@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371AbaICMUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:20:37 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:62560 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170AbaICMUg (ORCPT
+	id S932409AbaICMVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:21:22 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:53468 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932170AbaICMVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:20:36 -0400
+	Wed, 3 Sep 2014 08:21:21 -0400
+Message-ID: <540707B3.4050305@arm.com>
+Date: Wed, 03 Sep 2014 13:21:07 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
-Date: Wed, 3 Sep 2014 08:20:35 -0400
-Message-ID: <CAHQdGtTWjD5szmwtcv0fXxgmhdYea1h9wYddwhhPxnP5wBaToA@mail.gmail.com>
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: david@fromorbit.com, akpm@linux-foundation.org, xuejiufei@huawei.com,
-        ming.lei@canonical.com,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Devel FS Linux <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "tony@atomide.com" <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "jonas@southpole.se" <jonas@southpole.se>,
+        "shc_work@mail.ru" <shc_work@mail.ru>,
+        "baohua@kernel.org" <baohua@kernel.org>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "khilman@linaro.org" <khilman@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "stefan.kristiansson@saunalahti.fi" 
+	<stefan.kristiansson@saunalahti.fi>,
+        "vkale@apm.com" <vkale@apm.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH v2 00/26] genirq: fix use of irq_find_mapping outside
+ of legal RCU context
+References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <alpine.DEB.2.10.1408262333420.3323@nanos> <87y4uap98n.fsf@approximate.cambridge.arm.com> <20140903120406.GK30467@titan.lakedaemon.net> <alpine.DEB.2.10.1409031409160.3333@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409031409160.3333@nanos>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 3, 2014 at 1:54 AM, Junxiao Bi <junxiao.bi@oracle.com> wrote:
-> commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
-> introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
-> when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
-> run into I/O, like in superblock shrinker.
->
-> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-> Cc: joyce.xue <xuejiufei@huawei.com>
-> Cc: Ming Lei <ming.lei@canonical.com>
-> ---
->  include/linux/sched.h |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 5c2c885..2fb2c47 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1936,11 +1936,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
->  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
->  #define used_math() tsk_used_math(current)
->
-> -/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
-> +/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
-> + * __GFP_FS is also cleared as it implies __GFP_IO.
-> + */
->  static inline gfp_t memalloc_noio_flags(gfp_t flags)
->  {
->         if (unlikely(current->flags & PF_MEMALLOC_NOIO))
-> -               flags &= ~__GFP_IO;
-> +               flags &= ~(__GFP_IO | __GFP_FS);
->         return flags;
->  }
->
+[Dropping linux@openrisc.net from the CC list]
 
-Shouldn't this be a stable fix? If it is needed, then it will affect
-all kernels that define PF_MEMALLOC_NOIO.
+On 03/09/14 13:09, Thomas Gleixner wrote:
+> On Wed, 3 Sep 2014, Jason Cooper wrote:
+> 
+>> On Wed, Aug 27, 2014 at 10:33:44AM +0100, Marc Zyngier wrote:
+>>> Hi Thomas,
+>>>
+>>> On Tue, Aug 26 2014 at 10:34:51 pm BST, Thomas Gleixner <tglx@linutronix.de> wrote:
+>>>> On Tue, 26 Aug 2014, Marc Zyngier wrote:
+>>>>
+>>>>> A number of irqchip drivers are directly calling irq_find_mapping,
+>>>>> which may use a rcu_read_lock call when walking the radix tree.
+>>>>>
+>>>>> Turns out that if you hit that point with CONFIG_PROVE_RCU enabled,
+>>>>> the kernel will shout at you, as using RCU in this context may be
+>>>>> illegal (specially if coming from the idle state, where RCU would be
+>>>>> in a quiescent state).
+>>>>>
+>>>>> A possible fix would be to wrap calls to irq_find_mapping into a
+>>>>> RCU_NONIDLE macro, but that really looks ugly.
+>>>>>
+>>>>> This patch series introduce another generic IRQ entry point
+>>>>> (handle_domain_irq), which has the exact same behaviour as handle_IRQ
+>>>>> (as defined on arm, arm64 and openrisc), except that it also takes a
+>>>>> irq_domain pointer. This allows the logical IRQ lookup to be done
+>>>>> inside the irq_{enter,exit} section, which contains a
+>>>>> rcu_irq_{enter,exit}, making it safe.
+>>>>
+>>>> Looks good. Should this be routed to the genirq tree?
+>>>
+>>> I'm happy for you to take this series, provided the architecture
+>>> maintainers agree on it (I'm still to hear from the openrisc guys, and
+>>> their mailing-list seems to positively hate my guts).
+>>
+>> I think everyone's had a chance to look over it by now.  Thomas, shall I
+>> take the series?
+> 
+> Yes please.
 
+Do you want a pull request? Or are you picking up the patches from the ML?
+
+Thanks,
+
+	M.
 -- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+Jazz is not dead. It just smells funny...
