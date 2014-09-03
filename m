@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715AbaICN0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:26:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60493 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932590AbaICN0m (ORCPT
+	id S1756152AbaICN1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:27:32 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61608 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755984AbaICN1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:26:42 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5407170F.2070701@roeck-us.net>
-Date: Wed, 03 Sep 2014 06:26:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 3 Sep 2014 09:27:30 -0400
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 00/56] 3.12.28-stable review
-References: <cover.1409735865.git.jslaby@suse.cz>
-In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <540716A1.7040905@redhat.com>
+References: <1409743943-16934-1-git-send-email-lersek@redhat.com>
+	<CAKv+Gu_Yk-q0gf+EHc3EYQ=obLT2nj6Kj6qPTk678ASFEW+ZFQ@mail.gmail.com>
+	<540716A1.7040905@redhat.com>
+Date: Wed, 3 Sep 2014 15:27:28 +0200
+Message-ID: <CAKv+Gu-dTApubxij8U3P93BnWot+x7Vy+QNE+xBMdU5xoOSBgA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] beautify EFI memmap logs
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Laszlo Ersek <lersek@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Mark Salter <msalter@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 02:26 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.28 release.
-> There are 56 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On 3 September 2014 15:24, Laszlo Ersek <lersek@redhat.com> wrote:
+> On 09/03/14 15:01, Ard Biesheuvel wrote:
+>> On 3 September 2014 13:32, Laszlo Ersek <lersek@redhat.com> wrote:
+>>> changes in v2:
+>>> - explain with examples how the log's appearance changes, in patches 3-5
+>>>   [Ingo]
+>>>
+>>> v1 blurb:
+>>>
+>>>> It's a pain to analyze EFI memmap logs while debugging, especially to
+>>>> verify the memory types (an enum) and the memory attributes (a
+>>>> bitmap). This series renders those columns human-readable, and unifies
+>>>> their formatting between x86, ia64 and arm64.
+>>>
+>>
+>> Tested-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+>> (on arm64 only)
+>>
+>> +1 for aligning between architectures
+>> +1 for cleaning up the output to make it more readable
+>>
+>> The only thing I am not entirely convinced about is printing all those
+>> memory attributes: is it really so interesting to know that region X
+>> /can/ be configured as writeback, write through, write combining etc
+>> etc, as most regions seem to support most attributes, yet it tells you
+>> nothing about what the kernel ends up doing with that information. In
+>> the arm64 case, for instance, all MEMORY_WB ranges are mapped
+>> writeback cached, and everything else is mapped uncached.
 >
-> Responses should be made by Fri Sep  5 11:17:45 CEST 2014.
-> Anything received after that time might be too late.
+> You don't need these attributes spelled out when you're not debugging.
+> In that case, either build without CONFIG_EFI_DEBUG (on x86 and ia64),
+> or don't pass uefi_debug=1 (on arm64).
+>
+> When you're debugging however, you need every bit of info you can get.
+> For example, assume a tricky bug in exactly that part of the arm64 code
+> that you just described above. You'll be flip-flopping between the
+> kernel source and the original, pristine memory map dump. It's much
+> easier to ignore a few words / columns in the log (even: cut it out with
+> a script or interactively) than to read bitmaps in hex (or to decode
+> them in a script). I know because I grew to hate these hex-encoded
+> attributes and dec-encoded enum constants when I was developing S3 for
+> OVMF, and fighting the memmap.
+>
+> A good analogue is ACPI debugging in the kernel. The ACPI subsystem
+> comes with a very elaborate heap of switches, facility bitmaps, log
+> levels, and so on. The end result is that it is faster to add printks to
+> your suspect location(s) in ACPI, rebuild, retest, repeat, than to learn
+> to use the acpi debug flags. (And I did the former when I was recently
+> fixing a bug in the RHEL-6 kernel, in the intersection of ACPI and EFI.)
+>
+> So yes, I think that this detailed format is preferable.
 >
 
-Jiri,
+OK, you've convinced me :-)
 
-I get a large number of build failures.
+Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-total: 135 pass: 104 fail: 31
-Failed builds:
-arm:s3c2410_defconfig
-arm:ixp4xx_defconfig
-arm:mini2440_defconfig
-arm:at91_dt_defconfig
-arm:s3c6400_defconfig
-arm:lpc32xx_defconfig
-arm:sama5_defconfig
-arm:cm_x2xx_defconfig
-arm:at91rm9200_defconfig
-ia64:defconfig
-mips:bcm47xx_defconfig
-mips:bcm63xx_defconfig
-mips:ath79_defconfig
-mips:fuloong2e_defconfig
-mips:powertv_defconfig
-parisc:defconfig
-powerpc:defconfig
-powerpc:ppc64e_defconfig
-powerpc:cell_defconfig
-powerpc:maple_defconfig
-powerpc:mpc85xx_defconfig
-powerpc:mpc85xx_smp_defconfig
-powerpc:defconfig
-powerpc:ppc64e_defconfig
-powerpc:cell_defconfig
-powerpc:maple_defconfig
-powerpc:mpc85xx_defconfig
-powerpc:mpc85xx_smp_defconfig
-sparc32:defconfig
-sparc64:defconfig
-tile:tilegx_defconfig
-
-In file included from drivers/usb/host/ohci-hcd.c:85:0:
-drivers/usb/host/ohci-dbg.c:411:20: error: conflicting types for 'ohci_dump'
-drivers/usb/host/ohci-hcd.c:81:13: note: previous declaration of 'ohci_dump' was here
-drivers/usb/host/ohci-hcd.c: In function 'ohci_run':
-drivers/usb/host/ohci-hcd.c:757:2: error: too few arguments to function 'ohci_dump'
-
-Guenter
-
+Cheers,
+Ard.
