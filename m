@@ -1,149 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936451AbaICXxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:53:48 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:57647 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933215AbaICXxn (ORCPT
+	id S936459AbaICXyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:54:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762AbaICWFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 19:53:43 -0400
+	Wed, 3 Sep 2014 18:05:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Chris Evans <cevans@google.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 04/55] isofs: Fix unbounded recursion when processing relocated directories
+Date: Wed,  3 Sep 2014 15:04:54 -0700
+Message-Id: <20140903220454.350652383@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+References: <20140903220453.653576908@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <540665BA.3080702@gmail.com>
-References: <1409350479-19108-1-git-send-email-abrestic@chromium.org>
-	<1409350479-19108-4-git-send-email-abrestic@chromium.org>
-	<5405FE07.4030400@gmail.com>
-	<CAL1qeaHcV_4Z9n_THEN_aST3smgaW1vwn81SkmbU0AUJ_rdB1Q@mail.gmail.com>
-	<540665BA.3080702@gmail.com>
-Date: Wed, 3 Sep 2014 16:53:42 -0700
-X-Google-Sender-Auth: H5sZMU-U74C7XVRXa7ycJC-tg58
-Message-ID: <CAL1qeaG_vSiBToi9ZU2=+Guj98gWE_AgmrR7=Z6-PxSNfdH9sA@mail.gmail.com>
-Subject: Re: [PATCH 03/12] of: Add binding document for MIPS GIC
-From: Andrew Bresticker <abrestic@chromium.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 5:50 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 09/02/2014 12:36 PM, Andrew Bresticker wrote:
->>
->> On Tue, Sep 2, 2014 at 10:27 AM, David Daney <ddaney.cavm@gmail.com>
->> wrote:
->>>
->>> On 08/29/2014 03:14 PM, Andrew Bresticker wrote:
->>>>
->>>>
->>>> The Global Interrupt Controller (GIC) present on certain MIPS systems
->>>> can be used to route external interrupts to individual VPEs and CPU
->>>> interrupt vectors.  It also supports a timer and software-generated
->>>> interrupts.
->>>>
->>>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->>>> ---
->>>>    Documentation/devicetree/bindings/mips/gic.txt | 50
->>>> ++++++++++++++++++++++++++
->>>>    1 file changed, 50 insertions(+)
->>>>    create mode 100644 Documentation/devicetree/bindings/mips/gic.txt
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/mips/gic.txt
->>>> b/Documentation/devicetree/bindings/mips/gic.txt
->>>> new file mode 100644
->>>> index 0000000..725f1ef
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/mips/gic.txt
->>>> @@ -0,0 +1,50 @@
->>>> +MIPS Global Interrupt Controller (GIC)
->>>> +
->>>> +The MIPS GIC routes external interrupts to individual VPEs and IRQ
->>>> pins.
->>>> +It also supports a timer and software-generated interrupts which can be
->>>> +used as IPIs.
->>>> +
->>>> +Required properties:
->>>> +- compatible : Should be "mti,global-interrupt-controller"
->>>> +- reg : Base address and length of the GIC registers.
->>>> +- interrupts : Core interrupts to which the GIC may route external
->>>> interrupts.
->>>
->>>
->>>
->>> This doesn't make sense to me.  The GIC can, and does, route interrupts
->>> to
->>> all CPU cores in a SMP system.  How can there be a concept of only
->>> associating it with several interrupt lines on a single CPU in the
->>> system?
->>> That is not what the GIC does, is it?  It is a Global interrupts
->>> controller,
->>> not local.  So specifying device tree bindings that don't show its Global
->>> nature seems wrong.
->>
->>
->> While the GIC can route external interrupts to any HW interrupt vector
->> it may not make sense to actually use all those vectors.  For example,
->> the CP0 timer is usually hooked up to HW vector 5 (it could be treated
->> as a GIC local interrupt, though it may still be fixed to HW vector
->> 5).  BTW, the Malta example about the i8259 I gave before was wrong -
->> it appears that it actually gets chained with the GIC.
->
->
-> Your comments don't really make sense to me in the context of my knowledge
-> of the GIC.
->
-> Of course all the CP0 timer and performance counter interrupts are per-CPU
-> and routed directly to the corresponding CP0_Cause[IP7..IP2] bits.  We are
-> don't need to give them further consideration.
->
->
-> Here is the scenario you should consider:
->
->   o 16 CPU cores.
->   o 1 GIC routing interrupts from external sources to the 16 CPUs.
->   o 2 network controllers each with an interrupt line routed to the GIC.
->
-> Q: What would the GIC "interrupts" property look like?
->
-> Note that the GIC doesn't have a single "interrupt-parent", as it can route
-> interrupts to *all* 16 CPUs.
->
-> I propose that the GIC have neither an "interrupt-parent", nor "interrupts".
-> The fact that it is an "mti,global-interrupt-controller", means that the
-> software drivers for the GIC already know how to route interrupts, and any
-> information the device tree could contain is redundant.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Ok, I misunderstood your opposition to the binding.
+------------------
 
-My intention for the "interrupt-parent" and "interrupts" property of
-the GIC was to express that GIC interrupts are routed to the CPU
-interrupt vectors and that a certain set of these vectors are
-available for use by the GIC.  I would agree that these are mostly
-redundant (obviously the GIC routes interrupts to CPU interrupt
-vecotrs) and that it is not the most accurate description of the
-GIC-CPU relationship (the CPU interrupt controller are per-CPU, not
-global, and the GIC can route interrupts to any of them), though I'm
-not sure that there's a better way of describing it in DT.
+From: Jan Kara <jack@suse.cz>
 
-So that leaves us with something like this:
+commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4 upstream.
 
-interrupt-controller@1bdc0000 {
-        compatible = "mti,global-interrupt-controller";
+We did not check relocated directory in any way when processing Rock
+Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
+entry pointing to another CL entry leading to possibly unbounded
+recursion in kernel code and thus stack overflow or deadlocks (if there
+is a loop created from CL entries).
 
-        interrupt-controller;
-        #interrupt-cells = <2>;
+Fix the problem by not allowing CL entry to point to a directory entry
+with CL entry (such use makes no good sense anyway) and by checking
+whether CL entry doesn't point to itself.
 
-        available-cpu-vectors = <2>, <3>, ...
-};
+Reported-by: Chris Evans <cevans@google.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-DT folks, thoughts?
+---
+ fs/isofs/inode.c |   15 ++++++++-------
+ fs/isofs/isofs.h |   23 +++++++++++++++++++----
+ fs/isofs/rock.c  |   39 ++++++++++++++++++++++++++++-----------
+ 3 files changed, 55 insertions(+), 22 deletions(-)
+
+--- a/fs/isofs/inode.c
++++ b/fs/isofs/inode.c
+@@ -69,7 +69,7 @@ static void isofs_put_super(struct super
+ 	return;
+ }
+ 
+-static int isofs_read_inode(struct inode *);
++static int isofs_read_inode(struct inode *, int relocated);
+ static int isofs_statfs (struct dentry *, struct kstatfs *);
+ 
+ static struct kmem_cache *isofs_inode_cachep;
+@@ -1274,7 +1274,7 @@ out_toomany:
+ 	goto out;
+ }
+ 
+-static int isofs_read_inode(struct inode *inode)
++static int isofs_read_inode(struct inode *inode, int relocated)
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
+@@ -1419,7 +1419,7 @@ static int isofs_read_inode(struct inode
+ 	 */
+ 
+ 	if (!high_sierra) {
+-		parse_rock_ridge_inode(de, inode);
++		parse_rock_ridge_inode(de, inode, relocated);
+ 		/* if we want uid/gid set, override the rock ridge setting */
+ 		if (sbi->s_uid_set)
+ 			inode->i_uid = sbi->s_uid;
+@@ -1498,9 +1498,10 @@ static int isofs_iget5_set(struct inode
+  * offset that point to the underlying meta-data for the inode.  The
+  * code below is otherwise similar to the iget() code in
+  * include/linux/fs.h */
+-struct inode *isofs_iget(struct super_block *sb,
+-			 unsigned long block,
+-			 unsigned long offset)
++struct inode *__isofs_iget(struct super_block *sb,
++			   unsigned long block,
++			   unsigned long offset,
++			   int relocated)
+ {
+ 	unsigned long hashval;
+ 	struct inode *inode;
+@@ -1522,7 +1523,7 @@ struct inode *isofs_iget(struct super_bl
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	if (inode->i_state & I_NEW) {
+-		ret = isofs_read_inode(inode);
++		ret = isofs_read_inode(inode, relocated);
+ 		if (ret < 0) {
+ 			iget_failed(inode);
+ 			inode = ERR_PTR(ret);
+--- a/fs/isofs/isofs.h
++++ b/fs/isofs/isofs.h
+@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
+ 
+ struct inode;		/* To make gcc happy */
+ 
+-extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
++extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
+ extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
+ extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
+ 
+@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struc
+ extern struct buffer_head *isofs_bread(struct inode *, sector_t);
+ extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
+ 
+-extern struct inode *isofs_iget(struct super_block *sb,
+-                                unsigned long block,
+-                                unsigned long offset);
++struct inode *__isofs_iget(struct super_block *sb,
++			   unsigned long block,
++			   unsigned long offset,
++			   int relocated);
++
++static inline struct inode *isofs_iget(struct super_block *sb,
++				       unsigned long block,
++				       unsigned long offset)
++{
++	return __isofs_iget(sb, block, offset, 0);
++}
++
++static inline struct inode *isofs_iget_reloc(struct super_block *sb,
++					     unsigned long block,
++					     unsigned long offset)
++{
++	return __isofs_iget(sb, block, offset, 1);
++}
+ 
+ /* Because the inode number is no longer relevant to finding the
+  * underlying meta-data for an inode, we are free to choose a more
+--- a/fs/isofs/rock.c
++++ b/fs/isofs/rock.c
+@@ -288,12 +288,16 @@ eio:
+ 	goto out;
+ }
+ 
++#define RR_REGARD_XA 1
++#define RR_RELOC_DE 2
++
+ static int
+ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
+-				struct inode *inode, int regard_xa)
++				struct inode *inode, int flags)
+ {
+ 	int symlink_len = 0;
+ 	int cnt, sig;
++	unsigned int reloc_block;
+ 	struct inode *reloc;
+ 	struct rock_ridge *rr;
+ 	int rootflag;
+@@ -305,7 +309,7 @@ parse_rock_ridge_inode_internal(struct i
+ 
+ 	init_rock_state(&rs, inode);
+ 	setup_rock_ridge(de, inode, &rs);
+-	if (regard_xa) {
++	if (flags & RR_REGARD_XA) {
+ 		rs.chr += 14;
+ 		rs.len -= 14;
+ 		if (rs.len < 0)
+@@ -485,12 +489,22 @@ repeat:
+ 					"relocated directory\n");
+ 			goto out;
+ 		case SIG('C', 'L'):
+-			ISOFS_I(inode)->i_first_extent =
+-			    isonum_733(rr->u.CL.location);
+-			reloc =
+-			    isofs_iget(inode->i_sb,
+-				       ISOFS_I(inode)->i_first_extent,
+-				       0);
++			if (flags & RR_RELOC_DE) {
++				printk(KERN_ERR
++				       "ISOFS: Recursive directory relocation "
++				       "is not supported\n");
++				goto eio;
++			}
++			reloc_block = isonum_733(rr->u.CL.location);
++			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
++			    ISOFS_I(inode)->i_iget5_offset == 0) {
++				printk(KERN_ERR
++				       "ISOFS: Directory relocation points to "
++				       "itself\n");
++				goto eio;
++			}
++			ISOFS_I(inode)->i_first_extent = reloc_block;
++			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
+ 			if (IS_ERR(reloc)) {
+ 				ret = PTR_ERR(reloc);
+ 				goto out;
+@@ -637,9 +651,11 @@ static char *get_symlink_chunk(char *rpn
+ 	return rpnt;
+ }
+ 
+-int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
++int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
++			   int relocated)
+ {
+-	int result = parse_rock_ridge_inode_internal(de, inode, 0);
++	int flags = relocated ? RR_RELOC_DE : 0;
++	int result = parse_rock_ridge_inode_internal(de, inode, flags);
+ 
+ 	/*
+ 	 * if rockridge flag was reset and we didn't look for attributes
+@@ -647,7 +663,8 @@ int parse_rock_ridge_inode(struct iso_di
+ 	 */
+ 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
+ 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
+-		result = parse_rock_ridge_inode_internal(de, inode, 14);
++		result = parse_rock_ridge_inode_internal(de, inode,
++							 flags | RR_REGARD_XA);
+ 	}
+ 	return result;
+ }
+
+
