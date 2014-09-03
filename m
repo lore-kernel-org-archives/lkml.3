@@ -1,107 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870AbaICOqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:46:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33781 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753751AbaICOqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:46:43 -0400
-Date: Wed, 3 Sep 2014 09:46:11 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>, Daniele Forsi <dforsi@gmail.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kishon <kishon@ti.com>, Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 5/5] phy: exynos5-usbdrd: Adding Kconfig dependency for
- Exynos7
-Message-ID: <20140903144611.GE31855@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409212920-28526-1-git-send-email-gautam.vivek@samsung.com>
- <1409212920-28526-6-git-send-email-gautam.vivek@samsung.com>
- <CAN_we7MQAqEsRaQc_pkRE_KXx9zZNLDBR2aHUrazM30Nv3udmQ@mail.gmail.com>
- <CAFp+6iHsfg6Ru0LBN=JviV=-mSdmuSo9Te3EXYF+X8jssD_BYQ@mail.gmail.com>
- <20140902143711.GD16872@saruman.home>
- <CAFp+6iE4V4bWHGasr2qNC14mGNAfjQbgerCDMLLatnQQJ86NuA@mail.gmail.com>
+	id S932843AbaICOss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:48:48 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38158 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932581AbaICOsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 10:48:47 -0400
+Message-ID: <54072A63.6080704@oracle.com>
+Date: Wed, 03 Sep 2014 10:49:07 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SNIs70sCzqvszXB4"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iE4V4bWHGasr2qNC14mGNAfjQbgerCDMLLatnQQJ86NuA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Vrabel <david.vrabel@citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [V2 PATCH 1/1] PVH: set EFER.NX and EFER.SCE
+References: <1409707176-16487-1-git-send-email-mukesh.rathor@oracle.com> <1409707176-16487-2-git-send-email-mukesh.rathor@oracle.com> <54071E6C.4080901@citrix.com>
+In-Reply-To: <54071E6C.4080901@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SNIs70sCzqvszXB4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/03/2014 09:58 AM, David Vrabel wrote:
 
-On Wed, Sep 03, 2014 at 09:32:14AM +0530, Vivek Gautam wrote:
-> On Tue, Sep 2, 2014 at 8:07 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > On Mon, Sep 01, 2014 at 01:30:21PM +0530, Vivek Gautam wrote:
-> >> On Thu, Aug 28, 2014 at 8:36 PM, Daniele Forsi <dforsi@gmail.com> wrot=
-e:
-> >> > 2014-08-28 10:02 GMT+02:00 Vivek Gautam:
-> >> >
-> >> >> This USB 3.0 PHY controller is also present on Exynos7
-> >> >> platform, so adding the dependency on ARCH_EXYNOS7 for this driver.
-> >> >
-> >> >> +++ b/drivers/phy/Kconfig
-> >> >> @@ -186,7 +186,7 @@ config PHY_EXYNOS5250_USB2
-> >> >>
-> >> >>  config PHY_EXYNOS5_USBDRD
-> >> >>         tristate "Exynos5 SoC series USB DRD PHY driver"
-> >> >> -       depends on ARCH_EXYNOS5 && OF
-> >> >> +       depends on (ARCH_EXYNOS5 || ARCH_EXYNOS7) && OF
-> >> >
-> >> > shouldn't that prompt and its help text be updated to mention also E=
-xynos7?
-> >>
-> >> Right, even that has to be updated accordingly. Will update the same i=
-n next
-> >> version of the patch. Thanks for pointing this.
-> >
-> > I would rather change that to ARCH_EXYNOS, unless Kishon doesn't like
-> > that idea. The thing is that this will likely need to be patches for
-> > exynos8, 9, 10, 11...
->=20
-> Yes, after we have the 2nd version of Exynos7 support patches, it makes
-> more sense to keep dependency on ARCH_EXYNOS.
+>   #endif
+> diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+> index 485b695..a64b464 100644
+> --- a/arch/x86/xen/xen-head.S
+> +++ b/arch/x86/xen/xen-head.S
+> @@ -47,6 +47,40 @@ ENTRY(startup_xen)
+>   
+>   	__FINIT
+>   
+> +#ifdef CONFIG_XEN_PVH
+> +#ifdef CONFIG_X86_64
 
-thank you, that'll help new silicon wakeup; one less thing to patch :-p
+CONFIG_XEN_PVH implies CONFIG_X86_64.
 
---=20
-balbi
-
---SNIs70sCzqvszXB4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUBymzAAoJEIaOsuA1yqREYaEQAJ9dKi8ErbHY2N98fpeo3a3W
-pqe496n8nmczlK3x1mCcEYwqPQcX95mDI11iKArSfCnaSQA5shMoGel3tjWFS6yQ
-3nCVpoi78PLvgwCu6HDPOuCCa74HRnW1eRS+gnnnEoVA2oufxU76G/f8WkYJFQkm
-EyMUZ+4nn1XrdXyudpaf8hWzVu7Ru2TvUx4HTe0QLRmFr1uxpfN/sAKAcjmx+Kn1
-zITKZ22qYt1RlN+mB3YqpENZzF9LV57AWHvy+RtJarFbMtHBJsbYruXKoxLbHbHK
-Q9qtDHNNq27cNAWlLsjFVAXMgAfUNkVfX/9qsH0NCidGVf4yD/SlM8QALaH5fKHX
-/JjBvjWU9qTScXCa3IcQxv8uOcgQdAioePEHQ7cvU2aVZzvRC3rbbXgsW46AtJqO
-0niicdNmkhv2E0ImlSWgc3ZvG9z440AaeMKJuqH22utUNUR6I0hngf1jlyJUa59P
-m5yrWXkYJVnSwKkW9I/KhDPGWYbygAcMVsS9ReN0p5I+fXAiqi0BfQlcNgrCyJfs
-QPQ6snXCFdQJMkz5xDC0rumxgdLELMNuMd83HeHuOfRZaurHkXswS76rsI8yVRQ5
-+eIuSDB2/XGrrWlTo5YThB32dd+Ak54g0rtpl1Yqg13gSbmnmQif7fByGJ7RxHIp
-eqrAfEoXvlxElVLR6bSu
-=ASkT
------END PGP SIGNATURE-----
-
---SNIs70sCzqvszXB4--
+-boris
