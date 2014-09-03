@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964831AbaICX3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:29:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45611 "EHLO
+	id S936077AbaICX2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:28:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933592AbaICWIn (ORCPT
+	with ESMTP id S933604AbaICWIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:43 -0400
+	Wed, 3 Sep 2014 18:08:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
+        Jack Morgenstein <jackm@mellanox.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 41/88] KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC redir table
-Date: Wed,  3 Sep 2014 15:05:15 -0700
-Message-Id: <20140903220517.202997943@linuxfoundation.org>
+Subject: [PATCH 3.14 44/88] kvm: iommu: fix the third parameter of kvm_iommu_put_pages (CVE-2014-3601)
+Date: Wed,  3 Sep 2014 15:05:18 -0700
+Message-Id: <20140903220517.290031914@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,67 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 0f6c0a740b7d3e1f3697395922d674000f83d060 upstream.
+commit 350b8bdd689cd2ab2c67c8a86a0be86cfa0751a7 upstream.
 
-Currently, the EOI exit bitmap (used for APICv) does not include
-interrupts that are masked.  However, this can cause a bug that manifests
-as an interrupt storm inside the guest.  Alex Williamson reported the
-bug and is the one who really debugged this; I only wrote the patch. :)
+The third parameter of kvm_iommu_put_pages is wrong,
+It should be 'gfn - slot->base_gfn'.
 
-The scenario involves a multi-function PCI device with OHCI and EHCI
-USB functions and an audio function, all assigned to the guest, where
-both USB functions use legacy INTx interrupts.
+By making gfn very large, malicious guest or userspace can cause kvm to
+go to this error path, and subsequently to pass a huge value as size.
+Alternatively if gfn is small, then pages would be pinned but never
+unpinned, causing host memory leak and local DOS.
 
-As soon as the guest boots, interrupts for these devices turn into an
-interrupt storm in the guest; the host does not see the interrupt storm.
-Basically the EOI path does not work, and the guest continues to see the
-interrupt over and over, even after it attempts to mask it at the APIC.
-The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
-with not many changes in the area of APIC/IOAPIC handling).
+Passing a reasonable but large value could be the most dangerous case,
+because it would unpin a page that should have stayed pinned, and thus
+allow the device to DMA into arbitrary memory.  However, this cannot
+happen because of the condition that can trigger the error:
 
-Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
-on in the eoi_exit_bitmap and TMR, and things then work.  What happens
-is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
-It does not have set bit 59 because the RTE was masked, so the IOAPIC
-never sees the EOI and the interrupt continues to fire in the guest.
+- out of memory (where you can't allocate even a single page)
+  should not be possible for the attacker to trigger
 
-My guess was that the guest is masking the interrupt in the redirection
-table in the interrupt routine, i.e. while the interrupt is set in a
-LAPIC's ISR, The simplest fix is to ignore the masking state, we would
-rather have an unnecessary exit rather than a missed IRQ ACK and anyway
-IOAPIC interrupts are not as performance-sensitive as for example MSIs.
-Alex tested this patch and it fixed his bug.
+- when exceeding the iommu's address space, guest pages after gfn
+  will also exceed the iommu's address space, and inside
+  kvm_iommu_put_pages() the iommu_iova_to_phys() will fail.  The
+  page thus would not be unpinned at all.
 
-[Thanks to Alex for his precise description of the problem
- and initial debugging effort.  A lot of the text above is
- based on emails exchanged with him.]
-
-Reported-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Alex Williamson <alex.williamson@redhat.com>
+Reported-by: Jack Morgenstein <jackm@mellanox.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/ioapic.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ virt/kvm/iommu.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -203,10 +203,9 @@ void kvm_ioapic_scan_entry(struct kvm_vc
- 	spin_lock(&ioapic->lock);
- 	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
- 		e = &ioapic->redirtbl[index];
--		if (!e->fields.mask &&
--			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
--			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
--				 index) || index == RTC_GSI)) {
-+		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
-+		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
-+		    index == RTC_GSI) {
- 			if (kvm_apic_match_dest(vcpu, NULL, 0,
- 				e->fields.dest_id, e->fields.dest_mode)) {
- 				__set_bit(e->fields.vector,
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -61,6 +61,14 @@ static pfn_t kvm_pin_pages(struct kvm_me
+ 	return pfn;
+ }
+ 
++static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
++{
++	unsigned long i;
++
++	for (i = 0; i < npages; ++i)
++		kvm_release_pfn_clean(pfn + i);
++}
++
+ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ {
+ 	gfn_t gfn, end_gfn;
+@@ -123,6 +131,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 		if (r) {
+ 			printk(KERN_ERR "kvm_iommu_map_address:"
+ 			       "iommu failed to map pfn=%llx\n", pfn);
++			kvm_unpin_pages(kvm, pfn, page_size);
+ 			goto unmap_pages;
+ 		}
+ 
+@@ -134,7 +143,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 	return 0;
+ 
+ unmap_pages:
+-	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn);
++	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn - slot->base_gfn);
+ 	return r;
+ }
+ 
+@@ -266,14 +275,6 @@ out_unlock:
+ 	return r;
+ }
+ 
+-static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < npages; ++i)
+-		kvm_release_pfn_clean(pfn + i);
+-}
+-
+ static void kvm_iommu_put_pages(struct kvm *kvm,
+ 				gfn_t base_gfn, unsigned long npages)
+ {
 
 
