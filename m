@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276AbaICMNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:13:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43935 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084AbaICMNI (ORCPT
+	id S1756125AbaICMN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:13:58 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:52015 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341AbaICMN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:13:08 -0400
-Date: Wed, 3 Sep 2014 14:13:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, jason@lakedaemon.net,
-        computersforpeace@gmail.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/2] Documentation: bcm7120-l2: Add Broadcom BCM7120-style
- L2 binding
-In-Reply-To: <1409265326-7579-3-git-send-email-f.fainelli@gmail.com>
-Message-ID: <alpine.DEB.2.10.1409031410580.3333@nanos>
-References: <1409265326-7579-1-git-send-email-f.fainelli@gmail.com> <1409265326-7579-3-git-send-email-f.fainelli@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 3 Sep 2014 08:13:57 -0400
+Date: Wed, 3 Sep 2014 13:13:19 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Loic Pefferkorn <loic@loicp.eu>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] staging: goldfish: document spinlock usage
+Message-ID: <20140903131319.79095a43@alan.etchedpixels.co.uk>
+In-Reply-To: <1409742827-6048-4-git-send-email-loic@loicp.eu>
+References: <1409742827-6048-1-git-send-email-loic@loicp.eu>
+	<1409742827-6048-4-git-send-email-loic@loicp.eu>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You forgot to CC the device tree dudes. We want an ack on the bindings
-before they materialize in Linus tree.
+On Wed,  3 Sep 2014 13:13:44 +0200
+Loic Pefferkorn <loic@loicp.eu> wrote:
 
-Thanks,
-
-	tglx
-
-On Thu, 28 Aug 2014, Florian Fainelli wrote:
-
-> This patch adds the Device Tree binding document for the Broadcom
-> BCM7120-style Set-top-box Level 2 interrupt controller hardware.
+> Coding style: document spinlock usage
 > 
-> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+> Signed-off-by: Loic Pefferkorn <loic@loicp.eu>
 > ---
->  .../interrupt-controller/brcm,bcm7120-l2-intc.txt  | 44 ++++++++++++++++++++++
->  1 file changed, 44 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt
+>  drivers/staging/goldfish/goldfish_audio.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt
-> new file mode 100644
-> index 000000000000..3818ffed7347
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt
-> @@ -0,0 +1,44 @@
-> +Broadcom BCM7120-style Level 2 interrupt controller
-> +
-> +Required properties:
-> +
-> +- compatible: should be "brcm,bcm7120-l2-intc"
-> +- reg: specifies the base physical address and size of the registers
-> +- interrupt-controller: identifies the node as an interrupt controller
-> +- #interrupt-cells: specifies the number of cells needed to encode an interrupt
-> +  source, should be 1.
-> +- interrupt-parent: specifies the phandle to the parent interrupt controller
-> +  this one is cascaded from
-> +- interrupts: specifies the interrupt line(s) in the interrupt-parent domain
-> +  to be used for cascading
-> +- brcm,int-map-mask: 32-bits bit mask describing how the interrupts at this level
-> +  map to their respective parents. Should match exactly the number of interrupts
-> +  specified in the 'interrupts' property.
-> +
-> +Optional properties:
-> +
-> +- interrupt-names: if present, the litteral names for the parent interrupts
-> +  specified in the 'interrupts' property.
-> +
-> +- brcm,irq-can-wake: if present, this means the L2 controller can be used as a
-> +  wakeup source for system suspend/resume.
-> +
-> +- brcm,int-fwd-mask: if present, a 32-bits bit mask describing the interrupts
-> +  which need to be enabled in this controller to flow to the higher level
-> +  interrupt controller. This is typically needed for the UARTs interrupts to
-> +  flow through the top-level interrupt controller (e.g: ARM GIC on ARM-based
-> +  platforms).
-> +
-> +Example:
-> +
-> +irq0_intc: interrupt-controller@f0406800 {
-> +	compatible = "brcm,bcm7120-l2-intc";
-> +	interrupt-parent = <&intc>;
-> +	#interrupt-cells = <1>;
-> +	reg = <0xf0406800 0x8>;
-> +	interrupt-controller;
-> +	interrupts = <0x0 0x42 0x0>, <0x0 0x40 0x0>;
-> +	interrupt-names = "upg_main", "upg_bsc";
-> +	brcm,int-map-mask = <0xeb8>, <0x140>;
-> +	brcm,int-fwd-mask = <0x7>;
-> +};
-> -- 
-> 1.9.1
-> 
-> 
+> diff --git a/drivers/staging/goldfish/goldfish_audio.c b/drivers/staging/goldfish/goldfish_audio.c
+> index 23a206d..ab723ab 100644
+> --- a/drivers/staging/goldfish/goldfish_audio.c
+> +++ b/drivers/staging/goldfish/goldfish_audio.c
+> @@ -36,7 +36,7 @@ MODULE_VERSION("1.0");
+>  struct goldfish_audio {
+>  	char __iomem *reg_base;
+>  	int irq;
+> -	spinlock_t lock;
+> +	spinlock_t lock;                /* Serialize access to device */
+
+This tells the reader nothing. It's good to document locking models but
+
+- you lock data not code (which is a detail a lot of programmers get wrong
+			  in th design stage too)
+- you need to document what objects are protected by the lock
+
+
+So it should tell the reader what the lock must be held to do
+
+If you look at the audio code it actually protects the status field and
+status register of the "hardware"
+
+
