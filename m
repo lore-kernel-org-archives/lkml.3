@@ -1,195 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933033AbaICPzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:55:14 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:53858 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538AbaICPzM (ORCPT
+	id S932987AbaICP51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:57:27 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:41067 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932743AbaICP50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:55:12 -0400
-Date: Wed, 3 Sep 2014 11:55:04 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-api@vger.kernel.org>
-Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
-Message-ID: <20140903115504.63a7ae6f@tlielax.poochiereds.net>
-In-Reply-To: <540727E0.6030005@parallels.com>
-References: <5405FBAE.5020303@parallels.com>
-	<20140902184456.GC31793@fieldses.org>
-	<54061562.4080306@parallels.com>
-	<20140902194300.GE31793@fieldses.org>
-	<20140902155351.79183446@tlielax.poochiereds.net>
-	<540727E0.6030005@parallels.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Wed, 3 Sep 2014 11:57:26 -0400
+Date: Wed, 3 Sep 2014 08:57:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        Peter Tyser <ptyser@xes-inc.com>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] x86, lpc, Allow only one load of lpc_ich
+Message-ID: <20140903155718.GA26776@roeck-us.net>
+References: <1409695097-5831-1-git-send-email-prarit@redhat.com>
+ <20140903074315.GB28985@lee--X1>
+ <5406E9B0.101@redhat.com>
+ <20140903113535.GE28985@lee--X1>
+ <540701B5.3020409@redhat.com>
+ <20140903121941.GF28985@lee--X1>
+ <54070842.2000700@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54070842.2000700@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Sep 2014 18:38:24 +0400
-Pavel Emelyanov <xemul@parallels.com> wrote:
-
-> On 09/02/2014 11:53 PM, Jeff Layton wrote:
-> > On Tue, 2 Sep 2014 15:43:00 -0400
-> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > 
-> >> On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
-> >>> On 09/02/2014 10:44 PM, J. Bruce Fields wrote:
-> >>>> On Tue, Sep 02, 2014 at 09:17:34PM +0400, Pavel Emelyanov wrote:
-> >>>>> Hi,
+On Wed, Sep 03, 2014 at 08:23:30AM -0400, Prarit Bhargava wrote:
+> 
+> 
+> On 09/03/2014 08:19 AM, Lee Jones wrote:
+> > On Wed, 03 Sep 2014, Prarit Bhargava wrote:
+> >> On 09/03/2014 07:35 AM, Lee Jones wrote:
+> >>>>>> This occurs because there are two LPC devices on the system:
+> >>>>>>
+> >>>>>> 00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
+> >>>>>> 80:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
+> >>>>>>
+> >>>>>> which AFAICT is a hardware configuration error that can be resolved in
+> >>>>>> firmware by hiding the second LPC device.  Having two of these results in
+> >>>>>> two GPIO mappings and two Watchdog Timers which doesn't make much sense.
+> >>>>>>
+> >>>>>> An end user has no idea what the splats mean.  We should inform the user that
+> >>>>>> the issue lies with the hardware and that they should contact their vendor
+> >>>>>> for resolution.
 > >>>>>
-> >>>>> There's a problem with getting information about who has a flock on
-> >>>>> a specific file. The thing is that the "owner" field, that is shown in
-> >>>>> /proc/locks is the pid of the task who created the flock, not the one
-> >>>>> who _may_ hold it.
+> >>>>> Why is it a problem for 2 of these devices to exist on a single system?
 > >>>>>
-> >>>>> If the flock creator shared the file with some other task (by forking
-> >>>>> or via scm_rights) and then died or closed the file, the information
-> >>>>> shown in proc no longer corresponds to the reality.
+> >>>>> Shouldn't the driver just be able to handle 2 devices?
 > >>>>>
-> >>>>> This is critical for CRIU project, that tries to dump (and restore)
-> >>>>> the state of running tasks. For example, let's take two tasks A and B
-> >>>>> both opened a file "/foo", one of tasks places a LOCK_SH lock on the 
-> >>>>> file and then "obfuscated" the owner field in /proc/locks. After this
-> >>>>> we have no ways to find out who is the lock holder.
-> >>>>>
-> >>>>> I'd like to note, that for LOCK_EX this problem is not critical -- we
-> >>>>> may go to both tasks and "ask" them to LOCK_EX the file again (we can
-> >>>>> do it in CRIU, I can tell more if required). The one who succeeds is 
-> >>>>> the lock holder.
+> >>
 > >>>>
-> >>>> It could be both, actually, right?
+> >>>> You end up with two watchdogs on the same system (and more confusingly they use
+> >>>> the same global interface).  Additionally you end up with two sets of GPIOs
+> >>>> which also use the same global interface ... not good.
 > >>>
-> >>> Two succeeding with LOCK_EX? AFAIU no. Am I missing something?
+> >>> I understand the problem with the _driver_, but why is it a problem
+> >>> that two of these _devices_ exist on one system?  Bailing out of the
+> >>> second .probe() sounds hacky to me.  The driver should know that this
+> >>> is possible and act accordingly, or the second devices shouldn't be
+> >>> registered.
+> >>>
+> >>> Can these devices be controlled seperately?  
 > >>
-> >> After a fork, two processes "own" the lock, right?:
+> >> Let's just try and address this for now ... They can be controlled separately
+> >> but that's not the issue here.
 > >>
-> >> 	int main(int argc, char *argv[])
-> >> 	{
-> >> 		int fd, ret;
-> >> 	
-> >> 		fd = open(argv[1], O_RDWR);
-> >> 		ret = flock(fd, LOCK_EX);
-> >> 		if (ret)
-> >> 			err(1, "flock");
-> >> 		ret = fork();
-> >> 		if (ret == -1)
-> >> 			err(1, "flock");
-> >> 		ret = flock(fd, LOCK_EX);
-> >> 		if (ret)
-> >> 			err(1, "flock");
-> >> 		printf("%d got exclusive lock\n", getpid());
-> >> 		sleep(1000);
-> >> 	}
+> >> Consider just the watchdog timer (because it is easier to explain).  The way the
+> >> watchdog timer works is that we write to it every 30 seconds (or so ... it
+> >> depends on your setup obviously).  If we don't write to it within 30 seconds the
+> >> system will panic and reboot.
 > >>
-> >> 	$ touch TMP
-> >> 	$ ./test TMP
-> >> 	15882 got exclusive lock
-> >> 	15883 got exclusive lock
-> >> 	^C
-> >>
-> >> I may misunderstand what you're doing.
-> >>
+> >> Now ... suppose you have two on a system.  To what end? It doesn't make sense to
+> >> have two.  Either you can write from userspace or you can't.  Now you have two
+> >> running with different timeouts -- why?  That doesn't make sense either.  It
 > > 
-> > Yeah, I don't understand either.
+> > You only have 2 running if you start them both.
 > > 
-> > Flock locks are owned by the file description. The task that set
-> > them is really irrelevant once they are set.
+> >> isn't like the one with the longer timeout is ever going to cause a reboot.
+> >>
+> >> Does that explain things better?  It's a not a real-world scenario.
 > > 
-> > In the second flock() call there, you're just "modifying" an existing
-> > lock (which turns out to be a noop here).
+> > On the h/w I'm currently working on, we have 3 Watchdogs.
+> 
+> "3": what are they?  Are they all system-level watchdogs?  I can understand the
+> BMC having a watchdog, the system HW having a watchdog (which is what we're
+> talking about here), and I'm sure we can think of other watchdogs ... but two
+> that are EXACTLY the same?
+> 
 > > 
-> > So, I don't quite understand the problem this solves. I get that you're
-> > trying to reestablish the flock "state" after a checkpoint/restore
-> > event, but why does it matter what task actually sets the locks as long
-> > as they're set on the correct set of fds?
+> >> You also asked ...
+> >>
+> >>> Then why do they [have two devices specified]?
+> >>
+> >> Because the vendor didn't/forgot to hide one from the kernel in BIOS -- hence
+> >> FW_BUG.
+> > 
+> > If only one is useful, why have the second one in the first place?
 > 
-> Sorry for confusion. Let me try to explain it more clearly.
+> That's just it -- it shouldn't have been exposed (again, according to Intel).
 > 
-> First, what I meant talking about two LOCK_EX locks. Let's consider
-> this scenario:
+> > 
+> > If the devices are present and we can see them, why not have 2?  Some
+> > users might find a use for them.
 > 
-> pid = fork()
-> fd = open("/foo"); /* both parent and child has _different_ files */
-> if (pid == 0)
-> 	/* child only */
-> 	flock(fd, LOCK_EX);
+> No one will.
 > 
-> at this point we have two different files pointing to "/foo" and 
-> only one of them has LOCK_EX on it. So if try to LOCK_EX it again, 
-> only at child's file this would succeed. So we can distinguish which
-> file is locked using this method.
-> 
-> 
-> 
-> Now, what problem this patch is trying to solve. It's quite tricky, 
-> but still. Let's imagine this scenario:
-> 
-> pid = fork();
-> fd = open("/foo"); /* yet again -- two different files */
-> if (pid == 0) {
-> 	flock(fd, LOCK_SH);
-> 	pid2 = fork();
-> 	if (pid2 != 0)
-> 		exit(0);
-> }
-> 
-> at this point we have:
-> 
-> task A -- the original task with file "/foo" opened
-> task B -- the first child, that exited at the end
-> task C -- the 2nd child, that "inherited" a file with the lock from B
-> 
-> Note, that file at A and file at C are two different files (struct 
-> file-s). And it's only the C's one that is locked.
-> 
-> The problem is that the /proc/locks shows the pid of B in this lock's
-> owner field. And we have no glue to find out who the real lock owner
-> is using the /proc/locks.
-> 
-> If we try to do the trickery like the one we did with LOCK_EX above,
-> this is what we would get.
-> 
-> If putting the 2nd LOCK_SH from A and from C, both attempts would succeed,
-> so this is not the solution.
-> 
-> If we try to LOCK_EX from A and C, only C would succeed, so this seem
-> to be the solution, but it's actually not. If there's another pair of 
-> A' and C' tasks holding the same "/foo" and having the LOCK_SH on C', 
-> this trick would stop working as none of the tasks would be able to 
-> put such lock on this file.
-> 
-> 
-> Thus, we need some way to find out whether a task X has a lock on file F.
-> This patch is one of the ways of doing this.
-> 
-> Hope this explanation is more clear.
-> 
+Really ? I must be the "no one" then.
 
-Yes, thanks for clarifying.
+If available, I like using two watchdogs: One to be controlled by, say, systemd,
+one to be controlled by the watchdog daemon. If I have three, I might find use
+for it as well: One more to be controlled by whatever application is running
+on the system.
 
-I think we do need to be a bit careful when describing this though.
+Sure, that may be considered overkill, but declaring that "no one will use them"
+if more than one watchdog is available is just not correct. After all, there was
+a _reason_ for introducing the capability to support more than one watchdog into
+the watchdog subsystem.
 
-flock locks are not owned by tasks, but by the file description. So you
-can't really tell whether task X has a lock on file F. Several tasks
-could have a reference to file F and none of them has any more "claim"
-to a lock on that file than another (at least from an API standpoint).
+Similar, if there are multiple LPCs with separate GPIO pins on each in the
+system, I don't entirely understand why the GPIO pins on the second chip
+would or should be declared to be unusable. Why ?
 
-What your patch really does is tell you whether that file description
-has a particular type of lock set on it.
-
-Like Bruce, I think this looks fairly reasonable. That said, I had to
-go through a bunch of API gyrations recently when getting the OFD lock
-patches merged. It would be good to accompany your kernel patch with
-glibc and manpage patches as well so we can make sure we have the
-design settled before merging anything.
-
-Sound OK?
--- 
-Jeff Layton <jlayton@poochiereds.net>
+Guenter
