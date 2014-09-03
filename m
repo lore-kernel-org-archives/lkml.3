@@ -1,131 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842AbaICHcd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:32:33 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:9431 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274AbaICHca (ORCPT
+	id S1755880AbaICHce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:32:34 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:64504 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663AbaICHcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:32:30 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-c1-5406c40c222f
+	Wed, 3 Sep 2014 03:32:32 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-14-5406c40c1638
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v2 2/3] integrity: move integrity subsystem options to a
- separate menu
-Date: Wed, 03 Sep 2014 10:29:28 +0300
-Message-id: <bce4893d9928b4c6ba9e69e8b4d858489acf6e9e.1409728926.git.d.kasatkin@samsung.com>
+Subject: [PATCH v2 3/3] integrity: make all integrity components as integrity
+ module
+Date: Wed, 03 Sep 2014 10:29:29 +0300
+Message-id: <7f2ba23fe3156fcb4d71836ec7b0fd12d30c599b.1409728926.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1409728926.git.d.kasatkin@samsung.com>
 References: <cover.1409728926.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1409728926.git.d.kasatkin@samsung.com>
 References: <cover.1409728926.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgluLIzCtJLcpLzFFi42I5/e/4FV2eI2whBqe+8Vrc+ruX2eLL0jqL
-	lzPmsVtc3jWHzeJDzyM2i08rJjE7sHnsnHWX3ePBoc0sHrsXfGby6NuyitHj8ya5ANYoLpuU
-	1JzMstQifbsEroyTOyaxFDwWqnj+ZTF7A+Ni/i5GTg4JAROJpetnsELYYhIX7q1n62Lk4hAS
-	WMoo8altDSOE08kk0X72PRNIFZuAnsSG5h/sILaIQI7EpDMXmEFsZoF0iU+TesHiwgIREq0f
-	2hlBbBYBVYn/B2eBxXkF4iS+7rsOtU1O4uSxyWA2p4CVxIbXO8FsIQFLiWWv1rDgEp/AyL+A
-	kWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkjofd3BuPSY1SFGAQ5GJR7eCEG2ECHWxLLi
-	ytxDjBIczEoivL6JQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MHLnL71f2zmI28Ur00D3SkJm4
-	K/HInSdzXf8s9J9Un3jpmIf4rTCzH4da3s8pZ/5pskAiyUDyedHNK+9qPJI3WZiGt14UK2Ks
-	Nv11+XWe5ecZzY9tODSt82yv/biQ+oLj9ZrO/Zt37NtW5fqyetaRxecXTCq7WewsZi384Osd
-	pW/Tes6Xnnh3VYmlOCPRUIu5qDgRANZFkRQbAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnluLIzCtJLcpLzFFi42I5/e/4FV2eI2whBm+7rCxu/d3LbPFlaZ3F
+	yxnz2C0u75rDZvGh5xGbxacVk5gd2Dx2zrrL7vHg0GYWj90LPjN59G1ZxejxeZNcAGsUl01K
+	ak5mWWqRvl0CV8bOR9vYC5o5K34urGlgvMPexcjJISFgInGk/T6ULSZx4d56ti5GLg4hgaWM
+	Ev/XfGWFcDqZJNrPvmcCqWIT0JPY0PwDrENEIEdi0pkLzCA2s0C6xKdJvWBxYYEwiea5X9hA
+	bBYBVYnJTctZQWxegTiJD98mMEJsk5M4eWwyWJxTwEpiw+udYLaQgKXEsldrWHCJT2DkX8DI
+	sIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJPC+7GBcfMzqEKMAB6MSD2+BGluIEGtiWXFl
+	7iFGCQ5mJRFe30SgEG9KYmVValF+fFFpTmrxIUYmDk6pBka/NrU8NrmnxbWXVm4UXpu3UGKC
+	NcM6dt3rHfuv7a3iX7tbK0ffjkHdya/VfuOBYFeP8sLrvJtZvs8VfTc/4vGpXBvlW3st9f59
+	2aJiUn28Pff0+4C/KdyBL5pPfLpxTO2jj2yzRMSrE6os8RpRDB5K8yP3nimrmRio5/+6uatg
+	erFYd41btRJLcUaioRZzUXEiALnqf8IaAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Integrity subsystem got lots of options and takes more than half
-of security menu.
-
-This patch moves integrity subsystem options to a separate menu.
-It does not affect existing configuration. Re-configuration is
-not needed.
-
-Changes in v2:
-- previous patch moved integrity out of the 'security' menu.
-  This version keeps integrity as a security option (Mimi).
+Kernel print macros use KBUILD_MODNAME, which is initialized
+to module name. Current Makefile puts every file to its own
+module. So pr_xxx messages prefixed with file name instead of
+module. This patch makes all as a 'integrity' module the same
+way as it is done in evm/Makefile and ima/Makefile.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/Kconfig     | 14 ++++++++++++--
- security/integrity/evm/Kconfig |  9 +--------
- security/integrity/ima/Kconfig |  3 +--
- 3 files changed, 14 insertions(+), 12 deletions(-)
+ security/integrity/Makefile | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-index f79d853..a734a83 100644
---- a/security/integrity/Kconfig
-+++ b/security/integrity/Kconfig
-@@ -1,7 +1,13 @@
+diff --git a/security/integrity/Makefile b/security/integrity/Makefile
+index 0793f48..8d1f4bf 100644
+--- a/security/integrity/Makefile
++++ b/security/integrity/Makefile
+@@ -3,11 +3,11 @@
  #
- config INTEGRITY
--	def_bool y
--	depends on IMA || EVM
-+	bool "Integrity subsystem support"
-+	depends on SECURITY
-+	default y
-+
-+if INTEGRITY
-+
-+menu "Options"
-+
  
- config INTEGRITY_SIGNATURE
- 	boolean "Digital signature verification using multiple keyrings"
-@@ -46,3 +52,7 @@ config INTEGRITY_AUDIT
+ obj-$(CONFIG_INTEGRITY) += integrity.o
+-obj-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
+-obj-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
+-obj-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
  
- source security/integrity/ima/Kconfig
- source security/integrity/evm/Kconfig
-+
-+endmenu
-+
-+endif   # if INTEGRITY
-diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
-index d606f3d..df20a2f 100644
---- a/security/integrity/evm/Kconfig
-+++ b/security/integrity/evm/Kconfig
-@@ -1,6 +1,6 @@
- config EVM
- 	boolean "EVM support"
--	depends on SECURITY
-+	depends on INTEGRITY
- 	select KEYS
- 	select ENCRYPTED_KEYS
- 	select CRYPTO_HMAC
-@@ -12,10 +12,6 @@ config EVM
+ integrity-y := iint.o
++integrity-$(CONFIG_INTEGRITY_AUDIT) += integrity_audit.o
++integrity-$(CONFIG_INTEGRITY_SIGNATURE) += digsig.o
++integrity-$(CONFIG_INTEGRITY_ASYMMETRIC_KEYS) += digsig_asymmetric.o
  
- 	  If you are unsure how to answer this question, answer N.
- 
--if EVM
--
--menu "EVM options"
--
- config EVM_ATTR_FSUUID
- 	bool "FSUUID (version 2)"
- 	default y
-@@ -47,6 +43,3 @@ config EVM_EXTRA_SMACK_XATTRS
- 	  additional info to the calculation, requires existing EVM
- 	  labeled file systems to be relabeled.
- 
--endmenu
--
--endif
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index 08758fb..2477d1e 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -2,8 +2,7 @@
- #
- config IMA
- 	bool "Integrity Measurement Architecture(IMA)"
--	depends on SECURITY
--	select INTEGRITY
-+	depends on INTEGRITY
- 	select SECURITYFS
- 	select CRYPTO
- 	select CRYPTO_HMAC
+ subdir-$(CONFIG_IMA)			+= ima
+ obj-$(CONFIG_IMA)			+= ima/
 -- 
 1.9.1
 
