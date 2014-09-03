@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849AbaICVXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:23:42 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:50588 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946AbaICVXN (ORCPT
+	id S932931AbaICVX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:23:59 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:58404 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932684AbaICVXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:23:13 -0400
+	Wed, 3 Sep 2014 17:23:11 -0400
 From: Andrew Pinski <apinski@cavium.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         pinskia@gmail.com
 Cc: Andrew Pinski <apinski@cavium.com>
-Subject: [PATCH 24/24] Add documentation about ARM64 ILP32 ABI
-Date: Wed,  3 Sep 2014 14:19:18 -0700
-Message-Id: <1409779158-30963-25-git-send-email-apinski@cavium.com>
+Subject: [PATCH 22/24] ARM64:ILP32: Fix signal return for ILP32 when the user modified the signal stack
+Date: Wed,  3 Sep 2014 14:19:16 -0700
+Message-Id: <1409779158-30963-23-git-send-email-apinski@cavium.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1409779158-30963-1-git-send-email-apinski@cavium.com>
 References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
@@ -21,77 +21,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the documentation about the ILP32 ABI and what is difference between it and the normal generic 32bit ABI.
+If the user decided to change the stack_t that was on the stack when returning
+from the signal handler, the stack_t's padding for ILP32 might be not zero.
+So we need to use the syscall version of restore_altstack (ilp32_sys_sigaltstack).
 
 Signed-off-by: Andrew Pinski <apinski@cavium.com>
 ---
- Documentation/arm64/ilp32.txt |   57 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 57 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/arm64/ilp32.txt
+ arch/arm64/kernel/signal.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/arm64/ilp32.txt b/Documentation/arm64/ilp32.txt
-new file mode 100644
-index 0000000..0863aa4
---- /dev/null
-+++ b/Documentation/arm64/ilp32.txt
-@@ -0,0 +1,57 @@
-+			ILP32 AARCH64 SYSCALL ABI
-+			=====================
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+index 5311147..6316d54 100644
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
+@@ -35,6 +35,7 @@
+ #include <asm/fpsimd.h>
+ #include <asm/signal32.h>
+ #include <asm/vdso.h>
++#include <asm/syscalls.h>
+ 
+ /*
+  * Do a signal return; undo the signal stack. These are aligned to 128-bit.
+@@ -149,6 +150,19 @@ asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
+ 	if (restore_sigframe(regs, frame))
+ 		goto badframe;
+ 
++#ifdef CONFIG_ARM64_ILP32
++	/*
++	 * ILP32 has to be handled "special" due to maybe not zeroing out
++	 * the upper 32bits of the pointer if the user changed the frame.
++	 */
++	if (is_ilp32_compat_task()) {
++		if (ilp32_sys_sigaltstack(&frame->uc.uc_stack,
++					  NULL) == -EFAULT)
++			goto badframe;
++		return regs->regs[0];
++	}
++#endif
 +
-+Author: Andrew Pinski  <apinski@cavium.com>
-+Date: May 23, 2014
-+
-+This document describes the ILP32 syscall ABI and where it differs
-+from the generic linux syscall interface.
-+ILP32 sets __kernel_long_t and __kernel_ulong_t both to 64bit
-+(long long).  This effects the following types:
-+* time_t: unsigned long long
-+* clock_t: unsigned long long
-+* fsword_t: long long
-+* suseconds_t: long long
-+* swblk_t: long long
-+* fd_mask_t: long long
-+
-+Some structures are changed to reduce the difference in the code path
-+for both ILP32 and LP64 ABIs for signal handling.
-+
-+The following structures have been changed so the layout of the structures are the same between ILP32 and LP64 ABIs.
-+* timespec: Uses time_t and suseconds_t
-+* timeval: Uses time_t and suseconds_t
-+* stat: Uses timespec/time_t.
-+* semid64_ds: Uses time_t.
-+* msqid64_ds: Uses time_t.
-+* shmid64_ds: Uses time_t.
-+* rt_sigframe: Uses siginfo and ucontext.
-+* siginfo_t: Uses clock_t and sigval_t
-+* ucontext: Uses stack_t and sigset_t
-+* stack_t: NOTE special handling inside the kernel is done to make sure
-+  the pointers are zero extended
-+* sigval_t: Contains pointers
-+* sigevent: Uses sigval_t which causes it to be the same.  Special
-+  handing is needed for reading; in the mq_notify syscall
-+* sigaction: NOTE the userland structure inside glibc does
-+  not match the kernel structure here (this causes issues with LTP).
-+  Uses sigset_t.
-+* fd_set: This is done to avoid endian issues between ILP32 and LP64
-+  Also the syscall which uses fd_set uses timespec
-+
-+
-+Also the syscalls which normally would pass 64bit values as two
-+arguments; now pass the 64bit value as one argument.  Also they have
-+been renamed (removing the 64 from the name) to avoid confusion.
-+The list of these syscalls:
-+* fcntl
-+* statfs
-+* fstatfs
-+* truncate
-+* ftruncate
-+* lseek
-+* sendfile
-+* newfstatat
-+* fstat
-+* mmap
-+* fadvise64
+ 	if (restore_altstack(&frame->uc.uc_stack))
+ 		goto badframe;
+ 
 -- 
 1.7.2.5
 
