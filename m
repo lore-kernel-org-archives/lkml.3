@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932875AbaICOuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:50:11 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40213 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932616AbaICOuJ (ORCPT
+	id S1752207AbaICOwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:52:22 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:56157 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763AbaICOwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:50:09 -0400
-Message-ID: <54072A99.1080306@hurleysoftware.com>
-Date: Wed, 03 Sep 2014 10:50:01 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 3 Sep 2014 10:52:20 -0400
+Date: Wed, 3 Sep 2014 20:22:04 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Piotr Witoslawski <pwitos@gmail.com>
+Cc: lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, markh@compro.net
+Subject: Re: [PATCH] drivers: staging: dgap: fix the checkpatch.pl issue
+ "Warning: line over 80 characters"
+Message-ID: <20140903145203.GB15176@sudip-PC>
+References: <20140903140959.GA24601@pwitoslawski.warsaw.osa>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 13/26] locking: Add non-fatal spin lock assert
-References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <1409693975-1028-14-git-send-email-peter@hurleysoftware.com> <20140903092723.GA4783@worktop.ger.corp.intel.com> <5406F964.6060900@hurleysoftware.com> <20140903144029.GA7083@twins.programming.kicks-ass.net>
-In-Reply-To: <20140903144029.GA7083@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903140959.GA24601@pwitoslawski.warsaw.osa>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 10:40 AM, Peter Zijlstra wrote:
-> On Wed, Sep 03, 2014 at 07:20:04AM -0400, Peter Hurley wrote:
->> Hi Peter,
->>
->> On 09/03/2014 05:27 AM, Peter Zijlstra wrote:
->>> On Tue, Sep 02, 2014 at 05:39:22PM -0400, Peter Hurley wrote:
->>>> Provide method for non-essential or non-critical code to warn of
->>>> invariant errors.
->>>>
->>>> CC: Ingo Molnar <mingo@kernel.org>
->>>> CC: Peter Zijlstra <peterz@infradead.org>
->>>> CC: Thomas Gleixner <tglx@linutronix.de>
->>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->>>> ---
->>>>  include/linux/spinlock.h         | 1 +
->>>>  include/linux/spinlock_api_smp.h | 1 +
->>>>  include/linux/spinlock_api_up.h  | 1 +
->>>>  3 files changed, 3 insertions(+)
->>>>
->>>> diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
->>>> index 3f2867f..8a9aaf1 100644
->>>> --- a/include/linux/spinlock.h
->>>> +++ b/include/linux/spinlock.h
->>>> @@ -394,6 +394,7 @@ static inline int spin_can_lock(spinlock_t *lock)
->>>>  }
->>>>  
->>>>  #define assert_spin_locked(lock)	assert_raw_spin_locked(&(lock)->rlock)
->>>> +#define warn_not_spin_locked(lock)	warn_not_raw_spin_locked(&(lock)->rlock)
->>>>  
->>>>  /*
->>>>   * Pull the atomic_t declaration:
->>>> diff --git a/include/linux/spinlock_api_smp.h b/include/linux/spinlock_api_smp.h
->>>> index 42dfab8..0ddd499 100644
->>>> --- a/include/linux/spinlock_api_smp.h
->>>> +++ b/include/linux/spinlock_api_smp.h
->>>> @@ -18,6 +18,7 @@
->>>>  int in_lock_functions(unsigned long addr);
->>>>  
->>>>  #define assert_raw_spin_locked(x)	BUG_ON(!raw_spin_is_locked(x))
->>>> +#define warn_not_raw_spin_locked(x)	WARN_ON_ONCE(!raw_spin_is_locked(x))
->>>
->>> No we should remove assert_spin_locked() not add to it. Use
->>> lockdep_assert_held() instead.
->>
->> I probably should have been more descriptive in the changelog: this
->> is not for a test configuration, but rather, an assertion in an
->> exported api.
+On Wed, Sep 03, 2014 at 04:09:59PM +0200, Piotr Witoslawski wrote:
+> Done as Eudyptula task 10.
+use proper commit message mentioning what changes you have done. 
+and you have not sent the patch to all the people who were
+supposed to be sent. 
+
+thanks
+sudip
+
+> Signed-off-by: Piotr Witoslawski <pwitos@gmail.com>
+> ---
+>  drivers/staging/dgap/dgap.c | 16 ++++++++++------
+>  1 file changed, 10 insertions(+), 6 deletions(-)
 > 
-> So ?
-
-So a lockdep-only assert is unlikely to draw attention to existing bugs,
-especially in established drivers.
-
+> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> index 8929dbf..67da1d5 100644
+> --- a/drivers/staging/dgap/dgap.c
+> +++ b/drivers/staging/dgap/dgap.c
+> @@ -88,7 +88,8 @@ static int dgap_block_til_ready(struct tty_struct *tty, struct file *file,
+>  				struct channel_t *ch);
+>  static int dgap_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+>  				unsigned long arg);
+> -static int dgap_tty_digigeta(struct channel_t *ch, struct digi_t __user *retinfo);
+> +static int dgap_tty_digigeta(struct channel_t *ch,
+> +			     struct digi_t __user *retinfo);
+>  static int dgap_tty_digiseta(struct channel_t *ch, struct board_t *bd,
+>  			     struct un_t *un, struct digi_t __user *new_info);
+>  static int dgap_tty_digigetedelay(struct tty_struct *tty, int __user *retinfo);
+> @@ -104,8 +105,9 @@ static void dgap_tty_flush_chars(struct tty_struct *tty);
+>  static void dgap_tty_flush_buffer(struct tty_struct *tty);
+>  static void dgap_tty_hangup(struct tty_struct *tty);
+>  static int dgap_wait_for_drain(struct tty_struct *tty);
+> -static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct un_t *un,
+> -			       unsigned int command, unsigned int __user *value);
+> +static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd,
+> +			       struct un_t *un, unsigned int command,
+> +			       unsigned int __user *value);
+>  static int dgap_get_modem_info(struct channel_t *ch,
+>  				unsigned int __user *value);
+>  static int dgap_tty_digisetcustombaud(struct channel_t *ch, struct board_t *bd,
+> @@ -3076,8 +3078,9 @@ static int dgap_get_modem_info(struct channel_t *ch, unsigned int __user *value)
+>   *
+>   * Set modem signals, called by ld.
+>   */
+> -static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct un_t *un,
+> -			       unsigned int command, unsigned int __user *value)
+> +static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd,
+> +			       struct un_t *un, unsigned int command,
+> +			       unsigned int __user *value)
+>  {
+>  	int ret;
+>  	unsigned int arg;
+> @@ -3153,7 +3156,8 @@ static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct
+>   *
+>   *
+>   */
+> -static int dgap_tty_digigeta(struct channel_t *ch, struct digi_t __user *retinfo)
+> +static int dgap_tty_digigeta(struct channel_t *ch,
+> +			     struct digi_t __user *retinfo)
+>  {
+>  	struct digi_t tmp;
+>  	ulong lock_flags;
+> -- 
+> 1.8.5.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
