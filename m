@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964783AbaICX1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:27:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
+	id S936160AbaICXao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:30:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757128AbaICWPy (ORCPT
+	with ESMTP id S932678AbaICWIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:54 -0400
+	Wed, 3 Sep 2014 18:08:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.14 69/88] jbd2: fix infinite loop when recovering corrupt journal blocks
-Date: Wed,  3 Sep 2014 15:05:43 -0700
-Message-Id: <20140903220518.023291318@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.14 28/88] hwmon: (lm78) Fix overflow problems seen when writing large temperature limits
+Date: Wed,  3 Sep 2014 15:05:02 -0700
+Message-Id: <20140903220516.789451701@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,52 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 022eaa7517017efe4f6538750c2b59a804dc7df7 upstream.
+commit 1074d683a51f1aded3562add9ef313e75d557327 upstream.
 
-When recovering the journal, don't fall into an infinite loop if we
-encounter a corrupt journal block.  Instead, just skip the block and
-return an error, which fails the mount and thus forces the user to run
-a full filesystem fsck.
+On platforms with sizeof(int) < sizeof(long), writing a temperature
+limit larger than MAXINT will result in unpredictable limit values
+written to the chip. Avoid auto-conversion from long to int to fix
+the problem.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/recovery.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/hwmon/lm78.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -426,6 +426,7 @@ static int do_one_pass(journal_t *journa
- 	int			tag_bytes = journal_tag_bytes(journal);
- 	__u32			crc32_sum = ~0; /* Transactional Checksums */
- 	int			descr_csum_size = 0;
-+	int			block_error = 0;
- 
- 	/*
- 	 * First thing is to establish what we expect to find in the log
-@@ -598,7 +599,8 @@ static int do_one_pass(journal_t *journa
- 						       "checksum recovering "
- 						       "block %llu in log\n",
- 						       blocknr);
--						continue;
-+						block_error = 1;
-+						goto skip_write;
- 					}
- 
- 					/* Find a buffer for the new
-@@ -797,7 +799,8 @@ static int do_one_pass(journal_t *journa
- 				success = -EIO;
- 		}
- 	}
--
-+	if (block_error && success == 0)
-+		success = -EIO;
- 	return success;
- 
-  failed:
+--- a/drivers/hwmon/lm78.c
++++ b/drivers/hwmon/lm78.c
+@@ -108,7 +108,7 @@ static inline int FAN_FROM_REG(u8 val, i
+  * TEMP: mC (-128C to +127C)
+  * REG: 1C/bit, two's complement
+  */
+-static inline s8 TEMP_TO_REG(int val)
++static inline s8 TEMP_TO_REG(long val)
+ {
+ 	int nval = clamp_val(val, -128000, 127000) ;
+ 	return nval < 0 ? (nval - 500) / 1000 : (nval + 500) / 1000;
 
 
