@@ -1,147 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017AbaICTF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:05:58 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33245 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402AbaICTF5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:05:57 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Guenter Roeck <linux@roeck-us.net>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Wim Van Sebroeck" <wim@iguana.be>,
-        "Catalin Marinas" <catalin.marinas@arm.com>,
-        "Maxime Ripard" <maxime.ripard@free-electrons.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1408495538-27480-12-git-send-email-linux@roeck-us.net>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        "Will Deacon" <will.deacon@arm.com>, "Arnd Bergmann" <arnd@arndb.de>,
-        "Heiko Stuebner" <heiko@sntech.de>,
-        "Jonas Jensen" <jonas.jensen@gmail.com>,
-        "Randy Dunlap" <rdunlap@infradead.org>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "Tomasz Figa" <t.figa@samsung.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Guenter Roeck" <linux@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
- <1408495538-27480-12-git-send-email-linux@roeck-us.net>
-Message-ID: <20140903190542.11368.20755@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v7 11/11] clk: rockchip: add restart handler
-Date: Wed, 03 Sep 2014 12:05:42 -0700
+	id S1756070AbaICTGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:06:09 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:34433 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756028AbaICTGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 15:06:04 -0400
+Message-ID: <1409771156.911.23.camel@jlt4.sipsolutions.net>
+Subject: Re: [RFC] firmware coredump: add new firmware coredump class
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>, luca@coelho.fi,
+        kvalo@adurom.com
+Date: Wed, 03 Sep 2014 21:05:56 +0200
+In-Reply-To: <CAKMK7uEYKwXgDPMkA632UVX7+eN5vS6_EJqHYNnEDDg10O68zg@mail.gmail.com> (sfid-20140903_161935_874433_8AE13432)
+References: <1409742945-3933-1-git-send-email-johannes@sipsolutions.net>
+	 <CAKMK7uEYKwXgDPMkA632UVX7+eN5vS6_EJqHYNnEDDg10O68zg@mail.gmail.com>
+	 (sfid-20140903_161935_874433_8AE13432)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Guenter Roeck (2014-08-19 17:45:38)
-> From: Heiko Stübner <heiko@sntech.de>
+On Wed, 2014-09-03 at 16:19 +0200, Daniel Vetter wrote:
+> [super-embarrassing resend, the previous one contained html gunk.]
 > 
-> Add infrastructure to write the correct value to the restart register and
-> register the restart notifier for both rk3188 (including rk3066) and rk3288.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> If the idea is to also convert gpu crash dumps to this we should add
+> dri-devel. And there the crashes are usually not due to firmware, but
+> because the shaders and command batches userspace submitted have
+> issues, so this should also be renamed to dev_coredump I think.
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+I don't know if the idea is to convert gpu crash dumps - I was just
+wondering if you could and would want to use such a generic framework.
+If the answer turns out to be no, that's perfectly reasonable I think.
 
-> ---
-> v7: Added patch to series.
-> 
->  drivers/clk/rockchip/clk-rk3188.c |  2 ++
->  drivers/clk/rockchip/clk-rk3288.c |  2 ++
->  drivers/clk/rockchip/clk.c        | 25 +++++++++++++++++++++++++
->  drivers/clk/rockchip/clk.h        |  1 +
->  4 files changed, 30 insertions(+)
-> 
-> diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
-> index a83a6d8..71b661a 100644
-> --- a/drivers/clk/rockchip/clk-rk3188.c
-> +++ b/drivers/clk/rockchip/clk-rk3188.c
-> @@ -631,6 +631,8 @@ static void __init rk3188_common_clk_init(struct device_node *np)
->  
->         rockchip_register_softrst(np, 9, reg_base + RK2928_SOFTRST_CON(0),
->                                   ROCKCHIP_SOFTRST_HIWORD_MASK);
-> +
-> +       rockchip_register_restart_notifier(RK2928_GLB_SRST_FST);
->  }
->  
->  static void __init rk3066a_clk_init(struct device_node *np)
-> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-> index 0d8c6c5..b604217 100644
-> --- a/drivers/clk/rockchip/clk-rk3288.c
-> +++ b/drivers/clk/rockchip/clk-rk3288.c
-> @@ -713,5 +713,7 @@ static void __init rk3288_clk_init(struct device_node *np)
->  
->         rockchip_register_softrst(np, 9, reg_base + RK3288_SOFTRST_CON(0),
->                                   ROCKCHIP_SOFTRST_HIWORD_MASK);
-> +
-> +       rockchip_register_restart_notifier(RK3288_GLB_SRST_FST);
->  }
->  CLK_OF_DECLARE(rk3288_cru, "rockchip,rk3288-cru", rk3288_clk_init);
-> diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
-> index 278cf9d..aa41433 100644
-> --- a/drivers/clk/rockchip/clk.c
-> +++ b/drivers/clk/rockchip/clk.c
-> @@ -25,6 +25,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/mfd/syscon.h>
->  #include <linux/regmap.h>
-> +#include <linux/reboot.h>
->  #include "clk.h"
->  
->  /**
-> @@ -242,3 +243,27 @@ void __init rockchip_clk_register_branches(
->                 rockchip_clk_add_lookup(clk, list->id);
->         }
->  }
-> +
-> +static unsigned int reg_restart;
-> +static int rockchip_restart_notify(struct notifier_block *this,
-> +                                  unsigned long mode, void *cmd)
-> +{
-> +       writel(0xfdb9, reg_base + reg_restart);
-> +       return NOTIFY_DONE;
-> +}
-> +
-> +static struct notifier_block rockchip_restart_handler = {
-> +       .notifier_call = rockchip_restart_notify,
-> +       .priority = 128,
-> +};
-> +
-> +void __init rockchip_register_restart_notifier(unsigned int reg)
-> +{
-> +       int ret;
-> +
-> +       reg_restart = reg;
-> +       ret = register_restart_handler(&rockchip_restart_handler);
-> +       if (ret)
-> +               pr_err("%s: cannot register restart handler, %d\n",
-> +                      __func__, ret);
-> +}
-> diff --git a/drivers/clk/rockchip/clk.h b/drivers/clk/rockchip/clk.h
-> index 887cbde..0b5eab5 100644
-> --- a/drivers/clk/rockchip/clk.h
-> +++ b/drivers/clk/rockchip/clk.h
-> @@ -329,6 +329,7 @@ void rockchip_clk_register_branches(struct rockchip_clk_branch *clk_list,
->                                     unsigned int nr_clk);
->  void rockchip_clk_register_plls(struct rockchip_pll_clock *pll_list,
->                                 unsigned int nr_pll, int grf_lock_offset);
-> +void rockchip_register_restart_notifier(unsigned int reg);
->  
->  #define ROCKCHIP_SOFTRST_HIWORD_MASK   BIT(0)
->  
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+However, renaming seems easy to do anyway :)
+
+> On the overall design I wonder whether this shouldn't work more like a
+> real core dump and dump to a real file. At least currently the dumps
+> i915 creates are only useful as a general guide to where things went
+> wrong, but if we actually want to submit them as traces to the
+> hardware people we need to dump a _lot_ more. Otoh with the future of
+> shared virtual address spaces between gpu/cpu we might just do a real
+> core dump, so maybe this use case should be out of scope for your
+> patch here.
+
+I'm not really sure I'd want to actually sys_write() to a file here -
+sounds like a big can of worms. If you have direct access (like shared
+memory space) it seems we could still use the same mechanisms with the
+coredumpm() method, no?
+
+> On the logic itself I'm not sure whether the timeout is all that
+> useful - at least in i915 our crash recovery works well enough that
+> reporters often don't realize right away when it happened, but only
+> later on when looking through logs to explain the tiny corruptions. If
+> the crashdupm has evapored meanwhile that's not that useful.
+
+Right. We might want to make it configurable, maybe even in Kconfig. I
+was thinking that there would be userspace that would (automatically)
+pick it up, and if such userspace doesn't exist or isn't running then
+we'd want to free the memory eventually.
+
+> Also, at least for gpus it's usually not interesting to grab
+> subsequent dumps: Often the gpu is in a bad mood due to the first
+> crash, or it's just a massive row of duplicated dumps. So in i915 we
+> only record the first crash and keep it around forever. And tooling
+> can still free it by writing to the file. This also ensures that we
+> don't waste excessive amounts of memory with crash dumps.
+
+Right, we discussed this but then I completely forgot. I think keeping
+the first one is reasonable. If userspace has already picked it up
+you'll still get multiple and maybe want to have a policy there as well.
+
+> And if we want to use this for i915 we need some way for tools to go
+> from the i915 drm class device node to the error state, not just from
+> the error state back to the device.
+
+Interesting. That's probably not all that difficult to do (maybe even
+set up a child/parent relationship?) but I actually wanted to avoid a
+hard dependency since there may be cases where the failing device
+disappears, e.g. in the case of USB. I have to think about this case
+more, I guess.
+
+johannes
+
