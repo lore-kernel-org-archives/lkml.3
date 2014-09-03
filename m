@@ -1,196 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaICBrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 21:47:45 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:54690 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750887AbaICBrn (ORCPT
+	id S1752363AbaICBwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 21:52:55 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50482 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887AbaICBwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 21:47:43 -0400
-X-IronPort-AV: E=Sophos;i="5.04,453,1406563200"; 
-   d="scan'208";a="35427886"
-Message-ID: <54067383.2070603@cn.fujitsu.com>
-Date: Wed, 3 Sep 2014 09:48:51 +0800
-From: tangchen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 2 Sep 2014 21:52:54 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <54067473.3060900@roeck-us.net>
+Date: Tue, 02 Sep 2014 18:52:51 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
-        <jan.kiszka@web.de>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH v4 5/6] kvm, mem-hotplug: Reload L1's apic access page
- on migration when L2 is running.
-References: <1409134661-27916-1-git-send-email-tangchen@cn.fujitsu.com> <1409134661-27916-6-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1409134661-27916-6-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Xuetao Guan <gxt@pku.edu.cn>
+CC: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFJlOiDlm57lpI3vvJogU3RhdHVzIG9mICd1bmk=?=
+ =?UTF-8?B?Y29yZTMyJyBhcmNoaXRlY3R1cmUgaW4gTGludXgga2VybmVs?=
+References: <717685015.32253.1409702968099.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <717685015.32253.1409702968099.JavaMail.root@bj-mail03.pku.edu.cn>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gleb,
-
-By the way, when testing nested vm, I started L1 and L2 vm with
-         -cpu XXX, -x2apic
-
-But with or with out this patch 5/6, when migrating apic access page,
-the nested vm didn't corrupt.
-
-We cannot migrate L2 vm because it pinned some other pages in memory.
-Without this patch, if we migrate apic access page, I thought L2 vm will
-corrupt. But it didn't.
-
-Did I made any mistake you can obviously find out ?
-
-Thanks.
-
-On 08/27/2014 06:17 PM, Tang Chen wrote:
-> This patch only handle "L1 and L2 vm share one apic access page" situation.
+On 09/02/2014 05:09 PM, Xuetao Guan  wrote:
 >
-> When L1 vm is running, if the shared apic access page is migrated, mmu_notifier will
-> request all vcpus to exit to L0, and reload apic access page physical address for
-> all the vcpus' vmcs (which is done by patch 5/6). And when it enters L2 vm, L2's vmcs
-> will be updated in prepare_vmcs02() called by nested_vm_run(). So we need to do
-> nothing.
+> [...]
+>>>
+>>>>
+>>>> unicore32: Add ocd console and qemu-defconfig to support qemu simulator
+>>>> 	This patch adds a primitive OCD console to communicate with qemu.
+>>>> 	The same code is already used for early console support.
+>>>
+>>> Do you mean there's the same/similar code in QEMU.
+>>>
+>> No, I mean that the ocd functions in the linux kernel (such as ocd_putc) are
+>> used by both earlyprintk and the ocd console code.
+> Yes. By the way, it's only for qemu and fpga debug.
 >
-> When L2 vm is running, if the shared apic access page is migrated, mmu_notifier will
-> request all vcpus to exit to L0, and reload apic access page physical address for
-> all L2 vmcs. And this patch requests apic access page reload in L2->L1 vmexit.
+>>
+>>>>
+>>>> With this patch added, and with qemu_defconfig as provided by the same patch,
+>>>> it is possible to build and load a unicore32 image in qemu using the following
+>>>> qemu command line.
+>>>>
+>>>> qemu-system-unicore32 -curses -M puv3 -m 512 -kernel arch/unicore32/boot/zImage
+>>>>
+>>>> Caveats:
+>>>> - The use of -nographic instead of -curses causes a qemu crash
+>>> Yes, since qemu curses code was modified to meet the simple OCD console requirement.
+>>>
+>> The lack of support for -nographic is a problem for scripted testing.
+>> The issue is that we have to interpret console output for scripted testing,
+>> and having to go through curses makes that a bit difficult.
+>>
+>> Wonder if '-nographic' can be modeled as '-curses' with no available terminal
+>> configuration. At least in theory that should work, but executing the above
+>> command with TERM=dumb yields no output. Wonder how difficult it would be to
+>> change that.
 >
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->   arch/x86/include/asm/kvm_host.h |  1 +
->   arch/x86/kvm/svm.c              |  6 ++++++
->   arch/x86/kvm/vmx.c              | 32 ++++++++++++++++++++++++++++++++
->   arch/x86/kvm/x86.c              |  3 +++
->   virt/kvm/kvm_main.c             |  1 +
->   5 files changed, 43 insertions(+)
+> I see. I'll try to make -nographic work anyway.
 >
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 514183e..13fbb62 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -740,6 +740,7 @@ struct kvm_x86_ops {
->   	void (*load_eoi_exitmap)(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap);
->   	void (*set_virtual_x2apic_mode)(struct kvm_vcpu *vcpu, bool set);
->   	void (*set_apic_access_page_addr)(struct kvm *kvm, hpa_t hpa);
-> +	void (*set_nested_apic_page_migrated)(struct kvm_vcpu *vcpu, bool set);
->   	void (*deliver_posted_interrupt)(struct kvm_vcpu *vcpu, int vector);
->   	void (*sync_pir_to_irr)(struct kvm_vcpu *vcpu);
->   	int (*set_tss_addr)(struct kvm *kvm, unsigned int addr);
-> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> index f2eacc4..da88646 100644
-> --- a/arch/x86/kvm/svm.c
-> +++ b/arch/x86/kvm/svm.c
-> @@ -3624,6 +3624,11 @@ static void svm_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
->   	return;
->   }
->   
-> +static void svm_set_nested_apic_page_migrated(struct kvm_vcpu *vcpu, bool set)
-> +{
-> +	return;
-> +}
-> +
->   static int svm_vm_has_apicv(struct kvm *kvm)
->   {
->   	return 0;
-> @@ -4379,6 +4384,7 @@ static struct kvm_x86_ops svm_x86_ops = {
->   	.update_cr8_intercept = update_cr8_intercept,
->   	.set_virtual_x2apic_mode = svm_set_virtual_x2apic_mode,
->   	.set_apic_access_page_addr = svm_set_apic_access_page_addr,
-> +	.set_nested_apic_page_migrated = svm_set_nested_apic_page_migrated,
->   	.vm_has_apicv = svm_vm_has_apicv,
->   	.load_eoi_exitmap = svm_load_eoi_exitmap,
->   	.hwapic_isr_update = svm_hwapic_isr_update,
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index da6d55d..9035fd1 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -379,6 +379,16 @@ struct nested_vmx {
->   	 * we must keep them pinned while L2 runs.
->   	 */
->   	struct page *apic_access_page;
-> +	/*
-> +	 * L1's apic access page can be migrated. When L1 and L2 are sharing
-> +	 * the apic access page, after the page is migrated when L2 is running,
-> +	 * we have to reload it to L1 vmcs before we enter L1.
-> +	 *
-> +	 * When the shared apic access page is migrated in L1 mode, we don't
-> +	 * need to do anything else because we reload apic access page each
-> +	 * time when entering L2 in prepare_vmcs02().
-> +	 */
-> +	bool apic_access_page_migrated;
->   	u64 msr_ia32_feature_control;
->   
->   	struct hrtimer preemption_timer;
-> @@ -7098,6 +7108,12 @@ static void vmx_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
->   	vmcs_write64(APIC_ACCESS_ADDR, hpa);
->   }
->   
-> +static void vmx_set_nested_apic_page_migrated(struct kvm_vcpu *vcpu, bool set)
-> +{
-> +	struct vcpu_vmx *vmx = to_vmx(vcpu);
-> +	vmx->nested.apic_access_page_migrated = set;
-> +}
-> +
->   static void vmx_hwapic_isr_update(struct kvm *kvm, int isr)
->   {
->   	u16 status;
-> @@ -8796,6 +8812,21 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
->   	}
->   
->   	/*
-> +	 * When shared (L1 & L2) apic access page is migrated during L2 is
-> +	 * running, mmu_notifier will force to reload the page's hpa for L2
-> +	 * vmcs. Need to reload it for L1 before entering L1.
-> +	 */
-> +	if (vmx->nested.apic_access_page_migrated) {
-> +		/*
-> +		 * Do not call kvm_reload_apic_access_page() because we are now
-> +		 * in L2. We should not call make_all_cpus_request() to exit to
-> +		 * L0, otherwise we will reload for L2 vmcs again.
-> +		 */
-> +		kvm_reload_apic_access_page(vcpu->kvm);
-> +		vmx->nested.apic_access_page_migrated = false;
-> +	}
-> +
-> +	/*
->   	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
->   	 * finished a VMLAUNCH or VMRESUME instruction, so we need to set the
->   	 * success or failure flag accordingly.
-> @@ -8916,6 +8947,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
->   	.update_cr8_intercept = update_cr8_intercept,
->   	.set_virtual_x2apic_mode = vmx_set_virtual_x2apic_mode,
->   	.set_apic_access_page_addr = vmx_set_apic_access_page_addr,
-> +	.set_nested_apic_page_migrated = vmx_set_nested_apic_page_migrated,
->   	.vm_has_apicv = vmx_vm_has_apicv,
->   	.load_eoi_exitmap = vmx_load_eoi_exitmap,
->   	.hwapic_irr_update = vmx_hwapic_irr_update,
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 96f4188..131b6e8 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -6000,6 +6000,9 @@ static void vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
->   				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
->   	kvm_x86_ops->set_apic_access_page_addr(vcpu->kvm,
->   				page_to_phys(vcpu->kvm->arch.apic_access_page));
-> +
-> +	if (is_guest_mode(vcpu))
-> +		kvm_x86_ops->set_nested_apic_page_migrated(vcpu, true);
->   }
->   
->   /*
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index d8280de..784127e 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -214,6 +214,7 @@ void kvm_reload_apic_access_page(struct kvm *kvm)
->   {
->   	make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
->   }
-> +EXPORT_SYMBOL_GPL(kvm_reload_apic_access_page);
->   
->   int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
->   {
+Another possibility would be to support "-display none". Unfortunately that also
+causes qemu to crash :-(.
+
+Guenter
 
