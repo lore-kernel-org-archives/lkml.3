@@ -1,40 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169AbaICJjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:39:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38925 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930AbaICJjx (ORCPT
+	id S1756045AbaICJmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:42:31 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64457 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974AbaICJma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:39:53 -0400
-Date: Wed, 3 Sep 2014 11:39:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Rustad, Mark D" <mark.d.rustad@intel.com>
-Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] semaphore: Resolve some shadow warnings
-Message-ID: <20140903093950.GE4783@worktop.ger.corp.intel.com>
-References: <1409228366-7027-1-git-send-email-jeffrey.t.kirsher@intel.com>
- <20140901120244.GI27892@worktop.ger.corp.intel.com>
- <1409614914.2384.3.camel@jtkirshe-mobl>
- <176C5670-03A7-4003-925D-9C252A7A284F@intel.com>
+	Wed, 3 Sep 2014 05:42:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <176C5670-03A7-4003-925D-9C252A7A284F@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1408317500-28146-1-git-send-email-eranian@google.com>
+References: <1408317500-28146-1-git-send-email-eranian@google.com>
+Date: Wed, 3 Sep 2014 11:42:29 +0200
+Message-ID: <CABPqkBSYjZTqbLqLpRzPJpbw_T=qPVVG06GTHvP0COPXHXakmQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/6] perf: add ability to sample interrupted machine state
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 09:16:23PM +0000, Rustad, Mark D wrote:
-> 
-> It would, but then it would be unclear as to what units the timeout
-> was in. I have no other objection to timeout, I was just trying to
-> preserve the meaning in the existing overloaded name. The "n" to me
-> suggests a number and, if anything, number of jiffies conveys a more
-> precise meaning than simply jiffies did.
+Hi,
 
-Use a comment for the unit. If you look you'll find tons of 'timeout'
-variables that measure in jiffies (and others of course).
+On Mon, Aug 18, 2014 at 1:18 AM, Stephane Eranian <eranian@google.com> wrote:
+> This short patch series add the ability to sample the interrupted
+> machine state for each hardware sample. This is useful to analyze
+> the state after certain events, for instance for function value
+> profiling after a call instruction.
+>
+> The patch extends the interface with a new PERF_SAMPLE_REGS_INTR
+> smaple_type flag. The register to sample can be named in the
+> sample_regs_intr bitmask for each event. The name and bit
+> position for each register is architecture dependent and
+> provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
+>
+> The support is similar to PERF_SAMPLE_REGS_USER.
+>
+> On Intel x86, the series includes support for capturing the
+> PEBS state as well. When precise sampling is used, the interrupted
+> state is collect from the PEBS records, at least partially.
+> The PEBS machine state is a subset of the machine state.
+>
+> The series provides access to this new feature in perf record
+> with the -I option. It is possible to display the sampled
+> register values using perf report -D.
+>
+> This patch series is the fundation for a future series adding
+> function value profiling.
+>
+> In V2, we address the issues raised during reviews:
+>  - add sample parsing test
+>  - shorten perf record option to --intr-regs
+>  - added man page for perf record -I/--intr-regs option
+>  - refactor register printf code between user and intr regs
+>  - rebase to v3.16-rc3
+>
+> In V3, we rebase to 3.16.0+ and made the modifications suggested
+> by PeterZ. We also integrated his patch to improve the layout
+> of perf_sample_data.
+>
+>
+> Peter Zijlstra (1):
+>   perf: improve perf_sample_data struct layout
+>
+> Stephane Eranian (5):
+>   perf: add ability to sample machine state on interrupt
+>   perf/x86: add support for sampling PEBS machine state registers
+>   perf tools: add core support for sampling intr machine state regs
+>   perf/tests: add interrupted state sample parsing test
+>   perf record: add new -I option to sample interrupted machine state
+>
+any comment on this updated series?
+
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c |   17 +++++++++
+>  include/linux/perf_event.h                |   37 ++++++++++---------
+>  include/uapi/linux/perf_event.h           |   14 +++++++-
+>  kernel/events/core.c                      |   49 +++++++++++++++++++++++--
+>  tools/perf/Documentation/perf-record.txt  |    6 ++++
+>  tools/perf/builtin-record.c               |    2 ++
+>  tools/perf/perf.h                         |    1 +
+>  tools/perf/tests/sample-parsing.c         |   55 +++++++++++++++++++++--------
+>  tools/perf/util/event.h                   |    1 +
+>  tools/perf/util/evsel.c                   |   46 +++++++++++++++++++++++-
+>  tools/perf/util/session.c                 |   44 ++++++++++++++++++++---
+>  11 files changed, 230 insertions(+), 42 deletions(-)
+>
+> --
+> 1.7.9.5
+>
