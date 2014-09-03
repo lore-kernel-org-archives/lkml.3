@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaICK4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:56:45 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:57675 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbaICK4n (ORCPT
+	id S932250AbaICK5n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:57:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43430 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067AbaICK5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:56:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-serial@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: Re: [PATCH] tty/serial: fix config dependencies for samsung serial
-Date: Wed, 03 Sep 2014 12:56:02 +0200
-Message-ID: <10202237.9vbtDF9MIQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAHfPSqAn5gHjDA75Zf1W5=GH9_W+X6+4oc9rDK7CqeSoF3DURw@mail.gmail.com>
-References: <1409671320-7604-1-git-send-email-ch.naveen@samsung.com> <3749760.naNt3fHoTI@wuerfel> <CAHfPSqAn5gHjDA75Zf1W5=GH9_W+X6+4oc9rDK7CqeSoF3DURw@mail.gmail.com>
+	Wed, 3 Sep 2014 06:57:41 -0400
+Date: Wed, 3 Sep 2014 12:57:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+cc: daniel.lezcano@linaro.org, dongsheng.wang@freescale.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] Clocksource: Flextimer: Fix counter clock prescaler
+ calculation.
+In-Reply-To: <1409031951-39021-5-git-send-email-Li.Xiubo@freescale.com>
+Message-ID: <alpine.DEB.2.10.1409031241310.3333@nanos>
+References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com> <1409031951-39021-5-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ifQFuQkQIVsrpwl9w2OgJ/TdIJO5tYWQ0p2cQu+bPGd
- jxV3Tmyyx12E0b/m//k/qckAcph1FAFDp0wQUu9DKHcG+ww7ch
- MR6DjZ5+e4gBNkbEBCm4DHxHAM2RCxdJhjWKofo9Ni9YFYOj4Z
- iZBeCjUmAnyrKYPnMtVTB1mWEEtvGrYKQqzUVIxy3XMX5/8rAI
- gZYkVe1kHS62sidtFl5XKZD9acHWyJovh2DERAQnFJHMF0BW44
- CNQy6kq/fv0K1xJo4RvaXsyzhsfv2dPfxyiMw110MM8U4zu3jX
- Kaa2IB5WL1Mvq5Sw2EpuTM99HsNNtcv5tDFKwhM4GSnmh7rNPq
- thrtb+zaUH6hAFCSTQFQ=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 September 2014 13:51:56 Naveen Krishna Ch wrote:
-> On 2 September 2014 21:16, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Tuesday 02 September 2014 20:52:00 Naveen Krishna Chatradhi wrote:
-> >> Make the config symbols SERIAL_SAMSUNG_UARTS_4 and
-> >> SERIAL_SAMSUNG_UARTS depend on SERIAL_SAMSUNG rather than
-> >> PLAT_SAMSUNG.
-> >
-> > Please always describe why you are doing a change. This patch
-> > seems really pointless.
+On Tue, 26 Aug 2014, Xiubo Li wrote:
+
+> We should minus one after calculating the counter input clock's
+> prescaler.
 > 
-> The SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS config options are
-> meaningful only if SERIAL_SAMSUNG is enabled. Hence the dependency
-> rules were changed. I will repost this patch with better description.
-
-My point is that the options are used by both the uart driver and
-the platform code, e.g. for the purpose of PM debugging which can
-be enabled even when the serial-samsung driver is turned off.
-
-> >>  config SERIAL_SAMSUNG_UARTS_4
-> >>         bool
-> >> -       depends on PLAT_SAMSUNG
-> >> +       depends on SERIAL_SAMSUNG
-> >>         default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
-> >>         help
-> >>           Internal node for the common case of 4 Samsung compatible UARTs
-> >>
-> >>  config SERIAL_SAMSUNG_UARTS
-> >>         int
-> >> -       depends on PLAT_SAMSUNG
-> >> +       depends on SERIAL_SAMSUNG
-> >>         default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
-> >>         default 3
-> >>         help
-> >>
-> >
-> > Have you checked that it still builds on all samsung platforms when
-> > SERIAL_SAMSUNG is disabled? We have had build errors in this area
-> > in the past.
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+> ---
+>  drivers/clocksource/fsl_ftm_timer.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Yes, it builds for other Samsung platforms.
+> diff --git a/drivers/clocksource/fsl_ftm_timer.c b/drivers/clocksource/fsl_ftm_timer.c
+> index f70fcf2..974890e 100644
+> --- a/drivers/clocksource/fsl_ftm_timer.c
+> +++ b/drivers/clocksource/fsl_ftm_timer.c
+> @@ -311,7 +311,7 @@ static int __init ftm_calc_closest_round_cyc(unsigned long freq)
+>  						HZ * (1 << priv->ps++));
+>  	} while (priv->periodic_cyc > 0xFFFF);
+>  
+> -	if (priv->ps > FTM_PS_MAX) {
+> +	if (--priv->ps > FTM_PS_MAX) {
 
-Ok.
+Looking at this makes me run away screaming. Just because you
+increment priv->ps unconditionally in the loop above, you decrement it
+again here. Why not fix the calculation proper in the first place?
 
-	Arnd
+      for (cyc = ~0UL, ps = 0, div = HZ; cyc > 0xffff; ps++, div *= 2)
+      	       cyc = DIV_ROUND_CLOSEST(freq, div);
+
+Hmm?
+
+	tglx
+
