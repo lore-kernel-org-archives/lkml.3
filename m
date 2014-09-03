@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936243AbaICXew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:34:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45524 "EHLO
+	id S933950AbaICXfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:35:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933154AbaICWIc (ORCPT
+	with ESMTP id S933148AbaICWIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:08:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.14 07/88] USB: devio: fix issue with log flooding
-Date: Wed,  3 Sep 2014 15:04:41 -0700
-Message-Id: <20140903220516.175705008@linuxfoundation.org>
+        Mario <fugazzi99@gmail.com>, corubba <corubba@gmx.de>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 14/88] ALSA: virtuoso: add Xonar Essence STX II support
+Date: Wed,  3 Sep 2014 15:04:48 -0700
+Message-Id: <20140903220516.375978468@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,35 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit d310d05f1225d1f6f2bf505255fdf593bfbb3051 upstream.
+commit f42bb22243d2ae264d721b055f836059fe35321f upstream.
 
-usbfs allows user space to pass down an URB which sets URB_SHORT_NOT_OK
-for output URBs. That causes usbcore to log messages without limit
-for a nonsensical disallowed combination. The fix is to silently drop
-the attribute in usbfs.
-The problem is reported to exist since 3.14
-https://www.virtualbox.org/ticket/13085
+Just add the PCI ID for the STX II.  It appears to work the same as the
+STX, except for the addition of the not-yet-supported daughterboard.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Mario <fugazzi99@gmail.com>
+Tested-by: corubba <corubba@gmx.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/sound/alsa/ALSA-Configuration.txt |    4 ++--
+ sound/pci/Kconfig                               |    4 ++--
+ sound/pci/oxygen/virtuoso.c                     |    1 +
+ sound/pci/oxygen/xonar_pcm179x.c                |   12 ++++++++++--
+ 4 files changed, 15 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1411,7 +1411,7 @@ static int proc_do_submiturb(struct dev_
- 	u = (is_in ? URB_DIR_IN : URB_DIR_OUT);
- 	if (uurb->flags & USBDEVFS_URB_ISO_ASAP)
- 		u |= URB_ISO_ASAP;
--	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK)
-+	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK && is_in)
- 		u |= URB_SHORT_NOT_OK;
- 	if (uurb->flags & USBDEVFS_URB_NO_FSBR)
- 		u |= URB_NO_FSBR;
+--- a/Documentation/sound/alsa/ALSA-Configuration.txt
++++ b/Documentation/sound/alsa/ALSA-Configuration.txt
+@@ -2026,8 +2026,8 @@ Prior to version 0.9.0rc4 options had a
+   -------------------
+ 
+     Module for sound cards based on the Asus AV66/AV100/AV200 chips,
+-    i.e., Xonar D1, DX, D2, D2X, DS, Essence ST (Deluxe), Essence STX,
+-    HDAV1.3 (Deluxe), and HDAV1.3 Slim.
++    i.e., Xonar D1, DX, D2, D2X, DS, DSX, Essence ST (Deluxe),
++    Essence STX (II), HDAV1.3 (Deluxe), and HDAV1.3 Slim.
+ 
+     This module supports autoprobe and multiple cards.
+ 
+--- a/sound/pci/Kconfig
++++ b/sound/pci/Kconfig
+@@ -859,8 +859,8 @@ config SND_VIRTUOSO
+ 	select SND_JACK if INPUT=y || INPUT=SND
+ 	help
+ 	  Say Y here to include support for sound cards based on the
+-	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS,
+-	  Essence ST (Deluxe), and Essence STX.
++	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS, DSX,
++	  Essence ST (Deluxe), and Essence STX (II).
+ 	  Support for the HDAV1.3 (Deluxe) and HDAV1.3 Slim is experimental;
+ 	  for the Xense, missing.
+ 
+--- a/sound/pci/oxygen/virtuoso.c
++++ b/sound/pci/oxygen/virtuoso.c
+@@ -53,6 +53,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x835e) },
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x838e) },
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
++	{ OXYGEN_PCI_SUBID(0x1043, 0x85f4) },
+ 	{ OXYGEN_PCI_SUBID_BROKEN_EEPROM },
+ 	{ }
+ };
+--- a/sound/pci/oxygen/xonar_pcm179x.c
++++ b/sound/pci/oxygen/xonar_pcm179x.c
+@@ -100,8 +100,8 @@
+  */
+ 
+ /*
+- * Xonar Essence ST (Deluxe)/STX
+- * -----------------------------
++ * Xonar Essence ST (Deluxe)/STX (II)
++ * ----------------------------------
+  *
+  * CMI8788:
+  *
+@@ -1137,6 +1137,14 @@ int get_xonar_pcm179x_model(struct oxyge
+ 		chip->model.init = xonar_stx_init;
+ 		chip->model.resume = xonar_stx_resume;
+ 		chip->model.set_dac_params = set_pcm1796_params;
++		break;
++	case 0x85f4:
++		chip->model = model_xonar_st;
++		/* TODO: daughterboard support */
++		chip->model.shortname = "Xonar STX II";
++		chip->model.init = xonar_stx_init;
++		chip->model.resume = xonar_stx_resume;
++		chip->model.set_dac_params = set_pcm1796_params;
+ 		break;
+ 	default:
+ 		return -EINVAL;
 
 
