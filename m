@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935816AbaICXXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:23:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
+	id S935800AbaICXW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:22:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180AbaICWP7 (ORCPT
+	with ESMTP id S1757124AbaICWQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:59 -0400
+	Wed, 3 Sep 2014 18:16:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 84/88] nfs3_list_one_acl(): check get_acl() result with IS_ERR_OR_NULL
-Date: Wed,  3 Sep 2014 15:05:58 -0700
-Message-Id: <20140903220518.464263738@linuxfoundation.org>
+        Arindam Nath <arindam.nath@amd.com>,
+        Shriraj-Rai P <shriraj-rai.p@amd.com>, Huang Rui <ray.huang@amd.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 75/88] usb: xhci: amd chipset also needs short TX quirk
+Date: Wed,  3 Sep 2014 15:05:49 -0700
+Message-Id: <20140903220518.196869844@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -30,37 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 7a9e75a185e6b3a3860e6a26fb6e88691fc2c9d9 upstream.
+commit 2597fe99bb0259387111d0431691f5daac84f5a5 upstream.
 
-There was a check for result being not NULL. But get_acl() may return
-NULL, or ERR_PTR, or actual pointer.
-The purpose of the function where current change is done is to "list
-ACLs only when they are available", so any error condition of get_acl()
-mustn't be elevated, and returning 0 there is still valid.
+AMD xHC also needs short tx quirk after tested on most of chipset
+generations. That's because there is the same incorrect behavior like
+Fresco Logic host. Please see below message with on USB webcam
+attached on xHC host:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81111
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Fixes: 74adf83f5d77 (nfs: only show Posix ACLs in listxattr if actually...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+[  139.262944] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.266934] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.270913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.274937] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.278914] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.282936] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.286915] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.290938] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.294913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.298917] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+
+Reported-by: Arindam Nath <arindam.nath@amd.com>
+Tested-by: Shriraj-Rai P <shriraj-rai.p@amd.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs3acl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/nfs/nfs3acl.c
-+++ b/fs/nfs/nfs3acl.c
-@@ -256,7 +256,7 @@ nfs3_list_one_acl(struct inode *inode, i
- 	char *p = data + *result;
- 
- 	acl = get_acl(inode, type);
--	if (!acl)
-+	if (IS_ERR_OR_NULL(acl))
- 		return 0;
- 
- 	posix_acl_release(acl);
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -101,6 +101,10 @@ static void xhci_pci_quirks(struct devic
+ 	/* AMD PLL quirk */
+ 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
+ 		xhci->quirks |= XHCI_AMD_PLL_FIX;
++
++	if (pdev->vendor == PCI_VENDOR_ID_AMD)
++		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
++
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
+ 		xhci->quirks |= XHCI_LPM_SUPPORT;
+ 		xhci->quirks |= XHCI_INTEL_HOST;
 
 
