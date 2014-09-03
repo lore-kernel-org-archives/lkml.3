@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964939AbaICXeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:34:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45534 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933166AbaICWIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933255AbaICWIe (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 3 Sep 2014 18:08:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45489 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933065AbaICWI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:08:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <bryan.odonoghue@intel.com>,
-        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 3.14 10/88] USB: ehci-pci: USB host controller support for Intel Quark X1000
-Date: Wed,  3 Sep 2014 15:04:44 -0700
-Message-Id: <20140903220516.261212892@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Aleksei Besogonov <alex.besogonov@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 55/55] vm_is_stack: use for_each_thread() rather then buggy while_each_thread()
+Date: Wed,  3 Sep 2014 15:05:45 -0700
+Message-Id: <20140903220502.640557931@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
-References: <20140903220515.958924632@linuxfoundation.org>
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+References: <20140903220453.653576908@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,73 +28,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 6e693739e9b603b3ca9ce0d4f4178f0633458465 upstream.
+commit 4449a51a7c281602d3a385044ab928322a122a02 upstream.
 
-The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000
-USB host controller, and the default value is 0x20 dwords. The in/out threshold
-can be programmed to 0x80 dwords (512 Bytes) to maximize the perfomrance,
-but only when isochronous/interrupt transactions are not initiated by the USB
-host controller. This patch is to reconfigure the packet buffer in/out
-threshold as maximal as possible to maximize the performance, and 0x7F dwords
-(508 Bytes) should be used because the USB host controller initiates
-isochronous/interrupt transactions.
+Aleksei hit the soft lockup during reading /proc/PID/smaps.  David
+investigated the problem and suggested the right fix.
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+while_each_thread() is racy and should die, this patch updates
+vm_is_stack().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Tested-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-pci.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ mm/util.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -35,6 +35,21 @@ static const char hcd_name[] = "ehci-pci
- #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -272,17 +272,14 @@ pid_t vm_is_stack(struct task_struct *ta
  
- /*-------------------------------------------------------------------------*/
-+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
-+static inline bool is_intel_quark_x1000(struct pci_dev *pdev)
-+{
-+	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
-+		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
-+}
-+
-+/*
-+ * 0x84 is the offset of in/out threshold register,
-+ * and it is the same offset as the register of 'hostpc'.
-+ */
-+#define	intel_quark_x1000_insnreg01	hostpc
-+
-+/* Maximum usable threshold value is 0x7f dwords for both IN and OUT */
-+#define INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD	0x007f007f
+ 	if (in_group) {
+ 		struct task_struct *t;
+-		rcu_read_lock();
+-		if (!pid_alive(task))
+-			goto done;
  
- /* called after powerup, by probe or system-pm "wakeup" */
- static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
-@@ -50,6 +65,16 @@ static int ehci_pci_reinit(struct ehci_h
- 	if (!retval)
- 		ehci_dbg(ehci, "MWI active\n");
- 
-+	/* Reset the threshold limit */
-+	if (is_intel_quark_x1000(pdev)) {
-+		/*
-+		 * For the Intel QUARK X1000, raise the I/O threshold to the
-+		 * maximum usable value in order to improve performance.
-+		 */
-+		ehci_writel(ehci, INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD,
-+			ehci->regs->intel_quark_x1000_insnreg01);
-+	}
-+
- 	return 0;
- }
- 
+-		t = task;
+-		do {
++		rcu_read_lock();
++		for_each_thread(task, t) {
+ 			if (vm_is_stack_for_task(t, vma)) {
+ 				ret = t->pid;
+ 				goto done;
+ 			}
+-		} while_each_thread(task, t);
++		}
+ done:
+ 		rcu_read_unlock();
+ 	}
 
 
