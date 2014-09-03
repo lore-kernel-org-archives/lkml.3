@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138AbaICWAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:00:36 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59481 "EHLO mail.kernel.org"
+	id S933174AbaICWAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:00:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59505 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933108AbaICWAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:00:33 -0400
+	id S933108AbaICWAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:00:37 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/10] perf evlist: Monitor POLLERR and POLLHUP events too
-Date: Wed,  3 Sep 2014 18:59:57 -0300
-Message-Id: <1409781604-16778-4-git-send-email-acme@kernel.org>
+Subject: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
+Date: Wed,  3 Sep 2014 18:59:58 -0300
+Message-Id: <1409781604-16778-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409781604-16778-1-git-send-email-acme@kernel.org>
 References: <1409781604-16778-1-git-send-email-acme@kernel.org>
@@ -28,23 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We want to know when the fd went away, like when a monitored thread
-exits.
+So that we don't continue polling on vanished file descriptors, i.e.
+file descriptors for events monitoring threads that exited.
 
-If we do not monitor such events, then the tools will wait forever on
-events from a vanished thread, like when running:
+I.e. the following 'perf record' command now exits as expected, instead
+of staying in an eternal loop:
 
- $ sleep 5s &
- $ perf record -p `pidof sleep`
+  $ sleep 5s &
+  $ perf record -p `pidof sleep`
 
-This builds upon the kernel patch by Jiri Olsa that actually makes a
-poll on those file descriptors to return POLLHUP.
-
-It is also needed to change the tools to use
-perf_evlist__filter_pollfd() to check if there are remainings fds to
-monitor or if all are gone, in which case they will exit the
-poll/mmap/read loop.
-
+Reported-by: Jiri Olsa <jolsa@redhat.com>
 Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -56,25 +49,26 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-a4fslwspov0bs69nj825hqpq@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ftg46awsyfjc3axb0xm63oig@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-record.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 023bc3873ae9..502cd11ab17e 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -424,7 +424,7 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
- {
- 	fcntl(fd, F_SETFL, O_NONBLOCK);
- 	evlist->pollfd[evlist->nr_fds].fd = fd;
--	evlist->pollfd[evlist->nr_fds].events = POLLIN;
-+	evlist->pollfd[evlist->nr_fds].events = POLLIN | POLLERR | POLLHUP;
- 	evlist->nr_fds++;
- }
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 87e28a4e33ba..b87708ce09c9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -467,6 +467,9 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 			if (err > 0 || (err < 0 && errno == EINTR))
+ 				err = 0;
+ 			waking++;
++
++			if (perf_evlist__filter_pollfd(rec->evlist, POLLERR | POLLHUP) == 0)
++				done = 1;
+ 		}
  
+ 		/*
 -- 
 1.9.3
 
