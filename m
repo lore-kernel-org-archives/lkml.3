@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146AbaICOK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:10:28 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:37871 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752712AbaICOK1 (ORCPT
+	id S1756260AbaICOL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:11:28 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59780 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286AbaICOLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:10:27 -0400
-Date: Wed, 3 Sep 2014 09:10:24 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
- this_cpu ops
-In-Reply-To: <20140903021152.GA14069@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1409030846310.9372@gentwo.org>
-References: <alpine.DEB.2.11.1409021513490.26284@gentwo.org> <20140902203743.GL5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021545370.32690@gentwo.org> <20140902211517.GO5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
- <20140903021152.GA14069@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 3 Sep 2014 10:11:25 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-b7-5407218b9fda
+Message-id: <5407218B.1020702@samsung.com>
+Date: Wed, 03 Sep 2014 23:11:23 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: eduardo.valentin@ti.com, amit.daniel@samsung.com, rui.zhang@intel.com,
+        kgene.kim@samsung.com, ch.naveen@samsung.com,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 0/2] thermal: exynos: Add support for TRIMINFO feature of
+ Exynos3250
+References: <1409713743-6124-1-git-send-email-cw00.choi@samsung.com>
+ <20140830023928.GC23645@developer>
+In-reply-to: <20140830023928.GC23645@developer>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsWyRsSkSLdbkT3E4OJ3S4uGqyEWG2esZ7W4
+	+/wwo8Wa/T+ZLOZfucZq0bvgKpvF2aY37BabHgO5l3fNYbP43HuE0WLG+X1MFk8e9rE58Hjs
+	nHWX3WPxnpdMHpuX1Hv0bVnF6HH8xnYmj8+b5ALYorhsUlJzMstSi/TtErgydswyL3jJWrFs
+	yW2WBsYbLF2MHBwSAiYSFycldzFyApliEhfurWfrYuTiEBJYyijx7MxrJoiEiUTXmWtQiemM
+	Ev1fp0E5rxkllnxczAZSxSugJbHs/lUWEJtFQFXiZucedhCbDSi+/8UNsBpRgTCJldOvsEDU
+	C0r8mHwPzBYBqjlxaTvYNmaBrUwSa946gNjCAjESvxuOMILYQgKZEre+XgKr5xTQl5jW28oO
+	Ua8jsb91GhuELS+xec1bZpDjJATeskt8e7SBEeIgAYlvkw9BvSwrsekAM8RnkhIHV9xgmcAo
+	NgvJSbOQjJ2FZOwCRuZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIHRevrfs74djDcPWB9i
+	FOBgVOLhXRDAFiLEmlhWXJl7iNEU6IqJzFKiyfnAlJBXEm9obGZkYWpiamxkbmmmJM6bIPUz
+	WEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAPjwssSh1or/OxX/fy+jcHq9v78RmbbGsUP81ON
+	N878d2bvs+o36Yvloh+1Oifvb3309KPCX6FZDYber+XK/yzjdVRfr3P6ypPWfQbzT0zmFjPl
+	zJnyXyxbtUP9lPv9BN6aXY0bL9vU6bmdadjbwD1ByKMnxlo1VLlKgr/694cJlltWrfrztdpT
+	iaU4I9FQi7moOBEAG1DgxNECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xoG63InuIwYGvhhYNV0MsNs5Yz2px
+	9/lhRos1+38yWcy/co3VonfBVTaLs01v2C02PQZyL++aw2bxufcIo8WM8/uYLJ487GNz4PHY
+	Oesuu8fiPS+ZPDYvqffo27KK0eP4je1MHp83yQWwRTUw2mSkJqakFimk5iXnp2TmpdsqeQfH
+	O8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA3aikUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC
+	1zckCK7HyAANJKxhzNgxy7zgJWvFsiW3WRoYb7B0MXJySAiYSHSducYGYYtJXLi3Hsjm4hAS
+	mM4o0f91GpTzmlFiycfFYFW8AloSy+5fBetmEVCVuNm5hx3EZgOK739xA6xGVCBMYuX0KywQ
+	9YISPybfA7NFgGpOXNrOBGIzC2xlkljz1gHEFhaIkfjdcIQRxBYSyJS49fUSWD2ngL7EtN5W
+	doh6HYn9rdPYIGx5ic1r3jJPYBSYhWTFLCRls5CULWBkXsUomlqQXFCclJ5rqFecmFtcmpeu
+	l5yfu4kRnAyeSe1gXNlgcYhRgINRiYd3QQBbiBBrYllxZe4hRgkOZiUR3jXS7CFCvCmJlVWp
+	RfnxRaU5qcWHGE2BITCRWUo0OR+YqPJK4g2NTcyMLI3MDS2MjM2VxHkPtFoHCgmkJ5akZqem
+	FqQWwfQxcXBKNTB6abWJm9baKJ2ZvWdN5c2KV9xHV0Tfsnr+WueuMcc63ZAdUyxOL/KSTKxK
+	nmT46lhp1L2thj93LFfnnTC1SP3VUcvtrmuaO74sf/XOcdGLqTeWd/vu6pNc+rdiOZPA99pJ
+	2zp6TD9P9Qxy9BKvYp8Umcdzvycs7sRX77uClTrR985KxvObT2ZRYinOSDTUYi4qTgQA5av5
+	qxwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Sep 2014, Paul E. McKenney wrote:
+Dear Eduardo,
 
-> On Tue, Sep 02, 2014 at 06:22:52PM -0500, Christoph Lameter wrote:
-> > On Tue, 2 Sep 2014, Paul E. McKenney wrote:
-> >
-> > > Yep, these two have been on my "when I am feeling insanely gutsy" list
-> > > for quite some time.
-> > >
-> > > But I have to ask...  On x86, is a pair of mfence instructions really
-> > > cheaper than an atomic increment?
-> >
-> > Not sure why you would need an mfence instruction?
->
-> Because otherwise RCU can break.  As soon as the grace-period machinery
-> sees that the value of this variable is even, it assumes a quiescent
-> state.  If there are no memory barriers, the non-quiescent code might
-> not have completed executing, and your kernel's actuarial statistics
-> become sub-optimal.
+On 08/30/2014 11:39 AM, Eduardo Valentin wrote:
+> Hi,
+> 
+> On Wed, Sep 03, 2014 at 12:09:01PM +0900, Chanwoo Choi wrote:
+>> This patchset add the support of TRIMINFO_RELOAD feature for Exynos3250.
+>> But Exynos3250 has two TRIMINFO_CTRL register instead other Exynos has only one
+>> TRIMINFO_CTRL register. So, this patchset support the some Exynos SoC which
+>> has more than one TRIMINF_CTRL.
+>>
+>> Also, this patchset fix wrong value of TRIMINFO_RELOAD_SHIFT and remove
+>> duplicate code when reading triminfo register of Exynos5440.
+>>
+>> Changes from v5:
+>> - Rebase this patchset on next branch of linux-soc-thermal.git
+>>
+> 
+> Pulled into my next branch. Thanks.
 
-Synchronization using per cpu variables is bound to be problematic since
-they are simply not made for that. The per cpu variable usually can change
-without notice to the other cpu since typically per cpu processing is
-ongoing. The improvided performance of per cpu instructions is
-possible only because we exploit the fact that there is no need for
-synchronization.
+Thanks.
 
-Kernel statistics *are* suboptimal for that very reason because they
-typically sum up individual counters from multiple processors without
-regard to complete accuracy. The manipulation of the VM counters is very
-low overhead due to the lack of concern for synchronization. This is a
-tradeoff vs. performance. We actually can tune the the fuzziness of
-statistics in the VM which allows us to control the overhead generated by
-the need for more or less accurate statistics.
-
-Memory barriers ensure that the code has completed executing? I think what
-is meant is that they ensure that all modifications to cachelines before the
-change of state are visible and the other processor does not have stale
-cachelines around?
-
-If the state variable is odd how does the other processor see a state
-change to even before processing is complete if the state is updated only
-at the end of processing?
-
+Best Regards,
+Chanwoo Choi
