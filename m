@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093AbaICIFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:05:22 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58305 "EHLO gloria.sntech.de"
+	id S1755577AbaICIGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:06:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11352 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527AbaICIFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:05:14 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: rui.zhang@intel.com, edubezval@gmail.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        huangtao@rock-chips.com, cf@rock-chips.com, dianders@chromium.org,
-        dtor@chromium.org, zyw@rock-chips.com, addy.ke@rock-chips.com,
-        dmitry.torokhov@gmail.com, zhaoyifeng <zyf@rock-chips.com>
-Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
-Date: Wed, 03 Sep 2014 10:07:15 +0200
-Message-ID: <11280986.L6lv82O8Qv@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1409710239-19941-3-git-send-email-caesar.wang@rock-chips.com>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com> <1409710239-19941-3-git-send-email-caesar.wang@rock-chips.com>
+	id S1753174AbaICIGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 04:06:37 -0400
+Date: Wed, 3 Sep 2014 11:09:18 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
+ runnable
+Message-ID: <20140903080918.GB6187@redhat.com>
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
+ <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+ <1408683665.5648.69.camel@marge.simpson.net>
+ <20140822073653.GA7372@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822073653.GA7372@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 3. September 2014, 10:10:37 schrieb Caesar Wang:
-> This add the necessary binding documentation for the thermal
-> found on Rockchip SoCs
+On Fri, Aug 22, 2014 at 09:36:53AM +0200, Ingo Molnar wrote:
 > 
-> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> ---
->  .../devicetree/bindings/thermal/rockchip-thermal.txt | 20
-> ++++++++++++++++++++ 1 file changed, 20 insertions(+)
->  create mode 100644
-> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> > > diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+> > > index 1d67fb6..8a33fb2 100644
+> > > --- a/include/net/busy_poll.h
+> > > +++ b/include/net/busy_poll.h
+> > > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+> > >  		cpu_relax();
+> > >  
+> > >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+> > > -		 !need_resched() && !busy_loop_timeout(end_time));
+> > > +		 !need_resched() && !busy_loop_timeout(end_time) &&
+> > > +		 nr_running_this_cpu() < 2);
 > 
-> diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new file
-> mode 100644
-> index 0000000..1ed4d4c
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> @@ -0,0 +1,20 @@
-> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
-> +
-> +Required properties:
-> +- compatible: "rockchip,rk3288-tsadc"
-> +- reg: physical base address of the controller and length of memory mapped
-> +       region.
-> +- interrupts: The interrupt number to the cpu. The interrupt specifier
-> format +	      depends on the interrupt controller.
-> +- clocks: Must contain an entry for each entry in clock-names.
-> +- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-> +	       the peripheral clock.
+> So it's generally a bad idea to couple to the scheduler through 
+> such a low level, implementation dependent value like 
+> 'nr_running', causing various problems:
+> 
+>  - It misses important work that might be pending on this CPU,
+>    like RCU callbacks.
+> 
+>  - It will also over-credit task contexts that might be
+>    runnable, but which are less important than the currently
+>    running one: such as a SCHED_IDLE task
+> 
+>  - It will also over-credit even regular SCHED_NORMAL tasks, if
+>    this current task is more important than them: say
+>    SCHED_FIFO. A SCHED_FIFO workload should run just as fast 
+>    with SCHED_NORMAL tasks around, as a SCHED_NORMAL workload 
+>    on an otherwise idle system.
+> 
+> So what you want is a more sophisticated query to the 
+> scheduler, a sched_expected_runtime() method that returns the 
+> number of nsecs this task is expected to run in the future, 
+> which returns 0 if you will be scheduled away on the next 
+> schedule(), and returns infinity for a high prio SCHED_FIFO 
+> task, or if this SCHED_NORMAL task is on an otherwise idle CPU.
+> 
+> It will return a regular time slice value in other cases, when 
+> there's some load on the CPU.
+> 
+> The polling logic can then do its decision based on that time 
+> value.
+> 
+> All this can be done reasonably fast and lockless in most 
+> cases, so that it can be called from busy-polling code.
+> 
+> An added advantage would be that this approach consolidates the 
+> somewhat random need_resched() checks into this method as well.
+> 
+> In any case I don't agree with the nr_running_this_cpu() 
+> method.
+> 
+> (Please Cc: me and lkml to future iterations of this patchset.)
+> 
+> Thanks,
+> 
+> 	Ingo
 
-You're using the passive-temp, critical-temp and force-shut-temp properties in 
-your driver without declaring them here.
+This sounds very nice.
 
-But more importantly, please use the generic trip-points for this. I guess it 
-shouldn't be a problem to introduce a "forced-shutdown" trippoint [0] for the 
-additional trip-point you have - thermal maintainers, please shout if I'm 
-wrong :-)
+We could then have applications say "I want to poll
+only if no one else has urgent work" where
+urgent is defined as "has to run within next N nseconds".
 
+Really just a bit more flexibility added to busy polling.
 
-Heiko
+Peter, Ingo, does this sound good?
 
-
-[0] in a separate patch, changing
-- thermal_trip_type enum in include/linux/thermal.h
-- trip_types mapping in drivers/thermal/of-thermal.c
-- Documentation/devicetree/bindings/thermal/thermal.txt
-
-> +
-> +Example:
-> +tsadc: tsadc@ff280000 {
-> +	compatible = "rockchip,rk3288-tsadc";
-> +	reg = <0xff280000 0x100>;
-> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-> +	clock-names = "tsadc", "apb_pclk";
-> +};
-
+-- 
+MST
