@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934785AbaICXNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:13:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46046 "EHLO
+	id S935012AbaICXOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:14:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933573AbaICWSf (ORCPT
+	with ESMTP id S933513AbaICWSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.16 008/125] USB: OHCI: fix bugs in debug routines
-Date: Wed,  3 Sep 2014 15:06:05 -0700
-Message-Id: <20140903220623.919569129@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.16 007/125] uas: Limit qdepth to 32 when connected over usb-2
+Date: Wed,  3 Sep 2014 15:06:04 -0700
+Message-Id: <20140903220623.890436935@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,95 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 256dbcd80f1ccf8abf421c1d72ba79a4e29941dd upstream.
+commit e2875c33787ebda21aeecc1a9d3ff52b3aa413ec upstream.
 
-The debug routine fill_async_buffer() in ohci-hcd is buggy: It never
-produces any output because it forgets to initialize the output buffer
-size.  Also, the debug routine ohci_dump() has an unused argument.
+Some jmicron uas chipsets act up (they disconnect from the bus) when sending
+more then 32 commands to them at once.
 
-This patch adds the correct initialization and removes the unused
-argument.
+Rather then building an ever growing list with usb-id based quirks for
+devices using this chipset, simply reduce the qdepth to 32 when connected
+over usb-2. 32 should be plenty to keep things close to maximum
+possible throughput on usb-2.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-and-reported-by: Laszlo T. <tlacix@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-dbg.c |    9 +++++----
- drivers/usb/host/ohci-hcd.c |   10 +++++-----
- 2 files changed, 10 insertions(+), 9 deletions(-)
+ drivers/usb/storage/uas.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ohci-dbg.c
-+++ b/drivers/usb/host/ohci-dbg.c
-@@ -236,7 +236,7 @@ ohci_dump_roothub (
- 	}
- }
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -1026,7 +1026,7 @@ static int uas_configure_endpoints(struc
+ 					    usb_endpoint_num(&eps[3]->desc));
  
--static void ohci_dump (struct ohci_hcd *controller, int verbose)
-+static void ohci_dump(struct ohci_hcd *controller)
- {
- 	ohci_dbg (controller, "OHCI controller state\n");
- 
-@@ -464,15 +464,16 @@ show_list (struct ohci_hcd *ohci, char *
- static ssize_t fill_async_buffer(struct debug_buffer *buf)
- {
- 	struct ohci_hcd		*ohci;
--	size_t			temp;
-+	size_t			temp, size;
- 	unsigned long		flags;
- 
- 	ohci = buf->ohci;
-+	size = PAGE_SIZE;
- 
- 	/* display control and bulk lists together, for simplicity */
- 	spin_lock_irqsave (&ohci->lock, flags);
--	temp = show_list(ohci, buf->page, buf->count, ohci->ed_controltail);
--	temp += show_list(ohci, buf->page + temp, buf->count - temp,
-+	temp = show_list(ohci, buf->page, size, ohci->ed_controltail);
-+	temp += show_list(ohci, buf->page + temp, size - temp,
- 			  ohci->ed_bulktail);
- 	spin_unlock_irqrestore (&ohci->lock, flags);
- 
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -76,8 +76,8 @@ static const char	hcd_name [] = "ohci_hc
- #include "ohci.h"
- #include "pci-quirks.h"
- 
--static void ohci_dump (struct ohci_hcd *ohci, int verbose);
--static void ohci_stop (struct usb_hcd *hcd);
-+static void ohci_dump(struct ohci_hcd *ohci);
-+static void ohci_stop(struct usb_hcd *hcd);
- 
- #include "ohci-hub.c"
- #include "ohci-dbg.c"
-@@ -744,7 +744,7 @@ retry:
- 		ohci->ed_to_check = NULL;
- 	}
- 
--	ohci_dump (ohci, 1);
-+	ohci_dump(ohci);
- 
- 	return 0;
- }
-@@ -825,7 +825,7 @@ static irqreturn_t ohci_irq (struct usb_
- 			usb_hc_died(hcd);
- 		}
- 
--		ohci_dump (ohci, 1);
-+		ohci_dump(ohci);
- 		ohci_usb_reset (ohci);
- 	}
- 
-@@ -925,7 +925,7 @@ static void ohci_stop (struct usb_hcd *h
- {
- 	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
- 
--	ohci_dump (ohci, 1);
-+	ohci_dump(ohci);
- 
- 	if (quirk_nec(ohci))
- 		flush_work(&ohci->nec_work);
+ 	if (udev->speed != USB_SPEED_SUPER) {
+-		devinfo->qdepth = 256;
++		devinfo->qdepth = 32;
+ 		devinfo->use_streams = 0;
+ 	} else {
+ 		devinfo->qdepth = usb_alloc_streams(devinfo->intf, eps + 1,
 
 
