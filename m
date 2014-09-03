@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934451AbaICXA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:00:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
+	id S1757334AbaICXBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:01:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756943AbaICWZ7 (ORCPT
+	with ESMTP id S1756940AbaICWZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:25:59 -0400
+	Wed, 3 Sep 2014 18:25:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kinglong Mee <kinglongmee@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.16 117/125] NFSD: Decrease nfsd_users in nfsd_startup_generic fail
-Date: Wed,  3 Sep 2014 15:07:54 -0700
-Message-Id: <20140903220627.210643731@linuxfoundation.org>
+        Hannes Reinecke <hare@suse.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.16 116/125] usbcore: Fix wrong device in an error message in hub_port_connect()
+Date: Wed,  3 Sep 2014 15:07:53 -0700
+Message-Id: <20140903220627.177279591@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,46 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kinglong Mee <kinglongmee@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d9499a95716db0d4bc9b67e88fd162133e7d6b08 upstream.
+commit dd5f5006d1035547559c8a90781a7e249787a7a2 upstream.
 
-A memory allocation failure could cause nfsd_startup_generic to fail, in
-which case nfsd_users wouldn't be incorrectly left elevated.
+The commit [5ee0f803cc3a: usbcore: don't log on consecutive debounce
+failures of the same port] added the check of the reliable port, but
+it also replaced the device argument to dev_err() wrongly, which leads
+to a NULL dereference.
 
-After nfsd restarts nfsd_startup_generic will then succeed without doing
-anything--the first consequence is likely nfs4_start_net finding a bad
-laundry_wq and crashing.
+This patch restores the right device, port_dev->dev.  Also, since
+dev_err() itself shows the port number, reduce the port number shown
+in the error message, essentially reverting to the state before the
+commit 5ee0f803cc3a.
 
-Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
-Fixes: 4539f14981ce "nfsd: replace boolean nfsd_up flag by users counter"
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[The fix suggested by Hannes, and the error message cleanup suggested
+ by Alan Stern]
+
+Fixes: 5ee0f803cc3a ('usbcore: don't log on consecutive debounce failures of the same port')
+Reported-by: Hannes Reinecke <hare@suse.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfssvc.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -221,7 +221,8 @@ static int nfsd_startup_generic(int nrse
- 	 */
- 	ret = nfsd_racache_init(2*nrservs);
- 	if (ret)
--		return ret;
-+		goto dec_users;
-+
- 	ret = nfs4_state_start();
- 	if (ret)
- 		goto out_racache;
-@@ -229,6 +230,8 @@ static int nfsd_startup_generic(int nrse
- 
- out_racache:
- 	nfsd_racache_shutdown();
-+dec_users:
-+	nfsd_users--;
- 	return ret;
- }
- 
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4619,9 +4619,7 @@ static void hub_port_connect(struct usb_
+ 			if (status != -ENODEV &&
+ 				port1 != unreliable_port &&
+ 				printk_ratelimit())
+-				dev_err(&udev->dev, "connect-debounce failed, port %d disabled\n",
+-					port1);
+-
++				dev_err(&port_dev->dev, "connect-debounce failed\n");
+ 			portstatus &= ~USB_PORT_STAT_CONNECTION;
+ 			unreliable_port = port1;
+ 		} else {
 
 
