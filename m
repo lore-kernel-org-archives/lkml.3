@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884AbaICNjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:39:37 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44840 "EHLO comal.ext.ti.com"
+	id S932898AbaICNjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:39:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30648 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712AbaICNjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:39:35 -0400
-Message-ID: <540719FC.5070803@ti.com>
-Date: Wed, 3 Sep 2014 08:39:08 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S932357AbaICNjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 09:39:36 -0400
+Date: Wed, 3 Sep 2014 15:36:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kautuk Consul <consul.kautuk@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
+	with try_to_wake_up()
+Message-ID: <20140903133640.GA25439@redhat.com>
+References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com> <20140825155738.GA5944@redhat.com> <20140901153935.GQ27892@worktop.ger.corp.intel.com> <20140901175851.GA15210@redhat.com> <20140901190931.GD5806@worktop.ger.corp.intel.com> <20140902155208.GA28668@redhat.com> <20140902164714.GA17033@redhat.com> <20140902173910.GF27892@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Tony <tony@atomide.com>
-CC: <balbi@ti.com>, <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: DRA7: Add PMU nodes
-References: <1408456440-30171-1-git-send-email-nm@ti.com>
-In-Reply-To: <1408456440-30171-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140902173910.GF27892@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 08:54 AM, Nishanth Menon wrote:
-> From: Lucas Weaver <l-weaver@ti.com>
-> 
-> DRA74x and DRA72x family of processors vary slightly in the number
-> of CPUs. So, add different instances of PMU for each of these processor
-> groups. Further, since the interrupts bypass crossbar and are directly
-> connected to GIC, mark the dts nodes with relevant information.
-> 
-> Tested with perf utility.
-> 
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Lucas Weaver <l-weaver@ti.com>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-Hi,
-Gentle ping..
+Peter, sorry for slow responses.
 
-Regards,
-Nishanth Menon
->  arch/arm/boot/dts/dra72x.dtsi |    5 +++++
->  arch/arm/boot/dts/dra74x.dtsi |    6 ++++++
->  2 files changed, 11 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/dra72x.dtsi b/arch/arm/boot/dts/dra72x.dtsi
-> index f1ec22f..e5a3d23 100644
-> --- a/arch/arm/boot/dts/dra72x.dtsi
-> +++ b/arch/arm/boot/dts/dra72x.dtsi
-> @@ -22,4 +22,9 @@
->  			reg = <0>;
->  		};
->  	};
-> +
-> +	pmu {
-> +		compatible = "arm,cortex-a15-pmu";
-> +		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>;
-> +	};
->  };
-> diff --git a/arch/arm/boot/dts/dra74x.dtsi b/arch/arm/boot/dts/dra74x.dtsi
-> index a4e8bb9..3be544c 100644
-> --- a/arch/arm/boot/dts/dra74x.dtsi
-> +++ b/arch/arm/boot/dts/dra74x.dtsi
-> @@ -38,4 +38,10 @@
->  			reg = <1>;
->  		};
->  	};
-> +
-> +	pmu {
-> +		compatible = "arm,cortex-a15-pmu";
-> +		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>,
-> +			     <GIC_SPI DIRECT_IRQ(132) IRQ_TYPE_LEVEL_HIGH>;
-> +	};
->  };
-> 
+On 09/02, Peter Zijlstra wrote:
+>
+> On Tue, Sep 02, 2014 at 06:47:14PM +0200, Oleg Nesterov wrote:
+>
+> > But since I already wrote v2 yesterday, let me show it anyway. Perhaps
+> > you will notice something wrong immediately...
+> >
+> > So, once again, this patch adds the ugly "goto" into schedule(). OTOH,
+> > it removes the ugly spin_unlock_wait(pi_lock).
+>
+> But schedule() is called _far_ more often than exit(). It would be
+> really good not to have to do that.
 
+Yes sure, performance-wise this is not a win. My point was, this way the
+whole "last schedule" logic becomes very simple.
 
--- 
-Regards,
-Nishanth Menon
+But OK, I buy your nack. I understand that we should not penalize
+__schedule() if possible. Let's forget this patch.
+
+> > TASK_DEAD can die. The only valid user is schedule_debug(), trivial to
+> > change. The usage of TASK_DEAD in task_numa_fault() is wrong in any case.
+> >
+> > In fact, I think that the next change can change exit_schedule() to use
+> > PREEMPT_ACTIVE, and then we can simply remove the TASK_DEAD check in
+> > schedule_debug().
+>
+> So you worry about concurrent wakeups vs setting TASK_DEAD and thereby
+> loosing it, right?
+>
+> Would not something like:
+>
+> 	spin_lock_irq(&current->pi_lock);
+> 	__set_current_state(TASK_DEAD);
+> 	spin_unlock_irq(&current->pi_lock);
+
+Sure. This should obviously fix the problem.
+
+And, I think, another mb() after unlock_wait should fix it as well.
+
+> Not be race free and similarly expensive to the smp_mb() we have there
+> now?
+
+Ah, I simply do not know what is cheaper, even on x86. Well, we need
+to enable/disable irqs, but again I do not really know how much does
+this cost. I can even say what (imo) looks better, lock/unlock above
+or
+
+	// Ensure that the previous __set_current_state(RUNNING) can't
+	// leak after spin_unlock_wait()
+	smp_mb();
+	spin_unlock_wait();
+	// Another mb to ensure this too can't be reordered with unlock_wait
+	set_current_state(TASK_DEAD);
+
+What do you think looks better?
+
+Oleg.
+
