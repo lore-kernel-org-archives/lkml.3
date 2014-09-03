@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029AbaICGCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:02:12 -0400
-Received: from relmlor3.renesas.com ([210.160.252.173]:26896 "EHLO
-	relmlie2.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754601AbaICGCK (ORCPT
+	id S1755244AbaICGDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:03:41 -0400
+Received: from relmlor4.renesas.com ([210.160.252.174]:15575 "EHLO
+	relmlie3.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754491AbaICGDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:02:10 -0400
+	Wed, 3 Sep 2014 02:03:39 -0400
 X-IronPort-AV: E=Sophos;i="5.04,455,1406559600"; 
-   d="scan'208";a="168203309"
-Message-ID: <5406AEDB.2040702@renesas.com>
-Date: Wed, 3 Sep 2014 15:02:03 +0900
+   d="scan'208";a="168203444"
+Message-ID: <5406AF31.4070906@renesas.com>
+Date: Wed, 3 Sep 2014 15:03:29 +0900
 From: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Felipe Balbi <balbi@ti.com>,
-        kuninori morimoto <kuninori.morimoto.gx@renesas.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+To: Simon Horman <horms@verge.net.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: USB_RENESAS_USBHS_UDC should depend on HAS_DMA
-References: <1409340700-2033-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1409340700-2033-1-git-send-email-geert@linux-m68k.org>
+Subject: Re: [PATCH v2] usb: renesas_usbhs: fix driver dependencies
+References: <1601192.oClrOJlUe8@amdc1032> <CAMuHMdVp16nXS1GefyV0OD7Dwewct0UPTEEYLj+GKCrnBxjhLw@mail.gmail.com> <20140901233900.GB15867@verge.net.au>
+In-Reply-To: <20140901233900.GB15867@verge.net.au>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [211.11.155.147]
-X-ClientProxiedBy: HKXPR06CA015.apcprd06.prod.outlook.com (10.141.129.45) To
- HKNPR06MB322.apcprd06.prod.outlook.com (10.141.38.16)
+X-ClientProxiedBy: HKXPR06CA012.apcprd06.prod.outlook.com (10.141.129.42) To
+ SINPR06MB330.apcprd06.prod.outlook.com (10.141.110.16)
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 032334F434
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019014)(6049001)(6009001)(51704005)(479174003)(199003)(24454002)(189002)(76482001)(21056001)(101416001)(46102001)(23756003)(64126003)(77982001)(90102001)(102836001)(79102001)(33656002)(76176999)(87266999)(99396002)(50986999)(54356999)(4396001)(50466002)(65816999)(19580405001)(80316001)(86362001)(31966008)(74662001)(74502001)(19580395003)(83322001)(92566001)(92726001)(87976001)(83072002)(85852003)(42186005)(64706001)(47776003)(20776003)(95666004)(85306004)(81342001)(106356001)(105586002)(66066001)(65956001)(80022001)(65806001)(77096002)(107046002)(36756003)(81542001);DIR:OUT;SFP:1102;SCL:1;SRVR:HKNPR06MB322;H:[10.161.20.147];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019014)(6049001)(6009001)(377454003)(189002)(479174003)(199003)(24454002)(51704005)(74662001)(102836001)(86362001)(33656002)(64126003)(101416001)(23756003)(81342001)(65816999)(83072002)(21056001)(74502001)(85852003)(31966008)(106356001)(4396001)(42186005)(15975445006)(77096002)(90102001)(15202345003)(36756003)(50986999)(80316001)(46102001)(47776003)(79102001)(85306004)(87976001)(19580405001)(95666004)(105586002)(50466002)(107046002)(81542001)(92726001)(20776003)(77982001)(92566001)(65806001)(99396002)(87266999)(19580395003)(76482001)(64706001)(76176999)(83322001)(54356999)(80022001)(66066001)(65956001);DIR:OUT;SFP:1102;SCL:1;SRVR:SINPR06MB330;H:[10.161.20.147];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
 X-OriginatorOrg: renesas.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-(2014/08/30 4:31), Geert Uytterhoeven wrote:
-> If NO_DMA=y:
+(2014/09/02 8:39), Simon Horman wrote:
+> On Mon, Sep 01, 2014 at 06:40:50PM +0200, Geert Uytterhoeven wrote:
+>> On Mon, Sep 1, 2014 at 4:24 PM, Bartlomiej Zolnierkiewicz
+>> <b.zolnierkie@samsung.com> wrote:
+>>> Renesas USBHS controller support should be available only on
+>>> Renesas ARM SoCs and SuperH architecture.
+>>>
+>>> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> Cc: Simon Horman <horms@verge.net.au>
+>>> Cc: Magnus Damm <magnus.damm@gmail.com>
+>>> ---
+>>> v2:
+>>> - s/ARCH_SH/SUPERH/ (thanks to Sergei Shtylyov)
+>>
+>> Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
 > 
-> drivers/built-in.o: In function `usbhsg_dma_map_ctrl':
-> mod_gadget.c:(.text+0x53b226): undefined reference to `usb_gadget_map_request'
-> mod_gadget.c:(.text+0x53b242): undefined reference to `usb_gadget_unmap_request'
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  drivers/usb/gadget/udc/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-> index 5151f947a4f5..00171d436cf8 100644
-> --- a/drivers/usb/gadget/udc/Kconfig
-> +++ b/drivers/usb/gadget/udc/Kconfig
-> @@ -163,7 +163,7 @@ config USB_R8A66597
->  
->  config USB_RENESAS_USBHS_UDC
->  	tristate 'Renesas USBHS controller'
-> -	depends on USB_RENESAS_USBHS
-> +	depends on USB_RENESAS_USBHS && HAS_DMA
->  	help
->  	   Renesas USBHS is a discrete USB host and peripheral controller chip
->  	   that supports both full and high speed USB 2.0 data transfers.
-> 
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
 Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
 
 Best regards,
 Yoshihiro Shimoda
 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
