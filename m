@@ -1,99 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666AbaICONm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:13:42 -0400
-Received: from fm1nodo1.polito.it ([130.192.180.11]:56479 "EHLO
-	antispam.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495AbaICONk (ORCPT
+	id S932706AbaICOOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:14:16 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:51941 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286AbaICOOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:13:40 -0400
-X-ExtScanner: Niversoft's FindAttachments (free)
-Message-ID: <54071B91.4020404@polito.it>
-Date: Wed, 03 Sep 2014 15:45:53 +0200
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
+	Wed, 3 Sep 2014 10:14:15 -0400
+Message-ID: <5407222F.9040200@collabora.com>
+Date: Wed, 03 Sep 2014 16:14:07 +0200
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>, zohar@linux.vnet.ibm.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [Linux-ima-devel] [PATCH 8/8] ima: initialize only required template
-References: <cover.1409728712.git.d.kasatkin@samsung.com> <ee009655866311106c98cdf87371d52f242782af.1409728712.git.d.kasatkin@samsung.com>
-In-Reply-To: <ee009655866311106c98cdf87371d52f242782af.1409728712.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-FEAS-SYSTEM-WL: 130.192.180.41
+To: Mike Turquette <mturquette@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH v8 6/7] clk: Add floor and ceiling constraints to clock
+ rates
+References: <1409585377-26091-1-git-send-email-tomeu.vizoso@collabora.com> <1409585675-26894-1-git-send-email-tomeu.vizoso@collabora.com> <1409585675-26894-3-git-send-email-tomeu.vizoso@collabora.com> <20140903001346.5251.47709@quantum>
+In-Reply-To: <20140903001346.5251.47709@quantum>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 09:20 AM, Dmitry Kasatkin wrote:
-> IMA uses only one template. This patch initializes only required
-> template to avoid unnecessary memory allocations.
+On 09/03/2014 02:13 AM, Mike Turquette wrote:
+> Quoting Tomeu Vizoso (2014-09-01 08:34:34)
+>> @@ -1633,6 +1636,13 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
+>>          /* prevent racing with updates to the clock topology */
+>>          clk_prepare_lock();
+>>
+>> +       hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
+>> +               rate = max(rate, clk_user->floor_constraint);
+>> +
+>> +               if (clk_user->ceiling_constraint > 0)
+>> +                       rate = min(rate, clk_user->ceiling_constraint);
 >
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> ---
->   security/integrity/ima/ima_template.c | 28 ++++------------------------
->   1 file changed, 4 insertions(+), 24 deletions(-)
+> A ceiling_constraint from consumer_A could be less than a
+> floor_constraint from consumer_B. What should we do in this case?
 >
-> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-> index f682606..e854862 100644
-> --- a/security/integrity/ima/ima_template.c
-> +++ b/security/integrity/ima/ima_template.c
-> @@ -152,24 +152,6 @@ out:
->   	return result;
->   }
+> In the code above the ceiling_constraint will always win. Is that by
+> design? We should document that behavior in Documentation/clk.txt.
 >
-> -static int __init init_defined_templates(void)
-> -{
-> -	int i = 0;
-> -	int result = 0;
-> -
-> -	/* Init defined templates. */
-> -	for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
-> -		struct ima_template_desc *template = &defined_templates[i];
-> -
-> -		result = template_desc_init_fields(template->fmt,
-> -						   &(template->fields),
-> -						   &(template->num_fields));
-> -		if (result < 0)
-> -			return result;
-> -	}
-> -	return result;
-> -}
-> -
->   struct ima_template_desc *ima_template_desc_current(void)
->   {
->   	if (!ima_template)
-> @@ -180,11 +162,9 @@ struct ima_template_desc *ima_template_desc_current(void)
+> This is the right place to check for the aforementioned corner case,
+> since we not only care about a single consumer having sane constraints
+> (e.g. min < max) but also mixing constraints across consumers.
+
+Yeah. I think I lean towards first applying all floors, then applying 
+all ceilings. Because hardware damage could happen if a ceiling from 
+thermal isn't applied because of a bug in some other driver.
+
+This also has the advantage of being deterministic, when with the 
+current approach the result depends on the order in which the per-user 
+clocks are iterated.
+
+> However ...
 >
->   int __init ima_init_template(void)
->   {
-> -	int result;
-> -
-> -	result = init_defined_templates();
-> -	if (result < 0)
-> -		return result;
-> +	struct ima_template_desc *template = ima_template_desc_current();
+>> +       }
+>> +
+>>          /* bail early if nothing to do */
+>>          if (rate == clk_provider_get_rate(clk))
+>>                  goto out;
+>> @@ -1699,6 +1709,24 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
+>>   }
+>>   EXPORT_SYMBOL_GPL(clk_set_rate);
+>>
+>> +int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
+>> +{
+>> +       struct clk_core *clk = clk_to_clk_core(clk_user);
+>> +
+>> +       clk_user->floor_constraint = rate;
+>> +       return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
+>> +}
+>> +EXPORT_SYMBOL_GPL(clk_set_floor_rate);
+>> +
+>> +int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
+>> +{
+>> +       struct clk_core *clk = clk_to_clk_core(clk_user);
+>> +
+>> +       clk_user->ceiling_constraint = rate;
+>> +       return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
+>> +}
+>> +EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
 >
-> -	return 0;
-> +	return template_desc_init_fields(template->fmt,
-> +					 &(template->fields),
-> +					 &(template->num_fields));
+> ... we should probably sanity-check constraints here to make sure that
+> ceiling_rates for a given consumer are higher than floor_constraints for
+> that same consumer. It's a bit extra overhead but a WARN would probably
+> be helpful in this case.
 
-Hi Dmitry
+Sounds like a good idea to me, will do.
 
-ok, I'm fine with the change even if the template
-initialization routine will be used for other purposes
-(array items will be added in a linked list to permit
-templates dynamic registration).
+Thanks,
 
-Thanks
+Tomeu
 
-Roberto Sassu
-
-
->   }
+> Rest of the patch looks good.
+>
+> Regards,
+> Mike
 >
 
