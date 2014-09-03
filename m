@@ -1,227 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252AbaICCKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 22:10:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11910 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453AbaICCKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 22:10:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="380604089"
-Message-ID: <5406789C.7040706@linux.intel.com>
-Date: Wed, 03 Sep 2014 10:10:36 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Aaron Lu <aaron.lu@intel.com>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jackey Shen <jackey.shen@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process()
- on sdio thread
-References: <53E85967.5060503@linux.intel.com>	<CAPDyKFqLE-09=3k_6stMXiY3+Ax3xoRBO3q__GHyqH4fd-XmsQ@mail.gmail.com>	<53F16D28.5010500@linux.intel.com> <CAPDyKFrfXe0f6S0z8HUG2Mg29JVU39C0VOBimgKtq-HL47HZrA@mail.gmail.com> <53FB5FDD.6030202@linux.intel.com>
-In-Reply-To: <53FB5FDD.6030202@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753520AbaICCK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 22:10:56 -0400
+Received: from regular1.263xmail.com ([211.150.99.140]:56759 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345AbaICCKx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 22:10:53 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <338e1d6c431fd41519665a6805bec622>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
+        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v4 0/4] Rockchip soc thermal driver
+Date: Wed,  3 Sep 2014 10:10:35 +0800
+Message-Id: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes in v4:
+        * address comments from Jonathan Cameron,huangtao and zhaoyifeng:
+        - this series thermal driver still be put in driver/thermal/
+        - modify the thermal driver description.
 
-Hi,Uffe
+Changes in v3:(add dts configure)
+        * address comments from Dmitry Torokhov and Arnd Bergmann:
+        - fix clock-names in rockchip-thermal.txt
+        - remove rockchip_thermal_control() in rockchip_set_mode()
+        - fix some code style.
+        - add dts configure.
 
-Could you please tell me into which git repository this patch is merged now?
+Changes in v2:
+        * address comments from Heiko Stubner:
+        - fix dt-bindings in rockchip-thermal.txt
+        - remove Author mark
+        - rename TSADC_XXX->TSADCV2_XXX,it eill ready to merge compatible other SoCs.
+        - fix a identation
+        - remove clk_set_rate(),it's no necessary.
+        - fix the SIMPLE_DEV_PM_OPS() function  style.
 
+Tested on rk3288 SDK board
 
+Caesar Wang (4):
+  thermal: rockchip: add driver for thermal
+  dt-bindings: document Rockchip thermal
+  ARM: dts: add main Thermal info to rk3288
+  ARM: dts: enable Thermal on rk3288-evb board
 
-Thanks,
-Zhonghui 
+ .../bindings/thermal/rockchip-thermal.txt          |  20 +
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   7 +
+ arch/arm/boot/dts/rk3288.dtsi                      |  18 +
+ drivers/thermal/Kconfig                            |   9 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/rockchip_thermal.c                 | 669 +++++++++++++++++++++
+ 6 files changed, 724 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+ create mode 100644 drivers/thermal/rockchip_thermal.c
 
+-- 
+1.9.1
 
-
-On 2014/8/26 0:10, Fu, Zhonghui wrote:
->
-> Many thanks for your helps.
->
->
->
-> Thanks,
-> Zhonghui
->
->
-> On 2014/8/18 20:07, Ulf Hansson wrote:
->> On 18 August 2014 05:04, Fu, Zhonghui <zhonghui.fu@linux.intel.com> wrote:
->>> From 21266249bbbaf9407c1e88cd5950e06ac88aeebf Mon Sep 17 00:00:00 2001
->>> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>> Date: Mon, 18 Aug 2014 10:48:14 +0800
->>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>>
->>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->>> the use of our own custom threaded IRQ handler, but left in an
->>> unconditional wake_up_process() on that handler at resume-time.
->>> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
->>>
->>> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
->>> before enable sdio IRQ.
->>>
->>> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->>> Signed-off-by: Chris Ball <chris@printf.net>
->>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
->>> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->> Thanks! Applied for next and added a stable tag for v3.16+.
->>
->> Kind regards
->> Uffe
->>
->>> ---
->>>  drivers/mmc/core/sdio.c     |   12 ++++++++++--
->>>  drivers/mmc/core/sdio_irq.c |    4 ++--
->>>  2 files changed, 12 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->>> index e636d9e..3fc40a7 100644
->>> --- a/drivers/mmc/core/sdio.c
->>> +++ b/drivers/mmc/core/sdio.c
->>> @@ -992,8 +992,16 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>>                 }
->>>         }
->>>
->>> -       if (!err && host->sdio_irqs)
->>> -               wake_up_process(host->sdio_irq_thread);
->>> +       if (!err && host->sdio_irqs) {
->>> +               if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>> +                       wake_up_process(host->sdio_irq_thread);
->>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>> +                       mmc_host_clk_hold(host);
->>> +                       host->ops->enable_sdio_irq(host, 1);
->>> +                       mmc_host_clk_release(host);
->>> +               }
->>> +       }
->>> +
->>>         mmc_release_host(host);
->>>
->>>         host->pm_flags &= ~MMC_PM_KEEP_POWER;
->>> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
->>> index 5cc13c8..696eca4 100644
->>> --- a/drivers/mmc/core/sdio_irq.c
->>> +++ b/drivers/mmc/core/sdio_irq.c
->>> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->>>                                 host->sdio_irqs--;
->>>                                 return err;
->>>                         }
->>> -               } else {
->>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>>                         mmc_host_clk_hold(host);
->>>                         host->ops->enable_sdio_irq(host, 1);
->>>                         mmc_host_clk_release(host);
->>> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->>>                 if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>>                         atomic_set(&host->sdio_irq_thread_abort, 1);
->>>                         kthread_stop(host->sdio_irq_thread);
->>> -               } else {
->>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>>                         mmc_host_clk_hold(host);
->>>                         host->ops->enable_sdio_irq(host, 0);
->>>                         mmc_host_clk_release(host);
->>> -- 1.7.1
->>>
->>> On 2014/8/12 18:23, Ulf Hansson wrote:
->>>> On 11 August 2014 07:49, Fu, Zhonghui <zhonghui.fu@linux.intel.com> wrote:
->>>>> From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
->>>>> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>>>> Date: Tue, 5 Aug 2014 12:44:38 +0800
->>>>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>>>>
->>>>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->>>>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->>>>> the use of our own custom threaded IRQ handler, but left in an
->>>>> unconditional wake_up_process() on that handler at resume-time.
->>>>> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
->>>>>
->>>>> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
->>>>> before enable sdio IRQ.
->>>>>
->>>>> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->>>>> Signed-off-by: Chris Ball <chris@printf.net>
->>>>> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>>>> ---
->>>>>  drivers/mmc/core/sdio.c     |   14 ++++++++++++--
->>>>>  drivers/mmc/core/sdio_irq.c |    4 ++--
->>>>>  2 files changed, 14 insertions(+), 4 deletions(-)
->>>>>
->>>>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->>>>> index e636d9e..e04a540 100644
->>>>> --- a/drivers/mmc/core/sdio.c
->>>>> +++ b/drivers/mmc/core/sdio.c
->>>>> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>>>>                 }
->>>>>         }
->>>>>
->>>>> -       if (!err && host->sdio_irqs)
->>>>> -               wake_up_process(host->sdio_irq_thread);
->>>>> +       if (!err && host->sdio_irqs) {
->>>>> +               if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>>>> +                       wake_up_process(host->sdio_irq_thread);
->>>>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>>>> +                       mmc_release_host(host);
->>>> Why mmc_release_host() and the corresponding mmc_claim_host() below?
->>>> Those shouldn't be needed I think.
->>> You are right. These two functions shouldn't be invoked here. I made a new patch as above.
->>>
->>>
->>> Thanks,
->>> Zhonghui
->>>>> +                       mmc_host_clk_hold(host);
->>>>> +                       host->ops->enable_sdio_irq(host, 1);
->>>>> +                       mmc_host_clk_release(host);
->>>>> +                       mmc_claim_host(host);
->>>>> +               }
->>>>> +       }
->>>>> +
->>>>>         mmc_release_host(host);
->>>>>
->>>>>         host->pm_flags &= ~MMC_PM_KEEP_POWER;
->>>>> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
->>>>> index 5cc13c8..696eca4 100644
->>>>> --- a/drivers/mmc/core/sdio_irq.c
->>>>> +++ b/drivers/mmc/core/sdio_irq.c
->>>>> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->>>>>                                 host->sdio_irqs--;
->>>>>                                 return err;
->>>>>                         }
->>>>> -               } else {
->>>>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>>>>                         mmc_host_clk_hold(host);
->>>>>                         host->ops->enable_sdio_irq(host, 1);
->>>>>                         mmc_host_clk_release(host);
->>>>> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->>>>>                 if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>>>>                         atomic_set(&host->sdio_irq_thread_abort, 1);
->>>>>                         kthread_stop(host->sdio_irq_thread);
->>>>> -               } else {
->>>>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>>>>                         mmc_host_clk_hold(host);
->>>>>                         host->ops->enable_sdio_irq(host, 0);
->>>>>                         mmc_host_clk_release(host);
->>>>> -- 1.7.1
->>>>>
->>>> Thanks for working on this!
->>>>
->>>> Kind regards
->>>> Uffe
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
 
