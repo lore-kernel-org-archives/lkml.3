@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372AbaICXCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:02:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46336 "EHLO
+	id S1757356AbaICXCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:02:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756835AbaICWZ5 (ORCPT
+	with ESMTP id S1756891AbaICWZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:25:57 -0400
+	Wed, 3 Sep 2014 18:25:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Forshaw <forshaw@google.com>
-Subject: [PATCH 3.16 113/125] USB: whiteheat: Added bounds checking for bulk command response
-Date: Wed,  3 Sep 2014 15:07:50 -0700
-Message-Id: <20140903220627.090666331@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.16 109/125] xhci: Disable streams on Via XHCI with device-id 0x3432
+Date: Wed,  3 Sep 2014 15:07:46 -0700
+Message-Id: <20140903220626.967775778@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,45 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Forshaw <forshaw@google.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 6817ae225cd650fb1c3295d769298c38b1eba818 upstream.
+commit e21eba05afd288a227320f797864ddd859397eed upstream.
 
-This patch fixes a potential security issue in the whiteheat USB driver
-which might allow a local attacker to cause kernel memory corrpution. This
-is due to an unchecked memcpy into a fixed size buffer (of 64 bytes). On
-EHCI and XHCI busses it's possible to craft responses greater than 64
-bytes leading a buffer overflow.
+This is a bit bigger hammer then I would like to use for this, but for now
+it will have to make do. I'm working on getting my hands on one of these so
+that I can try to get streams to work (with a quirk flag if necessary) and
+then we can re-enable them.
 
-Signed-off-by: James Forshaw <forshaw@google.com>
+For now this at least makes uas capable disk enclosures work again by forcing
+fallback to the usb-storage driver.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=79511
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/whiteheat.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/serial/whiteheat.c
-+++ b/drivers/usb/serial/whiteheat.c
-@@ -514,6 +514,10 @@ static void command_port_read_callback(s
- 		dev_dbg(&urb->dev->dev, "%s - command_info is NULL, exiting.\n", __func__);
- 		return;
- 	}
-+	if (!urb->actual_length) {
-+		dev_dbg(&urb->dev->dev, "%s - empty response, exiting.\n", __func__);
-+		return;
-+	}
- 	if (status) {
- 		dev_dbg(&urb->dev->dev, "%s - nonzero urb status: %d\n", __func__, status);
- 		if (status != -ENOENT)
-@@ -534,7 +538,8 @@ static void command_port_read_callback(s
- 		/* These are unsolicited reports from the firmware, hence no
- 		   waiting command to wakeup */
- 		dev_dbg(&urb->dev->dev, "%s - event received\n", __func__);
--	} else if (data[0] == WHITEHEAT_GET_DTR_RTS) {
-+	} else if ((data[0] == WHITEHEAT_GET_DTR_RTS) &&
-+		(urb->actual_length - 1 <= sizeof(command_info->result_buffer))) {
- 		memcpy(command_info->result_buffer, &data[1],
- 						urb->actual_length - 1);
- 		command_info->command_finished = WHITEHEAT_CMD_COMPLETE;
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -155,6 +155,11 @@ static void xhci_pci_quirks(struct devic
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 
++	/* See https://bugzilla.kernel.org/show_bug.cgi?id=79511 */
++	if (pdev->vendor == PCI_VENDOR_ID_VIA &&
++			pdev->device == 0x3432)
++		xhci->quirks |= XHCI_BROKEN_STREAMS;
++
+ 	if (xhci->quirks & XHCI_RESET_ON_RESUME)
+ 		xhci_dbg_trace(xhci, trace_xhci_dbg_quirks,
+ 				"QUIRK: Resetting on resume");
 
 
