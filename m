@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaICHYd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:24:33 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:22683 "EHLO
+	id S1755959AbaICHZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:25:03 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22669 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674AbaICHXZ (ORCPT
+	with ESMTP id S1755571AbaICHXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:23:25 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-e8-5406c1ebc98f
+	Wed, 3 Sep 2014 03:23:19 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-d8-5406c1e3efb6
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 5/8] ima: add missing '__init' keywords
-Date: Wed, 03 Sep 2014 10:19:58 +0300
-Message-id: <d867d0c80076e9f79279e29a3b7fa8c7ba0ea66c.1409728712.git.d.kasatkin@samsung.com>
+Subject: [PATCH 2/8] integrity: remove declaration of non-existing functions
+Date: Wed, 03 Sep 2014 10:19:55 +0300
+Message-id: <4ae21fa095c234dcb8f6b6ebb7b7fff308448fb8.1409728712.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1409728712.git.d.kasatkin@samsung.com>
 References: <cover.1409728712.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1409728712.git.d.kasatkin@samsung.com>
 References: <cover.1409728712.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjluLIzCtJLcpLzFFi42I5/e/4Vd3XB9lCDDbv4La49Xcvs8WXpXUW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjluLIzCtJLcpLzFFi42I5/e/4Vd3HB9lCDL5ftra49Xcvs8WXpXUW
 	L2fMY7e4vGsOm8WHnkdsFp9WTGJ2YPPYOesuu8eDQ5tZPHYv+Mzk0bdlFaPH501yAaxRXDYp
-	qTmZZalF+nYJXBkLnxxnL2jkq1izfiJ7A+NT7i5GTg4JAROJ3qabzBC2mMSFe+vZuhi5OIQE
-	ljJKvP27ihnC6WSS2DL7KiNIFZuAnsSG5h/sILaIQI7EpDMXwLqZBdIlPk3qBYsLC5hLHDjU
-	xgJiswioSmycegashlcgTuLT7IVQ2+QkTh6bzNrFyMHBKWAlMe+oFkhYSMBSov3qMkYcwhMY
-	+RcwMqxiFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECAm7rzsYlx6zOsQowMGoxMMbIcgWIsSa
-	WFZcmXuIUYKDWUmE1zcRKMSbklhZlVqUH19UmpNafIiRiYNTqoFx9afjXwOTnq8tiX7sfEJC
-	dR2r4fGH13+2W5Uums2rX/Bz5teOb1sZvb0ZFNwZPEoq53P6evRrP6wpbA5QncHsY/Je0/9X
-	C19gPRebddqTrPAl76cycdnKWpXvn3jxjXbsx7siafXiapuWPZN45Gt7JS1j0ds+l5fhXsGb
-	e5h0JY/t7UrQj1BiKc5INNRiLipOBAB7ZG9kGQIAAA==
+	qTmZZalF+nYJXBnPbvazFGwUqJjy8wV7A+Nf3i5GTg4JAROJ3jMXWSBsMYkL99azdTFycQgJ
+	LGWU+LCoE8rpZJJ4/LmfDaSKTUBPYkPzD3YQW0QgR2LSmQvMIDazQLrEp0m9YHFhAR+Jc4uX
+	g8VZBFQlXt08CxbnFYiTuHtpBtQ2OYmTxyazdjFycHAKWEnMO6oFEhYSsJRov7qMEYfwBEb+
+	BYwMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCwu7LDsbFx6wOMQpwMCrx8BaosYUIsSaW
+	FVfmHmKU4GBWEuH1TQQK8aYkVlalFuXHF5XmpBYfYmTi4JRqYOT+Zsn9tUnizF75na8fPyu2
+	eRbof1hoS9X9xv+8JhtyCs7ter3FjePNAbayH0sq13z8xO4jMZ+VI5WVn6/2ya9/e6/HOB18
+	tmrJrN8XOu/YTGu4emyFQoHBBY3VKgc7/3z3n3fZ7a2A4kp381tuWfot/lzL0vr837tN61oQ
+	v5Zhy/d/7yz9O2cpsRRnJBpqMRcVJwIAqQK5NBkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing keywords to the function definition to cleanup
-to discard initialization code.
+Noticed that there are declaration of few non-existing functions.
+Also remove duplicated declaration of inegrity_iint_find().
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/ima.h          | 2 --
- security/integrity/ima/ima_crypto.c   | 2 +-
- security/integrity/ima/ima_template.c | 4 ++--
- 3 files changed, 3 insertions(+), 5 deletions(-)
+ security/integrity/ima/ima.h   | 9 ---------
+ security/integrity/integrity.h | 1 -
+ 2 files changed, 10 deletions(-)
 
 diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index c6990a7..8e4bb88 100644
+index 0fb456c..c6990a7 100644
 --- a/security/integrity/ima/ima.h
 +++ b/security/integrity/ima/ima.h
-@@ -107,8 +107,6 @@ void ima_print_digest(struct seq_file *m, u8 *digest, int size);
- struct ima_template_desc *ima_template_desc_current(void);
- int ima_init_template(void);
+@@ -90,10 +90,7 @@ extern struct list_head ima_measurements;	/* list of all measurements */
  
--int ima_init_template(void);
+ /* Internal IMA function definitions */
+ int ima_init(void);
+-void ima_cleanup(void);
+ int ima_fs_init(void);
+-void ima_fs_cleanup(void);
+-int ima_inode_alloc(struct inode *inode);
+ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+ 			   const char *op, struct inode *inode,
+ 			   const unsigned char *filename);
+@@ -151,12 +148,6 @@ int ima_store_template(struct ima_template_entry *entry, int violation,
+ void ima_free_template_entry(struct ima_template_entry *entry);
+ const char *ima_d_path(struct path *path, char **pathbuf);
+ 
+-/* rbtree tree calls to lookup, insert, delete
+- * integrity data associated with an inode.
+- */
+-struct integrity_iint_cache *integrity_iint_insert(struct inode *inode);
+-struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
 -
- /*
-  * used to protect h_table and sha_table
+ /* IMA policy related functions */
+ enum ima_hooks { FILE_CHECK = 1, MMAP_CHECK, BPRM_CHECK, MODULE_CHECK, FIRMWARE_CHECK, POST_SETATTR };
+ 
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 904e68a..c0379d1 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -117,7 +117,6 @@ struct integrity_iint_cache {
+ /* rbtree tree calls to lookup, insert, delete
+  * integrity data associated with an inode.
   */
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index 3b26472..d34e7df 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -97,7 +97,7 @@ static int ima_kernel_read(struct file *file, loff_t offset,
- 	return ret;
- }
+-struct integrity_iint_cache *integrity_iint_insert(struct inode *inode);
+ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
  
--int ima_init_crypto(void)
-+int __init ima_init_crypto(void)
- {
- 	long rc;
- 
-diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index a076a96..f682606 100644
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -152,7 +152,7 @@ out:
- 	return result;
- }
- 
--static int init_defined_templates(void)
-+static int __init init_defined_templates(void)
- {
- 	int i = 0;
- 	int result = 0;
-@@ -178,7 +178,7 @@ struct ima_template_desc *ima_template_desc_current(void)
- 	return ima_template;
- }
- 
--int ima_init_template(void)
-+int __init ima_init_template(void)
- {
- 	int result;
- 
+ #define INTEGRITY_KEYRING_EVM		0
 -- 
 1.9.1
 
