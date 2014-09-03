@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaICJaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:30:22 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56821 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaICJaV (ORCPT
+	id S1756030AbaICJcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:32:04 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44365 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755882AbaICJcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:30:21 -0400
-Date: Wed, 3 Sep 2014 11:30:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Wang <jasowang@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
- runnable
-Message-ID: <20140903093008.GC4783@worktop.ger.corp.intel.com>
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
- <1408608310-13579-2-git-send-email-jasowang@redhat.com>
- <1408683665.5648.69.camel@marge.simpson.net>
- <20140901093159.GB27892@worktop.ger.corp.intel.com>
- <20140901095219.GD21269@redhat.com>
- <20140901100434.GD27892@worktop.ger.corp.intel.com>
- <20140901101939.GA31157@worktop.ger.corp.intel.com>
- <5405419E.7020103@redhat.com>
- <20140902102410.GX27892@worktop.ger.corp.intel.com>
- <5406BC19.9020009@redhat.com>
+	Wed, 3 Sep 2014 05:32:01 -0400
+Date: Wed, 3 Sep 2014 11:31:57 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH 0/5] rtc: at91sam9: add DT support
+Message-ID: <20140903113157.45822fbb@bbrezillon>
+In-Reply-To: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5406BC19.9020009@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 02:58:33PM +0800, Jason Wang wrote:
-> On 09/02/2014 06:24 PM, Peter Zijlstra wrote:
-> The patch only try to improve the performance of busy read (and test
-> results shows impressive changes). It does not change anything for busy
-> poll. Considering there maybe two processes in one cpu, one is doing
-> busy read and one is doing busy polling. This patch may in fact help the
-> busy polling performance in this case.
-> 
-> It's good to discuss the ideas of busy poll together, but it was out of
-> the scope of this patch. We can try to do optimization on top.
+On Wed,  3 Sep 2014 10:45:29 +0200
+Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
 
-No thta's just wrong, blocked read and blocking select should behave the
-same.
+> Hello,
+> 
+> This patch series adds DT support to the atmel at91sam9 RTC driver.
+> 
+> It also removes any machine specific inclusions to prepare the migration
+> to multi platform kernel support, and retain the slow clock to prevent
+> the CCF from disabling it at the end of boot.
+
+Oops, just noticed there already was a proposal adding DT support to
+this driver [1].
+Adding Johan and Douglas in Cc.
+
+[1]http://lists.infradead.org/pipermail/linux-arm-kernel/2013-April/160453.html
+
+> 
+> Best Regards,
+> 
+> Boris
+> 
+> Boris BREZILLON (5):
+>   rtc: at91sam9: remove references to mach specific headers
+>   rtc: at91sam9: use standard readl/writel functions instead of raw
+>     versions
+>   rtc: at91sam9: add DT support
+>   rtc: at91sam9: retain slow clock and check its rate
+>   rtc: at91sam9: add DT bindings documentation
+> 
+>  .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 20 +++++++
+>  drivers/rtc/rtc-at91sam9.c                         | 63 +++++++++++++++++++---
+>  2 files changed, 75 insertions(+), 8 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+> 
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
