@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212AbaICJpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:45:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43069 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930AbaICJpx (ORCPT
+	id S1755594AbaICJtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:49:20 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35048 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226AbaICJtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:45:53 -0400
-Date: Wed, 3 Sep 2014 11:45:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Oleg Nesterov <oleg@redhat.com>, Kautuk Consul <consul.kautuk@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
- with try_to_wake_up()
-Message-ID: <20140903094538.GF4783@worktop.ger.corp.intel.com>
-References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
- <20140825155738.GA5944@redhat.com>
- <3702911409735076@web26g.yandex.ru>
+	Wed, 3 Sep 2014 05:49:19 -0400
+Message-ID: <5406E41B.1040406@linaro.org>
+Date: Wed, 03 Sep 2014 11:49:15 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3702911409735076@web26g.yandex.ru>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: =?UTF-8?B?R2HDq2wgUE9SVEFZ?= <g.portay@overkiz.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCHv2 4/4] clocksource: tcb_clksrc: unprepare clock in case
+ of failure
+References: <1409329003-17252-1-git-send-email-g.portay@overkiz.com> <1409329003-17252-5-git-send-email-g.portay@overkiz.com>
+In-Reply-To: <1409329003-17252-5-git-send-email-g.portay@overkiz.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 01:04:36PM +0400, Kirill Tkhai wrote:
-> 25.08.2014, 20:01, "Oleg Nesterov" <oleg@redhat.com>:
-> > Peter, do you remember another problem with TASK_DEAD we discussed recently?
-> > (prev_state == TASK_DEAD detection in finish_task_switch() still looks racy).
-> 
-> One more problem with task_dead just to mention it here.
-> 
-> Below is racy with the change of sched_class:
-> 
->         if (prev->sched_class->task_dead)
->                 prev->sched_class->task_dead(prev);
-> 
-> switched_from_dl() does not cancel running timers.
+On 08/29/2014 06:16 PM, Gaël PORTAY wrote:
+> The clock is not unprepared in case of the request IRQ fails.
+>
+> Also update to request_irq.
+>
+> Signed-off-by: Gaël PORTAY <g.portay@overkiz.com>
 
-Well, it does a try_to_cancel() but yes, that can fail. Now I suspect
-you cannot actually do hrtimer_cancel() from switched_from because its
-called with locks held and the timer function will also try and acquire
-those locks.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-But yes, that appears to be an actual problem indeed.
+> ---
+>   drivers/clocksource/tcb_clksrc.c | 13 ++++---------
+>   1 file changed, 4 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+> index f922e81..8bdbc45 100644
+> --- a/drivers/clocksource/tcb_clksrc.c
+> +++ b/drivers/clocksource/tcb_clksrc.c
+> @@ -178,12 +178,6 @@ static irqreturn_t ch2_irq(int irq, void *handle)
+>   	return IRQ_NONE;
+>   }
+>
+> -static struct irqaction tc_irqaction = {
+> -	.name		= "tc_clkevt",
+> -	.flags		= IRQF_TIMER,
+> -	.handler	= ch2_irq,
+> -};
+> -
+>   static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
+>   {
+>   	int ret;
+> @@ -198,15 +192,16 @@ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
+>
+>   	clkevt.regs = tc->regs;
+>   	clkevt.clk = t2_clk;
+> -	tc_irqaction.dev_id = &clkevt;
+>
+>   	timer_clock = clk32k_divisor_idx;
+>
+>   	clkevt.clkevt.cpumask = cpumask_of(0);
+>
+> -	ret = setup_irq(irq, &tc_irqaction);
+> -	if (ret)
+> +	ret = request_irq(irq, ch2_irq, IRQF_TIMER, "tc_clkevt", &clkevt);
+> +	if (ret) {
+> +		clk_disable_unprepare(t2_clk);
+>   		return ret;
+> +	}
+>
+>   	clockevents_config_and_register(&clkevt.clkevt, 32768, 1, 0xffff);
+>
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
