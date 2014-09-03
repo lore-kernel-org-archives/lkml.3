@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668AbaICHXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:23:22 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:22669 "EHLO
+	id S1755703AbaICHX0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:23:26 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22683 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219AbaICHXU (ORCPT
+	with ESMTP id S1755671AbaICHXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:23:20 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-e6-5406c1e62f2c
+	Wed, 3 Sep 2014 03:23:24 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-e2-5406c1e9be6d
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 3/8] ima: simplify conditional statement to improve performance
-Date: Wed, 03 Sep 2014 10:19:56 +0300
-Message-id: <0e28e9a1e1bd839f7d551052b33bba6f266bd749.1409728712.git.d.kasatkin@samsung.com>
+Subject: [PATCH 4/8] ima: remove unnecessary extra variable
+Date: Wed, 03 Sep 2014 10:19:57 +0300
+Message-id: <cce196548e1db736486e0cfff8f6b06230d23a00.1409728712.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1409728712.git.d.kasatkin@samsung.com>
 References: <cover.1409728712.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1409728712.git.d.kasatkin@samsung.com>
 References: <cover.1409728712.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphluLIzCtJLcpLzFFi42I5/e/4Vd1nB9lCDPYe17K49Xcvs8WXpXUW
-	L2fMY7e4vGsOm8WHnkdsFp9WTGJ2YPPYOesuu8eDQ5tZPHYv+Mzk0bdlFaPH501yAaxRXDYp
-	qTmZZalF+nYJXBnnzyoXvGOv6H6Q1MB4ga2LkZNDQsBEYvnN26wQtpjEhXvrgeJcHEICSxkl
-	nj+9zgrhdDJJ3Pp1mQWkik1AT2JD8w92EFtEIEdi0pkLzCA2s0C6xKdJvWBxYQF/iWs/3zOB
-	2CwCqhIvT10D28YrECfxd/pvqM1yEiePTQZawMHBKWAlMe+oFkhYSMBSov3qMkYcwhMY+Rcw
-	MqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAm5LzsYFx+zOsQowMGoxMNboMYWIsSaWFZc
-	mXuIUYKDWUmE1zcRKMSbklhZlVqUH19UmpNafIiRiYNTqoGRbYZNy1HBwmd/zFnFePSeT39Z
-	ccTDJ2GeRIxST9rrNst8ddWvPCW+bPGcO5U//wucPD9OLvujjYwNy/2vagv3XBFUsBWtupWi
-	srpxCovsz97wHzx1ggK1IQJTFmboqXElW1+fFbT2d7hseE/R1e66l2mxWSnHFq3fFHSe92XB
-	Rsurr9oz3JRYijMSDbWYi4oTAbsPKW8XAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphluLIzCtJLcpLzFFi42I5/e/4Vd2XB9lCDNp6xS1u/d3LbPFlaZ3F
+	yxnz2C0u75rDZvGh5xGbxacVk5gd2Dx2zrrL7vHg0GYWj90LPjN59G1ZxejxeZNcAGsUl01K
+	ak5mWWqRvl0CV8aurl3MBbv5K35v/cDUwHiFp4uRk0NCwERi+tz1jBC2mMSFe+vZQGwhgaWM
+	ElNPCUHYnUwSG15lg9hsAnoSG5p/sIPYIgI5EpPOXGAGsZkF0iU+TeoFiwsLWEv8/vAGzGYR
+	UJV4tnkm2ExegTiJGZMuMUPskpM4eWwyaxcjBwengJXEvKNaEKssJdqvLmPEITyBkX8BI8Mq
+	RtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJCQ+7qDcekxq0OMAhyMSjy8EYJsIUKsiWXFlbmH
+	GCU4mJVEeH0TgUK8KYmVValF+fFFpTmpxYcYmTg4pRoYDWY9/lD6/Jx5UPyiGZZTTm/eFmVr
+	966ioKnKbcqOl2nK+rzKdw48nWUSJqZ4V/8pz6J40Sd+dv3Hql9wVd/inulUfDb66sqP7GsE
+	zjR7H66ZMuXGxJWf5vSEHvDiqGTUvvdjhtjJQ6mSopGVR216ruVO2jH3zsNnOTE/k5ga1zk8
+	l9DannzBRImlOCPRUIu5qDgRAIdAo2gXAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Precede bit testing before string comparison makes code
-faster. Also refactor statement as a single line pointer
-assignment.
+'function' variable value can be changed instead of
+allocating extra '_func' variable.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/ima_main.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ security/integrity/ima/ima_main.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index f82cf9b..f7b85bf 100644
+index f7b85bf..aaf5552 100644
 --- a/security/integrity/ima/ima_main.c
 +++ b/security/integrity/ima/ima_main.c
-@@ -206,10 +206,8 @@ static int process_measurement(struct file *file, const char *filename,
+@@ -164,7 +164,7 @@ static int process_measurement(struct file *file, const char *filename,
+ 	struct ima_template_desc *template_desc;
+ 	char *pathbuf = NULL;
+ 	const char *pathname = NULL;
+-	int rc = -ENOMEM, action, must_appraise, _func;
++	int rc = -ENOMEM, action, must_appraise;
+ 	struct evm_ima_xattr_data *xattr_value = NULL, **xattr_ptr = NULL;
+ 	int xattr_len = 0;
+ 
+@@ -182,7 +182,8 @@ static int process_measurement(struct file *file, const char *filename,
+ 	must_appraise = action & IMA_APPRAISE;
+ 
+ 	/*  Is the appraise rule hook specific?  */
+-	_func = (action & IMA_FILE_APPRAISE) ? FILE_CHECK : function;
++	if (action & IMA_FILE_APPRAISE)
++		function = FILE_CHECK;
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 
+@@ -201,7 +202,7 @@ static int process_measurement(struct file *file, const char *filename,
+ 	/* Nothing to do, just return existing appraised status */
+ 	if (!action) {
+ 		if (must_appraise)
+-			rc = ima_get_cache_status(iint, _func);
++			rc = ima_get_cache_status(iint, function);
+ 		goto out_digsig;
  	}
  
- 	template_desc = ima_template_desc_current();
--	if (strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) == 0) {
--		if (action & IMA_APPRAISE_SUBMASK)
--			xattr_ptr = &xattr_value;
--	} else
-+	if ((action & IMA_APPRAISE_SUBMASK) ||
-+		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
- 		xattr_ptr = &xattr_value;
- 
- 	rc = ima_collect_measurement(iint, file, xattr_ptr, &xattr_len);
+@@ -223,7 +224,7 @@ static int process_measurement(struct file *file, const char *filename,
+ 		ima_store_measurement(iint, file, pathname,
+ 				      xattr_value, xattr_len);
+ 	if (action & IMA_APPRAISE_SUBMASK)
+-		rc = ima_appraise_measurement(_func, iint, file, pathname,
++		rc = ima_appraise_measurement(function, iint, file, pathname,
+ 					      xattr_value, xattr_len, opened);
+ 	if (action & IMA_AUDIT)
+ 		ima_audit_measurement(iint, pathname);
 -- 
 1.9.1
 
