@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896AbaICWNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:13:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
+	id S1756907AbaICWNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:13:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45736 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933668AbaICWIw (ORCPT
+	with ESMTP id S1756604AbaICWNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:52 -0400
+	Wed, 3 Sep 2014 18:13:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH 3.14 59/88] x86/xen: resume timer irqs early
-Date: Wed,  3 Sep 2014 15:05:33 -0700
-Message-Id: <20140903220517.725632506@linuxfoundation.org>
+        Chris Murphy <lists@colorremedies.com>, Liu Bo <bo.li.liu@oracle.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 65/88] Btrfs: fix crash on endio of reading corrupted block
+Date: Wed,  3 Sep 2014 15:05:39 -0700
+Message-Id: <20140903220517.902079033@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,43 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit 8d5999df35314607c38fbd6bdd709e25c3a4eeab upstream.
+commit 38c1c2e44bacb37efd68b90b3f70386a8ee370ee upstream.
 
-If the timer irqs are resumed during device resume it is possible in
-certain circumstances for the resume to hang early on, before device
-interrupts are resumed.  For an Ubuntu 14.04 PVHVM guest this would
-occur in ~0.5% of resume attempts.
+The crash is
 
-It is not entirely clear what is occuring the point of the hang but I
-think a task necessary for the resume calls schedule_timeout(),
-waiting for a timer interrupt (which never arrives).  This failure may
-require specific tasks to be running on the other VCPUs to trigger
-(processes are not frozen during a suspend/resume if PREEMPT is
-disabled).
+------------[ cut here ]------------
+kernel BUG at fs/btrfs/extent_io.c:2124!
+[...]
+Workqueue: btrfs-endio normal_work_helper [btrfs]
+RIP: 0010:[<ffffffffa02d6055>]  [<ffffffffa02d6055>] end_bio_extent_readpage+0xb45/0xcd0 [btrfs]
 
-Add IRQF_EARLY_RESUME to the timer interrupts so they are resumed in
-syscore_resume().
+This is in fact a regression.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+It is because we forgot to increase @offset properly in reading corrupted block,
+so that the @offset remains, and this leads to checksum errors while reading
+left blocks queued up in the same bio, and then ends up with hiting the above
+BUG_ON.
+
+Reported-by: Chris Murphy <lists@colorremedies.com>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/time.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/extent_io.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -444,7 +444,7 @@ void xen_setup_timer(int cpu)
- 
- 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
- 				      IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER|
--				      IRQF_FORCE_RESUME,
-+				      IRQF_FORCE_RESUME|IRQF_EARLY_RESUME,
- 				      name, NULL);
- 	(void)xen_set_irq_priority(irq, XEN_IRQ_PRIORITY_MAX);
- 
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2525,6 +2525,7 @@ static void end_bio_extent_readpage(stru
+ 					test_bit(BIO_UPTODATE, &bio->bi_flags);
+ 				if (err)
+ 					uptodate = 0;
++				offset += len;
+ 				continue;
+ 			}
+ 		}
 
 
