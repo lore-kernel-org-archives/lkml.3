@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934096AbaICWWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:22:32 -0400
+	id S934130AbaICWXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:23:16 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46220 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933912AbaICWS4 (ORCPT
+	with ESMTP id S933902AbaICWSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:56 -0400
+	Wed, 3 Sep 2014 18:18:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.16 042/125] hwmon: (gpio-fan) Prevent overflow problem when writing large limits
-Date: Wed,  3 Sep 2014 15:06:39 -0700
-Message-Id: <20140903220624.914324155@linuxfoundation.org>
+        Addy Ke <addy.ke@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.16 050/125] i2c: rk3x: fix interrupt handling issue
+Date: Wed,  3 Sep 2014 15:06:47 -0700
+Message-Id: <20140903220625.147499867@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,32 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: addy ke <addy.ke@rock-chips.com>
 
-commit 2565fb05d1e9fc0831f7b1c083bcfcb1cba1f020 upstream.
+commit 9c5f7cad3acc69ce623d04d646950183a759949e upstream.
 
-On platforms with sizeof(int) < sizeof(unsigned long), writing a rpm value
-larger than MAXINT will result in unpredictable limit values written to the
-chip. Avoid auto-conversion from unsigned long to int to fix the problem.
+If slave holds scl, I2C_IPD[7] will be set 1 by controller
+for debugging. Driver must ignore it.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+[    5.752391] rk3x-i2c ff160000.i2c: unexpected irq in WRITE: 0x80
+[    5.939027] rk3x-i2c ff160000.i2c: timeout, ipd: 0x80, state: 4
+
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/gpio-fan.c |    2 +-
+ drivers/i2c/busses/i2c-rk3x.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/gpio-fan.c
-+++ b/drivers/hwmon/gpio-fan.c
-@@ -173,7 +173,7 @@ static int get_fan_speed_index(struct gp
- 	return -ENODEV;
- }
+--- a/drivers/i2c/busses/i2c-rk3x.c
++++ b/drivers/i2c/busses/i2c-rk3x.c
+@@ -399,7 +399,7 @@ static irqreturn_t rk3x_i2c_irq(int irqn
+ 	}
  
--static int rpm_to_speed_index(struct gpio_fan_data *fan_data, int rpm)
-+static int rpm_to_speed_index(struct gpio_fan_data *fan_data, unsigned long rpm)
- {
- 	struct gpio_fan_speed *speed = fan_data->speed;
- 	int i;
+ 	/* is there anything left to handle? */
+-	if (unlikely(ipd == 0))
++	if (unlikely((ipd & REG_INT_ALL) == 0))
+ 		goto out;
+ 
+ 	switch (i2c->state) {
 
 
