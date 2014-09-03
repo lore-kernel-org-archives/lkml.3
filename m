@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849AbaICIez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:34:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32137 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755456AbaICIew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:34:52 -0400
-Message-ID: <5406D293.3060404@redhat.com>
-Date: Wed, 03 Sep 2014 10:34:27 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755207AbaICIgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:36:41 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:43883 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbaICIgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 04:36:36 -0400
 MIME-Version: 1.0
-To: Laurent Dufour <ldufour@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org
-CC: kvm@vger.kernel.org, kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] powerpc/kvm/cma: Fix panic introduces by signed shift
- operation
-References: <1409674381-29465-1-git-send-email-ldufour@linux.vnet.ibm.com>
-In-Reply-To: <1409674381-29465-1-git-send-email-ldufour@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1409702308-3023-1-git-send-email-sboyd@codeaurora.org>
+References: <1409702308-3023-1-git-send-email-sboyd@codeaurora.org>
+Date: Wed, 3 Sep 2014 10:36:34 +0200
+Message-ID: <CAPDyKFoboJGTzF3aQ=YBpWyVT6opTMgz_6gpOo5BRX30+hfCBQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
+        Georgi Djakov <gdjakov@mm-sol.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/09/2014 18:13, Laurent Dufour ha scritto:
-> fc95ca7284bc54953165cba76c3228bd2cdb9591 introduces a memset in
-> kvmppc_alloc_hpt since the general CMA doesn't clear the memory it
-> allocates.
-> 
-> However, the size argument passed to memset is computed from a signed value
-> and its signed bit is extended by the cast the compiler is doing. This lead
-> to extremely large size value when dealing with order value >= 31, and
-> almost all the memory following the allocated space is cleaned. As a
-> consequence, the system is panicing and may even fail spawning the kdump
-> kernel.
-> 
-> This fix makes use of an unsigned value for the memset's size argument to
-> avoid sign extension. Among this fix, another shift operation which may
-> lead to signed extended value too is also fixed.
-> 
-> Cc: Alexey Kardashevskiy <aik@ozlabs.ru>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+On 3 September 2014 01:58, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> If we're tuning on a big-endian CPU we'll never determine we properly
+> tuned the device because we compare the data we received from the
+> controller with a table that assumes the CPU is little-endian.
+> Change the table to be an array of bytes instead of 32-bit words
+> so we can use memcmp() without needing to byte-swap every word
+> depending on the endianess of the CPU.
+>
+> Cc: Asutosh Das <asutoshd@codeaurora.org>
+> Cc: Venkat Gopalakrishnan <venkatg@codeaurora.org>
+> Cc: Georgi Djakov <gdjakov@mm-sol.com>
+> Fixes: 415b5a75da43 "mmc: sdhci-msm: Add platform_execute_tuning implementation"
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+
+Hi Stephen,
+
+If you want me to pick this up, please repost to linux-mmc as well.
+Otherwise you have my ack for it!
+
+Kind regards
+Uffe
+
 > ---
->  arch/powerpc/kvm/book3s_64_mmu_hv.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-> index 72c20bb16d26..79294c4c5015 100644
-> --- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-> +++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-> @@ -62,10 +62,10 @@ long kvmppc_alloc_hpt(struct kvm *kvm, u32 *htab_orderp)
->  	}
->  
->  	kvm->arch.hpt_cma_alloc = 0;
-> -	page = kvm_alloc_hpt(1 << (order - PAGE_SHIFT));
-> +	page = kvm_alloc_hpt(1ul << (order - PAGE_SHIFT));
->  	if (page) {
->  		hpt = (unsigned long)pfn_to_kaddr(page_to_pfn(page));
-> -		memset((void *)hpt, 0, (1 << order));
-> +		memset((void *)hpt, 0, (1ul << order));
->  		kvm->arch.hpt_cma_alloc = 1;
->  	}
->  
-> 
-
-Thanks, applied to kvm/master.
-
-Paolo
+>  drivers/mmc/host/sdhci-msm.c | 42 +++++++++++++++++++++++++++---------------
+>  1 file changed, 27 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+> index 40573a58486a..5aabffc15ae8 100644
+> --- a/drivers/mmc/host/sdhci-msm.c
+> +++ b/drivers/mmc/host/sdhci-msm.c
+> @@ -47,22 +47,34 @@
+>  #define CMUX_SHIFT_PHASE_SHIFT 24
+>  #define CMUX_SHIFT_PHASE_MASK  (7 << CMUX_SHIFT_PHASE_SHIFT)
+>
+> -static const u32 tuning_block_64[] = {
+> -       0x00ff0fff, 0xccc3ccff, 0xffcc3cc3, 0xeffefffe,
+> -       0xddffdfff, 0xfbfffbff, 0xff7fffbf, 0xefbdf777,
+> -       0xf0fff0ff, 0x3cccfc0f, 0xcfcc33cc, 0xeeffefff,
+> -       0xfdfffdff, 0xffbfffdf, 0xfff7ffbb, 0xde7b7ff7
+> +static const u8 tuning_block_64[] = {
+> +       0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+> +       0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+> +       0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+> +       0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+> +       0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+> +       0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+> +       0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+> +       0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+>  };
+>
+> -static const u32 tuning_block_128[] = {
+> -       0xff00ffff, 0x0000ffff, 0xccccffff, 0xcccc33cc,
+> -       0xcc3333cc, 0xffffcccc, 0xffffeeff, 0xffeeeeff,
+> -       0xffddffff, 0xddddffff, 0xbbffffff, 0xbbffffff,
+> -       0xffffffbb, 0xffffff77, 0x77ff7777, 0xffeeddbb,
+> -       0x00ffffff, 0x00ffffff, 0xccffff00, 0xcc33cccc,
+> -       0x3333cccc, 0xffcccccc, 0xffeeffff, 0xeeeeffff,
+> -       0xddffffff, 0xddffffff, 0xffffffdd, 0xffffffbb,
+> -       0xffffbbbb, 0xffff77ff, 0xff7777ff, 0xeeddbb77
+> +static const u8 tuning_block_128[] = {
+> +       0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+> +       0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+> +       0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+> +       0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+> +       0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+> +       0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+> +       0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+> +       0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+> +       0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+> +       0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+> +       0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+> +       0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+> +       0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+> +       0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+> +       0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+> +       0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+>  };
+>
+>  struct sdhci_msm_host {
+> @@ -359,7 +371,7 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+>  {
+>         int tuning_seq_cnt = 3;
+>         u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
+> -       const u32 *tuning_block_pattern = tuning_block_64;
+> +       const u8 *tuning_block_pattern = tuning_block_64;
+>         int size = sizeof(tuning_block_64);     /* Pattern size in bytes */
+>         int rc;
+>         struct mmc_host *mmc = host->mmc;
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
