@@ -1,140 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaICMfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:35:31 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:59893 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755478AbaICMf3 (ORCPT
+	id S932481AbaICMgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:36:13 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:57158 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236AbaICMgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:35:29 -0400
-Message-ID: <1409747724.21827.48.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH v2 2/3] integrity: move integrity subsystem options to a
- separate menu
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com
-Date: Wed, 03 Sep 2014 08:35:24 -0400
-In-Reply-To: <bce4893d9928b4c6ba9e69e8b4d858489acf6e9e.1409728926.git.d.kasatkin@samsung.com>
-References: <cover.1409728926.git.d.kasatkin@samsung.com>
-	 <bce4893d9928b4c6ba9e69e8b4d858489acf6e9e.1409728926.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090312-6688-0000-0000-0000047A5569
+	Wed, 3 Sep 2014 08:36:12 -0400
+Date: Wed, 3 Sep 2014 13:36:06 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Tyser <ptyser@xes-inc.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] x86, lpc, Allow only one load of lpc_ich
+Message-ID: <20140903123606.GG28985@lee--X1>
+References: <1409695097-5831-1-git-send-email-prarit@redhat.com>
+ <20140903074315.GB28985@lee--X1>
+ <5406E9B0.101@redhat.com>
+ <20140903113535.GE28985@lee--X1>
+ <540701B5.3020409@redhat.com>
+ <20140903121941.GF28985@lee--X1>
+ <54070842.2000700@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54070842.2000700@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-03 at 10:29 +0300, Dmitry Kasatkin wrote: 
-> Integrity subsystem got lots of options and takes more than half
-> of security menu.
+> > If only one is useful, why have the second one in the first place?
 > 
-> This patch moves integrity subsystem options to a separate menu.
-> It does not affect existing configuration. Re-configuration is
-> not needed.
+> That's just it -- it shouldn't have been exposed (again, according to Intel).
+
+I didn't mean at an OS level, I mean what's the point of having two on
+the h/w.  I guess only Intel may know.
+
+> > If the devices are present and we can see them, why not have 2?  Some
+> > users might find a use for them.
 > 
-> Changes in v2:
-> - previous patch moved integrity out of the 'security' menu.
->   This version keeps integrity as a security option (Mimi).
+> No one will.
+
+Okay, I guess I have my hackers head on here.  Perhaps this guy
+shouldn't probe.  It just seems weird to have a device that we know
+about and have register access to, but we're specifying "no playing".
+
+> > In the WARNING you submitted only sysfs was having a hard time.
+> > Perhaps the real fix would be to allow the Watchdog and GPIO driver to
+> > change their name when registering, so they can each have their own
+> > sysfs entries.
 > 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> ---
->  security/integrity/Kconfig     | 14 ++++++++++++--
->  security/integrity/evm/Kconfig |  9 +--------
->  security/integrity/ima/Kconfig |  3 +--
->  3 files changed, 14 insertions(+), 12 deletions(-)
+> /me scratches head.
 > 
-> diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-> index f79d853..a734a83 100644
-> --- a/security/integrity/Kconfig
-> +++ b/security/integrity/Kconfig
-> @@ -1,7 +1,13 @@
->  #
->  config INTEGRITY
-> -	def_bool y
-> -	depends on IMA || EVM
-> +	bool "Integrity subsystem support"
-> +	depends on SECURITY
-> +	default y
-> +
-> +if INTEGRITY
-> +
-> +menu "Options"
-> +
+> How does that help having multiple devices which shouldn't be exposed?
 
-Instead of moving everything to a separate menu, I would leave the
-ability to enable/disable IMA and EVM on the security page, but move
-their options to separate pages.  So unless someone wants to change the
-default options, they're hidden.
+The fact that they shouldn't be exposed should be neither here nor
+there.  I'm thinking that they are exposed, so why suffocate them.
+Besides, what happens when there is a use-case for two of these
+devices?
 
-There are Kconfig examples for enabling the option in the parent
-directory and clicking on the option brings up a separate menu (eg. NET,
-WIRELESS).
+How are these guys being registered anyway?  Does PCI detect and
+register them automatically?
 
->  config INTEGRITY_SIGNATURE
->  	boolean "Digital signature verification using multiple keyrings"
-> @@ -46,3 +52,7 @@ config INTEGRITY_AUDIT
-> 
->  source security/integrity/ima/Kconfig
->  source security/integrity/evm/Kconfig
-> +
-> +endmenu
-> +
-> +endif   # if INTEGRITY
-> diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
-> index d606f3d..df20a2f 100644
-> --- a/security/integrity/evm/Kconfig
-> +++ b/security/integrity/evm/Kconfig
-> @@ -1,6 +1,6 @@
->  config EVM
->  	boolean "EVM support"
-> -	depends on SECURITY
-> +	depends on INTEGRITY
-
-By adding the "if INTEGRITY",  the "depends on INTEGRITY" is redundant.
-Please remove the depends here and in the other places.
-
-Mimi
-
->  	select KEYS
->  	select ENCRYPTED_KEYS
->  	select CRYPTO_HMAC
-> @@ -12,10 +12,6 @@ config EVM
-> 
->  	  If you are unsure how to answer this question, answer N.
-> 
-> -if EVM
-> -
-> -menu "EVM options"
-> -
->  config EVM_ATTR_FSUUID
->  	bool "FSUUID (version 2)"
->  	default y
-> @@ -47,6 +43,3 @@ config EVM_EXTRA_SMACK_XATTRS
->  	  additional info to the calculation, requires existing EVM
->  	  labeled file systems to be relabeled.
-> 
-> -endmenu
-> -
-> -endif
-> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-> index 08758fb..2477d1e 100644
-> --- a/security/integrity/ima/Kconfig
-> +++ b/security/integrity/ima/Kconfig
-> @@ -2,8 +2,7 @@
->  #
->  config IMA
->  	bool "Integrity Measurement Architecture(IMA)"
-> -	depends on SECURITY
-> -	select INTEGRITY
-> +	depends on INTEGRITY
->  	select SECURITYFS
->  	select CRYPTO
->  	select CRYPTO_HMAC
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
