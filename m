@@ -1,116 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaICGJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:09:32 -0400
-Received: from mail.interact-automation.nl ([193.141.16.74]:39807 "EHLO
-	smtp.interact.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896AbaICGJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:09:31 -0400
-Message-ID: <5406B098.6020500@interact.nl>
-Date: Wed, 03 Sep 2014 08:09:28 +0200
-From: Erik van Luijk <evanluijk@interact.nl>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1755256AbaICGVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:21:47 -0400
+Received: from mga14.intel.com ([192.55.52.115]:50311 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083AbaICGVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 02:21:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,455,1406617200"; 
+   d="scan'208";a="585473761"
+Message-ID: <5406B365.5040604@linux.intel.com>
+Date: Wed, 03 Sep 2014 09:21:25 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: Re: [PATCH] ARM: at91/dt: at91sam9m10g45ek add rtc node
-References: <1409655132-17735-1-git-send-email-evanluijk@interact.nl> <20140902183356.7bcfdf84@bbrezillon>
-In-Reply-To: <20140902183356.7bcfdf84@bbrezillon>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Jason Wang <jasowang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Ingo Molnar jacob.e.keller@intel.com" <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>	 <1408683665.5648.69.camel@marge.simpson.net>	 <20140822073653.GA7372@gmail.com> <53F70887.8030602@redhat.com> <1408716976.5604.18.camel@edumazet-glaptop2.roam.corp.google.com> <53FB3715.7070009@linux.intel.com> <53FC3466.8000304@redhat.com> <5404186E.4090409@linux.intel.com> <54053AF8.6070907@redhat.com> <54055D9F.7000108@linux.intel.com> <54056459.4060100@redhat.com>
+In-Reply-To: <54056459.4060100@redhat.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/09/2014 09:31, Jason Wang wrote:
+> On 09/02/2014 02:03 PM, Eliezer Tamir wrote:
+>> On 02/09/2014 06:35, Jason Wang wrote:
+>>> Not sure whether this method will scale considering thousands of sockets
+>>> and processes.
+>> There may be millions of sockets, but in most cases only a handful of
+>> device queues per CPU to busy poll on. I have tested the epoll rfc
+>> code with hundreds of thousands of sockets and one or two device
+>> queues and is scales pretty well.
+>>
+>> The part I don't like in that code is the cumbersome mechanism I used
+>> to track the socket -> queue relationship. I think that if I had more
+>> time to work on it, I would instead look into extending the epoll
+>> interface so that libevent can tell the kernel what it wants, instead
+>> of having the busypoll code try and learn it.
+> 
+> I'd like to have a look at this rfc. Could you please give me a pointer?
+> I've done a quick search on kernel mailing list but didn't find it.
 
-Hi Boris, Nicolas,
+https://lkml.org/lkml/2013/8/21/192
 
-Boris BREZILLON schreef op 2-9-2014 om 18:33:
-> Hi Erik,
- >
- > On Tue,  2 Sep 2014 12:52:12 +0200
- > Erik van Luijk <evanluijk@interact.nl> wrote:
- >
- >> Signed-off-by: Erik van Luijk <evanluijk@interact.nl>
- >
- > Except for the nitpicks you'll find below, you have my
- >
- > Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
- >
- >> ---
- >>  arch/arm/boot/dts/at91sam9g45.dtsi     | 7 +++++++
- >>  arch/arm/boot/dts/at91sam9m10g45ek.dts | 3 +++
- >>  2 files changed, 10 insertions(+)
- >>
- >> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi 
-b/arch/arm/boot/dts/at91sam9g45.dtsi
- >> index 932a669..bf62c18 100644
- >> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
- >> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
- >> @@ -1070,6 +1070,13 @@
- >>                  status = "disabled";
- >>              };
- >>
- >> +            rtc@fffffdb0 {
- >> +                compatible = "atmel,at91rm9200-rtc";
- >> +                reg = <0xfffffdb0 0x30>;
- >
- > The RTC registers goes from 0xfffffdb0 to 0xfffffdc0, which means the
- > size is 0x10 and not 0x30. This is not important here, because the
- > following region is marked as reserved, but we prefer to keep the DT
- > consistent with the datasheet.
-
-This is an inconsistency in the datasheet of the AT91SAM9G45 (and at 
-least also
-AT91SAM9G15, AT91SAM9G25, AT91SAM9G35 and AT91SAM9M10).
-In the memory map (fig. 5-1) there is room for 16 bytes.
-But in the 'Real-time Clock (RTC) User Interface' (table 15-1) there is 
-room for
-48 bytes (0x30) excluding the Reserved Registers (which don't belong to 
-the RTC
-on the AT91SAM9M10). Perhaps Nicolas can draw some attention to this at 
-Atmel.
-
->
- >> +                interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
- >> +                status = "disabled";
- >> +            };
- >> +
- >>              spi0: spi@fffa4000 {
- >>                  #address-cells = <1>;
- >>                  #size-cells = <0>;
- >> diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts 
-b/arch/arm/boot/dts/at91sam9m10g45ek.dts
- >> index 96ccc7d..2dd2347 100644
- >> --- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
- >> +++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
- >> @@ -70,6 +70,9 @@
- >>
- >>              watchdog@fffffd40 {
- >>                  status = "okay";
- >> +
- >> +            rtc@fffffdb0 {
- >> +                status = "okay";
- >
- > Try to keep SoC and board changes in distinct commits.
-
-Understood.
-
->
- >>              };
- >>
- >>              mmc0: mmc@fff80000 {
- >
- >
- > Best Regards,
- >
- > Boris
- >
-
-Regards,
-
-Erik
+Cheers,
+Eliezer
