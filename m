@@ -1,135 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaICBlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 21:41:24 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:29537 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752751AbaICBlX (ORCPT
+	id S1755431AbaICBnC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 21:43:02 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:17589 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaICBm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 21:41:23 -0400
-X-IronPort-AV: E=Sophos;i="5.04,453,1406563200"; 
-   d="scan'208";a="35427497"
-Message-ID: <54067206.7050303@cn.fujitsu.com>
-Date: Wed, 3 Sep 2014 09:42:30 +0800
-From: tangchen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: <mtosatti@redhat.com>, <nadav.amit@gmail.com>, <jan.kiszka@web.de>,
-        <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH v4 4/6] kvm, mem-hotplug: Reload L1' apic access page
- on migration in vcpu_enter_guest().
-References: <1409134661-27916-1-git-send-email-tangchen@cn.fujitsu.com> <1409134661-27916-5-git-send-email-tangchen@cn.fujitsu.com> <20140902160005.GA26540@minantech.com>
-In-Reply-To: <20140902160005.GA26540@minantech.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Sep 2014 21:42:59 -0400
+X-AuditID: cbfee68f-f797f6d000001173-3b-5406721c8cca
+Message-id: <5406721C.9030906@samsung.com>
+Date: Wed, 03 Sep 2014 10:42:52 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Andrzej Hajda <a.hajda@samsung.com>, Inki Dae <inki.dae@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH v3 16/17] drm/exynos/ipp: remove file argument from node
+ related functions
+References: <1409216861-12452-17-git-send-email-a.hajda@samsung.com>
+ <1409662506-30270-1-git-send-email-a.hajda@samsung.com>
+In-reply-to: <1409662506-30270-1-git-send-email-a.hajda@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsWyRsSkQFe2iC3EYG+gxa1151gtrnx9z2Yx
+	6f4EFosX9y6yWJxtesNucXnXHDaLGef3MVmsPXKX3WLG5JdsDpwe97uPM3n0bVnF6PF5k1wA
+	cxSXTUpqTmZZapG+XQJXxuwb31kLJkpW9Oy+wNbAuEGki5GTQ0LARKJlzRFmCFtM4sK99Wxd
+	jFwcQgJLGSXm/znNCFP0+NEjMFtIYBGjxIfvPhBFrxglFu1dwwSS4BXQkljc1ccCYrMIqEos
+	/7MFbCqbgJ7EnW3HwWpEBUIk3hxvZ4eoF5T4MfkeWL2IgIfE/Dd7wOqZBc4wSXxdrwtiCwsk
+	SBx/85UdYnGdxLJ/s8FqOAVcJNY/XgcU5wCq15O4f1ELolVeYvOat8wgt0kInGKXaL5wmg3i
+	HgGJb5MPsYDUSwjISmw6APWwpMTBFTdYJjCKzUJy0SyEqbOQTF3AyLyKUTS1ILmgOCm9yFiv
+	ODG3uDQvXS85P3cTIzDiTv971r+D8e4B60OMAhyMSjy8CwLYQoRYE8uKK3MPMZoCHTGRWUo0
+	OR8Y13kl8YbGZkYWpiamxkbmlmZK4rwLpX4GCwmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamCc
+	a9nzMszlbcntOWY7YkM/6SZNLzZUKctiP+N8NHDyl20eK0KXrIpTFJm0Y9uW4+c7Lh/deuL3
+	HalOy7/GL1/wKX2Y98aWy5VtpuJPV/MNSs/3GMakdUw9KR13O3FhleSfpKkhCW2h1w+e3HHA
+	+Uf2toDlLLsvz+d4ZVh29CHfo7AEzlW+T37yKrEUZyQaajEXFScCAOTfllKzAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jAV2ZIrYQg+23TS1urTvHanHl63s2
+	i0n3J7BYvLh3kcXibNMbdovLu+awWcw4v4/JYu2Ru+wWMya/ZHPg9LjffZzJo2/LKkaPz5vk
+	ApijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4Du
+	UFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmzL7xnbVgomRFz+4LbA2M
+	G0S6GDk5JARMJB4/esQIYYtJXLi3ng3EFhJYxCjx4btPFyMXkP2KUWLR3jVMIAleAS2JxV19
+	LCA2i4CqxPI/W5hBbDYBPYk7246D1YgKhEi8Od7ODlEvKPFj8j2wehEBD4n5b/aA1TMLnGGS
+	+LpeF8QWFkiQOP7mKzvE4jqJZf9mg9VwCrhIrH+8DijOAVSvJ3H/ohZEq7zE5jVvmScwCsxC
+	smEWQtUsJFULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH9DOpHYwrGywOMQpwMCrx
+	8C4IYAsRYk0sK67MPcQowcGsJMLrmwgU4k1JrKxKLcqPLyrNSS0+xGgK9P9EZinR5Hxgsskr
+	iTc0NjEzsjQyN7QwMjZXEuc90GodKCSQnliSmp2aWpBaBNPHxMEp1cC4foG1WlTD0wUHRbXY
+	DmtuDUw7ddSYQ2uy42SV1S02mXt5NKbw/+bdJVd5sI/dWp/vjg5PnJPjGb1ENe/dj6MW7/p0
+	aGrlyWUfZhxOCzZviU85uO3Gak622GLFaDfNJAvWG0IRk5RF07v+WeRbaX//aLHab/LJSQvT
+	HD8H5yYdqfXs+6dxYYESS3FGoqEWc1FxIgDk+kMK/gIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gleb,
+On 09/02/2014 09:55 PM, Andrzej Hajda wrote:
+> Since file pointer is preserved in c_node passing it
+> as argument in node functions is redundant.
+> 
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> ---
+> v3:
+> - file check moved to next patch
+> ---
+>  drivers/gpu/drm/exynos/exynos_drm_ipp.c | 12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
+> 
 
-On 09/03/2014 12:00 AM, Gleb Natapov wrote:
-> ......
-> +static void vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
-> +{
-> +	/*
-> +	 * apic access page could be migrated. When the page is being migrated,
-> +	 * GUP will wait till the migrate entry is replaced with the new pte
-> +	 * entry pointing to the new page.
-> +	 */
-> +	vcpu->kvm->arch.apic_access_page = gfn_to_page(vcpu->kvm,
-> +				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
-> +	kvm_x86_ops->set_apic_access_page_addr(vcpu->kvm,
-> +				page_to_phys(vcpu->kvm->arch.apic_access_page));
-> I am a little bit worried that here all vcpus write to vcpu->kvm->arch.apic_access_page
-> without any locking. It is probably benign since pointer write is atomic on x86. Paolo?
->
-> Do we even need apic_access_page? Why not call
->   gfn_to_page(APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT)
->   put_page()
-> on rare occasions we need to know its address?
+About both patch 16 and 17
 
-Isn't it a necessary item defined in hardware spec ?
-
-I didn't read intel spec deeply, but according to the code, the page's 
-address is
-written into vmcs. And it made me think that we cannnot remove it.
+Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
 
 Thanks.
 
->
->> +}
->> +
->>   /*
->>    * Returns 1 to let __vcpu_run() continue the guest execution loop without
->>    * exiting to the userspace.  Otherwise, the value will be returned to the
->> @@ -6049,6 +6062,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->>   			kvm_deliver_pmi(vcpu);
->>   		if (kvm_check_request(KVM_REQ_SCAN_IOAPIC, vcpu))
->>   			vcpu_scan_ioapic(vcpu);
->> +		if (kvm_check_request(KVM_REQ_APIC_PAGE_RELOAD, vcpu))
->> +			vcpu_reload_apic_access_page(vcpu);
->>   	}
->>   
->>   	if (kvm_check_request(KVM_REQ_EVENT, vcpu) || req_int_win) {
->> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
->> index a4c33b3..8be076a 100644
->> --- a/include/linux/kvm_host.h
->> +++ b/include/linux/kvm_host.h
->> @@ -136,6 +136,7 @@ static inline bool is_error_page(struct page *page)
->>   #define KVM_REQ_GLOBAL_CLOCK_UPDATE 22
->>   #define KVM_REQ_ENABLE_IBS        23
->>   #define KVM_REQ_DISABLE_IBS       24
->> +#define KVM_REQ_APIC_PAGE_RELOAD  25
->>   
->>   #define KVM_USERSPACE_IRQ_SOURCE_ID		0
->>   #define KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID	1
->> @@ -579,6 +580,7 @@ void kvm_flush_remote_tlbs(struct kvm *kvm);
->>   void kvm_reload_remote_mmus(struct kvm *kvm);
->>   void kvm_make_mclock_inprogress_request(struct kvm *kvm);
->>   void kvm_make_scan_ioapic_request(struct kvm *kvm);
->> +void kvm_reload_apic_access_page(struct kvm *kvm);
->>   
->>   long kvm_arch_dev_ioctl(struct file *filp,
->>   			unsigned int ioctl, unsigned long arg);
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index 33712fb..d8280de 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -210,6 +210,11 @@ void kvm_make_scan_ioapic_request(struct kvm *kvm)
->>   	make_all_cpus_request(kvm, KVM_REQ_SCAN_IOAPIC);
->>   }
->>   
->> +void kvm_reload_apic_access_page(struct kvm *kvm)
->> +{
->> +	make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
->> +}
->> +
->>   int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
->>   {
->>   	struct page *page;
->> @@ -294,6 +299,13 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
->>   	if (need_tlb_flush)
->>   		kvm_flush_remote_tlbs(kvm);
->>   
->> +	/*
->> +	 * The physical address of apic access page is stroed in VMCS.
->> +	 * So need to update it when it becomes invalid.
->> +	 */
->> +	if (address == gfn_to_hva(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT))
->> +		kvm_reload_apic_access_page(kvm);
->> +
->>   	spin_unlock(&kvm->mmu_lock);
->>   	srcu_read_unlock(&kvm->srcu, idx);
->>   }
->> -- 
->> 1.8.3.1
->>
-> --
-> 			Gleb.
-> .
->
+> diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+> index 05f0f4e..9e9714a 100644
+> --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+> +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+> @@ -529,7 +529,6 @@ static int ipp_put_mem_node(struct drm_device *drm_dev,
+>  
+>  static struct drm_exynos_ipp_mem_node
+>  		*ipp_get_mem_node(struct drm_device *drm_dev,
+> -		struct drm_file *file,
+>  		struct drm_exynos_ipp_cmd_node *c_node,
+>  		struct drm_exynos_ipp_queue_buf *qbuf)
+>  {
+> @@ -560,7 +559,7 @@ static struct drm_exynos_ipp_mem_node
+>  			dma_addr_t *addr;
+>  
+>  			addr = exynos_drm_gem_get_dma_addr(drm_dev,
+> -					qbuf->handle[i], file);
+> +					qbuf->handle[i], c_node->filp);
+>  			if (IS_ERR(addr)) {
+>  				DRM_ERROR("failed to get addr.\n");
+>  				ipp_put_mem_node(drm_dev, c_node, m_node);
+> @@ -606,7 +605,6 @@ static void ipp_free_event(struct drm_pending_event *event)
+>  }
+>  
+>  static int ipp_get_event(struct drm_device *drm_dev,
+> -		struct drm_file *file,
+>  		struct drm_exynos_ipp_cmd_node *c_node,
+>  		struct drm_exynos_ipp_queue_buf *qbuf)
+>  {
+> @@ -618,7 +616,7 @@ static int ipp_get_event(struct drm_device *drm_dev,
+>  	e = kzalloc(sizeof(*e), GFP_KERNEL);
+>  	if (!e) {
+>  		spin_lock_irqsave(&drm_dev->event_lock, flags);
+> -		file->event_space += sizeof(e->event);
+> +		c_node->filp->event_space += sizeof(e->event);
+>  		spin_unlock_irqrestore(&drm_dev->event_lock, flags);
+>  		return -ENOMEM;
+>  	}
+> @@ -630,7 +628,7 @@ static int ipp_get_event(struct drm_device *drm_dev,
+>  	e->event.prop_id = qbuf->prop_id;
+>  	e->event.buf_id[EXYNOS_DRM_OPS_DST] = qbuf->buf_id;
+>  	e->base.event = &e->event.base;
+> -	e->base.file_priv = file;
+> +	e->base.file_priv = c_node->filp;
+>  	e->base.destroy = ipp_free_event;
+>  	mutex_lock(&c_node->event_lock);
+>  	list_add_tail(&e->base.link, &c_node->event_list);
+> @@ -908,7 +906,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
+>  	switch (qbuf->buf_type) {
+>  	case IPP_BUF_ENQUEUE:
+>  		/* get memory node */
+> -		m_node = ipp_get_mem_node(drm_dev, file, c_node, qbuf);
+> +		m_node = ipp_get_mem_node(drm_dev, c_node, qbuf);
+>  		if (IS_ERR(m_node)) {
+>  			DRM_ERROR("failed to get m_node.\n");
+>  			return PTR_ERR(m_node);
+> @@ -921,7 +919,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
+>  		 */
+>  		if (qbuf->ops_id == EXYNOS_DRM_OPS_DST) {
+>  			/* get event for destination buffer */
+> -			ret = ipp_get_event(drm_dev, file, c_node, qbuf);
+> +			ret = ipp_get_event(drm_dev, c_node, qbuf);
+>  			if (ret) {
+>  				DRM_ERROR("failed to get event.\n");
+>  				goto err_clean_node;
+> 
 
