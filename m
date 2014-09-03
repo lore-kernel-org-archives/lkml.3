@@ -1,212 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147AbaICJLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:11:51 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:55552 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896AbaICJLs (ORCPT
+	id S1755853AbaICJSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:18:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:52780 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581AbaICJSO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:11:48 -0400
-Message-ID: <5406DB43.1030506@linux.vnet.ibm.com>
-Date: Wed, 03 Sep 2014 14:41:31 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 3 Sep 2014 05:18:14 -0400
+Message-ID: <5406DCE6.7@arm.com>
+Date: Wed, 03 Sep 2014 10:18:30 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v5 08/12] sched: move cfs task on a CPU with higher capacity
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org> <54020F00.2030807@linux.vnet.ibm.com> <CAKfTPtBq89SX=7=bXu2za7oXi1Lid_5ara-WputrtE8kCqcZcw@mail.gmail.com>
-In-Reply-To: <CAKfTPtBq89SX=7=bXu2za7oXi1Lid_5ara-WputrtE8kCqcZcw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090309-6688-0000-0000-0000047968B8
+To: Luca Abeni <luca.abeni@unitn.it>, Henrik Austad <henrik@austad.us>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "raistlin@linux.it" <raistlin@linux.it>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] Documentation/scheduler/sched-deadline.txt: improve
+ and clarify AC bits
+References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com> <1409220029-9002-4-git-send-email-juri.lelli@arm.com> <20140902214538.GC22581@sisyphus.home.austad.us> <5406BA02.20806@unitn.it>
+In-Reply-To: <5406BA02.20806@unitn.it>
+X-OriginalArrivalTime: 03 Sep 2014 09:18:10.0361 (UTC) FILETIME=[FAF70A90:01CFC757]
+X-MC-Unique: 114090310181115701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 02:15 PM, Vincent Guittot wrote:
-> On 30 August 2014 19:50, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->> Hi Vincent,
->>> index 18db43e..60ae1ce 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -6049,6 +6049,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->>>                       return true;
->>>       }
->>>
->>> +     /*
->>> +      * The group capacity is reduced probably because of activity from other
->>> +      * sched class or interrupts which use part of the available capacity
->>> +      */
->>> +     if ((sg->sgc->capacity_orig * 100) > (sgs->group_capacity *
->>> +                             env->sd->imbalance_pct))
->>
->> Wouldn't the check on avg_load let us know if we are packing more tasks
->> in this group than its capacity ? Isn't that the metric we are more
->> interested in?
+Hi,
+
+On 03/09/14 07:49, Luca Abeni wrote:
+> Hi,
 > 
-> With  this patch, we don't want to pack but we prefer to spread the
-> task on another CPU than the one which handles the interruption if
-> latter uses a significant part of the CPU capacity.
+> On 09/02/2014 11:45 PM, Henrik Austad wrote:
+> [...]
+>>> + On multiprocessor systems with global EDF scheduling (non partitioned
+>>> + systems), a sufficient test for schedulability can not be based on the
+>>> + utilisations (it can be shown that task sets with utilisations slightly
+>>> + larger than 1 can miss deadlines regardless of the number of CPUs M).
+>>> + However, as previously stated, enforcing that the total utilisation is smaller
+>>> + than M is enough to guarantee that non real-time tasks are not starved and
+>>> + that the tardiness of real-time tasks has an upper bound.
+>>
+>> I'd _really_ appreciate a link to a paper where all of this is presented
+>> and proved!
+> Well, my original plan was to add the bibliography in the next round of patches...
+> Is this ok?
 > 
+> [...]
+>>> + As already stated in Section 3, a necessary condition to be respected to
+>>> + correctly schedule a set of real-time tasks is that the total utilisation
+>>> + is smaller than M. When talking about -deadline tasks, this requires to
+>>> + impose that the sum of the ratio between runtime and period for all tasks
+>>> + is smaller than M.
 >>
->>> +             return true;
->>> +
->>>       return false;
->>>  }
->>>
->>> @@ -6534,13 +6542,23 @@ static int need_active_balance(struct lb_env *env)
->>>       struct sched_domain *sd = env->sd;
->>>
->>>       if (env->idle == CPU_NEWLY_IDLE) {
->>> +             int src_cpu = env->src_cpu;
->>>
->>>               /*
->>>                * ASYM_PACKING needs to force migrate tasks from busy but
->>>                * higher numbered CPUs in order to pack all tasks in the
->>>                * lowest numbered CPUs.
->>>                */
->>> -             if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
->>> +             if ((sd->flags & SD_ASYM_PACKING) && src_cpu > env->dst_cpu)
->>> +                     return 1;
->>> +
->>> +             /*
->>> +              * If the CPUs share their cache and the src_cpu's capacity is
->>> +              * reduced because of other sched_class or IRQs, we trig an
->>> +              * active balance to move the task
->>> +              */
->>> +             if ((capacity_orig_of(src_cpu) * 100) > (capacity_of(src_cpu) *
->>> +                             sd->imbalance_pct))
->>>                       return 1;
->>>       }
->>>
->>> @@ -6643,6 +6661,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->>>
->>>       schedstat_add(sd, lb_imbalance[idle], env.imbalance);
->>>
->>> +     env.src_cpu = busiest->cpu;
->>> +
->>>       ld_moved = 0;
->>>       if (busiest->nr_running > 1) {
->>>               /*
->>> @@ -6652,7 +6672,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->>>                * correctly treated as an imbalance.
->>>                */
->>>               env.flags |= LBF_ALL_PINNED;
->>> -             env.src_cpu   = busiest->cpu;
->>>               env.src_rq    = busiest;
->>>               env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
->>>
->>> @@ -7359,10 +7378,12 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
->>>
->>>  /*
->>>   * Current heuristic for kicking the idle load balancer in the presence
->>> - * of an idle cpu is the system.
->>> + * of an idle cpu in the system.
->>>   *   - This rq has more than one task.
->>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
->>> - *     busy cpu's exceeding the group's capacity.
->>> + *   - This rq has at least one CFS task and the capacity of the CPU is
->>> + *     significantly reduced because of RT tasks or IRQs.
->>> + *   - At parent of LLC scheduler domain level, this cpu's scheduler group has
->>> + *     multiple busy cpu.
->>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->>>   *     domain span are idle.
->>>   */
->>> @@ -7372,9 +7393,10 @@ static inline int nohz_kick_needed(struct rq *rq)
->>>       struct sched_domain *sd;
->>>       struct sched_group_capacity *sgc;
->>>       int nr_busy, cpu = rq->cpu;
->>> +     bool kick = false;
->>>
->>>       if (unlikely(rq->idle_balance))
->>> -             return 0;
->>> +             return false;
->>>
->>>         /*
->>>       * We may be recently in ticked or tickless idle mode. At the first
->>> @@ -7388,38 +7410,45 @@ static inline int nohz_kick_needed(struct rq *rq)
->>>        * balancing.
->>>        */
->>>       if (likely(!atomic_read(&nohz.nr_cpus)))
->>> -             return 0;
->>> +             return false;
->>>
->>>       if (time_before(now, nohz.next_balance))
->>> -             return 0;
->>> +             return false;
->>>
->>>       if (rq->nr_running >= 2)
->>
->> Will this check ^^ not catch those cases which this patch is targeting?
+>> "This requires to impose that .." uhm, what? Drop 'to impose'.
+> Ok. I'll send an updated patch to Juri in few days
 > 
-> This patch is not about how many tasks are running but if the capacity
-> of the CPU is reduced because of side activity like interruptions
-> which are only visible in the capacity value (with IRQ_TIME_ACCOUNTING
-> config) but not in nr_running.
-> Even if the capacity is reduced because of RT tasks, nothing ensures
-> that the RT task will be running when the tick fires
 > 
-> Regards,
-> Vincent
->>
->> Regards
->> Preeti U Murthy
->>
->>> -             goto need_kick;
->>> +             return true;
->>>
->>>       rcu_read_lock();
->>>       sd = rcu_dereference(per_cpu(sd_busy, cpu));
+>>> [...] Notice that the ratio runtime/period is equivalent to
+>>> + the utilisation of a "traditional" real-time task, and is also often
+>>> + referred to as "bandwidth".
+>>> + The interface used to control the CPU bandwidth that can be allocated
+>>> + to -deadline tasks is similar to the one already used for -rt
+>>>    tasks with real-time group scheduling (a.k.a. RT-throttling - see
+>>>    Documentation/scheduler/sched-rt-group.txt), and is based on readable/
+>>>    writable control files located in procfs (for system wide settings).
+>>> @@ -232,8 +285,16 @@ CONTENTS
+>>>    950000. With rt_period equal to 1000000, by default, it means that -deadline
+>>>    tasks can use at most 95%, multiplied by the number of CPUs that compose the
+>>>    root_domain, for each root_domain.
 >>> -
->>>       if (sd) {
->>>               sgc = sd->groups->sgc;
->>>               nr_busy = atomic_read(&sgc->nr_busy_cpus);
->>>
->>> -             if (nr_busy > 1)
->>> -                     goto need_kick_unlock;
->>> +             if (nr_busy > 1) {
->>> +                     kick = true;
->>> +                     goto unlock;
->>> +             }
->>> +
->>>       }
->>>
->>> -     sd = rcu_dereference(per_cpu(sd_asym, cpu));
->>> +     sd = rcu_dereference(rq->sd);
->>> +     if (sd) {
->>> +             if ((rq->cfs.h_nr_running >= 1) &&
->>> +                             ((rq->cpu_capacity * sd->imbalance_pct) <
->>> +                             (rq->cpu_capacity_orig * 100))) {
+>>> - A -deadline task cannot fork.
+>>> + This means that non -deadline tasks will receive at least 5% of the CPU time,
+>>> + and that -deadline tasks will receive their runtime with a guaranteed
+>>> + worst-case delay respect to the "deadline" parameter. If "deadline" = "period"
+>>> + and the cpuset mechanism is used to implement partitioned scheduling (see
+>>> + Section 5), then this simple setting of the bandwidth management is able to
+>>> + deterministically guarantee that -deadline tasks will receive their runtime
+>>> + in a period.
+>>
+>> The whole 950000 / 1000000, is at least 50 *consecutive* ms given to non
+>> rt/dl tasks every second, or is this more finegrained now?
+>>
+>> If the 50ms can be given in a single go, then I don't think you can
+>> guarantee that deadline-tasks will receive their runtime in a period - a
+>> period can be <50ms, no?
+> Uhmm... Maybe there is something I am missing in how the SCHED_DEADLINE admission
+> control is implemented, but I do not know about any "50 consecutive ms to non dl
+> tasks" rule. I agree that if there is such a rule then deadline tasks are screwed.
+> Juri?
+> 
+> 
 
-Ok I understand your explanation above. But I was wondering if you would
-need to add this check around rq->cfs.h_nr_running >= 1 in the above two
-cases as well.
+In SCHED_DEADLINE we use those values only at admission control time (when
+the user calls sched_setattr()). Then, at runtime, we use tasks' parameters
+to perform scheduling. So there is no consecutive 50ms time for !SCHED_DEADLINE
+tasks.
 
-I have actually raised this concern over whether we should be using
-rq->nr_running or cfs_rq->nr_running while we do load balancing in reply
-to your patch3. While all our load measurements are about the cfs_rq
-load, we use rq->nr_running, which may include tasks from other sched
-classes as well. We divide them to get average load per task during load
-balancing which is wrong, isn't it? Similarly during nohz_kick_needed(),
-we trigger load balancing based on rq->nr_running again.
+We could probably clarify this aspect in the previous patch with something
+like this:
 
-In this patch too, even if you know that the cpu is being dominated by
-tasks that do not belong to cfs class, you would be triggering a futile
-load balance if there are no fair tasks to move.
+[snip]
++ The interface used to control the fraction of CPU bandwidth that can be
++ allocated to -deadline tasks is similar to the one already used for -rt
++ tasks with real-time group scheduling (a.k.a. RT-throttling - see
++ Documentation/scheduler/sched-rt-group.txt), and is based on readable/
++ writable control files located in procfs (for system wide settings).
++ Notice that per-group settings (controlled through cgroupfs) are still not
++ defined for -deadline tasks, because more discussion is needed in order to
++ figure out how we want to manage SCHED_DEADLINE bandwidth at the task group
++ level.
++
++ A main difference between deadline bandwidth management and RT-throttling
+  is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
+- and thus we don't need an higher level throttling mechanism to enforce the
+- desired bandwidth.
++ and thus we don't need a higher level throttling mechanism to enforce the
+---->
++ desired bandwidth. In other words, this means that interface parameters are
++ only used at admission control time (i.e., when the user calls
++ sched_setattr()). Scheduling is then performed considering actual tasks'
++ parameters, so that CPU bandwidth is allocated to SCHED_DEADLINE tasks
++ respecting their needs in terms of granularity. Therefore, using this simple
+<---
++ interface we can put a cap on total utilization of -deadline tasks (i.e.,
++ \Sum (runtime_i / period_i) < some_desired_value).
+[snip]
 
-Regards
-Preeti U Murthy
+What you think?
+
+Thanks,
+
+- Juri
+
+>>> + Finally, notice that in order not to jeopardize this admission control a
+>>> + -deadline task cannot fork.
+>>
+>> s/this/the
+>> (there aren't any other admission controls in the kernel)
+> Ok; this will go in my updated patch
+> 
+> 
+> 
+> 			Thanks,
+> 				Luca
+> 
 
