@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaICLcs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:32:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36254 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833AbaICLcr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:32:47 -0400
-Date: Wed, 3 Sep 2014 13:32:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Ben Segall <bsegall@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] sched: Reduce contention in update_cfs_rq_blocked_load
-Message-ID: <20140903113242.GO4783@worktop.ger.corp.intel.com>
-References: <1409094682.29189.23.camel@j-VirtualBox>
- <CAPM31RJcYakzwo9mByoadw6DGcg5SfYDOdX79NPo08hBP5PGjA@mail.gmail.com>
- <1409160893.31379.24.camel@j-VirtualBox>
- <1409182369.27939.9.camel@schen9-desk2.jf.intel.com>
- <1409255196.4945.7.camel@j-VirtualBox>
- <20140901125505.GK27892@worktop.ger.corp.intel.com>
- <1409643684.19197.15.camel@j-VirtualBox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409643684.19197.15.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S932239AbaICLc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:32:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32065 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756200AbaICLcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 07:32:54 -0400
+From: Laszlo Ersek <lersek@redhat.com>
+To: mingo@kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, x86@kernel.org,
+        linux-ia64@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com,
+        lersek@redhat.com
+Subject: [PATCH v2 1/5] efi: add macro for EFI_MEMORY_UCE memory attribute
+Date: Wed,  3 Sep 2014 13:32:19 +0200
+Message-Id: <1409743943-16934-2-git-send-email-lersek@redhat.com>
+In-Reply-To: <1409743943-16934-1-git-send-email-lersek@redhat.com>
+References: <1409743943-16934-1-git-send-email-lersek@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 12:41:24AM -0700, Jason Low wrote:
-> On Mon, 2014-09-01 at 14:55 +0200, Peter Zijlstra wrote:
-> > But yes, unbounded errors here are a problem, sure relaxing the updates
-> > makes things go fast, they also make things go skew.
-> 
-> Okay. In that case, would you like to take our original patch which
-> avoids unnecessary updates?
+Add the following macro from the UEFI spec, for completeness:
 
-This seems a safe patch; yes I'll queue it while we think of smarter
-things :-)
+  EFI_MEMORY_UCE  Memory cacheability attribute: The memory region
+                  supports being configured as not cacheable, exported,
+                  and supports the "fetch and add" semaphore mechanism.
+
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+---
+ include/linux/efi.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 45cb4ff..b4b1d8d 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -92,6 +92,7 @@ typedef	struct {
+ #define EFI_MEMORY_WC		((u64)0x0000000000000002ULL)	/* write-coalescing */
+ #define EFI_MEMORY_WT		((u64)0x0000000000000004ULL)	/* write-through */
+ #define EFI_MEMORY_WB		((u64)0x0000000000000008ULL)	/* write-back */
++#define EFI_MEMORY_UCE		((u64)0x0000000000000010ULL)	/* uncached, exported */
+ #define EFI_MEMORY_WP		((u64)0x0000000000001000ULL)	/* write-protect */
+ #define EFI_MEMORY_RP		((u64)0x0000000000002000ULL)	/* read-protect */
+ #define EFI_MEMORY_XP		((u64)0x0000000000004000ULL)	/* execute-protect */
+-- 
+1.8.3.1
+
+
