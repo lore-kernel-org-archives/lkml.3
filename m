@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289AbaICWRI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:17:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
+	id S933181AbaICWRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:17:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757245AbaICWQI (ORCPT
+	with ESMTP id S1756720AbaICWQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:08 -0400
+	Wed, 3 Sep 2014 18:16:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hawkes <hawkes@google.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.16 003/125] HID: logitech: fix bounds checking on LED report size
-Date: Wed,  3 Sep 2014 15:06:00 -0700
-Message-Id: <20140903220623.753016873@linuxfoundation.org>
+        Semen Protsenko <semen.protsenko@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.16 032/125] efi/arm64: Store Runtime Services revision
+Date: Wed,  3 Sep 2014 15:06:29 -0700
+Message-Id: <20140903220624.624226734@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,38 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Semen Protsenko <semen.protsenko@linaro.org>
 
-commit 51217e69697fba92a06e07e16f55c9a52d8e8945 upstream.
+commit 6a7519e81321343165f89abb8b616df186d3e57a upstream.
 
-The check on report size for REPORT_TYPE_LEDS in logi_dj_ll_raw_request()
-is wrong; the current check doesn't make any sense -- the report allocated
-by HID core in hid_hw_raw_request() can be much larger than
-DJREPORT_SHORT_LENGTH, and currently logi_dj_ll_raw_request() doesn't
-handle this properly at all.
+"efi" global data structure contains "runtime_version" field which must
+be assigned in order to use it later in Runtime Services virtual calls
+(virt_efi_* functions).
 
-Fix the check by actually trimming down the report size properly if it is
-too large.
+Before this patch "runtime_version" was unassigned (0), so each
+Runtime Service virtual call that checks revision would fail.
 
-Reported-by: Ben Hawkes <hawkes@google.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Semen Protsenko <semen.protsenko@linaro.org>
+Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/kernel/efi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -557,7 +557,7 @@ static int logi_dj_ll_raw_request(struct
- 	if (!out_buf)
- 		return -ENOMEM;
+--- a/arch/arm64/kernel/efi.c
++++ b/arch/arm64/kernel/efi.c
+@@ -464,6 +464,8 @@ static int __init arm64_enter_virtual_mo
  
--	if (count < DJREPORT_SHORT_LENGTH - 2)
-+	if (count > DJREPORT_SHORT_LENGTH - 2)
- 		count = DJREPORT_SHORT_LENGTH - 2;
+ 	set_bit(EFI_RUNTIME_SERVICES, &efi.flags);
  
- 	out_buf[0] = REPORT_ID_DJ_SHORT;
++	efi.runtime_version = efi.systab->hdr.revision;
++
+ 	return 0;
+ }
+ early_initcall(arm64_enter_virtual_mode);
 
 
