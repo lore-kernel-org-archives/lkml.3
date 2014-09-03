@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949AbaICRJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 13:09:59 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39087 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644AbaICRJ5 convert rfc822-to-8bit (ORCPT
+	id S932966AbaICRMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 13:12:05 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25920 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932644AbaICRMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 13:09:57 -0400
-Message-ID: <54074B62.2000207@arm.com>
-Date: Wed, 03 Sep 2014 18:09:54 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 3 Sep 2014 13:12:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Vv8xcLao/1/28ZbIBM6rSSpvMs6Kt5CU=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 1CF255D7175
+Date: Wed, 3 Sep 2014 13:11:41 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Leigh Brown <leigh@solinno.co.uk>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Raphael Rigo <ml-arm@syscall.eu>, Arnaud Ebalard <arno@natisbad.org>,
+        Simon Boulay <simon.boulay@vitec.com>
+Subject: Re: [PATCH V2 0/4] clk: mvebu: Improve clock drift
+Message-ID: <20140903171141.GO30467@titan.lakedaemon.net>
+References: <1409645719-20003-1-git-send-email-gregory.clement@free-electrons.com>
+ <902cee907da9c532822dcf5db722b47c@doppler.thel33t.co.uk>
+ <20140903170339.11368.17168@quantum>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v4 01/11] cpumask: factor out show_cpumap into separate
- helper function
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-2-git-send-email-sudeep.holla@arm.com> <CAErSpo6wOjh6PitcPudyZBVKy7vyEafNSzxgf5jSxFq+vrQHQQ@mail.gmail.com>
-In-Reply-To: <CAErSpo6wOjh6PitcPudyZBVKy7vyEafNSzxgf5jSxFq+vrQHQQ@mail.gmail.com>
-X-OriginalArrivalTime: 03 Sep 2014 17:09:54.0452 (UTC) FILETIME=[E1849540:01CFC799]
-X-MC-Unique: 114090318095404001
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903170339.11368.17168@quantum>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On Wed, Sep 03, 2014 at 10:03:39AM -0700, Mike Turquette wrote:
+> Quoting Leigh Brown (2014-09-03 07:40:56)
+> > On 2014-09-02 09:15, Gregory CLEMENT wrote:
+> > > Few users reported a timer drift on the Armada 370 based board such as
+> > > the mirabox or the Netgear ReadyNAS 102. This is the second series
+> > > with few improvements after the review of the 1st version.
+> > > 
+> > > The reason is that when the SSCG (Spread Spectrum Clock Generator) is
+> > > enabled, it shifts the frequency of the clock. The percentage is no
+> > > more than 1% but when the clock is used for a timer it leads to a
+> > > clock drift.
+> > > 
+> > > This series allows to correct the affected clock when the SSCG is
+> > > enabled. This drift can happen on all the mvebu SoC on the cpu clock
+> > > block (ie cpu, ddr and l2 cache). Currently the only notable effect is
+> > > for the Armada 370 because this SoC use the l2cache clock as source
+> > > for the timer. That's why even if the series allow any of the mvebu
+> > > SoC to benefit to this correction, Armada 370 is the only user of it.
+> > > 
+> > > The first 2 patches should go through the clk subsystem, whereas the
+> > > third one should go to the arm-soc through the mvebu tree.
+> > > 
+> > > The last one is just to fix a typo I found while I was reading the clk
+> > > code.
+> > 
+> > This is working superbly for me on my Mirabox, and ntpd is now 
+> > completely stable.
+> > 
+> > Tested-by: Leigh Brown <leigh@solinno.co.uk>
+> > 
+> 
+> Clock patches look good to me.
 
-On 03/09/14 18:05, Bjorn Helgaas wrote:
-> On Wed, Sep 3, 2014 at 11:00 AM, Sudeep Holla <sudeep.holla@arm.com> wrote:
->> From: Sudeep Holla <sudeep.holla@arm.com>
->>
->> Many sysfs *_show function use cpu{list,mask}_scnprintf to copy cpumap
->> to the buffer aligned to PAGE_SIZE, append '\n' and '\0' to return null
->> terminated buffer with newline.
->>
->> This patch creates a new helper function cpumap_copy_to_buf in
->> cpumask.h and consolidates most of them using this new helper.
->>
->> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
->> Suggested-by: Stephen Boyd <sboyd@codeaurora.org>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
->> Cc: Bjorn Helgaas <bhelgaas@google.com>
->> Cc: x86@kernel.org
->> Cc: linux-acpi@vger.kernel.org
->> Cc: linux-pci@vger.kernel.org
->
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com> (drivers/pci part)
->
+Ok, I'll pull it together into a clock branch and so forth.
 
-Thanks.
+thx,
 
-> I assume you'll merge this via a non-PCI tree.
->
-
-Yes, since it's widespread change, I prefer it to go through Greg's tree.
-
-Regards,
-Sudeep
-
+Jason.
