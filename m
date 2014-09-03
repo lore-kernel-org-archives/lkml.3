@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbaICIky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:40:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42504 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755456AbaICIkv (ORCPT
+	id S1755910AbaICIl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:41:29 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47901 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaICIlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:40:51 -0400
-Date: Wed, 3 Sep 2014 11:40:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, sparmaintainer@unisys.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: unisys: uislib: uisqueue.c: rewrite of
- do_locked_client_insert
-Message-ID: <20140903084038.GE6600@mwanda>
-References: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Wed, 3 Sep 2014 04:41:25 -0400
+Message-ID: <5406D42A.8090209@linux.vnet.ibm.com>
+Date: Wed, 03 Sep 2014 14:11:14 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Subject: Re: [PATCH v5 04/12] sched: Allow all archs to set the capacity_orig
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org> <540204DC.5090204@linux.vnet.ibm.com> <CAKfTPtCNPYOi9OY37nbG9o71n4i5mxxvrRow0SgL_9pVK1LpMA@mail.gmail.com>
+In-Reply-To: <CAKfTPtCNPYOi9OY37nbG9o71n4i5mxxvrRow0SgL_9pVK1LpMA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090308-6688-0000-0000-000004794A65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 11:46:35PM +0530, Sudip Mukherjee wrote:
-> From: Sudip Mukherjee <sudip@vectorindia.org>
-
-I really would prefer if you just figured out your email settings so
-this isn't needed.  The From: header is mostly used for people
-forwarding patches from other people.  We have allowed people to use
-the From header like this if they can't get their corporate email
-configured properly but I try to discorage it.  If everyone starts using
->From headers like this then it becomes a pain to deal with.
-
+On 09/01/2014 01:35 PM, Vincent Guittot wrote:
+> On 30 August 2014 19:07, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>> Hi Vincent,
+>>
+>> On 08/26/2014 04:36 PM, Vincent Guittot wrote:
+>>> capacity_orig is only changed for system with a SMT sched_domain level in order
+>>
+>> I think I had asked this before, but why only capacity_orig? The
+>> capacity of a group is also being updated the same way. This patch fixes
+>> the capacity of a group to reflect the capacity of the heterogeneous
+>> CPUs in it, this capacity being both the full capacity of the group:
+>> capacity_orig and the capacity available for the fair tasks. So I feel
+>> in the subject as well as the changelog it would suffice to say 'capacity'.
 > 
-> removed unused variables
-> fixed sparse warning of context imbalance in 'do_locked_client_insert'
->                          different lock contexts for basic block
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
-> 
+> IIRC, we discussed that point on a former version. The patch changes
+> only the behavior of capacity_orig but the behavior of capacity stays
+> unchanged as all archs can already set the capacity whereas the
+> capacity_orig was configurable only if the SD_SHARE_CPUCAPACITY was
+> set in the sched_domain. This is no more the case with this patch
+> which creates arch_scale_cpu_capacity for setting capacity_orig.
 
-This patch is much better and more interesting, but I still want some
-more changes.
+Yes, sorry I overlooked that.
 
-> v1 of the patch of the patch just fixed the sparse warning.
-> On suggestion of Dan Carpenter v2 is the total rewrite of the function.
-> Two of the function arguments (interruptHandle,channelId) are also not used. Wanted to remove them as well , 
-> but then thought maybe the original author have planned for some use of those variables.
+Reviewed-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
 
-In the kernel we don't put code in until we are ready to use it.  Don't
-worry about future changes.  But on the other hand, don't remove the
-parameters in this patch because that is doing too many changes in one
-patch.  It would have to be done in a follow on patch if you decide to
-do it.
+Regards
+Preeti U Murthy
 
-> -	if (locked) {
-> -		spin_unlock_irqrestore((spinlock_t *) lock, flags);
-> -		locked = 0;
-> +		goto unlock;
-> +	visor_signalqueue_empty(queueinfo->chan, whichqueue);
-
-Just remove this function.  But mention it in the changelog in case
-there are side effects.
-
-> +	/*visor_signal_insert() only return 0 or 1 */
-
-Don't put obvious comments like this.  A normal reader will assume that
-this function is boolean based on how it is used.
-
-> +	if (visor_signal_insert(queueinfo->chan, whichqueue, pSignal) == 1) {
-
-Don't put the == 1.  In terms of English, 1 really is intended as
-"success" and not the number one.  Also don't test for == true or
-== false.
-
-	if (foo) {
-	if (foo == true) {
-
-These two statement *mean* the same thing in terms of English, but the
-first one is simpler and less wordy.
-
-regards,
-dan carpenter
