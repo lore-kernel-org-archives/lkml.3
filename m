@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933875AbaICWSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:18:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46072 "EHLO
+	id S933975AbaICWTC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:19:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933813AbaICWSp (ORCPT
+	with ESMTP id S933872AbaICWSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:45 -0400
+	Wed, 3 Sep 2014 18:18:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.16 072/125] powerpc/eeh: Wrong place to call pci_get_slot()
-Date: Wed,  3 Sep 2014 15:07:09 -0700
-Message-Id: <20140903220625.838465391@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.16 084/125] Btrfs: Fix memory corruption by ulist_add_merge() on 32bit arch
+Date: Wed,  3 Sep 2014 15:07:21 -0700
+Message-Id: <20140903220626.190404790@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,113 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9e5c6e5a3be0b2e17ff61b9b74adef4a2c9e6934 upstream.
+commit 4eb1f66dce6c4dc28dd90a7ffbe6b2b1cb08aa4e upstream.
 
-pci_get_slot() is called with hold of PCI bus semaphore and it's not
-safe to be called in interrupt context. However, we possibly checks
-EEH error and calls the function in interrupt context. To avoid using
-pci_get_slot(), we turn into device tree for fetching location code.
-Otherwise, we might run into WARN_ON() as following messages indicate:
-
- WARNING: at drivers/pci/search.c:223
- CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc3+ #72
- task: c000000001367af0 ti: c000000001444000 task.ti: c000000001444000
- NIP: c000000000497b70 LR: c000000000037530 CTR: 000000003003d114
- REGS: c000000001446fa0 TRAP: 0700   Not tainted  (3.16.0-rc3+)
- MSR: 9000000000029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 48002422  XER: 20000000
- CFAR: c00000000003752c SOFTE: 0
-   :
- NIP [c000000000497b70] .pci_get_slot+0x40/0x110
- LR [c000000000037530] .eeh_pe_loc_get+0x150/0x190
+We've got bug reports that btrfs crashes when quota is enabled on
+32bit kernel, typically with the Oops like below:
+ BUG: unable to handle kernel NULL pointer dereference at 00000004
+ IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
+ *pde = 00000000
+ Oops: 0000 [#1] SMP
+ CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
+ Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
+ task: f1478130 ti: f147c000 task.ti: f147c000
+ EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
+ EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
+ EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
+ ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
+  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+ CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
+ Stack:
+  00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
+  00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
+  00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
  Call Trace:
-   .of_get_property+0x30/0x60 (unreliable)
-   .eeh_pe_loc_get+0x150/0x190
-   .eeh_dev_check_failure+0x1b4/0x550
-   .eeh_check_failure+0x90/0xf0
-   .lpfc_sli_check_eratt+0x504/0x7c0 [lpfc]
-   .lpfc_poll_eratt+0x64/0x100 [lpfc]
-   .call_timer_fn+0x64/0x190
-   .run_timer_softirq+0x2cc/0x3e0
+  [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
+  [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
+  [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
+  [<c025e38b>] process_one_work+0x11b/0x390
+  [<c025eea1>] worker_thread+0x101/0x340
+  [<c026432b>] kthread+0x9b/0xb0
+  [<c0712a71>] ret_from_kernel_thread+0x21/0x30
+  [<c0264290>] kthread_create_on_node+0x110/0x110
 
-Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-Acked-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This indicates a NULL corruption in prefs_delayed list.  The further
+investigation and bisection pointed that the call of ulist_add_merge()
+results in the corruption.
+
+ulist_add_merge() takes u64 as aux and writes a 64bit value into
+old_aux.  The callers of this function in backref.c, however, pass a
+pointer of a pointer to old_aux.  That is, the function overwrites
+64bit value on 32bit pointer.  This caused a NULL in the adjacent
+variable, in this case, prefs_delayed.
+
+Here is a quick attempt to band-aid over this: a new function,
+ulist_add_merge_ptr() is introduced to pass/store properly a pointer
+value instead of u64.  There are still ugly void ** cast remaining
+in the callers because void ** cannot be taken implicitly.  But, it's
+safer than explicit cast to u64, anyway.
+
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=887046
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/eeh_pe.c |   46 ++++++++++++-------------------------------
- 1 file changed, 13 insertions(+), 33 deletions(-)
+ fs/btrfs/backref.c |   11 +++++------
+ fs/btrfs/ulist.h   |   15 +++++++++++++++
+ 2 files changed, 20 insertions(+), 6 deletions(-)
 
---- a/arch/powerpc/kernel/eeh_pe.c
-+++ b/arch/powerpc/kernel/eeh_pe.c
-@@ -802,53 +802,33 @@ void eeh_pe_restore_bars(struct eeh_pe *
-  */
- const char *eeh_pe_loc_get(struct eeh_pe *pe)
- {
--	struct pci_controller *hose;
- 	struct pci_bus *bus = eeh_pe_bus_get(pe);
--	struct pci_dev *pdev;
--	struct device_node *dn;
--	const char *loc;
-+	struct device_node *dn = pci_bus_to_OF_node(bus);
-+	const char *loc = NULL;
+--- a/fs/btrfs/backref.c
++++ b/fs/btrfs/backref.c
+@@ -276,9 +276,8 @@ static int add_all_parents(struct btrfs_
+ 			}
+ 			if (ret > 0)
+ 				goto next;
+-			ret = ulist_add_merge(parents, eb->start,
+-					      (uintptr_t)eie,
+-					      (u64 *)&old, GFP_NOFS);
++			ret = ulist_add_merge_ptr(parents, eb->start,
++						  eie, (void **)&old, GFP_NOFS);
+ 			if (ret < 0)
+ 				break;
+ 			if (!ret && extent_item_pos) {
+@@ -1008,9 +1007,9 @@ again:
+ 					goto out;
+ 				ref->inode_list = eie;
+ 			}
+-			ret = ulist_add_merge(refs, ref->parent,
+-					      (uintptr_t)ref->inode_list,
+-					      (u64 *)&eie, GFP_NOFS);
++			ret = ulist_add_merge_ptr(refs, ref->parent,
++						  ref->inode_list,
++						  (void **)&eie, GFP_NOFS);
+ 			if (ret < 0)
+ 				goto out;
+ 			if (!ret && extent_item_pos) {
+--- a/fs/btrfs/ulist.h
++++ b/fs/btrfs/ulist.h
+@@ -57,6 +57,21 @@ void ulist_free(struct ulist *ulist);
+ int ulist_add(struct ulist *ulist, u64 val, u64 aux, gfp_t gfp_mask);
+ int ulist_add_merge(struct ulist *ulist, u64 val, u64 aux,
+ 		    u64 *old_aux, gfp_t gfp_mask);
++
++/* just like ulist_add_merge() but take a pointer for the aux data */
++static inline int ulist_add_merge_ptr(struct ulist *ulist, u64 val, void *aux,
++				      void **old_aux, gfp_t gfp_mask)
++{
++#if BITS_PER_LONG == 32
++	u64 old64 = (uintptr_t)*old_aux;
++	int ret = ulist_add_merge(ulist, val, (uintptr_t)aux, &old64, gfp_mask);
++	*old_aux = (void *)((uintptr_t)old64);
++	return ret;
++#else
++	return ulist_add_merge(ulist, val, (u64)aux, (u64 *)old_aux, gfp_mask);
++#endif
++}
++
+ struct ulist_node *ulist_next(struct ulist *ulist,
+ 			      struct ulist_iterator *uiter);
  
--	if (!bus)
--		return "N/A";
-+	if (!dn)
-+		goto out;
- 
- 	/* PHB PE or root PE ? */
- 	if (pci_is_root_bus(bus)) {
--		hose = pci_bus_to_host(bus);
--		loc = of_get_property(hose->dn,
--				"ibm,loc-code", NULL);
--		if (loc)
--			return loc;
--		loc = of_get_property(hose->dn,
--				"ibm,io-base-loc-code", NULL);
-+		loc = of_get_property(dn, "ibm,loc-code", NULL);
-+		if (!loc)
-+			loc = of_get_property(dn, "ibm,io-base-loc-code", NULL);
- 		if (loc)
--			return loc;
-+			goto out;
- 
--		pdev = pci_get_slot(bus, 0x0);
--	} else {
--		pdev = bus->self;
--	}
--
--	if (!pdev) {
--		loc = "N/A";
--		goto out;
--	}
--
--	dn = pci_device_to_OF_node(pdev);
--	if (!dn) {
--		loc = "N/A";
--		goto out;
-+		/* Check the root port */
-+		dn = dn->child;
-+		if (!dn)
-+			goto out;
- 	}
- 
- 	loc = of_get_property(dn, "ibm,loc-code", NULL);
- 	if (!loc)
- 		loc = of_get_property(dn, "ibm,slot-location-code", NULL);
--	if (!loc)
--		loc = "N/A";
- 
- out:
--	if (pci_is_root_bus(bus) && pdev)
--		pci_dev_put(pdev);
--	return loc;
-+	return loc ? loc : "N/A";
- }
- 
- /**
 
 
