@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaICTiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:38:52 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:37520 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaICTiu (ORCPT
+	id S1755041AbaICTkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:40:51 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:64134 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaICTkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:38:50 -0400
+	Wed, 3 Sep 2014 15:40:49 -0400
 From: Vincent Palatin <vpalatin@chromium.org>
 To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
@@ -15,111 +15,116 @@ Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
         Zach Kuznia <zork@chromium.org>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Vincent Palatin <vpalatin@chromium.org>
-Subject: [PATCH v3 1/2] [media] V4L: Add camera pan/tilt speed controls
-Date: Wed,  3 Sep 2014 12:38:39 -0700
-Message-Id: <1409773119-32023-1-git-send-email-vpalatin@chromium.org>
+Subject: [PATCH v3 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
+Date: Wed,  3 Sep 2014 12:40:38 -0700
+Message-Id: <1409773238-32177-1-git-send-email-vpalatin@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <CAP_ceTznJfoE2CNzU+=Ysnx_pNbmUeggOPCEzysvUP9YnSiGgg@mail.gmail.com>
-References: <CAP_ceTznJfoE2CNzU+=Ysnx_pNbmUeggOPCEzysvUP9YnSiGgg@mail.gmail.com>
+In-Reply-To: <CACHYQ-qST1gyyKCZp+tN9FbR3_=2q_+=PbVwfu3KgfTpkdDFCA@mail.gmail.com>
+References: <CACHYQ-qST1gyyKCZp+tN9FbR3_=2q_+=PbVwfu3KgfTpkdDFCA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
-camera by setting its rotation speed around its axis.
+Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
+CT_PANTILT_RELATIVE_CONTROL terminal control request.
+
+Tested by plugging a Logitech ConferenceCam C3000e USB camera
+and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
+Verified that it can pan and tilt at the same time in both directions.
 
 Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+
+Change-Id: I7b70b228e5c0126683f5f0be34ffd2807f5783dc
 ---
-Changes from v1:
-- update the documentation wording according to Pawel suggestion.
-Changes from v2:
-- bump Linux kernel version for the API change.
+Changes from v1/v2:
+- rebased
 
- Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
- Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
- include/uapi/linux/v4l2-controls.h           |  2 ++
- 4 files changed, 35 insertions(+)
+ drivers/media/usb/uvc/uvc_ctrl.c | 58 +++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 55 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
-index eee6f0f..7aa7c5d 100644
---- a/Documentation/DocBook/media/v4l/compat.xml
-+++ b/Documentation/DocBook/media/v4l/compat.xml
-@@ -2545,6 +2545,16 @@ fields changed from _s32 to _u32.
-       </orderedlist>
-     </section>
+diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
+index 0eb82106..d703cb0 100644
+--- a/drivers/media/usb/uvc/uvc_ctrl.c
++++ b/drivers/media/usb/uvc/uvc_ctrl.c
+@@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
+ 		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
+ 		.index		= 12,
+ 		.size		= 4,
+-		.flags		= UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
+-				| UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
+-				| UVC_CTRL_FLAG_GET_DEF
++		.flags		= UVC_CTRL_FLAG_SET_CUR
++				| UVC_CTRL_FLAG_GET_RANGE
+ 				| UVC_CTRL_FLAG_AUTO_UPDATE,
+ 	},
+ 	{
+@@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct uvc_control_mapping *mapping,
+ 	data[2] = min((int)abs(value), 0xff);
+ }
  
-+    <section>
-+      <title>V4L2 in Linux 3.18</title>
-+      <orderedlist>
-+	<listitem>
-+	  <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
-+ <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
-+	</listitem>
-+      </orderedlist>
-+    </section>
++static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
++	__u8 query, const __u8 *data)
++{
++	int first = mapping->offset / 8;
++	__s8 rel = (__s8)data[first];
 +
-     <section id="other">
-       <title>Relation of V4L2 to other Linux multimedia APIs</title>
- 
-diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-index 9f5ffd8..124f287 100644
---- a/Documentation/DocBook/media/v4l/controls.xml
-+++ b/Documentation/DocBook/media/v4l/controls.xml
-@@ -3965,6 +3965,27 @@ by exposure, white balance or focus controls.</entry>
- 	  </row>
- 	  <row><entry></entry></row>
- 
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
-+	    <entry>integer</entry>
-+	  </row><row><entry spanname="descr">This control turns the
-+camera horizontally at the specific speed. The unit is undefined. A
-+positive value moves the camera to the right (clockwise when viewed
-+from above), a negative value to the left. A value of zero stops the motion
-+if one is in progress and has no effect otherwise.</entry>
-+	  </row>
-+	  <row><entry></entry></row>
++	switch (query) {
++	case UVC_GET_CUR:
++		return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
++						 : -data[first+1]);
++	case UVC_GET_MIN:
++		return -data[first+1];
++	case UVC_GET_MAX:
++	case UVC_GET_RES:
++	case UVC_GET_DEF:
++	default:
++		return data[first+1];
++	}
++}
 +
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_TILT_SPEED</constant>&nbsp;</entry>
-+	    <entry>integer</entry>
-+	  </row><row><entry spanname="descr">This control turns the
-+camera vertically at the specified speed. The unit is undefined. A
-+positive value moves the camera up, a negative value down. A value of zero
-+stops the motion if one is in progress and has no effect otherwise.</entry>
-+	  </row>
-+	  <row><entry></entry></row>
++static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
++	__s32 value, __u8 *data)
++{
++	int first = mapping->offset / 8;
 +
- 	</tbody>
-       </tgroup>
-     </table>
-diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-index f030d6a..4d050f9 100644
---- a/drivers/media/v4l2-core/v4l2-ctrls.c
-+++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-@@ -796,6 +796,8 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_AUTO_FOCUS_STOP:		return "Auto Focus, Stop";
- 	case V4L2_CID_AUTO_FOCUS_STATUS:	return "Auto Focus, Status";
- 	case V4L2_CID_AUTO_FOCUS_RANGE:		return "Auto Focus, Range";
-+	case V4L2_CID_PAN_SPEED:		return "Pan, Speed";
-+	case V4L2_CID_TILT_SPEED:		return "Tilt, Speed";
- 
- 	/* FM Radio Modulator controls */
- 	/* Keep the order of the 'case's the same as in v4l2-controls.h! */
-diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-index e946e43..4de238b 100644
---- a/include/uapi/linux/v4l2-controls.h
-+++ b/include/uapi/linux/v4l2-controls.h
-@@ -746,6 +746,8 @@ enum v4l2_auto_focus_range {
- 	V4L2_AUTO_FOCUS_RANGE_INFINITY		= 3,
- };
- 
-+#define V4L2_CID_PAN_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+32)
-+#define V4L2_CID_TILT_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+33)
- 
- /* FM Modulator class control IDs */
- 
++	data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
++	data[first+1] = min_t(int, abs(value), 0xff);
++}
++
+ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+ 	{
+ 		.id		= V4L2_CID_BRIGHTNESS,
+@@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+ 		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
+ 	},
+ 	{
++		.id		= V4L2_CID_PAN_SPEED,
++		.name		= "Pan (Speed)",
++		.entity		= UVC_GUID_UVC_CAMERA,
++		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
++		.size		= 16,
++		.offset		= 0,
++		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
++		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
++		.get		= uvc_ctrl_get_rel_speed,
++		.set		= uvc_ctrl_set_rel_speed,
++	},
++	{
++		.id		= V4L2_CID_TILT_SPEED,
++		.name		= "Tilt (Speed)",
++		.entity		= UVC_GUID_UVC_CAMERA,
++		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
++		.size		= 16,
++		.offset		= 16,
++		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
++		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
++		.get		= uvc_ctrl_get_rel_speed,
++		.set		= uvc_ctrl_set_rel_speed,
++	},
++	{
+ 		.id		= V4L2_CID_PRIVACY,
+ 		.name		= "Privacy",
+ 		.entity		= UVC_GUID_UVC_CAMERA,
 -- 
 2.1.0.rc2.206.gedb03e5
 
