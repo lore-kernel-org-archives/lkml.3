@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255AbaICWIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:08:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45489 "EHLO
+	id S933172AbaICXfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:35:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065AbaICWI3 (ORCPT
+	with ESMTP id S933150AbaICWIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:29 -0400
+	Wed, 3 Sep 2014 18:08:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Aleksei Besogonov <alex.besogonov@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 55/55] vm_is_stack: use for_each_thread() rather then buggy while_each_thread()
-Date: Wed,  3 Sep 2014 15:05:45 -0700
-Message-Id: <20140903220502.640557931@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.14 06/88] USB: OHCI: dont lose track of EDs when a controller dies
+Date: Wed,  3 Sep 2014 15:04:40 -0700
+Message-Id: <20140903220516.147098321@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
+In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
+References: <20140903220515.958924632@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,54 +24,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 4449a51a7c281602d3a385044ab928322a122a02 upstream.
+commit 977dcfdc60311e7aa571cabf6f39c36dde13339e upstream.
 
-Aleksei hit the soft lockup during reading /proc/PID/smaps.  David
-investigated the problem and suggested the right fix.
+This patch fixes a bug in ohci-hcd.  When an URB is unlinked, the
+corresponding Endpoint Descriptor is added to the ed_rm_list and taken
+off the hardware schedule.  Once the ED is no longer visible to the
+hardware, finish_unlinks() handles the URBs that were unlinked or have
+completed.  If any URBs remain attached to the ED, the ED is added
+back to the hardware schedule -- but only if the controller is
+running.
 
-while_each_thread() is racy and should die, this patch updates
-vm_is_stack().
+This fails when a controller dies.  A non-empty ED does not get added
+back to the hardware schedule and does not remain on the ed_rm_list;
+ohci-hcd loses track of it.  The remaining URBs cannot be unlinked,
+which causes the USB stack to hang.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Aleksei Besogonov <alex.besogonov@gmail.com>
-Tested-by: Aleksei Besogonov <alex.besogonov@gmail.com>
-Suggested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The patch changes finish_unlinks() so that non-empty EDs remain on
+the ed_rm_list if the controller isn't running.  This requires moving
+some of the existing code around, to avoid modifying the ED's hardware
+fields more than once.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/util.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/usb/host/ohci-q.c |   46 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 29 insertions(+), 17 deletions(-)
 
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -272,17 +272,14 @@ pid_t vm_is_stack(struct task_struct *ta
+--- a/drivers/usb/host/ohci-q.c
++++ b/drivers/usb/host/ohci-q.c
+@@ -311,8 +311,7 @@ static void periodic_unlink (struct ohci
+  *  - ED_OPER: when there's any request queued, the ED gets rescheduled
+  *    immediately.  HC should be working on them.
+  *
+- *  - ED_IDLE:  when there's no TD queue. there's no reason for the HC
+- *    to care about this ED; safe to disable the endpoint.
++ *  - ED_IDLE: when there's no TD queue or the HC isn't running.
+  *
+  * When finish_unlinks() runs later, after SOF interrupt, it will often
+  * complete one or more URB unlinks before making that state change.
+@@ -926,6 +925,10 @@ rescan_all:
+ 		int			completed, modified;
+ 		__hc32			*prev;
  
- 	if (in_group) {
- 		struct task_struct *t;
--		rcu_read_lock();
--		if (!pid_alive(task))
--			goto done;
- 
--		t = task;
--		do {
-+		rcu_read_lock();
-+		for_each_thread(task, t) {
- 			if (vm_is_stack_for_task(t, vma)) {
- 				ret = t->pid;
- 				goto done;
++		/* Is this ED already invisible to the hardware? */
++		if (ed->state == ED_IDLE)
++			goto ed_idle;
++
+ 		/* only take off EDs that the HC isn't using, accounting for
+ 		 * frame counter wraps and EDs with partially retired TDs
+ 		 */
+@@ -955,12 +958,20 @@ skip_ed:
  			}
--		} while_each_thread(task, t);
-+		}
- done:
- 		rcu_read_unlock();
- 	}
+ 		}
+ 
++		/* ED's now officially unlinked, hc doesn't see */
++		ed->state = ED_IDLE;
++		if (quirk_zfmicro(ohci) && ed->type == PIPE_INTERRUPT)
++			ohci->eds_scheduled--;
++		ed->hwHeadP &= ~cpu_to_hc32(ohci, ED_H);
++		ed->hwNextED = 0;
++		wmb();
++		ed->hwINFO &= ~cpu_to_hc32(ohci, ED_SKIP | ED_DEQUEUE);
++ed_idle:
++
+ 		/* reentrancy:  if we drop the schedule lock, someone might
+ 		 * have modified this list.  normally it's just prepending
+ 		 * entries (which we'd ignore), but paranoia won't hurt.
+ 		 */
+-		*last = ed->ed_next;
+-		ed->ed_next = NULL;
+ 		modified = 0;
+ 
+ 		/* unlink urbs as requested, but rescan the list after
+@@ -1018,19 +1029,20 @@ rescan_this:
+ 		if (completed && !list_empty (&ed->td_list))
+ 			goto rescan_this;
+ 
+-		/* ED's now officially unlinked, hc doesn't see */
+-		ed->state = ED_IDLE;
+-		if (quirk_zfmicro(ohci) && ed->type == PIPE_INTERRUPT)
+-			ohci->eds_scheduled--;
+-		ed->hwHeadP &= ~cpu_to_hc32(ohci, ED_H);
+-		ed->hwNextED = 0;
+-		wmb ();
+-		ed->hwINFO &= ~cpu_to_hc32 (ohci, ED_SKIP | ED_DEQUEUE);
+-
+-		/* but if there's work queued, reschedule */
+-		if (!list_empty (&ed->td_list)) {
+-			if (ohci->rh_state == OHCI_RH_RUNNING)
+-				ed_schedule (ohci, ed);
++		/*
++		 * If no TDs are queued, take ED off the ed_rm_list.
++		 * Otherwise, if the HC is running, reschedule.
++		 * If not, leave it on the list for further dequeues.
++		 */
++		if (list_empty(&ed->td_list)) {
++			*last = ed->ed_next;
++			ed->ed_next = NULL;
++		} else if (ohci->rh_state == OHCI_RH_RUNNING) {
++			*last = ed->ed_next;
++			ed->ed_next = NULL;
++			ed_schedule(ohci, ed);
++		} else {
++			last = &ed->ed_next;
+ 		}
+ 
+ 		if (modified)
 
 
