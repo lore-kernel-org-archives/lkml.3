@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814AbaICVXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:23:17 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:51849 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644AbaICVXJ (ORCPT
+	id S932746AbaICVXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:23:14 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:56897 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932635AbaICVXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:23:09 -0400
+	Wed, 3 Sep 2014 17:23:07 -0400
 From: Andrew Pinski <apinski@cavium.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         pinskia@gmail.com
 Cc: Andrew Pinski <apinski@cavium.com>
-Subject: [PATCH 14/24] ARM64:ILP32 use the standard start_thread for ILP32 so the processor state is not AARCH32
-Date: Wed,  3 Sep 2014 14:19:08 -0700
-Message-Id: <1409779158-30963-15-git-send-email-apinski@cavium.com>
+Subject: [PATCH 20/24] ARM64:ILP32: The native siginfo is used instead of the compat siginfo
+Date: Wed,  3 Sep 2014 14:19:14 -0700
+Message-Id: <1409779158-30963-21-git-send-email-apinski@cavium.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1409779158-30963-1-git-send-email-apinski@cavium.com>
 References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
@@ -21,36 +21,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we have both ILP32 and AARCH32 compiled in, we need use the non compat start
-thread for ILP32.
+Set COMPAT_USE_NATIVE_SIGINFO to be true for non AARCH32 tasks.
 
 Signed-off-by: Andrew Pinski <apinski@cavium.com>
 ---
- arch/arm64/include/asm/processor.h |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ arch/arm64/include/asm/compat.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm64/include/asm/processor.h b/arch/arm64/include/asm/processor.h
-index 286b1be..7bd9f32 100644
---- a/arch/arm64/include/asm/processor.h
-+++ b/arch/arm64/include/asm/processor.h
-@@ -104,6 +104,17 @@ static inline void start_thread(struct pt_regs *regs, unsigned long pc,
- static inline void compat_start_thread(struct pt_regs *regs, unsigned long pc,
- 				       unsigned long sp)
- {
-+#ifdef CONFIG_ARM64_ILP32
-+	/*
-+	 * ILP32 thread are started the same way as LP64 threads.
-+	 * Note we cannot use is_ilp32_compat_task here as that
-+	 * would introduce a header depency issue.
-+	 */
-+	if (!test_thread_flag(TIF_AARCH32)) {
-+		start_thread(regs, pc, sp);
-+		return;
-+	}
-+#endif
- 	start_thread_common(regs, pc);
- 	regs->pstate = COMPAT_PSR_MODE_USR;
- 	if (pc & 1)
+diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
+index 2f84d2c..87cb50d 100644
+--- a/arch/arm64/include/asm/compat.h
++++ b/arch/arm64/include/asm/compat.h
+@@ -211,6 +211,9 @@ typedef struct compat_siginfo {
+ 	} _sifields;
+ } compat_siginfo_t;
+ 
++/* ILP32 uses the native siginfo and not the compat struct */
++#define COMPAT_USE_NATIVE_SIGINFO	(!is_a32_compat_task())
++
+ #define COMPAT_OFF_T_MAX	0x7fffffff
+ #define COMPAT_LOFF_T_MAX	0x7fffffffffffffffL
+ 
 -- 
 1.7.2.5
 
