@@ -1,415 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaICOiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:38:20 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:37231 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402AbaICOiS (ORCPT
+	id S932781AbaICOi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:38:29 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48266 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932402AbaICOiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:38:18 -0400
-Date: Wed, 3 Sep 2014 09:38:14 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>, luca@coelho.fi,
-        kvalo@adurom.com
-Subject: Re: [RFC] firmware coredump: add new firmware coredump class
-Message-ID: <20140903143814.GA37365@ubuntu-hedt>
-Mail-Followup-To: Johannes Berg <johannes@sipsolutions.net>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Emmanuel Grumbach <emmanuel.grumbach@intel.com>, luca@coelho.fi,
-	kvalo@adurom.com
-References: <1409742945-3933-1-git-send-email-johannes@sipsolutions.net>
+	Wed, 3 Sep 2014 10:38:25 -0400
+Date: Wed, 3 Sep 2014 15:37:24 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: James Ban <james.ban.opensource@diasemi.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140903143724.GR29327@sirena.org.uk>
+References: <1409706930.12827.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ByALBa1F2BBmKLOT"
 Content-Disposition: inline
-In-Reply-To: <1409742945-3933-1-git-send-email-johannes@sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409706930.12827.1.camel@phoenix>
+X-Cookie: Simulated picture.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: da9211: Fix missing config.of_node setting
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 01:15:45PM +0200, Johannes Berg wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
-> 
-> Many devices run firmware, and as other software such firmware has
-> bugs. When it misbehaves, however, it is often much harder to debug
-> than software running on the host.
-> 
-> Introduce a "firmware coredump" mechanism to allow dumping internal
-> firmware state through a generalized mechanism. As all devices are
-> different and information needed can vary accordingly, this doesn't
-> prescribe a file format - it just provides mechanism to get data to
-> be able to capture it in a generalized way (e.g. in distributions.)
-> 
-> Note that generalized capturing of such data may result in privacy
-> issues, so users generally need to be involved. In order to allow
-> certain users/system integrators/... to disable the feature at all,
-> introduce a Kconfig option to override the drivers that would like
-> to have the feature.
-> 
-> For now, this provides two ways of dumping data:
->  1) with a vmalloc'ed area, that is then given to the fwcoredump
->     subsystem and freed after retrieval or timeout
->  2) with a generalized reader/free function method
-> 
-> We could/should add more options, e.g. a list of pages, since the
-> vmalloc area is very limited on some architectures.
 
-Overall I think this looks pretty sensible. The thing that worries me
-though is firmware which might crash repeatedly in a short period of
-time, resulting in a proliferation of coredumps and eating up all
-available RAM. How about a limit of one active coredump per device or
-something similar?
+--ByALBa1F2BBmKLOT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Seth
+On Wed, Sep 03, 2014 at 09:15:30AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-> ---
->  MAINTAINERS                |   7 ++
->  drivers/base/Kconfig       |  21 +++++
->  drivers/base/Makefile      |   1 +
->  drivers/base/fwcoredump.c  | 222 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/fwcoredump.h |  35 +++++++
->  5 files changed, 286 insertions(+)
->  create mode 100644 drivers/base/fwcoredump.c
->  create mode 100644 include/linux/fwcoredump.h
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 2f85f55c8fb8..394bda1cde52 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3729,6 +3729,13 @@ F:	Documentation/firmware_class/
->  F:	drivers/base/firmware*.c
->  F:	include/linux/firmware.h
->  
-> +FIRMWARE COREDUMP (fwcoredump)
-> +M:	Johannes Berg <johannes@sipsolutions.net>
-> +L:	linux-kernel@vger.kernel.org
-> +S:	Maintained
-> +F:	drivers/base/fwcoredump.c
-> +F:	include/linux/fwcoredump.h
-> +
->  FLASH ADAPTER DRIVER (IBM Flash Adapter 900GB Full Height PCI Flash Card)
->  M:	Joshua Morris <josh.h.morris@us.ibm.com>
->  M:	Philip Kelleher <pjk1939@linux.vnet.ibm.com>
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 4e7f0ff83ae7..31eabab20c8a 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -165,6 +165,27 @@ config FW_LOADER_USER_HELPER_FALLBACK
->  
->  	  If you are unsure about this, say N here.
->  
-> +config WANT_FW_COREDUMP
-> +	bool
-> +	help
-> +	  Drivers should "select" this option if they desire to use the
-> +	  firmware coredump mechanism.
-> +
-> +config DISABLE_FW_COREDUMP
-> +	bool "Disable firmware coredump" if EXPERT
-> +	help
-> +	  Disable the firmware coredump mechanism despite drivers wanting to
-> +	  use it; this allows for more sensitive systems or systems that
-> +	  don't want to ever access the information to not have the code,
-> +	  nor keep any data.
-> +
-> +	  If unsure, say N.
-> +
-> +config FW_COREDUMP
-> +	bool
-> +	default y if WANT_FW_COREDUMP
-> +	depends on !DISABLE_FW_COREDUMP
-> +
->  config DEBUG_DRIVER
->  	bool "Driver Core verbose debug messages"
->  	depends on DEBUG_KERNEL
-> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-> index 4aab26ec0292..2af1be519653 100644
-> --- a/drivers/base/Makefile
-> +++ b/drivers/base/Makefile
-> @@ -21,6 +21,7 @@ obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
->  obj-$(CONFIG_REGMAP)	+= regmap/
->  obj-$(CONFIG_SOC_BUS) += soc.o
->  obj-$(CONFIG_PINCTRL) += pinctrl.o
-> +obj-$(CONFIG_FW_COREDUMP) += fwcoredump.o
->  
->  ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
->  
-> diff --git a/drivers/base/fwcoredump.c b/drivers/base/fwcoredump.c
-> new file mode 100644
-> index 000000000000..f70bef0727a9
-> --- /dev/null
-> +++ b/drivers/base/fwcoredump.c
-> @@ -0,0 +1,222 @@
-> +/******************************************************************************
-> + *
-> + * This file is provided under the GPLv2 license.
-> + *
-> + * GPL LICENSE SUMMARY
-> + *
-> + * Copyright(c) 2014 Intel Mobile Communications GmbH
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of version 2 of the GNU General Public License as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + *
-> + * The full GNU General Public License is included in this distribution
-> + * in the file called COPYING.
-> + *
-> + * Contact Information:
-> + *  Intel Linux Wireless <ilw@linux.intel.com>
-> + * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-> + */
-> +#include <linux/module.h>
-> +#include <linux/device.h>
-> +#include <linux/fwcoredump.h>
-> +#include <linux/list.h>
-> +#include <linux/slab.h>
-> +#include <linux/fs.h>
-> +#include <linux/workqueue.h>
-> +
-> +MODULE_AUTHOR("Johannes Berg <johannes@sipsolutions.net>");
-> +MODULE_DESCRIPTION("Firmware Coredump support");
-> +MODULE_LICENSE("GPL");
-> +
-> +/* if data isn't read by userspace after 5 minutes delete it */
-> +#define FWC_TIMEOUT	(HZ * 60 * 5)
-> +
-> +struct fwc_entry {
-> +	struct device fwc_dev;
-> +	const void *data;
-> +	size_t datalen;
-> +	struct module *owner;
-> +	ssize_t (*read)(char *buffer, loff_t offset, size_t count,
-> +			const void *data, size_t datalen);
-> +	void (*free)(const void *data);
-> +	struct delayed_work del_wk;
-> +};
-> +
-> +static struct fwc_entry *dev_to_fwc(struct device *dev)
-> +{
-> +	return container_of(dev, struct fwc_entry, fwc_dev);
-> +}
-> +
-> +static void fwc_dev_release(struct device *dev)
-> +{
-> +	struct fwc_entry *fwc = dev_to_fwc(dev);
-> +
-> +	fwc->free(fwc->data);
-> +	kfree(fwc);
-> +}
-> +
-> +static void fwc_del(struct work_struct *wk)
-> +{
-> +	struct fwc_entry *fwc;
-> +
-> +	fwc = container_of(wk, struct fwc_entry, del_wk.work);
-> +
-> +	device_del(&fwc->fwc_dev);
-> +	put_device(&fwc->fwc_dev);
-> +}
-> +
-> +static ssize_t fwc_data_read(struct file *filp, struct kobject *kobj,
-> +			     struct bin_attribute *bin_attr,
-> +			     char *buffer, loff_t offset, size_t count)
-> +{
-> +	struct device *dev = kobj_to_dev(kobj);
-> +	struct fwc_entry *fwc = dev_to_fwc(dev);
-> +
-> +	return fwc->read(buffer, offset, count, fwc->data, fwc->datalen);
-> +}
-> +
-> +static ssize_t fwc_data_write(struct file *filp, struct kobject *kobj,
-> +			      struct bin_attribute *bin_attr,
-> +			      char *buffer, loff_t offset, size_t count)
-> +{
-> +	struct device *dev = kobj_to_dev(kobj);
-> +	struct fwc_entry *fwc = dev_to_fwc(dev);
-> +
-> +	schedule_delayed_work(&fwc->del_wk, 0);
-> +
-> +	return count;
-> +}
-> +
-> +static struct bin_attribute fwc_attr_data = {
-> +	.attr = { .name = "data", .mode = S_IRUSR | S_IWUSR, },
-> +	.size = 0,
-> +	.read = fwc_data_read,
-> +	.write = fwc_data_write,
-> +};
-> +
-> +static struct bin_attribute *fwc_dev_bin_attrs[] = {
-> +	&fwc_attr_data, NULL,
-> +};
-> +
-> +static const struct attribute_group fwc_dev_group = {
-> +	.bin_attrs = fwc_dev_bin_attrs,
-> +};
-> +
-> +static const struct attribute_group *fwc_dev_groups[] = {
-> +	&fwc_dev_group, NULL,
-> +};
-> +
-> +static struct class fwc_class = {
-> +	.name		= "fwcoredump",
-> +	.dev_release	= fwc_dev_release,
-> +	.dev_groups	= fwc_dev_groups,
-> +};
-> +
-> +static ssize_t fwc_readv(char *buffer, loff_t offset, size_t count,
-> +			 const void *data, size_t datalen)
-> +{
-> +	if (offset > datalen)
-> +		return -EINVAL;
-> +
-> +	if (offset + count > datalen)
-> +		count = datalen - offset;
-> +
-> +	if (count)
-> +		memcpy(buffer, ((u8 *)data) + offset, count);
-> +
-> +	return count;
-> +}
-> +
-> +/**
-> + * fw_coredumpv - create firmware coredump with vmalloc data
-> + * @dev: the struct device for the crashed device
-> + * @data: vmalloc data containing the firmware coredump
-> + * @datalen: length of the data
-> + * @gfp: allocation flags
-> + */
-> +void fw_coredumpv(struct device *dev, const void *data, size_t datalen,
-> +		  gfp_t gfp)
-> +{
-> +	fw_coredumpm(dev, NULL, data, datalen, gfp, fwc_readv, vfree);
-> +}
-> +EXPORT_SYMBOL(fw_coredumpv);
-> +
-> +/**
-> + * fw_coredumpm - create firmware coredump with read/free methods
-> + * @dev: the struct device for the crashed device
-> + * @data: data cookie for the @read/@free functions
-> + * @datalen: length of the data
-> + * @gfp: allocation flags
-> + * @read: function to read from the given buffer
-> + * @free: function to free the given buffer
-> + */
-> +void fw_coredumpm(struct device *dev, struct module *owner,
-> +		  const void *data, size_t datalen, gfp_t gfp,
-> +		  ssize_t (*read)(char *buffer, loff_t offset, size_t count,
-> +				  const void *data, size_t datalen),
-> +		  void (*free)(const void *data))
-> +{
-> +	static atomic_t fwc_count = ATOMIC_INIT(0);
-> +	struct fwc_entry *fwc;
-> +
-> +	if (!try_module_get(owner))
-> +		return;
-> +
-> +	fwc = kzalloc(sizeof(*fwc), gfp);
-> +	if (!fwc)
-> +		goto put_module;
-> +
-> +	fwc->owner = owner;
-> +	fwc->data = data;
-> +	fwc->datalen = datalen;
-> +	fwc->read = read;
-> +	fwc->free = free;
-> +
-> +	device_initialize(&fwc->fwc_dev);
-> +
-> +	dev_set_name(&fwc->fwc_dev, "fwc%d", atomic_inc_return(&fwc_count));
-> +	fwc->fwc_dev.class = &fwc_class;
-> +
-> +	if (device_add(&fwc->fwc_dev))
-> +		goto put_device;
-> +
-> +	if (sysfs_create_link(&fwc->fwc_dev.kobj, &dev->kobj, "failing_device"))
-> +		/* nothing - symlink will be missing but that's ok */;
-> +
-> +	INIT_DELAYED_WORK(&fwc->del_wk, fwc_del);
-> +	schedule_delayed_work(&fwc->del_wk, FWC_TIMEOUT);
-> +
-> +	return;
-> + put_device:
-> +	put_device(&fwc->fwc_dev);
-> + put_module:
-> +	module_put(owner);
-> +}
-> +EXPORT_SYMBOL(fw_coredumpm);
-> +
-> +static int __init fwcoredump_init(void)
-> +{
-> +	return class_register(&fwc_class);
-> +}
-> +module_init(fwcoredump_init);
-> +
-> +static int fwc_free(struct device *dev, void *data)
-> +{
-> +	struct fwc_entry *fwc = dev_to_fwc(dev);
-> +
-> +	flush_delayed_work(&fwc->del_wk);
-> +	return 0;
-> +}
-> +
-> +static void __exit fwcoredump_exit(void)
-> +{
-> +	class_for_each_device(&fwc_class, NULL, NULL, fwc_free);
-> +	class_unregister(&fwc_class);
-> +}
-> +module_exit(fwcoredump_exit);
-> diff --git a/include/linux/fwcoredump.h b/include/linux/fwcoredump.h
-> new file mode 100644
-> index 000000000000..168f2d6abfc0
-> --- /dev/null
-> +++ b/include/linux/fwcoredump.h
-> @@ -0,0 +1,35 @@
-> +#ifndef __FWCOREDUMP_H
-> +#define __FWCOREDUMP_H
-> +
-> +#include <linux/device.h>
-> +#include <linux/module.h>
-> +#include <linux/vmalloc.h>
-> +
-> +#ifdef CONFIG_FW_COREDUMP
-> +void fw_coredumpv(struct device *dev, const void *data, size_t datalen,
-> +		  gfp_t gfp);
-> +
-> +void fw_coredumpm(struct device *dev, struct module *owner,
-> +		  const void *data, size_t datalen, gfp_t gfp,
-> +		  ssize_t (*read)(char *buffer, loff_t offset, size_t count,
-> +				  const void *data, size_t datalen),
-> +		  void (*free)(const void *data));
-> +#else
-> +static inline void fw_coredumpv(struct device *dev, const void *data,
-> +				size_t datalen, gfp_t gfp)
-> +{
-> +	vfree(data);
-> +}
-> +
-> +static inline void
-> +fw_coredumpm(struct device *dev, struct module *owner,
-> +	     const void *data, size_t datalen, gfp_t gfp,
-> +	     ssize_t (*read)(char *buffer, loff_t offset, size_t count,
-> +			     const void *data, size_t datalen),
-> +	     void (*free)(const void *data))
-> +{
-> +	free(data);
-> +}
-> +#endif /* CONFIG_FW_COREDUMP */
-> +
-> +#endif /* __FWCOREDUMP_H */
-> -- 
-> 2.1.0
-> 
+Applied, thanks.
+
+--ByALBa1F2BBmKLOT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUByehAAoJELSic+t+oim99xgP/AwfRI8WrsB7IzY82QD+yirb
+xSa/GKtcacWTEP9f2/Tkl9aWwTVanzj9nQNOeafj2maXaLJx38G06Ege7DWVDpTZ
++7VF1+JHz4gKb2KtXeYWvj+6VoUnus7xlMjwCqMEAKbfp0X3loM0ZeeOU9jUDEDE
+51B7p+iYGkW1PkZOSRFBZ8OtQL8DyUlwX1DEMMWd3q46/lCecetMHAZi+/9XdoW5
+Nv++Q2qoVE+DQR9IVxlkzYHBXqgawi0/KRpJbEZkqXxTU6Cah7S4dluoSFnS+5vz
+2HEgSUT5ClknfOAExoimX4zmFDPl4Cz7KxV+qoIQt29ipQrbBiuBBH47wnPzg2CP
+mRVqZAoVH6ja9W3CNKT+MppaH5CQ2yyLDE67F0MU8nLolzSEgyAEhESgSnxKDE5A
+zVOa6cpmnwcJ0tqG0Y038c3JdsA1ELT1cLiSFph2niFHZeEPokKSxHwDmArmJADp
+3LEBw1BiTpBUOdOdxYlLWPeSezkGvv+1WaFEL8RmLf1O0sQsMM6aIhY5DPUcWt4b
+ecTDbKcMRM37anPGQCjOpdyfS7HXzujIcg0Emv9ixfFhYe+GzIL/a6d9NiCLgLuE
+0w6OtL5xk8Idn2hSf07jDaZkIU/08pVXKgsKnkpEIoMlcBY2z4fVKlHmt6An5po4
+/TNrpN4SFDgFth8fDKwJ
+=dlGf
+-----END PGP SIGNATURE-----
+
+--ByALBa1F2BBmKLOT--
