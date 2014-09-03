@@ -1,42 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969AbaICPvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:51:17 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:50608
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932678AbaICPvQ (ORCPT
+	id S932990AbaICPw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:52:57 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:63022 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425AbaICPww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:51:16 -0400
-Date: Wed, 3 Sep 2014 10:51:13 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
- this_cpu ops
-In-Reply-To: <20140903144349.GT5001@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1409031043540.24085@gentwo.org>
-References: <alpine.DEB.2.11.1409021513490.26284@gentwo.org> <20140902203743.GL5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021545370.32690@gentwo.org> <20140902211517.GO5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
- <20140903021152.GA14069@linux.vnet.ibm.com> <alpine.DEB.2.11.1409030846310.9372@gentwo.org> <20140903144349.GT5001@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 3 Sep 2014 11:52:52 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: linux-pm@vger.kernel.org
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        =?UTF-8?q?Terje=20Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [REPOST PATCH v4 0/2] PM QoS: Add support for memory bandwidth constraints
+Date: Wed,  3 Sep 2014 17:49:31 +0200
+Message-Id: <1409759373-22696-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Sep 2014, Paul E. McKenney wrote:
+Hi,
 
-> You would prefer that I instead allocated an NR_CPUS-sized array?
+this is just a rebase on top of latest linux-next. Follows the original blurb:
 
-Well, a shared data structure would be cleaner in general but there are
-certainly other approaches.
+Some device drivers need to sustain transfers to or from external memory at
+given fixed rates for a period of time. If we wait for the devfreq drivers to
+react to this load, the user is likely going to perceive glitches in the user
+experience.
 
-But lets focus on the dynticks_idle case we are discussing here rather
-than tackle the more difficult other atomics. What is checked in the loop
-over the remote cpus is the dynticks_idle value plus
-dynticks_idle_jiffies. So it seems that memory ordering is only used to
-ensure that the jiffies are seen correctly.
+Some common scenarios that would benefit from it are display controllers
+setting a new mode, USB drivers starting isochronous transfers, camera drivers
+starting to capture and hw media codecs doing their thing.
 
-In that case both the dynticks_idle and dynticks_idle_jiffies could be
-placed in one 64 bit value. If this is stored and retrieved as one then
-there is no issue with ordering anymore and the barriers would no longer
-be needed.
+I'm proposing adding a new PM_QOS_MEMORY_BANDWIDTH class that device drivers
+can use to register their memory bandwidth needs right when they become known,
+so the external memory clock can be set at the optimum frequency, thus
+preventing glitches.
+
+There have been similar proposals before [0], the first main concern being that
+constraints need to refer to a global resource such as CPUs. If they referred
+to a network NIC or to a UART, there would be no way of knowing how to actually
+constrain each device because there would be a single list of requests.
+
+In this case, the memory bus is a global resource just like the CPUs are, and
+all requests in this class will apply to a single device driver in any
+particular system.
+
+The second serious concern was that constraints need to be defined in a way
+generic enough so they can be consumed in a wide array of particular systems
+without placing the burden of taking into account hw specifics in the driver of
+the memory client.
+
+Here, the PM_QOS_MEMORY_BANDWIDTH constraints are specified always in kbs,
+being the amount of data that the device driver wants to see transferred per
+second. This allows for example for a camera driver to calculate the
+appropriate value based on the size of each frame and the desired FPS and,
+depending on the particular system where the camera block is used, the
+appropriate external memory driver will convert that to the bus clock frequency
+that makes sense for the hardware at hand.
+
+The first patch adds the new class and also a new PM_QOS_SUM class type.
+
+The second illustrates how the driver for such a memory client would request
+its memory bandwidth requirement.
+
+Most vendor trees carry their own solution for this specific issue, so it would
+be pretty neat if mainline gained a similar mechanism so we get more power
+management goodies in the right place.
+
+[0] https://lkml.org/lkml/2012/3/10/165
+
+Thanks,
+
+Tomeu
+
+Tomeu Vizoso (2):
+  PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
+  drm/tegra: Request memory bandwidth for the display controller
+
+ Documentation/power/pm_qos_interface.txt |  4 +++-
+ drivers/gpu/drm/tegra/dc.c               | 15 +++++++++++++++
+ drivers/gpu/drm/tegra/drm.h              |  3 +++
+ include/linux/pm_qos.h                   |  5 ++++-
+ kernel/power/qos.c                       | 27 ++++++++++++++++++++++++++-
+ 5 files changed, 51 insertions(+), 3 deletions(-)
+
+-- 
+1.9.3
+
