@@ -1,106 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaIBX6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 19:58:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46646 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbaIBX6c (ORCPT
+	id S1753596AbaICAD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 20:03:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40347 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486AbaICAD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 19:58:32 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
-Date: Tue,  2 Sep 2014 16:58:28 -0700
-Message-Id: <1409702308-3023-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
+	Tue, 2 Sep 2014 20:03:56 -0400
+Date: Wed, 3 Sep 2014 02:03:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+cc: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
+        kgdb-bugreport@lists.sourceforge.net, Nicolas Pitre <nico@linaro.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
+        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v11 01/19] arm: fiq: Add callbacks to manage FIQ
+ routings
+In-Reply-To: <1409662853-29313-2-git-send-email-daniel.thompson@linaro.org>
+Message-ID: <alpine.DEB.2.10.1409030103090.3333@nanos>
+References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-2-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we're tuning on a big-endian CPU we'll never determine we properly
-tuned the device because we compare the data we received from the
-controller with a table that assumes the CPU is little-endian.
-Change the table to be an array of bytes instead of 32-bit words
-so we can use memcmp() without needing to byte-swap every word
-depending on the endianess of the CPU.
+On Tue, 2 Sep 2014, Daniel Thompson wrote:
 
-Cc: Asutosh Das <asutoshd@codeaurora.org>
-Cc: Venkat Gopalakrishnan <venkatg@codeaurora.org>
-Cc: Georgi Djakov <gdjakov@mm-sol.com>
-Fixes: 415b5a75da43 "mmc: sdhci-msm: Add platform_execute_tuning implementation"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/mmc/host/sdhci-msm.c | 42 +++++++++++++++++++++++++++---------------
- 1 file changed, 27 insertions(+), 15 deletions(-)
+> Currently enable_fiq/disable_fiq use a simple offset to convert an IRQ
+> virq into a FIQ virq. This is too inflexible for multi-platform kernels
+> and makes runtime error checking impossible.
 
-diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-index 40573a58486a..5aabffc15ae8 100644
---- a/drivers/mmc/host/sdhci-msm.c
-+++ b/drivers/mmc/host/sdhci-msm.c
-@@ -47,22 +47,34 @@
- #define CMUX_SHIFT_PHASE_SHIFT	24
- #define CMUX_SHIFT_PHASE_MASK	(7 << CMUX_SHIFT_PHASE_SHIFT)
+You are missing to explain WHY it is too inflexible ....
  
--static const u32 tuning_block_64[] = {
--	0x00ff0fff, 0xccc3ccff, 0xffcc3cc3, 0xeffefffe,
--	0xddffdfff, 0xfbfffbff, 0xff7fffbf, 0xefbdf777,
--	0xf0fff0ff, 0x3cccfc0f, 0xcfcc33cc, 0xeeffefff,
--	0xfdfffdff, 0xffbfffdf, 0xfff7ffbb, 0xde7b7ff7
-+static const u8 tuning_block_64[] = {
-+	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
-+	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
-+	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
-+	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
-+	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
-+	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
-+	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
-+	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
- };
- 
--static const u32 tuning_block_128[] = {
--	0xff00ffff, 0x0000ffff, 0xccccffff, 0xcccc33cc,
--	0xcc3333cc, 0xffffcccc, 0xffffeeff, 0xffeeeeff,
--	0xffddffff, 0xddddffff, 0xbbffffff, 0xbbffffff,
--	0xffffffbb, 0xffffff77, 0x77ff7777, 0xffeeddbb,
--	0x00ffffff, 0x00ffffff, 0xccffff00, 0xcc33cccc,
--	0x3333cccc, 0xffcccccc, 0xffeeffff, 0xeeeeffff,
--	0xddffffff, 0xddffffff, 0xffffffdd, 0xffffffbb,
--	0xffffbbbb, 0xffff77ff, 0xff7777ff, 0xeeddbb77
-+static const u8 tuning_block_128[] = {
-+	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-+	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
-+	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
-+	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
-+	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
-+	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
-+	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
-+	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
-+	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
-+	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
-+	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
-+	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
-+	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
-+	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
-+	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
-+	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
- };
- 
- struct sdhci_msm_host {
-@@ -359,7 +371,7 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
- {
- 	int tuning_seq_cnt = 3;
- 	u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
--	const u32 *tuning_block_pattern = tuning_block_64;
-+	const u8 *tuning_block_pattern = tuning_block_64;
- 	int size = sizeof(tuning_block_64);	/* Pattern size in bytes */
- 	int rc;
- 	struct mmc_host *mmc = host->mmc;
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> We solve this by introducing a flexible mapping that allows interrupt
+
+Flexible in that context reads like random semantics. And that's
+definitely nothing we want to see in the context of interrupts/fiqs
+
+> controllers that support FIQ to register those mappings. This, in turn,
+> makes it much possible for drivers in DT kernels to install FIQ handlers
+> without knowing anything about the interrupt controller.
+
+> +#include <linux/irq.h>
+>  #include <asm/ptrace.h>
+>  
+> +struct fiq_chip {
+> +	void (*fiq_enable)(struct irq_data *data);
+> +	void (*fiq_disable)(struct irq_data *data);
+> +};
+
+So you define an ARM specific extension to the irq infrastructure
+which is completely ignoring that there might be other architectures
+which have the same issue?
+
+Aside of that you define that structure w/o documenting in any way
+what the semantics of the callbacks are and how struct irq_data is
+supposed to be (ab)used there.
+
+> +struct fiq_data {
+> +	struct fiq_chip *fiq_chip;
+> +	struct irq_data *irq_data;
+> +};
+
+Nice. Another completely undocumented data structure.
+
+>  static unsigned long no_fiq_insn;
+> +static int fiq_start = -1;
+> +static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
+
+Along with a radix tree, which again lacks any form of documentation.
+
+> -static int fiq_start;
+> +static struct fiq_data *lookup_fiq_data(int fiq)
+> +{
+> +	struct fiq_data *data;
+> +
+> +	rcu_read_lock();
+> +	data = radix_tree_lookup(&fiq_data_tree, fiq);
+> +	rcu_read_unlock();
+> +
+> +	return data;
+
+That makes a lot of sense. NOT!
+
+What kind of protection is that rcu_read_lock/unlock pair providing
+for the return value? Just that it has been valid at lookup time?
+
+What protects against concurrent calls to the various usage sites
+which shine by the lack of serialization ...
+
+>  void enable_fiq(int fiq)
+>  {
+> +	struct fiq_data *data = lookup_fiq_data(fiq);
+> +
+> +	if (data) {
+> +		if (data->fiq_chip->fiq_enable)
+> +			data->fiq_chip->fiq_enable(data->irq_data);
+> +		enable_irq(fiq);
+
+This is ass backwards, really.
+
+The FIQ target is a property of the interrupt line right?
+
+So why the heck do you need a separate chip/data representation
+including a radix tree and whatever? Just because you can?
+
+What is wrong to tell the irq core code via a flag that a particular
+interrupt should be targeted at FIQ instead of a regular interrupt?
+
+Nothing as far as I can tell. And that would even allow to retarget an
+already enabled interrupt to FIQ or vice versa.
+
+So all your patch does is trying to (ab)use an existing interface
+which was created in the last millenium for totally different reasons
+and in a totally different context.
+
+But you fail completely to understand what that interface is doing:
+
+    It merily maps the Linux virq to a FIQ via an offset.
+
+While I understand that this is not workable on multiplatform kernels,
+I really cannot understand your attempt to change this by adding
+complex functionality to a primitive offset mapping function.
+
+You just add some randomly defined new chip/data combination which
+abuses the irq_data structure under the hood instead of properly
+integrating that irq chip property into irqchip/irqdata itself.
+
+So instead of thinking about the properties of the hardware and
+questioning the existing mechanism, you just bolt some crap onto it
+and inflict a gazillion of pointless modifications to the irq chip
+drivers without any value.
+
+So all it needs is
+
+ 1) Adding a property flag to the irq chip which signals that it
+    supports FIQ/NMI targets
+
+ 2) Adding a interface which allows to flag a particular interrupt
+    line targeted to either the regular or the FIQ/NMI which consults
+    the flag added by #1
+
+ 3) Let the chip driver deal with the target flag at a minimal
+    intrusive level w/o registering racy callbacks designed in hell
+    and imposing arch specific data structures, storage etc. for no
+    value
+
+Thanks,
+
+	tglx
 
