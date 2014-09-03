@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699AbaICHtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:49:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43316 "EHLO
+	id S1756019AbaICHur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:50:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43311 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755857AbaICHss (ORCPT
+	with ESMTP id S1755801AbaICHsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:48:48 -0400
+	Wed, 3 Sep 2014 03:48:43 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
         p.zabel@pengutronix.de
@@ -16,9 +16,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 09/12] ARM: dts: berlin: add BG2Q nodes for USB support
-Date: Wed,  3 Sep 2014 09:48:28 +0200
-Message-Id: <1409730511-16101-10-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v4 06/12] Documentation: bindings: add doc for the Berlin USB PHY
+Date: Wed,  3 Sep 2014 09:48:25 +0200
+Message-Id: <1409730511-16101-7-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -26,90 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds nodes describing the Marvell Berlin BG2Q USB PHY and USB. The BG2Q
-SoC has 3 USB host controller, compatible with ChipIdea.
+Document the bindings of the Marvell Berlin USB PHY driver.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/boot/dts/berlin2q.dtsi | 52 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
+ Documentation/devicetree/bindings/phy/berlin-usb-phy.txt | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index ffba5c3bdab8..faf7cbe2af20 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -114,6 +114,39 @@
- 			#interrupt-cells = <3>;
- 		};
- 
-+		usb_phy2: phy@a2f400 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xa2f400 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 14>;
-+			status = "disabled";
-+		};
+diff --git a/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+new file mode 100644
+index 000000000000..be33780f668e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+@@ -0,0 +1,16 @@
++* Marvell Berlin USB PHY
 +
-+		usb2: usb@a30000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xa30000 0x10000>;
-+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB2>;
-+			phys = <&usb_phy2>;
-+			status = "disabled";
-+		};
++Required properties:
++- compatible: "marvell,berlin2-usb-phy" or "marvell,berlin2cd-usb-phy"
++- reg: base address and length of the registers
++- #phys-cells: should be 0
++- resets: reference to the reset controller
 +
-+		usb_phy0: phy@b74000 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xb74000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 12>;
-+			status = "disabled";
-+		};
++Example:
 +
-+		usb_phy1: phy@b78000 {
-+			compatible = "marvell,berlin2-usb-phy";
-+			reg = <0xb78000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 0x104 13>;
-+			status = "disabled";
-+		};
-+
- 		cpu-ctrl@dd0000 {
- 			compatible = "marvell,berlin-cpu-ctrl";
- 			reg = <0xdd0000 0x10000>;
-@@ -348,6 +381,24 @@
- 			};
- 		};
- 
-+		usb0: usb@ed0000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xed0000 0x10000>;
-+			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB0>;
-+			phys = <&usb_phy0>;
-+			status = "disabled";
-+		};
-+
-+		usb1: usb@ee0000 {
-+			compatible = "chipidea,usb2";
-+			reg = <0xee0000 0x10000>;
-+			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB1>;
-+			phys = <&usb_phy1>;
-+			status = "disabled";
-+		};
-+
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -440,5 +491,6 @@
- 				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
- 			};
- 		};
-+
- 	};
- };
++	usb-phy@f774000 {
++		compatible = "marvell,berlin2-usb-phy";
++		reg = <0xf774000 0x128>;
++		#phy-cells = <0>;
++		resets = <&chip 0x104 14>;
++	};
 -- 
 1.9.1
 
