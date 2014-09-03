@@ -1,93 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752AbaICIbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:31:00 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:47643 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbaICIa5 (ORCPT
+	id S1755226AbaICIdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:33:20 -0400
+Received: from mx8.pku.edu.cn ([162.105.129.171]:36994 "EHLO mail.pku.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751588AbaICIdQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:30:57 -0400
+	Wed, 3 Sep 2014 04:33:16 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -306.932
+Date: Wed, 3 Sep 2014 16:32:59 +0800 (CST)
+From: =?gbk?B?WHVldGFvIEd1YW4g?= <gxt@pku.edu.cn>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <926403536.39754.1409733179383.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <20140903035811.GA954@roeck-us.net>
+Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_?=
+ =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_=E5=9B=9E?=
+ =?utf-8?Q?=E5=A4=8D=EF=BC=9A_Status_of_'unic?=
+ =?utf-8?Q?ore32'_architecture_in_Linux_kernel?=
 MIME-Version: 1.0
-In-Reply-To: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
-References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
-Date: Wed, 3 Sep 2014 10:30:56 +0200
-Message-ID: <CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>, h80.chung@samsung.com,
-        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.97]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 September 2014 17:49, Jean-Michel Hautbois
-<jean-michel.hautbois@vodalys.com> wrote:
-> This property is useful when we don't want to access boot partitions on eMMC
->
-> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+
+----- Guenter Roeck <linux@roeck-us.net> 写道：
+> On Wed, Sep 03, 2014 at 08:09:28AM +0800, Xuetao Guan  wrote:
+> > 
+> > [...]
+> > > > 
+> > > > > 
+> > > > > unicore32: Add ocd console and qemu-defconfig to support qemu simulator
+> > > > > 	This patch adds a primitive OCD console to communicate with qemu.
+> > > > > 	The same code is already used for early console support.
+> > > > 
+> > > > Do you mean there's the same/similar code in QEMU.
+> > > > 
+> > > No, I mean that the ocd functions in the linux kernel (such as ocd_putc) are
+> > > used by both earlyprintk and the ocd console code.
+> > Yes. By the way, it's only for qemu and fpga debug.
+> > 
+> > > 
+> > > > > 
+> > > > > With this patch added, and with qemu_defconfig as provided by the same patch,
+> > > > > it is possible to build and load a unicore32 image in qemu using the following
+> > > > > qemu command line.
+> > > > > 
+> > > > > qemu-system-unicore32 -curses -M puv3 -m 512 -kernel arch/unicore32/boot/zImage
+> > > > > 
+> > > > > Caveats:
+> > > > > - The use of -nographic instead of -curses causes a qemu crash
+> > > > Yes, since qemu curses code was modified to meet the simple OCD console requirement.
+> > > > 
+> > > The lack of support for -nographic is a problem for scripted testing.
+> > > The issue is that we have to interpret console output for scripted testing,
+> > > and having to go through curses makes that a bit difficult.
+> > > 
+> > > Wonder if '-nographic' can be modeled as '-curses' with no available terminal
+> > > configuration. At least in theory that should work, but executing the above
+> > > command with TERM=dumb yields no output. Wonder how difficult it would be to
+> > > change that.
+> > 
+> > I see. I'll try to make -nographic work anyway.
+> > 
+> Please try the following patch. That seems to do it.
+> I am sure it can be improved, but it is a start.
+> 
+> Thanks,
+> Guenter
+
+Thanks. I'll test it.
+BTW, Qemu codestyle is different, and tab should be replaced with blanks.
+
+Xuetao
+
+> 
 > ---
->  Documentation/devicetree/bindings/mmc/mmc.txt | 1 +
->  drivers/mmc/host/sdhci-esdhc-imx.c            | 8 ++++++++
->  include/linux/platform_data/mmc-esdhc-imx.h   | 1 +
->  3 files changed, 10 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/mmc/mmc.txt b/Documentation/devicetree/bindings/mmc/mmc.txt
-> index 431716e..59cc854 100644
-> --- a/Documentation/devicetree/bindings/mmc/mmc.txt
-> +++ b/Documentation/devicetree/bindings/mmc/mmc.txt
-> @@ -40,6 +40,7 @@ Optional properties:
->  - mmc-hs200-1_2v: eMMC HS200 mode(1.2V I/O) is supported
->  - mmc-hs400-1_8v: eMMC HS400 mode(1.8V I/O) is supported
->  - mmc-hs400-1_2v: eMMC HS400 mode(1.2V I/O) is supported
-> +- no-boot-part : when preset, tells to access boot partitions
->
->  *NOTE* on CD and WP polarity. To use common for all SD/MMC host controllers line
->  polarity properties, we have to fix the meaning of the "normal" and "inverted"
-> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-> index ccec0e3..439e663 100644
-> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
-> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-> @@ -942,6 +942,11 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
->         if (of_property_read_u32(np, "fsl,delay-line", &boarddata->delay_line))
->                 boarddata->delay_line = 0;
->
-> +       if (of_find_property(np, "no-boot-part", NULL))
-> +               boarddata->access_boot_part = false;
-> +       else
-> +               boarddata->access_boot_part = true;
+> From a7c89177b3c00e4c16bea25a0b4b2f9dc511e07b Mon Sep 17 00:00:00 2001
+> From: Guenter Roeck <linux@roeck-us.net>
+> Date: Tue, 2 Sep 2014 20:55:02 -0700
+> Subject: [PATCH] qemu: unicore32: Add support for non-curses display
+> 
+> Add basic support for DT_NONE and DT_NOGRAPHIC display types.
+> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  target-unicore32/helper.c | 14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+> 
+> diff --git a/target-unicore32/helper.c b/target-unicore32/helper.c
+> index e5ebbf4..dda3772 100644
+> --- a/target-unicore32/helper.c
+> +++ b/target-unicore32/helper.c
+> @@ -13,6 +13,7 @@
+>  #include "exec/gdbstub.h"
+>  #include "exec/helper-proto.h"
+>  #include "qemu/host-utils.h"
+> +#include "sysemu/sysemu.h"
+>  #ifndef CONFIG_USER_ONLY
+>  #include "ui/console.h"
+>  #endif
+> @@ -223,7 +224,18 @@ static void putc_on_screen(unsigned char ch)
+>  
+>  void helper_cp1_putc(target_ulong x)
+>  {
+> -    putc_on_screen((unsigned char)x);   /* Output to screen */
+> +    switch(display_type) {
+> +    case DT_CURSES:
+> +	putc_on_screen((unsigned char)x);   /* Output to screen */
+> +	break;
+> +    case DT_NOGRAPHIC:
+> +    case DT_NONE:
+> +	putchar((int)x);
+> +	break;
+> +    default:
+> +	break;
+> +    }
 > +
->         return 0;
+>      DPRINTF("%c", x);                   /* Output to stdout */
 >  }
->  #else
-> @@ -1119,6 +1124,9 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
->                 host->quirks2 |= SDHCI_QUIRK2_NO_1_8_V;
->         }
->
-> +       if (!boarddata->access_boot_part)
-> +               host->mmc->caps2 |= MMC_CAP2_BOOTPART_NOACC;
-> +
+>  #endif
+> -- 
+> 1.9.1
+> 
 
-Hmm, I don't think MMC_CAP2_BOOTPART_NOACC should have a DT binding.
-Does it describe the hardware in some form?
-
-Actually I would like to question why MMC_CAP2_BOOTPART_NOACC exists
-at all. If there are cards that don't supports the BOOT area,
-shouldn't we have a card quirk for it instead of a host cap? Maybe
-Adrian Hunter, how originally wrote the patch for adding
-MMC_CAP2_BOOTPART_NOACC, could help me understand the reasons behind
-it!?
-
-Kind regards
-Uffe
