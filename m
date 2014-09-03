@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473AbaICLeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:34:14 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:53883 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756419AbaICLeJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:34:09 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dirk Behme <dirk.behme@de.bosch.com>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Subject: [PATCH 3.17-rc3] serial: imx: clean up imx_poll_get_char()
-Date: Wed,  3 Sep 2014 12:33:53 +0100
-Message-Id: <1409744033-32741-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S932422AbaICLdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:33:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932259AbaICLc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 07:32:59 -0400
+From: Laszlo Ersek <lersek@redhat.com>
+To: mingo@kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, x86@kernel.org,
+        linux-ia64@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com,
+        lersek@redhat.com
+Subject: [PATCH v2 4/5] ia64: efi: format EFI memory type & attrs with efi_md_typeattr_format()
+Date: Wed,  3 Sep 2014 13:32:22 +0200
+Message-Id: <1409743943-16934-5-git-send-email-lersek@redhat.com>
+In-Reply-To: <1409743943-16934-1-git-send-email-lersek@redhat.com>
+References: <1409743943-16934-1-git-send-email-lersek@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Behme <dirk.behme@de.bosch.com>
+The effects of the patch on the i64 memory map log are similar to those
+visible in the previous (x86) patch: the type enum and the attribute
+bitmap are decoded.
 
-Looking at the get_poll_char() function of the 8250.c serial driver,
-we learn:
-
-* poll_get_char() doesn't have to save/disable/restore the interrupt
-  registers. No interrupt handling is needed in this function at all.
-  Remove it.
-
-* Don't block in case there is no data available. So instead blocking
-  in the do {} while loop, just return with NO_POLL_CHAR, immediately .
-
-Additionally, while the i.MX6 register URXD[7-0] contain the RX_DATA,
-the upper bits of this register (URXD[15-10]) might contain some
-control flags. To ensure that these are not returned with the data
-read, just mask out URXD[7-0].
-
-These changes fix the 'hang' working with kdb:
-
-$ echo ttymxc3 > /sys/module/kgdboc/parameters/kgdboc
-$ echo g >/proc/sysrq-trigger
-[0]kdb> help
-...
-<hang>
-
-Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
 ---
- drivers/tty/serial/imx.c | 29 ++++-------------------------
- 1 file changed, 4 insertions(+), 25 deletions(-)
+ arch/ia64/kernel/efi.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index 044e86d..983668a 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -80,6 +80,7 @@
- #define URXD_FRMERR	(1<<12)
- #define URXD_BRK	(1<<11)
- #define URXD_PRERR	(1<<10)
-+#define URXD_RX_DATA	(0xFF<<0)
- #define UCR1_ADEN	(1<<15) /* Auto detect interrupt */
- #define UCR1_ADBR	(1<<14) /* Auto detect baud rate */
- #define UCR1_TRDYEN	(1<<13) /* Transmitter ready interrupt enable */
-@@ -1506,32 +1507,10 @@ imx_verify_port(struct uart_port *port, struct serial_struct *ser)
- #if defined(CONFIG_CONSOLE_POLL)
- static int imx_poll_get_char(struct uart_port *port)
- {
--	struct imx_port_ucrs old_ucr;
--	unsigned int status;
--	unsigned char c;
--
--	/* save control registers */
--	imx_port_ucrs_save(port, &old_ucr);
--
--	/* disable interrupts */
--	writel(UCR1_UARTEN, port->membase + UCR1);
--	writel(old_ucr.ucr2 & ~(UCR2_ATEN | UCR2_RTSEN | UCR2_ESCI),
--	       port->membase + UCR2);
--	writel(old_ucr.ucr3 & ~(UCR3_DCD | UCR3_RI | UCR3_DTREN),
--	       port->membase + UCR3);
--
--	/* poll */
--	do {
--		status = readl(port->membase + USR2);
--	} while (~status & USR2_RDR);
--
--	/* read */
--	c = readl(port->membase + URXD0);
--
--	/* restore control registers */
--	imx_port_ucrs_restore(port, &old_ucr);
-+	if (!(readl(port->membase + USR2) & USR2_RDR))
-+		return NO_POLL_CHAR;
+diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+index 741b99c..c52d754 100644
+--- a/arch/ia64/kernel/efi.c
++++ b/arch/ia64/kernel/efi.c
+@@ -568,6 +568,7 @@ efi_init (void)
+ 		{
+ 			const char *unit;
+ 			unsigned long size;
++			char buf[64];
+ 
+ 			md = p;
+ 			size = md->num_pages << EFI_PAGE_SHIFT;
+@@ -586,9 +587,10 @@ efi_init (void)
+ 				unit = "KB";
+ 			}
+ 
+-			printk("mem%02d: type=%2u, attr=0x%016lx, "
++			printk("mem%02d: %s "
+ 			       "range=[0x%016lx-0x%016lx) (%4lu%s)\n",
+-			       i, md->type, md->attribute, md->phys_addr,
++			       i, efi_md_typeattr_format(buf, sizeof(buf), md),
++			       md->phys_addr,
+ 			       md->phys_addr + efi_md_size(md), size, unit);
+ 		}
+ 	}
+-- 
+1.8.3.1
 
--	return c;
-+	return readl(port->membase + URXD0) & URXD_RX_DATA;
- }
-
- static void imx_poll_put_char(struct uart_port *port, unsigned char c)
---
-1.9.3
 
