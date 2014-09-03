@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934147AbaICWXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:23:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46310 "EHLO
+	id S934160AbaICWXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:23:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933902AbaICWXR (ORCPT
+	with ESMTP id S933901AbaICWSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:23:17 -0400
+	Wed, 3 Sep 2014 18:18:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maciej Puzio <mx34567@gmail.com>, Evan Langlois <uudruid74@gmail.com>,
-        Julius Werner <jwerner@chromium.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.16 108/125] xhci: rework cycle bit checking for new dequeue pointers
-Date: Wed,  3 Sep 2014 15:07:45 -0700
-Message-Id: <20140903220626.938685741@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [PATCH 3.16 049/125] drivers/i2c/busses: use correct type for dma_map/unmap
+Date: Wed,  3 Sep 2014 15:06:46 -0700
+Message-Id: <20140903220625.118972185@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,179 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Wolfram Sang <wsa@the-dreams.de>
 
-commit 365038d83313951d6ace15342eb24624bbef1666 upstream.
+commit 28772ac8711e4d7268c06e765887dd8cb6924f98 upstream.
 
-When we manually need to move the TR dequeue pointer we need to set the
-correct cycle bit as well. Previously we used the trb pointer from the
-last event received as a base, but this was changed in
-commit 1f81b6d22a59 ("usb: xhci: Prefer endpoint context dequeue pointer")
-to use the dequeue pointer from the endpoint context instead
+dma_{un}map_* uses 'enum dma_data_direction' not 'enum dma_transfer_direction'.
 
-It turns out some Asmedia controllers advance the dequeue pointer
-stored in the endpoint context past the event triggering TRB, and
-this messed up the way the cycle bit was calculated.
-
-Instead of adding a quirk or complicating the already hard to follow cycle bit
-code, the whole cycle bit calculation is now simplified and adapted to handle
-event and endpoint context dequeue pointer differences.
-
-Fixes: 1f81b6d22a59 ("usb: xhci: Prefer endpoint context dequeue pointer")
-Reported-by: Maciej Puzio <mx34567@gmail.com>
-Reported-by: Evan Langlois <uudruid74@gmail.com>
-Reviewed-by: Julius Werner <jwerner@chromium.org>
-Tested-by: Maciej Puzio <mx34567@gmail.com>
-Tested-by: Evan Langlois <uudruid74@gmail.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |  101 ++++++++++++++++---------------------------
- drivers/usb/host/xhci.c      |    3 +
- 2 files changed, 42 insertions(+), 62 deletions(-)
+ drivers/i2c/busses/i2c-at91.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -364,32 +364,6 @@ static void ring_doorbell_for_active_rin
- 	}
+--- a/drivers/i2c/busses/i2c-at91.c
++++ b/drivers/i2c/busses/i2c-at91.c
+@@ -210,7 +210,7 @@ static void at91_twi_write_data_dma_call
+ 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
+ 
+ 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
+-			 dev->buf_len, DMA_MEM_TO_DEV);
++			 dev->buf_len, DMA_TO_DEVICE);
+ 
+ 	at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
  }
+@@ -289,7 +289,7 @@ static void at91_twi_read_data_dma_callb
+ 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
  
--/*
-- * Find the segment that trb is in.  Start searching in start_seg.
-- * If we must move past a segment that has a link TRB with a toggle cycle state
-- * bit set, then we will toggle the value pointed at by cycle_state.
-- */
--static struct xhci_segment *find_trb_seg(
--		struct xhci_segment *start_seg,
--		union xhci_trb	*trb, int *cycle_state)
--{
--	struct xhci_segment *cur_seg = start_seg;
--	struct xhci_generic_trb *generic_trb;
--
--	while (cur_seg->trbs > trb ||
--			&cur_seg->trbs[TRBS_PER_SEGMENT - 1] < trb) {
--		generic_trb = &cur_seg->trbs[TRBS_PER_SEGMENT - 1].generic;
--		if (generic_trb->field[3] & cpu_to_le32(LINK_TOGGLE))
--			*cycle_state ^= 0x1;
--		cur_seg = cur_seg->next;
--		if (cur_seg == start_seg)
--			/* Looped over the entire list.  Oops! */
--			return NULL;
--	}
--	return cur_seg;
--}
--
--
- static struct xhci_ring *xhci_triad_to_transfer_ring(struct xhci_hcd *xhci,
- 		unsigned int slot_id, unsigned int ep_index,
- 		unsigned int stream_id)
-@@ -459,9 +433,12 @@ void xhci_find_new_dequeue_state(struct
- 	struct xhci_virt_device *dev = xhci->devs[slot_id];
- 	struct xhci_virt_ep *ep = &dev->eps[ep_index];
- 	struct xhci_ring *ep_ring;
--	struct xhci_generic_trb *trb;
-+	struct xhci_segment *new_seg;
-+	union xhci_trb *new_deq;
- 	dma_addr_t addr;
- 	u64 hw_dequeue;
-+	bool cycle_found = false;
-+	bool td_last_trb_found = false;
+ 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
+-			 dev->buf_len, DMA_DEV_TO_MEM);
++			 dev->buf_len, DMA_FROM_DEVICE);
  
- 	ep_ring = xhci_triad_to_transfer_ring(xhci, slot_id,
- 			ep_index, stream_id);
-@@ -486,45 +463,45 @@ void xhci_find_new_dequeue_state(struct
- 		hw_dequeue = le64_to_cpu(ep_ctx->deq);
- 	}
- 
--	/* Find virtual address and segment of hardware dequeue pointer */
--	state->new_deq_seg = ep_ring->deq_seg;
--	state->new_deq_ptr = ep_ring->dequeue;
--	while (xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr)
--			!= (dma_addr_t)(hw_dequeue & ~0xf)) {
--		next_trb(xhci, ep_ring, &state->new_deq_seg,
--					&state->new_deq_ptr);
--		if (state->new_deq_ptr == ep_ring->dequeue) {
--			WARN_ON(1);
--			return;
--		}
--	}
-+	new_seg = ep_ring->deq_seg;
-+	new_deq = ep_ring->dequeue;
-+	state->new_cycle_state = hw_dequeue & 0x1;
-+
- 	/*
--	 * Find cycle state for last_trb, starting at old cycle state of
--	 * hw_dequeue. If there is only one segment ring, find_trb_seg() will
--	 * return immediately and cannot toggle the cycle state if this search
--	 * wraps around, so add one more toggle manually in that case.
-+	 * We want to find the pointer, segment and cycle state of the new trb
-+	 * (the one after current TD's last_trb). We know the cycle state at
-+	 * hw_dequeue, so walk the ring until both hw_dequeue and last_trb are
-+	 * found.
- 	 */
--	state->new_cycle_state = hw_dequeue & 0x1;
--	if (ep_ring->first_seg == ep_ring->first_seg->next &&
--			cur_td->last_trb < state->new_deq_ptr)
--		state->new_cycle_state ^= 0x1;
-+	do {
-+		if (!cycle_found && xhci_trb_virt_to_dma(new_seg, new_deq)
-+		    == (dma_addr_t)(hw_dequeue & ~0xf)) {
-+			cycle_found = true;
-+			if (td_last_trb_found)
-+				break;
-+		}
-+		if (new_deq == cur_td->last_trb)
-+			td_last_trb_found = true;
- 
--	state->new_deq_ptr = cur_td->last_trb;
--	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
--			"Finding segment containing last TRB in TD.");
--	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
--			state->new_deq_ptr, &state->new_cycle_state);
--	if (!state->new_deq_seg) {
--		WARN_ON(1);
--		return;
--	}
-+		if (cycle_found &&
-+		    TRB_TYPE_LINK_LE32(new_deq->generic.field[3]) &&
-+		    new_deq->generic.field[3] & cpu_to_le32(LINK_TOGGLE))
-+			state->new_cycle_state ^= 0x1;
-+
-+		next_trb(xhci, ep_ring, &new_seg, &new_deq);
-+
-+		/* Search wrapped around, bail out */
-+		if (new_deq == ep->ring->dequeue) {
-+			xhci_err(xhci, "Error: Failed finding new dequeue state\n");
-+			state->new_deq_seg = NULL;
-+			state->new_deq_ptr = NULL;
-+			return;
-+		}
-+
-+	} while (!cycle_found || !td_last_trb_found);
- 
--	/* Increment to find next TRB after last_trb. Cycle if appropriate. */
--	trb = &state->new_deq_ptr->generic;
--	if (TRB_TYPE_LINK_LE32(trb->field[3]) &&
--	    (trb->field[3] & cpu_to_le32(LINK_TOGGLE)))
--		state->new_cycle_state ^= 0x1;
--	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
-+	state->new_deq_seg = new_seg;
-+	state->new_deq_ptr = new_deq;
- 
- 	/* Don't update the ring cycle state for the producer (us). */
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2891,6 +2891,9 @@ void xhci_cleanup_stalled_ring(struct xh
- 			ep_index, ep->stopped_stream, ep->stopped_td,
- 			&deq_state);
- 
-+	if (!deq_state.new_deq_ptr || !deq_state.new_deq_seg)
-+		return;
-+
- 	/* HW with the reset endpoint quirk will use the saved dequeue state to
- 	 * issue a configure endpoint command later.
- 	 */
+ 	/* The last two bytes have to be read without using dma */
+ 	dev->buf += dev->buf_len - 2;
 
 
