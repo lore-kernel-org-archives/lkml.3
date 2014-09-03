@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567AbaICPJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:09:15 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:58719 "EHLO
+	id S932616AbaICPKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:10:21 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:49465 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903AbaICPJM (ORCPT
+	with ESMTP id S1751193AbaICPKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:09:12 -0400
+	Wed, 3 Sep 2014 11:10:19 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/12] MIPS: GIC: Move MIPS_GIC_IRQ_BASE into platform irq.h
-Date: Wed, 03 Sep 2014 17:08:43 +0200
-Message-ID: <3376106.3oS8jj7piF@wuerfel>
+To: linux-arm-kernel@lists.infradead.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        linaro-acpi@lists.linaro.org, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Olof Johansson <olof@lixom.net>, Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [Linaro-acpi] [RFC PATCH for Juno 1/2] net: smsc911x add support for probing from ACPI
+Date: Wed, 03 Sep 2014 17:09:48 +0200
+Message-ID: <4569324.eR9S3K10NB@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL1qeaETzZ3EaC8RVXm3K4GLZbknk5iMUR1X2naaAboon4s6fQ@mail.gmail.com>
-References: <1409350479-19108-1-git-send-email-abrestic@chromium.org> <CAL1qeaHryi7noBMiHxJPybByuvVts23reuiiQbV9mCQj+Ngqjw@mail.gmail.com> <CAL1qeaETzZ3EaC8RVXm3K4GLZbknk5iMUR1X2naaAboon4s6fQ@mail.gmail.com>
+In-Reply-To: <2913007.3xRNb2X4ts@vostro.rjw.lan>
+References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org> <20140902162606.GX29327@sirena.org.uk> <2913007.3xRNb2X4ts@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:dWGDpT87OTkZOn9i/jQzU4qxJ2lzAKAnyIz1NpvIilA
- 11yQEDXhK6eFlcM5KHJyK68K0S8Y2SJ2mfrYM/Tg04OfP/tq3i
- YGbp2LJ6mmF6BnAitDIDDzWouhjlGNSGYpj++Hjtn1sH5GNo1N
- 5ZlSEfgMumOnFx2tm39GoosFZVklRYUTHJyvlN2KQqRsb0M0xy
- OMsY/9fOsHNt7qxaqO6Zh7C1PxzI+Zoq1GItheRvtpbU1ml+/o
- jEebvacRoXPoQxKYVw7qQoH1ROMo71E9iqvxi0Eri/nJw7VX5e
- KB3NttP5xpU0gmaMlT89irLXz7dSpKSs/PmZ1T6wfzH0W7ViOn
- mZCmxrY/mFEY/+IHPF7s=
+X-Provags-ID: V02:K0:bXKSLx0j2T/3rJqQIaGoCknyuYNAtcAH6oucwk/45Xh
+ HelspHJXcJTTPSiNPB/9Cgd0hFNbp4PIAjrOSE8gXWQqjZAjuC
+ m8QHambIVvGN1wGlHLU8npoNmm1N1YYUAxCbiDMK2+ZQkSOgF9
+ k1JLkqL29ZzpLunY9ghUhRQ4x7Vs8Fwymd1K/nxsThj04NvEjq
+ +YlbtXL1tN5Qroo8LWJdDwsfiWjB4P++iYMjgmV7jMNZXS9pLh
+ 7vCXId2uKGxzpFwvsHb0hb5RbGtzm6tdAIMGUZw31nDSYyqF3B
+ ylS8ypML9gyZkaNTtnQoO48RsbA2ryp8bJSCUuUal3l3QagI20
+ JGW9Ec4+bno/FLP/zIVo=
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 September 2014 15:22:31 Andrew Bresticker wrote:
-> On Mon, Sep 1, 2014 at 5:08 PM, Andrew Bresticker <abrestic@chromium.org> wrote:
-> > On Mon, Sep 1, 2014 at 1:34 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> On Sunday 31 August 2014 11:54:04 Andrew Bresticker wrote:
-> >>> On Sat, Aug 30, 2014 at 12:57 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >>> > On Friday 29 August 2014 15:14:31 Andrew Bresticker wrote:
-> >>> >> Define a generic MIPS_GIC_IRQ_BASE which is suitable for Malta and
-> >>> >> the upcoming Danube board in <mach-generic/irq.h>.  Since Sead-3 is
-> >>> >> different and uses a MIPS_GIC_IRQ_BASE equal to the CPU IRQ base (0),
-> >>> >> define its MIPS_GIC_IRQ_BASE in <mach-sead3/irq.h>.
-> >>> >>
-> >>> >> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> >>> >>
-> >>> >
-> >>> > Why do you actually have to hardwire an IRQ base? Can't you move
-> >>> > to the linear irqdomain code for DT based MIPS systems yet?
-> >>>
-> >>> Neither Malta nor SEAD-3 use device-tree for interrupts yet, so they
-> >>> still require a hard-coded IRQ base.  For boards using device-tree, I
-> >>> stuck with a legacy IRQ domain as it allows most of the existing GIC
-> >>> irqchip code to be reused.
-> >>
-> >> I see. Note that we now have irq_domain_add_simple(), which should
-> >> do the right think in either case: use a legacy domain when a
-> >> nonzero base is provided for the old boards, but use the simple
-> >> domain when probed from DT without an irq base.
-> >>
-> >> This makes the latter case more memory efficient (it avoids
-> >> allocating the irq descriptors for every possibly but unused
-> >> IRQ number) and helps ensure that you don't accidentally rely
-> >> on hardcoded IRQ numbers for the DT based machines, which would
-> >> be considered a bug.
-> >
-> > Ah, ok.  It looks like add_simple() is what I want then.
+On Wednesday 03 September 2014 01:00:23 Rafael J. Wysocki wrote:
+> On Tuesday, September 02, 2014 05:26:06 PM Mark Brown wrote:
+> > 
+> > --s3puAW9DMBtS2ARW
+> > Content-Type: text/plain; charset=us-ascii
+> > Content-Disposition: inline
+> > 
+> > On Tue, Sep 02, 2014 at 03:42:53PM +0200, Arnd Bergmann wrote:
+> > 
+> > > The way I recall the discussion, most people were on one extreme
+> > > side of the discussion or the other:
+> > 
+> > > a) We should use _DSD for ARM64 servers to maximize code reuse with
+> > > DT-enabled drivers, work around the slow UEFI standardization process,
+> > > remain in control of the actual bindings, and avoid the need for
+> > > endless per-ID platform-data definitions in drivers.
+> > 
+> > > b) We should never use _DSD at all, since doing that would have no
+> > > advantage over using DT directly, and we should force every device
+> > > manufacturer to specify their bindings in an official ACPI document
+> > > to prevent random incompatible bindings from being established.
+> > > Any device that shows up in servers should not need arbitrary detailed
+> > > properties anyway, as the details are supposed to be hidden in AML.
+> > 
+> > > I can understand the reasons for both approaches, and I find it hard
+> > > to say either one is invalid. However, the worst possible outcome in
+> > > my opinion would be having to support a mix of the two.
+> > 
+> > Right, and the x86 embedded folks are going full steam ahead with _DSD
+> > regardless so it seems there will be some systems out there using it
+> > even if they're not ARM servers.
 > 
-> Actually, never mind.  To re-use the existing GIC irqchip code I want
-> a legacy IRQ domain.
+> Our intention is specifically not to use "random incompatible bindings"
+> in that.  We'd rather have a common venue and process for establishing
+> new bindings for both DT and _DSD in a compatible way.
 
-It shouldn't be hard to change the existing code to use irq domain
-accessors. The main part is probably just to replace 'd->irq -
-gic_irq_base' with 'd->hwirq', in case you make up your mind about
-it again.
+Right, I think everyone is on the same page for the embedded x86 case,
+my point was that there is no consensus about that yet among the
+parties involved in arm64 servers.
 
 	Arnd
