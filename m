@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935652AbaICXwu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:52:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
+	id S936434AbaICXxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:53:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933245AbaICWFu (ORCPT
+	with ESMTP id S933232AbaICWFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:50 -0400
+	Wed, 3 Sep 2014 18:05:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hawkes <hawkes@google.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 03/55] HID: fix a couple of off-by-ones
-Date: Wed,  3 Sep 2014 15:04:53 -0700
-Message-Id: <20140903220454.197183778@linuxfoundation.org>
+        Bryan ODonoghue <bryan.odonoghue@intel.com>,
+        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 3.10 08/55] USB: ehci-pci: USB host controller support for Intel Quark X1000
+Date: Wed,  3 Sep 2014 15:04:58 -0700
+Message-Id: <20140903220455.013880674@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -30,100 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
 
-commit 4ab25786c87eb20857bbb715c3ae34ec8fd6a214 upstream.
+commit 6e693739e9b603b3ca9ce0d4f4178f0633458465 upstream.
 
-There are a few very theoretical off-by-one bugs in report descriptor size
-checking when performing a pre-parsing fixup. Fix those.
+The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000
+USB host controller, and the default value is 0x20 dwords. The in/out threshold
+can be programmed to 0x80 dwords (512 Bytes) to maximize the perfomrance,
+but only when isochronous/interrupt transactions are not initiated by the USB
+host controller. This patch is to reconfigure the packet buffer in/out
+threshold as maximal as possible to maximize the performance, and 0x7F dwords
+(508 Bytes) should be used because the USB host controller initiates
+isochronous/interrupt transactions.
 
-Reported-by: Ben Hawkes <hawkes@google.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-cherry.c   |    2 +-
- drivers/hid/hid-kye.c      |    2 +-
- drivers/hid/hid-lg.c       |    4 ++--
- drivers/hid/hid-monterey.c |    2 +-
- drivers/hid/hid-petalynx.c |    2 +-
- drivers/hid/hid-sunplus.c  |    2 +-
- 6 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/host/ehci-pci.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
---- a/drivers/hid/hid-cherry.c
-+++ b/drivers/hid/hid-cherry.c
-@@ -28,7 +28,7 @@
- static __u8 *ch_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 17 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
-+	if (*rsize >= 18 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
- 		hid_info(hdev, "fixing up Cherry Cymotion report descriptor\n");
- 		rdesc[11] = rdesc[16] = 0xff;
- 		rdesc[12] = rdesc[17] = 0x03;
---- a/drivers/hid/hid-kye.c
-+++ b/drivers/hid/hid-kye.c
-@@ -280,7 +280,7 @@ static __u8 *kye_report_fixup(struct hid
- 		 *   - change the button usage range to 4-7 for the extra
- 		 *     buttons
- 		 */
--		if (*rsize >= 74 &&
-+		if (*rsize >= 75 &&
- 			rdesc[61] == 0x05 && rdesc[62] == 0x08 &&
- 			rdesc[63] == 0x19 && rdesc[64] == 0x08 &&
- 			rdesc[65] == 0x29 && rdesc[66] == 0x0f &&
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -345,14 +345,14 @@ static __u8 *lg_report_fixup(struct hid_
- 	struct usb_device_descriptor *udesc;
- 	__u16 bcdDevice, rev_maj, rev_min;
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -35,6 +35,21 @@ static const char hcd_name[] = "ehci-pci
+ #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
  
--	if ((drv_data->quirks & LG_RDESC) && *rsize >= 90 && rdesc[83] == 0x26 &&
-+	if ((drv_data->quirks & LG_RDESC) && *rsize >= 91 && rdesc[83] == 0x26 &&
- 			rdesc[84] == 0x8c && rdesc[85] == 0x02) {
- 		hid_info(hdev,
- 			 "fixing up Logitech keyboard report descriptor\n");
- 		rdesc[84] = rdesc[89] = 0x4d;
- 		rdesc[85] = rdesc[90] = 0x10;
- 	}
--	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 50 &&
-+	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 51 &&
- 			rdesc[32] == 0x81 && rdesc[33] == 0x06 &&
- 			rdesc[49] == 0x81 && rdesc[50] == 0x06) {
- 		hid_info(hdev,
---- a/drivers/hid/hid-monterey.c
-+++ b/drivers/hid/hid-monterey.c
-@@ -24,7 +24,7 @@
- static __u8 *mr_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 30 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
-+	if (*rsize >= 31 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
- 		hid_info(hdev, "fixing up button/consumer in HID report descriptor\n");
- 		rdesc[30] = 0x0c;
- 	}
---- a/drivers/hid/hid-petalynx.c
-+++ b/drivers/hid/hid-petalynx.c
-@@ -25,7 +25,7 @@
- static __u8 *pl_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 60 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
-+	if (*rsize >= 62 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
- 			rdesc[41] == 0x00 && rdesc[59] == 0x26 &&
- 			rdesc[60] == 0xf9 && rdesc[61] == 0x00) {
- 		hid_info(hdev, "fixing up Petalynx Maxter Remote report descriptor\n");
---- a/drivers/hid/hid-sunplus.c
-+++ b/drivers/hid/hid-sunplus.c
-@@ -24,7 +24,7 @@
- static __u8 *sp_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 107 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
-+	if (*rsize >= 112 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
- 			rdesc[106] == 0x03) {
- 		hid_info(hdev, "fixing up Sunplus Wireless Desktop report descriptor\n");
- 		rdesc[105] = rdesc[110] = 0x03;
+ /*-------------------------------------------------------------------------*/
++#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
++static inline bool is_intel_quark_x1000(struct pci_dev *pdev)
++{
++	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
++		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
++}
++
++/*
++ * 0x84 is the offset of in/out threshold register,
++ * and it is the same offset as the register of 'hostpc'.
++ */
++#define	intel_quark_x1000_insnreg01	hostpc
++
++/* Maximum usable threshold value is 0x7f dwords for both IN and OUT */
++#define INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD	0x007f007f
+ 
+ /* called after powerup, by probe or system-pm "wakeup" */
+ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
+@@ -50,6 +65,16 @@ static int ehci_pci_reinit(struct ehci_h
+ 	if (!retval)
+ 		ehci_dbg(ehci, "MWI active\n");
+ 
++	/* Reset the threshold limit */
++	if (is_intel_quark_x1000(pdev)) {
++		/*
++		 * For the Intel QUARK X1000, raise the I/O threshold to the
++		 * maximum usable value in order to improve performance.
++		 */
++		ehci_writel(ehci, INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD,
++			ehci->regs->intel_quark_x1000_insnreg01);
++	}
++
+ 	return 0;
+ }
+ 
 
 
