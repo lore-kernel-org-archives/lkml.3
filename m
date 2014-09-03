@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883AbaICMsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:48:20 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44690 "EHLO mail.mev.co.uk"
+	id S932530AbaICMtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:49:32 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:44730 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932771AbaICMq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:46:27 -0400
+	id S932743AbaICMqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 08:46:24 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 33/37] staging: comedi: ni_labpc_common: use CMDF_ROUND_...
-Date: Wed,  3 Sep 2014 13:45:56 +0100
-Message-Id: <1409748360-17063-34-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 27/37] staging: comedi: cb_pcidas64: use CMDF_ROUND_...
+Date: Wed,  3 Sep 2014 13:45:50 +0100
+Message-Id: <1409748360-17063-28-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
 References: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
@@ -27,39 +27,32 @@ Replace use of the `TRIG_ROUND_...` macros with the new names
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/ni_labpc_common.c | 8 ++++----
+ drivers/staging/comedi/drivers/cb_pcidas64.c | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc_common.c b/drivers/staging/comedi/drivers/ni_labpc_common.c
-index 1881510..c54c88d 100644
---- a/drivers/staging/comedi/drivers/ni_labpc_common.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc_common.c
-@@ -397,21 +397,21 @@ static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd,
- 		base_period = I8254_OSC_BASE_2MHZ * devpriv->divisor_b0;
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index f1b2744..56069d6 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -1958,14 +1958,14 @@ static unsigned int get_divisor(unsigned int ns, unsigned int flags)
+ {
+ 	unsigned int divisor;
  
- 		/*  set a0 for conversion frequency and b1 for scan frequency */
--		switch (cmd->flags & TRIG_ROUND_MASK) {
-+		switch (cmd->flags & CMDF_ROUND_MASK) {
- 		default:
--		case TRIG_ROUND_NEAREST:
-+		case CMDF_ROUND_NEAREST:
- 			devpriv->divisor_a0 =
- 			    (convert_period + (base_period / 2)) / base_period;
- 			devpriv->divisor_b1 =
- 			    (scan_period + (base_period / 2)) / base_period;
- 			break;
--		case TRIG_ROUND_UP:
-+		case CMDF_ROUND_UP:
- 			devpriv->divisor_a0 =
- 			    (convert_period + (base_period - 1)) / base_period;
- 			devpriv->divisor_b1 =
- 			    (scan_period + (base_period - 1)) / base_period;
- 			break;
--		case TRIG_ROUND_DOWN:
-+		case CMDF_ROUND_DOWN:
- 			devpriv->divisor_a0 = convert_period / base_period;
- 			devpriv->divisor_b1 = scan_period / base_period;
- 			break;
+-	switch (flags & TRIG_ROUND_MASK) {
+-	case TRIG_ROUND_UP:
++	switch (flags & CMDF_ROUND_MASK) {
++	case CMDF_ROUND_UP:
+ 		divisor = (ns + TIMER_BASE - 1) / TIMER_BASE;
+ 		break;
+-	case TRIG_ROUND_DOWN:
++	case CMDF_ROUND_DOWN:
+ 		divisor = ns / TIMER_BASE;
+ 		break;
+-	case TRIG_ROUND_NEAREST:
++	case CMDF_ROUND_NEAREST:
+ 	default:
+ 		divisor = (ns + TIMER_BASE / 2) / TIMER_BASE;
+ 		break;
 -- 
 2.1.0
 
