@@ -1,66 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933484AbaICWSV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:18:21 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:37109 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933347AbaICWSR (ORCPT
+	id S933875AbaICWSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:18:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46072 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933813AbaICWSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:17 -0400
+	Wed, 3 Sep 2014 18:18:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.16 072/125] powerpc/eeh: Wrong place to call pci_get_slot()
+Date: Wed,  3 Sep 2014 15:07:09 -0700
+Message-Id: <20140903220625.838465391@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <20140903220518.435911463@linuxfoundation.org>
-References: <20140903220515.958924632@linuxfoundation.org>
-	<20140903220518.435911463@linuxfoundation.org>
-Date: Wed, 3 Sep 2014 18:18:16 -0400
-Message-ID: <CAHQdGtR8eH-rz3=4uBU=MjrXBUKhrRFO1rsjKqSxD_131MoTFQ@mail.gmail.com>
-Subject: Re: [PATCH 3.14 83/88] NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Stable Tree <stable@vger.kernel.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 3, 2014 at 6:05 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> 3.14-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
->
-> commit 65b38851a17472d31fec9019fc3a55b0802dab88 upstream.
->
-> The usage of pid_ns->child_reaper->nsproxy->net_ns in
-> nfs_server_list_open and nfs_client_list_open is not safe.
->
-> /proc for a pid namespace can remain mounted after the all of the
-> process in that pid namespace have exited.  There are also times
-> before the initial process in a pid namespace has started or after the
-> initial process in a pid namespace has exited where
-> pid_ns->child_reaper can be NULL or stale.  Making the idiom
-> pid_ns->child_reaper->nsproxy a double whammy of problems.
->
-> Luckily all that needs to happen is to move /proc/fs/nfsfs/servers and
-> /proc/fs/nfsfs/volumes under /proc/net to /proc/net/nfsfs/servers and
-> /proc/net/nfsfs/volumes and add a symlink from the original location,
-> and to use seq_open_net as it has been designed.
->
-> Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-> Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-...and ditto. Please hold off applying until the commit is fixed in upstream.
+------------------
 
--- 
-Trond Myklebust
+From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
 
-Linux NFS client maintainer, PrimaryData
+commit 9e5c6e5a3be0b2e17ff61b9b74adef4a2c9e6934 upstream.
 
-trond.myklebust@primarydata.com
+pci_get_slot() is called with hold of PCI bus semaphore and it's not
+safe to be called in interrupt context. However, we possibly checks
+EEH error and calls the function in interrupt context. To avoid using
+pci_get_slot(), we turn into device tree for fetching location code.
+Otherwise, we might run into WARN_ON() as following messages indicate:
+
+ WARNING: at drivers/pci/search.c:223
+ CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.0-rc3+ #72
+ task: c000000001367af0 ti: c000000001444000 task.ti: c000000001444000
+ NIP: c000000000497b70 LR: c000000000037530 CTR: 000000003003d114
+ REGS: c000000001446fa0 TRAP: 0700   Not tainted  (3.16.0-rc3+)
+ MSR: 9000000000029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 48002422  XER: 20000000
+ CFAR: c00000000003752c SOFTE: 0
+   :
+ NIP [c000000000497b70] .pci_get_slot+0x40/0x110
+ LR [c000000000037530] .eeh_pe_loc_get+0x150/0x190
+ Call Trace:
+   .of_get_property+0x30/0x60 (unreliable)
+   .eeh_pe_loc_get+0x150/0x190
+   .eeh_dev_check_failure+0x1b4/0x550
+   .eeh_check_failure+0x90/0xf0
+   .lpfc_sli_check_eratt+0x504/0x7c0 [lpfc]
+   .lpfc_poll_eratt+0x64/0x100 [lpfc]
+   .call_timer_fn+0x64/0x190
+   .run_timer_softirq+0x2cc/0x3e0
+
+Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+Acked-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/kernel/eeh_pe.c |   46 ++++++++++++-------------------------------
+ 1 file changed, 13 insertions(+), 33 deletions(-)
+
+--- a/arch/powerpc/kernel/eeh_pe.c
++++ b/arch/powerpc/kernel/eeh_pe.c
+@@ -802,53 +802,33 @@ void eeh_pe_restore_bars(struct eeh_pe *
+  */
+ const char *eeh_pe_loc_get(struct eeh_pe *pe)
+ {
+-	struct pci_controller *hose;
+ 	struct pci_bus *bus = eeh_pe_bus_get(pe);
+-	struct pci_dev *pdev;
+-	struct device_node *dn;
+-	const char *loc;
++	struct device_node *dn = pci_bus_to_OF_node(bus);
++	const char *loc = NULL;
+ 
+-	if (!bus)
+-		return "N/A";
++	if (!dn)
++		goto out;
+ 
+ 	/* PHB PE or root PE ? */
+ 	if (pci_is_root_bus(bus)) {
+-		hose = pci_bus_to_host(bus);
+-		loc = of_get_property(hose->dn,
+-				"ibm,loc-code", NULL);
+-		if (loc)
+-			return loc;
+-		loc = of_get_property(hose->dn,
+-				"ibm,io-base-loc-code", NULL);
++		loc = of_get_property(dn, "ibm,loc-code", NULL);
++		if (!loc)
++			loc = of_get_property(dn, "ibm,io-base-loc-code", NULL);
+ 		if (loc)
+-			return loc;
++			goto out;
+ 
+-		pdev = pci_get_slot(bus, 0x0);
+-	} else {
+-		pdev = bus->self;
+-	}
+-
+-	if (!pdev) {
+-		loc = "N/A";
+-		goto out;
+-	}
+-
+-	dn = pci_device_to_OF_node(pdev);
+-	if (!dn) {
+-		loc = "N/A";
+-		goto out;
++		/* Check the root port */
++		dn = dn->child;
++		if (!dn)
++			goto out;
+ 	}
+ 
+ 	loc = of_get_property(dn, "ibm,loc-code", NULL);
+ 	if (!loc)
+ 		loc = of_get_property(dn, "ibm,slot-location-code", NULL);
+-	if (!loc)
+-		loc = "N/A";
+ 
+ out:
+-	if (pci_is_root_bus(bus) && pdev)
+-		pci_dev_put(pdev);
+-	return loc;
++	return loc ? loc : "N/A";
+ }
+ 
+ /**
+
+
