@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934192AbaICWYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:24:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46214 "EHLO
+	id S934177AbaICWYD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:24:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46220 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933893AbaICWSy (ORCPT
+	with ESMTP id S933899AbaICWSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:54 -0400
+	Wed, 3 Sep 2014 18:18:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.16 047/125] hwmon: (lm92) Prevent overflow problem when writing large limits
-Date: Wed,  3 Sep 2014 15:06:44 -0700
-Message-Id: <20140903220625.060915740@linuxfoundation.org>
+        Richard Marciel <rmaciel@linux.vnet.ibm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 3.16 048/125] tpm: Add missing tpm_do_selftest to ST33 I2C driver
+Date: Wed,  3 Sep 2014 15:06:45 -0700
+Message-Id: <20140903220625.089892150@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,63 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-commit 5b963089161b8fb244889c972edf553b9d737545 upstream.
+commit f07a5e9a331045e976a3d317ba43d14859d9407c upstream.
 
-On platforms with sizeof(int) < sizeof(long), writing a temperature
-limit larger than MAXINT will result in unpredictable limit values
-written to the chip. Avoid auto-conversion from long to int to fix
-the problem.
+Most device drivers do call 'tpm_do_selftest' which executes a
+TPM_ContinueSelfTest. tpm_i2c_stm_st33 is just pointlessly different,
+I think it is bug.
 
-The hysteresis temperature range depends on the value of
-data->temp[attr->index], since val is subtracted from it.
-Use a wider clamp, [-120000, 220000] should do to cover the
-possible range. Also add missing TEMP_TO_REG() on writes into
-cached hysteresis value.
+These days we have the general assumption that the TPM is usable by
+the kernel immediately after the driver is finished, so we can no
+longer defer the mandatory self test to userspace.
 
-Also uses clamp_val to simplify the code a bit.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-[Guenter Roeck: Fixed double TEMP_TO_REG on hysteresis updates]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reported-by: Richard Marciel <rmaciel@linux.vnet.ibm.com>
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/lm92.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/char/tpm/tpm_i2c_stm_st33.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/lm92.c
-+++ b/drivers/hwmon/lm92.c
-@@ -74,12 +74,9 @@ static inline int TEMP_FROM_REG(s16 reg)
- 	return reg / 8 * 625 / 10;
- }
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -714,6 +714,7 @@ tpm_st33_i2c_probe(struct i2c_client *cl
+ 	}
  
--static inline s16 TEMP_TO_REG(int val)
-+static inline s16 TEMP_TO_REG(long val)
- {
--	if (val <= -60000)
--		return -60000 * 10 / 625 * 8;
--	if (val >= 160000)
--		return 160000 * 10 / 625 * 8;
-+	val = clamp_val(val, -60000, 160000);
- 	return val * 10 / 625 * 8;
- }
+ 	tpm_get_timeouts(chip);
++	tpm_do_selftest(chip);
  
-@@ -206,10 +203,12 @@ static ssize_t set_temp_hyst(struct devi
- 	if (err)
- 		return err;
- 
-+	val = clamp_val(val, -120000, 220000);
- 	mutex_lock(&data->update_lock);
--	data->temp[t_hyst] = TEMP_FROM_REG(data->temp[attr->index]) - val;
-+	 data->temp[t_hyst] =
-+		TEMP_TO_REG(TEMP_FROM_REG(data->temp[attr->index]) - val);
- 	i2c_smbus_write_word_swapped(client, LM92_REG_TEMP_HYST,
--				     TEMP_TO_REG(data->temp[t_hyst]));
-+				     data->temp[t_hyst]);
- 	mutex_unlock(&data->update_lock);
- 	return count;
- }
+ 	dev_info(chip->dev, "TPM I2C Initialized\n");
+ 	return 0;
 
 
