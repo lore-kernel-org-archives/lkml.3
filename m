@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936427AbaICXw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:52:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
+	id S935652AbaICXwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:52:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933250AbaICWFu (ORCPT
+	with ESMTP id S933245AbaICWFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:05:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Francesco Muzio <muziofg@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 13/55] ALSA: hda/realtek - Avoid setting wrong COEF on ALC269 & co
-Date: Wed,  3 Sep 2014 15:05:03 -0700
-Message-Id: <20140903220456.003863870@linuxfoundation.org>
+        Ben Hawkes <hawkes@google.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 03/55] HID: fix a couple of off-by-ones
+Date: Wed,  3 Sep 2014 15:04:53 -0700
+Message-Id: <20140903220454.197183778@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -28,85 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit f3ee07d8b6e061bf34a7167c3f564e8da4360a99 upstream.
+commit 4ab25786c87eb20857bbb715c3ae34ec8fd6a214 upstream.
 
-ALC269 & co have many vendor-specific setups with COEF verbs.
-However, some verbs seem specific to some codec versions and they
-result in the codec stalling.  Typically, such a case can be avoided
-by checking the return value from reading a COEF.  If the return value
-is -1, it implies that the COEF is invalid, thus it shouldn't be
-written.
+There are a few very theoretical off-by-one bugs in report descriptor size
+checking when performing a pre-parsing fixup. Fix those.
 
-This patch adds the invalid COEF checks in appropriate places
-accessing ALC269 and its variants.  The patch actually fixes the
-resume problem on Acer AO725 laptop.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52181
-Tested-by: Francesco Muzio <muziofg@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Ben Hawkes <hawkes@google.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/hid/hid-cherry.c   |    2 +-
+ drivers/hid/hid-kye.c      |    2 +-
+ drivers/hid/hid-lg.c       |    4 ++--
+ drivers/hid/hid-monterey.c |    2 +-
+ drivers/hid/hid-petalynx.c |    2 +-
+ drivers/hid/hid-sunplus.c  |    2 +-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -175,6 +175,8 @@ static void alc_fix_pll(struct hda_codec
- 			    spec->pll_coef_idx);
- 	val = snd_hda_codec_read(codec, spec->pll_nid, 0,
- 				 AC_VERB_GET_PROC_COEF, 0);
-+	if (val == -1)
-+		return;
- 	snd_hda_codec_write(codec, spec->pll_nid, 0, AC_VERB_SET_COEF_INDEX,
- 			    spec->pll_coef_idx);
- 	snd_hda_codec_write(codec, spec->pll_nid, 0, AC_VERB_SET_PROC_COEF,
-@@ -2677,6 +2679,8 @@ static int alc269_parse_auto_config(stru
- static void alc269vb_toggle_power_output(struct hda_codec *codec, int power_up)
+--- a/drivers/hid/hid-cherry.c
++++ b/drivers/hid/hid-cherry.c
+@@ -28,7 +28,7 @@
+ static __u8 *ch_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
- 	int val = alc_read_coef_idx(codec, 0x04);
-+	if (val == -1)
-+		return;
- 	if (power_up)
- 		val |= 1 << 11;
- 	else
-@@ -3822,27 +3826,30 @@ static void alc269_fill_coef(struct hda_
- 	if ((alc_get_coef0(codec) & 0x00ff) == 0x017) {
- 		val = alc_read_coef_idx(codec, 0x04);
- 		/* Power up output pin */
--		alc_write_coef_idx(codec, 0x04, val | (1<<11));
-+		if (val != -1)
-+			alc_write_coef_idx(codec, 0x04, val | (1<<11));
+-	if (*rsize >= 17 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
++	if (*rsize >= 18 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
+ 		hid_info(hdev, "fixing up Cherry Cymotion report descriptor\n");
+ 		rdesc[11] = rdesc[16] = 0xff;
+ 		rdesc[12] = rdesc[17] = 0x03;
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -280,7 +280,7 @@ static __u8 *kye_report_fixup(struct hid
+ 		 *   - change the button usage range to 4-7 for the extra
+ 		 *     buttons
+ 		 */
+-		if (*rsize >= 74 &&
++		if (*rsize >= 75 &&
+ 			rdesc[61] == 0x05 && rdesc[62] == 0x08 &&
+ 			rdesc[63] == 0x19 && rdesc[64] == 0x08 &&
+ 			rdesc[65] == 0x29 && rdesc[66] == 0x0f &&
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -345,14 +345,14 @@ static __u8 *lg_report_fixup(struct hid_
+ 	struct usb_device_descriptor *udesc;
+ 	__u16 bcdDevice, rev_maj, rev_min;
+ 
+-	if ((drv_data->quirks & LG_RDESC) && *rsize >= 90 && rdesc[83] == 0x26 &&
++	if ((drv_data->quirks & LG_RDESC) && *rsize >= 91 && rdesc[83] == 0x26 &&
+ 			rdesc[84] == 0x8c && rdesc[85] == 0x02) {
+ 		hid_info(hdev,
+ 			 "fixing up Logitech keyboard report descriptor\n");
+ 		rdesc[84] = rdesc[89] = 0x4d;
+ 		rdesc[85] = rdesc[90] = 0x10;
  	}
- 
- 	if ((alc_get_coef0(codec) & 0x00ff) == 0x018) {
- 		val = alc_read_coef_idx(codec, 0xd);
--		if ((val & 0x0c00) >> 10 != 0x1) {
-+		if (val != -1 && (val & 0x0c00) >> 10 != 0x1) {
- 			/* Capless ramp up clock control */
- 			alc_write_coef_idx(codec, 0xd, val | (1<<10));
- 		}
- 		val = alc_read_coef_idx(codec, 0x17);
--		if ((val & 0x01c0) >> 6 != 0x4) {
-+		if (val != -1 && (val & 0x01c0) >> 6 != 0x4) {
- 			/* Class D power on reset */
- 			alc_write_coef_idx(codec, 0x17, val | (1<<7));
- 		}
+-	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 50 &&
++	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 51 &&
+ 			rdesc[32] == 0x81 && rdesc[33] == 0x06 &&
+ 			rdesc[49] == 0x81 && rdesc[50] == 0x06) {
+ 		hid_info(hdev,
+--- a/drivers/hid/hid-monterey.c
++++ b/drivers/hid/hid-monterey.c
+@@ -24,7 +24,7 @@
+ static __u8 *mr_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 30 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
++	if (*rsize >= 31 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
+ 		hid_info(hdev, "fixing up button/consumer in HID report descriptor\n");
+ 		rdesc[30] = 0x0c;
  	}
- 
- 	val = alc_read_coef_idx(codec, 0xd); /* Class D */
--	alc_write_coef_idx(codec, 0xd, val | (1<<14));
-+	if (val != -1)
-+		alc_write_coef_idx(codec, 0xd, val | (1<<14));
- 
- 	val = alc_read_coef_idx(codec, 0x4); /* HP */
--	alc_write_coef_idx(codec, 0x4, val | (1<<11));
-+	if (val != -1)
-+		alc_write_coef_idx(codec, 0x4, val | (1<<11));
- }
- 
- /*
+--- a/drivers/hid/hid-petalynx.c
++++ b/drivers/hid/hid-petalynx.c
+@@ -25,7 +25,7 @@
+ static __u8 *pl_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 60 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
++	if (*rsize >= 62 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
+ 			rdesc[41] == 0x00 && rdesc[59] == 0x26 &&
+ 			rdesc[60] == 0xf9 && rdesc[61] == 0x00) {
+ 		hid_info(hdev, "fixing up Petalynx Maxter Remote report descriptor\n");
+--- a/drivers/hid/hid-sunplus.c
++++ b/drivers/hid/hid-sunplus.c
+@@ -24,7 +24,7 @@
+ static __u8 *sp_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 107 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
++	if (*rsize >= 112 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
+ 			rdesc[106] == 0x03) {
+ 		hid_info(hdev, "fixing up Sunplus Wireless Desktop report descriptor\n");
+ 		rdesc[105] = rdesc[110] = 0x03;
 
 
