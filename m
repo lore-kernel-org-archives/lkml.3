@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934707AbaICXkU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:40:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
+	id S933368AbaICWGA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:06:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933240AbaICWGB (ORCPT
+	with ESMTP id S933240AbaICWFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:06:01 -0400
+	Wed, 3 Sep 2014 18:05:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.10 40/55] mei: reset client state on queued connect request
-Date: Wed,  3 Sep 2014 15:05:30 -0700
-Message-Id: <20140903220500.373847693@linuxfoundation.org>
+        Pratyush Anand <pratyush.anand@st.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.10 09/55] USB: Fix persist resume of some SS USB devices
+Date: Wed,  3 Sep 2014 15:04:59 -0700
+Message-Id: <20140903220455.162284403@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -29,37 +29,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Pratyush Anand <pratyush.anand@st.com>
 
-commit 73ab4232388b7a08f17c8d08141ff2099fa0b161 upstream.
+commit a40178b2fa6ad87670fb1e5fa4024db00c149629 upstream.
 
-If connect request is queued (e.g. device in pg) set client state
-to initializing, thus avoid preliminary exit in wait if current
-state is disconnected.
+Problem Summary: Problem has been observed generally with PM states
+where VBUS goes off during suspend. There are some SS USB devices which
+take longer time for link training compared to many others.  Such
+devices fail to reconnect with same old address which was associated
+with it before suspend.
 
-This is regression from:
+When system resumes, at some point of time (dpm_run_callback->
+usb_dev_resume->usb_resume->usb_resume_both->usb_resume_device->
+usb_port_resume) SW reads hub status. If device is present,
+then it finishes port resume and re-enumerates device with same
+address. If device is not present then, SW thinks that device was
+removed during suspend and therefore does logical disconnection
+and removes all the resource allocated for this device.
 
-commit e4d8270e604c3202131bac607969605ac397b893
-Author: Alexander Usyskin <alexander.usyskin@intel.com>
-mei: set connecting state just upon connection request is sent to the fw
+Now, if I put sufficient delay just before root hub status read in
+usb_resume_device then, SW sees always that device is present. In normal
+course(without any delay) SW sees that no device is present and then SW
+removes all resource associated with the device at this port.  In the
+latter case, after sometime, device says that hey I am here, now host
+enumerates it, but with new address.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Problem had been reproduced when I connect verbatim USB3.0 hard disc
+with my STiH407 XHCI host running with 3.10 kernel.
+
+I see that similar problem has been reported here.
+https://bugzilla.kernel.org/show_bug.cgi?id=53211
+Reading above it seems that bug was not in 3.6.6 and was present in 3.8
+and again it was not present for some in 3.12.6, while it was present
+for few others. I tested with 3.13-FC19 running at i686 desktop, problem
+was still there. However, I was failed to reproduce it with 3.16-RC4
+running at same i686 machine. I would say it is just a random
+observation. Problem for few devices is always there, as I am unable to
+find a proper fix for the issue.
+
+So, now question is what should be the amount of delay so that host is
+always able to recognize suspended device after resume.
+
+XHCI specs 4.19.4 says that when Link training is successful, port sets
+CSC bit to 1. So if SW reads port status before successful link
+training, then it will not find device to be present.  USB Analyzer log
+with such buggy devices show that in some cases device switch on the
+RX termination after long delay of host enabling the VBUS. In few other
+cases it has been seen that device fails to negotiate link training in
+first attempt. It has been reported till now that few devices take as
+long as 2000 ms to train the link after host enabling its VBUS and
+RX termination. This patch implements a 2000 ms timeout for CSC bit to set
+ie for link training. If in a case link trains before timeout, loop will
+exit earlier.
+
+This patch implements above delay, but only for SS device and when
+persist is enabled.
+
+So, for the good device overhead is almost none. While for the bad
+devices penalty could be the time which it take for link training.
+But, If a device was connected before suspend, and was removed
+while system was asleep, then the penalty would be the timeout ie
+2000 ms.
+
+Results:
+
+Verbatim USB SS hard disk connected with STiH407 USB host running 3.10
+Kernel resumes in 461 msecs without this patch, but hard disk is
+assigned a new device address. Same system resumes in 790 msecs with
+this patch, but with old device address.
+
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/client.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/hub.c |   41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -512,6 +512,7 @@ int mei_cl_connect(struct mei_cl *cl, st
- 		cl->timer_count = MEI_CONNECT_TIMEOUT;
- 		list_add_tail(&cb->list, &dev->ctrl_rd_list.list);
- 	} else {
-+		cl->state = MEI_FILE_INITIALIZING;
- 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
- 	}
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3166,6 +3166,43 @@ static int finish_port_resume(struct usb
+ }
  
+ /*
++ * There are some SS USB devices which take longer time for link training.
++ * XHCI specs 4.19.4 says that when Link training is successful, port
++ * sets CSC bit to 1. So if SW reads port status before successful link
++ * training, then it will not find device to be present.
++ * USB Analyzer log with such buggy devices show that in some cases
++ * device switch on the RX termination after long delay of host enabling
++ * the VBUS. In few other cases it has been seen that device fails to
++ * negotiate link training in first attempt. It has been
++ * reported till now that few devices take as long as 2000 ms to train
++ * the link after host enabling its VBUS and termination. Following
++ * routine implements a 2000 ms timeout for link training. If in a case
++ * link trains before timeout, loop will exit earlier.
++ *
++ * FIXME: If a device was connected before suspend, but was removed
++ * while system was asleep, then the loop in the following routine will
++ * only exit at timeout.
++ *
++ * This routine should only be called when persist is enabled for a SS
++ * device.
++ */
++static int wait_for_ss_port_enable(struct usb_device *udev,
++		struct usb_hub *hub, int *port1,
++		u16 *portchange, u16 *portstatus)
++{
++	int status = 0, delay_ms = 0;
++
++	while (delay_ms < 2000) {
++		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
++			break;
++		msleep(20);
++		delay_ms += 20;
++		status = hub_port_status(hub, *port1, portstatus, portchange);
++	}
++	return status;
++}
++
++/*
+  * usb_port_resume - re-activate a suspended usb device's upstream port
+  * @udev: device to re-activate, not a root hub
+  * Context: must be able to sleep; device not locked; pm locks held
+@@ -3267,6 +3304,10 @@ int usb_port_resume(struct usb_device *u
+ 
+ 	clear_bit(port1, hub->busy_bits);
+ 
++	if (udev->persist_enabled && hub_is_superspeed(hub->hdev))
++		status = wait_for_ss_port_enable(udev, hub, &port1, &portchange,
++				&portstatus);
++
+ 	status = check_port_resume_type(udev,
+ 			hub, port1, status, portchange, portstatus);
+ 	if (status == 0)
 
 
