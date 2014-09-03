@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450AbaICWGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:06:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45383 "EHLO
+	id S933418AbaICWGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:06:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933210AbaICWGF (ORCPT
+	with ESMTP id S933394AbaICWGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:06:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.10 46/55] ARM: OMAP2+: hwmod: Rearm wake-up interrupts for DT when MUSB is idled
-Date: Wed,  3 Sep 2014 15:05:36 -0700
-Message-Id: <20140903220501.294960621@linuxfoundation.org>
+        Nicolas Alt <n.alt@mytum.de>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 47/55] USB: ftdi_sio: add Basic Micro ATOM Nano USB2Serial PID
+Date: Wed,  3 Sep 2014 15:05:37 -0700
+Message-Id: <20140903220501.457199594@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -28,59 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit cc824534d4fef0e46e4486d5c1e10d3c6b1ebadc upstream.
+commit 6552cc7f09261db2aeaae389aa2c05a74b3a93b4 upstream.
 
-Looks like MUSB cable removal can cause wake-up interrupts to
-stop working for device tree based booting at least for UART3
-even as nothing is dynamically remuxed. This can be fixed by
-calling reconfigure_io_chain() for device tree based booting
-in hwmod code. Note that we already do that for legacy booting
-if the legacy mux is configured.
+Add device id for Basic Micro ATOM Nano USB2Serial adapters.
 
-My guess is that this is related to UART3 and MUSB ULPI
-hsusb0_data0 and hsusb0_data1 support for Carkit mode that
-somehow affect the configured IO chain for UART3 and require
-rearming the wake-up interrupts.
-
-In general, for device tree based booting, pinctrl-single
-calls the rearm hook that in turn calls reconfigure_io_chain
-so calling reconfigure_io_chain should not be needed from the
-hwmod code for other events.
-
-So let's limit the hwmod rearming of iochain only to
-HWMOD_FORCE_MSTANDBY where MUSB is currently the only user
-of it. If we see other devices needing similar changes we can
-add more checks for it.
-
-Cc: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Nicolas Alt <n.alt@mytum.de>
+Tested-by: Nicolas Alt <n.alt@mytum.de>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/omap_hwmod.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    2 ++
+ 2 files changed, 3 insertions(+)
 
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2177,6 +2177,8 @@ static int _enable(struct omap_hwmod *oh
- 			 oh->mux->pads_dynamic))) {
- 		omap_hwmod_mux(oh->mux, _HWMOD_STATE_ENABLED);
- 		_reconfigure_io_chain();
-+	} else if (oh->flags & HWMOD_FORCE_MSTANDBY) {
-+		_reconfigure_io_chain();
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -154,6 +154,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_BM_ATOM_NANO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_EV3CON_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -42,6 +42,8 @@
+ /* www.candapter.com Ewert Energy Systems CANdapter device */
+ #define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
  
- 	_add_initiator_dep(oh, mpu_oh);
-@@ -2283,6 +2285,8 @@ static int _idle(struct omap_hwmod *oh)
- 	if (oh->mux && oh->mux->pads_dynamic) {
- 		omap_hwmod_mux(oh->mux, _HWMOD_STATE_IDLE);
- 		_reconfigure_io_chain();
-+	} else if (oh->flags & HWMOD_FORCE_MSTANDBY) {
-+		_reconfigure_io_chain();
- 	}
- 
- 	oh->_state = _HWMOD_STATE_IDLE;
++#define FTDI_BM_ATOM_NANO_PID	0xa559	/* Basic Micro ATOM Nano USB2Serial */
++
+ /*
+  * Texas Instruments XDS100v2 JTAG / BeagleBone A3
+  * http://processors.wiki.ti.com/index.php/XDS100
 
 
