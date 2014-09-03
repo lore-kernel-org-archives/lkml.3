@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526AbaICWIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:08:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45492 "EHLO
+	id S933611AbaICWIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:08:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933092AbaICWIa (ORCPT
+	with ESMTP id S933548AbaICWIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:30 -0400
+	Wed, 3 Sep 2014 18:08:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Chiluk <chiluk@canonical.com>
-Subject: [PATCH 3.14 01/88] stable_kernel_rules: Add pointer to netdev-FAQ for network patches
-Date: Wed,  3 Sep 2014 15:04:35 -0700
-Message-Id: <20140903220516.002924511@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.14 20/88] mei: start disconnect request timer consistently
+Date: Wed,  3 Sep 2014 15:04:54 -0700
+Message-Id: <20140903220516.559117800@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,32 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chiluk <chiluk@canonical.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit b76fc285337b6b256e9ba20a40cfd043f70c27af upstream.
+commit 22b987a325701223f9a37db700c6eb20b9924c6f upstream.
 
-Stable_kernel_rules should point submitters of network stable patches to the
-netdev_FAQ.txt as requests for stable network patches should go to netdev
-first.
+Link must be reset in case the fw doesn't
+respond to client disconnect request.
+We did charge the timer only in irq path
+from mei_cl_irq_close and not in mei_cl_disconnect
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/stable_kernel_rules.txt |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/misc/mei/client.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -29,6 +29,9 @@ Rules on what kind of patches are accept
- 
- Procedure for submitting patches to the -stable tree:
- 
-+ - If the patch covers files in net/ or drivers/net please follow netdev stable
-+   submission guidelines as described in
-+   Documentation/networking/netdev-FAQ.txt
-  - Send the patch, after verifying that it follows the above rules, to
-    stable@vger.kernel.org.  You must note the upstream commit ID in the
-    changelog of your submission, as well as the kernel version you wish
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -459,6 +459,7 @@ int mei_cl_disconnect(struct mei_cl *cl)
+ 			cl_err(dev, cl, "failed to disconnect.\n");
+ 			goto free;
+ 		}
++		cl->timer_count = MEI_CONNECT_TIMEOUT;
+ 		mdelay(10); /* Wait for hardware disconnection ready */
+ 		list_add_tail(&cb->list, &dev->ctrl_rd_list.list);
+ 	} else {
 
 
