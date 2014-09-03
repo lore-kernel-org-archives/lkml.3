@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbaICDuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 23:50:35 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:56489
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753439AbaICDue convert rfc822-to-8bit (ORCPT
+	id S1755174AbaICDwV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 23:52:21 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:36236 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaICDwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 23:50:34 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-CC: "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/5] Clocksource: Flextimer: Merged to LS1
-Thread-Topic: [PATCH 0/5] Clocksource: Flextimer: Merged to LS1
-Thread-Index: AQHPwPGd9AH53fMtSU2fkniGB8TfU5vu0l4A
-Date: Wed, 3 Sep 2014 03:50:29 +0000
-Message-ID: <55643a67eb1a4157b18fc8483d072908@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-x-forefront-prvs: 032334F434
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199003)(51704005)(189002)(164054003)(13464003)(377454003)(66066001)(79102001)(101416001)(46102001)(76482001)(74316001)(76176999)(50986999)(99396002)(81542001)(81342001)(80022001)(85306004)(2501002)(74662001)(31966008)(2656002)(20776003)(54356999)(107046002)(64706001)(99286002)(86362001)(106116001)(95666004)(106356001)(108616004)(77096002)(105586002)(83072002)(85852003)(4396001)(87936001)(21056001)(83322001)(33646002)(92566001)(90102001)(77982001)(19580395003)(74502001)(19580405001)(76576001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB191;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 2 Sep 2014 23:52:19 -0400
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <54067674.3040007@rock-chips.com>
+References: <1409562468-16586-1-git-send-email-zyw@rock-chips.com>
+	<1409564586-18421-1-git-send-email-zyw@rock-chips.com>
+	<CAD=FV=X-hSHKe4_QRxFLejok-qVYM_FyXO7L7X6AzW8sTaVPnQ@mail.gmail.com>
+	<54067674.3040007@rock-chips.com>
+Date: Tue, 2 Sep 2014 20:52:17 -0700
+X-Google-Sender-Auth: tMRAGhviiPj2HN251Owxi4Kc5IM
+Message-ID: <CAD=FV=Xq+EaSX=wqkpRVKg5e5Rf-CMWD8ZBJ_-SZqoo-KrX0LA@mail.gmail.com>
+Subject: Re: [PATCH v7 3/5] RTC: RK808: add RTC driver for RK808
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
+        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        xxx <xxx@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Dmitry Torokhov <dtor@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kever Yang <kever.yang@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping :)
+Chris,
 
-Thanks,
+On Tue, Sep 2, 2014 at 7:01 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+>
+> On 09/02/2014 11:58 AM, Doug Anderson wrote:
+>>>
+>>> +static int rk808_rtc_probe(struct platform_device *pdev)
+>>> >+{
+>>> >+       struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
+>>> >+       struct rk808_rtc *rk808_rtc;
+>>> >+       struct rtc_time tm;
+>>> >+       int ret;
+>>> >+
+>>> >+       rk808_rtc = devm_kzalloc(&pdev->dev, sizeof(*rk808_rtc),
+>>> > GFP_KERNEL);
+>>> >+       if (rk808_rtc == NULL)
+>>> >+               return -ENOMEM;
+>>> >+
+>>> >+       platform_set_drvdata(pdev, rk808_rtc);
+>>> >+       rk808_rtc->rk808 = rk808;
+>>> >+
+>>> >+       /* start rtc running by default, and use shadowed timer. */
+>>> >+       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
+>>> >+                                BIT_RTC_CTRL_REG_STOP_RTC_M |
+>>> >+                                BIT_RTC_CTRL_REG_RTC_READSEL_M,
+>>> >+                                BIT_RTC_CTRL_REG_RTC_READSEL_M);
+>>
+>> I think this should still be setting to 0, not to
+>> BIT_RTC_CTRL_REG_RTC_READSEL_M.  Otherwise the first read of the time
+>> will return that time that was frozen at probe time, right?  AKA: if
+>> probe happens at 11:00:00 and then we read the time at 11:00:05 we'll
+>> still read 11:00:00 the first time.
+>>
+>  Sorry, I did not describe correctly, in the previous mail.
+>  Actually, RK808 has a "GET_TIME" switch bit. When "GET_TIME" bit rising
+> thansiton to 1,
+>  the current time will save in a shadowed register.
+>  If "READSEL" = 1, read rtc time register, return the frozen time.
+>  If we need the real time, clr this "READSEL" bit.
 
-BRs
-Xiubo
+Ohhhhh!  I see.  I clearly didn't look closely enough at the whole
+register description in the user manual.  I think you've got it right,
+then.
 
+I think this would be more obvious if you added a comment and you set
+both the high and low bits at the same time.  AKA:
 
++       /* Force an update of the shadowed registers right now */
++       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
++                                BIT_RTC_CTRL_REG_RTC_GET_TIME,
++                                BIT_RTC_CTRL_REG_RTC_GET_TIME);
++       if (ret) {
++               dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
++               return ret;
++       }
++
++       ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
++                                BIT_RTC_CTRL_REG_RTC_GET_TIME,
++                                BIT_RTC_CTRL_REG_RTC_GET_TIME);
++       if (ret) {
++               dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
++               return ret;
++       }
 
+...doing them both at the same time makes it obvious that this is a
+one-time copy triggered by the "rising edge" of this bit.  It also
+means you don't need any "goto" for error handling.
 
-> -----Original Message-----
-> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
-> Sent: Tuesday, August 26, 2014 1:46 PM
-> To: daniel.lezcano@linaro.org; tglx@linutronix.de
-> Cc: Wang Dongsheng-B40534; linux-kernel@vger.kernel.org; Xiubo Li-B47053
-> Subject: [PATCH 0/5] Clocksource: Flextimer: Merged to LS1
-> 
-> 
-> Xiubo Li (5):
->   Clocksource: Flextimer: Set cpumask to cpu_possible_mask
->   Clocksource: Flextimer: Use internal clocksource read API.
->   Clocksource: Flextimer: Remove the useless code.
->   Clocksource: Flextimer: Fix counter clock prescaler calculation.
->   Clocksource: Flextimer: Use Macro for clock source selection.
-> 
->  drivers/clocksource/fsl_ftm_timer.c | 20 +++++++++++++-------
->  1 file changed, 13 insertions(+), 7 deletions(-)
-> 
-> --
-> 1.8.5
-
+-Doug
