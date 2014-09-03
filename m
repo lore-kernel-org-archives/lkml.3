@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935422AbaICXLZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:11:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
+	id S933650AbaICWSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:18:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46021 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933693AbaICWSi (ORCPT
+	with ESMTP id S933486AbaICWSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:38 -0400
+	Wed, 3 Sep 2014 18:18:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.16 057/125] KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC redir table
-Date: Wed,  3 Sep 2014 15:06:54 -0700
-Message-Id: <20140903220625.353548451@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.16 039/125] hwmon: (sis5595) Prevent overflow problem when writing large limits
+Date: Wed,  3 Sep 2014 15:06:36 -0700
+Message-Id: <20140903220624.827352581@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,67 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 0f6c0a740b7d3e1f3697395922d674000f83d060 upstream.
+commit cc336546ddca8c22de83720632431c16a5f9fe9a upstream.
 
-Currently, the EOI exit bitmap (used for APICv) does not include
-interrupts that are masked.  However, this can cause a bug that manifests
-as an interrupt storm inside the guest.  Alex Williamson reported the
-bug and is the one who really debugged this; I only wrote the patch. :)
+On platforms with sizeof(int) < sizeof(long), writing a temperature
+limit larger than MAXINT will result in unpredictable limit values
+written to the chip. Avoid auto-conversion from long to int to fix
+the problem.
 
-The scenario involves a multi-function PCI device with OHCI and EHCI
-USB functions and an audio function, all assigned to the guest, where
-both USB functions use legacy INTx interrupts.
-
-As soon as the guest boots, interrupts for these devices turn into an
-interrupt storm in the guest; the host does not see the interrupt storm.
-Basically the EOI path does not work, and the guest continues to see the
-interrupt over and over, even after it attempts to mask it at the APIC.
-The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
-with not many changes in the area of APIC/IOAPIC handling).
-
-Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
-on in the eoi_exit_bitmap and TMR, and things then work.  What happens
-is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
-It does not have set bit 59 because the RTE was masked, so the IOAPIC
-never sees the EOI and the interrupt continues to fire in the guest.
-
-My guess was that the guest is masking the interrupt in the redirection
-table in the interrupt routine, i.e. while the interrupt is set in a
-LAPIC's ISR, The simplest fix is to ignore the masking state, we would
-rather have an unnecessary exit rather than a missed IRQ ACK and anyway
-IOAPIC interrupts are not as performance-sensitive as for example MSIs.
-Alex tested this patch and it fixed his bug.
-
-[Thanks to Alex for his precise description of the problem
- and initial debugging effort.  A lot of the text above is
- based on emails exchanged with him.]
-
-Reported-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/ioapic.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/hwmon/sis5595.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -254,10 +254,9 @@ void kvm_ioapic_scan_entry(struct kvm_vc
- 	spin_lock(&ioapic->lock);
- 	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
- 		e = &ioapic->redirtbl[index];
--		if (!e->fields.mask &&
--			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
--			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
--				 index) || index == RTC_GSI)) {
-+		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
-+		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
-+		    index == RTC_GSI) {
- 			if (kvm_apic_match_dest(vcpu, NULL, 0,
- 				e->fields.dest_id, e->fields.dest_mode)) {
- 				__set_bit(e->fields.vector,
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -159,7 +159,7 @@ static inline int TEMP_FROM_REG(s8 val)
+ {
+ 	return val * 830 + 52120;
+ }
+-static inline s8 TEMP_TO_REG(int val)
++static inline s8 TEMP_TO_REG(long val)
+ {
+ 	int nval = clamp_val(val, -54120, 157530) ;
+ 	return nval < 0 ? (nval - 5212 - 415) / 830 : (nval - 5212 + 415) / 830;
 
 
