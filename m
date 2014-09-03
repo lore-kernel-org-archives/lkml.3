@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935468AbaICXM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:12:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46063 "EHLO
+	id S934705AbaICXMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:12:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46069 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486AbaICWSh (ORCPT
+	with ESMTP id S933662AbaICWSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:37 -0400
+	Wed, 3 Sep 2014 18:18:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valerio Vanni <valerio.vanni@inwind.it>,
-        Alan Cox <alan@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.16 053/125] serial: core: Preserve termios c_cflag for console resume
-Date: Wed,  3 Sep 2014 15:06:50 -0700
-Message-Id: <20140903220625.234840439@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>, linux-crypto@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 054/125] crypto: ux500 - make interrupt mode plausible
+Date: Wed,  3 Sep 2014 15:06:51 -0700
+Message-Id: <20140903220625.263803089@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,40 +32,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit ae84db9661cafc63d179e1d985a2c5b841ff0ac4 upstream.
+commit e1f8859ee265fc89bd21b4dca79e8e983a044892 upstream.
 
-When a tty is opened for the serial console, the termios c_cflag
-settings are inherited from the console line settings.
-However, if the tty is subsequently closed, the termios settings
-are lost. This results in a garbled console if the console is later
-suspended and resumed.
+The interrupt handler in the ux500 crypto driver has an obviously
+incorrect way to access the data buffer, which for a while has
+caused this build warning:
 
-Preserve the termios c_cflag for the serial console when the tty
-is shutdown; this reflects the most recent line settings.
+../ux500/cryp/cryp_core.c: In function 'cryp_interrupt_handler':
+../ux500/cryp/cryp_core.c:234:5: warning: passing argument 1 of '__fswab32' makes integer from pointer without a cast [enabled by default]
+     writel_relaxed(ctx->indata,
+     ^
+In file included from ../include/linux/swab.h:4:0,
+                 from ../include/uapi/linux/byteorder/big_endian.h:12,
+                 from ../include/linux/byteorder/big_endian.h:4,
+                 from ../arch/arm/include/uapi/asm/byteorder.h:19,
+                 from ../include/asm-generic/bitops/le.h:5,
+                 from ../arch/arm/include/asm/bitops.h:340,
+                 from ../include/linux/bitops.h:33,
+                 from ../include/linux/kernel.h:10,
+                 from ../include/linux/clk.h:16,
+                 from ../drivers/crypto/ux500/cryp/cryp_core.c:12:
+../include/uapi/linux/swab.h:57:119: note: expected '__u32' but argument is of type 'const u8 *'
+ static inline __attribute_const__ __u32 __fswab32(__u32 val)
 
-Fixes: Bugzilla #69751, 'serial console does not wake from S3'
-Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+There are at least two, possibly three problems here:
+a) when writing into the FIFO, we copy the pointer rather than the
+   actual data we want to give to the hardware
+b) the data pointer is an array of 8-bit values, while the FIFO
+   is 32-bit wide, so both the read and write access fail to do
+   a proper type conversion
+c) This seems incorrect for big-endian kernels, on which we need to
+   byte-swap any register access, but not normally FIFO accesses,
+   at least the DMA case doesn't do it either.
+
+This converts the bogus loop to use the same readsl/writesl pair
+that we use for the two other modes (DMA and polling). This is
+more efficient and consistent, and probably correct for endianess.
+
+The bug has existed since the driver was first merged, and was
+probably never detected because nobody tried to use interrupt mode.
+It might make sense to backport this fix to stable kernels, depending
+on how the crypto maintainers feel about that.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-crypto@vger.kernel.org
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/serial_core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/crypto/ux500/cryp/cryp_core.c |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -243,6 +243,9 @@ static void uart_shutdown(struct tty_str
- 		/*
- 		 * Turn off DTR and RTS early.
- 		 */
-+		if (uart_console(uport) && tty)
-+			uport->cons->cflag = tty->termios.c_cflag;
-+
- 		if (!tty || (tty->termios.c_cflag & HUPCL))
- 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -190,7 +190,7 @@ static void add_session_id(struct cryp_c
+ static irqreturn_t cryp_interrupt_handler(int irq, void *param)
+ {
+ 	struct cryp_ctx *ctx;
+-	int i;
++	int count;
+ 	struct cryp_device_data *device_data;
  
+ 	if (param == NULL) {
+@@ -215,12 +215,11 @@ static irqreturn_t cryp_interrupt_handle
+ 	if (cryp_pending_irq_src(device_data,
+ 				 CRYP_IRQ_SRC_OUTPUT_FIFO)) {
+ 		if (ctx->outlen / ctx->blocksize > 0) {
+-			for (i = 0; i < ctx->blocksize / 4; i++) {
+-				*(ctx->outdata) = readl_relaxed(
+-						&device_data->base->dout);
+-				ctx->outdata += 4;
+-				ctx->outlen -= 4;
+-			}
++			count = ctx->blocksize / 4;
++
++			readsl(&device_data->base->dout, ctx->outdata, count);
++			ctx->outdata += count;
++			ctx->outlen -= count;
+ 
+ 			if (ctx->outlen == 0) {
+ 				cryp_disable_irq_src(device_data,
+@@ -230,12 +229,12 @@ static irqreturn_t cryp_interrupt_handle
+ 	} else if (cryp_pending_irq_src(device_data,
+ 					CRYP_IRQ_SRC_INPUT_FIFO)) {
+ 		if (ctx->datalen / ctx->blocksize > 0) {
+-			for (i = 0 ; i < ctx->blocksize / 4; i++) {
+-				writel_relaxed(ctx->indata,
+-						&device_data->base->din);
+-				ctx->indata += 4;
+-				ctx->datalen -= 4;
+-			}
++			count = ctx->blocksize / 4;
++
++			writesl(&device_data->base->din, ctx->indata, count);
++
++			ctx->indata += count;
++			ctx->datalen -= count;
+ 
+ 			if (ctx->datalen == 0)
+ 				cryp_disable_irq_src(device_data,
 
 
