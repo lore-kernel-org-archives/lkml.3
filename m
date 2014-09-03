@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaICQOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 12:14:32 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:52523 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645AbaICQOa (ORCPT
+	id S1756201AbaICQT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 12:19:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:32885 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308AbaICQTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 12:14:30 -0400
+	Wed, 3 Sep 2014 12:19:54 -0400
+Message-ID: <54073FAC.8030702@wwwdotorg.org>
+Date: Wed, 03 Sep 2014 10:19:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1409742329-17411-1-git-send-email-linus.walleij@linaro.org>
-References: <1409742329-17411-1-git-send-email-linus.walleij@linaro.org>
-Date: Wed, 3 Sep 2014 09:14:25 -0700
-Message-ID: <CAJAp7OgyriJHCLmF4EkdqVV-9_-ve4wRb-jQER9y9-Q4nhd81A@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: clean up after enable refactoring
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-gpio@vger.kernel.org, Fan Wu <fwu@marvell.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: linux-tegra@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v3 1/9] of: Add NVIDIA Tegra XUSB mailbox binding
+References: <1409693701-16520-1-git-send-email-abrestic@chromium.org> <1409693701-16520-2-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1409693701-16520-2-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 3, 2014 at 4:05 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-[..]
-> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-> index 80a64cad907d..01eab47a746f 100644
-> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
-> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-> @@ -134,9 +134,9 @@ static int msm_get_function_groups(struct pinctrl_dev *pctldev,
->         return 0;
->  }
->
-> -static int msm_pinmux_enable(struct pinctrl_dev *pctldev,
-> -                            unsigned function,
-> -                            unsigned group)
-> +static int msm_pinmux_set_mux(struct pinctrl_dev *pctldev,
-> +                             unsigned function,
-> +                             unsigned group)
->  {
->         struct msm_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctldev);
->         const struct msm_pingroup *g;
-> @@ -170,7 +170,7 @@ static const struct pinmux_ops msm_pinmux_ops = {
->         .get_functions_count    = msm_get_functions_count,
->         .get_function_name      = msm_get_function_name,
->         .get_function_groups    = msm_get_function_groups,
-> -       .enable                 = msm_pinmux_enable,
-> +       .set_mux                = msm_pinmux_set_mux,
->  };
->
->  static int msm_config_reg(struct msm_pinctrl *pctrl,
+On 09/02/2014 03:34 PM, Andrew Bresticker wrote:
+> Add device-tree bindings for the Tegra XUSB mailbox which will be used
+> for communication between the Tegra xHCI controller's firmware and the
+> host processor.
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+The series,
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+
+I'd like Thierry to review at least the XUSB pinctrl and all DT binding 
+changes too, if possible.
