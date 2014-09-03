@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936215AbaICXen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:34:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45506 "EHLO
+	id S936243AbaICXew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:34:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163AbaICWId (ORCPT
+	with ESMTP id S933154AbaICWIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:33 -0400
+	Wed, 3 Sep 2014 18:08:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick Riphagen <patrick.riphagen@xsens.com>,
-        Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 09/88] USB: serial: ftdi_sio: Add support for new Xsens devices
-Date: Wed,  3 Sep 2014 15:04:43 -0700
-Message-Id: <20140903220516.232603678@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.14 07/88] USB: devio: fix issue with log flooding
+Date: Wed,  3 Sep 2014 15:04:41 -0700
+Message-Id: <20140903220516.175705008@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,44 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick Riphagen <patrick.riphagen@xsens.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 4bdcde358b4bda74e356841d351945ca3f2245dd upstream.
+commit d310d05f1225d1f6f2bf505255fdf593bfbb3051 upstream.
 
-This adds support for new Xsens devices, using Xsens' own Vendor ID.
+usbfs allows user space to pass down an URB which sets URB_SHORT_NOT_OK
+for output URBs. That causes usbcore to log messages without limit
+for a nonsensical disallowed combination. The fix is to silently drop
+the attribute in usbfs.
+The problem is reported to exist since 3.14
+https://www.virtualbox.org/ticket/13085
 
-Signed-off-by: Patrick Riphagen <patrick.riphagen@xsens.com>
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-Cc: Johan Hovold <johan@kernel.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    3 +++
- 2 files changed, 5 insertions(+)
+ drivers/usb/core/devio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -673,6 +673,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
-+	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
-+	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
- 	{ USB_DEVICE(MOBILITY_VID, MOBILITY_USB_SERIAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACTIVE_ROBOTS_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -140,6 +140,9 @@
- /*
-  * Xsens Technologies BV products (http://www.xsens.com).
-  */
-+#define XSENS_VID		0x2639
-+#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
-+#define XSENS_MTW_PID		0x0200	/* Xsens MTw */
- #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
- #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
- #define XSENS_CONVERTER_2_PID	0xD38A
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1411,7 +1411,7 @@ static int proc_do_submiturb(struct dev_
+ 	u = (is_in ? URB_DIR_IN : URB_DIR_OUT);
+ 	if (uurb->flags & USBDEVFS_URB_ISO_ASAP)
+ 		u |= URB_ISO_ASAP;
+-	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK)
++	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK && is_in)
+ 		u |= URB_SHORT_NOT_OK;
+ 	if (uurb->flags & USBDEVFS_URB_NO_FSBR)
+ 		u |= URB_NO_FSBR;
 
 
