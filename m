@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319AbaICWFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:05:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45230 "EHLO
+	id S936263AbaICXra (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:47:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755992AbaICWFr (ORCPT
+	with ESMTP id S933313AbaICWFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:47 -0400
+	Wed, 3 Sep 2014 18:05:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hawkes <hawkes@google.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 02/55] HID: logitech: perform bounds checking on device_id early enough
-Date: Wed,  3 Sep 2014 15:04:52 -0700
-Message-Id: <20140903220454.047224415@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 20/55] hwmon: (ads1015) Fix off-by-one for valid channel index checking
+Date: Wed,  3 Sep 2014 15:05:10 -0700
+Message-Id: <20140903220457.154119657@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -30,60 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit ad3e14d7c5268c2e24477c6ef54bbdf88add5d36 upstream.
+commit 56de1377ad92f72ee4e5cb0faf7a9b6048fdf0bf upstream.
 
-device_index is a char type and the size of paired_dj_deivces is 7
-elements, therefore proper bounds checking has to be applied to
-device_index before it is used.
+Current code uses channel as array index, so the valid channel value is
+0 .. ADS1015_CHANNELS - 1.
 
-We are currently performing the bounds checking in
-logi_dj_recv_add_djhid_device(), which is too late, as malicious device
-could send REPORT_TYPE_NOTIF_DEVICE_UNPAIRED early enough and trigger the
-problem in one of the report forwarding functions called from
-logi_dj_raw_event().
-
-Fix this by performing the check at the earliest possible ocasion in
-logi_dj_raw_event().
-
-Reported-by: Ben Hawkes <hawkes@google.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/hwmon/ads1015.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -237,13 +237,6 @@ static void logi_dj_recv_add_djhid_devic
- 		return;
- 	}
+--- a/drivers/hwmon/ads1015.c
++++ b/drivers/hwmon/ads1015.c
+@@ -184,7 +184,7 @@ static int ads1015_get_channels_config_o
+ 		}
  
--	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
--	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&djrcv_hdev->dev, "%s: invalid device index:%d\n",
--			__func__, dj_report->device_index);
--		return;
--	}
--
- 	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
- 		/* The device is already known. No need to reallocate it. */
- 		dbg_hid("%s: device is already known\n", __func__);
-@@ -713,6 +706,12 @@ static int logi_dj_raw_event(struct hid_
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
-+	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
-+		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+				__func__, dj_report->device_index);
-+		return false;
-+	}
- 
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
- 	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
+ 		channel = be32_to_cpup(property);
+-		if (channel > ADS1015_CHANNELS) {
++		if (channel >= ADS1015_CHANNELS) {
+ 			dev_err(&client->dev,
+ 				"invalid channel index %d on %s\n",
+ 				channel, node->full_name);
 
 
