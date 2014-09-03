@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936143AbaICX3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:29:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45603 "EHLO
+	id S964847AbaICXaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:30:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933588AbaICWIm (ORCPT
+	with ESMTP id S933579AbaICWIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:42 -0400
+	Wed, 3 Sep 2014 18:08:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 39/88] debugfs: Fix corrupted loop in debugfs_remove_recursive
-Date: Wed,  3 Sep 2014 15:05:13 -0700
-Message-Id: <20140903220517.137362112@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>, linux-crypto@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 38/88] crypto: ux500 - make interrupt mode plausible
+Date: Wed,  3 Sep 2014 15:05:12 -0700
+Message-Id: <20140903220517.106225423@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,181 +32,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 485d44022a152c0254dd63445fdb81c4194cbf0e upstream.
+commit e1f8859ee265fc89bd21b4dca79e8e983a044892 upstream.
 
-[ I'm currently running my tests on it now, and so far, after a few
- hours it has yet to blow up. I'll run it for 24 hours which it never
- succeeded in the past. ]
+The interrupt handler in the ux500 crypto driver has an obviously
+incorrect way to access the data buffer, which for a while has
+caused this build warning:
 
-The tracing code has a way to make directories within the debugfs file
-system as well as deleting them using mkdir/rmdir in the instance
-directory. This is very limited in functionality, such as there is
-no renames, and the parent directory "instance" can not be modified.
-The tracing code creates the instance directory from the debugfs code
-and then replaces the dentry->d_inode->i_op with its own to allow
-for mkdir/rmdir to work.
+../ux500/cryp/cryp_core.c: In function 'cryp_interrupt_handler':
+../ux500/cryp/cryp_core.c:234:5: warning: passing argument 1 of '__fswab32' makes integer from pointer without a cast [enabled by default]
+     writel_relaxed(ctx->indata,
+     ^
+In file included from ../include/linux/swab.h:4:0,
+                 from ../include/uapi/linux/byteorder/big_endian.h:12,
+                 from ../include/linux/byteorder/big_endian.h:4,
+                 from ../arch/arm/include/uapi/asm/byteorder.h:19,
+                 from ../include/asm-generic/bitops/le.h:5,
+                 from ../arch/arm/include/asm/bitops.h:340,
+                 from ../include/linux/bitops.h:33,
+                 from ../include/linux/kernel.h:10,
+                 from ../include/linux/clk.h:16,
+                 from ../drivers/crypto/ux500/cryp/cryp_core.c:12:
+../include/uapi/linux/swab.h:57:119: note: expected '__u32' but argument is of type 'const u8 *'
+ static inline __attribute_const__ __u32 __fswab32(__u32 val)
 
-When these are called, the d_entry and inode locks need to be released
-to call the instance creation and deletion code. That code has its own
-accounting and locking to serialize everything to prevent multiple
-users from causing harm. As the parent "instance" directory can not
-be modified this simplifies things.
+There are at least two, possibly three problems here:
+a) when writing into the FIFO, we copy the pointer rather than the
+   actual data we want to give to the hardware
+b) the data pointer is an array of 8-bit values, while the FIFO
+   is 32-bit wide, so both the read and write access fail to do
+   a proper type conversion
+c) This seems incorrect for big-endian kernels, on which we need to
+   byte-swap any register access, but not normally FIFO accesses,
+   at least the DMA case doesn't do it either.
 
-I created a stress test that creates several threads that randomly
-creates and deletes directories thousands of times a second. The code
-stood up to this test and I submitted it a while ago.
+This converts the bogus loop to use the same readsl/writesl pair
+that we use for the two other modes (DMA and polling). This is
+more efficient and consistent, and probably correct for endianess.
 
-Recently I added a new test that adds readers to the mix. While the
-instance directories were being added and deleted, readers would read
-from these directories and even enable tracing within them. This test
-was able to trigger a bug:
+The bug has existed since the driver was first merged, and was
+probably never detected because nobody tried to use interrupt mode.
+It might make sense to backport this fix to stable kernels, depending
+on how the crypto maintainers feel about that.
 
- general protection fault: 0000 [#1] PREEMPT SMP
- Modules linked in: ...
- CPU: 3 PID: 17789 Comm: rmdir Tainted: G        W     3.15.0-rc2-test+ #41
- Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
- task: ffff88003786ca60 ti: ffff880077018000 task.ti: ffff880077018000
- RIP: 0010:[<ffffffff811ed5eb>]  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
- RSP: 0018:ffff880077019df8  EFLAGS: 00010246
- RAX: 0000000000000002 RBX: ffff88006f0fe490 RCX: 0000000000000000
- RDX: dead000000100058 RSI: 0000000000000246 RDI: ffff88003786d454
- RBP: ffff88006f0fe640 R08: 0000000000000628 R09: 0000000000000000
- R10: 0000000000000628 R11: ffff8800795110a0 R12: ffff88006f0fe640
- R13: ffff88006f0fe640 R14: ffffffff81817d0b R15: ffffffff818188b7
- FS:  00007ff13ae24700(0000) GS:ffff88007d580000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000003054ec7be0 CR3: 0000000076d51000 CR4: 00000000000007e0
- Stack:
-  ffff88007a41ebe0 dead000000100058 00000000fffffffe ffff88006f0fe640
-  0000000000000000 ffff88006f0fe678 ffff88007a41ebe0 ffff88003793a000
-  00000000fffffffe ffffffff810bde82 ffff88006f0fe640 ffff88007a41eb28
- Call Trace:
-  [<ffffffff810bde82>] ? instance_rmdir+0x15b/0x1de
-  [<ffffffff81132e2d>] ? vfs_rmdir+0x80/0xd3
-  [<ffffffff81132f51>] ? do_rmdir+0xd1/0x139
-  [<ffffffff8124ad9e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
-  [<ffffffff814fea62>] ? system_call_fastpath+0x16/0x1b
- Code: fe ff ff 48 8d 75 30 48 89 df e8 c9 fd ff ff 85 c0 75 13 48 c7 c6 b8 cc d2 81 48 c7 c7 b0 cc d2 81 e8 8c 7a f5 ff 48 8b 54 24 08 <48> 8b 82 a8 00 00 00 48 89 d3 48 2d a8 00 00 00 48 89 44 24 08
- RIP  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
-  RSP <ffff880077019df8>
-
-It took a while, but every time it triggered, it was always in the
-same place:
-
-	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-
-Where the child->d_u.d_child seemed to be corrupted.  I added lots of
-trace_printk()s to see what was wrong, and sure enough, it was always
-the child's d_u.d_child field. I looked around to see what touches
-it and noticed that in __dentry_kill() which calls dentry_free():
-
-static void dentry_free(struct dentry *dentry)
-{
-	/* if dentry was never visible to RCU, immediate free is OK */
-	if (!(dentry->d_flags & DCACHE_RCUACCESS))
-		__d_free(&dentry->d_u.d_rcu);
-	else
-		call_rcu(&dentry->d_u.d_rcu, __d_free);
-}
-
-I also noticed that __dentry_kill() unlinks the child->d_u.child
-under the parent->d_lock spin_lock.
-
-Looking back at the loop in debugfs_remove_recursive() it never takes the
-parent->d_lock to do the list walk. Adding more tracing, I was able to
-prove this was the issue:
-
- ftrace-t-15385   1.... 246662024us : dentry_kill <ffffffff81138b91>: free ffff88006d573600
-    rmdir-15409   2.... 246662024us : debugfs_remove_recursive <ffffffff811ec7e5>: child=ffff88006d573600 next=dead000000100058
-
-The dentry_kill freed ffff88006d573600 just as the remove recursive was walking
-it.
-
-In order to fix this, the list walk needs to be modified a bit to take
-the parent->d_lock. The safe version is no longer necessary, as every
-time we remove a child, the parent->d_lock must be released and the
-list walk must start over. Each time a child is removed, even though it
-may still be on the list, it should be skipped by the first check
-in the loop:
-
-		if (!debugfs_positive(child))
-			continue;
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-crypto@vger.kernel.org
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/debugfs/inode.c |   33 ++++++++++++++++++++++++++-------
- 1 file changed, 26 insertions(+), 7 deletions(-)
+ drivers/crypto/ux500/cryp/cryp_core.c |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -533,7 +533,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
-  */
- void debugfs_remove_recursive(struct dentry *dentry)
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -190,7 +190,7 @@ static void add_session_id(struct cryp_c
+ static irqreturn_t cryp_interrupt_handler(int irq, void *param)
  {
--	struct dentry *child, *next, *parent;
-+	struct dentry *child, *parent;
+ 	struct cryp_ctx *ctx;
+-	int i;
++	int count;
+ 	struct cryp_device_data *device_data;
  
- 	if (IS_ERR_OR_NULL(dentry))
- 		return;
-@@ -545,30 +545,49 @@ void debugfs_remove_recursive(struct den
- 	parent = dentry;
-  down:
- 	mutex_lock(&parent->d_inode->i_mutex);
--	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-+ loop:
-+	/*
-+	 * The parent->d_subdirs is protected by the d_lock. Outside that
-+	 * lock, the child can be unlinked and set to be freed which can
-+	 * use the d_u.d_child as the rcu head and corrupt this list.
-+	 */
-+	spin_lock(&parent->d_lock);
-+	list_for_each_entry(child, &parent->d_subdirs, d_u.d_child) {
- 		if (!debugfs_positive(child))
- 			continue;
- 
- 		/* perhaps simple_empty(child) makes more sense */
- 		if (!list_empty(&child->d_subdirs)) {
-+			spin_unlock(&parent->d_lock);
- 			mutex_unlock(&parent->d_inode->i_mutex);
- 			parent = child;
- 			goto down;
- 		}
-- up:
+ 	if (param == NULL) {
+@@ -215,12 +215,11 @@ static irqreturn_t cryp_interrupt_handle
+ 	if (cryp_pending_irq_src(device_data,
+ 				 CRYP_IRQ_SRC_OUTPUT_FIFO)) {
+ 		if (ctx->outlen / ctx->blocksize > 0) {
+-			for (i = 0; i < ctx->blocksize / 4; i++) {
+-				*(ctx->outdata) = readl_relaxed(
+-						&device_data->base->dout);
+-				ctx->outdata += 4;
+-				ctx->outlen -= 4;
+-			}
++			count = ctx->blocksize / 4;
 +
-+		spin_unlock(&parent->d_lock);
++			readsl(&device_data->base->dout, ctx->outdata, count);
++			ctx->outdata += count;
++			ctx->outlen -= count;
+ 
+ 			if (ctx->outlen == 0) {
+ 				cryp_disable_irq_src(device_data,
+@@ -230,12 +229,12 @@ static irqreturn_t cryp_interrupt_handle
+ 	} else if (cryp_pending_irq_src(device_data,
+ 					CRYP_IRQ_SRC_INPUT_FIFO)) {
+ 		if (ctx->datalen / ctx->blocksize > 0) {
+-			for (i = 0 ; i < ctx->blocksize / 4; i++) {
+-				writel_relaxed(ctx->indata,
+-						&device_data->base->din);
+-				ctx->indata += 4;
+-				ctx->datalen -= 4;
+-			}
++			count = ctx->blocksize / 4;
 +
- 		if (!__debugfs_remove(child, parent))
- 			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++			writesl(&device_data->base->din, ctx->indata, count);
 +
-+		/*
-+		 * The parent->d_lock protects agaist child from unlinking
-+		 * from d_subdirs. When releasing the parent->d_lock we can
-+		 * no longer trust that the next pointer is valid.
-+		 * Restart the loop. We'll skip this one with the
-+		 * debugfs_positive() check.
-+		 */
-+		goto loop;
- 	}
-+	spin_unlock(&parent->d_lock);
++			ctx->indata += count;
++			ctx->datalen -= count;
  
- 	mutex_unlock(&parent->d_inode->i_mutex);
- 	child = parent;
- 	parent = parent->d_parent;
- 	mutex_lock(&parent->d_inode->i_mutex);
- 
--	if (child != dentry) {
--		next = list_next_entry(child, d_u.d_child);
--		goto up;
--	}
-+	if (child != dentry)
-+		/* go up */
-+		goto loop;
- 
- 	if (!__debugfs_remove(child, parent))
- 		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 			if (ctx->datalen == 0)
+ 				cryp_disable_irq_src(device_data,
 
 
