@@ -1,114 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaICEeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 00:34:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37277 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772AbaICEeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 00:34:02 -0400
-Date: Tue, 2 Sep 2014 21:34:00 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux FS Dev Mailing List <linux-fsdevel@vger.kernel.org>,
-        Linux F2FS Dev Mailing List 
-	<linux-f2fs-devel@lists.sourceforge.net>
-Subject: [GIT PULL] f2fs bug fixes for v3.17-rc4
-Message-ID: <20140903043400.GA72553@jaegeuk-mac02.hsd1.ca.comcast.net>
+	id S1751589AbaICEkC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 00:40:02 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:55165 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833AbaICEkA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 00:40:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
+References: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
+Date: Wed, 3 Sep 2014 10:09:58 +0530
+X-Google-Sender-Auth: 15VrssonLExpF1yDbmdbIjA3pIo
+Message-ID: <CAOh2x==TSbtOKBn6KOL9Z_M-nkzQOiO+EqSTmEtQeRLXROC1rw@mail.gmail.com>
+Subject: Re: [RFC PATCH] pm: prevent suspend until power supply events are processed
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Don't have Zoran's new email address, but probably other might have
+answers to my queries.
 
-This is a pull request on the f2fs bug fixes for v3.17-rc4.
-Most of things are related to recovery and error handling routines.
-Please pull these patches.
+I have just started with the power-supply framework a day or two back
+and so my understanding might not be good enough :)
 
-Thank you very much,
+On Sat, Aug 3, 2013 at 2:08 AM, Zoran Markovic
+<zoran.markovic@linaro.org> wrote:
+> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+> index 3b2d5df..e68d598 100644
+> --- a/drivers/power/power_supply_core.c
+> +++ b/drivers/power/power_supply_core.c
+> @@ -67,23 +67,41 @@ static int __power_supply_changed_work(struct device *dev, void *data)
+>
+>  static void power_supply_changed_work(struct work_struct *work)
+>  {
+> +       unsigned long flags;
+>         struct power_supply *psy = container_of(work, struct power_supply,
+>                                                 changed_work);
+>
+>         dev_dbg(psy->dev, "%s\n", __func__);
+>
+> -       class_for_each_device(power_supply_class, NULL, psy,
+> -                             __power_supply_changed_work);
+> -
+> -       power_supply_update_leds(psy);
+> -
+> -       kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
+> +       spin_lock_irqsave(&psy->changed_lock, flags);
+> +       if (psy->changed) {
 
-The following changes since commit 63d871cb0b9e4207044ced0322aa34d859fa463d:
+Can this be false here? We have reached here as the work was
+scheduled after setting it to true..
 
-  Merge tag 'md/3.17-fixes' of git://neil.brown.name/md (2014-08-19 09:47:01 -0500)
+Maybe a WARN_ON(psy->changed) is more sensible here ?
 
-are available in the git repository at:
+> +               psy->changed = false;
+> +               spin_unlock_irqrestore(&psy->changed_lock, flags);
+> +               class_for_each_device(power_supply_class, NULL, psy,
+> +                                     __power_supply_changed_work);
+> +               power_supply_update_leds(psy);
+> +               kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
+> +               spin_lock_irqsave(&psy->changed_lock, flags);
+> +       }
+> +       /* dependent power supplies (e.g. battery) may have changed
+> +        * state as a result of this event, so poll again and hold
+> +        * the wakeup_source until all events are processed.
+> +        */
+> +       if (!psy->changed)
+> +               pm_relax(psy->dev);
 
+I got a bit confused here. Does the above comment say this:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git tags/for-f2fs-3.17-rc4
-
-for you to fetch changes up to b73e52824c8920a5ff754e3c8ff68466a7dd61f9:
-
-  f2fs: reposition unlock_new_inode to prevent accessing invalid inode (2014-09-02 00:22:24 -0700)
-
-----------------------------------------------------------------
-f2fs bug fixes for 3.17-rc4
-
-This series includes patches to:
- o fix recovery routines
- o fix bugs related to inline_data/xattr
- o fix when casting the dentry names
- o handle EIO or ENOMEM correctly
- o fix memory leak
- o fix lock coverage
-
-----------------------------------------------------------------
-Chao Yu (4):
-      f2fs: fix incorrect calculation with total/free inode num
-      f2fs: introduce need_do_checkpoint for readability
-      f2fs: use macro for code readability
-      f2fs: reposition unlock_new_inode to prevent accessing invalid inode
-
-Dan Carpenter (1):
-      f2fs: simplify by using a literal
-
-Jaegeuk Kim (22):
-      f2fs: should convert inline_data during the mkwrite
-      f2fs: make clear on test condition and return types
-      f2fs: fix the initial inode page for recovery
-      f2fs: clear FI_INC_LINK during the recovery
-      f2fs: should clear the inline_xattr flag
-      f2fs: fix to recover inline_xattr/data and blocks
-      f2fs: avoid bug_on when error is occurred
-      f2fs: don't skip checkpoint if there is no dirty node pages
-      f2fs: trigger release_dirty_inode in f2fs_put_super
-      f2fs: give a chance to mount again when encountering errors
-      f2fs: introduce f2fs_cp_error for readability
-      f2fs: unlock_page when node page is redirtied out
-      f2fs: check s_dirty under cp_mutex
-      f2fs: handle EIO not to break fs consistency
-      f2fs: add WARN_ON in f2fs_bug_on
-      f2fs: prevent checkpoint during roll-forward
-      f2fs: avoid double lock in truncate_blocks
-      f2fs: remove rewrite_node_page
-      f2fs: skip if inline_data was converted already
-      f2fs: remove rename and use rename2
-      f2fs: truncate stale block for inline_data
-      f2fs: fix wrong casting for dentry name
-
-arter97 (1):
-      f2fs: fix typo
-
- fs/f2fs/Kconfig         |  4 +--
- fs/f2fs/checkpoint.c    | 80 +++++++++++++++++++++++++++++++------------------
- fs/f2fs/data.c          | 19 ++++++++----
- fs/f2fs/debug.c         |  4 +--
- fs/f2fs/dir.c           |  6 ++--
- fs/f2fs/f2fs.h          | 26 ++++++++--------
- fs/f2fs/file.c          | 60 +++++++++++++++++++++++--------------
- fs/f2fs/gc.c            |  8 ++---
- fs/f2fs/gc.h            |  2 +-
- fs/f2fs/hash.c          |  7 +++--
- fs/f2fs/inline.c        | 38 +++++++++++++----------
- fs/f2fs/namei.c         | 23 ++++----------
- fs/f2fs/node.c          | 80 +++++++++++++++++++++++--------------------------
- fs/f2fs/recovery.c      | 30 ++++++++++++++-----
- fs/f2fs/segment.c       | 53 ++------------------------------
- fs/f2fs/segment.h       |  2 +-
- fs/f2fs/super.c         | 32 ++++++++++++++------
- fs/f2fs/xattr.c         |  2 +-
- include/linux/f2fs_fs.h | 16 ++++++++--
- 19 files changed, 261 insertions(+), 231 deletions(-)
+The supplies dependent on 'psy' may change states and that *may*
+change the state of 'psy' again? And so psy->changed is set to true
+again?
