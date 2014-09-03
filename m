@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaICGnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:43:14 -0400
-Received: from mail3.unitn.it ([193.205.206.24]:59295 "EHLO mail3.unitn.it"
+	id S1755149AbaICGrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:47:00 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:14144 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751508AbaICGnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:43:13 -0400
-Message-ID: <5406B874.5040507@unitn.it>
-Date: Wed, 03 Sep 2014 08:43:00 +0200
-From: Luca Abeni <luca.abeni@unitn.it>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751146AbaICGq6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 02:46:58 -0400
+Date: Wed, 3 Sep 2014 08:48:14 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Cc: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "perex@perex.cz" <perex@perex.cz>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "tiwai@suse.de" <tiwai@suse.de>, "andrew@lunn.ch" <andrew@lunn.ch>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "jsarha@ti.com" <jsarha@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCHv2 1/4] ASoC: simple-card: add
+ asoc_simple_card_fmt_master() to simplify the code.
+Message-ID: <20140903084814.0949534c@armhf>
+In-Reply-To: <87wq9l5ojn.wl%kuninori.morimoto.gx@gmail.com>
+References: <1409649969-15759-1-git-send-email-Li.Xiubo@freescale.com>
+	<1409649969-15759-2-git-send-email-Li.Xiubo@freescale.com>
+	<87egvt7dmd.wl%kuninori.morimoto.gx@gmail.com>
+	<df7936d5863948b0a0a33aa8283d6a67@BY2PR0301MB0613.namprd03.prod.outlook.com>
+	<87wq9l5ojn.wl%kuninori.morimoto.gx@gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-To: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@arm.com>
-CC: peterz@infradead.org, rdunlap@infradead.org, mingo@redhat.com,
-        raistlin@linux.it, juri.lelli@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] Documentation/scheduler/sched-deadline.txt: fix
- terminology and improve clarity
-References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com> <1409220029-9002-2-git-send-email-juri.lelli@arm.com> <20140902211019.GA22581@sisyphus.home.austad.us>
-In-Reply-To: <20140902211019.GA22581@sisyphus.home.austad.us>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 02 Sep 2014 21:13:52 -0700 (PDT)
+Kuninori Morimoto <kuninori.morimoto.gx@gmail.com> wrote:
 
-On 09/02/2014 11:10 PM, Henrik Austad wrote:
-> On Thu, Aug 28, 2014 at 11:00:26AM +0100, Juri Lelli wrote:
->> From: Luca Abeni <luca.abeni@unitn.it>
->>
->> Several small changes regarding SCHED_DEADLINE documentation that fix
->> terminology and improve clarity and readability:
->>
->>   - "current runtime" becomes "remaining runtime"
->>
->>   - readablity of an equation is improved by introducing more spacing
->>
->>   - clarify when admission control will certainly fail
->>
->>   - new URL for CBS technical report
->>
->>   - substitue "smallest" with "closest"
->
-> I'm tempted to say "earliest" (being part of the algorithm's name and all
-> ;)
-Well, AFAIR "closest" was suggested during the initial review some months ago...
-Anyway, if now there is agreement on "earliest" I can change to it; let me know.
+> OK, will do.
+> To avoid confusion/conflict, I will post it after Mark applied it.
+> Because many simple-card patches are posted in these days...
 
-[...]
->>    Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to tasks so
->>    that each task runs for at most its runtime every period, avoiding any
->>    interference between different tasks (bandwidth isolation), while the EDF[1]
->> - algorithm selects the task with the smallest scheduling deadline as the one
->> + algorithm selects the task with the closest scheduling deadline as the one
->>    to be executed first.  Thanks to this feature, also tasks that do not
->
-> s/first/next/
->
-> Also, next sentence does not make much sense, I would drop the also;
->
-> "Thanks to this feature, tasks that do not strictly comply with the ..."
-I agree with these changes, but they are in text that is not changed by my
-patch, right?
-What should I do? Add these changes to the patch, or send an additional incremental
-patch with these changes?
+Yes, I have one more awaiting, about multi-CODECs...
 
-
-
-				Thanks,
-					Luca
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
