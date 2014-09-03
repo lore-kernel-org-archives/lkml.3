@@ -1,222 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816AbaICQ6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 12:58:03 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:59220 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932743AbaICQ6A (ORCPT
+	id S932864AbaICQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 12:58:37 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:59503 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932743AbaICQ6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 12:58:00 -0400
+	Wed, 3 Sep 2014 12:58:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140903120321.604f9039@tlielax.poochiereds.net>
-References: <5405FBAE.5020303@parallels.com> <20140902184456.GC31793@fieldses.org>
- <54061562.4080306@parallels.com> <20140902194300.GE31793@fieldses.org>
- <20140902155351.79183446@tlielax.poochiereds.net> <540727E0.6030005@parallels.com>
- <20140903115504.63a7ae6f@tlielax.poochiereds.net> <54073B02.2060707@parallels.com>
- <20140903120321.604f9039@tlielax.poochiereds.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 3 Sep 2014 09:57:38 -0700
-Message-ID: <CALCETrVxNtCumkbDzfn2+LwvAL5y18NaA8-00YDyHagBXkGX0w@mail.gmail.com>
-Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <540707D9.4040208@linux.vnet.ibm.com>
+References: <540707D9.4040208@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 3 Sep 2014 18:58:14 +0200
+Message-ID: <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com>
+Subject: Re: [QUERY] Confusing usage of rq->nr_running in load balancing
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 3, 2014 9:04 AM, "Jeff Layton" <jlayton@poochiereds.net> wrote:
->
-> On Wed, 3 Sep 2014 20:00:02 +0400
-> Pavel Emelyanov <xemul@parallels.com> wrote:
->
-> > On 09/03/2014 07:55 PM, Jeff Layton wrote:
-> > > On Wed, 3 Sep 2014 18:38:24 +0400
-> > > Pavel Emelyanov <xemul@parallels.com> wrote:
-> > >
-> > >> On 09/02/2014 11:53 PM, Jeff Layton wrote:
-> > >>> On Tue, 2 Sep 2014 15:43:00 -0400
-> > >>> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > >>>
-> > >>>> On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
-> > >>>>> On 09/02/2014 10:44 PM, J. Bruce Fields wrote:
-> > >>>>>> On Tue, Sep 02, 2014 at 09:17:34PM +0400, Pavel Emelyanov wrote:
-> > >>>>>>> Hi,
-> > >>>>>>>
-> > >>>>>>> There's a problem with getting information about who has a flock on
-> > >>>>>>> a specific file. The thing is that the "owner" field, that is shown in
-> > >>>>>>> /proc/locks is the pid of the task who created the flock, not the one
-> > >>>>>>> who _may_ hold it.
-> > >>>>>>>
-> > >>>>>>> If the flock creator shared the file with some other task (by forking
-> > >>>>>>> or via scm_rights) and then died or closed the file, the information
-> > >>>>>>> shown in proc no longer corresponds to the reality.
-> > >>>>>>>
-> > >>>>>>> This is critical for CRIU project, that tries to dump (and restore)
-> > >>>>>>> the state of running tasks. For example, let's take two tasks A and B
-> > >>>>>>> both opened a file "/foo", one of tasks places a LOCK_SH lock on the
-> > >>>>>>> file and then "obfuscated" the owner field in /proc/locks. After this
-> > >>>>>>> we have no ways to find out who is the lock holder.
-> > >>>>>>>
-> > >>>>>>> I'd like to note, that for LOCK_EX this problem is not critical -- we
-> > >>>>>>> may go to both tasks and "ask" them to LOCK_EX the file again (we can
-> > >>>>>>> do it in CRIU, I can tell more if required). The one who succeeds is
-> > >>>>>>> the lock holder.
-> > >>>>>>
-> > >>>>>> It could be both, actually, right?
-> > >>>>>
-> > >>>>> Two succeeding with LOCK_EX? AFAIU no. Am I missing something?
-> > >>>>
-> > >>>> After a fork, two processes "own" the lock, right?:
-> > >>>>
-> > >>>>  int main(int argc, char *argv[])
-> > >>>>  {
-> > >>>>          int fd, ret;
-> > >>>>
-> > >>>>          fd = open(argv[1], O_RDWR);
-> > >>>>          ret = flock(fd, LOCK_EX);
-> > >>>>          if (ret)
-> > >>>>                  err(1, "flock");
-> > >>>>          ret = fork();
-> > >>>>          if (ret == -1)
-> > >>>>                  err(1, "flock");
-> > >>>>          ret = flock(fd, LOCK_EX);
-> > >>>>          if (ret)
-> > >>>>                  err(1, "flock");
-> > >>>>          printf("%d got exclusive lock\n", getpid());
-> > >>>>          sleep(1000);
-> > >>>>  }
-> > >>>>
-> > >>>>  $ touch TMP
-> > >>>>  $ ./test TMP
-> > >>>>  15882 got exclusive lock
-> > >>>>  15883 got exclusive lock
-> > >>>>  ^C
-> > >>>>
-> > >>>> I may misunderstand what you're doing.
-> > >>>>
-> > >>>
-> > >>> Yeah, I don't understand either.
-> > >>>
-> > >>> Flock locks are owned by the file description. The task that set
-> > >>> them is really irrelevant once they are set.
-> > >>>
-> > >>> In the second flock() call there, you're just "modifying" an existing
-> > >>> lock (which turns out to be a noop here).
-> > >>>
-> > >>> So, I don't quite understand the problem this solves. I get that you're
-> > >>> trying to reestablish the flock "state" after a checkpoint/restore
-> > >>> event, but why does it matter what task actually sets the locks as long
-> > >>> as they're set on the correct set of fds?
-> > >>
-> > >> Sorry for confusion. Let me try to explain it more clearly.
-> > >>
-> > >> First, what I meant talking about two LOCK_EX locks. Let's consider
-> > >> this scenario:
-> > >>
-> > >> pid = fork()
-> > >> fd = open("/foo"); /* both parent and child has _different_ files */
-> > >> if (pid == 0)
-> > >>    /* child only */
-> > >>    flock(fd, LOCK_EX);
-> > >>
-> > >> at this point we have two different files pointing to "/foo" and
-> > >> only one of them has LOCK_EX on it. So if try to LOCK_EX it again,
-> > >> only at child's file this would succeed. So we can distinguish which
-> > >> file is locked using this method.
-> > >>
-> > >>
-> > >>
-> > >> Now, what problem this patch is trying to solve. It's quite tricky,
-> > >> but still. Let's imagine this scenario:
-> > >>
-> > >> pid = fork();
-> > >> fd = open("/foo"); /* yet again -- two different files */
-> > >> if (pid == 0) {
-> > >>    flock(fd, LOCK_SH);
-> > >>    pid2 = fork();
-> > >>    if (pid2 != 0)
-> > >>            exit(0);
-> > >> }
-> > >>
-> > >> at this point we have:
-> > >>
-> > >> task A -- the original task with file "/foo" opened
-> > >> task B -- the first child, that exited at the end
-> > >> task C -- the 2nd child, that "inherited" a file with the lock from B
-> > >>
-> > >> Note, that file at A and file at C are two different files (struct
-> > >> file-s). And it's only the C's one that is locked.
-> > >>
-> > >> The problem is that the /proc/locks shows the pid of B in this lock's
-> > >> owner field. And we have no glue to find out who the real lock owner
-> > >> is using the /proc/locks.
-> > >>
-> > >> If we try to do the trickery like the one we did with LOCK_EX above,
-> > >> this is what we would get.
-> > >>
-> > >> If putting the 2nd LOCK_SH from A and from C, both attempts would succeed,
-> > >> so this is not the solution.
-> > >>
-> > >> If we try to LOCK_EX from A and C, only C would succeed, so this seem
-> > >> to be the solution, but it's actually not. If there's another pair of
-> > >> A' and C' tasks holding the same "/foo" and having the LOCK_SH on C',
-> > >> this trick would stop working as none of the tasks would be able to
-> > >> put such lock on this file.
-> > >>
-> > >>
-> > >> Thus, we need some way to find out whether a task X has a lock on file F.
-> > >> This patch is one of the ways of doing this.
-> > >>
-> > >> Hope this explanation is more clear.
-> > >>
-> > >
-> > > Yes, thanks for clarifying.
-> > >
-> > > I think we do need to be a bit careful when describing this though.
-> > >
-> > > flock locks are not owned by tasks, but by the file description. So you
-> > > can't really tell whether task X has a lock on file F. Several tasks
-> > > could have a reference to file F and none of them has any more "claim"
-> > > to a lock on that file than another (at least from an API standpoint).
-> > >
-> > > What your patch really does is tell you whether that file description
-> > > has a particular type of lock set on it.
-> >
-> > Exactly.
-> >
-> > > Like Bruce, I think this looks fairly reasonable. That said, I had to
-> > > go through a bunch of API gyrations recently when getting the OFD lock
-> > > patches merged. It would be good to accompany your kernel patch with
-> > > glibc and manpage patches as well so we can make sure we have the
-> > > design settled before merging anything.
-> > >
-> > > Sound OK?
-> >
-> > Sure! But I think glibc and man-pages people would first want the
-> > kernel part to get finished, as it's the part that mostly drives the
-> > API. Since the linux-api@ is in Cc for this patch, what else would
-> > you suggest me to do to keep the process moving?
-> >
-> > Thanks,
-> > Pavel
-> >
->
-> (cc'ing Michael Kerrisk, the manpages maintainer)
->
-> Michael had good suggestions for me when I was doing the OFD lock work.
-> I'd also consider cc'ing the glibc development list.
+On 3 September 2014 14:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> Hi,
 
-I would suggest writing up a short description of the exact semantics
-of your proposal.  That way reviewers can decide whether the semantics
-make sense and then check whether the code matches the description.
+Hi Preeti,
 
-This could take the form of text that would go in the appropriate manpage.
+>
+> There are places in kernel/sched/fair.c in the load balancing part where
+> rq->nr_running is used as against cfs_rq->nr_running. At least I could
+> not make out why the former was used in the following scenarios.
+> It looks to me that it can very well lead to incorrect load balancing.
+> Also I did not pay attention to the numa balancing part of the code
+> while skimming through this file to catch this scenario. There are a
+> couple of places there too which need to be scrutinized.
+>
+> 1. load_balance(): The check (busiest->nr_running > 1)
+> The load balancing would be futile if there are tasks of other
+> scheduling classes, wouldn't it?
 
---Andy
+agree with you
+
+>
+> 2. active_load_balance_cpu_stop(): A similar check and a similar
+> consequence as 1 here.
+
+agree with you
+
+>
+> 3. nohz_kick_needed() : We check for more than one task on the runqueue
+> and hence trigger load balancing even if there are rt-tasks.
+
+I can see one potentiel reason why rq->nr_running is interesting that
+is the group capacity might have changed because of non cfs tasks
+since last load balance. So we need to monitor the change of the
+groups' capacity to ensure that the average load of each group is
+still in the same level
+
+>
+> 4. cpu_avg_load_per_task(): This stands out among the rest as an
+> incorrect usage of rq->nr_running in place of cfs_rq->nr_running. We
+> divide the load associated with the cfs_rq by the number of tasks on the
+> rq. This will make the cfs_rq load look smaller.
+
+This one is solved in the consolidation of cpu_capacity patchset
+
+>
+> 5. task_hot() : I am not too sure about the consequences of using
+> rq->nr_running here.
+
+IIUC, the goal is to check if other tasks are running on the dst_rq so
+rq->nr_running is the good one
+
+>
+> 6. update_sg_lb_stats(): sgs->sum_nr_running is the sum of
+> rq->nr_running and propogates thus throughout the load balancing code path.
+
+This one is solved in the consolidation of cpu_capacity patchset
+>
+> 7. sg_capacity_factor(): Returns the capacity factor measured against
+> the cpu capacity available to fair tasks. We then compare this with the
+> rq->nr_running in update_sg_lb_stats(), update_sd_pick_busiest() and
+> calculate_imbalance()
+
+This one is removed with the consolidation of cpu_capacity patchset
+
+>
+> 8. find_busiest_queue(): This anomaly shows up when we filter against
+> rq->nr_running == 1 and imbalance cannot be taken care of by the
+> existing task on this rq.
+
+agree with you even if the test with wl should prevent wrong decision
+as a wl will be null if no cfs task are present
+
+Regards
+Vincent
+>
+> Did I miss something or is it true that the usage of rq->nr_running in
+> the above places is incorrect?
+>
+> Thanks
+>
+> Regards
+> Preeti U Murthy
+>
