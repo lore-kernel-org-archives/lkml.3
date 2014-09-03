@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933696AbaICWIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:08:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
+	id S1755077AbaICWKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:10:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933631AbaICWIr (ORCPT
+	with ESMTP id S933691AbaICWIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:47 -0400
+	Wed, 3 Sep 2014 18:08:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 48/88] drm/radeon: add additional SI pci ids
-Date: Wed,  3 Sep 2014 15:05:22 -0700
-Message-Id: <20140903220517.407483224@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.14 32/88] hwmon: (ads1015) Fix out-of-bounds array access
+Date: Wed,  3 Sep 2014 15:05:06 -0700
+Message-Id: <20140903220516.910390809@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,38 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 37dbeab788a8f23fd946c0be083e5484d6f929a1 upstream.
+commit e981429557cbe10c780fab1c1a237cb832757652 upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Current code uses data_rate as array index in ads1015_read_adc() and uses pga
+as array index in ads1015_reg_to_mv, so we must make sure both data_rate and
+pga settings are in valid value range.
+Return -EINVAL if the setting is out-of-range.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/hwmon/ads1015.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -165,8 +165,11 @@
- 	{0x1002, 0x6601, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6602, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6603, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6604, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6605, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6606, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6607, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6608, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6610, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6611, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6613, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
-@@ -300,6 +303,7 @@
- 	{0x1002, 0x6829, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x682C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6830, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+--- a/drivers/hwmon/ads1015.c
++++ b/drivers/hwmon/ads1015.c
+@@ -212,6 +212,7 @@ static int ads1015_get_channels_config_o
+ 				dev_err(&client->dev,
+ 					"invalid gain on %s\n",
+ 					node->full_name);
++				return -EINVAL;
+ 			}
+ 		}
+ 
+@@ -222,6 +223,7 @@ static int ads1015_get_channels_config_o
+ 				dev_err(&client->dev,
+ 					"invalid data_rate on %s\n",
+ 					node->full_name);
++				return -EINVAL;
+ 			}
+ 		}
+ 
 
 
