@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160AbaICMSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:18:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43992 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448AbaICMSy (ORCPT
+	id S932283AbaICMTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:19:35 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:52031 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932170AbaICMTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:18:54 -0400
-Date: Wed, 3 Sep 2014 14:18:51 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-cc: linux-kernel@vger.kernel.org, jason@lakedaemon.net,
-        computersforpeace@gmail.com
-Subject: Re: [PATCH 1/2] irqchip: add Broadcom BCM7120-style Level 2 interrupt
- controller
-In-Reply-To: <1409265326-7579-2-git-send-email-f.fainelli@gmail.com>
-Message-ID: <alpine.DEB.2.10.1409031413230.3333@nanos>
-References: <1409265326-7579-1-git-send-email-f.fainelli@gmail.com> <1409265326-7579-2-git-send-email-f.fainelli@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 3 Sep 2014 08:19:33 -0400
+Date: Wed, 3 Sep 2014 13:19:19 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 21/26] tty: Convert tty_struct bitfield to bools
+Message-ID: <20140903131919.0d970b6f@alan.etchedpixels.co.uk>
+In-Reply-To: <54070643.9080903@hurleysoftware.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+	<1409693975-1028-22-git-send-email-peter@hurleysoftware.com>
+	<20140903115852.5a720754@alan.etchedpixels.co.uk>
+	<54070643.9080903@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014, Florian Fainelli wrote:
-> +static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
-> +{
-> +	struct bcm7120_l2_intc_data *b = irq_desc_get_handler_data(desc);
-> +	struct irq_chip *chip = irq_desc_get_chip(desc);
-> +	struct irq_chip_generic *gc = irq_get_domain_generic_chip(b->domain, 0);
-> +	u32 status;
-> +
-> +	chained_irq_enter(chip, desc);
-> +
-> +	irq_gc_lock(gc);
-> +	status = __raw_readl(b->base + IRQSTAT);
-> +	irq_gc_unlock(gc);
+> Ahh. Thanks for the insight, Alan.
+> 
+> But set_bit() et. al. will generate an incredible amount of churn;
+> what if I split the fields up to prevent false-sharing?
 
-Why do you need locking around the status read out?
+Do you feel lucky ;-)
 
-> +	for (irq = 0; irq < num_parent_irqs; irq++) {
-> +		ret = bcm7120_l2_intc_init_one(dn, data, irq, map_mask);
-> +		if (ret)
-> +			continue;
+I'd rather set_bit and friends were used. They exist largely for this
+kind of reason and they also have atomic test/set methods which may in
+the longer term be very useful.
 
-What's the exact purpose of this "if (ret)" construct?
+Yes it is churn can't argue with that.
 
-Thanks,
-
-	tglx
+Alan
