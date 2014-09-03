@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933676AbaICWIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:08:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45634 "EHLO
+	id S1756878AbaICWMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:12:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933626AbaICWIq (ORCPT
+	with ESMTP id S933673AbaICWIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:46 -0400
+	Wed, 3 Sep 2014 18:08:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.14 29/88] hwmon: (gpio-fan) Prevent overflow problem when writing large limits
-Date: Wed,  3 Sep 2014 15:05:03 -0700
-Message-Id: <20140903220516.818177316@linuxfoundation.org>
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Robert Elliott <elliott@hp.com>, Joe Handzik <joseph.t.handzik@hp.com>,
+        Scott Teel <scott.teel@hp.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 60/88] hpsa: fix bad -ENOMEM return value in hpsa_big_passthru_ioctl
+Date: Wed,  3 Sep 2014 15:05:34 -0700
+Message-Id: <20140903220517.754808904@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,32 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 2565fb05d1e9fc0831f7b1c083bcfcb1cba1f020 upstream.
+commit 0758f4f732b08b6ef07f2e5f735655cf69fea477 upstream.
 
-On platforms with sizeof(int) < sizeof(unsigned long), writing a rpm value
-larger than MAXINT will result in unpredictable limit values written to the
-chip. Avoid auto-conversion from unsigned long to int to fix the problem.
+When copy_from_user fails, return -EFAULT, not -ENOMEM
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Reported-by: Robert Elliott <elliott@hp.com>
+Reviewed-by: Joe Handzik <joseph.t.handzik@hp.com>
+Reviewed-by: Scott Teel <scott.teel@hp.com>
+Reviewed by: Mike MIller <michael.miller@canonical.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/gpio-fan.c |    2 +-
+ drivers/scsi/hpsa.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/gpio-fan.c
-+++ b/drivers/hwmon/gpio-fan.c
-@@ -173,7 +173,7 @@ static int get_fan_speed_index(struct gp
- 	return -ENODEV;
- }
- 
--static int rpm_to_speed_index(struct gpio_fan_data *fan_data, int rpm)
-+static int rpm_to_speed_index(struct gpio_fan_data *fan_data, unsigned long rpm)
- {
- 	struct gpio_fan_speed *speed = fan_data->speed;
- 	int i;
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3131,7 +3131,7 @@ static int hpsa_big_passthru_ioctl(struc
+ 		}
+ 		if (ioc->Request.Type.Direction == XFER_WRITE) {
+ 			if (copy_from_user(buff[sg_used], data_ptr, sz)) {
+-				status = -ENOMEM;
++				status = -EFAULT;
+ 				goto cleanup1;
+ 			}
+ 		} else
 
 
