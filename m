@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941AbaICFCl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 01:02:41 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37784 "EHLO mail.kernel.org"
+	id S1755105AbaICFCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 01:02:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37810 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754652AbaICFCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 01:02:39 -0400
+	id S1754967AbaICFCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 01:02:42 -0400
 From: Jaegeuk Kim <jaegeuk@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-f2fs-devel@lists.sourceforge.net
 Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 2/6] f2fs: remain inconsistency information to initiate fsck.f2fs
-Date: Tue,  2 Sep 2014 22:02:30 -0700
-Message-Id: <1409720554-72925-2-git-send-email-jaegeuk@kernel.org>
+Subject: [PATCH 4/6] f2fs: add BUG cases to initiate fsck.f2fs
+Date: Tue,  2 Sep 2014 22:02:32 -0700
+Message-Id: <1409720554-72925-4-git-send-email-jaegeuk@kernel.org>
 X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
 In-Reply-To: <1409720554-72925-1-git-send-email-jaegeuk@kernel.org>
 References: <1409720554-72925-1-git-send-email-jaegeuk@kernel.org>
@@ -20,67 +20,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds sbi->need_fsck to conduct fsck.f2fs later.
-This flag is only able to be removed by fsck.f2fs.
+This patch replaces BUG cases with f2fs_bug_on to remain fsck.f2fs information.
+And it implements some void functions to initiate fsck.f2fs too.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- fs/f2fs/checkpoint.c    | 3 +++
- fs/f2fs/f2fs.h          | 1 +
- fs/f2fs/super.c         | 1 +
- include/linux/f2fs_fs.h | 1 +
- 4 files changed, 6 insertions(+)
+ fs/f2fs/segment.c |  4 ++--
+ fs/f2fs/segment.h | 38 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 37 insertions(+), 5 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index cb5cb4c..5af97d9 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -882,6 +882,9 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	else
- 		clear_ckpt_flags(ckpt, CP_ORPHAN_PRESENT_FLAG);
- 
-+	if (sbi->need_fsck)
-+		set_ckpt_flags(ckpt, CP_FSCK_FLAG);
-+
- 	/* update SIT/NAT bitmap */
- 	get_sit_bitmap(sbi, __bitmap_ptr(sbi, SIT_BITMAP));
- 	get_nat_bitmap(sbi, __bitmap_ptr(sbi, NAT_BITMAP));
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 222ff5b..210c62d 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -434,6 +434,7 @@ struct f2fs_sb_info {
- 	struct buffer_head *raw_super_buf;	/* buffer head of raw sb */
- 	struct f2fs_super_block *raw_super;	/* raw super block pointer */
- 	int s_dirty;				/* dirty flag for checkpoint */
-+	bool need_fsck;				/* need fsck.f2fs to fix */
- 
- 	/* for node-related operations */
- 	struct f2fs_nm_info *nm_info;		/* node manager */
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 41bdf51..a692304 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -849,6 +849,7 @@ static void init_sb_info(struct f2fs_sb_info *sbi)
- 		atomic_set(&sbi->nr_pages[i], 0);
- 
- 	sbi->dir_level = DEF_DIR_LEVEL;
-+	sbi->need_fsck = false;
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index abfbbca..46586d3 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -526,10 +526,10 @@ static void update_sit_entry(struct f2fs_sb_info *sbi, block_t blkaddr, int del)
+ 	/* Update valid block bitmap */
+ 	if (del > 0) {
+ 		if (f2fs_set_bit(offset, se->cur_valid_map))
+-			BUG();
++			f2fs_bug_on(sbi, 1);
+ 	} else {
+ 		if (!f2fs_clear_bit(offset, se->cur_valid_map))
+-			BUG();
++			f2fs_bug_on(sbi, 1);
+ 	}
+ 	if (!f2fs_test_bit(offset, se->ckpt_valid_map))
+ 		se->ckpt_valid_blocks += del;
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 793ca27..d163fc8 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -583,9 +583,41 @@ static inline void check_block_count(struct f2fs_sb_info *sbi,
+ 	BUG_ON(GET_SIT_VBLOCKS(raw_sit) != valid_blocks);
  }
+ #else
+-#define check_seg_range(sbi, segno)
+-#define verify_block_addr(sbi, blk_addr)
+-#define check_block_count(sbi, segno, raw_sit)
++static inline void check_seg_range(struct f2fs_sb_info *sbi, unsigned int segno)
++{
++	unsigned int end_segno = SM_I(sbi)->segment_count - 1;
++
++	if (segno > end_segno)
++		sbi->need_fsck = true;
++}
++
++static inline void verify_block_addr(struct f2fs_sb_info *sbi, block_t blk_addr)
++{
++	struct f2fs_sm_info *sm_info = SM_I(sbi);
++	block_t total_blks = sm_info->segment_count << sbi->log_blocks_per_seg;
++	block_t start_addr = sm_info->seg0_blkaddr;
++	block_t end_addr = start_addr + total_blks - 1;
++
++	if (blk_addr < start_addr || blk_addr > end_addr)
++		sbi->need_fsck = true;
++}
++
++/*
++ * Summary block is always treated as an invalid block
++ */
++static inline void check_block_count(struct f2fs_sb_info *sbi,
++		int segno, struct f2fs_sit_entry *raw_sit)
++{
++	unsigned int end_segno = SM_I(sbi)->segment_count - 1;
++
++	/* check segment usage */
++	if (GET_SIT_VBLOCKS(raw_sit) > sbi->blocks_per_seg)
++		sbi->need_fsck = true;
++
++	/* check boundary of a given segment number */
++	if (segno > end_segno)
++		sbi->need_fsck = true;
++}
+ #endif
  
- /*
-diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
-index 08ed2b0..9ca1ff3 100644
---- a/include/linux/f2fs_fs.h
-+++ b/include/linux/f2fs_fs.h
-@@ -85,6 +85,7 @@ struct f2fs_super_block {
- /*
-  * For checkpoint
-  */
-+#define CP_FSCK_FLAG		0x00000010
- #define CP_ERROR_FLAG		0x00000008
- #define CP_COMPACT_SUM_FLAG	0x00000004
- #define CP_ORPHAN_PRESENT_FLAG	0x00000002
+ static inline pgoff_t current_sit_addr(struct f2fs_sb_info *sbi,
 -- 
 1.8.5.2 (Apple Git-48)
 
