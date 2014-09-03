@@ -1,382 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167AbaICLm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:42:27 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:33742 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112AbaICLmY (ORCPT
+	id S1756180AbaICLpV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:45:21 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:58259 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755936AbaICLpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:42:24 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Alexander Shiyan <shc_work@mail.ru>, Shawn Guo <shawn.guo@linaro.org>,
-        Anson Huang <b20788@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Denis Carikli <denis@eukrea.com>, Markus Pargmann <mpa@pengutronix.de>,
-        Greg Ungerer <gerg@uclinux.org>, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH] pinctrl: imx/mxs: move freescale drivers to subdir
-Date: Wed,  3 Sep 2014 13:42:18 +0200
-Message-Id: <1409744538-21827-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Wed, 3 Sep 2014 07:45:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <5406DB43.1030506@linux.vnet.ibm.com>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org>
+ <54020F00.2030807@linux.vnet.ibm.com> <CAKfTPtBq89SX=7=bXu2za7oXi1Lid_5ara-WputrtE8kCqcZcw@mail.gmail.com>
+ <5406DB43.1030506@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 3 Sep 2014 13:44:58 +0200
+Message-ID: <CAKfTPtCXBYSbXVgdeyMtvuK8aZaRBzhs9S3=+V2jvXnoCJFqBQ@mail.gmail.com>
+Subject: Re: [PATCH v5 08/12] sched: move cfs task on a CPU with higher capacity
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves all the Freescale-related drivers (i.MX and MXS) to
-its own subdirectory to clear the view.
+On 3 September 2014 11:11, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> On 09/01/2014 02:15 PM, Vincent Guittot wrote:
+>> On 30 August 2014 19:50, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>>> Hi Vincent,
+>>>> index 18db43e..60ae1ce 100644
+>>>> --- a/kernel/sched/fair.c
+>>>> +++ b/kernel/sched/fair.c
+>>>> @@ -6049,6 +6049,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+>>>>                       return true;
+>>>>       }
+>>>>
+>>>> +     /*
+>>>> +      * The group capacity is reduced probably because of activity from other
+>>>> +      * sched class or interrupts which use part of the available capacity
+>>>> +      */
+>>>> +     if ((sg->sgc->capacity_orig * 100) > (sgs->group_capacity *
+>>>> +                             env->sd->imbalance_pct))
+>>>
+>>> Wouldn't the check on avg_load let us know if we are packing more tasks
+>>> in this group than its capacity ? Isn't that the metric we are more
+>>> interested in?
+>>
+>> With  this patch, we don't want to pack but we prefer to spread the
+>> task on another CPU than the one which handles the interruption if
+>> latter uses a significant part of the CPU capacity.
+>>
+>>>
+>>>> +             return true;
+>>>> +
+>>>>       return false;
+>>>>  }
+>>>>
+>>>> @@ -6534,13 +6542,23 @@ static int need_active_balance(struct lb_env *env)
+>>>>       struct sched_domain *sd = env->sd;
+>>>>
+>>>>       if (env->idle == CPU_NEWLY_IDLE) {
+>>>> +             int src_cpu = env->src_cpu;
+>>>>
+>>>>               /*
+>>>>                * ASYM_PACKING needs to force migrate tasks from busy but
+>>>>                * higher numbered CPUs in order to pack all tasks in the
+>>>>                * lowest numbered CPUs.
+>>>>                */
+>>>> -             if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
+>>>> +             if ((sd->flags & SD_ASYM_PACKING) && src_cpu > env->dst_cpu)
+>>>> +                     return 1;
+>>>> +
+>>>> +             /*
+>>>> +              * If the CPUs share their cache and the src_cpu's capacity is
+>>>> +              * reduced because of other sched_class or IRQs, we trig an
+>>>> +              * active balance to move the task
+>>>> +              */
+>>>> +             if ((capacity_orig_of(src_cpu) * 100) > (capacity_of(src_cpu) *
+>>>> +                             sd->imbalance_pct))
+>>>>                       return 1;
+>>>>       }
+>>>>
+>>>> @@ -6643,6 +6661,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>>>>
+>>>>       schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+>>>>
+>>>> +     env.src_cpu = busiest->cpu;
+>>>> +
+>>>>       ld_moved = 0;
+>>>>       if (busiest->nr_running > 1) {
+>>>>               /*
+>>>> @@ -6652,7 +6672,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>>>>                * correctly treated as an imbalance.
+>>>>                */
+>>>>               env.flags |= LBF_ALL_PINNED;
+>>>> -             env.src_cpu   = busiest->cpu;
+>>>>               env.src_rq    = busiest;
+>>>>               env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+>>>>
+>>>> @@ -7359,10 +7378,12 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
+>>>>
+>>>>  /*
+>>>>   * Current heuristic for kicking the idle load balancer in the presence
+>>>> - * of an idle cpu is the system.
+>>>> + * of an idle cpu in the system.
+>>>>   *   - This rq has more than one task.
+>>>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
+>>>> - *     busy cpu's exceeding the group's capacity.
+>>>> + *   - This rq has at least one CFS task and the capacity of the CPU is
+>>>> + *     significantly reduced because of RT tasks or IRQs.
+>>>> + *   - At parent of LLC scheduler domain level, this cpu's scheduler group has
+>>>> + *     multiple busy cpu.
+>>>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+>>>>   *     domain span are idle.
+>>>>   */
+>>>> @@ -7372,9 +7393,10 @@ static inline int nohz_kick_needed(struct rq *rq)
+>>>>       struct sched_domain *sd;
+>>>>       struct sched_group_capacity *sgc;
+>>>>       int nr_busy, cpu = rq->cpu;
+>>>> +     bool kick = false;
+>>>>
+>>>>       if (unlikely(rq->idle_balance))
+>>>> -             return 0;
+>>>> +             return false;
+>>>>
+>>>>         /*
+>>>>       * We may be recently in ticked or tickless idle mode. At the first
+>>>> @@ -7388,38 +7410,45 @@ static inline int nohz_kick_needed(struct rq *rq)
+>>>>        * balancing.
+>>>>        */
+>>>>       if (likely(!atomic_read(&nohz.nr_cpus)))
+>>>> -             return 0;
+>>>> +             return false;
+>>>>
+>>>>       if (time_before(now, nohz.next_balance))
+>>>> -             return 0;
+>>>> +             return false;
+>>>>
+>>>>       if (rq->nr_running >= 2)
+>>>
+>>> Will this check ^^ not catch those cases which this patch is targeting?
+>>
+>> This patch is not about how many tasks are running but if the capacity
+>> of the CPU is reduced because of side activity like interruptions
+>> which are only visible in the capacity value (with IRQ_TIME_ACCOUNTING
+>> config) but not in nr_running.
+>> Even if the capacity is reduced because of RT tasks, nothing ensures
+>> that the RT task will be running when the tick fires
+>>
+>> Regards,
+>> Vincent
+>>>
+>>> Regards
+>>> Preeti U Murthy
+>>>
+>>>> -             goto need_kick;
+>>>> +             return true;
+>>>>
+>>>>       rcu_read_lock();
+>>>>       sd = rcu_dereference(per_cpu(sd_busy, cpu));
+>>>> -
+>>>>       if (sd) {
+>>>>               sgc = sd->groups->sgc;
+>>>>               nr_busy = atomic_read(&sgc->nr_busy_cpus);
+>>>>
+>>>> -             if (nr_busy > 1)
+>>>> -                     goto need_kick_unlock;
+>>>> +             if (nr_busy > 1) {
+>>>> +                     kick = true;
+>>>> +                     goto unlock;
+>>>> +             }
+>>>> +
+>>>>       }
+>>>>
+>>>> -     sd = rcu_dereference(per_cpu(sd_asym, cpu));
+>>>> +     sd = rcu_dereference(rq->sd);
+>>>> +     if (sd) {
+>>>> +             if ((rq->cfs.h_nr_running >= 1) &&
+>>>> +                             ((rq->cpu_capacity * sd->imbalance_pct) <
+>>>> +                             (rq->cpu_capacity_orig * 100))) {
+>
+> Ok I understand your explanation above. But I was wondering if you would
+> need to add this check around rq->cfs.h_nr_running >= 1 in the above two
+> cases as well.
 
-Cc: Alexander Shiyan <shc_work@mail.ru>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Anson Huang <b20788@freescale.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: Denis Carikli <denis@eukrea.com>
-Cc: Markus Pargmann <mpa@pengutronix.de>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/Kconfig                            | 110 +--------------------
- drivers/pinctrl/Makefile                           |  19 +---
- drivers/pinctrl/{ => freescale}/pinctrl-imx.c      |   2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx.h      |   0
- .../pinctrl/{ => freescale}/pinctrl-imx1-core.c    |   2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx1.c     |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx1.h     |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx21.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx23.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx25.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx27.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx28.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx35.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx50.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx51.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx53.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx6dl.c   |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx6q.c    |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx6sl.c   |   0
- drivers/pinctrl/{ => freescale}/pinctrl-imx6sx.c   |   0
- drivers/pinctrl/{ => freescale}/pinctrl-mxs.c      |   2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-mxs.h      |   0
- drivers/pinctrl/{ => freescale}/pinctrl-vf610.c    |   0
- 23 files changed, 5 insertions(+), 130 deletions(-)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx.h (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx1-core.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx1.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx1.h (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx21.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx23.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx25.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx27.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx28.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx35.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx50.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx51.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx53.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6dl.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6q.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6sl.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6sx.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-mxs.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-mxs.h (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-vf610.c (100%)
+yes you're right for the test if (rq->nr_running >= 2).
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index e1c5a87c80cd..64d06b52f98a 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -97,102 +97,6 @@ config PINCTRL_BCM281XX
- 	  BCM28145, and BCM28155 SoCs.  This driver requires the pinctrl
- 	  framework.  GPIO is provided by a separate GPIO driver.
- 
--config PINCTRL_IMX
--	bool
--	select PINMUX
--	select PINCONF
--
--config PINCTRL_IMX1_CORE
--	bool
--	select PINMUX
--	select PINCONF
--
--config PINCTRL_IMX1
--	bool "IMX1 pinctrl driver"
--	depends on SOC_IMX1
--	select PINCTRL_IMX1_CORE
--	help
--	  Say Y here to enable the imx1 pinctrl driver
--
--config PINCTRL_IMX21
--	bool "i.MX21 pinctrl driver"
--	depends on SOC_IMX21
--	select PINCTRL_IMX1_CORE
--	help
--	  Say Y here to enable the i.MX21 pinctrl driver
--
--config PINCTRL_IMX27
--	bool "IMX27 pinctrl driver"
--	depends on SOC_IMX27
--	select PINCTRL_IMX1_CORE
--	help
--	  Say Y here to enable the imx27 pinctrl driver
--
--
--config PINCTRL_IMX25
--        bool "IMX25 pinctrl driver"
--        depends on OF
--        depends on SOC_IMX25
--        select PINCTRL_IMX
--        help
--          Say Y here to enable the imx25 pinctrl driver
--
--config PINCTRL_IMX35
--	bool "IMX35 pinctrl driver"
--	depends on SOC_IMX35
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the imx35 pinctrl driver
--
--config PINCTRL_IMX50
--	bool "IMX50 pinctrl driver"
--	depends on SOC_IMX50
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the imx50 pinctrl driver
--
--config PINCTRL_IMX51
--	bool "IMX51 pinctrl driver"
--	depends on SOC_IMX51
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the imx51 pinctrl driver
--
--config PINCTRL_IMX53
--	bool "IMX53 pinctrl driver"
--	depends on SOC_IMX53
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the imx53 pinctrl driver
--
--config PINCTRL_IMX6Q
--	bool "IMX6Q/DL pinctrl driver"
--	depends on SOC_IMX6Q
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the imx6q/dl pinctrl driver
--
--config PINCTRL_IMX6SL
--	bool "IMX6SL pinctrl driver"
--	depends on SOC_IMX6SL
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the imx6sl pinctrl driver
--
--config PINCTRL_IMX6SX
--	bool "IMX6SX pinctrl driver"
--	depends on SOC_IMX6SX
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the imx6sx pinctrl driver
--
--config PINCTRL_VF610
--	bool "Freescale Vybrid VF610 pinctrl driver"
--	depends on SOC_VF610
--	select PINCTRL_IMX
--	help
--	  Say Y here to enable the Freescale Vybrid VF610 pinctrl driver
--
- config PINCTRL_LANTIQ
- 	bool
- 	depends on LANTIQ
-@@ -204,19 +108,6 @@ config PINCTRL_FALCON
- 	depends on SOC_FALCON
- 	depends on PINCTRL_LANTIQ
- 
--config PINCTRL_MXS
--	bool
--	select PINMUX
--	select PINCONF
--
--config PINCTRL_IMX23
--	bool
--	select PINCTRL_MXS
--
--config PINCTRL_IMX28
--	bool
--	select PINCTRL_MXS
--
- config PINCTRL_ROCKCHIP
- 	bool
- 	select PINMUX
-@@ -313,6 +204,7 @@ config PINCTRL_PALMAS
- 	  TPS65913, TPS80036 etc.
- 
- source "drivers/pinctrl/berlin/Kconfig"
-+source "drivers/pinctrl/freescale/Kconfig"
- source "drivers/pinctrl/mvebu/Kconfig"
- source "drivers/pinctrl/nomadik/Kconfig"
- source "drivers/pinctrl/qcom/Kconfig"
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 0ffe1f608c67..51f52d32859e 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -17,24 +17,7 @@ obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
- obj-$(CONFIG_PINCTRL_BCM2835)	+= pinctrl-bcm2835.o
- obj-$(CONFIG_PINCTRL_BAYTRAIL)	+= pinctrl-baytrail.o
- obj-$(CONFIG_PINCTRL_BCM281XX)	+= pinctrl-bcm281xx.o
--obj-$(CONFIG_PINCTRL_IMX)	+= pinctrl-imx.o
--obj-$(CONFIG_PINCTRL_IMX1_CORE)	+= pinctrl-imx1-core.o
--obj-$(CONFIG_PINCTRL_IMX1)	+= pinctrl-imx1.o
--obj-$(CONFIG_PINCTRL_IMX21)	+= pinctrl-imx21.o
--obj-$(CONFIG_PINCTRL_IMX27)	+= pinctrl-imx27.o
--obj-$(CONFIG_PINCTRL_IMX35)	+= pinctrl-imx35.o
--obj-$(CONFIG_PINCTRL_IMX50)	+= pinctrl-imx50.o
--obj-$(CONFIG_PINCTRL_IMX51)	+= pinctrl-imx51.o
--obj-$(CONFIG_PINCTRL_IMX53)	+= pinctrl-imx53.o
--obj-$(CONFIG_PINCTRL_IMX6Q)	+= pinctrl-imx6q.o
--obj-$(CONFIG_PINCTRL_IMX6Q)	+= pinctrl-imx6dl.o
--obj-$(CONFIG_PINCTRL_IMX6SL)	+= pinctrl-imx6sl.o
--obj-$(CONFIG_PINCTRL_IMX6SX)	+= pinctrl-imx6sx.o
- obj-$(CONFIG_PINCTRL_FALCON)	+= pinctrl-falcon.o
--obj-$(CONFIG_PINCTRL_MXS)	+= pinctrl-mxs.o
--obj-$(CONFIG_PINCTRL_IMX23)	+= pinctrl-imx23.o
--obj-$(CONFIG_PINCTRL_IMX25)	+= pinctrl-imx25.o
--obj-$(CONFIG_PINCTRL_IMX28)	+= pinctrl-imx28.o
- obj-$(CONFIG_PINCTRL_PALMAS)	+= pinctrl-palmas.o
- obj-$(CONFIG_PINCTRL_ROCKCHIP)	+= pinctrl-rockchip.o
- obj-$(CONFIG_PINCTRL_SINGLE)	+= pinctrl-single.o
-@@ -53,9 +36,9 @@ obj-$(CONFIG_PINCTRL_XWAY)	+= pinctrl-xway.o
- obj-$(CONFIG_PINCTRL_LANTIQ)	+= pinctrl-lantiq.o
- obj-$(CONFIG_PINCTRL_TB10X)	+= pinctrl-tb10x.o
- obj-$(CONFIG_PINCTRL_ST) 	+= pinctrl-st.o
--obj-$(CONFIG_PINCTRL_VF610)	+= pinctrl-vf610.o
- 
- obj-$(CONFIG_ARCH_BERLIN)	+= berlin/
-+obj-y				+= freescale/
- obj-$(CONFIG_PLAT_ORION)        += mvebu/
- obj-y				+= nomadik/
- obj-$(CONFIG_ARCH_QCOM)		+= qcom/
-diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/freescale/pinctrl-imx.c
-similarity index 99%
-rename from drivers/pinctrl/pinctrl-imx.c
-rename to drivers/pinctrl/freescale/pinctrl-imx.c
-index 570e5acb4a6a..e89268c09e4c 100644
---- a/drivers/pinctrl/pinctrl-imx.c
-+++ b/drivers/pinctrl/freescale/pinctrl-imx.c
-@@ -24,7 +24,7 @@
- #include <linux/pinctrl/pinmux.h>
- #include <linux/slab.h>
- 
--#include "core.h"
-+#include "../core.h"
- #include "pinctrl-imx.h"
- 
- /* The bits in CONFIG cell defined in binding doc*/
-diff --git a/drivers/pinctrl/pinctrl-imx.h b/drivers/pinctrl/freescale/pinctrl-imx.h
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx.h
-rename to drivers/pinctrl/freescale/pinctrl-imx.h
-diff --git a/drivers/pinctrl/pinctrl-imx1-core.c b/drivers/pinctrl/freescale/pinctrl-imx1-core.c
-similarity index 99%
-rename from drivers/pinctrl/pinctrl-imx1-core.c
-rename to drivers/pinctrl/freescale/pinctrl-imx1-core.c
-index 176a3e62f1cf..5ac59fbb2440 100644
---- a/drivers/pinctrl/pinctrl-imx1-core.c
-+++ b/drivers/pinctrl/freescale/pinctrl-imx1-core.c
-@@ -28,7 +28,7 @@
- #include <linux/pinctrl/pinmux.h>
- #include <linux/slab.h>
- 
--#include "core.h"
-+#include "../core.h"
- #include "pinctrl-imx1.h"
- 
- struct imx1_pinctrl {
-diff --git a/drivers/pinctrl/pinctrl-imx1.c b/drivers/pinctrl/freescale/pinctrl-imx1.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx1.c
-rename to drivers/pinctrl/freescale/pinctrl-imx1.c
-diff --git a/drivers/pinctrl/pinctrl-imx1.h b/drivers/pinctrl/freescale/pinctrl-imx1.h
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx1.h
-rename to drivers/pinctrl/freescale/pinctrl-imx1.h
-diff --git a/drivers/pinctrl/pinctrl-imx21.c b/drivers/pinctrl/freescale/pinctrl-imx21.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx21.c
-rename to drivers/pinctrl/freescale/pinctrl-imx21.c
-diff --git a/drivers/pinctrl/pinctrl-imx23.c b/drivers/pinctrl/freescale/pinctrl-imx23.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx23.c
-rename to drivers/pinctrl/freescale/pinctrl-imx23.c
-diff --git a/drivers/pinctrl/pinctrl-imx25.c b/drivers/pinctrl/freescale/pinctrl-imx25.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx25.c
-rename to drivers/pinctrl/freescale/pinctrl-imx25.c
-diff --git a/drivers/pinctrl/pinctrl-imx27.c b/drivers/pinctrl/freescale/pinctrl-imx27.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx27.c
-rename to drivers/pinctrl/freescale/pinctrl-imx27.c
-diff --git a/drivers/pinctrl/pinctrl-imx28.c b/drivers/pinctrl/freescale/pinctrl-imx28.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx28.c
-rename to drivers/pinctrl/freescale/pinctrl-imx28.c
-diff --git a/drivers/pinctrl/pinctrl-imx35.c b/drivers/pinctrl/freescale/pinctrl-imx35.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx35.c
-rename to drivers/pinctrl/freescale/pinctrl-imx35.c
-diff --git a/drivers/pinctrl/pinctrl-imx50.c b/drivers/pinctrl/freescale/pinctrl-imx50.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx50.c
-rename to drivers/pinctrl/freescale/pinctrl-imx50.c
-diff --git a/drivers/pinctrl/pinctrl-imx51.c b/drivers/pinctrl/freescale/pinctrl-imx51.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx51.c
-rename to drivers/pinctrl/freescale/pinctrl-imx51.c
-diff --git a/drivers/pinctrl/pinctrl-imx53.c b/drivers/pinctrl/freescale/pinctrl-imx53.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx53.c
-rename to drivers/pinctrl/freescale/pinctrl-imx53.c
-diff --git a/drivers/pinctrl/pinctrl-imx6dl.c b/drivers/pinctrl/freescale/pinctrl-imx6dl.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx6dl.c
-rename to drivers/pinctrl/freescale/pinctrl-imx6dl.c
-diff --git a/drivers/pinctrl/pinctrl-imx6q.c b/drivers/pinctrl/freescale/pinctrl-imx6q.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx6q.c
-rename to drivers/pinctrl/freescale/pinctrl-imx6q.c
-diff --git a/drivers/pinctrl/pinctrl-imx6sl.c b/drivers/pinctrl/freescale/pinctrl-imx6sl.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx6sl.c
-rename to drivers/pinctrl/freescale/pinctrl-imx6sl.c
-diff --git a/drivers/pinctrl/pinctrl-imx6sx.c b/drivers/pinctrl/freescale/pinctrl-imx6sx.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-imx6sx.c
-rename to drivers/pinctrl/freescale/pinctrl-imx6sx.c
-diff --git a/drivers/pinctrl/pinctrl-mxs.c b/drivers/pinctrl/freescale/pinctrl-mxs.c
-similarity index 99%
-rename from drivers/pinctrl/pinctrl-mxs.c
-rename to drivers/pinctrl/freescale/pinctrl-mxs.c
-index 67035091f8fd..f98c6bb0f769 100644
---- a/drivers/pinctrl/pinctrl-mxs.c
-+++ b/drivers/pinctrl/freescale/pinctrl-mxs.c
-@@ -21,7 +21,7 @@
- #include <linux/pinctrl/pinmux.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
--#include "core.h"
-+#include "../core.h"
- #include "pinctrl-mxs.h"
- 
- #define SUFFIX_LEN	4
-diff --git a/drivers/pinctrl/pinctrl-mxs.h b/drivers/pinctrl/freescale/pinctrl-mxs.h
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-mxs.h
-rename to drivers/pinctrl/freescale/pinctrl-mxs.h
-diff --git a/drivers/pinctrl/pinctrl-vf610.c b/drivers/pinctrl/freescale/pinctrl-vf610.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-vf610.c
-rename to drivers/pinctrl/freescale/pinctrl-vf610.c
--- 
-1.9.3
+It's not so straight forward for nr_busy_cpus which reflects how many
+CPUs have not stopped their tick. The scheduler assumes that the
+latter are busy with cfs tasks
 
+>
+> I have actually raised this concern over whether we should be using
+> rq->nr_running or cfs_rq->nr_running while we do load balancing in reply
+> to your patch3. While all our load measurements are about the cfs_rq
+
+I have just replied to your comments on patch 3. Sorry for the delay
+
+> load, we use rq->nr_running, which may include tasks from other sched
+> classes as well. We divide them to get average load per task during load
+> balancing which is wrong, isn't it? Similarly during nohz_kick_needed(),
+> we trigger load balancing based on rq->nr_running again.
+>
+> In this patch too, even if you know that the cpu is being dominated by
+> tasks that do not belong to cfs class, you would be triggering a futile
+> load balance if there are no fair tasks to move.
+This patch adds one additional condition that is based on
+rq->cfs.h_nr_running so it should not trigger any futile load balance.
+Then, I have also take advantage of this patch to clean up
+nohz_kick_needed as proposed by Peter but the conditions are the same
+than previously (except the one with rq->cfs.h_nr_running)
+
+I can prepare another patchset that will solve the concerns that you
+raised for nohz_kick_needed and in patch 3 but i would prefer not
+include them in this patchset which is large enough and which subject
+is a bit different.
+Does it seem ok for you ?
+
+Regards,
+Vincent
+>
+> Regards
+> Preeti U Murthy
+>
