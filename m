@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935218AbaICW4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:56:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46384 "EHLO
+	id S935233AbaICW5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:57:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933865AbaICW0B (ORCPT
+	with ESMTP id S933077AbaICW0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:26:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Maydell <peter.maydell@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.16 037/125] mmc: mmci: Remove redundant check of status for DATA irq
-Date: Wed,  3 Sep 2014 15:06:34 -0700
-Message-Id: <20140903220624.769916934@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.16 123/125] NFSv4: Dont clear the open state when we just did an OPEN_DOWNGRADE
+Date: Wed,  3 Sep 2014 15:08:00 -0700
+Message-Id: <20140903220627.389106646@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -32,59 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulf Hansson <ulf.hansson@linaro.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 1cb9da502835dad73dda772b20c1e792f4e71589 upstream.
+commit 412f6c4c26fb1eba8844290663837561ac53fa6e upstream.
 
-We don't need to verify the content of the status register twice, while
-we are about to handle a DATA irq. Instead let's leave all verification
-to be handled by mmci_data_irq().
+If we did an OPEN_DOWNGRADE, then the right thing to do on success, is
+to apply the new open mode to the struct nfs4_state. Instead, we were
+unconditionally clearing the state, making it appear to our state
+machinery as if we had just performed a CLOSE.
 
-Cc: Peter Maydell <peter.maydell@linaro.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Tested-by: Kees Cook <keescook@chromium.org>
-Tested-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Fixes: 226056c5c312b (NFSv4: Use correct locking when updating nfs4_state...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/mmci.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4proc.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -834,6 +834,10 @@ static void
- mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
- 	      unsigned int status)
- {
-+	/* Make sure we have data to handle */
-+	if (!data)
-+		return;
-+
- 	/* First check for errors */
- 	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
- 		      MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
-@@ -1133,7 +1137,6 @@ static irqreturn_t mmci_irq(int irq, voi
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2545,6 +2545,7 @@ static void nfs4_close_done(struct rpc_t
+ 	struct nfs4_closedata *calldata = data;
+ 	struct nfs4_state *state = calldata->state;
+ 	struct nfs_server *server = NFS_SERVER(calldata->inode);
++	nfs4_stateid *res_stateid = NULL;
  
- 	do {
- 		struct mmc_command *cmd;
--		struct mmc_data *data;
- 
- 		status = readl(host->base + MMCISTATUS);
- 
-@@ -1159,11 +1162,7 @@ static irqreturn_t mmci_irq(int irq, voi
- 			MCI_CMDSENT|MCI_CMDRESPEND) && cmd)
- 			mmci_cmd_irq(host, cmd, status);
- 
--		data = host->data;
--		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
--			      MCI_TXUNDERRUN|MCI_RXOVERRUN|MCI_DATAEND|
--			      MCI_DATABLOCKEND) && data)
--			mmci_data_irq(host, data, status);
-+		mmci_data_irq(host, host->data, status);
- 
- 		/* Don't poll for busy completion in irq context. */
- 		if (host->busy_status)
+ 	dprintk("%s: begin!\n", __func__);
+ 	if (!nfs4_sequence_done(task, &calldata->res.seq_res))
+@@ -2555,12 +2556,12 @@ static void nfs4_close_done(struct rpc_t
+ 	 */
+ 	switch (task->tk_status) {
+ 		case 0:
+-			if (calldata->roc)
++			res_stateid = &calldata->res.stateid;
++			if (calldata->arg.fmode == 0 && calldata->roc)
+ 				pnfs_roc_set_barrier(state->inode,
+ 						     calldata->roc_barrier);
+-			nfs_clear_open_stateid(state, &calldata->res.stateid, 0);
+ 			renew_lease(server, calldata->timestamp);
+-			goto out_release;
++			break;
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_STALE_STATEID:
+ 		case -NFS4ERR_OLD_STATEID:
+@@ -2574,7 +2575,7 @@ static void nfs4_close_done(struct rpc_t
+ 				goto out_release;
+ 			}
+ 	}
+-	nfs_clear_open_stateid(state, NULL, calldata->arg.fmode);
++	nfs_clear_open_stateid(state, res_stateid, calldata->arg.fmode);
+ out_release:
+ 	nfs_release_seqid(calldata->arg.seqid);
+ 	nfs_refresh_inode(calldata->inode, calldata->res.fattr);
 
 
