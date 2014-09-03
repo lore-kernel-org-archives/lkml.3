@@ -1,66 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaICSvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 14:51:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45575 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaICSvI (ORCPT
+	id S1754865AbaICS5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 14:57:48 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:57339 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141AbaICS5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 14:51:08 -0400
-Message-ID: <54076311.2030306@ti.com>
-Date: Wed, 3 Sep 2014 13:50:57 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 3 Sep 2014 14:57:47 -0400
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-CC: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Marek Belisko <marek@goldelico.com>, <linux-omap@vger.kernel.org>
-Subject: Re: PROBLEM: bindings for drivers/mfd/twl4030-power.c
-References: <FAC7D7E5-1D05-4D63-821F-C56D3AAA8FF9@goldelico.com> <20140825212652.GR17254@atomide.com> <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com> <20140903184527.GG11766@atomide.com>
-In-Reply-To: <20140903184527.GG11766@atomide.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1407456558-18509-1-git-send-email-ahh@google.com>
+References: <1407456558-18509-1-git-send-email-ahh@google.com>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 3 Sep 2014 11:57:14 -0700
+Message-ID: <CAPM31R+1=pOPkHT1O87=GXFOYP77YR=7aGugP+BZi+ixypE2qg@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix timeval conversion to jiffies
+To: Andrew Hunter <ahh@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, unmobile@gmail.com,
+        Aaron Jacobs <jacobsa@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 01:45 PM, Tony Lindgren wrote:
-> * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140901 09:54]:
->> Hi,
->>
->> Am 25.08.2014 um 23:26 schrieb Tony Lindgren:
->>
->>> * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140817 08:46]:
->>>> I am trying to make ti,use_poweroff work on 3.17-rc1 for the GTA04 board.
->>>> Poweroff was broken for a while and I found that the driver isn't loaded at all.
->>>>
->>>> It appears to me that commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
->>>> did rename the compatible entry from "ti,twl4030-power" to "ti,twl4030-power-reset"
->>>> but this was not documented in the bindings and of course our DT does not
->>>> match.
->>>>
->>>> Even your commit message talks about "ti,twl4030-power" although I can't find it
->>>> in the code.
->>>
->>> Hmm sorry did I accidentally remove ti,twl4030-power? If so, that should
->>> be added back for sure. Do you have a patch for that already?
->>
->> No, I have only updated our device tree because I don't know if it really should
->> be added back or not.
->>
->> As you say the "ti,twl4030-power" does not configure anything. So what
->> is it good for?
-> 
-> Only for the poweroff if "ti,use_poweroff" is set. Care to do a patch
-> as you clearly have a use case to test it with?
+John -- Any chance to take a look at this?  (The dilation is pretty
+unfortunate when profiling reprograms a timer with it.)
 
-Tony, we were talking about supporting ti,system-power-controller as
-the standard way of stating poweroff control is by the PMIC. this
-seems to be standard in various SoCs. use_poweroff seems to predate
-that standardization. Should'nt we start using
-ti,system-power-controller instead?
-
--- 
-Regards,
-Nishanth Menon
+On Thu, Aug 7, 2014 at 5:09 PM, Andrew Hunter <ahh@google.com> wrote:
+> timeval_to_jiffies rounding was broken.  It essentially computed
+> (eliding seconds)
+>
+> jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
+>
+> by using scaling arithmetic, which took the best approximation of
+> NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
+> x/(2^USEC_JIFFIE_SC), and computed:
+>
+> jiffies = (usec * x) >> USEC_JIFFIE_SC
+>
+> and it rounded this calculation up in the intermediate form (since we
+> can't necessarily exactly represent TICK_NSEC in usec.) But the
+> scaling arithmetic is a (very slight) *over*approximation of the true
+> value: rounding the division up by adding 2^USEC_JIFFIE_SC - 1, when
+> the error in scaling was added in, was sufficient to add one jiffie to
+> the final result.
+>
+> In particular, with HZ=1000, we consistently computed that 10000 usec
+> was 11 jiffies; the same was true for any exact multiple of
+> TICK_NSEC. This is obviously bad as a general rule, and caused
+> observable user problems with setitimer() at the very least:
+>
+> setitimer(ITIMER_PROF, &val, NULL);
+> setitimer(ITIMER_PROF, NULL, &val);
+>
+> would actually add a tick to val!
+>
+> We could possibly still round in the intermediate form, adding
+> something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
+> convert usec->nsec, round in nanoseconds, and then convert using
+> time*spec*_to_jiffies.  This adds one constant multiplication, and is
+> not observably slower in microbenchmarks on recent x86 hardware.
+>
+> Tested: the following program:
+>
+> int main() {
+>   struct itimerval zero = {{0, 0}, {0, 0}};
+>   /* Initially set to 10 ms. */
+>   struct itimerval initial = zero;
+>   initial.it_interval.tv_usec = 10000;
+>   setitimer(ITIMER_PROF, &initial, NULL);
+>   /* Save and restore several times. */
+>   for (size_t i = 0; i < 10; ++i) {
+>     struct itimerval prev;
+>     setitimer(ITIMER_PROF, &zero, &prev);
+>     /* on old kernels, this goes up by TICK_USEC every iteration */
+>     printf("previous value: %ld %ld %ld %ld\n",
+>            prev.it_interval.tv_sec, prev.it_interval.tv_usec,
+>            prev.it_value.tv_sec, prev.it_value.tv_usec);
+>     setitimer(ITIMER_PROF, &prev, NULL);
+>   }
+>     return 0;
+> }
+>
+> Signed-off-by: Andrew Hunter <ahh@google.com>
+> Reviewed-by: Paul Turner <pjt@google.com>
+> Reported-by: Aaron Jacobs <jacobsa@google.com>
+> Change-Id: I7cd0f0764847fd055d39531f54e6ea3dd3ce5453
+> ---
+>  include/linux/jiffies.h | 12 -----------
+>  kernel/time.c           | 54 +++++++++++++++++++++++++++----------------------
+>  2 files changed, 30 insertions(+), 36 deletions(-)
+>
+> diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+> index 1f44466..c367cbd 100644
+> --- a/include/linux/jiffies.h
+> +++ b/include/linux/jiffies.h
+> @@ -258,23 +258,11 @@ extern unsigned long preset_lpj;
+>  #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
+>  #endif
+>  #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
+> -#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
+>  #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
+>                                  TICK_NSEC -1) / (u64)TICK_NSEC))
+>
+>  #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
+>                                          TICK_NSEC -1) / (u64)TICK_NSEC))
+> -#define USEC_CONVERSION  \
+> -                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
+> -                                        TICK_NSEC -1) / (u64)TICK_NSEC))
+> -/*
+> - * USEC_ROUND is used in the timeval to jiffie conversion.  See there
+> - * for more details.  It is the scaled resolution rounding value.  Note
+> - * that it is a 64-bit value.  Since, when it is applied, we are already
+> - * in jiffies (albit scaled), it is nothing but the bits we will shift
+> - * off.
+> - */
+> -#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
+>  /*
+>   * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
+>   * into seconds.  The 64-bit case will overflow if we are not careful,
+> diff --git a/kernel/time.c b/kernel/time.c
+> index 7c7964c..3c49ab4 100644
+> --- a/kernel/time.c
+> +++ b/kernel/time.c
+> @@ -496,17 +496,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
+>   * that a remainder subtract here would not do the right thing as the
+>   * resolution values don't fall on second boundries.  I.e. the line:
+>   * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
+> + * Note that due to the small error in the multiplier here, this
+> + * rounding is incorrect for sufficiently large values of tv_nsec, but
+> + * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
+> + * OK.
+>   *
+>   * Rather, we just shift the bits off the right.
+>   *
+>   * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
+>   * value to a scaled second value.
+>   */
+> -unsigned long
+> -timespec_to_jiffies(const struct timespec *value)
+> +static unsigned long
+> +__timespec_to_jiffies(unsigned long sec, long nsec)
+>  {
+> -       unsigned long sec = value->tv_sec;
+> -       long nsec = value->tv_nsec + TICK_NSEC - 1;
+> +       nsec = nsec + TICK_NSEC - 1;
+>
+>         if (sec >= MAX_SEC_IN_JIFFIES){
+>                 sec = MAX_SEC_IN_JIFFIES;
+> @@ -517,6 +520,13 @@ timespec_to_jiffies(const struct timespec *value)
+>                  (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
+>
+>  }
+> +
+> +unsigned long
+> +timespec_to_jiffies(const struct timespec *value)
+> +{
+> +       return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
+> +}
+> +
+>  EXPORT_SYMBOL(timespec_to_jiffies);
+>
+>  void
+> @@ -533,31 +543,27 @@ jiffies_to_timespec(const unsigned long jiffies, struct timespec *value)
+>  }
+>  EXPORT_SYMBOL(jiffies_to_timespec);
+>
+> -/* Same for "timeval"
+> +/*
+> + * We could use a similar algorithm to timespec_to_jiffies (with a
+> + * different multiplier for usec instead of nsec). But this has a
+> + * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
+> + * usec value, since it's not necessarily integral.
+>   *
+> - * Well, almost.  The problem here is that the real system resolution is
+> - * in nanoseconds and the value being converted is in micro seconds.
+> - * Also for some machines (those that use HZ = 1024, in-particular),
+> - * there is a LARGE error in the tick size in microseconds.
+> -
+> - * The solution we use is to do the rounding AFTER we convert the
+> - * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
+> - * Instruction wise, this should cost only an additional add with carry
+> - * instruction above the way it was done above.
+> + * We could instead round in the intermediate scaled representation
+> + * (i.e. in units of 1/2^(large scale) jiffies) but that's also
+> + * perilous: the scaling introduces a small positive error, which
+> + * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
+> + * units to the intermediate before shifting) leads to accidental
+> + * overflow and overestimates.
+> + *
+> + * At the cost of one additional multiplication by a constant, just
+> + * use the timespec implementation.
+>   */
+>  unsigned long
+>  timeval_to_jiffies(const struct timeval *value)
+>  {
+> -       unsigned long sec = value->tv_sec;
+> -       long usec = value->tv_usec;
+> -
+> -       if (sec >= MAX_SEC_IN_JIFFIES){
+> -               sec = MAX_SEC_IN_JIFFIES;
+> -               usec = 0;
+> -       }
+> -       return (((u64)sec * SEC_CONVERSION) +
+> -               (((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
+> -                (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
+> +       return __timespec_to_jiffies(value->tv_sec,
+> +                                    value->tv_usec * NSEC_PER_USEC);
+>  }
+>  EXPORT_SYMBOL(timeval_to_jiffies);
+>
+> --
+> 2.0.0.526.g5318336
+>
