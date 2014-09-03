@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264AbaICQkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 12:40:22 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:36516 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaICQkV (ORCPT
+	id S1755747AbaICQqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 12:46:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45765 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaICQqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 12:40:21 -0400
-Message-ID: <5407444C.2080107@gmail.com>
-Date: Wed, 03 Sep 2014 09:39:40 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 3 Sep 2014 12:46:16 -0400
+Message-ID: <540745CC.2090901@linutronix.de>
+Date: Wed, 03 Sep 2014 18:46:04 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, jason@lakedaemon.net,
-        computersforpeace@gmail.com
-Subject: Re: [PATCH 1/2] irqchip: add Broadcom BCM7120-style Level 2 interrupt
- controller
-References: <1409265326-7579-1-git-send-email-f.fainelli@gmail.com> <1409265326-7579-2-git-send-email-f.fainelli@gmail.com> <alpine.DEB.2.10.1409031413230.3333@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409031413230.3333@nanos>
-Content-Type: text/plain; charset=utf-8
+To: Tony Lindgren <tony@atomide.com>
+CC: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
+References: <53FE3779.5090908@linutronix.de> <20140827202313.GF16006@atomide.com> <20140828082348.GA5413@linutronix.de> <20140828164645.GG16006@atomide.com> <53FF84DF.7080406@linutronix.de> <20140828225454.GM16006@atomide.com> <540048B4.7010807@linutronix.de> <20140829161221.GO16006@atomide.com> <5404B149.6010400@linutronix.de> <54060EDA.6060204@linutronix.de> <20140902201536.GC11766@atomide.com>
+In-Reply-To: <20140902201536.GC11766@atomide.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 05:18 AM, Thomas Gleixner wrote:
-> On Thu, 28 Aug 2014, Florian Fainelli wrote:
->> +static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
->> +{
->> +	struct bcm7120_l2_intc_data *b = irq_desc_get_handler_data(desc);
->> +	struct irq_chip *chip = irq_desc_get_chip(desc);
->> +	struct irq_chip_generic *gc = irq_get_domain_generic_chip(b->domain, 0);
->> +	u32 status;
->> +
->> +	chained_irq_enter(chip, desc);
->> +
->> +	irq_gc_lock(gc);
->> +	status = __raw_readl(b->base + IRQSTAT);
->> +	irq_gc_unlock(gc);
+On 09/02/2014 10:15 PM, Tony Lindgren wrote:
+>> - I see to face two kind of "deaths":
+>>   - the LED still goes on and off and the uart just does not respond
+>>     even if I tell the button print something on the screen (the button
+>>     also changes the frequency of the LED so I know that the button is
+>>     doing something).
+>>     Also from dumping the content of /proc/interrupts it seems that a
+>>     wake up is made, the uart should have restored the registers.
 > 
-> Why do you need locking around the status read out?
+> OK yeah this is the case I was seeing too. So do you just set the
+> LED triggers to none in sysfs to make it easier to reproduce?
 
-I was worried about potential concurrency issues, but I suppose that
-this is just extra carefulness that brings nothing.
+Yes.
 
+>>   - one where the system is dead and the LED does not blink anymore.
+>>     Also my button is dead.
 > 
->> +	for (irq = 0; irq < num_parent_irqs; irq++) {
->> +		ret = bcm7120_l2_intc_init_one(dn, data, irq, map_mask);
->> +		if (ret)
->> +			continue;
-> 
-> What's the exact purpose of this "if (ret)" construct?
+> This I don't think I've seen. This could also be the errata issue on
+> your earlier rev beagleboard-xm with off-idle.
 
-It's pretty much useless the way it is now, I will rework that.
+might be.
 
-Thanks for the review!
---
-Florian
+Your pstore hint gave me something. I tried that earlier but somehow
+assumed that dram content was killed on init. But the content is even
+there are pressing the reset button :)
+
+However, I was able to capture the case where the LED was not blinking:
+The IIR register says 0xc6 (=> line status error). That is okay. At the
+same time LSR register says 0xe0. This is not okay. It means that there
+is some kind of error and at least one error bit is set in this
+register which is not the case. Also those bits are cleared on read
+which does not happen here. And we loop forever so the LED does blink
+anymore.
+
+The RX-count register says that it is empty which sense because bit 0
+is not set (in LSR). However I can read multiple times from the RX FIFO
+until I get the "unhandled bus access" error which usually happens
+right away if the empty FIFO is read on omap3 HW. In the last test I
+mange to read 91 times before the crash. I hoped that this FIFO read
+would make the interrupt go away but it did not.
+
+The HW seems to be in a strange state. It might be either the errata
+or something else. I even took the resume routine from omap-serial in
+case I did something wrong. In my last test it worked for 10minues
+before the interrupt storm came.
+
+This is probably the same thing I see on the omap-serial driver where I
+got from pstore:
+
+[   32.659271] random: nonblocking pool is initialized
+[  212.170623] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 22s!
+[swapper:0]
+
+So I *guess* the interrupt routine is looping. This is problem one, no
+idea what is going on (the register status captured on 8250-omap makes
+no sense).
+
+Problem two, where the UART does not wakeup:
+What I observed is that sometimes the UART does not wake up properly
+i.e. it does not write anything on the console, even where it should. I
+can't tell if the read is working properly, the write does not.
+>From my capture I see that the resume routine was running and the
+register should have been written. That means the UART should be up and
+running but nothing happens.
+It often works again after the system comes out of resume again (i.e.
+RPM suspens and resumes the UART). So it is okay on the next wakeup. Or
+the wakeup after next.
+>From the script:
+
+| while ((1))
+| do
+|
+|         echo -n 409-chars >/dev/ttyUSB0
+|
+|         sleep 1
+|         a=$(date)
+|         echo -e "\n#$a" >/dev/ttyUSB0
+|         echo $a
+|         sleep 13;
+| done
+
+I see that sometimes one or two sequential timestamps are missing. And
+the it continues like nothing happened.
+
+> Tony
+
+Sebastian
