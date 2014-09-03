@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935296AbaICXmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:42:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
+	id S935335AbaICXmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:42:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933350AbaICWF6 (ORCPT
+	with ESMTP id S933344AbaICWF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:05:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.10 33/55] ext4: fix BUG_ON in mb_free_blocks()
-Date: Wed,  3 Sep 2014 15:05:23 -0700
-Message-Id: <20140903220459.260506935@linuxfoundation.org>
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 31/55] Revert "KVM: x86: Increase the number of fixed MTRR regs to 10"
+Date: Wed,  3 Sep 2014 15:05:21 -0700
+Message-Id: <20140903220458.940535422@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -28,62 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit c99d1e6e83b06744c75d9f5e491ed495a7086b7b upstream.
+commit 0d234daf7e0a3290a3a20c8087eefbd6335a5bd4 upstream.
 
-If we suffer a block allocation failure (for example due to a memory
-allocation failure), it's possible that we will call
-ext4_discard_allocated_blocks() before we've actually allocated any
-blocks.  In that case, fe_len and fe_start in ac->ac_f_ex will still
-be zero, and this will result in mb_free_blocks(inode, e4b, 0, 0)
-triggering the BUG_ON on mb_free_blocks():
+This reverts commit 682367c494869008eb89ef733f196e99415ae862,
+which causes 32-bit SMP Windows 7 guests to panic.
 
-	BUG_ON(last >= (sb->s_blocksize << 3));
+SeaBIOS has a limit on the number of MTRRs that it can handle,
+and this patch exceeded the limit.  Better revert it.
+Thanks to Nadav Amit for debugging the cause.
 
-Fix this by bailing out of ext4_discard_allocated_blocks() if fs_len
-is zero.
-
-Also fix a missing ext4_mb_unload_buddy() call in
-ext4_discard_allocated_blocks().
-
-Google-Bug-Id: 16844242
-
-Fixes: 86f0afd463215fc3e58020493482faa4ac3a4d69
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reported-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -1396,6 +1396,8 @@ static void mb_free_blocks(struct inode
- 	int last = first + count - 1;
- 	struct super_block *sb = e4b->bd_sb;
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -92,7 +92,7 @@
+ #define KVM_REFILL_PAGES 25
+ #define KVM_MAX_CPUID_ENTRIES 80
+ #define KVM_NR_FIXED_MTRR_REGION 88
+-#define KVM_NR_VAR_MTRR 10
++#define KVM_NR_VAR_MTRR 8
  
-+	if (WARN_ON(count == 0))
-+		return;
- 	BUG_ON(last >= (sb->s_blocksize << 3));
- 	assert_spin_locked(ext4_group_lock_ptr(sb, e4b->bd_group));
- 	mb_check_buddy(e4b);
-@@ -3181,6 +3183,8 @@ static void ext4_discard_allocated_block
- 	int err;
+ #define ASYNC_PF_PER_VCPU 64
  
- 	if (pa == NULL) {
-+		if (ac->ac_f_ex.fe_len == 0)
-+			return;
- 		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
- 		if (err) {
- 			/*
-@@ -3195,6 +3199,7 @@ static void ext4_discard_allocated_block
- 		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
- 			       ac->ac_f_ex.fe_len);
- 		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		ext4_mb_unload_buddy(&e4b);
- 		return;
- 	}
- 	if (pa->pa_type == MB_INODE_PA)
 
 
