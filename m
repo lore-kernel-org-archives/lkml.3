@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122AbaICWAe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:00:34 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:41549 "EHLO smtp.outflux.net"
+	id S933103AbaICWAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:00:31 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:50091 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932084AbaICWAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933065AbaICWAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:00:23 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
         Will Deacon <will.deacon@arm.com>, Rabin Vincent <rabin@rab.in>,
         Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Doug Anderson <dianders@google.com>,
         Jason Wessel <jason.wessel@windriver.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5 5/8] ARM: kexec: Make .text R/W in machine_kexec
-Date: Wed,  3 Sep 2014 14:57:06 -0700
-Message-Id: <1409781429-27593-6-git-send-email-keescook@chromium.org>
+Subject: [PATCH v5 6/8] arm: kgdb: Handle read-only text / modules
+Date: Wed,  3 Sep 2014 14:57:07 -0700
+Message-Id: <1409781429-27593-7-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409781429-27593-1-git-send-email-keescook@chromium.org>
 References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
@@ -31,64 +31,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikolay Borisov <Nikolay.Borisov@arm.com>
+From: Doug Anderson <dianders@chromium.org>
 
-With the introduction of Kees Cook's patch to make the kernel .text
-read-only the existing method by which kexec works got broken since it
-directly pokes some values in the template code, which resides in the
-.text section.
+Handle the case where someone has set the text segment of the kernel
+as read-only by using the newly introduced "patch" mechanism.
 
-The current patch changes the way those values are inserted so that poking
-.text section occurs only in machine_kexec (e.g when we are about to nuke
-the old kernel and are beyond the point of return). This allows to use
-set_kernel_text_rw() to directly patch the values in the .text section.
-
-I had already sent a patch which achieved this but it was significantly
-more complicated, so this is a cleaner/straight-forward approach.
-
-Signed-off-by: Nikolay Borisov <Nikolay.Borisov@arm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-[kees: collapsed kexec_boot_atags (will.daecon)]
-[kees: for bisectability, moved set_kernel_text_rw() to RODATA patch]
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+[kees: switched structure size check to BUILD_BUG_ON (sboyd)]
 Signed-off-by: Kees Cook <keescook@chromium.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/kernel/machine_kexec.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/kernel/Makefile |  2 +-
+ arch/arm/kernel/kgdb.c   | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
-index 8cf0996aa1a8..8f75250cbe30 100644
---- a/arch/arm/kernel/machine_kexec.c
-+++ b/arch/arm/kernel/machine_kexec.c
-@@ -29,6 +29,7 @@ extern unsigned long kexec_boot_atags;
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 38ddd9f83d0e..70b730766330 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -67,7 +67,7 @@ test-kprobes-objs		+= kprobes-test-arm.o
+ endif
+ obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
+ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+-obj-$(CONFIG_KGDB)		+= kgdb.o
++obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
+ obj-$(CONFIG_OF)		+= devtree.o
+diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
+index a74b53c1b7df..07db2f8a1b45 100644
+--- a/arch/arm/kernel/kgdb.c
++++ b/arch/arm/kernel/kgdb.c
+@@ -12,8 +12,12 @@
+ #include <linux/irq.h>
+ #include <linux/kdebug.h>
+ #include <linux/kgdb.h>
++#include <linux/uaccess.h>
++
+ #include <asm/traps.h>
  
- static atomic_t waiting_for_crash_ipi;
- 
-+static unsigned long dt_mem;
- /*
-  * Provide a dummy crash_notes definition while crash dump arrives to arm.
-  * This prevents breakage of crash_notes attribute in kernel/ksysfs.c.
-@@ -64,7 +65,7 @@ int machine_kexec_prepare(struct kimage *image)
- 			return err;
- 
- 		if (be32_to_cpu(header) == OF_DT_HEADER)
--			kexec_boot_atags = current_segment->mem;
-+			dt_mem = current_segment->mem;
- 	}
- 	return 0;
++#include "patch.h"
++
+ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
+ {
+ 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
+@@ -244,6 +248,31 @@ void kgdb_arch_exit(void)
+ 	unregister_die_notifier(&kgdb_notifier);
  }
-@@ -166,9 +167,8 @@ void machine_kexec(struct kimage *image)
- 	kexec_start_address = image->start;
- 	kexec_indirection_page = page_list;
- 	kexec_mach_type = machine_arch_type;
--	if (!kexec_boot_atags)
--		kexec_boot_atags = image->start - KEXEC_ARM_ZIMAGE_OFFSET + KEXEC_ARM_ATAGS_OFFSET;
--
-+	kexec_boot_atags = dt_mem ?: image->start - KEXEC_ARM_ZIMAGE_OFFSET
-+				     + KEXEC_ARM_ATAGS_OFFSET;
  
- 	/* copy our kernel relocation code to the control code page */
- 	reboot_entry = fncpy(reboot_code_buffer,
++int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
++{
++	int err;
++
++	/* patch_text() only supports int-sized breakpoints */
++	BUILD_BUG_ON(sizeof(int) != BREAK_INSTR_SIZE);
++
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++
++	patch_text((void *)bpt->bpt_addr,
++		   *(unsigned int *)arch_kgdb_ops.gdb_bpt_instr);
++
++	return err;
++}
++
++int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
++{
++	patch_text((void *)bpt->bpt_addr, *(unsigned int *)bpt->saved_instr);
++
++	return 0;
++}
++
+ /*
+  * Register our undef instruction hooks with ARM undef core.
+  * We regsiter a hook specifically looking for the KGB break inst
 -- 
 1.9.1
 
