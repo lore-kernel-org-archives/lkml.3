@@ -1,38 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaICJoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:44:39 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:52695 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755341AbaICJoi (ORCPT
+	id S1756195AbaICJpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:45:30 -0400
+Received: from mail.vectorindia.org ([208.85.3.102]:45293 "EHLO
+	vectorindia.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756070AbaICJp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:44:38 -0400
-MIME-Version: 1.0
-From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Date: Wed, 3 Sep 2014 11:44:22 +0200
-X-Google-Sender-Auth: Z5ORaUXZ_AnetKP2cziDXgbz9ac
-Message-ID: <CAL8zT=hNnRU3gbprVXOMt6FC9veRvQKRmS9gSeCm5-DNfGv-xg@mail.gmail.com>
-Subject: PFUZE100 regulator not going off when PWRON is 0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: lgirdwood@gmail.com, devicetree@vger.kernel.org, robh+dt@kernel.org,
-        grant.likely@linaro.org, broonie@kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Sep 2014 05:45:29 -0400
+X-Greylist: delayed 940 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Sep 2014 05:45:29 EDT
+From: Sudip Mukherjee <sudip@vectorindia.org>
+To: Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sudip Mukherjee <sudip@vectorindia.org>, sparmaintainer@unisys.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4] staging: unisys: uislib: uisqueue.c: rewrite of do_locked_client_insert
+Date: Wed,  3 Sep 2014 14:59:21 +0530
+Message-Id: <1409736561-23883-1-git-send-email-sudip@vectorindia.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+1) removed unused variables
+2) fixed sparse warning of context imbalance in 'do_locked_client_insert'
+                         different lock contexts for basic block
+3) removed the call to visor_signalqueue_empty() , this function is
+   checking whether a signal queue is empty, but the return value
+   of the function is not beeing used, so it is safe to remove.
 
-I have a custom i.MX6 based board, but PMIC part is exactly the same
-as the Freescale SabreSD board.
-I have a reset button, which makes the PWRON signal on PFUZE100 go from 1 to 0.
-I thought this would reset the chip, and thus all voltages would go to
-0, but this is not the case. It seems that SWxOMODE registers are
-involved in this process, accorgind to the datasheet, but I don't
-think this is implemented right now.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
 
-I also removed regulator-always-on for my SW2 pin in order to get it
-off, but this has no effect.
+v1 of the patch of the patch just fixed the sparse warning.
+On suggestion of Dan Carpenter v2 is the total rewrite of the function.
 
-Thanks for your advices,
-JM
+change from v2 to v3 : i messed up in writing a comment , which greg k-h pointed out.
+The comment was actually not needed , so that has been removed.
+
+change from v3 to v4 : call to visor_signalqueue_empty() was removed and
+in the if condition comparison with 1 was removed.
+
+
+ drivers/staging/unisys/uislib/uisqueue.c | 37 ++++++--------------------------
+ 1 file changed, 7 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/staging/unisys/uislib/uisqueue.c b/drivers/staging/unisys/uislib/uisqueue.c
+index f52bca1..83f8761 100644
+--- a/drivers/staging/unisys/uislib/uisqueue.c
++++ b/drivers/staging/unisys/uislib/uisqueue.c
+@@ -78,41 +78,18 @@ do_locked_client_insert(struct uisqueue_info *queueinfo,
+ 			u64 interruptHandle, u8 *channelId)
+ {
+ 	unsigned long flags;
+-	unsigned char queueWasEmpty;
+-	unsigned int locked = 0;
+-	unsigned int acquired = 0;
+ 	u8 rc = 0;
+
+ 	spin_lock_irqsave(lock, flags);
+-	locked = 1;
+-
+ 	if (!ULTRA_CHANNEL_CLIENT_ACQUIRE_OS(queueinfo->chan, channelId, NULL))
+-		goto Away;
+-
+-	acquired = 1;
+-
+-	queueWasEmpty = visor_signalqueue_empty(queueinfo->chan, whichqueue);
+-	if (!visor_signal_insert(queueinfo->chan, whichqueue, pSignal))
+-		goto Away;
+-	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
+-	acquired = 0;
+-	spin_unlock_irqrestore(lock, flags);
+-	locked = 0;
+-
+-	queueinfo->packets_sent++;
+-
+-	rc = 1;
+-Away:
+-	if (acquired) {
+-		ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId,
+-						NULL);
+-		acquired = 0;
++		goto unlock;
++	if (visor_signal_insert(queueinfo->chan, whichqueue, pSignal)) {
++		queueinfo->packets_sent++;
++		rc = 1;
+ 	}
+-	if (locked) {
+-		spin_unlock_irqrestore((spinlock_t *) lock, flags);
+-		locked = 0;
+-	}
+-
++	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
++unlock:
++	spin_unlock_irqrestore((spinlock_t *)lock, flags);
+ 	return rc;
+ }
+
+--
+1.8.1.2
+
