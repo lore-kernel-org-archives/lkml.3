@@ -1,138 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834AbaICWVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:21:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933920AbaICWS5 (ORCPT
+	id S934077AbaICWV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:21:59 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:53388 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933916AbaICWV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:57 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.16 099/125] ext4: fix same-dir rename when inline data directory overflows
-Date: Wed,  3 Sep 2014 15:07:36 -0700
-Message-Id: <20140903220626.668757149@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
-References: <20140903220623.649748296@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 3 Sep 2014 18:21:56 -0400
+Date: Wed, 3 Sep 2014 23:20:18 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <h.peter.anvin@intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: RFC: Tainting the kernel on raw I/O access
+Message-ID: <20140903232018.17bba503@alan.etchedpixels.co.uk>
+In-Reply-To: <5407863B.9030608@intel.com>
+References: <5407863B.9030608@intel.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 03 Sep 2014 14:20:59 -0700
+"H. Peter Anvin" <h.peter.anvin@intel.com> wrote:
 
-------------------
+> In a meeting earlier today, we discussed MSR access and that it could be
+> used to do bad things.  The same applies to other forms of raw I/O
+> (/dev/mem, /dev/port, ioperm, iopl, etc.)
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+For MSR I assume writing primarily - but if you block read access you
+break a ton of tools, and if you block write access you stop things like
+DPTF working (which personally I couldn't care about, but other folks who
+are using it to power manage their boxes might be a bit more upset 8)).
+Fixing that takes you into the joyful world of whitelists.
 
-commit d80d448c6c5bdd32605b78a60fe8081d82d4da0f upstream.
+> This is basically the same problem with which the secure boot people
+> have been struggling.
 
-When performing a same-directory rename, it's possible that adding or
-setting the new directory entry will cause the directory to overflow
-the inline data area, which causes the directory to be converted to an
-extent-based directory.  Under this circumstance it is necessary to
-re-read the directory when deleting the old dirent because the "old
-directory" context still points to i_block in the inode table, which
-is now an extent tree root!  The delete fails with an FS error, and
-the subsequent fsck complains about incorrect link counts and
-hardlinked directories.
+Not sure that is true
 
-Test case (originally found with flat_dir_test in the metadata_csum
-test program):
+"secure" boot is based upon the premise that you can't fool the machine
+into booting a different OS image without the user choosing to do so in a
+protected manner that prevents impersonation.
 
-# mkfs.ext4 -O inline_data /dev/sda
-# mount /dev/sda /mnt
-# mkdir /mnt/x
-# touch /mnt/x/changelog.gz /mnt/x/copyright /mnt/x/README.Debian
-# sync
-# for i in /mnt/x/*; do mv $i $i.longer; done
-# ls -la /mnt/x/
-total 0
--rw-r--r-- 1 root root 0 Aug 25 12:03 changelog.gz.longer
--rw-r--r-- 1 root root 0 Aug 25 12:03 copyright
--rw-r--r-- 1 root root 0 Aug 25 12:03 copyright.longer
--rw-r--r-- 1 root root 0 Aug 25 12:03 README.Debian.longer
+"tainting" on raw I/O is a useful debug tool. There is at best only
+minimal overlap in the sense that one is a partial subset of the other
+(and only partial because there are safe MSRs, I/O ports and memory
+ranges).
 
-(Hey!  Why are there four files now??)
+> Peter Z. suggested we should taint the kernel on raw I/O access, and I
+> tend to concur.
+> 
+> So what I would like to suggest is that we create a new kernel helper
+> function which can return an error in secure boot mode and otherwise
+> taints the kernel with a raw I/O taint.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+That makes the job instantly about ten times harder. You can add taints
+trivially to the kernel but every single taint that might error is a new
+error path, and no doubt a new exciting pile of kernel bugs.
 
----
- fs/ext4/namei.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+> What do people think?
 
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -3147,7 +3147,8 @@ static int ext4_find_delete_entry(handle
- 	return retval;
- }
- 
--static void ext4_rename_delete(handle_t *handle, struct ext4_renament *ent)
-+static void ext4_rename_delete(handle_t *handle, struct ext4_renament *ent,
-+			       int force_reread)
- {
- 	int retval;
- 	/*
-@@ -3159,7 +3160,8 @@ static void ext4_rename_delete(handle_t
- 	if (le32_to_cpu(ent->de->inode) != ent->inode->i_ino ||
- 	    ent->de->name_len != ent->dentry->d_name.len ||
- 	    strncmp(ent->de->name, ent->dentry->d_name.name,
--		    ent->de->name_len)) {
-+		    ent->de->name_len) ||
-+	    force_reread) {
- 		retval = ext4_find_delete_entry(handle, ent->dir,
- 						&ent->dentry->d_name);
- 	} else {
-@@ -3210,6 +3212,7 @@ static int ext4_rename(struct inode *old
- 		.dentry = new_dentry,
- 		.inode = new_dentry->d_inode,
- 	};
-+	int force_reread;
- 	int retval;
- 
- 	dquot_initialize(old.dir);
-@@ -3271,6 +3274,15 @@ static int ext4_rename(struct inode *old
- 		if (retval)
- 			goto end_rename;
- 	}
-+	/*
-+	 * If we're renaming a file within an inline_data dir and adding or
-+	 * setting the new dirent causes a conversion from inline_data to
-+	 * extents/blockmap, we need to force the dirent delete code to
-+	 * re-read the directory, or else we end up trying to delete a dirent
-+	 * from what is now the extent tree root (or a block map).
-+	 */
-+	force_reread = (new.dir->i_ino == old.dir->i_ino &&
-+			ext4_test_inode_flag(new.dir, EXT4_INODE_INLINE_DATA));
- 	if (!new.bh) {
- 		retval = ext4_add_entry(handle, new.dentry, old.inode);
- 		if (retval)
-@@ -3281,6 +3293,9 @@ static int ext4_rename(struct inode *old
- 		if (retval)
- 			goto end_rename;
- 	}
-+	if (force_reread)
-+		force_reread = !ext4_test_inode_flag(new.dir,
-+						     EXT4_INODE_INLINE_DATA);
- 
- 	/*
- 	 * Like most other Unix systems, set the ctime for inodes on a
-@@ -3292,7 +3307,7 @@ static int ext4_rename(struct inode *old
- 	/*
- 	 * ok, that's it
- 	 */
--	ext4_rename_delete(handle, &old);
-+	ext4_rename_delete(handle, &old, force_reread);
- 
- 	if (new.inode) {
- 		ext4_dec_count(handle, new.inode);
+The problem is that it's not just little bits of raw I/O. You've got a
+load of kernel command line options that have the same problem and you've
+got a load of things like firmware upload in the unsigned firmware case
+which may in some cases also need to count but not others. Even things
+like the features planned so you can inject missing DTD information int
+your ACPI tables (or fix the garbage your vendor provided) raise the same
+question.
 
+What is the *actual* goal here, what is the security model, what is the
+at least basic proof that it works. We've got 20 years of layered
+insecurity by guesswork in the kernel already.
 
+Also how does this work for virtual machines ? Does the hypervisor do the
+taint management for ports it doesn't manage and that are not
+passthrough. What about passthrough devices on a non signed guest on a
+signed master.
+
+If you just want some "detector bits" for bug report filtering them its
+quite a different need to fixing "secure" boot mode. Even in the detector
+bits case there should be an overall plan and some defined properties
+that provide the security and which you can show should always be true.
+
+The failure case for "detector bits" is 'the user did something dumb and
+we spent a while looking at a bug that was their fault' and the fix path
+is 'get around to adding a new taint'. The 'secure boot' case is a
+promise of a security model which implies you can prove its at least
+reasonably correct (and can be implemented to be correct).
+
+Alan
