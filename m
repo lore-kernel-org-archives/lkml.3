@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbaICJ76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:59:58 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57477 "EHLO
+	id S1756558AbaICKFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:05:23 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57433 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932611AbaICJ7P (ORCPT
+	by vger.kernel.org with ESMTP id S932307AbaICJ5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:59:15 -0400
+	Wed, 3 Sep 2014 05:57:51 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
+Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 41/56] serial: core: Preserve termios c_cflag for console resume
-Date: Wed,  3 Sep 2014 11:27:00 +0200
-Message-Id: <8c97d63679fc0f7e1456003b16f625a804d9d68b.1409735865.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 39/56] drivers/i2c/busses: use correct type for dma_map/unmap
+Date: Wed,  3 Sep 2014 11:26:58 +0200
+Message-Id: <54a4167859c75a9bd83434b7547ebd398aeb2d05.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
@@ -23,46 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Wolfram Sang <wsa@the-dreams.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ae84db9661cafc63d179e1d985a2c5b841ff0ac4 upstream.
+commit 28772ac8711e4d7268c06e765887dd8cb6924f98 upstream.
 
-When a tty is opened for the serial console, the termios c_cflag
-settings are inherited from the console line settings.
-However, if the tty is subsequently closed, the termios settings
-are lost. This results in a garbled console if the console is later
-suspended and resumed.
+dma_{un}map_* uses 'enum dma_data_direction' not 'enum dma_transfer_direction'.
 
-Preserve the termios c_cflag for the serial console when the tty
-is shutdown; this reflects the most recent line settings.
-
-Fixes: Bugzilla #69751, 'serial console does not wake from S3'
-Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/serial/serial_core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/i2c/busses/i2c-at91.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 0f02351c9239..b5180c10f71d 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -235,6 +235,9 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
- 		/*
- 		 * Turn off DTR and RTS early.
- 		 */
-+		if (uart_console(uport) && tty)
-+			uport->cons->cflag = tty->termios.c_cflag;
-+
- 		if (!tty || (tty->termios.c_cflag & HUPCL))
- 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
+index fd059308affa..9d3e846e0137 100644
+--- a/drivers/i2c/busses/i2c-at91.c
++++ b/drivers/i2c/busses/i2c-at91.c
+@@ -210,7 +210,7 @@ static void at91_twi_write_data_dma_callback(void *data)
+ 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
  
+ 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
+-			 dev->buf_len, DMA_MEM_TO_DEV);
++			 dev->buf_len, DMA_TO_DEVICE);
+ 
+ 	at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
+ }
+@@ -289,7 +289,7 @@ static void at91_twi_read_data_dma_callback(void *data)
+ 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
+ 
+ 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
+-			 dev->buf_len, DMA_DEV_TO_MEM);
++			 dev->buf_len, DMA_FROM_DEVICE);
+ 
+ 	/* The last two bytes have to be read without using dma */
+ 	dev->buf += dev->buf_len - 2;
 -- 
 2.1.0
 
