@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933851AbaICWSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:18:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46124 "EHLO
+	id S1757409AbaICXDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:03:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46157 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933807AbaICWSp (ORCPT
+	with ESMTP id S933807AbaICWSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:45 -0400
+	Wed, 3 Sep 2014 18:18:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Resch <fli4l@robert.reschpara.de>,
-        Christoph Schulz <develop@kristov.de>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.16 071/125] x86: dont exclude low BIOS area when allocating address space for non-PCI cards
-Date: Wed,  3 Sep 2014 15:07:08 -0700
-Message-Id: <20140903220625.809518983@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH 3.16 078/125] xen/events/fifo: ensure all bitops are properly aligned even on x86
+Date: Wed,  3 Sep 2014 15:07:15 -0700
+Message-Id: <20140903220626.015504620@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,90 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Schulz <develop@kristov.de>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit cbace46a9710a480cae51e4611697df5de41713e upstream.
+commit dcecb8fd93a65787130a74e61fdf29932c8d85eb upstream.
 
-Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
-space") moved the test for resource allocations that fall within the first
-1MB of address space from the PCI-specific path to a generic path, such
-that all resource allocations will avoid this area.  However, this breaks
-ISA cards which need to allocate a memory region within the first 1MB.  An
-example is the i82365 PCMCIA controller and derivatives like the Ricoh
-RF5C296/396 which map part of the PCMCIA socket memory address space into
-the first 1MB of system memory address space.  They do not work anymore as
-no usable memory region exists due to this change:
+When using the FIFO-based ABI on x86_64, if the last port is at the
+end of an event array page then sync_test_bit() on this port's event
+word will read beyond the end of the page and in certain circumstances
+this may fault.
 
-  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
-  host opts [0]: none
-  host opts [1]: none
-  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
-  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
-  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
+The fault requires the following page in the kernel's direct mapping
+to be not present, which would mean:
 
-If filtering out the first 1MB is reverted, everything works as expected.
+a) the array page is the last page of RAM; or
 
-Tested-by: Robert Resch <fli4l@robert.reschpara.de>
-Signed-off-by: Christoph Schulz <develop@kristov.de>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+b) the following page is ballooned out /and/ it has been used for a
+   foreign mapping by a kernel driver (such as netback or blkback)
+   /and/ the grant has been unmapped.
+
+Use the infrastructure added for arm64 to ensure that all bitops
+operating on event words are unsigned long aligned.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/resource.c |    8 +++++---
- arch/x86/pci/i386.c        |    4 ++++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/xen/events/events_fifo.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/resource.c
-+++ b/arch/x86/kernel/resource.c
-@@ -37,10 +37,12 @@ static void remove_e820_regions(struct r
+--- a/drivers/xen/events/events_fifo.c
++++ b/drivers/xen/events/events_fifo.c
+@@ -67,10 +67,9 @@ static event_word_t *event_array[MAX_EVE
+ static unsigned event_array_pages __read_mostly;
  
- void arch_remove_reservations(struct resource *avail)
- {
--	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
-+	/*
-+	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
-+	 * the low 1MB unconditionally, as this area is needed for some ISA
-+	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
-+	 */
- 	if (avail->flags & IORESOURCE_MEM) {
--		if (avail->start < BIOS_END)
--			avail->start = BIOS_END;
- 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
+ /*
+- * sync_set_bit() and friends must be unsigned long aligned on non-x86
+- * platforms.
++ * sync_set_bit() and friends must be unsigned long aligned.
+  */
+-#if !defined(CONFIG_X86) && BITS_PER_LONG > 32
++#if BITS_PER_LONG > 32
  
- 		remove_e820_regions(avail);
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const
- 			return start;
- 		if (start & 0x300)
- 			start = (start + 0x3ff) & ~0x3ff;
-+	} else if (res->flags & IORESOURCE_MEM) {
-+		/* The low 1MB range is reserved for ISA cards */
-+		if (start < BIOS_END)
-+			start = BIOS_END;
- 	}
- 	return start;
- }
+ #define BM(w) (unsigned long *)((unsigned long)w & ~0x7UL)
+ #define EVTCHN_FIFO_BIT(b, w) \
 
 
