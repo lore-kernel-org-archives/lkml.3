@@ -1,71 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538AbaICJ6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:58:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50362 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504AbaICJ6h (ORCPT
+	id S932575AbaICJ6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:58:45 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57464 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932541AbaICJ6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:58:37 -0400
-Date: Wed, 3 Sep 2014 11:58:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Chintan Pandya <cpandya@codeaurora.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers for
- scanner thread
-Message-ID: <20140903095815.GK4783@worktop.ger.corp.intel.com>
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
- <1408536628-29379-2-git-send-email-cpandya@codeaurora.org>
- <alpine.LSU.2.11.1408272258050.10518@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1408272258050.10518@eggly.anvils>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Wed, 3 Sep 2014 05:58:43 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Pratyush Anand <pratyush.anand@st.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 20/56] USB: Fix persist resume of some SS USB devices
+Date: Wed,  3 Sep 2014 11:26:39 +0200
+Message-Id: <c5b3795f9b7cab50c1d6d449fb2aa492d6ec2c45.1409735865.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
+References: <cover.1409735865.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 11:02:20PM -0700, Hugh Dickins wrote:
-> Sorry for holding you up, I'm slow. and needed to think about this more,
-> 
-> On Wed, 20 Aug 2014, Chintan Pandya wrote:
-> 
-> > KSM thread to scan pages is scheduled on definite timeout. That wakes up
-> > CPU from idle state and hence may affect the power consumption. Provide
-> > an optional support to use deferrable timer which suites low-power
-> > use-cases.
-> > 
-> > Typically, on our setup we observed, 10% less power consumption with some
-> > use-cases in which CPU goes to power collapse frequently. For example,
-> > playing audio on Soc which has HW based Audio encoder/decoder, CPU
-> > remains idle for longer duration of time. This idle state will save
-> > significant CPU power consumption if KSM don't wakes them up
-> > periodically.
-> > 
-> > Note that, deferrable timers won't be deferred if any CPU is active and
-> > not in IDLE state.
-> > 
-> > By default, deferrable timers is enabled. To disable deferrable timers,
-> > $ echo 0 > /sys/kernel/mm/ksm/deferrable_timer
-> 
-> I have now experimented.  And, much as I wanted to eliminate the
-> tunable, and just have deferrable timers on, I have come right back
-> to your original position.
-> 
-> I was impressed by how quiet ksmd goes when there's nothing much
-> happening on the machine; but equally, disappointed in how slow
-> it then is to fulfil the outstanding merge work.  I agree with your
-> original assessment, that not everybody will want deferrable timer,
-> the way it is working at present.
-> 
-> I expect that can be fixed, partly by doing more work on wakeup from
-> a deferred timer, according to how long it has been deferred; and
-> partly by not deferring on idle until two passes of the list have been
-> completed.  But that's easier said than done, and might turn out to
+From: Pratyush Anand <pratyush.anand@st.com>
 
-So why not have the timer cancel itself when there is no more work to do
-and start itself up again when there's work added?
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit a40178b2fa6ad87670fb1e5fa4024db00c149629 upstream.
+
+Problem Summary: Problem has been observed generally with PM states
+where VBUS goes off during suspend. There are some SS USB devices which
+take longer time for link training compared to many others.  Such
+devices fail to reconnect with same old address which was associated
+with it before suspend.
+
+When system resumes, at some point of time (dpm_run_callback->
+usb_dev_resume->usb_resume->usb_resume_both->usb_resume_device->
+usb_port_resume) SW reads hub status. If device is present,
+then it finishes port resume and re-enumerates device with same
+address. If device is not present then, SW thinks that device was
+removed during suspend and therefore does logical disconnection
+and removes all the resource allocated for this device.
+
+Now, if I put sufficient delay just before root hub status read in
+usb_resume_device then, SW sees always that device is present. In normal
+course(without any delay) SW sees that no device is present and then SW
+removes all resource associated with the device at this port.  In the
+latter case, after sometime, device says that hey I am here, now host
+enumerates it, but with new address.
+
+Problem had been reproduced when I connect verbatim USB3.0 hard disc
+with my STiH407 XHCI host running with 3.10 kernel.
+
+I see that similar problem has been reported here.
+https://bugzilla.kernel.org/show_bug.cgi?id=53211
+Reading above it seems that bug was not in 3.6.6 and was present in 3.8
+and again it was not present for some in 3.12.6, while it was present
+for few others. I tested with 3.13-FC19 running at i686 desktop, problem
+was still there. However, I was failed to reproduce it with 3.16-RC4
+running at same i686 machine. I would say it is just a random
+observation. Problem for few devices is always there, as I am unable to
+find a proper fix for the issue.
+
+So, now question is what should be the amount of delay so that host is
+always able to recognize suspended device after resume.
+
+XHCI specs 4.19.4 says that when Link training is successful, port sets
+CSC bit to 1. So if SW reads port status before successful link
+training, then it will not find device to be present.  USB Analyzer log
+with such buggy devices show that in some cases device switch on the
+RX termination after long delay of host enabling the VBUS. In few other
+cases it has been seen that device fails to negotiate link training in
+first attempt. It has been reported till now that few devices take as
+long as 2000 ms to train the link after host enabling its VBUS and
+RX termination. This patch implements a 2000 ms timeout for CSC bit to set
+ie for link training. If in a case link trains before timeout, loop will
+exit earlier.
+
+This patch implements above delay, but only for SS device and when
+persist is enabled.
+
+So, for the good device overhead is almost none. While for the bad
+devices penalty could be the time which it take for link training.
+But, If a device was connected before suspend, and was removed
+while system was asleep, then the penalty would be the timeout ie
+2000 ms.
+
+Results:
+
+Verbatim USB SS hard disk connected with STiH407 USB host running 3.10
+Kernel resumes in 461 msecs without this patch, but hard disk is
+assigned a new device address. Same system resumes in 790 msecs with
+this patch, but with old device address.
+
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/usb/core/hub.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 9c63a76cfedd..557e8a9fe58a 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3168,6 +3168,43 @@ static int finish_port_resume(struct usb_device *udev)
+ }
+ 
+ /*
++ * There are some SS USB devices which take longer time for link training.
++ * XHCI specs 4.19.4 says that when Link training is successful, port
++ * sets CSC bit to 1. So if SW reads port status before successful link
++ * training, then it will not find device to be present.
++ * USB Analyzer log with such buggy devices show that in some cases
++ * device switch on the RX termination after long delay of host enabling
++ * the VBUS. In few other cases it has been seen that device fails to
++ * negotiate link training in first attempt. It has been
++ * reported till now that few devices take as long as 2000 ms to train
++ * the link after host enabling its VBUS and termination. Following
++ * routine implements a 2000 ms timeout for link training. If in a case
++ * link trains before timeout, loop will exit earlier.
++ *
++ * FIXME: If a device was connected before suspend, but was removed
++ * while system was asleep, then the loop in the following routine will
++ * only exit at timeout.
++ *
++ * This routine should only be called when persist is enabled for a SS
++ * device.
++ */
++static int wait_for_ss_port_enable(struct usb_device *udev,
++		struct usb_hub *hub, int *port1,
++		u16 *portchange, u16 *portstatus)
++{
++	int status = 0, delay_ms = 0;
++
++	while (delay_ms < 2000) {
++		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
++			break;
++		msleep(20);
++		delay_ms += 20;
++		status = hub_port_status(hub, *port1, portstatus, portchange);
++	}
++	return status;
++}
++
++/*
+  * usb_port_resume - re-activate a suspended usb device's upstream port
+  * @udev: device to re-activate, not a root hub
+  * Context: must be able to sleep; device not locked; pm locks held
+@@ -3269,6 +3306,10 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
+ 
+ 	clear_bit(port1, hub->busy_bits);
+ 
++	if (udev->persist_enabled && hub_is_superspeed(hub->hdev))
++		status = wait_for_ss_port_enable(udev, hub, &port1, &portchange,
++				&portstatus);
++
+ 	status = check_port_resume_type(udev,
+ 			hub, port1, status, portchange, portstatus);
+ 	if (status == 0)
+-- 
+2.1.0
+
