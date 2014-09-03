@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935437AbaICXL0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:11:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46028 "EHLO
+	id S935422AbaICXLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:11:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933681AbaICWSi (ORCPT
+	with ESMTP id S933693AbaICWSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
+        Alex Williamson <alex.williamson@redhat.com>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.16 056/125] KVM: x86: Inter-privilege level ret emulation is not implemeneted
-Date: Wed,  3 Sep 2014 15:06:53 -0700
-Message-Id: <20140903220625.323786336@linuxfoundation.org>
+Subject: [PATCH 3.16 057/125] KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC redir table
+Date: Wed,  3 Sep 2014 15:06:54 -0700
+Message-Id: <20140903220625.353548451@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,41 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 9e8919ae793f4edfaa29694a70f71a515ae9942a upstream.
+commit 0f6c0a740b7d3e1f3697395922d674000f83d060 upstream.
 
-Return unhandlable error on inter-privilege level ret instruction.  This is
-since the current emulation does not check the privilege level correctly when
-loading the CS, and does not pop RSP/SS as needed.
+Currently, the EOI exit bitmap (used for APICv) does not include
+interrupts that are masked.  However, this can cause a bug that manifests
+as an interrupt storm inside the guest.  Alex Williamson reported the
+bug and is the one who really debugged this; I only wrote the patch. :)
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+The scenario involves a multi-function PCI device with OHCI and EHCI
+USB functions and an audio function, all assigned to the guest, where
+both USB functions use legacy INTx interrupts.
+
+As soon as the guest boots, interrupts for these devices turn into an
+interrupt storm in the guest; the host does not see the interrupt storm.
+Basically the EOI path does not work, and the guest continues to see the
+interrupt over and over, even after it attempts to mask it at the APIC.
+The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
+with not many changes in the area of APIC/IOAPIC handling).
+
+Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
+on in the eoi_exit_bitmap and TMR, and things then work.  What happens
+is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
+It does not have set bit 59 because the RTE was masked, so the IOAPIC
+never sees the EOI and the interrupt continues to fire in the guest.
+
+My guess was that the guest is masking the interrupt in the redirection
+table in the interrupt routine, i.e. while the interrupt is set in a
+LAPIC's ISR, The simplest fix is to ignore the masking state, we would
+rather have an unnecessary exit rather than a missed IRQ ACK and anyway
+IOAPIC interrupts are not as performance-sensitive as for example MSIs.
+Alex tested this patch and it fixed his bug.
+
+[Thanks to Alex for his precise description of the problem
+ and initial debugging effort.  A lot of the text above is
+ based on emails exchanged with him.]
+
+Reported-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Alex Williamson <alex.williamson@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ virt/kvm/ioapic.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -2017,6 +2017,7 @@ static int em_ret_far(struct x86_emulate
- {
- 	int rc;
- 	unsigned long cs;
-+	int cpl = ctxt->ops->cpl(ctxt);
- 
- 	rc = emulate_pop(ctxt, &ctxt->_eip, ctxt->op_bytes);
- 	if (rc != X86EMUL_CONTINUE)
-@@ -2026,6 +2027,9 @@ static int em_ret_far(struct x86_emulate
- 	rc = emulate_pop(ctxt, &cs, ctxt->op_bytes);
- 	if (rc != X86EMUL_CONTINUE)
- 		return rc;
-+	/* Outer-privilege level return is not implemented */
-+	if (ctxt->mode >= X86EMUL_MODE_PROT16 && (cs & 3) > cpl)
-+		return X86EMUL_UNHANDLEABLE;
- 	rc = load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS);
- 	return rc;
- }
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -254,10 +254,9 @@ void kvm_ioapic_scan_entry(struct kvm_vc
+ 	spin_lock(&ioapic->lock);
+ 	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
+ 		e = &ioapic->redirtbl[index];
+-		if (!e->fields.mask &&
+-			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
+-			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
+-				 index) || index == RTC_GSI)) {
++		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
++		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
++		    index == RTC_GSI) {
+ 			if (kvm_apic_match_dest(vcpu, NULL, 0,
+ 				e->fields.dest_id, e->fields.dest_mode)) {
+ 				__set_bit(e->fields.vector,
 
 
