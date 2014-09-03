@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933762AbaICWLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:11:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45730 "EHLO
+	id S933780AbaICWLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:11:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933293AbaICWLD (ORCPT
+	with ESMTP id S933626AbaICWIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:11:03 -0400
+	Wed, 3 Sep 2014 18:08:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.14 27/88] hwmon: (amc6821) Fix possible race condition bug
-Date: Wed,  3 Sep 2014 15:05:01 -0700
-Message-Id: <20140903220516.760635470@linuxfoundation.org>
+        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 62/88] Btrfs: fix csum tree corruption, duplicate and outdated checksums
+Date: Wed,  3 Sep 2014 15:05:36 -0700
+Message-Id: <20140903220517.815171626@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,84 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Filipe Manana <fdmanana@suse.com>
 
-commit cf44819c98db11163f58f08b822d626c7a8f5188 upstream.
+commit 27b9a8122ff71a8cadfbffb9c4f0694300464f3b upstream.
 
-Ensure mutex lock protects the read-modify-write period to prevent possible
-race condition bug.
-In additional, update data->valid should also be protected by the mutex lock.
+Under rare circumstances we can end up leaving 2 versions of a checksum
+for the same file extent range.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+The reason for this is that after calling btrfs_next_leaf we process
+slot 0 of the leaf it returns, instead of processing the slot set in
+path->slots[0]. Most of the time (by far) path->slots[0] is 0, but after
+btrfs_next_leaf() releases the path and before it searches for the next
+leaf, another task might cause a split of the next leaf, which migrates
+some of its keys to the leaf we were processing before calling
+btrfs_next_leaf(). In this case btrfs_next_leaf() returns again the
+same leaf but with path->slots[0] having a slot number corresponding
+to the first new key it got, that is, a slot number that didn't exist
+before calling btrfs_next_leaf(), as the leaf now has more keys than
+it had before. So we must really process the returned leaf starting at
+path->slots[0] always, as it isn't always 0, and the key at slot 0 can
+have an offset much lower than our search offset/bytenr.
+
+For example, consider the following scenario, where we have:
+
+sums->bytenr: 40157184, sums->len: 16384, sums end: 40173568
+four 4kb file data blocks with offsets 40157184, 40161280, 40165376, 40169472
+
+  Leaf N:
+
+    slot = 0                           slot = btrfs_header_nritems() - 1
+  |-------------------------------------------------------------------|
+  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4] |
+  |-------------------------------------------------------------------|
+
+  Leaf N + 1:
+
+      slot = 0                          slot = btrfs_header_nritems() - 1
+  |--------------------------------------------------------------------|
+  | [(CSUM CSUM 40161280), size 32] ... [((CSUM CSUM 40615936), size 8 |
+  |--------------------------------------------------------------------|
+
+Because we are at the last slot of leaf N, we call btrfs_next_leaf() to
+find the next highest key, which releases the current path and then searches
+for that next key. However after releasing the path and before finding that
+next key, the item at slot 0 of leaf N + 1 gets moved to leaf N, due to a call
+to ctree.c:push_leaf_left() (via ctree.c:split_leaf()), and therefore
+btrfs_next_leaf() will returns us a path again with leaf N but with the slot
+pointing to its new last key (CSUM CSUM 40161280). This new version of leaf N
+is then:
+
+    slot = 0                        slot = btrfs_header_nritems() - 2  slot = btrfs_header_nritems() - 1
+  |----------------------------------------------------------------------------------------------------|
+  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4]  [(CSUM CSUM 40161280), size 32] |
+  |----------------------------------------------------------------------------------------------------|
+
+And incorrecly using slot 0, makes us set next_offset to 39239680 and we jump
+into the "insert:" label, which will set tmp to:
+
+    tmp = min((sums->len - total_bytes) >> blocksize_bits,
+        (next_offset - file_key.offset) >> blocksize_bits) =
+    min((16384 - 0) >> 12, (39239680 - 40157184) >> 12) =
+    min(4, (u64)-917504 = 18446744073708634112 >> 12) = 4
+
+and
+
+   ins_size = csum_size * tmp = 4 * 4 = 16 bytes.
+
+In other words, we insert a new csum item in the tree with key
+(CSUM_OBJECTID CSUM_KEY 40157184 = sums->bytenr) that contains the checksums
+for all the data (4 blocks of 4096 bytes each = sums->len). Which is wrong,
+because the item with key (CSUM CSUM 40161280) (the one that was moved from
+leaf N + 1 to the end of leaf N) contains the old checksums of the last 12288
+bytes of our data and won't get those old checksums removed.
+
+So this leaves us 2 different checksums for 3 4kb blocks of data in the tree,
+and breaks the logical rule:
+
+   Key_N+1.offset >= Key_N.offset + length_of_data_its_checksums_cover
+
+An obvious bad effect of this is that a subsequent csum tree lookup to get
+the checksum of any of the blocks with logical offset of 40161280, 40165376
+or 40169472 (the last 3 4kb blocks of file data), will get the old checksums.
+
+Signed-off-by: Filipe Manana <fdmanana@suse.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/amc6821.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ fs/btrfs/file-item.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/amc6821.c
-+++ b/drivers/hwmon/amc6821.c
-@@ -360,11 +360,13 @@ static ssize_t set_pwm1_enable(
- 	if (config)
- 		return config;
- 
-+	mutex_lock(&data->update_lock);
- 	config = i2c_smbus_read_byte_data(client, AMC6821_REG_CONF1);
- 	if (config < 0) {
- 			dev_err(&client->dev,
- 			"Error reading configuration register, aborting.\n");
--			return config;
-+			count = config;
-+			goto unlock;
- 	}
- 
- 	switch (val) {
-@@ -381,14 +383,15 @@ static ssize_t set_pwm1_enable(
- 		config |= AMC6821_CONF1_FDRC1;
- 		break;
- 	default:
--		return -EINVAL;
-+		count = -EINVAL;
-+		goto unlock;
- 	}
--	mutex_lock(&data->update_lock);
- 	if (i2c_smbus_write_byte_data(client, AMC6821_REG_CONF1, config)) {
- 			dev_err(&client->dev,
- 			"Configuration register write error, aborting.\n");
- 			count = -EIO;
- 	}
-+unlock:
- 	mutex_unlock(&data->update_lock);
- 	return count;
- }
-@@ -493,8 +496,9 @@ static ssize_t set_temp_auto_point_temp(
- 		return -EINVAL;
- 	}
- 
--	data->valid = 0;
- 	mutex_lock(&data->update_lock);
-+	data->valid = 0;
-+
- 	switch (ix) {
- 	case 0:
- 		ptemp[0] = clamp_val(val / 1000, 0,
-@@ -658,13 +662,14 @@ static ssize_t set_fan1_div(
- 	if (config)
- 		return config;
- 
-+	mutex_lock(&data->update_lock);
- 	config = i2c_smbus_read_byte_data(client, AMC6821_REG_CONF4);
- 	if (config < 0) {
- 		dev_err(&client->dev,
- 			"Error reading configuration register, aborting.\n");
--		return config;
-+		count = config;
-+		goto EXIT;
- 	}
--	mutex_lock(&data->update_lock);
- 	switch (val) {
- 	case 2:
- 		config &= ~AMC6821_CONF4_PSPR;
+--- a/fs/btrfs/file-item.c
++++ b/fs/btrfs/file-item.c
+@@ -756,7 +756,7 @@ again:
+ 				found_next = 1;
+ 			if (ret != 0)
+ 				goto insert;
+-			slot = 0;
++			slot = path->slots[0];
+ 		}
+ 		btrfs_item_key_to_cpu(path->nodes[0], &found_key, slot);
+ 		if (found_key.objectid != BTRFS_EXTENT_CSUM_OBJECTID ||
 
 
