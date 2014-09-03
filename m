@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936062AbaICX2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:28:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45626 "EHLO
+	id S936176AbaICXay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:30:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933609AbaICWIo (ORCPT
+	with ESMTP id S933566AbaICWIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:44 -0400
+	Wed, 3 Sep 2014 18:08:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.14 45/88] ext4: fix BUG_ON in mb_free_blocks()
-Date: Wed,  3 Sep 2014 15:05:19 -0700
-Message-Id: <20140903220517.318610379@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 15/88] ALSA: hda/ca0132 - Dont try loading firmware at resume when already failed
+Date: Wed,  3 Sep 2014 15:04:49 -0700
+Message-Id: <20140903220516.407829247@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,62 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c99d1e6e83b06744c75d9f5e491ed495a7086b7b upstream.
+commit e24aa0a4c5ac92a171d9dd74a8d3dbf652990d36 upstream.
 
-If we suffer a block allocation failure (for example due to a memory
-allocation failure), it's possible that we will call
-ext4_discard_allocated_blocks() before we've actually allocated any
-blocks.  In that case, fe_len and fe_start in ac->ac_f_ex will still
-be zero, and this will result in mb_free_blocks(inode, e4b, 0, 0)
-triggering the BUG_ON on mb_free_blocks():
+CA0132 driver tries to reload the firmware at resume.  Usually this
+works since the firmware loader core caches the firmware contents by
+itself.  However, if the driver failed to load the firmwares
+(e.g. missing files), reloading the firmware at resume goes through
+the actual file loading code path, and triggers a kernel WARNING like:
 
-	BUG_ON(last >= (sb->s_blocksize << 3));
+ WARNING: CPU: 10 PID:11371 at drivers/base/firmware_class.c:1105 _request_firmware+0x9ab/0x9d0()
 
-Fix this by bailing out of ext4_discard_allocated_blocks() if fs_len
-is zero.
+For avoiding this situation, this patch makes CA0132 skipping the f/w
+loading at resume when it failed at probe time.
 
-Also fix a missing ext4_mb_unload_buddy() call in
-ext4_discard_allocated_blocks().
-
-Google-Bug-Id: 16844242
-
-Fixes: 86f0afd463215fc3e58020493482faa4ac3a4d69
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reported-and-tested-by: Janek Kozicki <cosurgi@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ sound/pci/hda/patch_ca0132.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -1398,6 +1398,8 @@ static void mb_free_blocks(struct inode
- 	int last = first + count - 1;
- 	struct super_block *sb = e4b->bd_sb;
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -4379,6 +4379,9 @@ static void ca0132_download_dsp(struct h
+ 	return; /* NOP */
+ #endif
  
-+	if (WARN_ON(count == 0))
-+		return;
- 	BUG_ON(last >= (sb->s_blocksize << 3));
- 	assert_spin_locked(ext4_group_lock_ptr(sb, e4b->bd_group));
- 	/* Don't bother if the block group is corrupt. */
-@@ -3200,6 +3202,8 @@ static void ext4_discard_allocated_block
- 	int err;
++	if (spec->dsp_state == DSP_DOWNLOAD_FAILED)
++		return; /* don't retry failures */
++
+ 	chipio_enable_clocks(codec);
+ 	spec->dsp_state = DSP_DOWNLOADING;
+ 	if (!ca0132_download_dsp_images(codec))
+@@ -4555,7 +4558,8 @@ static int ca0132_init(struct hda_codec
+ 	struct auto_pin_cfg *cfg = &spec->autocfg;
+ 	int i;
  
- 	if (pa == NULL) {
-+		if (ac->ac_f_ex.fe_len == 0)
-+			return;
- 		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
- 		if (err) {
- 			/*
-@@ -3214,6 +3218,7 @@ static void ext4_discard_allocated_block
- 		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
- 			       ac->ac_f_ex.fe_len);
- 		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		ext4_mb_unload_buddy(&e4b);
- 		return;
- 	}
- 	if (pa->pa_type == MB_INODE_PA)
+-	spec->dsp_state = DSP_DOWNLOAD_INIT;
++	if (spec->dsp_state != DSP_DOWNLOAD_FAILED)
++		spec->dsp_state = DSP_DOWNLOAD_INIT;
+ 	spec->curr_chip_addx = INVALID_CHIP_ADDRESS;
+ 
+ 	snd_hda_power_up(codec);
+@@ -4666,6 +4670,7 @@ static int patch_ca0132(struct hda_codec
+ 	codec->spec = spec;
+ 	spec->codec = codec;
+ 
++	spec->dsp_state = DSP_DOWNLOAD_INIT;
+ 	spec->num_mixers = 1;
+ 	spec->mixers[0] = ca0132_mixer;
+ 
 
 
