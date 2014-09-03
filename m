@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590AbaICWIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:08:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
+	id S964878AbaICXbi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:31:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933547AbaICWIh (ORCPT
+	with ESMTP id S933552AbaICWIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:37 -0400
+	Wed, 3 Sep 2014 18:08:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Franz Hsieh <franz.hsieh@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 18/88] ALSA: hda - restore the gpio led after resume
-Date: Wed,  3 Sep 2014 15:04:52 -0700
-Message-Id: <20140903220516.501609060@linuxfoundation.org>
+        Daniel Bristot de Oliveira <bristot@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 21/88] sched: Fix sched_setparam() policy == -1 logic
+Date: Wed,  3 Sep 2014 15:04:55 -0700
+Message-Id: <20140903220516.590374192@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,52 +32,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Daniel Bristot de Oliveira <bristot@redhat.com>
 
-commit f475371aa65de84fa483a998ab7594531026b9d9 upstream.
+commit d8d28c8f00e84a72e8bee39a85835635417bee49 upstream.
 
-On some HP laptops, the mute led is controlled by codec gpio.
+The scheduler uses policy == -1 to preserve the current policy state to
+implement sched_setparam(). But, as (int) -1 is equals to 0xffffffff,
+it's matching the if (policy & SCHED_RESET_ON_FORK) on
+_sched_setscheduler(). This match changes the policy value to an
+invalid value, breaking the sched_setparam() syscall.
 
-When some machine resume from s3/s4, the codec gpio data will be
-cleared to 0 by BIOS:
-Before suspend:
-  IO[3]: enable=1, dir=1, wake=0, sticky=0, data=1, unsol=0
-After resume:
-  IO[3]: enable=1, dir=1, wake=0, sticky=0, data=0, unsol=0
+This patch checks policy == -1 before check the SCHED_RESET_ON_FORK flag.
 
-To skip the AFG node to enter D3 can't fix this problem.
+The following program shows the bug:
 
-A workaround is to restore the gpio data when the system resume
-back from s3/s4. It is safe even on the machines without this
-problem.
+int main(void)
+{
+	struct sched_param param = {
+		.sched_priority = 5,
+	};
 
-BugLink: https://bugs.launchpad.net/bugs/1358116
-Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+	sched_setscheduler(0, SCHED_FIFO, &param);
+	param.sched_priority = 1;
+	sched_setparam(0, &param);
+	param.sched_priority = 0;
+	sched_getparam(0, &param);
+	if (param.sched_priority != 1)
+		printf("failed priority setting (found %d instead of 1)\n",
+			param.sched_priority);
+	else
+		printf("priority setting fine\n");
+}
+
+Signed-off-by: Daniel Bristot de Oliveira <bristot@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Fixes: 7479f3c9cf67 "sched: Move SCHED_RESET_ON_FORK into attr::sched_flags"
+Link: http://lkml.kernel.org/r/9ebe0566a08dbbb3999759d3f20d6004bb2dbcfa.1406079891.git.bristot@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ kernel/sched/core.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3064,6 +3064,15 @@ static int alc269_resume(struct hda_code
- 	snd_hda_codec_resume_cache(codec);
- 	alc_inv_dmic_sync(codec, true);
- 	hda_call_check_power_status(codec, 0x01);
-+
-+	/* on some machine, the BIOS will clear the codec gpio data when enter
-+	 * suspend, and won't restore the data after resume, so we restore it
-+	 * in the driver.
-+	 */
-+	if (spec->gpio_led)
-+		snd_hda_codec_write(codec, codec->afg, 0, AC_VERB_SET_GPIO_DATA,
-+			    spec->gpio_led);
-+
- 	if (spec->has_alc5505_dsp)
- 		alc5505_dsp_resume(codec);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3511,9 +3511,10 @@ static int _sched_setscheduler(struct ta
+ 	};
  
+ 	/*
+-	 * Fixup the legacy SCHED_RESET_ON_FORK hack
++	 * Fixup the legacy SCHED_RESET_ON_FORK hack, except if
++	 * the policy=-1 was passed by sched_setparam().
+ 	 */
+-	if (policy & SCHED_RESET_ON_FORK) {
++	if ((policy != -1) && (policy & SCHED_RESET_ON_FORK)) {
+ 		attr.sched_flags |= SCHED_FLAG_RESET_ON_FORK;
+ 		policy &= ~SCHED_RESET_ON_FORK;
+ 		attr.sched_policy = policy;
 
 
