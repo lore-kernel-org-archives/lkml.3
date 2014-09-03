@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936257AbaICXpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:45:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962AbaICWF4 (ORCPT
+	id S934656AbaICXpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:45:50 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35906 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933336AbaICXps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:56 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.10 25/55] ext4: fix ext4_discard_allocated_blocks() if we cant allocate the pa struct
-Date: Wed,  3 Sep 2014 15:05:15 -0700
-Message-Id: <20140903220458.010684264@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 3 Sep 2014 19:45:48 -0400
+Message-ID: <5407A82B.7000602@codeaurora.org>
+Date: Wed, 03 Sep 2014 16:45:47 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Tomasz Figa <t.figa@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        rabin@rab.in, Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 4/7] clk: use struct clk only for external API
+References: <1409585377-26091-1-git-send-email-tomeu.vizoso@collabora.com> <1409585675-26894-1-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <1409585675-26894-1-git-send-email-tomeu.vizoso@collabora.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 09/01/14 08:34, Tomeu Vizoso wrote:
 
-------------------
+>
+> NOTE: with this patch, clk_get_parent() behaves like clk_get(), i.e. it
+> needs to be matched with a clk_put().  Otherwise, memory will leak.
+>
+[...]
+>  }
+> +EXPORT_SYMBOL_GPL(clk_provider_get_parent);
+> +
+> +/**
+> + * clk_get_parent - return the parent of a clk
+> + * @clk_user: the clk whose parent gets returned
+> + *
+> + * Simply returns clk->parent.  Returns NULL if clk is NULL.
 
-From: Theodore Ts'o <tytso@mit.edu>
+We should at least document here that clk_put() is expected to be called
+when it's not being used. I wonder why it's this way though. Why can't
+every clk_core have a private clk pointer to it's parent that's created
+during registration time? Then we just hand that out for
+clk_get_parent() and destroy it when the clk_core is freed?
 
-commit 86f0afd463215fc3e58020493482faa4ac3a4d69 upstream.
+> + */
+> +struct clk *clk_get_parent(struct clk *clk_user)
+> +{
+> +	struct clk_core *clk;
+> +	struct clk_core *parent;
+> +
+> +	if (!clk_user)
+> +		return NULL;
+> +
+> +	clk = clk_to_clk_core(clk_user);
+> +	parent = clk_provider_get_parent(clk);
+> +
+> +	return __clk_create_clk(parent);
+> +}
+>  EXPORT_SYMBOL_GPL(clk_get_parent);
+>  
 
-If there is a failure while allocating the preallocation structure, a
-number of blocks can end up getting marked in the in-memory buddy
-bitmap, and then not getting released.  This can result in the
-following corruption getting reported by the kernel:
-
-EXT4-fs error (device sda3): ext4_mb_generate_buddy:758: group 1126,
-12793 clusters in bitmap, 12729 in gd
-
-In that case, we need to release the blocks using mb_free_blocks().
-
-Tested: fs smoke test; also demonstrated that with injected errors,
-	the file system is no longer getting corrupted
-
-Google-Bug-Id: 16657874
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/mballoc.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
-
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3177,8 +3177,27 @@ static void ext4_mb_collect_stats(struct
- static void ext4_discard_allocated_blocks(struct ext4_allocation_context *ac)
- {
- 	struct ext4_prealloc_space *pa = ac->ac_pa;
-+	struct ext4_buddy e4b;
-+	int err;
- 
--	if (pa && pa->pa_type == MB_INODE_PA)
-+	if (pa == NULL) {
-+		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
-+		if (err) {
-+			/*
-+			 * This should never happen since we pin the
-+			 * pages in the ext4_allocation_context so
-+			 * ext4_mb_load_buddy() should never fail.
-+			 */
-+			WARN(1, "mb_load_buddy failed (%d)", err);
-+			return;
-+		}
-+		ext4_lock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
-+			       ac->ac_f_ex.fe_len);
-+		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		return;
-+	}
-+	if (pa->pa_type == MB_INODE_PA)
- 		pa->pa_free += ac->ac_b_ex.fe_len;
- }
- 
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
