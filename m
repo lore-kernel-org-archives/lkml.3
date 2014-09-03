@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928AbaICHsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:48:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43335 "EHLO
+	id S1755628AbaICHt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:49:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43322 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755868AbaICHst (ORCPT
+	with ESMTP id S1755894AbaICHsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:48:49 -0400
+	Wed, 3 Sep 2014 03:48:50 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
         p.zabel@pengutronix.de
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 10/12] ARM: dts: Berlin: enable USB on the BG2Q DMP
-Date: Wed,  3 Sep 2014 09:48:29 +0200
-Message-Id: <1409730511-16101-11-git-send-email-antoine.tenart@free-electrons.com>
+Cc: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antoine Tenart <antoine.tenart@free-electrons.com>
+Subject: [PATCH v4 11/12] ARM: dts: berlin: add BG2CD nodes for USB support
+Date: Wed,  3 Sep 2014 09:48:30 +0200
+Message-Id: <1409730511-16101-12-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -26,89 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the 2 available USB PHY and USB nodes on the Marvell Berlin BG2Q
-DMP.
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
+Adds nodes describing the Marvell Berlin BG2CD USB PHY and USB. The BG2CD
+SoC has 2 USB ChipIdea controllers, with usb0 host-only and usb1 dual-role
+capable.
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 53 ++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ arch/arm/boot/dts/berlin2cd.dtsi | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index a357ce02a64e..663aedb173e0 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -7,6 +7,8 @@
-  */
+diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
+index 68f7032b4686..5c6950531327 100644
+--- a/arch/arm/boot/dts/berlin2cd.dtsi
++++ b/arch/arm/boot/dts/berlin2cd.dtsi
+@@ -66,6 +66,22 @@
+ 			clocks = <&chip CLKID_TWD>;
+ 		};
  
- /dts-v1/;
-+
-+#include <dt-bindings/gpio/gpio.h>
- #include "berlin2q.dtsi"
- 
- / {
-@@ -21,6 +23,39 @@
- 	choosen {
- 		bootargs = "console=ttyS0,115200 earlyprintk";
- 	};
-+
-+	regulators {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		reg_usb0_vbus: regulator@0 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "usb0_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			gpio = <&portb 8 GPIO_ACTIVE_HIGH>;
-+			enable-active-high;
++		usb_phy0: usb-phy@b74000 {
++			compatible = "marvell,berlin2cd-usb-phy";
++			reg = <0xb74000 0x128>;
++			#phy-cells = <0>;
++			resets = <&chip 0x178 23>;
++			status = "disabled";
 +		};
 +
-+		reg_usb1_vbus: regulator@1 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "usb1_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			gpio = <&portb 10 GPIO_ACTIVE_HIGH>;
-+			enable-active-high;
++		usb_phy1: usb-phy@b78000 {
++			compatible = "marvell,berlin2cd-usb-phy";
++			reg = <0xb78000 0x128>;
++			#phy-cells = <0>;
++			resets = <&chip 0x178 24>;
++			status = "disabled";
 +		};
 +
-+		reg_usb2_vbus: regulator@2 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "usb2_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			gpio = <&portb 12 GPIO_ACTIVE_HIGH>;
-+			enable-active-high;
-+		};
-+	};
- };
+ 		apb@e80000 {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
+@@ -242,6 +258,24 @@
+ 			};
+ 		};
  
- &sdhci1 {
-@@ -45,3 +80,21 @@
- &uart0 {
- 	status = "okay";
- };
++		usb0: usb@ed0000 {
++			compatible = "chipidea,usb2";
++			reg = <0xed0000 0x200>;
++			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&chip CLKID_USB0>;
++			usb-phy = <&usb_phy0>;
++			status = "disabled";
++		};
 +
-+&usb_phy0 {
-+	status = "okay";
-+};
++		usb1: usb@ee0000 {
++			compatible = "chipidea,usb2";
++			reg = <0xee0000 0x200>;
++			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&chip CLKID_USB1>;
++			usb-phy = <&usb_phy1>;
++			status = "disabled";
++		};
 +
-+&usb_phy2 {
-+	status = "okay";
-+};
-+
-+&usb0 {
-+	vbus-supply = <&reg_usb0_vbus>;
-+	status = "okay";
-+};
-+
-+&usb2 {
-+	vbus-supply = <&reg_usb2_vbus>;
-+	status = "okay";
-+};
+ 		apb@fc0000 {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
 -- 
 1.9.1
 
