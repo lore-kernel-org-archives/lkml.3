@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250AbaICK5n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:57:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43430 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbaICK5l (ORCPT
+	id S932290AbaICK7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:59:09 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:51820 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129AbaICK7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:57:41 -0400
-Date: Wed, 3 Sep 2014 12:57:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-cc: daniel.lezcano@linaro.org, dongsheng.wang@freescale.com,
+	Wed, 3 Sep 2014 06:59:07 -0400
+Date: Wed, 3 Sep 2014 11:58:52 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] Clocksource: Flextimer: Fix counter clock prescaler
- calculation.
-In-Reply-To: <1409031951-39021-5-git-send-email-Li.Xiubo@freescale.com>
-Message-ID: <alpine.DEB.2.10.1409031241310.3333@nanos>
-References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com> <1409031951-39021-5-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+Subject: Re: [PATCH 21/26] tty: Convert tty_struct bitfield to bools
+Message-ID: <20140903115852.5a720754@alan.etchedpixels.co.uk>
+In-Reply-To: <1409693975-1028-22-git-send-email-peter@hurleysoftware.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+	<1409693975-1028-22-git-send-email-peter@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Aug 2014, Xiubo Li wrote:
+On Tue,  2 Sep 2014 17:39:30 -0400
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-> We should minus one after calculating the counter input clock's
-> prescaler.
+> The stopped, hw_stopped, flow_stopped and packet bits are smp-unsafe
+> and interrupt-unsafe. For example,
 > 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+> CPU 0                         | CPU 1
+>                               |
+> tty->flow_stopped = 1         | tty->hw_stopped = 0
+> 
+> One of these updates will be corrupted, as the bitwise operation
+> on the bitfield is non-atomic.
+> 
+> Ensure each flag has a separate memory location, so concurrent
+> updates do not corrupt orthogonal states.
+
+Ouch....
+
+Alas the fix is not sufficient on some platforms. gcc will happily use
+32bit operations on those fields if it thinks its a performance win.
+
+It needs to use set_bit and friends.
+
+x86 is generally ok, but ia64 gcc will do things like load all four
+bytes, mask and write the dword back. I believe ARM gcc may also
+sometimes generate similar results.
+
+
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 > ---
->  drivers/clocksource/fsl_ftm_timer.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  include/linux/tty.h | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/clocksource/fsl_ftm_timer.c b/drivers/clocksource/fsl_ftm_timer.c
-> index f70fcf2..974890e 100644
-> --- a/drivers/clocksource/fsl_ftm_timer.c
-> +++ b/drivers/clocksource/fsl_ftm_timer.c
-> @@ -311,7 +311,7 @@ static int __init ftm_calc_closest_round_cyc(unsigned long freq)
->  						HZ * (1 << priv->ps++));
->  	} while (priv->periodic_cyc > 0xFFFF);
->  
-> -	if (priv->ps > FTM_PS_MAX) {
-> +	if (--priv->ps > FTM_PS_MAX) {
-
-Looking at this makes me run away screaming. Just because you
-increment priv->ps unconditionally in the loop above, you decrement it
-again here. Why not fix the calculation proper in the first place?
-
-      for (cyc = ~0UL, ps = 0, div = HZ; cyc > 0xffff; ps++, div *= 2)
-      	       cyc = DIV_ROUND_CLOSEST(freq, div);
-
-Hmm?
-
-	tglx
-
+> diff --git a/include/linux/tty.h b/include/linux/tty.h
+> index 1c3316a..7cf61cb 100644
+> --- a/include/linux/tty.h
+> +++ b/include/linux/tty.h
+> @@ -261,7 +261,10 @@ struct tty_struct {
+>  	unsigned long flags;
+>  	int count;
+>  	struct winsize winsize;		/* winsize_mutex */
+> -	unsigned char stopped:1, hw_stopped:1, flow_stopped:1, packet:1;
+> +	bool stopped;
+> +	bool hw_stopped;
+> +	bool flow_stopped;
+> +	bool packet;
+>  	unsigned char ctrl_status;	/* ctrl_lock */
+>  	unsigned int receive_room;	/* Bytes free for queue */
+>  	int flow_change;
