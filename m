@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934829AbaICXBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:01:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46344 "EHLO
+	id S1757372AbaICXCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:02:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756930AbaICWZ6 (ORCPT
+	with ESMTP id S1756835AbaICWZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:25:58 -0400
+	Wed, 3 Sep 2014 18:25:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Michael Welling <mwelling@emacinc.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.16 115/125] usb: hub: Prevent hub autosuspend if usbcore.autosuspend is -1
-Date: Wed,  3 Sep 2014 15:07:52 -0700
-Message-Id: <20140903220627.148549302@linuxfoundation.org>
+        James Forshaw <forshaw@google.com>
+Subject: [PATCH 3.16 113/125] USB: whiteheat: Added bounds checking for bulk command response
+Date: Wed,  3 Sep 2014 15:07:50 -0700
+Message-Id: <20140903220627.090666331@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,43 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: James Forshaw <forshaw@google.com>
 
-commit bdd405d2a5287bdb9b04670ea255e1f122138e66 upstream.
+commit 6817ae225cd650fb1c3295d769298c38b1eba818 upstream.
 
-If user specifies that USB autosuspend must be disabled by module
-parameter "usbcore.autosuspend=-1" then we must prevent
-autosuspend of USB hub devices as well.
+This patch fixes a potential security issue in the whiteheat USB driver
+which might allow a local attacker to cause kernel memory corrpution. This
+is due to an unchecked memcpy into a fixed size buffer (of 64 bytes). On
+EHCI and XHCI busses it's possible to craft responses greater than 64
+bytes leading a buffer overflow.
 
-commit 596d789a211d introduced in v3.8 changed the original behaivour
-and stopped respecting the usbcore.autosuspend parameter for hubs.
-
-Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Michael Welling <mwelling@emacinc.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: James Forshaw <forshaw@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/serial/whiteheat.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1728,8 +1728,12 @@ static int hub_probe(struct usb_interfac
- 	 * - Change autosuspend delay of hub can avoid unnecessary auto
- 	 *   suspend timer for hub, also may decrease power consumption
- 	 *   of USB bus.
-+	 *
-+	 * - If user has indicated to prevent autosuspend by passing
-+	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
- 	 */
--	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-+	if (hdev->dev.power.autosuspend_delay >= 0)
-+		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
- 
- 	/*
- 	 * Hubs have proper suspend/resume support, except for root hubs
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -514,6 +514,10 @@ static void command_port_read_callback(s
+ 		dev_dbg(&urb->dev->dev, "%s - command_info is NULL, exiting.\n", __func__);
+ 		return;
+ 	}
++	if (!urb->actual_length) {
++		dev_dbg(&urb->dev->dev, "%s - empty response, exiting.\n", __func__);
++		return;
++	}
+ 	if (status) {
+ 		dev_dbg(&urb->dev->dev, "%s - nonzero urb status: %d\n", __func__, status);
+ 		if (status != -ENOENT)
+@@ -534,7 +538,8 @@ static void command_port_read_callback(s
+ 		/* These are unsolicited reports from the firmware, hence no
+ 		   waiting command to wakeup */
+ 		dev_dbg(&urb->dev->dev, "%s - event received\n", __func__);
+-	} else if (data[0] == WHITEHEAT_GET_DTR_RTS) {
++	} else if ((data[0] == WHITEHEAT_GET_DTR_RTS) &&
++		(urb->actual_length - 1 <= sizeof(command_info->result_buffer))) {
+ 		memcpy(command_info->result_buffer, &data[1],
+ 						urb->actual_length - 1);
+ 		command_info->command_finished = WHITEHEAT_CMD_COMPLETE;
 
 
