@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935867AbaICXYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:24:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45832 "EHLO
+	id S935883AbaICXYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:24:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45837 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757161AbaICWP6 (ORCPT
+	with ESMTP id S1757159AbaICWP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:15:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.14 80/88] usb: ehci: using wIndex + 1 for hub port
-Date: Wed,  3 Sep 2014 15:05:54 -0700
-Message-Id: <20140903220518.340692320@linuxfoundation.org>
+        James Forshaw <forshaw@google.com>
+Subject: [PATCH 3.14 79/88] USB: whiteheat: Added bounds checking for bulk command response
+Date: Wed,  3 Sep 2014 15:05:53 -0700
+Message-Id: <20140903220518.312032313@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,34 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: James Forshaw <forshaw@google.com>
 
-commit 5cbcc35e5bf0eae3c7494ce3efefffc9977827ae upstream.
+commit 6817ae225cd650fb1c3295d769298c38b1eba818 upstream.
 
-The roothub's index per controller is from 0, but the hub port index per hub
-is from 1, this patch fixes "can't find device at roohub" problem for connecting
-test fixture at roohub when do USB-IF Embedded Host High-Speed Electrical Test.
+This patch fixes a potential security issue in the whiteheat USB driver
+which might allow a local attacker to cause kernel memory corrpution. This
+is due to an unchecked memcpy into a fixed size buffer (of 64 bytes). On
+EHCI and XHCI busses it's possible to craft responses greater than 64
+bytes leading a buffer overflow.
 
-This patch is for v3.12+.
-
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: James Forshaw <forshaw@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-hub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/whiteheat.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -1239,7 +1239,7 @@ static int ehci_hub_control (
- 			if (selector == EHSET_TEST_SINGLE_STEP_SET_FEATURE) {
- 				spin_unlock_irqrestore(&ehci->lock, flags);
- 				retval = ehset_single_step_set_feature(hcd,
--									wIndex);
-+								wIndex + 1);
- 				spin_lock_irqsave(&ehci->lock, flags);
- 				break;
- 			}
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -514,6 +514,10 @@ static void command_port_read_callback(s
+ 		dev_dbg(&urb->dev->dev, "%s - command_info is NULL, exiting.\n", __func__);
+ 		return;
+ 	}
++	if (!urb->actual_length) {
++		dev_dbg(&urb->dev->dev, "%s - empty response, exiting.\n", __func__);
++		return;
++	}
+ 	if (status) {
+ 		dev_dbg(&urb->dev->dev, "%s - nonzero urb status: %d\n", __func__, status);
+ 		if (status != -ENOENT)
+@@ -534,7 +538,8 @@ static void command_port_read_callback(s
+ 		/* These are unsolicited reports from the firmware, hence no
+ 		   waiting command to wakeup */
+ 		dev_dbg(&urb->dev->dev, "%s - event received\n", __func__);
+-	} else if (data[0] == WHITEHEAT_GET_DTR_RTS) {
++	} else if ((data[0] == WHITEHEAT_GET_DTR_RTS) &&
++		(urb->actual_length - 1 <= sizeof(command_info->result_buffer))) {
+ 		memcpy(command_info->result_buffer, &data[1],
+ 						urb->actual_length - 1);
+ 		command_info->command_finished = WHITEHEAT_CMD_COMPLETE;
 
 
