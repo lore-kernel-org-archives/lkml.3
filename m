@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334AbaICXBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:01:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46336 "EHLO
+	id S934883AbaICXBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:01:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756940AbaICWZ6 (ORCPT
+	with ESMTP id S1756928AbaICWZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:25:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Reinecke <hare@suse.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 116/125] usbcore: Fix wrong device in an error message in hub_port_connect()
-Date: Wed,  3 Sep 2014 15:07:53 -0700
-Message-Id: <20140903220627.177279591@linuxfoundation.org>
+        Peter Chen <peter.chen@freescale.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.16 114/125] usb: ehci: using wIndex + 1 for hub port
+Date: Wed,  3 Sep 2014 15:07:51 -0700
+Message-Id: <20140903220627.119526681@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,44 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit dd5f5006d1035547559c8a90781a7e249787a7a2 upstream.
+commit 5cbcc35e5bf0eae3c7494ce3efefffc9977827ae upstream.
 
-The commit [5ee0f803cc3a: usbcore: don't log on consecutive debounce
-failures of the same port] added the check of the reliable port, but
-it also replaced the device argument to dev_err() wrongly, which leads
-to a NULL dereference.
+The roothub's index per controller is from 0, but the hub port index per hub
+is from 1, this patch fixes "can't find device at roohub" problem for connecting
+test fixture at roohub when do USB-IF Embedded Host High-Speed Electrical Test.
 
-This patch restores the right device, port_dev->dev.  Also, since
-dev_err() itself shows the port number, reduce the port number shown
-in the error message, essentially reverting to the state before the
-commit 5ee0f803cc3a.
+This patch is for v3.12+.
 
-[The fix suggested by Hannes, and the error message cleanup suggested
- by Alan Stern]
-
-Fixes: 5ee0f803cc3a ('usbcore: don't log on consecutive debounce failures of the same port')
-Reported-by: Hannes Reinecke <hare@suse.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/usb/host/ehci-hub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4619,9 +4619,7 @@ static void hub_port_connect(struct usb_
- 			if (status != -ENODEV &&
- 				port1 != unreliable_port &&
- 				printk_ratelimit())
--				dev_err(&udev->dev, "connect-debounce failed, port %d disabled\n",
--					port1);
--
-+				dev_err(&port_dev->dev, "connect-debounce failed\n");
- 			portstatus &= ~USB_PORT_STAT_CONNECTION;
- 			unreliable_port = port1;
- 		} else {
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -1230,7 +1230,7 @@ int ehci_hub_control(
+ 			if (selector == EHSET_TEST_SINGLE_STEP_SET_FEATURE) {
+ 				spin_unlock_irqrestore(&ehci->lock, flags);
+ 				retval = ehset_single_step_set_feature(hcd,
+-									wIndex);
++								wIndex + 1);
+ 				spin_lock_irqsave(&ehci->lock, flags);
+ 				break;
+ 			}
 
 
