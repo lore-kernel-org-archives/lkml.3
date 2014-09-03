@@ -1,78 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887AbaICTCt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:02:49 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44007 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752643AbaICTCs (ORCPT
+	id S1755965AbaICTFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:05:46 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:44706 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755198AbaICTFo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:02:48 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Vt0DO13f+E2ay8IyvCdKl
-Date: Wed, 3 Sep 2014 12:02:34 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Marek Belisko <marek@goldelico.com>, linux-omap@vger.kernel.org
-Subject: Re: PROBLEM: bindings for drivers/mfd/twl4030-power.c
-Message-ID: <20140903190234.GH11766@atomide.com>
-References: <FAC7D7E5-1D05-4D63-821F-C56D3AAA8FF9@goldelico.com>
- <20140825212652.GR17254@atomide.com>
- <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com>
- <20140903184527.GG11766@atomide.com>
- <54076311.2030306@ti.com>
+	Wed, 3 Sep 2014 15:05:44 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54076311.2030306@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+To: Guenter Roeck <linux@roeck-us.net>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Wim Van Sebroeck" <wim@iguana.be>,
+        "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Maxime Ripard" <maxime.ripard@free-electrons.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1408495538-27480-11-git-send-email-linux@roeck-us.net>
+Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        "Will Deacon" <will.deacon@arm.com>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Heiko Stuebner" <heiko@sntech.de>,
+        "Jonas Jensen" <jonas.jensen@gmail.com>,
+        "Randy Dunlap" <rdunlap@infradead.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "Tomasz Figa" <t.figa@samsung.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Guenter Roeck" <linux@roeck-us.net>
+References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
+ <1408495538-27480-11-git-send-email-linux@roeck-us.net>
+Message-ID: <20140903190526.11368.71063@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v7 10/11] clk: samsung: register restart handlers for s3c2412 and
+ s3c2443
+Date: Wed, 03 Sep 2014 12:05:26 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140903 11:51]:
-> On 09/03/2014 01:45 PM, Tony Lindgren wrote:
-> > * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140901 09:54]:
-> >> Hi,
-> >>
-> >> Am 25.08.2014 um 23:26 schrieb Tony Lindgren:
-> >>
-> >>> * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140817 08:46]:
-> >>>> I am trying to make ti,use_poweroff work on 3.17-rc1 for the GTA04 board.
-> >>>> Poweroff was broken for a while and I found that the driver isn't loaded at all.
-> >>>>
-> >>>> It appears to me that commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
-> >>>> did rename the compatible entry from "ti,twl4030-power" to "ti,twl4030-power-reset"
-> >>>> but this was not documented in the bindings and of course our DT does not
-> >>>> match.
-> >>>>
-> >>>> Even your commit message talks about "ti,twl4030-power" although I can't find it
-> >>>> in the code.
-> >>>
-> >>> Hmm sorry did I accidentally remove ti,twl4030-power? If so, that should
-> >>> be added back for sure. Do you have a patch for that already?
-> >>
-> >> No, I have only updated our device tree because I don't know if it really should
-> >> be added back or not.
-> >>
-> >> As you say the "ti,twl4030-power" does not configure anything. So what
-> >> is it good for?
-> > 
-> > Only for the poweroff if "ti,use_poweroff" is set. Care to do a patch
-> > as you clearly have a use case to test it with?
+Quoting Guenter Roeck (2014-08-19 17:45:37)
+> From: Heiko Stübner <heiko@sntech.de>
 > 
-> Tony, we were talking about supporting ti,system-power-controller as
-> the standard way of stating poweroff control is by the PMIC. this
-> seems to be standard in various SoCs. use_poweroff seems to predate
-> that standardization. Should'nt we start using
-> ti,system-power-controller instead?
+> S3C2412, S3C2443 and their derivatives contain a special software-reset
+> register in their system-controller.
+> 
+> Therefore register a restart handler for those.
+> 
+> Tested on a s3c2416-based board, s3c2412 compile-tested.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-Sure we can add that. But need to keep also parsing "ti,use_poweroff"
-as it's already in use.
+Acked-by: Mike Turquette <mturquette@linaro.org>
 
-Regards,
-
-Tony
+> ---
+> v7: Added patch to series.
+> 
+>  drivers/clk/samsung/clk-s3c2412.c | 29 +++++++++++++++++++++++++++++
+>  drivers/clk/samsung/clk-s3c2443.c | 19 +++++++++++++++++++
+>  2 files changed, 48 insertions(+)
+> 
+> diff --git a/drivers/clk/samsung/clk-s3c2412.c b/drivers/clk/samsung/clk-s3c2412.c
+> index 34af09f..2ceedaf 100644
+> --- a/drivers/clk/samsung/clk-s3c2412.c
+> +++ b/drivers/clk/samsung/clk-s3c2412.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+>  #include <linux/syscore_ops.h>
+> +#include <linux/reboot.h>
+>  
+>  #include <dt-bindings/clock/s3c2412.h>
+>  
+> @@ -26,6 +27,7 @@
+>  #define CLKCON         0x0c
+>  #define CLKDIVN                0x14
+>  #define CLKSRC         0x1c
+> +#define SWRST          0x30
+>  
+>  /* list of PLLs to be registered */
+>  enum s3c2412_plls {
+> @@ -204,6 +206,28 @@ struct samsung_clock_alias s3c2412_aliases[] __initdata = {
+>         ALIAS(MSYSCLK, NULL, "fclk"),
+>  };
+>  
+> +static int s3c2412_restart(struct notifier_block *this,
+> +                          unsigned long mode, void *cmd)
+> +{
+> +       /* errata "Watch-dog/Software Reset Problem" specifies that
+> +        * this reset must be done with the SYSCLK sourced from
+> +        * EXTCLK instead of FOUT to avoid a glitch in the reset
+> +        * mechanism.
+> +        *
+> +        * See the watchdog section of the S3C2412 manual for more
+> +        * information on this fix.
+> +        */
+> +
+> +       __raw_writel(0x00, reg_base + CLKSRC);
+> +       __raw_writel(0x533C2412, reg_base + SWRST);
+> +       return NOTIFY_DONE;
+> +}
+> +
+> +static struct notifier_block s3c2412_restart_handler = {
+> +       .notifier_call = s3c2412_restart,
+> +       .priority = 129,
+> +};
+> +
+>  /*
+>   * fixed rate clocks generated outside the soc
+>   * Only necessary until the devicetree-move is complete
+> @@ -233,6 +257,7 @@ void __init s3c2412_common_clk_init(struct device_node *np, unsigned long xti_f,
+>                                     unsigned long ext_f, void __iomem *base)
+>  {
+>         struct samsung_clk_provider *ctx;
+> +       int ret;
+>         reg_base = base;
+>  
+>         if (np) {
+> @@ -267,6 +292,10 @@ void __init s3c2412_common_clk_init(struct device_node *np, unsigned long xti_f,
+>         s3c2412_clk_sleep_init();
+>  
+>         samsung_clk_of_add_provider(np, ctx);
+> +
+> +       ret = register_restart_handler(&s3c2412_restart_handler);
+> +       if (ret)
+> +               pr_warn("cannot register restart handler, %d\n", ret);
+>  }
+>  
+>  static void __init s3c2412_clk_init(struct device_node *np)
+> diff --git a/drivers/clk/samsung/clk-s3c2443.c b/drivers/clk/samsung/clk-s3c2443.c
+> index c92f853..0c3c182 100644
+> --- a/drivers/clk/samsung/clk-s3c2443.c
+> +++ b/drivers/clk/samsung/clk-s3c2443.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+>  #include <linux/syscore_ops.h>
+> +#include <linux/reboot.h>
+>  
+>  #include <dt-bindings/clock/s3c2443.h>
+>  
+> @@ -33,6 +34,7 @@
+>  #define HCLKCON                0x30
+>  #define PCLKCON                0x34
+>  #define SCLKCON                0x38
+> +#define SWRST          0x44
+>  
+>  /* the soc types */
+>  enum supported_socs {
+> @@ -354,6 +356,18 @@ struct samsung_clock_alias s3c2450_aliases[] __initdata = {
+>         ALIAS(PCLK_I2C1, "s3c2410-i2c.1", "i2c"),
+>  };
+>  
+> +static int s3c2443_restart(struct notifier_block *this,
+> +                          unsigned long mode, void *cmd)
+> +{
+> +       __raw_writel(0x533c2443, reg_base + SWRST);
+> +       return NOTIFY_DONE;
+> +}
+> +
+> +static struct notifier_block s3c2443_restart_handler = {
+> +       .notifier_call = s3c2443_restart,
+> +       .priority = 129,
+> +};
+> +
+>  /*
+>   * fixed rate clocks generated outside the soc
+>   * Only necessary until the devicetree-move is complete
+> @@ -378,6 +392,7 @@ void __init s3c2443_common_clk_init(struct device_node *np, unsigned long xti_f,
+>                                     void __iomem *base)
+>  {
+>         struct samsung_clk_provider *ctx;
+> +       int ret;
+>         reg_base = base;
+>  
+>         if (np) {
+> @@ -447,6 +462,10 @@ void __init s3c2443_common_clk_init(struct device_node *np, unsigned long xti_f,
+>         s3c2443_clk_sleep_init();
+>  
+>         samsung_clk_of_add_provider(np, ctx);
+> +
+> +       ret = register_restart_handler(&s3c2443_restart_handler);
+> +       if (ret)
+> +               pr_warn("cannot register restart handler, %d\n", ret);
+>  }
+>  
+>  static void __init s3c2416_clk_init(struct device_node *np)
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
