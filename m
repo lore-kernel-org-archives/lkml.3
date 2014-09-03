@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214AbaICJ4a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:56:30 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57364 "EHLO
+	id S1756249AbaICJ4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:56:37 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57373 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755904AbaICJ43 (ORCPT
+	by vger.kernel.org with ESMTP id S1756226AbaICJ4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:56:29 -0400
+	Wed, 3 Sep 2014 05:56:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Joonyoung Shim <jy0922.shim@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 46/56] Revert "KVM: x86: Increase the number of fixed MTRR regs to 10"
-Date: Wed,  3 Sep 2014 11:27:05 +0200
-Message-Id: <96de8d44b459c60fc5c854bbe58794f87b245449.1409735865.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 04/56] USB: add reset resume quirk for usb3503
+Date: Wed,  3 Sep 2014 11:26:23 +0200
+Message-Id: <0003ed46b16d2dd12b5f95d6dd6d2b3b1d43166d.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
@@ -23,40 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Joonyoung Shim <jy0922.shim@samsung.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0d234daf7e0a3290a3a20c8087eefbd6335a5bd4 upstream.
+commit 526a4045c60fbaede88ec95a69a73059dff02160 upstream.
 
-This reverts commit 682367c494869008eb89ef733f196e99415ae862,
-which causes 32-bit SMP Windows 7 guests to panic.
+The usb device will autoresume from choose_wakeup() if it is
+autosuspended with the wrong wakeup setting, but below errors occur
+because usb3503 misc driver will switch to standby mode when suspended.
 
-SeaBIOS has a limit on the number of MTRRs that it can handle,
-and this patch exceeded the limit.  Better revert it.
-Thanks to Nadav Amit for debugging the cause.
+As add USB_QUIRK_RESET_RESUME, it can stop setting wrong wakeup from
+autosuspend_check().
 
-Reported-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[    7.734717] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    7.854658] usb 1-3: device descriptor read/64, error -71
+[    8.079657] usb 1-3: device descriptor read/64, error -71
+[    8.294664] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    8.414658] usb 1-3: device descriptor read/64, error -71
+[    8.639657] usb 1-3: device descriptor read/64, error -71
+[    8.854667] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    9.264598] usb 1-3: device not accepting address 3, error -71
+[    9.374655] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    9.784601] usb 1-3: device not accepting address 3, error -71
+[    9.784838] usb usb1-port3: device 1-3 not suspended yet
+
+Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/kvm_host.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/quirks.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 694851592399..ec6c0395b512 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -92,7 +92,7 @@
- #define KVM_REFILL_PAGES 25
- #define KVM_MAX_CPUID_ENTRIES 80
- #define KVM_NR_FIXED_MTRR_REGION 88
--#define KVM_NR_VAR_MTRR 10
-+#define KVM_NR_VAR_MTRR 8
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 1053eb651b2f..31f7ebf55868 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -154,6 +154,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* INTEL VALUE SSD */
+ 	{ USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
  
- #define ASYNC_PF_PER_VCPU 64
++	/* USB3503 */
++	{ USB_DEVICE(0x0424, 0x3503), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	{ }  /* terminating entry must be last */
+ };
  
 -- 
 2.1.0
