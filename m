@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaICWOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:14:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
+	id S1757026AbaICWOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:14:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933089AbaICWIs (ORCPT
+	with ESMTP id S933647AbaICWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:48 -0400
+	Wed, 3 Sep 2014 18:08:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Brian W. Hart" <hartb@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 53/88] powerpc/powernv: Update dev->dma_mask in pci_set_dma_mask() path
-Date: Wed,  3 Sep 2014 15:05:27 -0700
-Message-Id: <20140903220517.550292429@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.14 54/88] x86_64/vsyscall: Fix warn_bad_vsyscall log output
+Date: Wed,  3 Sep 2014 15:05:28 -0700
+Message-Id: <20140903220517.578717968@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,33 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian W Hart <hartb@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit a32305bf90a2ae0e6a9a93370c7616565f75e15a upstream.
+commit 53b884ac3745353de220d92ef792515c3ae692f0 upstream.
 
-powerpc defines various machine-specific routines for handling
-pci_set_dma_mask().  The routines for machine "PowerNV" may neglect
-to set dev->dma_mask.  This could confuse anyone (e.g. drivers) that
-consult dev->dma_mask to find the current mask.  Set the dma_mask in
-the PowerNV leaf routine.
+This commit in Linux 3.6:
 
-Signed-off-by: Brian W. Hart <hartb@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
+    Author: Joe Perches <joe@perches.com>
+    Date:   Mon May 21 19:50:07 2012 -0700
+
+        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
+
+caused warn_bad_vsyscall to output garbage in the middle of the
+line.  Revert the bad part of it.
+
+The printk in question isn't actually bare; the level is "%s".
+
+The bug this fixes is purely cosmetic; backports are optional.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/03eac1f24110bbe496ecc12a4df467e0d88466d4.1406330947.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/vsyscall_64.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -491,6 +491,7 @@ static int pnv_pci_ioda_dma_set_mask(str
- 		set_dma_ops(&pdev->dev, &dma_iommu_ops);
- 		set_iommu_table_base(&pdev->dev, &pe->tce32_table);
- 	}
-+	*pdev->dev.dma_mask = dma_mask;
- 	return 0;
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -125,10 +125,10 @@ static void warn_bad_vsyscall(const char
+ 	if (!show_unhandled_signals)
+ 		return;
+ 
+-	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
+-			      level, current->comm, task_pid_nr(current),
+-			      message, regs->ip, regs->cs,
+-			      regs->sp, regs->ax, regs->si, regs->di);
++	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
++			   level, current->comm, task_pid_nr(current),
++			   message, regs->ip, regs->cs,
++			   regs->sp, regs->ax, regs->si, regs->di);
  }
  
+ static int addr_to_vsyscall_nr(unsigned long addr)
 
 
