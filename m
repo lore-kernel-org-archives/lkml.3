@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964936AbaICXcu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:32:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45549 "EHLO
+	id S964783AbaICX1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:27:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933092AbaICWIg (ORCPT
+	with ESMTP id S1757128AbaICWPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:36 -0400
+	Wed, 3 Sep 2014 18:15:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 16/88] ALSA: usb-audio: fix BOSS ME-25 MIDI regression
-Date: Wed,  3 Sep 2014 15:04:50 -0700
-Message-Id: <20140903220516.444650042@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 69/88] jbd2: fix infinite loop when recovering corrupt journal blocks
+Date: Wed,  3 Sep 2014 15:05:43 -0700
+Message-Id: <20140903220518.023291318@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,60 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 53da5ebfef66ea6e478ad9c6add3781472b79475 upstream.
+commit 022eaa7517017efe4f6538750c2b59a804dc7df7 upstream.
 
-The BOSS ME-25 turns out not to have any useful descriptors in its MIDI
-interface, so its needs a quirk entry after all.
+When recovering the journal, don't fall into an infinite loop if we
+encounter a corrupt journal block.  Instead, just skip the block and
+return an error, which fails the mount and thus forces the user to run
+a full filesystem fsck.
 
-Reported-and-tested-by: Kees van Veen <kees.vanveen@gmail.com>
-Fixes: 8e5ced83dd1c ("ALSA: usb-audio: remove superfluous Roland quirks")
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks-table.h |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ fs/jbd2/recovery.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -1581,6 +1581,35 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -426,6 +426,7 @@ static int do_one_pass(journal_t *journa
+ 	int			tag_bytes = journal_tag_bytes(journal);
+ 	__u32			crc32_sum = ~0; /* Transactional Checksums */
+ 	int			descr_csum_size = 0;
++	int			block_error = 0;
+ 
+ 	/*
+ 	 * First thing is to establish what we expect to find in the log
+@@ -598,7 +599,8 @@ static int do_one_pass(journal_t *journa
+ 						       "checksum recovering "
+ 						       "block %llu in log\n",
+ 						       blocknr);
+-						continue;
++						block_error = 1;
++						goto skip_write;
+ 					}
+ 
+ 					/* Find a buffer for the new
+@@ -797,7 +799,8 @@ static int do_one_pass(journal_t *journa
+ 				success = -EIO;
+ 		}
  	}
- },
- {
-+	/* BOSS ME-25 */
-+	USB_DEVICE(0x0582, 0x0113),
-+	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = (const struct snd_usb_audio_quirk[]) {
-+			{
-+				.ifnum = 0,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 2,
-+				.type = QUIRK_MIDI_FIXED_ENDPOINT,
-+				.data = & (const struct snd_usb_midi_endpoint_info) {
-+					.out_cables = 0x0001,
-+					.in_cables  = 0x0001
-+				}
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
-+	}
-+},
-+{
- 	/* only 44.1 kHz works at the moment */
- 	USB_DEVICE(0x0582, 0x0120),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+-
++	if (block_error && success == 0)
++		success = -EIO;
+ 	return success;
+ 
+  failed:
 
 
