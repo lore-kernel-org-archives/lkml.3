@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582AbaICMke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:40:34 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:19264 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932220AbaICMkd (ORCPT
+	id S932428AbaICMnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:43:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59911 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932091AbaICMnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:40:33 -0400
-Message-ID: <54070C3C.1050201@arm.com>
-Date: Wed, 03 Sep 2014 13:40:28 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 3 Sep 2014 08:43:14 -0400
+X-Sasl-enc: p/m8U1y0D0kx3NfefbmUddocqiQ5oAMu/f5/mO8y0SOG 1409748193
+Date: Wed, 3 Sep 2014 09:43:02 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: early microcode: how to disable at runtime?
+Message-ID: <20140903124302.GA18507@khazad-dum.debian.net>
+References: <54037C07.8060703@zytor.com>
+ <20140831201126.GB12628@khazad-dum.debian.net>
+ <20140901051302.GA28402@nazgul.tnic>
+ <5404A035.3070707@zytor.com>
+ <20140901174322.GA15533@khazad-dum.debian.net>
+ <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
+ <20140901195921.GA18675@khazad-dum.debian.net>
+ <20140902063354.GA32105@nazgul.tnic>
+ <20140902131651.GA10691@khazad-dum.debian.net>
+ <20140903064015.GA3941@nazgul.tnic>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "tony@atomide.com" <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "jonas@southpole.se" <jonas@southpole.se>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "baohua@kernel.org" <baohua@kernel.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "stefan.kristiansson@saunalahti.fi" 
-	<stefan.kristiansson@saunalahti.fi>,
-        "vkale@apm.com" <vkale@apm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH v2 00/26] genirq: fix use of irq_find_mapping outside
- of legal RCU context
-References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <alpine.DEB.2.10.1408262333420.3323@nanos> <87y4uap98n.fsf@approximate.cambridge.arm.com> <20140903120406.GK30467@titan.lakedaemon.net> <alpine.DEB.2.10.1409031409160.3333@nanos> <540707B3.4050305@arm.com> <alpine.DEB.2.10.1409031424170.3333@nanos> <20140903123729.GM30467@titan.lakedaemon.net>
-In-Reply-To: <20140903123729.GM30467@titan.lakedaemon.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903064015.GA3941@nazgul.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/14 13:37, Jason Cooper wrote:
-> On Wed, Sep 03, 2014 at 02:25:09PM +0200, Thomas Gleixner wrote:
->> On Wed, 3 Sep 2014, Marc Zyngier wrote:
->>> [Dropping linux@openrisc.net from the CC list]
->>>
->>> On 03/09/14 13:09, Thomas Gleixner wrote:
->>>> On Wed, 3 Sep 2014, Jason Cooper wrote:
->>>>
->>>>> On Wed, Aug 27, 2014 at 10:33:44AM +0100, Marc Zyngier wrote:
->>>>>> Hi Thomas,
->>>>>>
->>>>>> On Tue, Aug 26 2014 at 10:34:51 pm BST, Thomas Gleixner <tglx@linutronix.de> wrote:
->>>>>>> On Tue, 26 Aug 2014, Marc Zyngier wrote:
->>>>>>>
->>>>>>>> A number of irqchip drivers are directly calling irq_find_mapping,
->>>>>>>> which may use a rcu_read_lock call when walking the radix tree.
->>>>>>>>
->>>>>>>> Turns out that if you hit that point with CONFIG_PROVE_RCU enabled,
->>>>>>>> the kernel will shout at you, as using RCU in this context may be
->>>>>>>> illegal (specially if coming from the idle state, where RCU would be
->>>>>>>> in a quiescent state).
->>>>>>>>
->>>>>>>> A possible fix would be to wrap calls to irq_find_mapping into a
->>>>>>>> RCU_NONIDLE macro, but that really looks ugly.
->>>>>>>>
->>>>>>>> This patch series introduce another generic IRQ entry point
->>>>>>>> (handle_domain_irq), which has the exact same behaviour as handle_IRQ
->>>>>>>> (as defined on arm, arm64 and openrisc), except that it also takes a
->>>>>>>> irq_domain pointer. This allows the logical IRQ lookup to be done
->>>>>>>> inside the irq_{enter,exit} section, which contains a
->>>>>>>> rcu_irq_{enter,exit}, making it safe.
->>>>>>>
->>>>>>> Looks good. Should this be routed to the genirq tree?
->>>>>>
->>>>>> I'm happy for you to take this series, provided the architecture
->>>>>> maintainers agree on it (I'm still to hear from the openrisc guys, and
->>>>>> their mailing-list seems to positively hate my guts).
->>>>>
->>>>> I think everyone's had a chance to look over it by now.  Thomas, shall I
->>>>> take the series?
->>>>
->>>> Yes please.
->>>
->>> Do you want a pull request? Or are you picking up the patches from the ML?
->>
->> Did you pick up the Acked/Reviewed/Ignored-by tags?
+On Wed, 03 Sep 2014, Borislav Petkov wrote:
+> On Tue, Sep 02, 2014 at 10:16:51AM -0300, Henrique de Moraes Holschuh wrote:
+> > Things do go wrong in other ways, not just corrupt microcode data/initramfs
+> > images.
+> > 
+> > This stuff runs too early.  It is easy to break, and annoying to debug.
 > 
-> Marc, unless you've already done it, I'll pull from the ml, since I need
-> to apply the Acked-bys and tweak the subject lines.
+> How is this stuff easy to break? Please stop with the conjectures and
+> give concrete issues, if any.
 
-If you're going to repaint the subject lines, then I'll leave you to it! ;-)
+Half the things you'd usually do when writing kernel code cannot be done
+that early, that's how.  It is not that the code is bad or especially
+fragile (at least not the core or the AMD driver.  The Intel driver is
+convoluted).
 
-	M.
+You have fixed several such bugs recently, commit ids:
+75a1ba5b2c529db60ca49626bcaf0bddf4548438,
+84516098b58e05821780dc0b89abcee434b4dca5,
+5335ba5cf475369f88db8e6835764efdcad8ab96.
+
+> > Although, on the corrupted microcode topic, I have this very strong
+> > feeling that at least the Intel driver would benefit from a careful
+> > audit on the microcode container handling if we want to be sure it
+> > won't do stupid things when fed specially crafted hostile data.
+> 
+> If loading the microcode can disrupt the system (and not simply be
+> ignored if faulty) then we have to fix that. Disabling the loader is only
+> a stop-gap measure in such situation anyway - not a real solution.
+
+Yes.  It is a stop gap solution, I never claimed it to be anything else.
+
+What I did claim is that it is going to be a far more user-friendly stop gap
+than the "boot from rescue media" option.
+
 -- 
-Jazz is not dead. It just smells funny...
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
