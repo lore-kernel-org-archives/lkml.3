@@ -1,285 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266AbaICKLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:11:49 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:59314 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755613AbaICKLq convert rfc822-to-8bit (ORCPT
+	id S932779AbaICKNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:13:05 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57315 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753530AbaICJ4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:11:46 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Hartmut Knaack <knaack.h@gmx.de>, Jonathan Cameron <jic23@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] iio: adc: rockchip_saradc: add support for rk3066-tsadc variant
-Date: Wed, 03 Sep 2014 12:13:48 +0200
-Message-ID: <38104193.mr2XbIjNkb@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <540642CA.9080007@gmx.de>
-References: <1999284.oRCTeZRSv1@diego> <540642CA.9080007@gmx.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	Wed, 3 Sep 2014 05:56:06 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        James P Michels III <james.p.michels@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 05/56] usb-core bInterval quirk
+Date: Wed,  3 Sep 2014 11:26:24 +0200
+Message-Id: <c877de31fe78ee82855a2c1049c7b755128f481c.1409735865.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
+In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
+References: <cover.1409735865.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 3. September 2014, 00:20:58 schrieb Hartmut Knaack:
-> Heiko Stübner schrieb:
-> > Older Rockchip SoCs, at least the rk3066, used a slightly modified saradc
-> > for temperature measurements. This so called tsadc does not contain any
-> > active parts like temperature interrupts and only supports polling the
-> > current temperature. The returned voltage can then be converted by a
-> > suitable thermal driver to and actual temperature and used for thermal
-> > handling.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > ---
-> 
-> Looks mostly good to me, just some minor style issues inline.
-> 
-> > This is a different IP than the rk3288-tsadc Ceasar provided a driver for.
-> > As the commit messages states, the one used on the rk3066 is just a
-> > saradc,
-> > while the new tsadc in the rk3288 contains active components for thermal
-> > handling.
-> > 
-> > A working example using the pending iio-thermal driver can found on
-> > https://github.com/mmind/linux-rockchip/commit/c07e02f069d9677d489f2541766
-> > 19fae36f2aad0> 
-> >  .../bindings/iio/adc/rockchip-saradc.txt           |  2 +-
-> >  drivers/iio/adc/rockchip_saradc.c                  | 62
-> >  +++++++++++++++++----- 2 files changed, 50 insertions(+), 14
-> >  deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-> > b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt index
-> > 5d3ec1d..a9a5fe1 100644
-> > --- a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-> > +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-> > @@ -1,7 +1,7 @@
-> > 
-> >  Rockchip Successive Approximation Register (SAR) A/D Converter bindings
-> > 
-> >  Required properties:
-> > -- compatible: Should be "rockchip,saradc"
-> > +- compatible: Should be "rockchip,saradc" or "rockchip,rk3066-tsadc"
-> > 
-> >  - reg: physical base address of the controller and length of memory
-> >  mapped
-> >  
-> >         region.
-> >  
-> >  - interrupts: The interrupt number to the cpu. The interrupt specifier
-> >  format> 
-> > diff --git a/drivers/iio/adc/rockchip_saradc.c
-> > b/drivers/iio/adc/rockchip_saradc.c index e074a0b..7effada 100644
-> > --- a/drivers/iio/adc/rockchip_saradc.c
-> > +++ b/drivers/iio/adc/rockchip_saradc.c
-> > @@ -18,13 +18,13 @@
-> > 
-> >  #include <linux/interrupt.h>
-> >  #include <linux/io.h>
-> >  #include <linux/of.h>
-> > 
-> > +#include <linux/of_device.h>
-> > 
-> >  #include <linux/clk.h>
-> >  #include <linux/completion.h>
-> >  #include <linux/regulator/consumer.h>
-> >  #include <linux/iio/iio.h>
-> >  
-> >  #define SARADC_DATA			0x00
-> > 
-> > -#define SARADC_DATA_MASK		0x3ff
-> > 
-> >  #define SARADC_STAS			0x04
-> >  #define SARADC_STAS_BUSY		BIT(0)
-> > 
-> > @@ -38,15 +38,22 @@
-> > 
-> >  #define SARADC_DLY_PU_SOC		0x0c
-> >  #define SARADC_DLY_PU_SOC_MASK		0x3f
-> > 
-> > -#define SARADC_BITS			10
-> > 
-> >  #define SARADC_TIMEOUT			msecs_to_jiffies(100)
-> > 
-> > +struct rockchip_saradc_data {
-> > +	int				num_bits;
-> > +	const struct iio_chan_spec	*channels;
-> > +	int				num_channels;
-> > +	unsigned long			clk_rate;
-> > +};
-> > +
-> > 
-> >  struct rockchip_saradc {
-> >  
-> >  	void __iomem		*regs;
-> >  	struct clk		*pclk;
-> >  	struct clk		*clk;
-> >  	struct completion	completion;
-> >  	struct regulator	*vref;
-> > 
-> > +	const struct rockchip_saradc_data *data;
-> > 
-> >  	u16			last_val;
-> >  
-> >  };
-> 
-> The alignment of the whole block should be adjusted to fit with the new
-> element.
+From: James P Michels III <james.p.michels@gmail.com>
 
-Hmm, I'm not sure if this should be in this patch, as changing the indentation 
-is more or less an unrelated change which makes recognizing the actual change 
-of adding the data field harder to see. 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-It could be a second patch on top to adapt the formating, but this also sounds 
-a bit like overkill.
+===============
 
-In any case I guess I'll wait for Jonathan to decide how he likes this to be 
-approached.
+commit cd83ce9e6195aa3ea15ab4db92892802c20df5d0 upstream.
 
+This patch adds a usb quirk to support devices with interupt endpoints
+and bInterval values expressed as microframes. The quirk causes the
+parse endpoint function to modify the reported bInterval to a standards
+conforming value.
 
-> > @@ -90,7 +97,7 @@ static int rockchip_saradc_read_raw(struct iio_dev
-> > *indio_dev,> 
-> >  		}
-> >  		
-> >  		*val = ret / 1000;
-> > 
-> > -		*val2 = SARADC_BITS;
-> > +		*val2 = info->data->num_bits;
-> > 
-> >  		return IIO_VAL_FRACTIONAL_LOG2;
-> >  	
-> >  	default:
-> >  		return -EINVAL;
-> > 
-> > @@ -103,7 +110,7 @@ static irqreturn_t rockchip_saradc_isr(int irq, void
-> > *dev_id)> 
-> >  	/* Read value */
-> >  	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
-> > 
-> > -	info->last_val &= SARADC_DATA_MASK;
-> > +	info->last_val &= BIT(info->data->num_bits) - 1;
-> 
-> I think using GENMASK would reflect the intention better, that you want to
-> mask out your data.
+There is currently code in the endpoint parser that checks for
+bIntervals that are outside of the valid range (1-16 for USB 2+ high
+speed and super speed interupt endpoints). In this case, the code assumes
+the bInterval is being reported in 1ms frames. As well, the correction
+is only applied if the original bInterval value is out of the 1-16 range.
 
-I didn't know GENMASK before, so thanks for the pointer .. this looks quite 
-cool :-)
+With this quirk applied to the device, the bInterval will be
+accurately adjusted from microframes to an exponent.
 
+Signed-off-by: James P Michels III <james.p.michels@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/usb/core/config.c  | 11 +++++++++++
+ drivers/usb/core/quirks.c  |  4 ++++
+ include/linux/usb/quirks.h | 11 +++++++++++
+ 3 files changed, 26 insertions(+)
 
-> >  	/* Clear irq & power down adc */
-> >  	writel_relaxed(0, info->regs + SARADC_CTRL);
-> > 
-> > @@ -133,12 +140,44 @@ static const struct iio_chan_spec
-> > rockchip_saradc_iio_channels[] = {> 
-> >  	ADC_CHANNEL(2, "adc2"),
-> >  
-> >  };
-> > 
-> > +static const struct rockchip_saradc_data saradc_data = {
-> > +	.num_bits = 10,
-> > +	.channels = rockchip_saradc_iio_channels,
-> > +	.num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels),
-> > +	.clk_rate = 1000000,
-> > +};
-> > +
-> > +static const struct iio_chan_spec rockchip_rk3066_tsadc_iio_channels[] =
-> > {
-> > +	ADC_CHANNEL(0, "adc0"),
-> > +	ADC_CHANNEL(1, "adc1"),
-> > +};
-> > +
-> > +static const struct rockchip_saradc_data rk3066_tsadc_data = {
-> > +	.num_bits = 12,
-> > +	.channels = rockchip_rk3066_tsadc_iio_channels,
-> > +	.num_channels = ARRAY_SIZE(rockchip_rk3066_tsadc_iio_channels),
-> > +	.clk_rate = 50000,
-> > +};
-> > +
-> > +static const struct of_device_id rockchip_saradc_match[] = {
-> > +	{
-> > +		.compatible = "rockchip,saradc",
-> > +		.data = &saradc_data,
-> > +	}, {
-> > +		.compatible = "rockchip,rk3066-tsadc",
-> > +		.data = &rk3066_tsadc_data,
-> > +	},
-> > +	{},
-> > +};
-> > +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
-> > +
-> > 
-> >  static int rockchip_saradc_probe(struct platform_device *pdev)
-> >  {
-> >  
-> >  	struct rockchip_saradc *info = NULL;
-> >  	struct device_node *np = pdev->dev.of_node;
-> >  	struct iio_dev *indio_dev = NULL;
-> >  	struct resource	*mem;
-> > 
-> > +	const struct of_device_id *match;
-> > 
-> >  	int ret;
-> >  	int irq;
-> > 
-> > @@ -152,6 +191,9 @@ static int rockchip_saradc_probe(struct
-> > platform_device *pdev)> 
-> >  	}
-> >  	info = iio_priv(indio_dev);
-> > 
-> > +	match = of_match_device(rockchip_saradc_match, &pdev->dev);
-> > +	info->data = match->data;
-> > +
-> > 
-> >  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >  	info->regs = devm_ioremap_resource(&pdev->dev, mem);
-> >  	if (IS_ERR(info->regs))
-> > 
-> > @@ -195,7 +237,7 @@ static int rockchip_saradc_probe(struct
-> > platform_device *pdev)> 
-> >  	 * Use a default of 1MHz for the converter clock.
-> >  	 * This may become user-configurable in the future.
-> >  	 */
-> > 
-> > -	ret = clk_set_rate(info->clk, 1000000);
-> > +	ret = clk_set_rate(info->clk, info->data->clk_rate);
-> > 
-> >  	if (ret < 0) {
-> >  	
-> >  		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
-> >  		return ret;
-> > 
-> > @@ -227,8 +269,8 @@ static int rockchip_saradc_probe(struct
-> > platform_device *pdev)> 
-> >  	indio_dev->info = &rockchip_saradc_iio_info;
-> >  	indio_dev->modes = INDIO_DIRECT_MODE;
-> > 
-> > -	indio_dev->channels = rockchip_saradc_iio_channels;
-> > -	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
-> > +	indio_dev->channels = info->data->channels;
-> > +	indio_dev->num_channels = info->data->num_channels;
-> > 
-> >  	ret = iio_device_register(indio_dev);
-> >  	if (ret)
-> > 
-> > @@ -296,12 +338,6 @@ static int rockchip_saradc_resume(struct device *dev)
-> > 
-> >  static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
-> >  
-> >  			 rockchip_saradc_suspend, rockchip_saradc_resume);
-> > 
-> > -static const struct of_device_id rockchip_saradc_match[] = {
-> > -	{ .compatible = "rockchip,saradc" },
-> > -	{},
-> > -};
-> > -MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
-> > -
-> > 
-> >  static struct platform_driver rockchip_saradc_driver = {
-> >  
-> >  	.probe		= rockchip_saradc_probe,
-> >  	.remove		= rockchip_saradc_remove,
+diff --git a/drivers/usb/core/config.c b/drivers/usb/core/config.c
+index 652438325197..98cb09617b20 100644
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -201,6 +201,17 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno, int inum,
+ 			if (n == 0)
+ 				n = 9;	/* 32 ms = 2^(9-1) uframes */
+ 			j = 16;
++
++			/*
++			 * Adjust bInterval for quirked devices.
++			 * This quirk fixes bIntervals reported in
++			 * linear microframes.
++			 */
++			if (to_usb_device(ddev)->quirks &
++				USB_QUIRK_LINEAR_UFRAME_INTR_BINTERVAL) {
++				n = clamp(fls(d->bInterval), i, j);
++				i = j = n;
++			}
+ 			break;
+ 		default:		/* USB_SPEED_FULL or _LOW */
+ 			/* For low-speed, 10 ms is the official minimum.
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 31f7ebf55868..6fd22252273c 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -147,6 +147,10 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* SKYMEDI USB_DRIVE */
+ 	{ USB_DEVICE(0x1516, 0x8628), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* Razer - Razer Blade Keyboard */
++	{ USB_DEVICE(0x1532, 0x0116), .driver_info =
++			USB_QUIRK_LINEAR_UFRAME_INTR_BINTERVAL },
++
+ 	/* BUILDWIN Photo Frame */
+ 	{ USB_DEVICE(0x1908, 0x1315), .driver_info =
+ 			USB_QUIRK_HONOR_BNUMINTERFACES },
+diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
+index 52f944dfe2fd..55a17b188daa 100644
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -30,4 +30,15 @@
+    descriptor */
+ #define USB_QUIRK_DELAY_INIT		0x00000040
+ 
++/*
++ * For high speed and super speed interupt endpoints, the USB 2.0 and
++ * USB 3.0 spec require the interval in microframes
++ * (1 microframe = 125 microseconds) to be calculated as
++ * interval = 2 ^ (bInterval-1).
++ *
++ * Devices with this quirk report their bInterval as the result of this
++ * calculation instead of the exponent variable used in the calculation.
++ */
++#define USB_QUIRK_LINEAR_UFRAME_INTR_BINTERVAL	0x00000080
++
+ #endif /* __LINUX_USB_QUIRKS_H */
+-- 
+2.1.0
+
