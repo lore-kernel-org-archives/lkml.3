@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509AbaICP02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:26:28 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46043 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaICP01 (ORCPT
+	id S1756230AbaICP3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:29:43 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34061 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751AbaICP3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:26:27 -0400
-Message-ID: <54073322.6030508@gmail.com>
-Date: Wed, 03 Sep 2014 23:26:26 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 3 Sep 2014 11:29:42 -0400
+Date: Wed, 3 Sep 2014 17:28:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com, <""@rjwysocki.net>,
+        tianyu.lan@intel.com
+Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
+ and expedited grace periods
+Message-ID: <20140903152850.GQ4783@worktop.ger.corp.intel.com>
+References: <20140828194745.GA3761@linux.vnet.ibm.com>
+ <20140901112059.GG27892@worktop.ger.corp.intel.com>
+ <20140901160550.GL5001@linux.vnet.ibm.com>
+ <20140901161735.GA5806@worktop.ger.corp.intel.com>
+ <20140902163656.GC5001@linux.vnet.ibm.com>
+ <20140903113112.GM4783@worktop.ger.corp.intel.com>
+ <20140903150306.GU5001@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        michal.simek@xilinx.com, Michal Simek <monstr@monstr.eu>
-Subject: [PATCH] drivers/net/fddi/skfp/h/skfbi.h: Remove useless PCI_BASE_2ND
- macros
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903150306.GU5001@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are use less, and may generate compiling warnings, so remove them
-(microblaze, arc, arm64, and unicore32 have already defined PCI_IOBASE).
+On Wed, Sep 03, 2014 at 08:03:06AM -0700, Paul E. McKenney wrote:
+> > > Normal RCU grace periods avoid this by synchronizing on a lock acquired by
+> > > the RCU CPU-hotplug notifiers, but this does not work for the expedited
+> > > grace periods because the outgoing CPU can be running random tasks for
+> > > quite some time after RCU's notifier executes.  So the fix is just to
+> > > drop back to a normal grace period when there is a CPU-hotplug operation
+> > > in progress.
+> > 
+> > So why are we 'normally' doing an expedited call here anyhow? 
+> 
+> Presumably because they set either the boot parameter or
+> the sysfs variable that causes synchronize_sched() to so
+> synchronize_sched_expedited().
 
-The related warnings (with allmodconfig under microblaze):
+That's not a why but a how. Why does that option exist, why are we doing
+this?
 
-  CC [M]  drivers/net/fddi/skfp/skfddi.o
-  In file included from drivers/net/fddi/skfp/skfddi.c:95:0:
-  drivers/net/fddi/skfp/h/skfbi.h:151:0: warning: "PCI_IOBASE" redefined
-   #define PCI_IOBASE 0xffffff00L  /* Bit 31..8:  I/O Base address */
-   ^
-  In file included from include/linux/io.h:22:0,
-                   from include/linux/pci.h:31,
-                   from drivers/net/fddi/skfp/skfddi.c:82:
-  ./arch/microblaze/include/asm/io.h:33:0: note: this is the location of the previous definition
-   #define PCI_IOBASE ((void __iomem *)_IO_BASE)
-   ^
+I cannot actually find a sysfs variable that controls this though; only
+the rcu_pm_notifier. It seems to favour doing an expedited call when
+suspending on 'small' machines.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/net/fddi/skfp/h/skfbi.h | 5 -----
- 1 file changed, 5 deletions(-)
+> > But those are not within hotplug bits. Also weren't we removing them? I
+> > thought we didn't appreciate spraying IPIs like they do?
+> 
+> I hadn't heard anything about removing them, but making the
+> expedited primitives a bit less IPI-happy is on my list.
 
-diff --git a/drivers/net/fddi/skfp/h/skfbi.h b/drivers/net/fddi/skfp/h/skfbi.h
-index c1ba26c..3de2f0d 100644
---- a/drivers/net/fddi/skfp/h/skfbi.h
-+++ b/drivers/net/fddi/skfp/h/skfbi.h
-@@ -147,11 +147,6 @@
- #define	PCI_MEM64BIT	(2<<1)	     /* Base addr anywhere in 64 Bit range */
- #define	PCI_MEMSPACE	0x00000001L  /* Bit 0:	Memory Space Indic. */
- 
--/*	PCI_BASE_2ND	32 bit	2nd Base address */
--#define	PCI_IOBASE	0xffffff00L  /* Bit 31..8:  I/O Base address */
--#define	PCI_IOSIZE	0x000000fcL  /* Bit 7..2:   I/O Size Requirements */
--#define	PCI_IOSPACE	0x00000001L  /* Bit 0:	    I/O Space Indicator */
--
- /*	PCI_SUB_VID	16 bit	Subsystem Vendor ID */
- /*	PCI_SUB_ID	16 bit	Subsystem ID */
- 
--- 
-1.9.3
+I had some recollections of removing a fair number of expedited calls,
+but its was a long while ago so what do I know ;-)
+
+Making them less IPI happy would be good indeed.
