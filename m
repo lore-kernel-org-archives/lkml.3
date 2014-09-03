@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118AbaICWEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:04:54 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27917 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756285AbaICWEw (ORCPT
+	id S933435AbaICWGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:06:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45367 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933397AbaICWGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:04:52 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19NFGY+7k5gGIUbHzFT6XWo
-Date: Wed, 3 Sep 2014 15:04:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: kpark3469@gmail.com, keun-o.park@windriver.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        afzal.mohd.ma@gmail.com
-Subject: Re: [PATCHv2] ARM: debug: uncompress debug support for omap2plus
-Message-ID: <20140903220433.GQ11766@atomide.com>
-References: <1409038140-7433-1-git-send-email-kpark3469@gmail.com>
- <20140826075831.GU30401@n2100.arm.linux.org.uk>
+	Wed, 3 Sep 2014 18:06:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kinglong Mee <kinglongmee@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 51/55] NFSD: Decrease nfsd_users in nfsd_startup_generic fail
+Date: Wed,  3 Sep 2014 15:05:41 -0700
+Message-Id: <20140903220502.099062426@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+References: <20140903220453.653576908@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140826075831.GU30401@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [140826 00:58]:
-> On Tue, Aug 26, 2014 at 04:28:59PM +0900, kpark3469@gmail.com wrote:
-> > From: Sahara <keun-o.park@windriver.com>
-> > 
-> > Since OMAP low-level debug code places data in the .data section,
-> > The symbol DEBUG_UNCOMPRESS was defined with !DEBUG_OMAP2PLUS_UART.
-> > This patch removes the part using data section in debug/omap2plus.S,
-> > so DEBUG_UNCOMPRESS is now available on OMAP system.
-> > 
-> > Signed-off-by: Sahara <keun-o.park@windriver.com>
-> > Tested-by: Afzal Mohammed <afzal.mohd.ma@gmail.com> (on am335x beagle
-> > bone white)
-> 
-> You need to consider whom you are sending this to.  It would be well
-> worth including the OMAP maintainer, Tony Lindgren.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks saw it and replied yesterday that we should just rip out
-the SoC detection and use standard 8250 debug_ll code.
+------------------
 
-Regards,
+From: Kinglong Mee <kinglongmee@gmail.com>
 
-Tony
+commit d9499a95716db0d4bc9b67e88fd162133e7d6b08 upstream.
+
+A memory allocation failure could cause nfsd_startup_generic to fail, in
+which case nfsd_users wouldn't be incorrectly left elevated.
+
+After nfsd restarts nfsd_startup_generic will then succeed without doing
+anything--the first consequence is likely nfs4_start_net finding a bad
+laundry_wq and crashing.
+
+Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
+Fixes: 4539f14981ce "nfsd: replace boolean nfsd_up flag by users counter"
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/nfsd/nfssvc.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -220,7 +220,8 @@ static int nfsd_startup_generic(int nrse
+ 	 */
+ 	ret = nfsd_racache_init(2*nrservs);
+ 	if (ret)
+-		return ret;
++		goto dec_users;
++
+ 	ret = nfs4_state_start();
+ 	if (ret)
+ 		goto out_racache;
+@@ -228,6 +229,8 @@ static int nfsd_startup_generic(int nrse
+ 
+ out_racache:
+ 	nfsd_racache_shutdown();
++dec_users:
++	nfsd_users--;
+ 	return ret;
+ }
+ 
+
+
