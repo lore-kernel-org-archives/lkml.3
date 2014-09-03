@@ -1,116 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932891AbaICOno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:43:44 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:55038 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402AbaICOnm (ORCPT
+	id S932914AbaICOn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:43:59 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45336 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932402AbaICOn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:43:42 -0400
-Date: Wed, 3 Sep 2014 20:13:25 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, sparmaintainer@unisys.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: unisys: uislib: uisqueue.c: rewrite of
- do_locked_client_insert
-Message-ID: <20140903144325.GA15176@sudip-PC>
-References: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
- <20140903084038.GE6600@mwanda>
- <20140903085944.GA1184@sudip-PC>
+	Wed, 3 Sep 2014 10:43:57 -0400
+Date: Wed, 3 Sep 2014 07:43:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
+ this_cpu ops
+Message-ID: <20140903144349.GT5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.11.1409021513490.26284@gentwo.org>
+ <20140902203743.GL5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021545370.32690@gentwo.org>
+ <20140902211517.GO5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
+ <20140903021152.GA14069@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409030846310.9372@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140903085944.GA1184@sudip-PC>
+In-Reply-To: <alpine.DEB.2.11.1409030846310.9372@gentwo.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090314-1344-0000-0000-000003EA8303
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 02:29:44PM +0530, Sudip Mukherjee wrote:
-> On Wed, Sep 03, 2014 at 11:40:38AM +0300, Dan Carpenter wrote:
-> > On Tue, Sep 02, 2014 at 11:46:35PM +0530, Sudip Mukherjee wrote:
-> > > From: Sudip Mukherjee <sudip@vectorindia.org>
-> > 
-> > I really would prefer if you just figured out your email settings so
-> > this isn't needed.  The From: header is mostly used for people
-> > forwarding patches from other people.  We have allowed people to use
-> > the From header like this if they can't get their corporate email
-> > configured properly but I try to discorage it.  If everyone starts using
-> > From headers like this then it becomes a pain to deal with.
-> > 
-> I will configure the corporate mail. I am the server admin , so there should
-> not be any problem in settings. :)
+On Wed, Sep 03, 2014 at 09:10:24AM -0500, Christoph Lameter wrote:
+> On Tue, 2 Sep 2014, Paul E. McKenney wrote:
 > 
-v4 of the patch was sent from the corporate mail. The settings were done.
-But the problem is coming in a different area. I have given strict DMARC check 
-for the corporate mail server. DMARC = domain based message authentication.
-So the mail i sent reached all the list subscriber from a different server than 
-our designated server , and as a result it has been marked as spam in many places.
-I have already received a few complaints regarding that.
-Is there any other way that i send the patch from my personal account , 
-and use my corporate mail in Signed-off-by ... 
+> > On Tue, Sep 02, 2014 at 06:22:52PM -0500, Christoph Lameter wrote:
+> > > On Tue, 2 Sep 2014, Paul E. McKenney wrote:
+> > >
+> > > > Yep, these two have been on my "when I am feeling insanely gutsy" list
+> > > > for quite some time.
+> > > >
+> > > > But I have to ask...  On x86, is a pair of mfence instructions really
+> > > > cheaper than an atomic increment?
+> > >
+> > > Not sure why you would need an mfence instruction?
+> >
+> > Because otherwise RCU can break.  As soon as the grace-period machinery
+> > sees that the value of this variable is even, it assumes a quiescent
+> > state.  If there are no memory barriers, the non-quiescent code might
+> > not have completed executing, and your kernel's actuarial statistics
+> > become sub-optimal.
+> 
+> Synchronization using per cpu variables is bound to be problematic since
+> they are simply not made for that. The per cpu variable usually can change
+> without notice to the other cpu since typically per cpu processing is
+> ongoing. The improvided performance of per cpu instructions is
+> possible only because we exploit the fact that there is no need for
+> synchronization.
 
-thanks
-sudip
+Christoph, per-CPU variables are memory.  If I do the correct operations
+on them, they work just like any other memory.  And yes, I typically
+cannot use the per-CPU operations if I need coherent results visible to
+all CPUs (but see your statistical-counters example below).  This is of
+course exactly why I use atomic operations and memory barriers on
+the dynticks counters.
 
-> > > 
-> > > removed unused variables
-> > > fixed sparse warning of context imbalance in 'do_locked_client_insert'
-> > >                          different lock contexts for basic block
-> > > 
-> > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > > ---
-> > > 
-> > 
-> > This patch is much better and more interesting, but I still want some
-> > more changes.
-> > 
-> I have already sent v3 of the patch just before your mail , based on 
-> what greg k-h has suggested about the commnent. Please discard that.
-> 
-> > > v1 of the patch of the patch just fixed the sparse warning.
-> > > On suggestion of Dan Carpenter v2 is the total rewrite of the function.
-> > > Two of the function arguments (interruptHandle,channelId) are also not used. Wanted to remove them as well , 
-> > > but then thought maybe the original author have planned for some use of those variables.
-> > 
-> > In the kernel we don't put code in until we are ready to use it.  Don't
-> > worry about future changes.  But on the other hand, don't remove the
-> > parameters in this patch because that is doing too many changes in one
-> > patch.  It would have to be done in a follow on patch if you decide to
-> > do it.
-> > 
-> > > -	if (locked) {
-> > > -		spin_unlock_irqrestore((spinlock_t *) lock, flags);
-> > > -		locked = 0;
-> > > +		goto unlock;
-> > > +	visor_signalqueue_empty(queueinfo->chan, whichqueue);
-> > 
-> > Just remove this function.  But mention it in the changelog in case
-> > there are side effects.
-> > 
-> > > +	/*visor_signal_insert() only return 0 or 1 */
-> > 
-> > Don't put obvious comments like this.  A normal reader will assume that
-> > this function is boolean based on how it is used.
-> > 
-> > > +	if (visor_signal_insert(queueinfo->chan, whichqueue, pSignal) == 1) {
-> > 
-> > Don't put the == 1.  In terms of English, 1 really is intended as
-> > "success" and not the number one.  Also don't test for == true or
-> > == false.
-> > 
-> > 	if (foo) {
-> > 	if (foo == true) {
-> > 
-> > These two statement *mean* the same thing in terms of English, but the
-> > first one is simpler and less wordy.
-> > 
-> > regards,
-> > dan carpenter
-> 
-> thanks
-> sudip
+You would prefer that I instead allocated an NR_CPUS-sized array?
+
+> Kernel statistics *are* suboptimal for that very reason because they
+> typically sum up individual counters from multiple processors without
+> regard to complete accuracy. The manipulation of the VM counters is very
+> low overhead due to the lack of concern for synchronization. This is a
+> tradeoff vs. performance. We actually can tune the the fuzziness of
+> statistics in the VM which allows us to control the overhead generated by
+> the need for more or less accurate statistics.
+
+Yes, statistics is one of the cross-CPU uses of per-CPU variables where
+you can get away without tight synchronization.
+
+> Memory barriers ensure that the code has completed executing? I think what
+> is meant is that they ensure that all modifications to cachelines before the
+> change of state are visible and the other processor does not have stale
+> cachelines around?
+
+No, memory barriers simply enforce ordering, and ordering is all
+that RCU's dyntick-idle code relies on.  In other words, if the RCU
+grace-period kthread sees a value indicating that a CPU is idle, that
+kthread needs assurance that all the memory operations that took place
+before that CPU went idle have completed.  All that is required for this
+is ordering:  I saw that the ->dynticks counter had an even value, and
+I know that it was preceded a memory barrier, therefore, all subsequent
+code after a memory barrier will see the effects of all pre-idle code.
+
+> If the state variable is odd how does the other processor see a state
+> change to even before processing is complete if the state is updated only
+> at the end of processing?
+
+I am having some difficulty parsing that question.
+
+However, suppose that the grace-period kthread sees ->dynticks with an
+odd value, say three.  Supppose that this kthread later sees another
+odd value, say eleven.  Then because of the atomic operations and memory
+barriers, the kthread can be sure that the CPU corresponding to that
+->dynticks has passed through an idle state since the time it saw the
+value three, and therefore that that CPU has passed through a quiescent
+state since the start of the grace period.
+
+Similarly, if the grace-period kthread sees ->dynticks with an even value,
+it knows that after a subsequent memory barrier, all the pre-idle effects
+will be visible, as required.
+
+As a diagram:
+
+	CPU 0				CPU 1
+
+	/* Access some RCU-protected struct. */
+	smp_mb__before_atomic()
+	atomic_inc()->even value
+	/* Now idle. */
+					atomic_add_return(0, ...)-> odd value
+					/* implied memory barrier. */
+					/* post-GP changes won't interfere */
+					/*   with pre-idle accesses. */
+
+In other words, if CPU 0 accessed some RCU-protected memory before going
+idle, that memory is guaranteed not to be freed until after those pre-idle
+accesses have completed.
+
+Of course, it also needs to work the other way around:
+
+	CPU 0				CPU 1
+
+					/* Remove some RCU-protected struct. */
+					/* implied memory barrier. */
+					atomic_add_return(0, ...)-> even value
+	/* Was idle. */
+	atomic_inc()->odd value
+	smp_mb__after_atomic()
+	/* post-idle accesses. */
+	/* Will see pre-GP changes. */
+
+								Thanx, Paul
+
