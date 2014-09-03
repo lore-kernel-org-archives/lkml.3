@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaICEWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 00:22:12 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45989 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaICEWK (ORCPT
+	id S1751615AbaICEZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 00:25:59 -0400
+Received: from smtprelay0019.hostedemail.com ([216.40.44.19]:54035 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751209AbaICEZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 00:22:10 -0400
-Message-ID: <54069744.7050509@oracle.com>
-Date: Wed, 03 Sep 2014 12:21:24 +0800
-From: Junxiao Bi <junxiao.bi@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: xuejiufei@huawei.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH] fs/super.c: do not shrink fs slab during direct memory
- reclaim
-References: <54004E82.3060608@huawei.com> <20140901235102.GI26465@dastard> <540587DF.6040302@huawei.com> <54067117.4060201@oracle.com> <20140903031023.GC20473@dastard>
-In-Reply-To: <20140903031023.GC20473@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Sep 2014 00:25:57 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3871:3872:3873:3874:4250:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12043:12517:12519:12679:12740:13018:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tub66_33c1febadf158
+X-Filterd-Recvd-Size: 1447
+Message-ID: <1409718353.2715.3.camel@joe-AO725>
+Subject: Re: Bogus error in checkpatch.pl
+From: Joe Perches <joe@perches.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 02 Sep 2014 21:25:53 -0700
+In-Reply-To: <CAJhHMCDMuByuTdOwTscZ0tF3WopYrqfYnRD=5sPHXGQZZu09wg@mail.gmail.com>
+References: <CAJhHMCDMuByuTdOwTscZ0tF3WopYrqfYnRD=5sPHXGQZZu09wg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 11:10 AM, Dave Chinner wrote:
-> On Wed, Sep 03, 2014 at 09:38:31AM +0800, Junxiao Bi wrote:
->> Hi Jiufei,
->>
->> On 09/02/2014 05:03 PM, Xue jiufei wrote:
->>> Hi, Dave
->>> On 2014/9/2 7:51, Dave Chinner wrote:
->>>> On Fri, Aug 29, 2014 at 05:57:22PM +0800, Xue jiufei wrote:
->>>>> The patch trys to solve one deadlock problem caused by cluster
->>>>> fs, like ocfs2. And the problem may happen at least in the below
->>>>> situations:
->>>>> 1)Receiving a connect message from other nodes, node queues a
->>>>> work_struct o2net_listen_work.
->>>>> 2)o2net_wq processes this work and calls sock_alloc() to allocate
->>>>> memory for a new socket.
->>>>> 3)It would do direct memory reclaim when available memory is not
->>>>> enough and trigger the inode cleanup. That inode being cleaned up
->>>>> is happened to be ocfs2 inode, so call evict()->ocfs2_evict_inode()
->>>>> ->ocfs2_drop_lock()->dlmunlock()->o2net_send_message_vec(),
->>>>> and wait for the unlock response from master.
->>>>> 4)tcp layer received the response, call o2net_data_ready() and
->>>>> queue sc_rx_work, waiting o2net_wq to process this work.
->>>>> 5)o2net_wq is a single thread workqueue, it process the work one by
->>>>> one. Right now it is still doing o2net_listen_work and cannot handle
->>>>> sc_rx_work. so we deadlock.
->>>>>
->>>>> It is impossible to set GFP_NOFS for memory allocation in sock_alloc().
->>>>> So we use PF_FSTRANS to avoid the task reentering filesystem when
->>>>> available memory is not enough.
->>>>>
->>>>> Signed-off-by: joyce.xue <xuejiufei@huawei.com>
->>>>
->>>> For the second time: use memalloc_noio_save/memalloc_noio_restore.
->>>> And please put a great big comment in the code explaining why you
->>>> need to do this special thing with memory reclaim flags.
->>>>
->>>> Cheers,
->>>>
->>>> Dave.
->>>>
->>> Thanks for your reply. But I am afraid that memalloc_noio_save/
->>> memalloc_noio_restore can not solve my problem. __GFP_IO is cleared
->>> if PF_MEMALLOC_NOIO is set and can avoid doing IO in direct memory
->>> reclaim. However, __GFP_FS is still set that can not avoid pruning
->>> dcache and icache in memory allocation, resulting in the deadlock I
->>> described.
->>
->> You can use PF_MEMALLOC_NOIO to replace PF_FSTRANS, set this flag in
->> ocfs2 and check it in sb shrinker.
+On Wed, 2014-09-03 at 00:03 -0400, Pranith Kumar wrote:
+> I receive an ERROR when running checkpatch.pl on a patch containing
+> the following line:
 > 
-> No changes to the superblock shrinker, please. The flag should
-> modify the gfp_mask in the struct shrink_control passed to the
-> shrinker, just like the noio flag is used in the rest of the mm
-> code.
-__GFP_FS seemed imply __GFP_IO, can superblock shrinker check
-!(sc->gfp_mask & __GFP_IO) and stop?
+> Commit 615cc2c9cf95 "Documentation/memory-barriers.txt: fix important typo re
+> 
+> saying that the commit ID should be 12 or more characters when the
+> commit ID is indeed 12 characters. I tried fixing it, but my perl is
+> not up-to-par.
 
-Thanks,
-Junxiao.
-> 
-> Cheers,
-> 
-> Dave.
-> 
+You need to use parentheses around the description like:
+	commit <commitid> ("commit description")
+
+For your case:
+
+Commit 615cc2c9cf95 ("Documentation/memory-barriers.txt: fix important
+typo re memory barriers")
+
+
+
 
