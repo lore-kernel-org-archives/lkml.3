@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932959AbaICPjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:39:48 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:42163 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756323AbaICPjq (ORCPT
+	id S932752AbaICPjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:39:03 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:39548 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755886AbaICPi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:39:46 -0400
+	Wed, 3 Sep 2014 11:38:59 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -20,12 +20,10 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Grant Likely <grant.likely@linaro.org>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Harsh Gupta <harsh.gupta@st.com>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.orgm>
-Subject: [PATCH v2 7/8] phy: miphy28lp: Add SSC support for PCIE
-Date: Wed,  3 Sep 2014 17:37:16 +0200
-Message-Id: <1409758637-28654-8-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH v2 4/8] ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
+Date: Wed,  3 Sep 2014 17:37:13 +0200
+Message-Id: <1409758637-28654-5-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409758637-28654-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1409758637-28654-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -35,68 +33,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SSC is the technique of modulating the operating frequency of a signal
-slightly to spread its radiated emissions over a range of frequencies.
-This reduction in the maximum emission for a given frequency helps meet
-radiated emission requirements.
-These settings are applicable for PCIE with Internal clock.
+The MiPHY28lp is a Generic PHY which can serve various SATA, PCIe or
+USB3 devices. The two first ports can be use for either; both SATA, both
+PCIe or one of each in any configuration.
+The Third port is only for USB3.
 
-Signed-off-by: Harsh Gupta <harsh.gupta@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.orgm>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- drivers/phy/phy-miphy28lp.c | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+ arch/arm/boot/dts/stih407-b2120.dts | 11 +++++++
+ arch/arm/boot/dts/stih407.dtsi      | 65 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 76 insertions(+)
 
-diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
-index b36e737..976fdda 100644
---- a/drivers/phy/phy-miphy28lp.c
-+++ b/drivers/phy/phy-miphy28lp.c
-@@ -679,6 +679,36 @@ static int miphy28lp_init_sata(struct miphy28lp_phy *miphy_phy)
- 	return miphy_is_ready(miphy_phy);
- }
+diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
+index fe69f92..d0837fb 100644
+--- a/arch/arm/boot/dts/stih407-b2120.dts
++++ b/arch/arm/boot/dts/stih407-b2120.dts
+@@ -74,5 +74,16 @@
+ 			st,i2c-min-scl-pulse-width-us = <0>;
+ 			st,i2c-min-sda-pulse-width-us = <5>;
+ 		};
++
++		miphy28lp_phy: miphy28lp@9b22000 {
++
++			phy_port0: port@9b22000 {
++				st,osc-rdy;
++			};
++
++			phy_port1: port@9b2a000 {
++				st,osc-force-ext;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+index 4f9024f..b8cc9a3 100644
+--- a/arch/arm/boot/dts/stih407.dtsi
++++ b/arch/arm/boot/dts/stih407.dtsi
+@@ -259,5 +259,70 @@
  
-+static void miphy_pcie_tune_ssc(struct miphy28lp_phy *miphy_phy)
-+{
-+	u8 val;
+ 			status = "disabled";
+ 		};
 +
-+	/* Compensate Tx impedance to avoid out of range values */
-+	if (miphy_phy->ssc) {
-+		/*
-+		 * Enable the SSC on PLL for all banks
-+		 * SSC Modulation @ 31 KHz and 4000 ppm modulation amp
-+		 */
-+		val = readb_relaxed(miphy_phy->base + 0x0c);
-+		val |= 0x04;
-+		writeb_relaxed(val, miphy_phy->base + 0x0c);
-+		val = readb_relaxed(miphy_phy->base + 0x0a);
-+		val |= 0x10;
-+		writeb_relaxed(val, miphy_phy->base + 0x0a);
++		miphy28lp_phy: miphy28lp@9b22000 {
++			compatible = "st,miphy28lp-phy";
++			st,syscfg = <&syscfg_core>;
++			#address-cells	= <1>;
++			#size-cells	= <1>;
++			ranges;
 +
-+		for (val = 0; val < 2; val++) {
-+			writeb_relaxed(val, miphy_phy->base + 0x0f);
-+			writeb_relaxed(0x69, miphy_phy->base + 0xe5);
-+			writeb_relaxed(0x21, miphy_phy->base + 0xe6);
-+			writeb_relaxed(0x3c, miphy_phy->base + 0xe4);
-+			writeb_relaxed(0x21, miphy_phy->base + 0xe6);
-+			writeb_relaxed(0x00, miphy_phy->base + 0xe3);
-+			writeb_relaxed(0x02, miphy_phy->base + 0xe3);
-+			writeb_relaxed(0x00, miphy_phy->base + 0xe3);
-+		}
-+	}
-+}
++			phy_port0: port@9b22000 {
++				reg = <0x9b22000 0xff>,
++				      <0x9b09000 0xff>,
++				      <0x9b04000 0xff>,
++				      <0x114 0x4>, /* sysctrl MiPHY cntrl */
++				      <0x818 0x4>, /* sysctrl MiPHY status*/
++				      <0xe0  0x4>, /* sysctrl PCIe */
++				      <0xec  0x4>; /* sysctrl SATA */
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
 +
- static int miphy28lp_init_pcie(struct miphy28lp_phy *miphy_phy)
- {
- 	struct miphy28lp_dev *miphy_dev = miphy_phy->phydev;
-@@ -710,6 +740,8 @@ static int miphy28lp_init_pcie(struct miphy28lp_phy *miphy_phy)
- 	/* initialize miphy */
- 	miphy28lp_configure_pcie(miphy_phy);
- 
-+	miphy_pcie_tune_ssc(miphy_phy);
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
++			};
 +
- 	/* Waiting for Compensation to complete */
- 	do {
- 		val = readb_relaxed(miphy_phy->base + MIPHY_COMP_FSM_6);
++			phy_port1: port@9b2a000 {
++				reg = <0x9b2a000 0xff>,
++				      <0x9b19000 0xff>,
++				      <0x9b14000 0xff>,
++				      <0x118 0x4>,
++				      <0x81c 0x4>,
++				      <0xe4  0x4>,
++				      <0xf0  0x4>;
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
++
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
++			};
++
++			phy_port2: port@8f95000 {
++				reg = <0x8f95000 0xff>,
++				      <0x8f90000 0xff>,
++				      <0x11c 0x4>,
++				      <0x820 0x4>;
++				reg-names = "pipew",
++				    "usb3-up",
++				    "miphy-ctrl-glue",
++				    "miphy-status-glue";
++				#phy-cells = <1>;
++
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
++			};
++		};
+ 	};
+ };
 -- 
 1.9.1
 
