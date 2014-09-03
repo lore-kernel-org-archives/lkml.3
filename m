@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626AbaICHXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:23:20 -0400
+	id S1755668AbaICHXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:23:22 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:22669 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219AbaICHXS (ORCPT
+	with ESMTP id S1755219AbaICHXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:23:18 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-c7-5406c1df53c8
+	Wed, 3 Sep 2014 03:23:20 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-e6-5406c1e62f2c
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 0/8] integrity: miscellaneous cleanups
-Date: Wed, 03 Sep 2014 10:19:53 +0300
-Message-id: <cover.1409728712.git.d.kasatkin@samsung.com>
+Subject: [PATCH 3/8] ima: simplify conditional statement to improve performance
+Date: Wed, 03 Sep 2014 10:19:56 +0300
+Message-id: <0e28e9a1e1bd839f7d551052b33bba6f266bd749.1409728712.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBJMWRmVeSWpSXmKPExsVy+t/xq7r3D7KFGLy6y2Jx6+9eZosvS+ss
-	Xs6Yx25xedccNosPPY/YLD6tmMTswOaxc9Zddo8HhzazeOxe8JnJo2/LKkaPz5vkAlijuGxS
-	UnMyy1KL9O0SuDIuntjFWtDCUdF3ZwVrA+N+ti5GTg4JAROJVcs3skPYYhIX7q0HinNxCAks
-	ZZSYfriVGcLpZJLo2PuHCaSKTUBPYkPzD7AOEYEciUlnLjCD2MwC6RKfJvWCxYUFzCQmHugC
-	q2cRUJVYuqALLM4rYClx9cNCVohtchInj01mncDIvYCRYRWjaGppckFxUnquoV5xYm5xaV66
-	XnJ+7iZGSGh82cG4+JjVIUYBDkYlHt4CNbYQIdbEsuLK3EOMEhzMSiK8volAId6UxMqq1KL8
-	+KLSnNTiQ4xMHJxSDYzL4+7Vyyhfe1mscndDZfCywlbJXz+CZpWJFbf5PpN5mZs/9fLWeV2t
-	d6+tW7bvk/31t9J33+Z5rWGyEth7wVEwuu+R/vq23vIFmk9f+qhmrOGPsyvbuqvfLZ7/6GT+
-	6VXulmfM+QJU/u4SO73iscJd4ZLU43MiHed4ml5hS/l3dP2itz/87ucpsRRnJBpqMRcVJwIA
-	LvzHX+sBAAA=
+In-reply-to: <cover.1409728712.git.d.kasatkin@samsung.com>
+References: <cover.1409728712.git.d.kasatkin@samsung.com>
+In-reply-to: <cover.1409728712.git.d.kasatkin@samsung.com>
+References: <cover.1409728712.git.d.kasatkin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphluLIzCtJLcpLzFFi42I5/e/4Vd1nB9lCDPYe17K49Xcvs8WXpXUW
+	L2fMY7e4vGsOm8WHnkdsFp9WTGJ2YPPYOesuu8eDQ5tZPHYv+Mzk0bdlFaPH501yAaxRXDYp
+	qTmZZalF+nYJXBnnzyoXvGOv6H6Q1MB4ga2LkZNDQsBEYvnN26wQtpjEhXvrgeJcHEICSxkl
+	nj+9zgrhdDJJ3Pp1mQWkik1AT2JD8w92EFtEIEdi0pkLzCA2s0C6xKdJvWBxYQF/iWs/3zOB
+	2CwCqhIvT10D28YrECfxd/pvqM1yEiePTQZawMHBKWAlMe+oFkhYSMBSov3qMkYcwhMY+Rcw
+	MqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAm5LzsYFx+zOsQowMGoxMNboMYWIsSaWFZc
+	mXuIUYKDWUmE1zcRKMSbklhZlVqUH19UmpNafIiRiYNTqoGRbYZNy1HBwmd/zFnFePSeT39Z
+	ccTDJ2GeRIxST9rrNst8ddWvPCW+bPGcO5U//wucPD9OLvujjYwNy/2vagv3XBFUsBWtupWi
+	srpxCovsz97wHzx1ggK1IQJTFmboqXElW1+fFbT2d7hseE/R1e66l2mxWSnHFq3fFHSe92XB
+	Rsurr9oz3JRYijMSDbWYi4oTAbsPKW8XAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Precede bit testing before string comparison makes code
+faster. Also refactor statement as a single line pointer
+assignment.
 
-Here is a few miscellaneous cleanups to improve code quality,
-performance and prevent unnecessary memory allocations.
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+---
+ security/integrity/ima/ima_main.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-- Dmitry
-
-Dmitry Kasatkin (8):
-  integrity: prevent flooding with 'Request for unknown key'
-  integrity: remove declaration of non-existing functions
-  ima: simplify conditional statement to improve performance
-  ima: remove unnecessary extra variable
-  ima: add missing '__init' keywords
-  ima: remove unnecessary code
-  ima: remove usage of filename parameter
-  ima: initialize only required template
-
- security/integrity/digsig_asymmetric.c |  5 +++--
- security/integrity/ima/ima.h           | 11 -----------
- security/integrity/ima/ima_appraise.c  |  2 --
- security/integrity/ima/ima_crypto.c    |  2 +-
- security/integrity/ima/ima_main.c      | 34 +++++++++++++++-------------------
- security/integrity/ima/ima_template.c  | 30 +++++-------------------------
- security/integrity/integrity.h         |  1 -
- 7 files changed, 24 insertions(+), 61 deletions(-)
-
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index f82cf9b..f7b85bf 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -206,10 +206,8 @@ static int process_measurement(struct file *file, const char *filename,
+ 	}
+ 
+ 	template_desc = ima_template_desc_current();
+-	if (strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) == 0) {
+-		if (action & IMA_APPRAISE_SUBMASK)
+-			xattr_ptr = &xattr_value;
+-	} else
++	if ((action & IMA_APPRAISE_SUBMASK) ||
++		    strcmp(template_desc->name, IMA_TEMPLATE_IMA_NAME) != 0)
+ 		xattr_ptr = &xattr_value;
+ 
+ 	rc = ima_collect_measurement(iint, file, xattr_ptr, &xattr_len);
 -- 
 1.9.1
 
