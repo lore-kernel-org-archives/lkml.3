@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaICETS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 00:19:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56011 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaICETR convert rfc822-to-8bit (ORCPT
+	id S1751520AbaICEWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 00:22:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:45989 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaICEWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 00:19:17 -0400
-Date: Wed, 3 Sep 2014 12:19:02 +0800
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>, Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        Kick In <pierre-andre.morey@canonical.com>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
-Message-ID: <20140903121902.7a9f5a5a@tom-ThinkPad-T410>
-In-Reply-To: <5405EF38.60007@kernel.dk>
-References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com>
-	<20140902162146.GA28741@infradead.org>
-	<5405EF38.60007@kernel.dk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Wed, 3 Sep 2014 00:22:10 -0400
+Message-ID: <54069744.7050509@oracle.com>
+Date: Wed, 03 Sep 2014 12:21:24 +0800
+From: Junxiao Bi <junxiao.bi@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: xuejiufei@huawei.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
+Subject: Re: [PATCH] fs/super.c: do not shrink fs slab during direct memory
+ reclaim
+References: <54004E82.3060608@huawei.com> <20140901235102.GI26465@dastard> <540587DF.6040302@huawei.com> <54067117.4060201@oracle.com> <20140903031023.GC20473@dastard>
+In-Reply-To: <20140903031023.GC20473@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Sep 2014 10:24:24 -0600
-Jens Axboe <axboe@kernel.dk> wrote:
-
-> On 09/02/2014 10:21 AM, Christoph Hellwig wrote:
-> > Btw, one thing we should reconsider is where we set
-> > QUEUE_FLAG_NO_SG_MERGE.  At least for virtio-blk it seems to me that
-> > doing the S/G merge should be a lot cheaper than fanning out into the
-> > indirect descriptors.
-
-Indirect is always considered first no matter SG merge is off or on,
-at least from current virtio-blk implementation.
-
-But it is a good idea to try direct descriptor first, the below simple
-change can improve randread(libaio, O_DIRECT, multi-queue) 7% in my test,
-and 77% transfer starts to use direct descriptor, and almost all transfer
-uses indirect descriptor only in current upstream implementation.
-
->From 8803341503dedab282c15f2801fdb6d7420cea6f Mon Sep 17 00:00:00 2001
-From: Ming Lei <ming.lei@canonical.com>
-Date: Wed, 3 Sep 2014 10:42:32 +0800
-Subject: [PATCH] virtio_ring: use direct descriptor as far as possible
-
-Direct descriptor can avoid one kmalloc() and should have
-better cache utilization, so try to use it if there are enough
-free direct descriptors.
-
-Suggested-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/virtio/virtio_ring.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 4d08f45a..c76b7a4 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -224,9 +224,13 @@ static inline int virtqueue_add(struct virtqueue *_vq,
- 
- 	total_sg = total_in + total_out;
- 
--	/* If the host supports indirect descriptor tables, and we have multiple
--	 * buffers, then go indirect. FIXME: tune this threshold */
--	if (vq->indirect && total_sg > 1 && vq->vq.num_free) {
-+	/*
-+	 * If the host supports indirect descriptor tables, and we have
-+	 * multiple buffers, then go indirect only if free descriptors
-+	 * are less than 16.
-+	 */
-+	if (vq->indirect && total_sg > 1 && vq->vq.num_free &&
-+			vq->vq.num_free < 16) {
- 		head = vring_add_indirect(vq, sgs, next, total_sg, total_out,
- 					  total_in,
- 					  out_sgs, in_sgs, gfp);
--- 
-1.7.9.5
-
- 
-
+On 09/03/2014 11:10 AM, Dave Chinner wrote:
+> On Wed, Sep 03, 2014 at 09:38:31AM +0800, Junxiao Bi wrote:
+>> Hi Jiufei,
+>>
+>> On 09/02/2014 05:03 PM, Xue jiufei wrote:
+>>> Hi, Dave
+>>> On 2014/9/2 7:51, Dave Chinner wrote:
+>>>> On Fri, Aug 29, 2014 at 05:57:22PM +0800, Xue jiufei wrote:
+>>>>> The patch trys to solve one deadlock problem caused by cluster
+>>>>> fs, like ocfs2. And the problem may happen at least in the below
+>>>>> situations:
+>>>>> 1)Receiving a connect message from other nodes, node queues a
+>>>>> work_struct o2net_listen_work.
+>>>>> 2)o2net_wq processes this work and calls sock_alloc() to allocate
+>>>>> memory for a new socket.
+>>>>> 3)It would do direct memory reclaim when available memory is not
+>>>>> enough and trigger the inode cleanup. That inode being cleaned up
+>>>>> is happened to be ocfs2 inode, so call evict()->ocfs2_evict_inode()
+>>>>> ->ocfs2_drop_lock()->dlmunlock()->o2net_send_message_vec(),
+>>>>> and wait for the unlock response from master.
+>>>>> 4)tcp layer received the response, call o2net_data_ready() and
+>>>>> queue sc_rx_work, waiting o2net_wq to process this work.
+>>>>> 5)o2net_wq is a single thread workqueue, it process the work one by
+>>>>> one. Right now it is still doing o2net_listen_work and cannot handle
+>>>>> sc_rx_work. so we deadlock.
+>>>>>
+>>>>> It is impossible to set GFP_NOFS for memory allocation in sock_alloc().
+>>>>> So we use PF_FSTRANS to avoid the task reentering filesystem when
+>>>>> available memory is not enough.
+>>>>>
+>>>>> Signed-off-by: joyce.xue <xuejiufei@huawei.com>
+>>>>
+>>>> For the second time: use memalloc_noio_save/memalloc_noio_restore.
+>>>> And please put a great big comment in the code explaining why you
+>>>> need to do this special thing with memory reclaim flags.
+>>>>
+>>>> Cheers,
+>>>>
+>>>> Dave.
+>>>>
+>>> Thanks for your reply. But I am afraid that memalloc_noio_save/
+>>> memalloc_noio_restore can not solve my problem. __GFP_IO is cleared
+>>> if PF_MEMALLOC_NOIO is set and can avoid doing IO in direct memory
+>>> reclaim. However, __GFP_FS is still set that can not avoid pruning
+>>> dcache and icache in memory allocation, resulting in the deadlock I
+>>> described.
+>>
+>> You can use PF_MEMALLOC_NOIO to replace PF_FSTRANS, set this flag in
+>> ocfs2 and check it in sb shrinker.
 > 
-> And we might consider flipping the default, as most would probably like
-> to have the sg merging on.
->
-
-With this patch, I think SG merge can be kept as off at default if there is
-no extra cost introduced for handling more segments by driver or HW.
-
-If SG merge is changed to on in my above virtio-blk fio test, small throughput
-drop can be observed. 
-
+> No changes to the superblock shrinker, please. The flag should
+> modify the gfp_mask in the struct shrink_control passed to the
+> shrinker, just like the noio flag is used in the rest of the mm
+> code.
+__GFP_FS seemed imply __GFP_IO, can superblock shrinker check
+!(sc->gfp_mask & __GFP_IO) and stop?
 
 Thanks,
--- 
-Ming Lei
+Junxiao.
+> 
+> Cheers,
+> 
+> Dave.
+> 
+
