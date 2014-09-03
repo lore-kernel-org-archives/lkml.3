@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926AbaICWNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:13:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
+	id S1756970AbaICWOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:14:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933659AbaICWIv (ORCPT
+	with ESMTP id S933650AbaICWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:51 -0400
+	Wed, 3 Sep 2014 18:08:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.14 30/88] hwmon: (ads1015) Fix off-by-one for valid channel index checking
-Date: Wed,  3 Sep 2014 15:05:04 -0700
-Message-Id: <20140903220516.846530100@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 55/88] hpsa: fix non-x86 builds
+Date: Wed,  3 Sep 2014 15:05:29 -0700
+Message-Id: <20140903220517.608065055@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,31 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 56de1377ad92f72ee4e5cb0faf7a9b6048fdf0bf upstream.
+commit 0b9e7b741f2bf8103b15bb14d5b4a6f5ee91c59a upstream.
 
-Current code uses channel as array index, so the valid channel value is
-0 .. ADS1015_CHANNELS - 1.
+commit 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
+turns on unit attention notifications, but got the change wrong for
+all architectures other than x86, which now store an uninitialized
+value into the device register.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Gcc helpfully warns about this:
+
+../drivers/scsi/hpsa.c: In function 'hpsa_set_driver_support_bits':
+../drivers/scsi/hpsa.c:6373:17: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]
+  driver_support |= ENABLE_UNIT_ATTN;
+                 ^
+
+This moves the #ifdef so only the prefetch-enable is conditional
+on x86, not also reading the initial register contents.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
+Acked-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ads1015.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/hpsa.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/ads1015.c
-+++ b/drivers/hwmon/ads1015.c
-@@ -198,7 +198,7 @@ static int ads1015_get_channels_config_o
- 		}
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -4367,9 +4367,9 @@ static inline void hpsa_set_driver_suppo
+ {
+ 	u32 driver_support;
  
- 		channel = be32_to_cpup(property);
--		if (channel > ADS1015_CHANNELS) {
-+		if (channel >= ADS1015_CHANNELS) {
- 			dev_err(&client->dev,
- 				"invalid channel index %d on %s\n",
- 				channel, node->full_name);
+-#ifdef CONFIG_X86
+-	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
+ 	driver_support = readl(&(h->cfgtable->driver_support));
++	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
++#ifdef CONFIG_X86
+ 	driver_support |= ENABLE_SCSI_PREFETCH;
+ #endif
+ 	driver_support |= ENABLE_UNIT_ATTN;
 
 
