@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaICEGa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 00:06:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53770 "EHLO mx2.suse.de"
+	id S1751530AbaICEHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 00:07:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53777 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810AbaICEG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 00:06:28 -0400
-Date: Wed, 3 Sep 2014 14:06:17 +1000
-From: NeilBrown <neilb@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kbuild-all@01.org, lkml <linux-kernel@vger.kernel.org>,
-        Ian Kent <raven@themaw.net>, autofs@vger.kernel.org
-Subject: [PATCH] autofs4: use ACCESS_ONCE rather than rcu_dereference for
- dentry->d_inode
-Message-ID: <20140903140617.7502ad32@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751480AbaICEHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 00:07:19 -0400
+Message-ID: <540693F4.8080109@suse.com>
+Date: Wed, 03 Sep 2014 06:07:16 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/8Xnn/5WxTxmXnB0/OkC4vFD"; protocol="application/pgp-signature"
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jan Beulich <JBeulich@suse.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kees Cook <keescook@chromium.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [Xen-devel] [PATCH] Solved the Xen PV/KASLR riddle
+References: <20140827204940.GA10556@laptop.dumpdata.com> <1409248903-19625-1-git-send-email-stefan.bader@canonical.com> <20140829140823.GF3609@laptop.dumpdata.com> <54008DDA.3040701@canonical.com> <5400ADD6020000780002F159@mail.emea.novell.com> <20140829145558.GK3609@laptop.dumpdata.com> <5403EFFA.50701@suse.com> <20140902192204.GF3291@laptop.dumpdata.com>
+In-Reply-To: <20140902192204.GF3291@laptop.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8Xnn/5WxTxmXnB0/OkC4vFD
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/02/2014 09:22 PM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Sep 01, 2014 at 06:03:06AM +0200, Juergen Gross wrote:
+>> On 08/29/2014 04:55 PM, Konrad Rzeszutek Wilk wrote:
+>>> On Fri, Aug 29, 2014 at 03:44:06PM +0100, Jan Beulich wrote:
+>>>>>>> On 29.08.14 at 16:27, <stefan.bader@canonical.com> wrote:
+>>>>> Sure. Btw, someone also contacted me saying they have the same problem
+>>>>> without
+>>>>> changing the layout but having really big initrd (500M). While that feels
+>>>>> like
+>>>>> it should be impossible (if the kernel+initrd+xen stuff has to fix the 512M
+>>>>> kernel image size area then). But if it can happen, then surely it does
+>>>>> cause
+>>>>> mappings to be where the module space starts then.
+>>>>
+>>>> Since the initrd doesn't really need to be mapped into the (limited)
+>>>> virtual address space a pv guest starts with, we specifically got
+>>>>
+>>>> /*
+>>>>   * Whether or not the guest can deal with being passed an initrd not
+>>>>   * mapped through its initial page tables.
+>>>>   */
+>>>> #define XEN_ELFNOTE_MOD_START_PFN 16
+>>>>
+>>>> to deal with that situation. The hypervisor side for Dom0 is in place,
+>>>> and the kernel side works in our (classic) kernels. Whether it got
+>>>> implemented for DomU meanwhile I don't know; I'm pretty certain
+>>>> pv-ops kernels don't support it so far.
+>>>
+>>> Correct - Not implemented. Here is what I had mentioned in the past:
+>>> (see http://lists.xen.org/archives/html/xen-devel/2014-03/msg00580.html)
+>>>
+>>>
+>>> XEN_ELFNOTE_INIT_P2M, XEN_ELFNOTE_MOD_START_PFN - I had been looking
+>>>      at that but I can't figure out a nice way of implementing this
+>>>      without the usage of SPARSEMAP_VMAP virtual addresses - which is how
+>>>      the classic Xen does it. But then - I don't know who is using huge PV
+>>>      guests - as the PVHVM does a fine job? But then with PVH, now you can
+>>>      boot with large amount of memory (1TB?) - so some of these issues
+>>>      would go away? Except the 'large ramdisk' as that would eat in the
+>>>      MODULES_VADDR I think? Needs more thinking.
+>>>
+>>> .. and then I left it and to my suprise saw on Luis's slides that
+>>> Jurgen is going to take a look at that (500GB support).
+>>
+>> I have a patch which should do the job. It is based on the classic
+>> kernel patch Jan mentioned above. The system is coming up with it, I
+>> haven't tested it with a huge initrd up to now. My plan was to post the
+>> patch together with the rest of the >500GB support, but I can send it
+>> on it's own if required.
+>
+> Oooh goodies! I think it makes sense to post it whenever you think
+> it is in the right state to be posted.
+>
+> Now that your pvSCSI drivers are in, you have tons of free time
+> I suspect :-)
 
+Oh yeah. Only one or two lines missing in xl to support it. :-)
 
+I hope to have the >500GB patch ready for testing soon. I'd prefer to
+combine this and the large initrd patch in one series, as both need the
+same headers to be synced with Xen. In case I'm meeting some serious
+issues I'll post the large initrd patch on Friday.
 
-As the kbuild test robot reports, rcu_dereference() isn't really
-appropriate here - we don't need a memory barrier, just a guard
-against accidentally dereferencing NULL.
+Juergen
 
-This can be merged into
- autofs4: d_manage() should return -EISDIR when appropriate in rcu-walk mod=
-e.
-in 'mm'.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 71e4413d65c8..d76d083f2f06 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -463,7 +463,7 @@ static int autofs4_d_manage(struct dentry *dentry, bool=
- rcu_walk)
- 			return 0;
- 		if (d_mountpoint(dentry))
- 			return 0;
--		inode =3D rcu_dereference(dentry->d_inode);
-+		inode =3D ACCESS_ONCE(dentry->d_inode);
- 		if (inode && S_ISLNK(inode->i_mode))
- 			return -EISDIR;
- 		if (list_empty(&dentry->d_subdirs))
-
---Sig_/8Xnn/5WxTxmXnB0/OkC4vFD
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBVAaTujnsnt1WYoG5AQKuXhAAtOkxbxEp6cXChqxzp9nNwhsxbxqeBYdl
-rFDJPLgZVbe1bOcqmkuQfZdzh+pOQzowhb09m6doLg/d2JwkB0cLgmAeZKS6ufOa
-U6BPw0lIfxjf6i257t+rGcKBkJAFF/IoPz3XIazZIm3hELoLc/y9nPtoIA9/cgnH
-p1DTJWfm7RPAskSwJJooNUD8ccb2/MvQ1i94K9rEgrJsyJYH7tniyt/ySJyx0F7g
-DWYUhBNYxZ17I16lcuD4GvR5nYCKfkpsyZVTmJtTwU1Yo6CQa/K8IAPwfZyNhxbP
-ZZ72HPNoOFPl783uTwWLLc4/VVR9DjAMKggnncDQKogtnJt+MARqpvtRYPMwOg5e
-uxIo15XOwOzmNaXC5cQ8knBDJkFfHamFTxmdHVPLPWVG5neqmwlcRRcBRmUfTmr8
-TYNtPGrcpyuWA4CP/PKCtynpE+L2Qxwg4/ICO0f2a2I1/DeJ1mOZ+dTau5mgIgo5
-rgzdv9vzfx35pC1RuV0RmTPcjOuqhzNvhPAYGirH37Zxl28RGybY9bNp34iqEo11
-aDqmREGs899LB3Ei/qv+LOxt1RM1C6LDcwDpuTBLt/XENbPzIzKItcRUqvMvvR7N
-Z3fJFsQ6LOtI8URb/MRztZVQNqh9DEmYh+DRGKfWW53uO7otFRzBqYBJGVdE3w5P
-uv5LJ9BoInY=
-=r/9g
------END PGP SIGNATURE-----
-
---Sig_/8Xnn/5WxTxmXnB0/OkC4vFD--
