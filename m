@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964847AbaICXaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:30:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
+	id S935983AbaICX1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:27:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45837 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933579AbaICWIl (ORCPT
+	with ESMTP id S1757136AbaICWPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:41 -0400
+	Wed, 3 Sep 2014 18:15:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-crypto@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 38/88] crypto: ux500 - make interrupt mode plausible
-Date: Wed,  3 Sep 2014 15:05:12 -0700
-Message-Id: <20140903220517.106225423@linuxfoundation.org>
+        Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 3.14 71/88] staging: et131x: Fix errors caused by phydev->addr accesses before initialisation
+Date: Wed,  3 Sep 2014 15:05:45 -0700
+Message-Id: <20140903220518.080570021@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -32,110 +28,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Mark Einon <mark.einon@gmail.com>
 
-commit e1f8859ee265fc89bd21b4dca79e8e983a044892 upstream.
+commit ec0a38bf8b28b036202070cf3ef271e343d9eafc upstream.
 
-The interrupt handler in the ux500 crypto driver has an obviously
-incorrect way to access the data buffer, which for a while has
-caused this build warning:
+Fix two reported bugs, caused by et131x_adapter->phydev->addr being accessed
+before it is initialised, by:
 
-../ux500/cryp/cryp_core.c: In function 'cryp_interrupt_handler':
-../ux500/cryp/cryp_core.c:234:5: warning: passing argument 1 of '__fswab32' makes integer from pointer without a cast [enabled by default]
-     writel_relaxed(ctx->indata,
-     ^
-In file included from ../include/linux/swab.h:4:0,
-                 from ../include/uapi/linux/byteorder/big_endian.h:12,
-                 from ../include/linux/byteorder/big_endian.h:4,
-                 from ../arch/arm/include/uapi/asm/byteorder.h:19,
-                 from ../include/asm-generic/bitops/le.h:5,
-                 from ../arch/arm/include/asm/bitops.h:340,
-                 from ../include/linux/bitops.h:33,
-                 from ../include/linux/kernel.h:10,
-                 from ../include/linux/clk.h:16,
-                 from ../drivers/crypto/ux500/cryp/cryp_core.c:12:
-../include/uapi/linux/swab.h:57:119: note: expected '__u32' but argument is of type 'const u8 *'
- static inline __attribute_const__ __u32 __fswab32(__u32 val)
+- letting et131x_mii_write() take a phydev address, instead of using the one
+  stored in adapter by default. This is so et131x_mdio_write() can use it's own
+  addr value.
+- removing implementation of et131x_mdio_reset(), as it's not needed.
+- moving a call to et131x_disable_phy_coma() in et131x_pci_setup(), which uses
+  phydev->addr, until after the mdiobus has been registered.
 
-There are at least two, possibly three problems here:
-a) when writing into the FIFO, we copy the pointer rather than the
-   actual data we want to give to the hardware
-b) the data pointer is an array of 8-bit values, while the FIFO
-   is 32-bit wide, so both the read and write access fail to do
-   a proper type conversion
-c) This seems incorrect for big-endian kernels, on which we need to
-   byte-swap any register access, but not normally FIFO accesses,
-   at least the DMA case doesn't do it either.
-
-This converts the bogus loop to use the same readsl/writesl pair
-that we use for the two other modes (DMA and polling). This is
-more efficient and consistent, and probably correct for endianess.
-
-The bug has existed since the driver was first merged, and was
-probably never detected because nobody tried to use interrupt mode.
-It might make sense to backport this fix to stable kernels, depending
-on how the crypto maintainers feel about that.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-crypto@vger.kernel.org
-Cc: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=80751
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=77121
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/ux500/cryp/cryp_core.c |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ drivers/staging/et131x/et131x.c |   68 +++++++++++++++-------------------------
+ 1 file changed, 27 insertions(+), 41 deletions(-)
 
---- a/drivers/crypto/ux500/cryp/cryp_core.c
-+++ b/drivers/crypto/ux500/cryp/cryp_core.c
-@@ -190,7 +190,7 @@ static void add_session_id(struct cryp_c
- static irqreturn_t cryp_interrupt_handler(int irq, void *param)
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -1422,22 +1422,16 @@ static int et131x_mii_read(struct et131x
+  * @reg: the register to read
+  * @value: 16-bit value to write
+  */
+-static int et131x_mii_write(struct et131x_adapter *adapter, u8 reg, u16 value)
++static int et131x_mii_write(struct et131x_adapter *adapter, u8 addr, u8 reg,
++			    u16 value)
  {
- 	struct cryp_ctx *ctx;
--	int i;
-+	int count;
- 	struct cryp_device_data *device_data;
+ 	struct mac_regs __iomem *mac = &adapter->regs->mac;
+-	struct phy_device *phydev = adapter->phydev;
+ 	int status = 0;
+-	u8 addr;
+ 	u32 delay = 0;
+ 	u32 mii_addr;
+ 	u32 mii_cmd;
+ 	u32 mii_indicator;
  
- 	if (param == NULL) {
-@@ -215,12 +215,11 @@ static irqreturn_t cryp_interrupt_handle
- 	if (cryp_pending_irq_src(device_data,
- 				 CRYP_IRQ_SRC_OUTPUT_FIFO)) {
- 		if (ctx->outlen / ctx->blocksize > 0) {
--			for (i = 0; i < ctx->blocksize / 4; i++) {
--				*(ctx->outdata) = readl_relaxed(
--						&device_data->base->dout);
--				ctx->outdata += 4;
--				ctx->outlen -= 4;
--			}
-+			count = ctx->blocksize / 4;
-+
-+			readsl(&device_data->base->dout, ctx->outdata, count);
-+			ctx->outdata += count;
-+			ctx->outlen -= count;
+-	if (!phydev)
+-		return -EIO;
+-
+-	addr = phydev->addr;
+-
+ 	/* Save a local copy of the registers we are dealing with so we can
+ 	 * set them back
+ 	 */
+@@ -1632,17 +1626,7 @@ static int et131x_mdio_write(struct mii_
+ 	struct net_device *netdev = bus->priv;
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
  
- 			if (ctx->outlen == 0) {
- 				cryp_disable_irq_src(device_data,
-@@ -230,12 +229,12 @@ static irqreturn_t cryp_interrupt_handle
- 	} else if (cryp_pending_irq_src(device_data,
- 					CRYP_IRQ_SRC_INPUT_FIFO)) {
- 		if (ctx->datalen / ctx->blocksize > 0) {
--			for (i = 0 ; i < ctx->blocksize / 4; i++) {
--				writel_relaxed(ctx->indata,
--						&device_data->base->din);
--				ctx->indata += 4;
--				ctx->datalen -= 4;
--			}
-+			count = ctx->blocksize / 4;
-+
-+			writesl(&device_data->base->din, ctx->indata, count);
-+
-+			ctx->indata += count;
-+			ctx->datalen -= count;
+-	return et131x_mii_write(adapter, reg, value);
+-}
+-
+-static int et131x_mdio_reset(struct mii_bus *bus)
+-{
+-	struct net_device *netdev = bus->priv;
+-	struct et131x_adapter *adapter = netdev_priv(netdev);
+-
+-	et131x_mii_write(adapter, MII_BMCR, BMCR_RESET);
+-
+-	return 0;
++	return et131x_mii_write(adapter, phy_addr, reg, value);
+ }
  
- 			if (ctx->datalen == 0)
- 				cryp_disable_irq_src(device_data,
+ /*	et1310_phy_power_switch	-	PHY power control
+@@ -1657,18 +1641,20 @@ static int et131x_mdio_reset(struct mii_
+ static void et1310_phy_power_switch(struct et131x_adapter *adapter, bool down)
+ {
+ 	u16 data;
++	struct  phy_device *phydev = adapter->phydev;
+ 
+ 	et131x_mii_read(adapter, MII_BMCR, &data);
+ 	data &= ~BMCR_PDOWN;
+ 	if (down)
+ 		data |= BMCR_PDOWN;
+-	et131x_mii_write(adapter, MII_BMCR, data);
++	et131x_mii_write(adapter, phydev->addr, MII_BMCR, data);
+ }
+ 
+ /* et131x_xcvr_init - Init the phy if we are setting it into force mode */
+ static void et131x_xcvr_init(struct et131x_adapter *adapter)
+ {
+ 	u16 lcr2;
++	struct  phy_device *phydev = adapter->phydev;
+ 
+ 	/* Set the LED behavior such that LED 1 indicates speed (off =
+ 	 * 10Mbits, blink = 100Mbits, on = 1000Mbits) and LED 2 indicates
+@@ -1689,7 +1675,7 @@ static void et131x_xcvr_init(struct et13
+ 		else
+ 			lcr2 |= (LED_VAL_LINKON << LED_TXRX_SHIFT);
+ 
+-		et131x_mii_write(adapter, PHY_LED_2, lcr2);
++		et131x_mii_write(adapter, phydev->addr, PHY_LED_2, lcr2);
+ 	}
+ }
+ 
+@@ -3638,14 +3624,14 @@ static void et131x_adjust_link(struct ne
+ 
+ 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
+ 					 &register18);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18 | 0x4);
+-			et131x_mii_write(adapter, PHY_INDEX_REG,
++			et131x_mii_write(adapter, phydev->addr,
++					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
++			et131x_mii_write(adapter, phydev->addr, PHY_INDEX_REG,
+ 					 register18 | 0x8402);
+-			et131x_mii_write(adapter, PHY_DATA_REG,
++			et131x_mii_write(adapter, phydev->addr, PHY_DATA_REG,
+ 					 register18 | 511);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18);
++			et131x_mii_write(adapter, phydev->addr,
++					 PHY_MPHY_CONTROL_REG, register18);
+ 		}
+ 
+ 		et1310_config_flow_control(adapter);
+@@ -3657,7 +3643,8 @@ static void et131x_adjust_link(struct ne
+ 			et131x_mii_read(adapter, PHY_CONFIG, &reg);
+ 			reg &= ~ET_PHY_CONFIG_TX_FIFO_DEPTH;
+ 			reg |= ET_PHY_CONFIG_FIFO_DEPTH_32;
+-			et131x_mii_write(adapter, PHY_CONFIG, reg);
++			et131x_mii_write(adapter, phydev->addr, PHY_CONFIG,
++					 reg);
+ 		}
+ 
+ 		et131x_set_rx_dma_timer(adapter);
+@@ -3670,14 +3657,14 @@ static void et131x_adjust_link(struct ne
+ 
+ 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
+ 					 &register18);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18 | 0x4);
+-			et131x_mii_write(adapter, PHY_INDEX_REG,
+-					 register18 | 0x8402);
+-			et131x_mii_write(adapter, PHY_DATA_REG,
+-					 register18 | 511);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_MPHY_CONTROL_REG, register18 | 0x4);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_INDEX_REG, register18 | 0x8402);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_DATA_REG, register18 | 511);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_MPHY_CONTROL_REG, register18);
+ 		}
+ 
+ 		/* Free the packets being actively sent & stopped */
+@@ -4646,10 +4633,6 @@ static int et131x_pci_setup(struct pci_d
+ 	/* Copy address into the net_device struct */
+ 	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
+ 
+-	/* Init variable for counting how long we do not have link status */
+-	adapter->boot_coma = 0;
+-	et1310_disable_phy_coma(adapter);
+-
+ 	rc = -ENOMEM;
+ 
+ 	/* Setup the mii_bus struct */
+@@ -4665,7 +4648,6 @@ static int et131x_pci_setup(struct pci_d
+ 	adapter->mii_bus->priv = netdev;
+ 	adapter->mii_bus->read = et131x_mdio_read;
+ 	adapter->mii_bus->write = et131x_mdio_write;
+-	adapter->mii_bus->reset = et131x_mdio_reset;
+ 	adapter->mii_bus->irq = kmalloc_array(PHY_MAX_ADDR, sizeof(int),
+ 					      GFP_KERNEL);
+ 	if (!adapter->mii_bus->irq)
+@@ -4689,6 +4671,10 @@ static int et131x_pci_setup(struct pci_d
+ 	/* Setup et1310 as per the documentation */
+ 	et131x_adapter_setup(adapter);
+ 
++	/* Init variable for counting how long we do not have link status */
++	adapter->boot_coma = 0;
++	et1310_disable_phy_coma(adapter);
++
+ 	/* We can enable interrupts now
+ 	 *
+ 	 *  NOTE - Because registration of interrupt handler is done in the
 
 
