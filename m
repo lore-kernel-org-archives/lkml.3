@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874AbaICNiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:38:25 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41771 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755478AbaICNiX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:38:23 -0400
-Date: Wed, 3 Sep 2014 14:38:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Anand Moon <moon.linux@yahoo.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Nimrod Andy <B38611@freescale.com>, Frank Li <frank.li@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        fugang.duan@freescale.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] v2 fec_main iMX6Q DMA-API: device driver tries to free
-	DMA memory it has not allocated
-Message-ID: <20140903133805.GZ30401@n2100.arm.linux.org.uk>
-References: <1409746850-30850-1-git-send-email-moon.linux@yahoo.com>
+	id S932884AbaICNjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:39:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44840 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752712AbaICNjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 09:39:35 -0400
+Message-ID: <540719FC.5070803@ti.com>
+Date: Wed, 3 Sep 2014 08:39:08 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409746850-30850-1-git-send-email-moon.linux@yahoo.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Tony <tony@atomide.com>
+CC: <balbi@ti.com>, <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: DRA7: Add PMU nodes
+References: <1408456440-30171-1-git-send-email-nm@ti.com>
+In-Reply-To: <1408456440-30171-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 05:50:50PM +0530, Anand Moon wrote:
-> Check was added to check dma address should not be 0x0000000000000000
-> before unmap the dma.
->  v1: remove unnecessary of bdp->cbd_bufaddr as suggested
->  by  Andy <fugang.duan@freescale.com>
+On 08/19/2014 08:54 AM, Nishanth Menon wrote:
+> From: Lucas Weaver <l-weaver@ti.com>
+> 
+> DRA74x and DRA72x family of processors vary slightly in the number
+> of CPUs. So, add different instances of PMU for each of these processor
+> groups. Further, since the interrupts bypass crossbar and are directly
+> connected to GIC, mark the dts nodes with relevant information.
+> 
+> Tested with perf utility.
+> 
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Lucas Weaver <l-weaver@ti.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+Hi,
+Gentle ping..
 
-I still have a whole pile of commits, one of them cleans up the handling
-of this stuff.  Please hold off on this for the time being until I can
-dig out the appropriate commit.
+Regards,
+Nishanth Menon
+>  arch/arm/boot/dts/dra72x.dtsi |    5 +++++
+>  arch/arm/boot/dts/dra74x.dtsi |    6 ++++++
+>  2 files changed, 11 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/dra72x.dtsi b/arch/arm/boot/dts/dra72x.dtsi
+> index f1ec22f..e5a3d23 100644
+> --- a/arch/arm/boot/dts/dra72x.dtsi
+> +++ b/arch/arm/boot/dts/dra72x.dtsi
+> @@ -22,4 +22,9 @@
+>  			reg = <0>;
+>  		};
+>  	};
+> +
+> +	pmu {
+> +		compatible = "arm,cortex-a15-pmu";
+> +		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>;
+> +	};
+>  };
+> diff --git a/arch/arm/boot/dts/dra74x.dtsi b/arch/arm/boot/dts/dra74x.dtsi
+> index a4e8bb9..3be544c 100644
+> --- a/arch/arm/boot/dts/dra74x.dtsi
+> +++ b/arch/arm/boot/dts/dra74x.dtsi
+> @@ -38,4 +38,10 @@
+>  			reg = <1>;
+>  		};
+>  	};
+> +
+> +	pmu {
+> +		compatible = "arm,cortex-a15-pmu";
+> +		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>,
+> +			     <GIC_SPI DIRECT_IRQ(132) IRQ_TYPE_LEVEL_HIGH>;
+> +	};
+>  };
+> 
+
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Regards,
+Nishanth Menon
