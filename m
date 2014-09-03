@@ -1,66 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184AbaICTv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:51:28 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:47289 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbaICTv0 (ORCPT
+	id S1755749AbaICTwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:52:22 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42187 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaICTwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:51:26 -0400
+	Wed, 3 Sep 2014 15:52:21 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1409756150-30889-1-git-send-email-k.wrona@samsung.com>
+References: <1409756150-30889-1-git-send-email-k.wrona@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1408467712-27497-1-git-send-email-abrestic@chromium.org>
-References: <1408467712-27497-1-git-send-email-abrestic@chromium.org>
-Date: Wed, 3 Sep 2014 12:51:25 -0700
-X-Google-Sender-Auth: 2LVbksVB-nKENXDj4-hAXEqxNi8
-Message-ID: <CAL1qeaFwGYgzL=n0My4eBQMhvtNQfHpU5d1tif0twtYyjw5yqg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] Allow xHCI drivers to be built as separate modules
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mathias Nyman <mathias.nyman@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [RFC/PATCH 0/6] iio: Add sensorhub driver
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Wed, 03 Sep 2014 20:52:13 +0100
+To: Karol Wrona <k.wrona@samsung.com>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <476dc5c4-557d-467c-9583-201b10b7e1df@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathias,
 
-On Tue, Aug 19, 2014 at 10:01 AM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
-> It was suggested in the review of the Tegra xHCI driver [1] that we
-> allow xHCI drivers to be built as individual modules (like EHCI) instead
-> of building them all into the single xhci-hcd module as they are today.
->
-> Patches 1-3 prepare for making the xHCI PCI and platform drivers able
-> to be built as individual modules and patch 4 actually creates the 3
-> separate modules (core, platform, PCI).
->
-> Based on 3.17-rc1.
->
-> Changes from v2:
->  - fixed typo in xhci_register_plat
->  - exported another symbol needed by xhci-pci module
-> Changes from v1:
->  - rebased on changes introduced by xhci-rcar driver
->
-> [1] http://patchwork.ozlabs.org/patch/361265/
->
-> Andrew Bresticker (4):
->   xhci: Introduce xhci_init_driver()
->   xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
->   xhci: Export symbols used by host-controller drivers
->   xhci: Allow xHCI drivers to be built as separate modules
 
-Any thoughts/comments on this series?
+On September 3, 2014 3:55:44 PM GMT+01:00, Karol Wrona <k.wrona@samsung.com> wrote:
+>Hello,
+>
+>This patchset adds support for sensorhub. It is an external mcu which
+>manages
+>and collects data from several sensors i.e. on Galaxy Gear 2 watch.
+>
+>It contains:
+>- spi driver for sensorhub device
+>- DT binding for the device
+>- IIO common utils for ssp sensors, a trigger module
+>- IIO accelerometer driver
+>- IIO gyroscope driver
+>
+>Generally this is an attempt to generalize sensors handling on some
+>Samsung
+>boards which have multiple sensors IC and also sensorhub does some data
+>processing itself.
+>
+>I would like to get your opinion about such solution. The idea is that
+>data communication layer gives control and data to proper IIO sensor
+>devices.
+>In this case I chose that sensor drivers are platform ones represented
+>by
+>child nodes of sensorhub in DT. These compatibles are used mainly to
+>match
+>sensor to driver. For example at this stage there is one accelerometer
+>but on
+>other board can have different one with changed data format etc. In
+>this case
+>ssp_accel_sensor driver could handle several physical devices of accel
+>class.
+>Unfortunately the firmware gives only an information about used sensor
+>type,
+>the driver can find out that there is an accelerometer on board but
+>nothing
+>specific about the sensor.
+Will look at this later... In the meantime..
+>
+>Other question:
+>The sensorhub can implement some devices which are non common for IIO
+>and hard
+>to standardise. These ones need two way communication (raw write will
+>not be
+>proper for that) and can produce data packets with flexible size to
+>2KB).
+>I'm wondering if it is worth to look for solution in IIO and implement
+>something like IIO_BULK sensor with no standard channel description
+>or solve this problem using cdev. This is the reason why the part of
+>the 
+>patchset is intended to be placed in misc.
+Out of curiosity, what are these other sensors, roughly?  If they are popular I am
+ sure there will be more out there soon!  Ideally we would work out how to standardize these. So convince is it can't be
+ done! 
+>
+>Regards,
+>Karol
+>
+>Karol Wrona (6):
+>  iio:sensorhub: Add sensorhub common library
+>  misc: sensorhub: Add sensorhub driver
+>  sensorhub: Add sensorhub bindings
+>  iio: sensorhub: Add sensorhub iio commons
+>  iio: sensorhub: Add sensorhub accelerometer sensor
+>  iio: sensorhub: Add sensorhub gyroscope sensor
+>
+> .../devicetree/bindings/misc/sensorhub.txt         |   51 ++
+> drivers/iio/accel/Makefile                         |    2 +
+> drivers/iio/accel/ssp_accel_sensor.c               |  240 ++++++
+> drivers/iio/common/Kconfig                         |    1 +
+> drivers/iio/common/Makefile                        |    1 +
+> drivers/iio/common/ssp_sensors/Kconfig             |   15 +
+> drivers/iio/common/ssp_sensors/Makefile            |    6 +
+> .../iio/common/ssp_sensors/ssp-sensor-trigger.c    |   92 +++
+> drivers/iio/common/ssp_sensors/ssp_iio.c           |   35 +
+> drivers/iio/common/ssp_sensors/ssp_iio_sensor.h    |   62 ++
+> drivers/iio/gyro/Makefile                          |    2 +
+> drivers/iio/gyro/ssp_gyro_sensor.c                 |  225 ++++++
+> drivers/misc/Kconfig                               |    1 +
+> drivers/misc/Makefile                              |    1 +
+> drivers/misc/sensorhub/Kconfig                     |   13 +
+> drivers/misc/sensorhub/Makefile                    |    8 +
+> drivers/misc/sensorhub/ssp.h                       |  323 ++++++++
+> drivers/misc/sensorhub/ssp_data.c                  |   61 ++
+>drivers/misc/sensorhub/ssp_dev.c                   |  782
+>++++++++++++++++++++
+>drivers/misc/sensorhub/ssp_firmware.c              |  571
+>++++++++++++++
+>drivers/misc/sensorhub/ssp_spi.c                   |  700
+>++++++++++++++++++
+> include/linux/iio/common/ssp_sensors.h             |   82 ++
+> 22 files changed, 3274 insertions(+)
+>create mode 100644 Documentation/devicetree/bindings/misc/sensorhub.txt
+> create mode 100644 drivers/iio/accel/ssp_accel_sensor.c
+> create mode 100644 drivers/iio/common/ssp_sensors/Kconfig
+> create mode 100644 drivers/iio/common/ssp_sensors/Makefile
+> create mode 100644 drivers/iio/common/ssp_sensors/ssp-sensor-trigger.c
+> create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio.c
+> create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
+> create mode 100644 drivers/iio/gyro/ssp_gyro_sensor.c
+> create mode 100644 drivers/misc/sensorhub/Kconfig
+> create mode 100644 drivers/misc/sensorhub/Makefile
+> create mode 100644 drivers/misc/sensorhub/ssp.h
+> create mode 100644 drivers/misc/sensorhub/ssp_data.c
+> create mode 100644 drivers/misc/sensorhub/ssp_dev.c
+> create mode 100644 drivers/misc/sensorhub/ssp_firmware.c
+> create mode 100644 drivers/misc/sensorhub/ssp_spi.c
+> create mode 100644 include/linux/iio/common/ssp_sensors.h
 
-Thanks,
-Andrew
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
