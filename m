@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaICJtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:49:20 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35048 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226AbaICJtT (ORCPT
+	id S1755694AbaICJvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:51:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38986 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaICJvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:49:19 -0400
-Message-ID: <5406E41B.1040406@linaro.org>
-Date: Wed, 03 Sep 2014 11:49:15 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 3 Sep 2014 05:51:52 -0400
+Date: Wed, 3 Sep 2014 11:51:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: luto@amacapital.net, daniel.lezcano@linaro.org, rjw@rjwysocki.net,
+        mingo@redhat.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, changcheng.liu@intel.com,
+        xiaoming.wang@intel.com, souvik.k.chakravarty@intel.com
+Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
+ idle cpu
+Message-ID: <20140903095148.GH4783@worktop.ger.corp.intel.com>
+References: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?R2HDq2wgUE9SVEFZ?= <g.portay@overkiz.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCHv2 4/4] clocksource: tcb_clksrc: unprepare clock in case
- of failure
-References: <1409329003-17252-1-git-send-email-g.portay@overkiz.com> <1409329003-17252-5-git-send-email-g.portay@overkiz.com>
-In-Reply-To: <1409329003-17252-5-git-send-email-g.portay@overkiz.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 06:16 PM, Gaël PORTAY wrote:
-> The clock is not unprepared in case of the request IRQ fails.
->
-> Also update to request_irq.
->
-> Signed-off-by: Gaël PORTAY <g.portay@overkiz.com>
-
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-
+On Mon, Aug 18, 2014 at 04:37:30PM +0800, Chuansheng Liu wrote:
+> Implementing one new API wake_up_if_idle(), which is used to
+> wake up the idle CPU.
+> 
+> Suggested-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 > ---
->   drivers/clocksource/tcb_clksrc.c | 13 ++++---------
->   1 file changed, 4 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-> index f922e81..8bdbc45 100644
-> --- a/drivers/clocksource/tcb_clksrc.c
-> +++ b/drivers/clocksource/tcb_clksrc.c
-> @@ -178,12 +178,6 @@ static irqreturn_t ch2_irq(int irq, void *handle)
->   	return IRQ_NONE;
->   }
->
-> -static struct irqaction tc_irqaction = {
-> -	.name		= "tc_clkevt",
-> -	.flags		= IRQF_TIMER,
-> -	.handler	= ch2_irq,
-> -};
-> -
->   static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
->   {
->   	int ret;
-> @@ -198,15 +192,16 @@ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
->
->   	clkevt.regs = tc->regs;
->   	clkevt.clk = t2_clk;
-> -	tc_irqaction.dev_id = &clkevt;
->
->   	timer_clock = clk32k_divisor_idx;
->
->   	clkevt.clkevt.cpumask = cpumask_of(0);
->
-> -	ret = setup_irq(irq, &tc_irqaction);
-> -	if (ret)
-> +	ret = request_irq(irq, ch2_irq, IRQF_TIMER, "tc_clkevt", &clkevt);
-> +	if (ret) {
-> +		clk_disable_unprepare(t2_clk);
->   		return ret;
+>  include/linux/sched.h |    1 +
+>  kernel/sched/core.c   |   16 ++++++++++++++++
+>  2 files changed, 17 insertions(+)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 857ba40..3f89ac1 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
+>  extern struct sched_domain_topology_level *sched_domain_topology;
+>  
+>  extern void set_sched_topology(struct sched_domain_topology_level *tl);
+> +extern void wake_up_if_idle(int cpu);
+>  
+>  #ifdef CONFIG_SCHED_DEBUG
+>  # define SD_INIT_NAME(type)		.name = #type
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 1211575..adf104f 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1620,6 +1620,22 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+>  	}
+>  }
+>  
+> +void wake_up_if_idle(int cpu)
+> +{
+> +	struct rq *rq = cpu_rq(cpu);
+> +	unsigned long flags;
+> +
+> +	if (set_nr_if_polling(rq->idle)) {
+> +		trace_sched_wake_idle_without_ipi(cpu);
+> +	} else {
+> +		raw_spin_lock_irqsave(&rq->lock, flags);
+> +		if (rq->curr == rq->idle)
+
+That needs to be is_idle_task(), there might be other 'idle' tasks than
+rq->idle :/
+
+> +			smp_send_reschedule(cpu);
+> +		/* Else cpu is not in idle, do nothing here */
+> +		raw_spin_unlock_irqrestore(&rq->lock, flags);
 > +	}
->
->   	clockevents_config_and_register(&clkevt.clkevt, 32768, 1, 0xffff);
->
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> +}
+> +
+>  bool cpus_share_cache(int this_cpu, int that_cpu)
+>  {
+>  	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
+> -- 
+> 1.7.9.5
+> 
