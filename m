@@ -1,19 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934197AbaICWYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:24:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46211 "EHLO
+	id S1756856AbaICWZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:25:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933878AbaICWSx (ORCPT
+	with ESMTP id S933868AbaICWSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:53 -0400
+	Wed, 3 Sep 2014 18:18:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.16 088/125] btrfs: disable strict file flushes for renames and truncates
-Date: Wed,  3 Sep 2014 15:07:25 -0700
-Message-Id: <20140903220626.316562512@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 082/125] x86,mm: fix pte_special versus pte_numa
+Date: Wed,  3 Sep 2014 15:07:19 -0700
+Message-Id: <20140903220626.131400948@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,473 +36,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 8d875f95da43c6a8f18f77869f2ef26e9594fecc upstream.
+commit b38af4721f59d0b564468f623b3e52a638195015 upstream.
 
-Truncates and renames are often used to replace old versions of a file
-with new versions.  Applications often expect this to be an atomic
-replacement, even if they haven't done anything to make sure the new
-version is fully on disk.
+Sasha Levin has shown oopses on ffffea0003480048 and ffffea0003480008 at
+mm/memory.c:1132, running Trinity on different 3.16-rc-next kernels:
+where zap_pte_range() checks page->mapping to see if PageAnon(page).
 
-Btrfs has strict flushing in place to make sure that renaming over an
-old file with a new file will fully flush out the new file before
-allowing the transaction commit with the rename to complete.
+Those addresses fit struct pages for pfns d2001 and d2000, and in each
+dump a register or a stack slot showed d2001730 or d2000730: pte flags
+0x730 are PCD ACCESSED PROTNONE SPECIAL IOMAP; and Sasha's e820 map has
+a hole between cfffffff and 100000000, which would need special access.
 
-This ordering means the commit code needs to be able to lock file pages,
-and there are a few paths in the filesystem where we will try to end a
-transaction with the page lock held.  It's rare, but these things can
-deadlock.
+Commit c46a7c817e66 ("x86: define _PAGE_NUMA by reusing software bits on
+the PMD and PTE levels") has broken vm_normal_page(): a PROTNONE SPECIAL
+pte no longer passes the pte_special() test, so zap_pte_range() goes on
+to try to access a non-existent struct page.
 
-This patch removes the ordered flushes and switches to a best effort
-filemap_flush like ext4 uses. It's not perfect, but it should fix the
-deadlocks.
+Fix this by refining pte_special() (SPECIAL with PRESENT or PROTNONE) to
+complement pte_numa() (SPECIAL with neither PRESENT nor PROTNONE).  A
+hint that this was a problem was that c46a7c817e66 added pte_numa() test
+to vm_normal_page(), and moved its is_zero_pfn() test from slow to fast
+path: This was papering over a pte_special() snag when the zero page was
+encountered during zap.  This patch reverts vm_normal_page() to how it
+was before, relying on pte_special().
 
-Signed-off-by: Chris Mason <clm@fb.com>
+It still appears that this patch may be incomplete: aren't there other
+places which need to be handling PROTNONE along with PRESENT?  For
+example, pte_mknuma() clears _PAGE_PRESENT and sets _PAGE_NUMA, but on a
+PROT_NONE area, that would make it pte_special().  This is side-stepped
+by the fact that NUMA hinting faults skipped PROT_NONE VMAs and there
+are no grounds where a NUMA hinting fault on a PROT_NONE VMA would be
+interesting.
+
+Fixes: c46a7c817e66 ("x86: define _PAGE_NUMA by reusing software bits on the PMD and PTE levels")
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/btrfs_inode.h  |    6 --
- fs/btrfs/disk-io.c      |   32 ------------
- fs/btrfs/file.c         |   26 ----------
- fs/btrfs/inode.c        |   47 +-----------------
- fs/btrfs/ordered-data.c |  123 ------------------------------------------------
- fs/btrfs/ordered-data.h |    5 -
- fs/btrfs/transaction.c  |   33 ------------
- fs/btrfs/transaction.h  |    1 
- 8 files changed, 6 insertions(+), 267 deletions(-)
+ arch/x86/include/asm/pgtable.h |    9 +++++++--
+ mm/memory.c                    |    7 +++----
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
---- a/fs/btrfs/btrfs_inode.h
-+++ b/fs/btrfs/btrfs_inode.h
-@@ -84,12 +84,6 @@ struct btrfs_inode {
- 	 */
- 	struct list_head delalloc_inodes;
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -131,8 +131,13 @@ static inline int pte_exec(pte_t pte)
  
--	/*
--	 * list for tracking inodes that must be sent to disk before a
--	 * rename or truncate commit
--	 */
--	struct list_head ordered_operations;
--
- 	/* node for the red-black tree that links inodes in subvolume root */
- 	struct rb_node rb_node;
- 
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -60,8 +60,6 @@ static void end_workqueue_fn(struct btrf
- static void free_fs_root(struct btrfs_root *root);
- static int btrfs_check_super_valid(struct btrfs_fs_info *fs_info,
- 				    int read_only);
--static void btrfs_destroy_ordered_operations(struct btrfs_transaction *t,
--					     struct btrfs_root *root);
- static void btrfs_destroy_ordered_extents(struct btrfs_root *root);
- static int btrfs_destroy_delayed_refs(struct btrfs_transaction *trans,
- 				      struct btrfs_root *root);
-@@ -3829,34 +3827,6 @@ static void btrfs_error_commit_super(str
- 	btrfs_cleanup_transaction(root);
+ static inline int pte_special(pte_t pte)
+ {
+-	return (pte_flags(pte) & (_PAGE_PRESENT|_PAGE_SPECIAL)) ==
+-				 (_PAGE_PRESENT|_PAGE_SPECIAL);
++	/*
++	 * See CONFIG_NUMA_BALANCING pte_numa in include/asm-generic/pgtable.h.
++	 * On x86 we have _PAGE_BIT_NUMA == _PAGE_BIT_GLOBAL+1 ==
++	 * __PAGE_BIT_SOFTW1 == _PAGE_BIT_SPECIAL.
++	 */
++	return (pte_flags(pte) & _PAGE_SPECIAL) &&
++		(pte_flags(pte) & (_PAGE_PRESENT|_PAGE_PROTNONE));
  }
  
--static void btrfs_destroy_ordered_operations(struct btrfs_transaction *t,
--					     struct btrfs_root *root)
--{
--	struct btrfs_inode *btrfs_inode;
--	struct list_head splice;
--
--	INIT_LIST_HEAD(&splice);
--
--	mutex_lock(&root->fs_info->ordered_operations_mutex);
--	spin_lock(&root->fs_info->ordered_root_lock);
--
--	list_splice_init(&t->ordered_operations, &splice);
--	while (!list_empty(&splice)) {
--		btrfs_inode = list_entry(splice.next, struct btrfs_inode,
--					 ordered_operations);
--
--		list_del_init(&btrfs_inode->ordered_operations);
--		spin_unlock(&root->fs_info->ordered_root_lock);
--
--		btrfs_invalidate_inodes(btrfs_inode->root);
--
--		spin_lock(&root->fs_info->ordered_root_lock);
--	}
--
--	spin_unlock(&root->fs_info->ordered_root_lock);
--	mutex_unlock(&root->fs_info->ordered_operations_mutex);
--}
--
- static void btrfs_destroy_ordered_extents(struct btrfs_root *root)
- {
- 	struct btrfs_ordered_extent *ordered;
-@@ -4093,8 +4063,6 @@ again:
- void btrfs_cleanup_one_transaction(struct btrfs_transaction *cur_trans,
- 				   struct btrfs_root *root)
- {
--	btrfs_destroy_ordered_operations(cur_trans, root);
--
- 	btrfs_destroy_delayed_refs(cur_trans, root);
+ static inline unsigned long pte_pfn(pte_t pte)
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -751,7 +751,7 @@ struct page *vm_normal_page(struct vm_ar
+ 	unsigned long pfn = pte_pfn(pte);
  
- 	cur_trans->state = TRANS_STATE_COMMIT_START;
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1838,33 +1838,9 @@ out:
- 
- int btrfs_release_file(struct inode *inode, struct file *filp)
- {
--	/*
--	 * ordered_data_close is set by settattr when we are about to truncate
--	 * a file from a non-zero size to a zero size.  This tries to
--	 * flush down new bytes that may have been written if the
--	 * application were using truncate to replace a file in place.
--	 */
--	if (test_and_clear_bit(BTRFS_INODE_ORDERED_DATA_CLOSE,
--			       &BTRFS_I(inode)->runtime_flags)) {
--		struct btrfs_trans_handle *trans;
--		struct btrfs_root *root = BTRFS_I(inode)->root;
--
--		/*
--		 * We need to block on a committing transaction to keep us from
--		 * throwing a ordered operation on to the list and causing
--		 * something like sync to deadlock trying to flush out this
--		 * inode.
--		 */
--		trans = btrfs_start_transaction(root, 0);
--		if (IS_ERR(trans))
--			return PTR_ERR(trans);
--		btrfs_add_ordered_operation(trans, BTRFS_I(inode)->root, inode);
--		btrfs_end_transaction(trans, root);
--		if (inode->i_size > BTRFS_ORDERED_OPERATIONS_FLUSH_LIMIT)
--			filemap_flush(inode->i_mapping);
--	}
- 	if (filp->private_data)
- 		btrfs_ioctl_trans_end(filp);
-+	filemap_flush(inode->i_mapping);
- 	return 0;
- }
- 
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -7951,27 +7951,6 @@ static int btrfs_truncate(struct inode *
- 	BUG_ON(ret);
- 
- 	/*
--	 * setattr is responsible for setting the ordered_data_close flag,
--	 * but that is only tested during the last file release.  That
--	 * could happen well after the next commit, leaving a great big
--	 * window where new writes may get lost if someone chooses to write
--	 * to this file after truncating to zero
--	 *
--	 * The inode doesn't have any dirty data here, and so if we commit
--	 * this is a noop.  If someone immediately starts writing to the inode
--	 * it is very likely we'll catch some of their writes in this
--	 * transaction, and the commit will find this file on the ordered
--	 * data list with good things to send down.
--	 *
--	 * This is a best effort solution, there is still a window where
--	 * using truncate to replace the contents of the file will
--	 * end up with a zero length file after a crash.
--	 */
--	if (inode->i_size == 0 && test_bit(BTRFS_INODE_ORDERED_DATA_CLOSE,
--					   &BTRFS_I(inode)->runtime_flags))
--		btrfs_add_ordered_operation(trans, root, inode);
--
--	/*
- 	 * So if we truncate and then write and fsync we normally would just
- 	 * write the extents that changed, which is a problem if we need to
- 	 * first truncate that entire inode.  So set this flag so we write out
-@@ -8118,7 +8097,6 @@ struct inode *btrfs_alloc_inode(struct s
- 	mutex_init(&ei->delalloc_mutex);
- 	btrfs_ordered_inode_tree_init(&ei->ordered_tree);
- 	INIT_LIST_HEAD(&ei->delalloc_inodes);
--	INIT_LIST_HEAD(&ei->ordered_operations);
- 	RB_CLEAR_NODE(&ei->rb_node);
- 
- 	return inode;
-@@ -8158,17 +8136,6 @@ void btrfs_destroy_inode(struct inode *i
- 	if (!root)
- 		goto free;
- 
--	/*
--	 * Make sure we're properly removed from the ordered operation
--	 * lists.
--	 */
--	smp_mb();
--	if (!list_empty(&BTRFS_I(inode)->ordered_operations)) {
--		spin_lock(&root->fs_info->ordered_root_lock);
--		list_del_init(&BTRFS_I(inode)->ordered_operations);
--		spin_unlock(&root->fs_info->ordered_root_lock);
--	}
--
- 	if (test_bit(BTRFS_INODE_HAS_ORPHAN_ITEM,
- 		     &BTRFS_I(inode)->runtime_flags)) {
- 		btrfs_info(root->fs_info, "inode %llu still on the orphan list",
-@@ -8350,12 +8317,10 @@ static int btrfs_rename(struct inode *ol
- 	ret = 0;
- 
- 	/*
--	 * we're using rename to replace one file with another.
--	 * and the replacement file is large.  Start IO on it now so
--	 * we don't add too much work to the end of the transaction
-+	 * we're using rename to replace one file with another.  Start IO on it
-+	 * now so  we don't add too much work to the end of the transaction
- 	 */
--	if (new_inode && S_ISREG(old_inode->i_mode) && new_inode->i_size &&
--	    old_inode->i_size > BTRFS_ORDERED_OPERATIONS_FLUSH_LIMIT)
-+	if (new_inode && S_ISREG(old_inode->i_mode) && new_inode->i_size)
- 		filemap_flush(old_inode->i_mapping);
- 
- 	/* close the racy window with snapshot create/destroy ioctl */
-@@ -8403,12 +8368,6 @@ static int btrfs_rename(struct inode *ol
- 		 */
- 		btrfs_pin_log_trans(root);
+ 	if (HAVE_PTE_SPECIAL) {
+-		if (likely(!pte_special(pte) || pte_numa(pte)))
++		if (likely(!pte_special(pte)))
+ 			goto check_pfn;
+ 		if (vma->vm_flags & (VM_PFNMAP | VM_MIXEDMAP))
+ 			return NULL;
+@@ -777,15 +777,14 @@ struct page *vm_normal_page(struct vm_ar
+ 		}
  	}
--	/*
--	 * make sure the inode gets flushed if it is replacing
--	 * something.
--	 */
--	if (new_inode && new_inode->i_size && S_ISREG(old_inode->i_mode))
--		btrfs_add_ordered_operation(trans, root, old_inode);
  
- 	inode_inc_iversion(old_dir);
- 	inode_inc_iversion(new_dir);
---- a/fs/btrfs/ordered-data.c
-+++ b/fs/btrfs/ordered-data.c
-@@ -571,18 +571,6 @@ void btrfs_remove_ordered_extent(struct
++	if (is_zero_pfn(pfn))
++		return NULL;
+ check_pfn:
+ 	if (unlikely(pfn > highest_memmap_pfn)) {
+ 		print_bad_pte(vma, addr, pte, NULL);
+ 		return NULL;
+ 	}
  
- 	trace_btrfs_ordered_extent_remove(inode, entry);
- 
--	/*
--	 * we have no more ordered extents for this inode and
--	 * no dirty pages.  We can safely remove it from the
--	 * list of ordered extents
--	 */
--	if (RB_EMPTY_ROOT(&tree->tree) &&
--	    !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_DIRTY)) {
--		spin_lock(&root->fs_info->ordered_root_lock);
--		list_del_init(&BTRFS_I(inode)->ordered_operations);
--		spin_unlock(&root->fs_info->ordered_root_lock);
--	}
+-	if (is_zero_pfn(pfn))
+-		return NULL;
 -
- 	if (!root->nr_ordered_extents) {
- 		spin_lock(&root->fs_info->ordered_root_lock);
- 		BUG_ON(list_empty(&root->ordered_root));
-@@ -687,81 +675,6 @@ void btrfs_wait_ordered_roots(struct btr
- }
- 
- /*
-- * this is used during transaction commit to write all the inodes
-- * added to the ordered operation list.  These files must be fully on
-- * disk before the transaction commits.
-- *
-- * we have two modes here, one is to just start the IO via filemap_flush
-- * and the other is to wait for all the io.  When we wait, we have an
-- * extra check to make sure the ordered operation list really is empty
-- * before we return
-- */
--int btrfs_run_ordered_operations(struct btrfs_trans_handle *trans,
--				 struct btrfs_root *root, int wait)
--{
--	struct btrfs_inode *btrfs_inode;
--	struct inode *inode;
--	struct btrfs_transaction *cur_trans = trans->transaction;
--	struct list_head splice;
--	struct list_head works;
--	struct btrfs_delalloc_work *work, *next;
--	int ret = 0;
--
--	INIT_LIST_HEAD(&splice);
--	INIT_LIST_HEAD(&works);
--
--	mutex_lock(&root->fs_info->ordered_extent_flush_mutex);
--	spin_lock(&root->fs_info->ordered_root_lock);
--	list_splice_init(&cur_trans->ordered_operations, &splice);
--	while (!list_empty(&splice)) {
--		btrfs_inode = list_entry(splice.next, struct btrfs_inode,
--				   ordered_operations);
--		inode = &btrfs_inode->vfs_inode;
--
--		list_del_init(&btrfs_inode->ordered_operations);
--
--		/*
--		 * the inode may be getting freed (in sys_unlink path).
--		 */
--		inode = igrab(inode);
--		if (!inode)
--			continue;
--
--		if (!wait)
--			list_add_tail(&BTRFS_I(inode)->ordered_operations,
--				      &cur_trans->ordered_operations);
--		spin_unlock(&root->fs_info->ordered_root_lock);
--
--		work = btrfs_alloc_delalloc_work(inode, wait, 1);
--		if (!work) {
--			spin_lock(&root->fs_info->ordered_root_lock);
--			if (list_empty(&BTRFS_I(inode)->ordered_operations))
--				list_add_tail(&btrfs_inode->ordered_operations,
--					      &splice);
--			list_splice_tail(&splice,
--					 &cur_trans->ordered_operations);
--			spin_unlock(&root->fs_info->ordered_root_lock);
--			ret = -ENOMEM;
--			goto out;
--		}
--		list_add_tail(&work->list, &works);
--		btrfs_queue_work(root->fs_info->flush_workers,
--				 &work->work);
--
--		cond_resched();
--		spin_lock(&root->fs_info->ordered_root_lock);
--	}
--	spin_unlock(&root->fs_info->ordered_root_lock);
--out:
--	list_for_each_entry_safe(work, next, &works, list) {
--		list_del_init(&work->list);
--		btrfs_wait_and_free_delalloc_work(work);
--	}
--	mutex_unlock(&root->fs_info->ordered_extent_flush_mutex);
--	return ret;
--}
--
--/*
-  * Used to start IO or wait for a given ordered extent to finish.
-  *
-  * If wait is one, this effectively waits on page writeback for all the pages
-@@ -1120,42 +1033,6 @@ out:
- 	return index;
- }
- 
--
--/*
-- * add a given inode to the list of inodes that must be fully on
-- * disk before a transaction commit finishes.
-- *
-- * This basically gives us the ext3 style data=ordered mode, and it is mostly
-- * used to make sure renamed files are fully on disk.
-- *
-- * It is a noop if the inode is already fully on disk.
-- *
-- * If trans is not null, we'll do a friendly check for a transaction that
-- * is already flushing things and force the IO down ourselves.
-- */
--void btrfs_add_ordered_operation(struct btrfs_trans_handle *trans,
--				 struct btrfs_root *root, struct inode *inode)
--{
--	struct btrfs_transaction *cur_trans = trans->transaction;
--	u64 last_mod;
--
--	last_mod = max(BTRFS_I(inode)->generation, BTRFS_I(inode)->last_trans);
--
--	/*
--	 * if this file hasn't been changed since the last transaction
--	 * commit, we can safely return without doing anything
--	 */
--	if (last_mod <= root->fs_info->last_trans_committed)
--		return;
--
--	spin_lock(&root->fs_info->ordered_root_lock);
--	if (list_empty(&BTRFS_I(inode)->ordered_operations)) {
--		list_add_tail(&BTRFS_I(inode)->ordered_operations,
--			      &cur_trans->ordered_operations);
--	}
--	spin_unlock(&root->fs_info->ordered_root_lock);
--}
--
- int __init ordered_data_init(void)
- {
- 	btrfs_ordered_extent_cache = kmem_cache_create("btrfs_ordered_extent",
---- a/fs/btrfs/ordered-data.h
-+++ b/fs/btrfs/ordered-data.h
-@@ -190,11 +190,6 @@ int btrfs_ordered_update_i_size(struct i
- 				struct btrfs_ordered_extent *ordered);
- int btrfs_find_ordered_sum(struct inode *inode, u64 offset, u64 disk_bytenr,
- 			   u32 *sum, int len);
--int btrfs_run_ordered_operations(struct btrfs_trans_handle *trans,
--				 struct btrfs_root *root, int wait);
--void btrfs_add_ordered_operation(struct btrfs_trans_handle *trans,
--				 struct btrfs_root *root,
--				 struct inode *inode);
- int btrfs_wait_ordered_extents(struct btrfs_root *root, int nr);
- void btrfs_wait_ordered_roots(struct btrfs_fs_info *fs_info, int nr);
- void btrfs_get_logged_extents(struct inode *inode,
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -218,7 +218,6 @@ loop:
- 	spin_lock_init(&cur_trans->delayed_refs.lock);
- 
- 	INIT_LIST_HEAD(&cur_trans->pending_snapshots);
--	INIT_LIST_HEAD(&cur_trans->ordered_operations);
- 	INIT_LIST_HEAD(&cur_trans->pending_chunks);
- 	INIT_LIST_HEAD(&cur_trans->switch_commits);
- 	list_add_tail(&cur_trans->list, &fs_info->trans_list);
-@@ -1612,27 +1611,6 @@ static void cleanup_transaction(struct b
- 	kmem_cache_free(btrfs_trans_handle_cachep, trans);
- }
- 
--static int btrfs_flush_all_pending_stuffs(struct btrfs_trans_handle *trans,
--					  struct btrfs_root *root)
--{
--	int ret;
--
--	ret = btrfs_run_delayed_items(trans, root);
--	if (ret)
--		return ret;
--
--	/*
--	 * rename don't use btrfs_join_transaction, so, once we
--	 * set the transaction to blocked above, we aren't going
--	 * to get any new ordered operations.  We can safely run
--	 * it here and no for sure that nothing new will be added
--	 * to the list
--	 */
--	ret = btrfs_run_ordered_operations(trans, root, 1);
--
--	return ret;
--}
--
- static inline int btrfs_start_delalloc_flush(struct btrfs_fs_info *fs_info)
- {
- 	if (btrfs_test_opt(fs_info->tree_root, FLUSHONCOMMIT))
-@@ -1653,13 +1631,6 @@ int btrfs_commit_transaction(struct btrf
- 	struct btrfs_transaction *prev_trans = NULL;
- 	int ret;
- 
--	ret = btrfs_run_ordered_operations(trans, root, 0);
--	if (ret) {
--		btrfs_abort_transaction(trans, root, ret);
--		btrfs_end_transaction(trans, root);
--		return ret;
--	}
--
- 	/* Stop the commit early if ->aborted is set */
- 	if (unlikely(ACCESS_ONCE(cur_trans->aborted))) {
- 		ret = cur_trans->aborted;
-@@ -1740,7 +1711,7 @@ int btrfs_commit_transaction(struct btrf
- 	if (ret)
- 		goto cleanup_transaction;
- 
--	ret = btrfs_flush_all_pending_stuffs(trans, root);
-+	ret = btrfs_run_delayed_items(trans, root);
- 	if (ret)
- 		goto cleanup_transaction;
- 
-@@ -1748,7 +1719,7 @@ int btrfs_commit_transaction(struct btrf
- 		   extwriter_counter_read(cur_trans) == 0);
- 
- 	/* some pending stuffs might be added after the previous flush. */
--	ret = btrfs_flush_all_pending_stuffs(trans, root);
-+	ret = btrfs_run_delayed_items(trans, root);
- 	if (ret)
- 		goto cleanup_transaction;
- 
---- a/fs/btrfs/transaction.h
-+++ b/fs/btrfs/transaction.h
-@@ -55,7 +55,6 @@ struct btrfs_transaction {
- 	wait_queue_head_t writer_wait;
- 	wait_queue_head_t commit_wait;
- 	struct list_head pending_snapshots;
--	struct list_head ordered_operations;
- 	struct list_head pending_chunks;
- 	struct list_head switch_commits;
- 	struct btrfs_delayed_ref_root delayed_refs;
+ 	/*
+ 	 * NOTE! We still have PageReserved() pages in the page tables.
+ 	 * eg. VDSO mappings can cause them to exist.
 
 
