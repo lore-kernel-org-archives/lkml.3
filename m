@@ -1,185 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257AbaICDqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 23:46:19 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62700 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaICDqS (ORCPT
+	id S1754714AbaICDuf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 23:50:35 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:56489
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753439AbaICDue convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 23:46:18 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@kernel.org, rdunlap@infradead.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v2] perf/documentation: Fix typo in perf/Documentation
-Date: Wed,  3 Sep 2014 12:46:03 +0900
-Message-Id: <1409715963-513-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.0.24.g4109c28
-In-Reply-To: <5405EDDC.4050808@infradead.org>
-References: <5405EDDC.4050808@infradead.org>
+	Tue, 2 Sep 2014 23:50:34 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+CC: "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/5] Clocksource: Flextimer: Merged to LS1
+Thread-Topic: [PATCH 0/5] Clocksource: Flextimer: Merged to LS1
+Thread-Index: AQHPwPGd9AH53fMtSU2fkniGB8TfU5vu0l4A
+Date: Wed, 3 Sep 2014 03:50:29 +0000
+Message-ID: <55643a67eb1a4157b18fc8483d072908@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+x-forefront-prvs: 032334F434
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199003)(51704005)(189002)(164054003)(13464003)(377454003)(66066001)(79102001)(101416001)(46102001)(76482001)(74316001)(76176999)(50986999)(99396002)(81542001)(81342001)(80022001)(85306004)(2501002)(74662001)(31966008)(2656002)(20776003)(54356999)(107046002)(64706001)(99286002)(86362001)(106116001)(95666004)(106356001)(108616004)(77096002)(105586002)(83072002)(85852003)(4396001)(87936001)(21056001)(83322001)(33646002)(92566001)(90102001)(77982001)(19580395003)(74502001)(19580405001)(76576001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB191;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix spelling typo found in tool/perf/Documentation.
+Ping :)
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- tools/perf/Documentation/perf-diff.txt          | 6 +++---
- tools/perf/Documentation/perf-kvm.txt           | 4 ++--
- tools/perf/Documentation/perf-list.txt          | 2 +-
- tools/perf/Documentation/perf-record.txt        | 2 +-
- tools/perf/Documentation/perf-script-perl.txt   | 4 ++--
- tools/perf/Documentation/perf-script-python.txt | 6 +++---
- tools/perf/Documentation/perf-script.txt        | 2 +-
- tools/perf/Documentation/perf-test.txt          | 2 +-
- tools/perf/Documentation/perf-trace.txt         | 2 +-
- 9 files changed, 15 insertions(+), 15 deletions(-)
+Thanks,
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index b3b8aba..e463caa 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -196,10 +196,10 @@ If specified the 'Weighted diff' column is displayed with value 'd' computed as:
- 
-   - period being the hist entry period value
- 
--  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-+  - WEIGHT-A/WEIGHT-B being user supplied weights in the the '-c' option
-     behind ':' separator like '-c wdiff:1,2'.
--    - WIEGHT-A being the weight of the data file
--    - WIEGHT-B being the weight of the baseline data file
-+    - WEIGHT-A being the weight of the data file
-+    - WEIGHT-B being the weight of the baseline data file
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-index 6e689dc..4edbc2b 100644
---- a/tools/perf/Documentation/perf-kvm.txt
-+++ b/tools/perf/Documentation/perf-kvm.txt
-@@ -100,7 +100,7 @@ OPTIONS
- STAT REPORT OPTIONS
- -------------------
- --vcpu=<value>::
--       analyze events which occures on this vcpu. (default: all vcpus)
-+       analyze events which occurs on this vcpu. (default: all vcpus)
- 
- --event=<value>::
-        event to be analyzed. Possible values: vmexit, mmio (x86 only),
-@@ -134,7 +134,7 @@ STAT LIVE OPTIONS
-     Analyze events only for given process ID(s) (comma separated list).
- 
- --vcpu=<value>::
--       analyze events which occures on this vcpu. (default: all vcpus)
-+       analyze events which occurs on this vcpu. (default: all vcpus)
- 
- 
- --event=<value>::
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 6fce6a6..cbb4f74 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -19,7 +19,7 @@ various perf commands with the -e option.
- EVENT MODIFIERS
- ---------------
- 
--Events can optionally have a modifer by appending a colon and one or
-+Events can optionally have a modifier by appending a colon and one or
- more modifiers. Modifiers allow the user to restrict the events to be
- counted. The following modifiers exist:
- 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index d460049..398f8d5 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -146,7 +146,7 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- 
- -N::
- --no-buildid-cache::
--Do not update the builid cache. This saves some overhead in situations
-+Do not update the buildid cache. This saves some overhead in situations
- where the information in the perf.data file (which includes buildids)
- is sufficient.
- 
-diff --git a/tools/perf/Documentation/perf-script-perl.txt b/tools/perf/Documentation/perf-script-perl.txt
-index d00bef2..dfbb506 100644
---- a/tools/perf/Documentation/perf-script-perl.txt
-+++ b/tools/perf/Documentation/perf-script-perl.txt
-@@ -181,8 +181,8 @@ strings for flag and symbolic fields.  These correspond to the strings
- and values parsed from the 'print fmt' fields of the event format
- files:
- 
--  flag_str($event_name, $field_name, $field_value) - returns the string represention corresponding to $field_value for the flag field $field_name of event $event_name
--  symbol_str($event_name, $field_name, $field_value) - returns the string represention corresponding to $field_value for the symbolic field $field_name of event $event_name
-+  flag_str($event_name, $field_name, $field_value) - returns the string representation corresponding to $field_value for the flag field $field_name of event $event_name
-+  symbol_str($event_name, $field_name, $field_value) - returns the string representation corresponding to $field_value for the symbolic field $field_name of event $event_name
- 
- Perf::Trace::Context Module
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diff --git a/tools/perf/Documentation/perf-script-python.txt b/tools/perf/Documentation/perf-script-python.txt
-index 9f1f054..54acba2 100644
---- a/tools/perf/Documentation/perf-script-python.txt
-+++ b/tools/perf/Documentation/perf-script-python.txt
-@@ -263,7 +263,7 @@ and having the counts we've tallied as values.
- 
- The print_syscall_totals() function iterates over the entries in the
- dictionary and displays a line for each entry containing the syscall
--name (the dictonary keys contain the syscall ids, which are passed to
-+name (the dictionary keys contain the syscall ids, which are passed to
- the Util function syscall_name(), which translates the raw syscall
- numbers to the corresponding syscall name strings).  The output is
- displayed after all the events in the trace have been processed, by
-@@ -576,8 +576,8 @@ strings for flag and symbolic fields.  These correspond to the strings
- and values parsed from the 'print fmt' fields of the event format
- files:
- 
--  flag_str(event_name, field_name, field_value) - returns the string represention corresponding to field_value for the flag field field_name of event event_name
--  symbol_str(event_name, field_name, field_value) - returns the string represention corresponding to field_value for the symbolic field field_name of event event_name
-+  flag_str(event_name, field_name, field_value) - returns the string representation corresponding to field_value for the flag field field_name of event event_name
-+  symbol_str(event_name, field_name, field_value) - returns the string representation corresponding to field_value for the symbolic field field_name of event event_name
- 
- The *autodict* function returns a special kind of Python
- dictionary that implements Perl's 'autovivifying' hashes in Python
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 05f9a0a..5a0160d 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -140,7 +140,7 @@ OPTIONS
-     
- 		"Overriding previous field request for all events."
-     
--	Alternativey, consider the order:
-+	Alternatively, consider the order:
-     
- 		-f comm,tid,time,ip,sym -f trace:
-     
-diff --git a/tools/perf/Documentation/perf-test.txt b/tools/perf/Documentation/perf-test.txt
-index d1d3e5121..9fc5c5d 100644
---- a/tools/perf/Documentation/perf-test.txt
-+++ b/tools/perf/Documentation/perf-test.txt
-@@ -25,7 +25,7 @@ OPTIONS
- -------
- -s::
- --skip::
--	Tests to skip (comma separater numeric list).
-+	Tests to skip (comma separator numeric list).
- 
- -v::
- --verbose::
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 02aac83..524c169 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -20,7 +20,7 @@ scheduling events, etc.
- This is a live mode tool in addition to working with perf.data files like
- the other perf tools. Files can be generated using the 'perf record' command
- but the session needs to include the raw_syscalls events (-e 'raw_syscalls:*').
--Alernatively, the 'perf trace record' can be used as a shortcut to
-+Alternatively, the 'perf trace record' can be used as a shortcut to
- automatically include the raw_syscalls events when writing events to a file.
- 
- The following options apply to perf trace; options to perf trace record are
--- 
-2.1.0.24.g4109c28
+BRs
+Xiubo
+
+
+
+
+> -----Original Message-----
+> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
+> Sent: Tuesday, August 26, 2014 1:46 PM
+> To: daniel.lezcano@linaro.org; tglx@linutronix.de
+> Cc: Wang Dongsheng-B40534; linux-kernel@vger.kernel.org; Xiubo Li-B47053
+> Subject: [PATCH 0/5] Clocksource: Flextimer: Merged to LS1
+> 
+> 
+> Xiubo Li (5):
+>   Clocksource: Flextimer: Set cpumask to cpu_possible_mask
+>   Clocksource: Flextimer: Use internal clocksource read API.
+>   Clocksource: Flextimer: Remove the useless code.
+>   Clocksource: Flextimer: Fix counter clock prescaler calculation.
+>   Clocksource: Flextimer: Use Macro for clock source selection.
+> 
+>  drivers/clocksource/fsl_ftm_timer.c | 20 +++++++++++++-------
+>  1 file changed, 13 insertions(+), 7 deletions(-)
+> 
+> --
+> 1.8.5
 
