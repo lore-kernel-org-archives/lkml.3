@@ -1,235 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180AbaICLpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:45:21 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:58259 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936AbaICLpT (ORCPT
+	id S1756187AbaICLr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:47:27 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:41219 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112AbaICLr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:45:19 -0400
+	Wed, 3 Sep 2014 07:47:26 -0400
+Message-ID: <5406FFBD.8010207@gmail.com>
+Date: Wed, 03 Sep 2014 19:47:09 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <5406DB43.1030506@linux.vnet.ibm.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org>
- <54020F00.2030807@linux.vnet.ibm.com> <CAKfTPtBq89SX=7=bXu2za7oXi1Lid_5ara-WputrtE8kCqcZcw@mail.gmail.com>
- <5406DB43.1030506@linux.vnet.ibm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 3 Sep 2014 13:44:58 +0200
-Message-ID: <CAKfTPtCXBYSbXVgdeyMtvuK8aZaRBzhs9S3=+V2jvXnoCJFqBQ@mail.gmail.com>
-Subject: Re: [PATCH v5 08/12] sched: move cfs task on a CPU with higher capacity
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: eparis@redhat.com, paulmck@linux.vnet.ibm.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>, zhenglong.cai@cs2c.com.cn,
+        khilman@linaro.org, ak@linux.intel.com, mcgrof@suse.com,
+        fabf@skynet.be, "dhowells@redhat.com" <dhowells@redhat.com>,
+        pefoley2@pefoley.com, mgorman@suse.de, biederm@xmission.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH] init/Kconfig: Add ENDIAN attributes for all architectures
+ using
+References: <540494D6.40701@gmail.com> <20140901160828.GJ26632@windriver.com> <5404A66E.509@zytor.com> <20140902051737.GK26632@windriver.com> <54055FF8.3080907@gmail.com>
+In-Reply-To: <54055FF8.3080907@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 September 2014 11:11, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> On 09/01/2014 02:15 PM, Vincent Guittot wrote:
->> On 30 August 2014 19:50, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->>> Hi Vincent,
->>>> index 18db43e..60ae1ce 100644
->>>> --- a/kernel/sched/fair.c
->>>> +++ b/kernel/sched/fair.c
->>>> @@ -6049,6 +6049,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->>>>                       return true;
->>>>       }
->>>>
->>>> +     /*
->>>> +      * The group capacity is reduced probably because of activity from other
->>>> +      * sched class or interrupts which use part of the available capacity
->>>> +      */
->>>> +     if ((sg->sgc->capacity_orig * 100) > (sgs->group_capacity *
->>>> +                             env->sd->imbalance_pct))
->>>
->>> Wouldn't the check on avg_load let us know if we are packing more tasks
->>> in this group than its capacity ? Isn't that the metric we are more
->>> interested in?
+On 09/02/2014 02:13 PM, Chen Gang wrote:
+> On 9/2/14 13:17, Paul Gortmaker wrote:
 >>
->> With  this patch, we don't want to pack but we prefer to spread the
->> task on another CPU than the one which handles the interruption if
->> latter uses a significant part of the CPU capacity.
+>> OK, but that was not at _all_ what I thought when looking at this...
 >>
->>>
->>>> +             return true;
->>>> +
->>>>       return false;
->>>>  }
->>>>
->>>> @@ -6534,13 +6542,23 @@ static int need_active_balance(struct lb_env *env)
->>>>       struct sched_domain *sd = env->sd;
->>>>
->>>>       if (env->idle == CPU_NEWLY_IDLE) {
->>>> +             int src_cpu = env->src_cpu;
->>>>
->>>>               /*
->>>>                * ASYM_PACKING needs to force migrate tasks from busy but
->>>>                * higher numbered CPUs in order to pack all tasks in the
->>>>                * lowest numbered CPUs.
->>>>                */
->>>> -             if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
->>>> +             if ((sd->flags & SD_ASYM_PACKING) && src_cpu > env->dst_cpu)
->>>> +                     return 1;
->>>> +
->>>> +             /*
->>>> +              * If the CPUs share their cache and the src_cpu's capacity is
->>>> +              * reduced because of other sched_class or IRQs, we trig an
->>>> +              * active balance to move the task
->>>> +              */
->>>> +             if ((capacity_orig_of(src_cpu) * 100) > (capacity_of(src_cpu) *
->>>> +                             sd->imbalance_pct))
->>>>                       return 1;
->>>>       }
->>>>
->>>> @@ -6643,6 +6661,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->>>>
->>>>       schedstat_add(sd, lb_imbalance[idle], env.imbalance);
->>>>
->>>> +     env.src_cpu = busiest->cpu;
->>>> +
->>>>       ld_moved = 0;
->>>>       if (busiest->nr_running > 1) {
->>>>               /*
->>>> @@ -6652,7 +6672,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->>>>                * correctly treated as an imbalance.
->>>>                */
->>>>               env.flags |= LBF_ALL_PINNED;
->>>> -             env.src_cpu   = busiest->cpu;
->>>>               env.src_rq    = busiest;
->>>>               env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
->>>>
->>>> @@ -7359,10 +7378,12 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
->>>>
->>>>  /*
->>>>   * Current heuristic for kicking the idle load balancer in the presence
->>>> - * of an idle cpu is the system.
->>>> + * of an idle cpu in the system.
->>>>   *   - This rq has more than one task.
->>>> - *   - At any scheduler domain level, this cpu's scheduler group has multiple
->>>> - *     busy cpu's exceeding the group's capacity.
->>>> + *   - This rq has at least one CFS task and the capacity of the CPU is
->>>> + *     significantly reduced because of RT tasks or IRQs.
->>>> + *   - At parent of LLC scheduler domain level, this cpu's scheduler group has
->>>> + *     multiple busy cpu.
->>>>   *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
->>>>   *     domain span are idle.
->>>>   */
->>>> @@ -7372,9 +7393,10 @@ static inline int nohz_kick_needed(struct rq *rq)
->>>>       struct sched_domain *sd;
->>>>       struct sched_group_capacity *sgc;
->>>>       int nr_busy, cpu = rq->cpu;
->>>> +     bool kick = false;
->>>>
->>>>       if (unlikely(rq->idle_balance))
->>>> -             return 0;
->>>> +             return false;
->>>>
->>>>         /*
->>>>       * We may be recently in ticked or tickless idle mode. At the first
->>>> @@ -7388,38 +7410,45 @@ static inline int nohz_kick_needed(struct rq *rq)
->>>>        * balancing.
->>>>        */
->>>>       if (likely(!atomic_read(&nohz.nr_cpus)))
->>>> -             return 0;
->>>> +             return false;
->>>>
->>>>       if (time_before(now, nohz.next_balance))
->>>> -             return 0;
->>>> +             return false;
->>>>
->>>>       if (rq->nr_running >= 2)
->>>
->>> Will this check ^^ not catch those cases which this patch is targeting?
+>> Instead I saw a well intentioned, but perhaps not fully thought out
+>> attempt at fixing a largely irrelevant randconfig/allmodconfig of a
+>> 1990's vintage ISDN driver coming from that x86-only era, built against
+>> an architecture that will never use or support it (microblaze).
 >>
->> This patch is not about how many tasks are running but if the capacity
->> of the CPU is reduced because of side activity like interruptions
->> which are only visible in the capacity value (with IRQ_TIME_ACCOUNTING
->> config) but not in nr_running.
->> Even if the capacity is reduced because of RT tasks, nothing ensures
->> that the RT task will be running when the tick fires
+>> In today's world, we'd probably not accept a new ethernet driver or
+>> filesystem if it was incapable of handling both BE and LE (exception
+>> being SoC ethernet physically bound to one specific CPU, of course.)
+>> So the justification given in the commit log for expanding the scope to
+>> better deal with the stuff found in ISDN and the like was questionable.
 >>
->> Regards,
->> Vincent
->>>
->>> Regards
->>> Preeti U Murthy
->>>
->>>> -             goto need_kick;
->>>> +             return true;
->>>>
->>>>       rcu_read_lock();
->>>>       sd = rcu_dereference(per_cpu(sd_busy, cpu));
->>>> -
->>>>       if (sd) {
->>>>               sgc = sd->groups->sgc;
->>>>               nr_busy = atomic_read(&sgc->nr_busy_cpus);
->>>>
->>>> -             if (nr_busy > 1)
->>>> -                     goto need_kick_unlock;
->>>> +             if (nr_busy > 1) {
->>>> +                     kick = true;
->>>> +                     goto unlock;
->>>> +             }
->>>> +
->>>>       }
->>>>
->>>> -     sd = rcu_dereference(per_cpu(sd_asym, cpu));
->>>> +     sd = rcu_dereference(rq->sd);
->>>> +     if (sd) {
->>>> +             if ((rq->cfs.h_nr_running >= 1) &&
->>>> +                             ((rq->cpu_capacity * sd->imbalance_pct) <
->>>> +                             (rq->cpu_capacity_orig * 100))) {
->
-> Ok I understand your explanation above. But I was wondering if you would
-> need to add this check around rq->cfs.h_nr_running >= 1 in the above two
-> cases as well.
+> 
 
-yes you're right for the test if (rq->nr_running >= 2).
+I guess, we are mainly focus on: "Is it worthy enough to add *ENDIAN in
+init/Kconfig?"
 
-It's not so straight forward for nr_busy_cpus which reflects how many
-CPUs have not stopped their tick. The scheduler assumes that the
-latter are busy with cfs tasks
+It seems really few modules need depend on LE or BE (although I am still
+not quite sure). If it is true, for me, only for architectures, it is
+still worthy enough to let all duplicated *ENDIAN to one place.
 
->
-> I have actually raised this concern over whether we should be using
-> rq->nr_running or cfs_rq->nr_running while we do load balancing in reply
-> to your patch3. While all our load measurements are about the cfs_rq
+If it is still worthy, maybe this patch need be improvement (especially,
+for its comments), so please help check when you have time, thanks.
 
-I have just replied to your comments on patch 3. Sorry for the delay
 
-> load, we use rq->nr_running, which may include tasks from other sched
-> classes as well. We divide them to get average load per task during load
-> balancing which is wrong, isn't it? Similarly during nohz_kick_needed(),
-> we trigger load balancing based on rq->nr_running again.
->
-> In this patch too, even if you know that the cpu is being dominated by
-> tasks that do not belong to cfs class, you would be triggering a futile
-> load balance if there are no fair tasks to move.
-This patch adds one additional condition that is based on
-rq->cfs.h_nr_running so it should not trigger any futile load balance.
-Then, I have also take advantage of this patch to clean up
-nohz_kick_needed as proposed by Peter but the conditions are the same
-than previously (except the one with rq->cfs.h_nr_running)
+Welcome any other members' ideas, suggestions, or completions.
 
-I can prepare another patchset that will solve the concerns that you
-raised for nohz_kick_needed and in patch 3 but i would prefer not
-include them in this patchset which is large enough and which subject
-is a bit different.
-Does it seem ok for you ?
+Thanks.
 
-Regards,
-Vincent
->
-> Regards
-> Preeti U Murthy
->
+> After a simple search, for crypto, it may be endian sensitive, and for
+> architectures may be endian sensitive, in config time.
+> 
+>   bash-3.2# find ./ | grep Kconfig | xargs grep depend | grep ENDIAN
+>   .//arch/arm/mm/Kconfig:	depends on ARCH_SUPPORTS_BIG_ENDIAN
+>   .//arch/arm/mm/Kconfig:	depends on CPU_BIG_ENDIAN
+>   .//arch/arm/mm/Kconfig:	depends on CPU_BIG_ENDIAN
+>   .//arch/arm64/Kconfig:	depends on OF && !CPU_BIG_ENDIAN
+>   .//arch/mips/Kconfig:	depends on SYS_SUPPORTS_BIG_ENDIAN
+>   .//arch/mips/Kconfig:	depends on SYS_SUPPORTS_LITTLE_ENDIAN
+>   .//arch/mips/Kconfig:	depends on SGI_IP22 || SGI_IP28 || (SNI_RM && CPU_LITTLE_ENDIAN)
+>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on !CPU_LITTLE_ENDIAN
+>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
+>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
+>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
+>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
+>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on CPU_LITTLE_ENDIAN
+>   [...]
+>   .//crypto/Kconfig:	depends on ARM && KERNEL_MODE_NEON && !CPU_BIG_ENDIAN
+>   .//crypto/Kconfig:	depends on ARM && KERNEL_MODE_NEON && !CPU_BIG_ENDIAN
+>   .//drivers/crypto/Kconfig:	depends on PPC64 && IBMVIO && !CPU_LITTLE_ENDIAN
+>   [...]
+> 
+> It is a simple search, so I am not sure whether have other modules also
+> need LE or BE.
+> 
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
