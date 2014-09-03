@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042AbaICIrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:47:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43930 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755388AbaICIpk (ORCPT
+	id S1756058AbaICIsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:48:04 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:52443 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250AbaICIsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:45:40 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 3/5] rtc: at91sam9: add DT support
-Date: Wed,  3 Sep 2014 10:45:32 +0200
-Message-Id: <1409733934-14465-4-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 3 Sep 2014 04:48:00 -0400
+Date: Wed, 3 Sep 2014 10:47:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: amit.shah@redhat.com, bobby.prani@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL rcu/urgent] Fix for 3.17
+Message-ID: <20140903084755.GB8021@gmail.com>
+References: <20140903034346.GA17003@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903034346.GA17003@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_match_table to the existing driver so that rtc nodes defined in at91
-DTs can be attached to this driver.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/rtc/rtc-at91sam9.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 74a9ca0..57014b7 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -454,6 +454,14 @@ static int at91_rtc_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id at91_rtc_dt_ids[] = {
-+	{ .compatible = "atmel,at91sam9260-rtt" },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, at91_rtc_dt_ids);
-+#endif
-+
- static struct platform_driver at91_rtc_driver = {
- 	.probe		= at91_rtc_probe,
- 	.remove		= at91_rtc_remove,
-@@ -462,6 +470,7 @@ static struct platform_driver at91_rtc_driver = {
- 		.name	= "rtc-at91sam9",
- 		.owner	= THIS_MODULE,
- 		.pm	= &at91_rtc_pm_ops,
-+		.of_match_table = of_match_ptr(at91_rtc_dt_ids),
- 	},
- };
- 
--- 
-1.9.1
+> Hello, Ingo,
+> 
+> This series contains a single commit fixing an initialization bug
+> reported by Amit Shah and fixed by Pranith Kumar (and tested by Amit).
+> This bug results in a boot-time hang in callback-offloaded configurations
+> where callbacks were posted before the offloading ("rcuo") kthreads
+> were created.  This has been exposed to -next testing, and is available
+> in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
+> 
+> for you to fetch changes up to 11ed7f934cb807f26da09547b5946c2e534d1dac:
+> 
+>   rcu: Make nocb leader kthreads process pending callbacks after spawning (2014-08-28 05:59:59 -0700)
+> 
+> ----------------------------------------------------------------
+> Pranith Kumar (1):
+>       rcu: Make nocb leader kthreads process pending callbacks after spawning
+> 
+>  kernel/rcu/tree.h        |  2 +-
+>  kernel/rcu/tree_plugin.h | 22 +++++++++++-----------
+>  2 files changed, 12 insertions(+), 12 deletions(-)
 
+Pulled into tip:core/urgent, thanks a lot Paul!
+
+	Ingo
