@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936293AbaICXs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:48:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
+	id S936311AbaICXtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:49:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933304AbaICWFx (ORCPT
+	with ESMTP id S933300AbaICWFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:05:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 18/55] hwmon: (lm78) Fix overflow problems seen when writing large temperature limits
-Date: Wed,  3 Sep 2014 15:05:08 -0700
-Message-Id: <20140903220456.847214719@linuxfoundation.org>
+        Valerio Vanni <valerio.vanni@inwind.it>,
+        Alan Cox <alan@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.10 26/55] serial: core: Preserve termios c_cflag for console resume
+Date: Wed,  3 Sep 2014 15:05:16 -0700
+Message-Id: <20140903220458.181068922@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -28,34 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 1074d683a51f1aded3562add9ef313e75d557327 upstream.
+commit ae84db9661cafc63d179e1d985a2c5b841ff0ac4 upstream.
 
-On platforms with sizeof(int) < sizeof(long), writing a temperature
-limit larger than MAXINT will result in unpredictable limit values
-written to the chip. Avoid auto-conversion from long to int to fix
-the problem.
+When a tty is opened for the serial console, the termios c_cflag
+settings are inherited from the console line settings.
+However, if the tty is subsequently closed, the termios settings
+are lost. This results in a garbled console if the console is later
+suspended and resumed.
 
-Cc: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Preserve the termios c_cflag for the serial console when the tty
+is shutdown; this reflects the most recent line settings.
+
+Fixes: Bugzilla #69751, 'serial console does not wake from S3'
+Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/lm78.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/serial_core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hwmon/lm78.c
-+++ b/drivers/hwmon/lm78.c
-@@ -108,7 +108,7 @@ static inline int FAN_FROM_REG(u8 val, i
-  * TEMP: mC (-128C to +127C)
-  * REG: 1C/bit, two's complement
-  */
--static inline s8 TEMP_TO_REG(int val)
-+static inline s8 TEMP_TO_REG(long val)
- {
- 	int nval = clamp_val(val, -128000, 127000) ;
- 	return nval < 0 ? (nval - 500) / 1000 : (nval + 500) / 1000;
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -241,6 +241,9 @@ static void uart_shutdown(struct tty_str
+ 		/*
+ 		 * Turn off DTR and RTS early.
+ 		 */
++		if (uart_console(uport) && tty)
++			uport->cons->cflag = tty->termios.c_cflag;
++
+ 		if (!tty || (tty->termios.c_cflag & HUPCL))
+ 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+ 
 
 
