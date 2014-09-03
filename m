@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935705AbaICXUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:20:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
+	id S935735AbaICXVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:21:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757151AbaICWQC (ORCPT
+	with ESMTP id S1757190AbaICWQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:02 -0400
+	Wed, 3 Sep 2014 18:16:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <bryan.odonoghue@intel.com>,
-        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 3.16 014/125] USB: ehci-pci: USB host controller support for Intel Quark X1000
-Date: Wed,  3 Sep 2014 15:06:11 -0700
-Message-Id: <20140903220624.093823402@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.16 011/125] USB: devio: fix issue with log flooding
+Date: Wed,  3 Sep 2014 15:06:08 -0700
+Message-Id: <20140903220624.007001572@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -31,69 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 6e693739e9b603b3ca9ce0d4f4178f0633458465 upstream.
+commit d310d05f1225d1f6f2bf505255fdf593bfbb3051 upstream.
 
-The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000
-USB host controller, and the default value is 0x20 dwords. The in/out threshold
-can be programmed to 0x80 dwords (512 Bytes) to maximize the perfomrance,
-but only when isochronous/interrupt transactions are not initiated by the USB
-host controller. This patch is to reconfigure the packet buffer in/out
-threshold as maximal as possible to maximize the performance, and 0x7F dwords
-(508 Bytes) should be used because the USB host controller initiates
-isochronous/interrupt transactions.
+usbfs allows user space to pass down an URB which sets URB_SHORT_NOT_OK
+for output URBs. That causes usbcore to log messages without limit
+for a nonsensical disallowed combination. The fix is to silently drop
+the attribute in usbfs.
+The problem is reported to exist since 3.14
+https://www.virtualbox.org/ticket/13085
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-pci.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ drivers/usb/core/devio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -35,6 +35,21 @@ static const char hcd_name[] = "ehci-pci
- #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
- 
- /*-------------------------------------------------------------------------*/
-+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
-+static inline bool is_intel_quark_x1000(struct pci_dev *pdev)
-+{
-+	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
-+		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
-+}
-+
-+/*
-+ * 0x84 is the offset of in/out threshold register,
-+ * and it is the same offset as the register of 'hostpc'.
-+ */
-+#define	intel_quark_x1000_insnreg01	hostpc
-+
-+/* Maximum usable threshold value is 0x7f dwords for both IN and OUT */
-+#define INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD	0x007f007f
- 
- /* called after powerup, by probe or system-pm "wakeup" */
- static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
-@@ -50,6 +65,16 @@ static int ehci_pci_reinit(struct ehci_h
- 	if (!retval)
- 		ehci_dbg(ehci, "MWI active\n");
- 
-+	/* Reset the threshold limit */
-+	if (is_intel_quark_x1000(pdev)) {
-+		/*
-+		 * For the Intel QUARK X1000, raise the I/O threshold to the
-+		 * maximum usable value in order to improve performance.
-+		 */
-+		ehci_writel(ehci, INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD,
-+			ehci->regs->intel_quark_x1000_insnreg01);
-+	}
-+
- 	return 0;
- }
- 
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1509,7 +1509,7 @@ static int proc_do_submiturb(struct usb_
+ 	u = (is_in ? URB_DIR_IN : URB_DIR_OUT);
+ 	if (uurb->flags & USBDEVFS_URB_ISO_ASAP)
+ 		u |= URB_ISO_ASAP;
+-	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK)
++	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK && is_in)
+ 		u |= URB_SHORT_NOT_OK;
+ 	if (uurb->flags & USBDEVFS_URB_NO_FSBR)
+ 		u |= URB_NO_FSBR;
 
 
