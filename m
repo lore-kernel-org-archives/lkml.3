@@ -1,53 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301AbaICLdC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:33:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42504 "EHLO mx1.redhat.com"
+	id S932392AbaICLd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:33:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15974 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755833AbaICLcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:32:54 -0400
+	id S932275AbaICLdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 07:33:00 -0400
 From: Laszlo Ersek <lersek@redhat.com>
 To: mingo@kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, x86@kernel.org,
         linux-ia64@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com,
         lersek@redhat.com
-Subject: [PATCH v2 0/5] beautify EFI memmap logs
-Date: Wed,  3 Sep 2014 13:32:18 +0200
-Message-Id: <1409743943-16934-1-git-send-email-lersek@redhat.com>
+Subject: [PATCH v2 3/5] x86: efi: format EFI memory type & attrs with efi_md_typeattr_format()
+Date: Wed,  3 Sep 2014 13:32:21 +0200
+Message-Id: <1409743943-16934-4-git-send-email-lersek@redhat.com>
+In-Reply-To: <1409743943-16934-1-git-send-email-lersek@redhat.com>
+References: <1409743943-16934-1-git-send-email-lersek@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-changes in v2:
-- explain with examples how the log's appearance changes, in patches 3-5
-  [Ingo]
+An example log excerpt demonstrating the change:
 
-v1 blurb:
+Before the patch:
 
-> It's a pain to analyze EFI memmap logs while debugging, especially to
-> verify the memory types (an enum) and the memory attributes (a
-> bitmap). This series renders those columns human-readable, and unifies
-> their formatting between x86, ia64 and arm64.
+> efi: mem00: type=7, attr=0xf, range=[0x0000000000000000-0x000000000009f000) (0MB)
+> efi: mem01: type=2, attr=0xf, range=[0x000000000009f000-0x00000000000a0000) (0MB)
+> efi: mem02: type=7, attr=0xf, range=[0x0000000000100000-0x0000000000400000) (3MB)
+> efi: mem03: type=2, attr=0xf, range=[0x0000000000400000-0x0000000000800000) (4MB)
+> efi: mem04: type=10, attr=0xf, range=[0x0000000000800000-0x0000000000808000) (0MB)
+> efi: mem05: type=7, attr=0xf, range=[0x0000000000808000-0x0000000000810000) (0MB)
+> efi: mem06: type=10, attr=0xf, range=[0x0000000000810000-0x0000000000900000) (0MB)
+> efi: mem07: type=4, attr=0xf, range=[0x0000000000900000-0x0000000001100000) (8MB)
+> efi: mem08: type=7, attr=0xf, range=[0x0000000001100000-0x0000000001400000) (3MB)
+> efi: mem09: type=2, attr=0xf, range=[0x0000000001400000-0x0000000002613000) (18MB)
+> efi: mem10: type=7, attr=0xf, range=[0x0000000002613000-0x0000000004000000) (25MB)
+> efi: mem11: type=4, attr=0xf, range=[0x0000000004000000-0x0000000004020000) (0MB)
+> efi: mem12: type=7, attr=0xf, range=[0x0000000004020000-0x00000000068ea000) (40MB)
+> efi: mem13: type=2, attr=0xf, range=[0x00000000068ea000-0x00000000068f0000) (0MB)
+> efi: mem14: type=3, attr=0xf, range=[0x00000000068f0000-0x0000000006c7b000) (3MB)
+> efi: mem15: type=6, attr=0x800000000000000f, range=[0x0000000006c7b000-0x0000000006c7d000) (0MB)
+> efi: mem16: type=5, attr=0x800000000000000f, range=[0x0000000006c7d000-0x0000000006c85000) (0MB)
+> efi: mem17: type=6, attr=0x800000000000000f, range=[0x0000000006c85000-0x0000000006c87000) (0MB)
+> efi: mem18: type=3, attr=0xf, range=[0x0000000006c87000-0x0000000006ca3000) (0MB)
+> efi: mem19: type=6, attr=0x800000000000000f, range=[0x0000000006ca3000-0x0000000006ca6000) (0MB)
+> efi: mem20: type=10, attr=0xf, range=[0x0000000006ca6000-0x0000000006cc6000) (0MB)
+> efi: mem21: type=6, attr=0x800000000000000f, range=[0x0000000006cc6000-0x0000000006d95000) (0MB)
+> efi: mem22: type=5, attr=0x800000000000000f, range=[0x0000000006d95000-0x0000000006e22000) (0MB)
+> efi: mem23: type=7, attr=0xf, range=[0x0000000006e22000-0x0000000007165000) (3MB)
+> efi: mem24: type=4, attr=0xf, range=[0x0000000007165000-0x0000000007d22000) (11MB)
+> efi: mem25: type=7, attr=0xf, range=[0x0000000007d22000-0x0000000007d25000) (0MB)
+> efi: mem26: type=3, attr=0xf, range=[0x0000000007d25000-0x0000000007ea2000) (1MB)
+> efi: mem27: type=5, attr=0x800000000000000f, range=[0x0000000007ea2000-0x0000000007ed2000) (0MB)
+> efi: mem28: type=6, attr=0x800000000000000f, range=[0x0000000007ed2000-0x0000000007ef6000) (0MB)
+> efi: mem29: type=7, attr=0xf, range=[0x0000000007ef6000-0x0000000007f00000) (0MB)
+> efi: mem30: type=9, attr=0xf, range=[0x0000000007f00000-0x0000000007f02000) (0MB)
+> efi: mem31: type=10, attr=0xf, range=[0x0000000007f02000-0x0000000007f06000) (0MB)
+> efi: mem32: type=4, attr=0xf, range=[0x0000000007f06000-0x0000000007fd0000) (0MB)
+> efi: mem33: type=6, attr=0x800000000000000f, range=[0x0000000007fd0000-0x0000000007ff0000) (0MB)
+> efi: mem34: type=7, attr=0xf, range=[0x0000000007ff0000-0x0000000008000000) (0MB)
 
-Thanks
-Laszlo
+After the patch:
 
-Laszlo Ersek (5):
-  efi: add macro for EFI_MEMORY_UCE memory attribute
-  efi: introduce efi_md_typeattr_format()
-  x86: efi: format EFI memory type & attrs with efi_md_typeattr_format()
-  ia64: efi: format EFI memory type & attrs with
-    efi_md_typeattr_format()
-  arm64: efi: format EFI memory type & attrs with
-    efi_md_typeattr_format()
+> efi: mem00: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000000000-0x000000000009f000) (0MB)
+> efi: mem01: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x000000000009f000-0x00000000000a0000) (0MB)
+> efi: mem02: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000100000-0x0000000000400000) (3MB)
+> efi: mem03: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000400000-0x0000000000800000) (4MB)
+> efi: mem04: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000800000-0x0000000000808000) (0MB)
+> efi: mem05: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000808000-0x0000000000810000) (0MB)
+> efi: mem06: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000810000-0x0000000000900000) (0MB)
+> efi: mem07: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000000900000-0x0000000001100000) (8MB)
+> efi: mem08: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000001100000-0x0000000001400000) (3MB)
+> efi: mem09: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000001400000-0x0000000002613000) (18MB)
+> efi: mem10: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000002613000-0x0000000004000000) (25MB)
+> efi: mem11: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000004000000-0x0000000004020000) (0MB)
+> efi: mem12: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000004020000-0x00000000068ea000) (40MB)
+> efi: mem13: [Loader Data        |   |  |  |  |   |WB|WT|WC|UC] range=[0x00000000068ea000-0x00000000068f0000) (0MB)
+> efi: mem14: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x00000000068f0000-0x0000000006c7b000) (3MB)
+> efi: mem15: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c7b000-0x0000000006c7d000) (0MB)
+> efi: mem16: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c7d000-0x0000000006c85000) (0MB)
+> efi: mem17: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c85000-0x0000000006c87000) (0MB)
+> efi: mem18: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000006c87000-0x0000000006ca3000) (0MB)
+> efi: mem19: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006ca3000-0x0000000006ca6000) (0MB)
+> efi: mem20: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000006ca6000-0x0000000006cc6000) (0MB)
+> efi: mem21: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006cc6000-0x0000000006d95000) (0MB)
+> efi: mem22: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000006d95000-0x0000000006e22000) (0MB)
+> efi: mem23: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000006e22000-0x0000000007165000) (3MB)
+> efi: mem24: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007165000-0x0000000007d22000) (11MB)
+> efi: mem25: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007d22000-0x0000000007d25000) (0MB)
+> efi: mem26: [Boot Code          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007d25000-0x0000000007ea2000) (1MB)
+> efi: mem27: [Runtime Code       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ea2000-0x0000000007ed2000) (0MB)
+> efi: mem28: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ed2000-0x0000000007ef6000) (0MB)
+> efi: mem29: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ef6000-0x0000000007f00000) (0MB)
+> efi: mem30: [ACPI Reclaim Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007f00000-0x0000000007f02000) (0MB)
+> efi: mem31: [ACPI Memory NVS    |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007f02000-0x0000000007f06000) (0MB)
+> efi: mem32: [Boot Data          |   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007f06000-0x0000000007fd0000) (0MB)
+> efi: mem33: [Runtime Data       |RUN|  |  |  |   |WB|WT|WC|UC] range=[0x0000000007fd0000-0x0000000007ff0000) (0MB)
+> efi: mem34: [Conventional Memory|   |  |  |  |   |WB|WT|WC|UC] range=[0x0000000007ff0000-0x0000000008000000) (0MB)
 
- include/linux/efi.h         |  8 +++++++
- arch/arm64/kernel/efi.c     | 26 +++++----------------
- arch/ia64/kernel/efi.c      |  6 +++--
- arch/x86/platform/efi/efi.c |  7 ++++--
- drivers/firmware/efi/efi.c  | 57 +++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 80 insertions(+), 24 deletions(-)
+Both the type enum and the attribute bitmap are decoded, with the
+additional benefit that the memory ranges line up as well.
 
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+---
+ arch/x86/platform/efi/efi.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 850da94..ae2573a 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -210,9 +210,12 @@ static void __init print_efi_memmap(void)
+ 	for (p = memmap.map, i = 0;
+ 	     p < memmap.map_end;
+ 	     p += memmap.desc_size, i++) {
++		char buf[64];
++
+ 		md = p;
+-		pr_info("mem%02u: type=%u, attr=0x%llx, range=[0x%016llx-0x%016llx) (%lluMB)\n",
+-			i, md->type, md->attribute, md->phys_addr,
++		pr_info("mem%02u: %s range=[0x%016llx-0x%016llx) (%lluMB)\n",
++			i, efi_md_typeattr_format(buf, sizeof(buf), md),
++			md->phys_addr,
+ 			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
+ 			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
+ 	}
 -- 
 1.8.3.1
+
 
