@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935897AbaICXZL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:25:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
+	id S935976AbaICXZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:25:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45844 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757154AbaICWP5 (ORCPT
+	with ESMTP id S1757139AbaICWPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:57 -0400
+	Wed, 3 Sep 2014 18:15:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Aleksei Besogonov <alex.besogonov@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 88/88] vm_is_stack: use for_each_thread() rather then buggy while_each_thread()
-Date: Wed,  3 Sep 2014 15:06:02 -0700
-Message-Id: <20140903220518.582157169@linuxfoundation.org>
+        Holger Paradies <retabell@gmx.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.14 72/88] staging/rtl8188eu: add 0df6:0076 Sitecom Europe B.V.
+Date: Wed,  3 Sep 2014 15:05:46 -0700
+Message-Id: <20140903220518.110312484@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -32,50 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Holger Paradies <retabell@gmx.de>
 
-commit 4449a51a7c281602d3a385044ab928322a122a02 upstream.
+commit 8626d524ef08f10fccc0c41e5f75aef8235edf47 upstream.
 
-Aleksei hit the soft lockup during reading /proc/PID/smaps.  David
-investigated the problem and suggested the right fix.
+The stick is not recognized.
+This dongle uses r8188eu but usb-id is missing.
+3.16.0
 
-while_each_thread() is racy and should die, this patch updates
-vm_is_stack().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Aleksei Besogonov <alex.besogonov@gmail.com>
-Tested-by: Aleksei Besogonov <alex.besogonov@gmail.com>
-Suggested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Holger Paradies <retabell@gmx.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/util.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -275,17 +275,14 @@ pid_t vm_is_stack(struct task_struct *ta
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -56,6 +56,7 @@ static struct usb_device_id rtw_usb_id_t
+ 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
+ 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
+ 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
++	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
+ 	{}	/* Terminating entry */
+ };
  
- 	if (in_group) {
- 		struct task_struct *t;
--		rcu_read_lock();
--		if (!pid_alive(task))
--			goto done;
- 
--		t = task;
--		do {
-+		rcu_read_lock();
-+		for_each_thread(task, t) {
- 			if (vm_is_stack_for_task(t, vma)) {
- 				ret = t->pid;
- 				goto done;
- 			}
--		} while_each_thread(task, t);
-+		}
- done:
- 		rcu_read_unlock();
- 	}
 
 
