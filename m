@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011AbaICWGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:06:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45376 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933330AbaICWGE (ORCPT
+	id S933516AbaICWGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:06:55 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:37745 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932836AbaICWGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:06:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arindam Nath <arindam.nath@amd.com>,
-        Shriraj-Rai P <shriraj-rai.p@amd.com>, Huang Rui <ray.huang@amd.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.10 45/55] usb: xhci: amd chipset also needs short TX quirk
-Date: Wed,  3 Sep 2014 15:05:35 -0700
-Message-Id: <20140903220501.156865477@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 3 Sep 2014 18:06:51 -0400
+Message-ID: <540790F7.8040006@cogentembedded.com>
+Date: Thu, 04 Sep 2014 02:06:47 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
+        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
+        stern@rowland.harvard.edu
+CC: yoshihiro.shimoda.uh@renesas.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 4/9] usb: rename phy to usb_phy in HCD
+References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com> <1409730040-14200-5-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1409730040-14200-5-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hello.
 
-------------------
+On 09/03/2014 11:40 AM, Antoine Tenart wrote:
 
-From: Huang Rui <ray.huang@amd.com>
+> The USB PHY member of the HCD structure is renamed to 'usb_phy' and
+> modifications are done in all drivers accessing it.
 
-commit 2597fe99bb0259387111d0431691f5daac84f5a5 upstream.
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> ---
+>   drivers/usb/chipidea/host.c   |  2 +-
+>   drivers/usb/core/hcd.c        | 20 ++++++++++----------
+>   drivers/usb/core/hub.c        |  8 ++++----
+>   drivers/usb/host/ehci-fsl.c   | 16 ++++++++--------
+>   drivers/usb/host/ehci-hub.c   |  2 +-
+>   drivers/usb/host/ehci-msm.c   |  4 ++--
+>   drivers/usb/host/ehci-tegra.c | 16 ++++++++--------
+>   drivers/usb/host/ohci-omap.c  | 20 ++++++++++----------
+>   include/linux/usb/hcd.h       |  2 +-
+>   9 files changed, 45 insertions(+), 45 deletions(-)
 
-AMD xHC also needs short tx quirk after tested on most of chipset
-generations. That's because there is the same incorrect behavior like
-Fresco Logic host. Please see below message with on USB webcam
-attached on xHC host:
+    It looks like you left out drivers/usb/misc/lvstest.c...
 
-[  139.262944] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.266934] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.270913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.274937] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.278914] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.282936] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.286915] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.290938] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.294913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.298917] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-
-Reported-by: Arindam Nath <arindam.nath@amd.com>
-Tested-by: Shriraj-Rai P <shriraj-rai.p@amd.com>
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci-pci.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -87,6 +87,10 @@ static void xhci_pci_quirks(struct devic
- 	/* AMD PLL quirk */
- 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
- 		xhci->quirks |= XHCI_AMD_PLL_FIX;
-+
-+	if (pdev->vendor == PCI_VENDOR_ID_AMD)
-+		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
-+
- 	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
- 		xhci->quirks |= XHCI_LPM_SUPPORT;
- 		xhci->quirks |= XHCI_INTEL_HOST;
-
+WBR, Sergei
 
