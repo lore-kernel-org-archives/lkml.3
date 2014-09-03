@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936019AbaICXdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:33:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45514 "EHLO
+	id S933590AbaICWIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:08:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933246AbaICWIe (ORCPT
+	with ESMTP id S933547AbaICWIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:34 -0400
+	Wed, 3 Sep 2014 18:08:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Franz Hsieh <franz.hsieh@canonical.com>,
         Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 12/88] ALSA: hda - fix an external mic jack problem on a HP machine
-Date: Wed,  3 Sep 2014 15:04:46 -0700
-Message-Id: <20140903220516.318891781@linuxfoundation.org>
+Subject: [PATCH 3.14 18/88] ALSA: hda - restore the gpio led after resume
+Date: Wed,  3 Sep 2014 15:04:52 -0700
+Message-Id: <20140903220516.501609060@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -31,64 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hui Wang <hui.wang@canonical.com>
 
-commit 7440850c20b69658f322119d20a94dc914127cc7 upstream.
+commit f475371aa65de84fa483a998ab7594531026b9d9 upstream.
 
-ON the machine, two pin complex (0xb and 0xe) are both routed to
-the same external right-side mic jack, this makes the jack can't work.
+On some HP laptops, the mute led is controlled by codec gpio.
 
-To fix this problem, set the 0xe to "not connected".
+When some machine resume from s3/s4, the codec gpio data will be
+cleared to 0 by BIOS:
+Before suspend:
+  IO[3]: enable=1, dir=1, wake=0, sticky=0, data=1, unsol=0
+After resume:
+  IO[3]: enable=1, dir=1, wake=0, sticky=0, data=0, unsol=0
 
-BugLink: https://bugs.launchpad.net/bugs/1350148
+To skip the AFG node to enter D3 can't fix this problem.
+
+A workaround is to restore the gpio data when the system resume
+back from s3/s4. It is safe even on the machines without this
+problem.
+
+BugLink: https://bugs.launchpad.net/bugs/1358116
 Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
 Signed-off-by: Hui Wang <hui.wang@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ sound/pci/hda/patch_realtek.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -84,6 +84,7 @@ enum {
- 	STAC_DELL_EQ,
- 	STAC_ALIENWARE_M17X,
- 	STAC_92HD89XX_HP_FRONT_JACK,
-+	STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK,
- 	STAC_92HD73XX_MODELS
- };
- 
-@@ -1803,6 +1804,11 @@ static const struct hda_pintbl stac92hd8
- 	{}
- };
- 
-+static const struct hda_pintbl stac92hd89xx_hp_z1_g2_right_mic_jack_pin_configs[] = {
-+	{ 0x0e, 0x400000f0 },
-+	{}
-+};
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3064,6 +3064,15 @@ static int alc269_resume(struct hda_code
+ 	snd_hda_codec_resume_cache(codec);
+ 	alc_inv_dmic_sync(codec, true);
+ 	hda_call_check_power_status(codec, 0x01);
 +
- static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
- 				   const struct hda_fixup *fix, int action)
- {
-@@ -1925,6 +1931,10 @@ static const struct hda_fixup stac92hd73
- 	[STAC_92HD89XX_HP_FRONT_JACK] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
-+	},
-+	[STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = stac92hd89xx_hp_z1_g2_right_mic_jack_pin_configs,
- 	}
- };
++	/* on some machine, the BIOS will clear the codec gpio data when enter
++	 * suspend, and won't restore the data after resume, so we restore it
++	 * in the driver.
++	 */
++	if (spec->gpio_led)
++		snd_hda_codec_write(codec, codec->afg, 0, AC_VERB_SET_GPIO_DATA,
++			    spec->gpio_led);
++
+ 	if (spec->has_alc5505_dsp)
+ 		alc5505_dsp_resume(codec);
  
-@@ -1985,6 +1995,8 @@ static const struct snd_pci_quirk stac92
- 		      "Alienware M17x", STAC_ALIENWARE_M17X),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
- 		      "Alienware M17x R3", STAC_DELL_EQ),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1927,
-+				"HP Z1 G2", STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
- 				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
- 	{} /* terminator */
 
 
