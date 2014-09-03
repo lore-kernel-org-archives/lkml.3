@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936374AbaICXvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:51:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
+	id S935206AbaICXwC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:52:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933282AbaICWFv (ORCPT
+	with ESMTP id S933279AbaICWFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:05:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Franz Hsieh <franz.hsieh@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 10/55] ALSA: hda - fix an external mic jack problem on a HP machine
-Date: Wed,  3 Sep 2014 15:05:00 -0700
-Message-Id: <20140903220455.371591766@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.10 14/55] mei: start disconnect request timer consistently
+Date: Wed,  3 Sep 2014 15:05:04 -0700
+Message-Id: <20140903220456.180595892@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -29,66 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit 7440850c20b69658f322119d20a94dc914127cc7 upstream.
+commit 22b987a325701223f9a37db700c6eb20b9924c6f upstream.
 
-ON the machine, two pin complex (0xb and 0xe) are both routed to
-the same external right-side mic jack, this makes the jack can't work.
+Link must be reset in case the fw doesn't
+respond to client disconnect request.
+We did charge the timer only in irq path
+from mei_cl_irq_close and not in mei_cl_disconnect
 
-To fix this problem, set the 0xe to "not connected".
-
-BugLink: https://bugs.launchpad.net/bugs/1350148
-Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/misc/mei/client.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -84,6 +84,7 @@ enum {
- 	STAC_DELL_EQ,
- 	STAC_ALIENWARE_M17X,
- 	STAC_92HD89XX_HP_FRONT_JACK,
-+	STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK,
- 	STAC_92HD73XX_MODELS
- };
- 
-@@ -1783,6 +1784,11 @@ static const struct hda_pintbl stac92hd8
- 	{}
- };
- 
-+static const struct hda_pintbl stac92hd89xx_hp_z1_g2_right_mic_jack_pin_configs[] = {
-+	{ 0x0e, 0x400000f0 },
-+	{}
-+};
-+
- static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
- 				   const struct hda_fixup *fix, int action)
- {
-@@ -1905,6 +1911,10 @@ static const struct hda_fixup stac92hd73
- 	[STAC_92HD89XX_HP_FRONT_JACK] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
-+	},
-+	[STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = stac92hd89xx_hp_z1_g2_right_mic_jack_pin_configs,
- 	}
- };
- 
-@@ -1965,6 +1975,8 @@ static const struct snd_pci_quirk stac92
- 		      "Alienware M17x", STAC_ALIENWARE_M17X),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
- 		      "Alienware M17x R3", STAC_DELL_EQ),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1927,
-+				"HP Z1 G2", STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
- 				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
- 	{} /* terminator */
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -405,6 +405,7 @@ int mei_cl_disconnect(struct mei_cl *cl)
+ 			dev_err(&dev->pdev->dev, "failed to disconnect.\n");
+ 			goto free;
+ 		}
++		cl->timer_count = MEI_CONNECT_TIMEOUT;
+ 		mdelay(10); /* Wait for hardware disconnection ready */
+ 		list_add_tail(&cb->list, &dev->ctrl_rd_list.list);
+ 	} else {
 
 
