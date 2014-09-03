@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934331AbaICWno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:43:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46565 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934428AbaICW2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:28:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Drews <drews@engr.wisc.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 124/125] NFSv4: Fix problems with close in the presence of a delegation
-Date: Wed,  3 Sep 2014 15:08:01 -0700
-Message-Id: <20140903220627.418297861@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
-References: <20140903220623.649748296@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S934592AbaICWoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:44:23 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:21087
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933473AbaICWoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:44:19 -0400
+From: "J. German Rivera" <German.Rivera@freescale.com>
+To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>
+CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
+        <scottwood@freescale.com>, <agraf@suse.de>,
+        <linuxppc-release@linux.freescale.net>,
+        "J. German Rivera" <German.Rivera@freescale.com>
+Subject: [RFC PATCH 4/4 v4] Update MAINTAINERS file
+Date: Wed, 3 Sep 2014 17:25:46 -0500
+Message-ID: <1409783146-13418-5-git-send-email-German.Rivera@freescale.com>
+X-Mailer: git-send-email 1.7.9.7
+In-Reply-To: <1409783146-13418-1-git-send-email-German.Rivera@freescale.com>
+References: <1409783146-13418-1-git-send-email-German.Rivera@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(105606002)(87936001)(104166001)(64706001)(80022001)(81156004)(92726001)(79102001)(2201001)(92566001)(26826002)(88136002)(19580405001)(83322001)(19580395003)(77982001)(68736004)(69596002)(44976005)(6806004)(81342001)(229853001)(47776003)(107046002)(81542001)(62966002)(20776003)(95666004)(106466001)(89996001)(90102001)(36756003)(99396002)(77156001)(97736001)(50986999)(93916002)(86362001)(21056001)(104016003)(50466002)(48376002)(85852003)(46102001)(85306004)(83072002)(102836001)(4396001)(50226001)(76176999)(76482001)(31966008)(87286001)(74662001)(84676001)(74502001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB326;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 032334F434
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=German.Rivera@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+From: "J. German Rivera" <German.Rivera@freescale.com>
 
-------------------
-
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-
-commit aee7af356e151494d5014f57b33460b162f181b5 upstream.
-
-In the presence of delegations, we can no longer assume that the
-state->n_rdwr, state->n_rdonly, state->n_wronly reflect the open
-stateid share mode, and so we need to calculate the initial value
-for calldata->arg.fmode using the state->flags.
-
-Reported-by: James Drews <drews@engr.wisc.edu>
-Fixes: 88069f77e1ac5 (NFSv41: Fix a potential state leakage when...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
+Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
 ---
- fs/nfs/nfs4proc.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+Changes in v4:
+none
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2587,6 +2587,7 @@ static void nfs4_close_prepare(struct rp
- 	struct nfs4_closedata *calldata = data;
- 	struct nfs4_state *state = calldata->state;
- 	struct inode *inode = calldata->inode;
-+	bool is_rdonly, is_wronly, is_rdwr;
- 	int call_close = 0;
- 
- 	dprintk("%s: begin!\n", __func__);
-@@ -2594,18 +2595,24 @@ static void nfs4_close_prepare(struct rp
- 		goto out_wait;
- 
- 	task->tk_msg.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_OPEN_DOWNGRADE];
--	calldata->arg.fmode = FMODE_READ|FMODE_WRITE;
- 	spin_lock(&state->owner->so_lock);
-+	is_rdwr = test_bit(NFS_O_RDWR_STATE, &state->flags);
-+	is_rdonly = test_bit(NFS_O_RDONLY_STATE, &state->flags);
-+	is_wronly = test_bit(NFS_O_WRONLY_STATE, &state->flags);
-+	/* Calculate the current open share mode */
-+	calldata->arg.fmode = 0;
-+	if (is_rdonly || is_rdwr)
-+		calldata->arg.fmode |= FMODE_READ;
-+	if (is_wronly || is_rdwr)
-+		calldata->arg.fmode |= FMODE_WRITE;
- 	/* Calculate the change in open mode */
- 	if (state->n_rdwr == 0) {
- 		if (state->n_rdonly == 0) {
--			call_close |= test_bit(NFS_O_RDONLY_STATE, &state->flags);
--			call_close |= test_bit(NFS_O_RDWR_STATE, &state->flags);
-+			call_close |= is_rdonly || is_rdwr;
- 			calldata->arg.fmode &= ~FMODE_READ;
- 		}
- 		if (state->n_wronly == 0) {
--			call_close |= test_bit(NFS_O_WRONLY_STATE, &state->flags);
--			call_close |= test_bit(NFS_O_RDWR_STATE, &state->flags);
-+			call_close |= is_wronly || is_rdwr;
- 			calldata->arg.fmode &= ~FMODE_WRITE;
- 		}
- 	}
+Changes in v3:
+none
 
+Changes in v2:
+none
+
+ MAINTAINERS |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 7e2eb4c..eb8597d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3841,6 +3841,14 @@ S:	Maintained
+ F:	sound/soc/fsl/fsl*
+ F:	sound/soc/fsl/mpc8610_hpcd.c
+
++FREESCALE QORIQ MANAGEMENT COMPLEX DRIVER
++M:	J. German Rivera <German.Rivera@freescale.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	include/linux/fsl_mc*
++F:	include/linux/fsl_dp*
++F:	drivers/bus/fsl-mc/*
++
+ FREEVXFS FILESYSTEM
+ M:	Christoph Hellwig <hch@infradead.org>
+ W:	ftp://ftp.openlinux.org/pub/people/hch/vxfs
+--
+1.7.9.7
 
