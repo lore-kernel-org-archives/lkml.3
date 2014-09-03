@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936342AbaICXtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:49:36 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49014 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291AbaICXta (ORCPT
+	id S936319AbaICXtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:49:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45237 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933295AbaICWFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 19:49:30 -0400
-Date: Thu, 4 Sep 2014 00:49:17 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Peter Foley <pefoley2@pefoley.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
-Message-ID: <20140903234917.GH29327@sirena.org.uk>
-References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
- <53FB9DA0.7000301@infradead.org>
- <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com>
- <540651B3.8030400@infradead.org>
- <20140902232906.GG29327@sirena.org.uk>
- <CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com>
- <20140903232149.GG29327@sirena.org.uk>
- <5407A68F.5090805@infradead.org>
+	Wed, 3 Sep 2014 18:05:52 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 17/55] hwmon: (sis5595) Prevent overflow problem when writing large limits
+Date: Wed,  3 Sep 2014 15:05:07 -0700
+Message-Id: <20140903220456.680480651@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+References: <20140903220453.653576908@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nkinyqrdwMuqz198"
-Content-Disposition: inline
-In-Reply-To: <5407A68F.5090805@infradead.org>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
- built-in.o files
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
---nkinyqrdwMuqz198
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Wed, Sep 03, 2014 at 04:38:55PM -0700, Randy Dunlap wrote:
-> On 09/03/14 16:21, Mark Brown wrote:
+From: Axel Lin <axel.lin@ingics.com>
 
-> > | git am ../quilt/rd-docs/001-docum-use-subdiry-avoid-builtin.patch
-> > | Patch format detection failed.
+commit cc336546ddca8c22de83720632431c16a5f9fe9a upstream.
 
-> > I guess either something changed in the way Randy is generating his
-> > patches or I'm using a different version of git which doesn't like
-> > them - looking at te patch files I'm not *entirely* surprised they=20
-> > have trouble.
+On platforms with sizeof(int) < sizeof(long), writing a temperature
+limit larger than MAXINT will result in unpredictable limit values
+written to the chip. Avoid auto-conversion from long to int to fix
+the problem.
 
-> Hm, it could be a problem with the Index line.  I'll disable that option
-> in quilt and see if that helps for the next time.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-If you try applying it locally with git am that should show if it's OK I
-guess - I'm using git 2.1.0 here FWIW.
+---
+ drivers/hwmon/sis5595.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---nkinyqrdwMuqz198
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -159,7 +159,7 @@ static inline int TEMP_FROM_REG(s8 val)
+ {
+ 	return val * 830 + 52120;
+ }
+-static inline s8 TEMP_TO_REG(int val)
++static inline s8 TEMP_TO_REG(long val)
+ {
+ 	int nval = clamp_val(val, -54120, 157530) ;
+ 	return nval < 0 ? (nval - 5212 - 415) / 830 : (nval - 5212 + 415) / 830;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUB6j6AAoJELSic+t+oim928kQAJXvhXJ5UNfdvqzX1I0txJBC
-r2X0rN8AZAi6DgwlSnyh5P7KiUOT8Mm7oXb3SpGMdpB2hvDy3uRtZDv4KcQmR6nf
-8bSfjxYy5urugCIG8ZZNBAMiwjgs5IpRvOgoPRoLLxK0o65hQBBUfd3GVUJR0zMI
-ToBp1YLPhzf07hjPOPcCm4Cgy0mEBeu4dNcyjJWf5Nf4Lq1nsJhJONu51uOekbEt
-AW6R//7pRZSqRbW+G8j8tR/PiFx/9XXpXhkkwE0F8mcHpbOHolkcHjm21+k7DnwN
-Uzb4tnXWEeFGVYGN3uHqrFSPZ43cO4ncR7ndjFJlzq7AWUxsE59leXvnTt0t1ODf
-3NvbNqEpAIAy7TtBZOFtqL83HRXCYdO+Y6aEOdKsRFTiQNjclsGeHSGPEgq5zoLY
-6iYVmiMIOhG8ZFDehQphgC/8bj8oPxVnDI1dOqLu1ovh2cxe8DD9Z23+XJ2cYsCh
-aMI0pxsJeXsRGWJS3R6bPkOg5kR/wRoorMwfxN6ePIS/mhS0u4AD/9DkUQ8Fbwv8
-N5TYzZ3sv/Kq5C+1C7eVoDx7r6N7/nuHlye1ynkVAITWoqdNf8EiQEp8uFxnwWkQ
-y2h9YihnOeXsPHQ49ZMXGxH/1HmQgoF036IC5gWaFQcsOnB2qAqp/PLynuF0V/ID
-vqYttLfMq+PsVIYRCErM
-=miWX
------END PGP SIGNATURE-----
-
---nkinyqrdwMuqz198--
