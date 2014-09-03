@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150AbaICMqu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:46:50 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44690 "EHLO mail.mev.co.uk"
+	id S932790AbaICMq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:46:28 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:44730 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932792AbaICMq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:46:29 -0400
+	id S932692AbaICMq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 08:46:26 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 34/37] staging: comedi: ni_mio_common: use CMDF_ROUND_...
-Date: Wed,  3 Sep 2014 13:45:57 +0100
-Message-Id: <1409748360-17063-35-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 31/37] staging: comedi: me4000: use CMDF_ROUND_...
+Date: Wed,  3 Sep 2014 13:45:54 +0100
+Message-Id: <1409748360-17063-32-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
 References: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
@@ -27,136 +27,61 @@ Replace use of the `TRIG_ROUND_...` macros with the new names
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/ni_mio_common.c | 38 +++++++++++++-------------
- 1 file changed, 19 insertions(+), 19 deletions(-)
+ drivers/staging/comedi/drivers/me4000.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index 584de17..b34df3a 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -2206,15 +2206,15 @@ static int ni_ns_to_timer(const struct comedi_device *dev, unsigned nanosec,
- 	struct ni_private *devpriv = dev->private;
- 	int divider;
+diff --git a/drivers/staging/comedi/drivers/me4000.c b/drivers/staging/comedi/drivers/me4000.c
+index 5b74b36..3b0df6b 100644
+--- a/drivers/staging/comedi/drivers/me4000.c
++++ b/drivers/staging/comedi/drivers/me4000.c
+@@ -650,10 +650,10 @@ static int ai_round_cmd_args(struct comedi_device *dev,
+ 		*init_ticks = (cmd->start_arg * 33) / 1000;
+ 		rest = (cmd->start_arg * 33) % 1000;
  
--	switch (flags & TRIG_ROUND_MASK) {
--	case TRIG_ROUND_NEAREST:
-+	switch (flags & CMDF_ROUND_MASK) {
-+	case CMDF_ROUND_NEAREST:
- 	default:
- 		divider = (nanosec + devpriv->clock_ns / 2) / devpriv->clock_ns;
- 		break;
--	case TRIG_ROUND_DOWN:
-+	case CMDF_ROUND_DOWN:
- 		divider = (nanosec) / devpriv->clock_ns;
- 		break;
--	case TRIG_ROUND_UP:
-+	case CMDF_ROUND_UP:
- 		divider = (nanosec + devpriv->clock_ns - 1) / devpriv->clock_ns;
- 		break;
- 	}
-@@ -2541,7 +2541,7 @@ static int ni_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+-		if ((cmd->flags & TRIG_ROUND_MASK) == TRIG_ROUND_NEAREST) {
++		if ((cmd->flags & CMDF_ROUND_MASK) == CMDF_ROUND_NEAREST) {
+ 			if (rest > 33)
+ 				(*init_ticks)++;
+-		} else if ((cmd->flags & TRIG_ROUND_MASK) == TRIG_ROUND_UP) {
++		} else if ((cmd->flags & CMDF_ROUND_MASK) == CMDF_ROUND_UP) {
+ 			if (rest)
+ 				(*init_ticks)++;
+ 		}
+@@ -663,10 +663,10 @@ static int ai_round_cmd_args(struct comedi_device *dev,
+ 		*scan_ticks = (cmd->scan_begin_arg * 33) / 1000;
+ 		rest = (cmd->scan_begin_arg * 33) % 1000;
  
- 		/* load SI */
- 		timer = ni_ns_to_timer(dev, cmd->scan_begin_arg,
--				       TRIG_ROUND_NEAREST);
-+				       CMDF_ROUND_NEAREST);
- 		ni_stc_writel(dev, timer, AI_SI_Load_A_Registers);
- 		ni_stc_writew(dev, AI_SI_Load, AI_Command_1_Register);
- 		break;
-@@ -2569,7 +2569,7 @@ static int ni_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 			timer = 1;
- 		else
- 			timer = ni_ns_to_timer(dev, cmd->convert_arg,
--					       TRIG_ROUND_NEAREST);
-+					       CMDF_ROUND_NEAREST);
- 		/* 0,0 does not work */
- 		ni_stc_writew(dev, 1, AI_SI2_Load_A_Register);
- 		ni_stc_writew(dev, timer, AI_SI2_Load_B_Register);
-@@ -3190,7 +3190,7 @@ static int ni_ao_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		devpriv->ao_cmd2 &= ~AO_BC_Gate_Enable;
- 		trigvar =
- 		    ni_ns_to_timer(dev, cmd->scan_begin_arg,
--				   TRIG_ROUND_NEAREST);
-+				   CMDF_ROUND_NEAREST);
- 		ni_stc_writel(dev, 1, AO_UI_Load_A_Register);
- 		ni_stc_writew(dev, AO_UI_Load, AO_Command_1_Register);
- 		ni_stc_writel(dev, trigvar, AO_UI_Load_A_Register);
-@@ -4187,15 +4187,15 @@ static int ni_m_series_pwm_config(struct comedi_device *dev,
- 	switch (data[0]) {
- 	case INSN_CONFIG_PWM_OUTPUT:
- 		switch (data[1]) {
--		case TRIG_ROUND_NEAREST:
-+		case CMDF_ROUND_NEAREST:
- 			up_count =
- 			    (data[2] +
- 			     devpriv->clock_ns / 2) / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_DOWN:
-+		case CMDF_ROUND_DOWN:
- 			up_count = data[2] / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_UP:
-+		case CMDF_ROUND_UP:
- 			up_count =
- 			    (data[2] + devpriv->clock_ns -
- 			     1) / devpriv->clock_ns;
-@@ -4204,15 +4204,15 @@ static int ni_m_series_pwm_config(struct comedi_device *dev,
- 			return -EINVAL;
+-		if ((cmd->flags & TRIG_ROUND_MASK) == TRIG_ROUND_NEAREST) {
++		if ((cmd->flags & CMDF_ROUND_MASK) == CMDF_ROUND_NEAREST) {
+ 			if (rest > 33)
+ 				(*scan_ticks)++;
+-		} else if ((cmd->flags & TRIG_ROUND_MASK) == TRIG_ROUND_UP) {
++		} else if ((cmd->flags & CMDF_ROUND_MASK) == CMDF_ROUND_UP) {
+ 			if (rest)
+ 				(*scan_ticks)++;
  		}
- 		switch (data[3]) {
--		case TRIG_ROUND_NEAREST:
-+		case CMDF_ROUND_NEAREST:
- 			down_count =
- 			    (data[4] +
- 			     devpriv->clock_ns / 2) / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_DOWN:
-+		case CMDF_ROUND_DOWN:
- 			down_count = data[4] / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_UP:
-+		case CMDF_ROUND_UP:
- 			down_count =
- 			    (data[4] + devpriv->clock_ns -
- 			     1) / devpriv->clock_ns;
-@@ -4251,15 +4251,15 @@ static int ni_6143_pwm_config(struct comedi_device *dev,
- 	switch (data[0]) {
- 	case INSN_CONFIG_PWM_OUTPUT:
- 		switch (data[1]) {
--		case TRIG_ROUND_NEAREST:
-+		case CMDF_ROUND_NEAREST:
- 			up_count =
- 			    (data[2] +
- 			     devpriv->clock_ns / 2) / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_DOWN:
-+		case CMDF_ROUND_DOWN:
- 			up_count = data[2] / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_UP:
-+		case CMDF_ROUND_UP:
- 			up_count =
- 			    (data[2] + devpriv->clock_ns -
- 			     1) / devpriv->clock_ns;
-@@ -4268,15 +4268,15 @@ static int ni_6143_pwm_config(struct comedi_device *dev,
- 			return -EINVAL;
+@@ -676,10 +676,10 @@ static int ai_round_cmd_args(struct comedi_device *dev,
+ 		*chan_ticks = (cmd->convert_arg * 33) / 1000;
+ 		rest = (cmd->convert_arg * 33) % 1000;
+ 
+-		if ((cmd->flags & TRIG_ROUND_MASK) == TRIG_ROUND_NEAREST) {
++		if ((cmd->flags & CMDF_ROUND_MASK) == CMDF_ROUND_NEAREST) {
+ 			if (rest > 33)
+ 				(*chan_ticks)++;
+-		} else if ((cmd->flags & TRIG_ROUND_MASK) == TRIG_ROUND_UP) {
++		} else if ((cmd->flags & CMDF_ROUND_MASK) == CMDF_ROUND_UP) {
+ 			if (rest)
+ 				(*chan_ticks)++;
  		}
- 		switch (data[3]) {
--		case TRIG_ROUND_NEAREST:
-+		case CMDF_ROUND_NEAREST:
- 			down_count =
- 			    (data[4] +
- 			     devpriv->clock_ns / 2) / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_DOWN:
-+		case CMDF_ROUND_DOWN:
- 			down_count = data[4] / devpriv->clock_ns;
- 			break;
--		case TRIG_ROUND_UP:
-+		case CMDF_ROUND_UP:
- 			down_count =
- 			    (data[4] + devpriv->clock_ns -
- 			     1) / devpriv->clock_ns;
+@@ -849,7 +849,7 @@ static int me4000_ai_do_cmd_test(struct comedi_device *dev,
+ 	int err = 0;
+ 
+ 	/* Only rounding flags are implemented */
+-	cmd->flags &= TRIG_ROUND_NEAREST | TRIG_ROUND_UP | TRIG_ROUND_DOWN;
++	cmd->flags &= CMDF_ROUND_NEAREST | CMDF_ROUND_UP | CMDF_ROUND_DOWN;
+ 
+ 	/* Round the timer arguments */
+ 	ai_round_cmd_args(dev, s, cmd, &init_ticks, &scan_ticks, &chan_ticks);
 -- 
 2.1.0
 
