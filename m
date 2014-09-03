@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203AbaICJ5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:57:18 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57394 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932184AbaICJ5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:57:14 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 55/56] x86/xen: resume timer irqs early
-Date: Wed,  3 Sep 2014 11:27:14 +0200
-Message-Id: <b15a46084b814a29038739c27b78977637354602.1409735865.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
-References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
-In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
-References: <cover.1409735865.git.jslaby@suse.cz>
+	id S932365AbaICJ6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:58:08 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:4762 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932347AbaICJ6E convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 05:58:04 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
+        "'santosh.shilimkar@ti.com'" <santosh.shilimkar@ti.com>,
+        "'grant.likely@linaro.org'" <grant.likely@linaro.org>,
+        "'robh@kernel.org'" <robh@kernel.org>,
+        "'akpm@linux-foundation.org'" <akpm@linux-foundation.org>,
+        "'m.szyprowski@samsung.com'" <m.szyprowski@samsung.com>,
+        "'lauraa@codeaurora.org'" <lauraa@codeaurora.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'m.szyprowski@samsung.com'" <m.szyprowski@samsung.com>,
+        "'akpm@linux-foundation.org'" <akpm@linux-foundation.org>,
+        "'iamjoonsoo.kim@lge.com'" <iamjoonsoo.kim@lge.com>,
+        "'mina86@mina86.com'" <mina86@mina86.com>,
+        "'aneesh.kumar@linux.vnet.ibm.com'" <aneesh.kumar@linux.vnet.ibm.com>,
+        "'lauraa@codeaurora.org'" <lauraa@codeaurora.org>,
+        "'gioh.kim@lge.com'" <gioh.kim@lge.com>,
+        "'michael.opdenacker@free-electrons.com'" 
+	<michael.opdenacker@free-electrons.com>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Wed, 3 Sep 2014 17:57:57 +0800
+Subject: free initrd / cma pages problems with memblock
+Thread-Topic: free initrd / cma pages problems with memblock
+Thread-Index: Ac/HXYoIBMd4ncK5R8G5Q+V4maVpeA==
+Message-ID: <35FD53F367049845BC99AC72306C23D103CDBFBFB00B@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Vrabel <david.vrabel@citrix.com>
+Hi 
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
 
-===============
+I found the freed reserved memory by free_initrd_mem( ) and  cma_activate_area( )
+Are still marked as reserved in /sys/kernel/debug/memblock/reserved .
 
-commit 8d5999df35314607c38fbd6bdd709e25c3a4eeab upstream.
+I think This is not correct and not suitable for memory debug,
+Why not also call memblock_free during these functions?
+So that /sys/kernel/debug/memblock/reserved only mark really reserved memory as reserved .
 
-If the timer irqs are resumed during device resume it is possible in
-certain circumstances for the resume to hang early on, before device
-interrupts are resumed.  For an Ubuntu 14.04 PVHVM guest this would
-occur in ~0.5% of resume attempts.
 
-It is not entirely clear what is occuring the point of the hang but I
-think a task necessary for the resume calls schedule_timeout(),
-waiting for a timer interrupt (which never arrives).  This failure may
-require specific tasks to be running on the other VCPUs to trigger
-(processes are not frozen during a suspend/resume if PREEMPT is
-disabled).
 
-Add IRQF_EARLY_RESUME to the timer interrupts so they are resumed in
-syscore_resume().
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- arch/x86/xen/time.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index ee365895b06b..90bfa524b11c 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -445,7 +445,7 @@ void xen_setup_timer(int cpu)
- 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
- 				      IRQF_DISABLED|IRQF_PERCPU|
- 				      IRQF_NOBALANCING|IRQF_TIMER|
--				      IRQF_FORCE_RESUME,
-+				      IRQF_FORCE_RESUME|IRQF_EARLY_RESUME,
- 				      name, NULL);
- 
- 	memcpy(evt, xen_clockevent, sizeof(*evt));
--- 
-2.1.0
+Thanks.
 
