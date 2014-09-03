@@ -1,132 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaICHJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:09:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42972 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751598AbaICHJU (ORCPT
+	id S1755492AbaICHKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:10:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:35619 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaICHKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:09:20 -0400
-Date: Wed, 3 Sep 2014 09:09:16 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Erik van Luijk <evanluijk@interact.nl>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: Re: [PATCH] ARM: at91/dt: at91sam9m10g45ek add rtc node
-Message-ID: <20140903090916.4a624739@bbrezillon>
-In-Reply-To: <5406B098.6020500@interact.nl>
-References: <1409655132-17735-1-git-send-email-evanluijk@interact.nl>
-	<20140902183356.7bcfdf84@bbrezillon>
-	<5406B098.6020500@interact.nl>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Sep 2014 03:10:01 -0400
+X-AuditID: cbfee691-f79546d0000011a1-2e-5406bec28106
+Message-id: <5406BEC2.60801@samsung.com>
+Date: Wed, 03 Sep 2014 16:09:54 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        r.baldyga@samsung.com
+Subject: Re: [PATCH v2] extcon: max77693: Fix a bug occured at changing ADC
+ debounce time.
+References: <1409726878-25781-1-git-send-email-jonghwa3.lee@samsung.com>
+In-reply-to: <1409726878-25781-1-git-send-email-jonghwa3.lee@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSoHtoH1uIQccRTYvOs0+YLS7vmsNm
+	cbtxBZvFg8M72R1YPPq2rGL0+LxJLoApissmJTUnsyy1SN8ugSvj0PTnTAXf+CpeT9NqYGzg
+	6WLk5JAQMJFY+O0YC4QtJnHh3nq2LkYuDiGBpYwSv08/YoEpmjr3EDOILSSwiFHi5SNFiKLX
+	jBJtB2cygiR4BTQk9p7vYAWxWQRUJV7/fA3WwCagJbH/xQ02EFtUIExi5fQrLBD1ghI/Jt8D
+	s0WAaq49fgc2h1kgWGLSng6wXmGBGIl3HTehFntIXGlawwRicwp4Siz8OYcVol5HYn/rNDYI
+	W15i85q3zCDHSQhMZ5eYvXoxI8RBAhLfJh8CWsYBlJCV2HSAGeIxSYmDK26wTGAUm4XkpFlI
+	xs5CMnYBI/MqRtHUguSC4qT0IlO94sTc4tK8dL3k/NxNjMDIOf3v2cQdjPcPWB9iFOBgVOLh
+	XRDAFiLEmlhWXJl7iNEU6IqJzFKiyfnA+MwriTc0NjOyMDUxNTYytzRTEufVkf4ZLCSQnliS
+	mp2aWpBaFF9UmpNafIiRiYNTqoFRwuuOe2uTNkMLj4iUf8s+QeF5Iva1kx4a3FqQuemVc4TG
+	N9s6oaClBxnbZ2Uf7dsocNDhtklstf/RKJnOM1d8zbMvLppuqM261tgo7q5G9ZpH7KU3VDds
+	j2Q/ryo5Qe6Ml/iWmfP2uF27+klFgbN/OfOqlypXzia8Vp2nklR7/F3hwVmBIkeVWIozEg21
+	mIuKEwGWqSaclwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t9jAd1D+9hCDFb+krfoPPuE2eLyrjls
+	FrcbV7BZPDi8k92BxaNvyypGj8+b5AKYohoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
+	dQ0tLcyVFPISc1NtlVx8AnTdMnOANikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
+	MkADCWsYMw5Nf85U8I2v4vU0rQbGBp4uRk4OCQETialzDzFD2GISF+6tZwOxhQQWMUq8fKTY
+	xcgFZL9mlGg7OJMRJMEroCGx93wHK4jNIqAq8frna7BmNgEtif0vboA1iwqESaycfoUFol5Q
+	4sfke2C2CFDNtcfvwOYwCwRLTNrTAdYrLBAj8a7jJjPEYg+JK01rmEBsTgFPiYU/57BC1OtI
+	7G+dxgZhy0tsXvOWeQKjwCwkK2YhKZuFpGwBI/MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxN
+	jOC4fCa1g3Flg8UhRgEORiUe3gUBbCFCrIllxZW5hxglOJiVRHh9E4FCvCmJlVWpRfnxRaU5
+	qcWHGE2BITCRWUo0OR+YMvJK4g2NTcyMLI3MDS2MjM2VxHkPtFoHCgmkJ5akZqemFqQWwfQx
+	cXBKNTBO+Hh12uTt39xcKzd8UWOR4P7a8fzOLoXPBqu3m4fPWm+09tcO3w3lyW1PRGW+LuDM
+	k96ov2P+BzHpm4cYfDluHrm27dXkOdzPw72UDu6efoDnCyfnmh13HmnYqM7sWrjOMcct39Zy
+	hY19/5uJ5k6bffsi9y0rMvhY8PlWTPF51lOv9/grPY3yUWIpzkg01GIuKk4EAJmAXI3hAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Sep 2014 08:09:28 +0200
-Erik van Luijk <evanluijk@interact.nl> wrote:
+Hi Jonghwa,
 
+On 09/03/2014 03:47 PM, Jonghwa Lee wrote:
+> When it writes some value other than 0 to BTLDset and JIGset, muic device
+> will be reset automatically. And it happens during updating ADC debounce time,
+> because it shares same register. To update ADC debounce time without reset,
+> set value only to ADCDbset and 0 to BTLDset and JIGset.
 > 
-> Hi Boris, Nicolas,
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> ---
+> Changes in v2
+>  - Fix comments.
 > 
-> Boris BREZILLON schreef op 2-9-2014 om 18:33:
-> > Hi Erik,
->  >
->  > On Tue,  2 Sep 2014 12:52:12 +0200
->  > Erik van Luijk <evanluijk@interact.nl> wrote:
->  >
->  >> Signed-off-by: Erik van Luijk <evanluijk@interact.nl>
->  >
->  > Except for the nitpicks you'll find below, you have my
->  >
->  > Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
->  >
->  >> ---
->  >>  arch/arm/boot/dts/at91sam9g45.dtsi     | 7 +++++++
->  >>  arch/arm/boot/dts/at91sam9m10g45ek.dts | 3 +++
->  >>  2 files changed, 10 insertions(+)
->  >>
->  >> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi 
-> b/arch/arm/boot/dts/at91sam9g45.dtsi
->  >> index 932a669..bf62c18 100644
->  >> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
->  >> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
->  >> @@ -1070,6 +1070,13 @@
->  >>                  status = "disabled";
->  >>              };
->  >>
->  >> +            rtc@fffffdb0 {
->  >> +                compatible = "atmel,at91rm9200-rtc";
->  >> +                reg = <0xfffffdb0 0x30>;
->  >
->  > The RTC registers goes from 0xfffffdb0 to 0xfffffdc0, which means the
->  > size is 0x10 and not 0x30. This is not important here, because the
->  > following region is marked as reserved, but we prefer to keep the DT
->  > consistent with the datasheet.
+>  drivers/extcon/extcon-max77693.c |   11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
 > 
-> This is an inconsistency in the datasheet of the AT91SAM9G45 (and at 
-> least also
-> AT91SAM9G15, AT91SAM9G25, AT91SAM9G35 and AT91SAM9M10).
-> In the memory map (fig. 5-1) there is room for 16 bytes.
-> But in the 'Real-time Clock (RTC) User Interface' (table 15-1) there is 
-> room for
-> 48 bytes (0x30) excluding the Reserved Registers (which don't belong to 
-> the RTC
-> on the AT91SAM9M10). Perhaps Nicolas can draw some attention to this at 
-> Atmel.
+> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+> index 77460f2..171f35a 100644
+> --- a/drivers/extcon/extcon-max77693.c
+> +++ b/drivers/extcon/extcon-max77693.c
+> @@ -255,10 +255,15 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
+>  	case ADC_DEBOUNCE_TIME_10MS:
+>  	case ADC_DEBOUNCE_TIME_25MS:
+>  	case ADC_DEBOUNCE_TIME_38_62MS:
+> -		ret = regmap_update_bits(info->max77693->regmap_muic,
+> +		/*
+> +		 * Don't touch BTLDset, JIGset when you want to change adc
+> +		 * debounce time. If it writes other than 0 to BTLDset, JIGset
+> +		 * muic device will be reset and loose current state.
+> +		 */
+> +		ret = regmap_write_bits(info->max77693->regmap_muic,
 
-Indeed, I only had a look at the memory map.
-Given this input, you should keep your definition ;-).
+regmap_write_bits() is wrong. You have to use regmap_write().
 
-> 
-> >
->  >> +                interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
->  >> +                status = "disabled";
->  >> +            };
->  >> +
->  >>              spi0: spi@fffa4000 {
->  >>                  #address-cells = <1>;
->  >>                  #size-cells = <0>;
->  >> diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts 
-> b/arch/arm/boot/dts/at91sam9m10g45ek.dts
->  >> index 96ccc7d..2dd2347 100644
->  >> --- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
->  >> +++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
->  >> @@ -70,6 +70,9 @@
->  >>
->  >>              watchdog@fffffd40 {
->  >>                  status = "okay";
->  >> +
->  >> +            rtc@fffffdb0 {
->  >> +                status = "okay";
->  >
->  > Try to keep SoC and board changes in distinct commits.
-> 
-> Understood.
-> 
-> >
->  >>              };
->  >>
->  >>              mmc0: mmc@fff80000 {
->  >
->  >
->  > Best Regards,
->  >
->  > Boris
->  >
-> 
-> Regards,
-> 
-> Erik
+>  					  MAX77693_MUIC_REG_CTRL3,
+> -					  CONTROL3_ADCDBSET_MASK,
+> -					  time << CONTROL3_ADCDBSET_SHIFT);
+> +					  (CONTROL3_ADCDBSET_MASK &
+> +					  time << CONTROL3_ADCDBSET_SHIFT));
 
+I think you don't need to mask with CONTROL3_ADCDBSET_MASK.
+You can just write following statement wihtout masking operation
+because of using regmap_write() function.
 
+		ret = regmap_write(info->max77693->regmap_muic,			
+  				  MAX77693_MUIC_REG_CTRL3,
+				  time << CONTROL3_ADCDBSET_SHIFT);
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Thanks,
+Chanwoo Choi
