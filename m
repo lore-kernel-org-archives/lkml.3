@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933445AbaICWSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:18:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757233AbaICWQH (ORCPT
+	id S933484AbaICWSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:18:21 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:37109 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933347AbaICWSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.16 027/125] mei: fix return value on disconnect timeout
-Date: Wed,  3 Sep 2014 15:06:24 -0700
-Message-Id: <20140903220624.478492165@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
-References: <20140903220623.649748296@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 3 Sep 2014 18:18:17 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140903220518.435911463@linuxfoundation.org>
+References: <20140903220515.958924632@linuxfoundation.org>
+	<20140903220518.435911463@linuxfoundation.org>
+Date: Wed, 3 Sep 2014 18:18:16 -0400
+Message-ID: <CAHQdGtR8eH-rz3=4uBU=MjrXBUKhrRFO1rsjKqSxD_131MoTFQ@mail.gmail.com>
+Subject: Re: [PATCH 3.14 83/88] NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Stable Tree <stable@vger.kernel.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Sep 3, 2014 at 6:05 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> 3.14-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>
+> commit 65b38851a17472d31fec9019fc3a55b0802dab88 upstream.
+>
+> The usage of pid_ns->child_reaper->nsproxy->net_ns in
+> nfs_server_list_open and nfs_client_list_open is not safe.
+>
+> /proc for a pid namespace can remain mounted after the all of the
+> process in that pid namespace have exited.  There are also times
+> before the initial process in a pid namespace has started or after the
+> initial process in a pid namespace has exited where
+> pid_ns->child_reaper can be NULL or stale.  Making the idiom
+> pid_ns->child_reaper->nsproxy a double whammy of problems.
+>
+> Luckily all that needs to happen is to move /proc/fs/nfsfs/servers and
+> /proc/fs/nfsfs/volumes under /proc/net to /proc/net/nfsfs/servers and
+> /proc/net/nfsfs/volumes and add a symlink from the original location,
+> and to use seq_open_net as it has been designed.
+>
+> Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+> Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
 
-------------------
+...and ditto. Please hold off applying until the commit is fixed in upstream.
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+-- 
+Trond Myklebust
 
-commit fe2f17eb3da38ac0d5a00c511255bf3a33d16d24 upstream.
+Linux NFS client maintainer, PrimaryData
 
-wait_event_timeout can return 0 or the remaining jiffies
-so return -ETIME if disconnected state not reached.
-
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/misc/mei/client.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
-
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -459,7 +459,7 @@ int mei_cl_disconnect(struct mei_cl *cl)
- {
- 	struct mei_device *dev;
- 	struct mei_cl_cb *cb;
--	int rets, err;
-+	int rets;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -ENODEV;
-@@ -501,23 +501,18 @@ int mei_cl_disconnect(struct mei_cl *cl)
- 	}
- 	mutex_unlock(&dev->device_lock);
- 
--	err = wait_event_timeout(dev->wait_recvd_msg,
-+	wait_event_timeout(dev->wait_recvd_msg,
- 			MEI_FILE_DISCONNECTED == cl->state,
- 			mei_secs_to_jiffies(MEI_CL_CONNECT_TIMEOUT));
- 
- 	mutex_lock(&dev->device_lock);
-+
- 	if (MEI_FILE_DISCONNECTED == cl->state) {
- 		rets = 0;
- 		cl_dbg(dev, cl, "successfully disconnected from FW client.\n");
- 	} else {
--		rets = -ENODEV;
--		if (MEI_FILE_DISCONNECTED != cl->state)
--			cl_err(dev, cl, "wrong status client disconnect.\n");
--
--		if (err)
--			cl_dbg(dev, cl, "wait failed disconnect err=%d\n", err);
--
--		cl_err(dev, cl, "failed to disconnect from FW client.\n");
-+		cl_dbg(dev, cl, "timeout on disconnect from FW client.\n");
-+		rets = -ETIME;
- 	}
- 
- 	mei_io_list_flush(&dev->ctrl_rd_list, cl);
-
-
+trond.myklebust@primarydata.com
