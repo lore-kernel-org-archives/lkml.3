@@ -1,104 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231AbaICPM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:12:27 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:54541 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932757AbaICPMR (ORCPT
+	id S1756117AbaICPPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:15:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40655 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaICPPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 11:12:17 -0400
-Date: Wed, 3 Sep 2014 08:03:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com, <""@rjwysocki.net>,
-        tianyu.lan@intel.com
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-Message-ID: <20140903150306.GU5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
- <20140901112059.GG27892@worktop.ger.corp.intel.com>
- <20140901160550.GL5001@linux.vnet.ibm.com>
- <20140901161735.GA5806@worktop.ger.corp.intel.com>
- <20140902163656.GC5001@linux.vnet.ibm.com>
- <20140903113112.GM4783@worktop.ger.corp.intel.com>
+	Wed, 3 Sep 2014 11:15:35 -0400
+Date: Wed, 3 Sep 2014 17:15:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: jjherne@linux.vnet.ibm.com, Sasha Levin <sasha.levin@oracle.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+Message-ID: <20140903151531.GP4783@worktop.ger.corp.intel.com>
+References: <53875F09.3090607@linux.vnet.ibm.com>
+ <538DB076.4090704@cn.fujitsu.com>
+ <20140603141659.GO30445@twins.programming.kicks-ass.net>
+ <538E840D.2040300@cn.fujitsu.com>
+ <20140604064946.GF30445@twins.programming.kicks-ass.net>
+ <538ED7EB.5050303@cn.fujitsu.com>
+ <20140604093907.GC11096@twins.programming.kicks-ass.net>
+ <53904C6B.90001@cn.fujitsu.com>
+ <20140606133629.GP13930@laptop.programming.kicks-ass.net>
+ <5403E237.2000708@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140903113112.GM4783@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090315-7164-0000-0000-00000452BE98
+In-Reply-To: <5403E237.2000708@cn.fujitsu.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 01:31:12PM +0200, Peter Zijlstra wrote:
-> On Tue, Sep 02, 2014 at 09:36:56AM -0700, Paul E. McKenney wrote:
-> > On Mon, Sep 01, 2014 at 06:17:35PM +0200, Peter Zijlstra wrote:
-> > > On Mon, Sep 01, 2014 at 09:05:50AM -0700, Paul E. McKenney wrote:
-> > > > > URGH.. I really hate that. The hotplug interface is already too
-> > > > > horrible, we should not add such hacks to it.
-> > > > 
-> > > > We do have try_ interfaces to a number of other subsystems, so I don't
-> > > > believe that it qualifies as such a hack.
-> > > 
-> > > We do indeed, but I'm not sure about adding this to the hotplug stuff.
-> > 
-> > Looks pretty straightforward to me.
-> > 
-> > > Also; not really understanding the problem doesn't help. 
-> > 
-> > The current implementation of synchronize_sched_expedited()
-> > calls get_online_cpus().  Some of the ACPI code needs to hold the
-> > acpi_ioremap_lock mutex across synchronize_sched_expedited(), and
-> > also needs to acquire this same mutex from a CPU hotplug notifier.
-> > This results in deadlock between the cpu_hotplug.lock mutex and the
-> > acpi_ioremap_lock mutex.
+On Mon, Sep 01, 2014 at 11:04:23AM +0800, Lai Jiangshan wrote:
+> Hi, Peter
 > 
+> Could you make a patch for it, please? Jason J. Herne's test showed we
+> addressed the bug.  But the fix is not in kernel yet.  Some new highly
+> related reports are come up again.
 > 
->   acpi_ioremap_lock			cpu_hotplug_begin()
->     synchronize_sched()			  acpi_ioremap_lock
->       get_online_cpus()
-> 
-> So yes, AB-BA.
-> 
-> > Normal RCU grace periods avoid this by synchronizing on a lock acquired by
-> > the RCU CPU-hotplug notifiers, but this does not work for the expedited
-> > grace periods because the outgoing CPU can be running random tasks for
-> > quite some time after RCU's notifier executes.  So the fix is just to
-> > drop back to a normal grace period when there is a CPU-hotplug operation
-> > in progress.
-> 
-> So why are we 'normally' doing an expedited call here anyhow? 
+> I don't want to argue any more, no matter how the patch will be,
+> I will accept.  And please add the following tags in your patch:
 
-Presumably because they set either the boot parameter or
-the sysfs variable that causes synchronize_sched() to so
-synchronize_sched_expedited().
+Well; I said http://marc.info/?l=linux-kernel&m=140187009016179 was a
+good patch and only asked you to add a comment and make it a nice patch
+which I could apply: http://marc.info/?l=linux-kernel&m=140187477317886&w=2
 
-> > > > > How about ripping that rcu_expedited stuff out instead? That's all
-> > > > > conditional anyhow, so might as well not do it.
-> > > > 
-> > > > In what way is the expedited stuff conditional?
-> > > 
-> > > synchronize_sched() conditionally calls synchronize_sched_expedited()
-> > > and its condition: rcu_expedited, gets set/cleared on pm notifiers and
-> > > nr_cpu_ids.
-> > 
-> > There are also direct calls to both synchronize_sched_expedited() and
-> > synchronize_rcu_expedited().
-> 
-> But those are not within hotplug bits. Also weren't we removing them? I
-> thought we didn't appreciate spraying IPIs like they do?
+Instead you posted an entirely different patch again.
 
-I hadn't heard anything about removing them, but making the
-expedited primitives a bit less IPI-happy is on my list.
+So how about the below?
 
-							Thanx, Paul
+---
+Subject: sched: Migrate waking tasks
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Wed, 4 Jun 2014 16:25:15 +0800
+
+Current code can fail to migrate a waking task (silently) when TTWU_QUEUE is
+enabled.
+
+When a task is waking, it is pending on the wake_list of the rq, but it is not
+queued (task->on_rq == 0). In this case, set_cpus_allowed_ptr() and
+__migrate_task() will not migrate it because its invisible to them.
+
+This behavior is incorrect, because the task has been already woken, it will be
+running on the wrong CPU without correct placement until the next wake-up or
+update for cpus_allowed.
+
+To fix this problem, we need to finish the wakeup (so they appear on
+the runqueue) before we migrate them.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Jason J. Herne <jjherne@linux.vnet.ibm.com>
+Tested-by: Jason J. Herne <jjherne@linux.vnet.ibm.com>
+signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/538ED7EB.5050303@cn.fujitsu.com
+---
+ kernel/sched/core.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4642,7 +4642,7 @@ int set_cpus_allowed_ptr(struct task_str
+ 		goto out;
+ 
+ 	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
+-	if (task_on_rq_queued(p)) {
++	if (task_on_rq_queued(p) || p->state == TASK_WAKING) {
+ 		struct migration_arg arg = { p, dest_cpu };
+ 		/* Need help from migration thread: drop lock and wait. */
+ 		task_rq_unlock(rq, p, &flags);
+@@ -4775,6 +4775,12 @@ static int migration_cpu_stop(void *data
+ 	 * be on another cpu but it doesn't matter.
+ 	 */
+ 	local_irq_disable();
++	/*
++	 * We need to explicitly wake pending tasks before running
++	 * __migrate_task() such that we will not miss enforcing cpus_allowed
++	 * during wakeups, see set_cpus_allowed_ptr()'s TASK_WAKING test.
++	 */
++	sched_ttwu_pending();
+ 	__migrate_task(arg->task, raw_smp_processor_id(), arg->dest_cpu);
+ 	local_irq_enable();
+ 	return 0;
 
