@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310AbaICK3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:29:44 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:11925 "EHLO
+	id S932335AbaICK34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:29:56 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:20783 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756066AbaICK3l (ORCPT
+	with ESMTP id S932257AbaICK3m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:29:41 -0400
+	Wed, 3 Sep 2014 06:29:42 -0400
 X-IronPort-AV: E=Sophos;i="5.04,456,1406563200"; 
-   d="scan'208";a="35453960"
+   d="scan'208";a="35453956"
 From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
 To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
 CC: "Eric W. Biederman" <ebiederm@xmission.com>,
@@ -18,78 +18,242 @@ CC: "Eric W. Biederman" <ebiederm@xmission.com>,
         Richard Weinberger <richard.weinberger@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         Vasiliy Kulikov <segooon@gmail.com>
-Subject: [PATCH 3/3] /proc/pid/status: show all sets of pid according to ns
-Date: Wed, 3 Sep 2014 18:30:00 +0800
-Message-ID: <1409740200-26461-4-git-send-email-chenhanxiao@cn.fujitsu.com>
+Subject: [RFC PATCH 2/3] procfs: show hierarchy of pid namespace
+Date: Wed, 3 Sep 2014 18:29:59 +0800
+Message-ID: <1409740200-26461-3-git-send-email-chenhanxiao@cn.fujitsu.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
 References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If some issues occurred inside a container guest, host user
-could not know which process is in trouble just by guest pid:
-the users of container guest only knew the pid inside containers.
-This will bring obstacle for trouble shooting.
+This patch will show the hierarchy of pid namespace
+under /proc/pidns like:
+/proc/pidns
+├── hierarchy
+│   ├── pidns4026532399
+│   │   ├── pidns -> /proc/2863/ns/pid
+│   │   └── pidns4026532515
+│   │       └── pidns -> /proc/10611/ns/pid
+│   └── pidns4026532504
+│       └── pidns -> /proc/4450/ns/pid
+└── refresh
 
-This patch adds four fields: NStgid, NSpid, NSpgid and NSsid:
-a) In init_pid_ns, nothing changed;
+a) hierarchy dir:
+  use to show hierarchy infomation using dir and symlinks.
+  dirs are named as pidns($inum)
+  a symlink is created under pidns($inum), and linked to
+  that pid namespace.
 
-b) In one pidns, will tell the pid inside containers:
-NStgid:	21776 	5 	1
-NSpid:	21776 	5 	1
-NSpgid:	21776 	5 	1
-NSsid:	21729 	1 	0
-** Process id is 21776 in level 0, 5 in level 1, 1 in level 2.
-
-c) If pidns is nested, it depends on which pidns are you in.
-NStgid:	5 	1
-NSpid:	5 	1
-NSpgid:	5 	1
-NSsid:	1 	0
-** Views from level 1
-
-v2: add two new fields: NStgid and NSpid.
-    keep fields of Tgid and Pid unchanged for back compatibility.
-v3: add another two fields: NSpgid and NSsid.
+b) refresh
+  trigger key.
+  We need to write sth to /proc/nspid/refresh,
+  then we could get hierarchy info
+  under /proc/pidns/hierarchy.
 
 Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
 ---
- fs/proc/array.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ fs/proc/Kconfig           |   6 ++
+ fs/proc/Makefile          |   1 +
+ fs/proc/pidns_hierarchy.c | 161 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 168 insertions(+)
+ create mode 100644 fs/proc/pidns_hierarchy.c
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index cd3653e..c30875d 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -193,6 +193,23 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		from_kgid_munged(user_ns, cred->egid),
- 		from_kgid_munged(user_ns, cred->sgid),
- 		from_kgid_munged(user_ns, cred->fsgid));
-+	seq_puts(m, "NStgid:");
-+	for (g = ns->level; g <= pid->level; g++)
-+		seq_printf(m, "\t%d ",
-+			task_tgid_nr_ns(p, pid->numbers[g].ns));
-+	seq_puts(m, "\nNSpid:");
-+	for (g = ns->level; g <= pid->level; g++)
-+		seq_printf(m, "\t%d ",
-+			task_pid_nr_ns(p, pid->numbers[g].ns));
-+	seq_puts(m, "\nNSpgid:");
-+	for (g = ns->level; g <= pid->level; g++)
-+		seq_printf(m, "\t%d ",
-+			task_pgrp_nr_ns(p, pid->numbers[g].ns));
-+	seq_puts(m, "\nNSsid:");
-+	for (g = ns->level; g <= pid->level; g++)
-+		seq_printf(m, "\t%d ",
-+			task_session_nr_ns(p, pid->numbers[g].ns));
-+	seq_putc(m, '\n');
- 
- 	task_lock(p);
- 	if (p->files)
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 2183fcf..e2e2292 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -71,3 +71,9 @@ config PROC_PAGE_MONITOR
+ 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
+ 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
+           interfaces will reduce the size of the kernel by approximately 4kb.
++
++config PROC_PID_HIERARCHY
++	bool "Enable /proc/pidns_hierarchy support" if EXPERT
++	depends on PROC_FS
++	help
++	  Show pid namespace hierarchy infomation
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index 239493e..733599b 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -29,3 +29,4 @@ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
+ proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
+ proc-$(CONFIG_PRINTK)	+= kmsg.o
+ proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
++proc-$(CONFIG_PROC_PID_HIERARCHY)	+= pidns_hierarchy.o
+diff --git a/fs/proc/pidns_hierarchy.c b/fs/proc/pidns_hierarchy.c
+new file mode 100644
+index 0000000..d35340f
+--- /dev/null
++++ b/fs/proc/pidns_hierarchy.c
+@@ -0,0 +1,161 @@
++/*
++ * proc_pidns_hierarchy.c -- handles pidns hierarchy
++ *
++ * Copyright 2014
++ */
++
++#include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/proc_fs.h>
++#include <linux/module.h>
++#include <linux/list.h>
++#include <linux/slab.h>
++#include <linux/pid_namespace.h>
++
++/*
++ * The /proc/pidns directory
++ */
++
++#define BASE_DIR	"pidns"			/* Subdir in /proc */
++#define HIERARCHY_DIR	"pidns/hierarchy"	/* hierarchy dir */
++#define REFRESH_KEY	"pidns/refresh"		/* refresh key */
++#define NAME		"pidns_hierarchy"	/* Module name */
++
++static LIST_HEAD(pidns_list);
++static DEFINE_RWLOCK(pidns_lock);
++static struct proc_dir_entry *proc_root;
++
++struct ns_pid_list {
++	struct pid *pid;
++	struct list_head list;
++};
++
++static void free_pidns_list(struct list_head *head)
++{
++	struct ns_pid_list *tmp, *pos;
++
++	list_for_each_entry_safe(pos, tmp, head, list) {
++		list_del(&pos->list);
++		kfree(pos);
++	}
++}
++
++/*
++ * Only add pids with different ns
++ */
++static int
++ns_pid_list_really_add(struct pid *pid)
++{
++	struct ns_pid_list *tmp, *pos;
++
++	list_for_each_entry_safe(pos, tmp, &pidns_list, list)
++		if (ns_of_pid(pid) == ns_of_pid(pos->pid))
++			return 0;
++
++	return 1;
++}
++
++static int
++ns_pid_list_add(struct pid *pid)
++{
++	struct ns_pid_list *ent;
++
++	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
++	if (!ent)
++		return -ENOMEM;
++	ent->pid = pid;
++	if (ns_pid_list_really_add(pid))
++		list_add_tail(&ent->list, &pidns_list);
++
++	return 0;
++}
++
++static void print_list(void)
++{
++	struct ns_pid_list *tmp, *pos;
++	struct proc_dir_entry *parent, *parent_new;
++	struct pid_namespace *ns, *curr_ns;
++	struct pid *pid;
++	char name_buf[16], pid_buf[32];
++	int i, k;
++
++	curr_ns = task_active_pid_ns(current);
++
++	list_for_each_entry_safe(pos, tmp, &pidns_list, list) {
++		pid = pos->pid;
++		k = -1;
++		ns = pid->numbers[pid->level].ns;
++		/* Check whether pid has relationship with current ns */
++		for (; ns != NULL; ns = ns->parent)
++			if (ns == curr_ns)
++				k = curr_ns->level;
++		if (k == -1)
++			continue;
++		parent = proc_root;
++		for (i = k + 1; i <= pid->level; i++) {
++			ns = pid->numbers[i].ns;
++			snprintf(name_buf, 16, "pidns%u",
++				pid->numbers[i].ns->proc_inum);
++			snprintf(pid_buf, 32, "/proc/%u/ns/pid",
++				pid->numbers[0].nr);
++			/* don't duplicate ns dirs */
++			parent_new = proc_uniq_dir(parent, name_buf);
++			if (!parent_new) {
++				parent_new = proc_mkdir(name_buf, parent);
++				proc_symlink("pidns", parent_new, pid_buf);
++			}
++		parent = parent_new;
++		}
++	}
++}
++
++void proc_pidns_list(void)
++{
++	struct pid *pid;
++	struct task_struct *task = &init_task;
++
++	remove_proc_subtree(HIERARCHY_DIR, NULL);
++	proc_root = proc_mkdir(HIERARCHY_DIR, NULL);
++	free_pidns_list(&pidns_list);
++
++	do {
++		pid = task_pid(task);
++		if (pid) {
++			if (pid->level > 0)
++				ns_pid_list_add(pid);
++		}
++	} while ((task = next_task(task)) != &init_task);
++
++	print_list();
++	printk(KERN_INFO "refresh finished\n");
++}
++
++ssize_t proc_pidns_refresh_switch(struct file *file, const char __user *buf,
++		size_t size, loff_t *ppos)
++{
++	write_lock(&pidns_lock);
++	proc_pidns_list();
++	write_unlock(&pidns_lock);
++	return 1;
++}
++
++static const struct file_operations proc_pidns_refresh_fops = {
++	.write = proc_pidns_refresh_switch,
++};
++
++static int __init pidns_hierarchy_init(void)
++{
++
++	if (!proc_mkdir(BASE_DIR, NULL))
++		return -ENOMEM;
++	proc_root = proc_mkdir(HIERARCHY_DIR, NULL);
++	if (!proc_root)
++		return -ENOMEM;
++
++	proc_create(REFRESH_KEY, S_IWUGO,
++		NULL, &proc_pidns_refresh_fops);
++	printk(KERN_INFO "%s: loaded successfully\n", NAME);
++
++	return 0;
++}
++fs_initcall(pidns_hierarchy_init);
 -- 
 1.9.0
 
