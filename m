@@ -1,67 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781AbaICOi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:38:29 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48266 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402AbaICOiZ (ORCPT
+	id S932839AbaICOid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:38:33 -0400
+Received: from relay.parallels.com ([195.214.232.42]:44536 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932784AbaICOib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:38:25 -0400
-Date: Wed, 3 Sep 2014 15:37:24 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: James Ban <james.ban.opensource@diasemi.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140903143724.GR29327@sirena.org.uk>
-References: <1409706930.12827.1.camel@phoenix>
+	Wed, 3 Sep 2014 10:38:31 -0400
+Message-ID: <540727E0.6030005@parallels.com>
+Date: Wed, 3 Sep 2014 18:38:24 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ByALBa1F2BBmKLOT"
-Content-Disposition: inline
-In-Reply-To: <1409706930.12827.1.camel@phoenix>
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: da9211: Fix missing config.of_node setting
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Jeff Layton <jlayton@poochiereds.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-api@vger.kernel.org>
+Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
+References: <5405FBAE.5020303@parallels.com>	<20140902184456.GC31793@fieldses.org>	<54061562.4080306@parallels.com>	<20140902194300.GE31793@fieldses.org> <20140902155351.79183446@tlielax.poochiereds.net>
+In-Reply-To: <20140902155351.79183446@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/02/2014 11:53 PM, Jeff Layton wrote:
+> On Tue, 2 Sep 2014 15:43:00 -0400
+> "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> 
+>> On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
+>>> On 09/02/2014 10:44 PM, J. Bruce Fields wrote:
+>>>> On Tue, Sep 02, 2014 at 09:17:34PM +0400, Pavel Emelyanov wrote:
+>>>>> Hi,
+>>>>>
+>>>>> There's a problem with getting information about who has a flock on
+>>>>> a specific file. The thing is that the "owner" field, that is shown in
+>>>>> /proc/locks is the pid of the task who created the flock, not the one
+>>>>> who _may_ hold it.
+>>>>>
+>>>>> If the flock creator shared the file with some other task (by forking
+>>>>> or via scm_rights) and then died or closed the file, the information
+>>>>> shown in proc no longer corresponds to the reality.
+>>>>>
+>>>>> This is critical for CRIU project, that tries to dump (and restore)
+>>>>> the state of running tasks. For example, let's take two tasks A and B
+>>>>> both opened a file "/foo", one of tasks places a LOCK_SH lock on the 
+>>>>> file and then "obfuscated" the owner field in /proc/locks. After this
+>>>>> we have no ways to find out who is the lock holder.
+>>>>>
+>>>>> I'd like to note, that for LOCK_EX this problem is not critical -- we
+>>>>> may go to both tasks and "ask" them to LOCK_EX the file again (we can
+>>>>> do it in CRIU, I can tell more if required). The one who succeeds is 
+>>>>> the lock holder.
+>>>>
+>>>> It could be both, actually, right?
+>>>
+>>> Two succeeding with LOCK_EX? AFAIU no. Am I missing something?
+>>
+>> After a fork, two processes "own" the lock, right?:
+>>
+>> 	int main(int argc, char *argv[])
+>> 	{
+>> 		int fd, ret;
+>> 	
+>> 		fd = open(argv[1], O_RDWR);
+>> 		ret = flock(fd, LOCK_EX);
+>> 		if (ret)
+>> 			err(1, "flock");
+>> 		ret = fork();
+>> 		if (ret == -1)
+>> 			err(1, "flock");
+>> 		ret = flock(fd, LOCK_EX);
+>> 		if (ret)
+>> 			err(1, "flock");
+>> 		printf("%d got exclusive lock\n", getpid());
+>> 		sleep(1000);
+>> 	}
+>>
+>> 	$ touch TMP
+>> 	$ ./test TMP
+>> 	15882 got exclusive lock
+>> 	15883 got exclusive lock
+>> 	^C
+>>
+>> I may misunderstand what you're doing.
+>>
+> 
+> Yeah, I don't understand either.
+> 
+> Flock locks are owned by the file description. The task that set
+> them is really irrelevant once they are set.
+> 
+> In the second flock() call there, you're just "modifying" an existing
+> lock (which turns out to be a noop here).
+> 
+> So, I don't quite understand the problem this solves. I get that you're
+> trying to reestablish the flock "state" after a checkpoint/restore
+> event, but why does it matter what task actually sets the locks as long
+> as they're set on the correct set of fds?
 
---ByALBa1F2BBmKLOT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry for confusion. Let me try to explain it more clearly.
 
-On Wed, Sep 03, 2014 at 09:15:30AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+First, what I meant talking about two LOCK_EX locks. Let's consider
+this scenario:
 
-Applied, thanks.
+pid = fork()
+fd = open("/foo"); /* both parent and child has _different_ files */
+if (pid == 0)
+	/* child only */
+	flock(fd, LOCK_EX);
 
---ByALBa1F2BBmKLOT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+at this point we have two different files pointing to "/foo" and 
+only one of them has LOCK_EX on it. So if try to LOCK_EX it again, 
+only at child's file this would succeed. So we can distinguish which
+file is locked using this method.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUByehAAoJELSic+t+oim99xgP/AwfRI8WrsB7IzY82QD+yirb
-xSa/GKtcacWTEP9f2/Tkl9aWwTVanzj9nQNOeafj2maXaLJx38G06Ege7DWVDpTZ
-+7VF1+JHz4gKb2KtXeYWvj+6VoUnus7xlMjwCqMEAKbfp0X3loM0ZeeOU9jUDEDE
-51B7p+iYGkW1PkZOSRFBZ8OtQL8DyUlwX1DEMMWd3q46/lCecetMHAZi+/9XdoW5
-Nv++Q2qoVE+DQR9IVxlkzYHBXqgawi0/KRpJbEZkqXxTU6Cah7S4dluoSFnS+5vz
-2HEgSUT5ClknfOAExoimX4zmFDPl4Cz7KxV+qoIQt29ipQrbBiuBBH47wnPzg2CP
-mRVqZAoVH6ja9W3CNKT+MppaH5CQ2yyLDE67F0MU8nLolzSEgyAEhESgSnxKDE5A
-zVOa6cpmnwcJ0tqG0Y038c3JdsA1ELT1cLiSFph2niFHZeEPokKSxHwDmArmJADp
-3LEBw1BiTpBUOdOdxYlLWPeSezkGvv+1WaFEL8RmLf1O0sQsMM6aIhY5DPUcWt4b
-ecTDbKcMRM37anPGQCjOpdyfS7HXzujIcg0Emv9ixfFhYe+GzIL/a6d9NiCLgLuE
-0w6OtL5xk8Idn2hSf07jDaZkIU/08pVXKgsKnkpEIoMlcBY2z4fVKlHmt6An5po4
-/TNrpN4SFDgFth8fDKwJ
-=dlGf
------END PGP SIGNATURE-----
 
---ByALBa1F2BBmKLOT--
+Now, what problem this patch is trying to solve. It's quite tricky, 
+but still. Let's imagine this scenario:
+
+pid = fork();
+fd = open("/foo"); /* yet again -- two different files */
+if (pid == 0) {
+	flock(fd, LOCK_SH);
+	pid2 = fork();
+	if (pid2 != 0)
+		exit(0);
+}
+
+at this point we have:
+
+task A -- the original task with file "/foo" opened
+task B -- the first child, that exited at the end
+task C -- the 2nd child, that "inherited" a file with the lock from B
+
+Note, that file at A and file at C are two different files (struct 
+file-s). And it's only the C's one that is locked.
+
+The problem is that the /proc/locks shows the pid of B in this lock's
+owner field. And we have no glue to find out who the real lock owner
+is using the /proc/locks.
+
+If we try to do the trickery like the one we did with LOCK_EX above,
+this is what we would get.
+
+If putting the 2nd LOCK_SH from A and from C, both attempts would succeed,
+so this is not the solution.
+
+If we try to LOCK_EX from A and C, only C would succeed, so this seem
+to be the solution, but it's actually not. If there's another pair of 
+A' and C' tasks holding the same "/foo" and having the LOCK_SH on C', 
+this trick would stop working as none of the tasks would be able to 
+put such lock on this file.
+
+
+Thus, we need some way to find out whether a task X has a lock on file F.
+This patch is one of the ways of doing this.
+
+Hope this explanation is more clear.
+
+>>>>> With LOCK_SH this doesn't work. Trying to drop the
+>>>>> lock doesn't work either, as flock(LOCK_UN) reports 0 in both cases:
+>>>>> if the file is locked and if it is not.
+>>>>>
+>>>>> That said, I'd like to propose the LOCK_TEST flag to the flock call,
+>>>>> that would check whether the lock of the given type (LOCK_SH or LOCK_EX)
+>>>>> exists on the file we test. It's not the same as the existing in-kernel
+>>>>> FL_ACCESS flag, which checks whether the new lock is possible, but
+>>>>> it's a new FL_TEST flag, that checks whether the existing lock is there.
+>>>>>
+>>>>> What do you think?
+>>>>
+>>>> I guess I can't see anything really wrong with it.
+>>>>
+>>>> It ignores the (poorly documented) LOCK_MAND case, but maybe that's OK.
+>>>
+>>> I actually checked it and it seemed to work. What problems do
+>>> you see with this case?
+>>
+>> On its own it just doesn't tell you whether or not LOCK_MAND is set.
+>> But I guess you can still get that out of /proc/locks.
+>>
+>> To be honest I don't really know whether LOCK_MAND works or is used.
+>>
+>> --b.
+> 
+> 
+
