@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827AbaICTBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:01:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48686 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144AbaICTBw (ORCPT
+	id S1755887AbaICTCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:02:49 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44007 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752643AbaICTCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:01:52 -0400
-Date: Wed, 3 Sep 2014 20:01:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140903190145.GD29327@sirena.org.uk>
+	Wed, 3 Sep 2014 15:02:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Vt0DO13f+E2ay8IyvCdKl
+Date: Wed, 3 Sep 2014 12:02:34 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Marek Belisko <marek@goldelico.com>, linux-omap@vger.kernel.org
+Subject: Re: PROBLEM: bindings for drivers/mfd/twl4030-power.c
+Message-ID: <20140903190234.GH11766@atomide.com>
+References: <FAC7D7E5-1D05-4D63-821F-C56D3AAA8FF9@goldelico.com>
+ <20140825212652.GR17254@atomide.com>
+ <EBD1E2E6-E596-4B3D-B093-144ABDD7DEDE@goldelico.com>
+ <20140903184527.GG11766@atomide.com>
+ <54076311.2030306@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KXlsDDyIxzhAJBYd"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Cookie: Simulated picture.
+In-Reply-To: <54076311.2030306@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: Tree for Sep 2
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Nishanth Menon <nm@ti.com> [140903 11:51]:
+> On 09/03/2014 01:45 PM, Tony Lindgren wrote:
+> > * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140901 09:54]:
+> >> Hi,
+> >>
+> >> Am 25.08.2014 um 23:26 schrieb Tony Lindgren:
+> >>
+> >>> * Dr. H. Nikolaus Schaller <hns@goldelico.com> [140817 08:46]:
+> >>>> I am trying to make ti,use_poweroff work on 3.17-rc1 for the GTA04 board.
+> >>>> Poweroff was broken for a while and I found that the driver isn't loaded at all.
+> >>>>
+> >>>> It appears to me that commit e7cd1d1eb16fcdf53001b926187a82f1f3e1a7e6
+> >>>> did rename the compatible entry from "ti,twl4030-power" to "ti,twl4030-power-reset"
+> >>>> but this was not documented in the bindings and of course our DT does not
+> >>>> match.
+> >>>>
+> >>>> Even your commit message talks about "ti,twl4030-power" although I can't find it
+> >>>> in the code.
+> >>>
+> >>> Hmm sorry did I accidentally remove ti,twl4030-power? If so, that should
+> >>> be added back for sure. Do you have a patch for that already?
+> >>
+> >> No, I have only updated our device tree because I don't know if it really should
+> >> be added back or not.
+> >>
+> >> As you say the "ti,twl4030-power" does not configure anything. So what
+> >> is it good for?
+> > 
+> > Only for the poweroff if "ti,use_poweroff" is set. Care to do a patch
+> > as you clearly have a use case to test it with?
+> 
+> Tony, we were talking about supporting ti,system-power-controller as
+> the standard way of stating poweroff control is by the PMIC. this
+> seems to be standard in various SoCs. use_poweroff seems to predate
+> that standardization. Should'nt we start using
+> ti,system-power-controller instead?
 
---KXlsDDyIxzhAJBYd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sure we can add that. But need to keep also parsing "ti,use_poweroff"
+as it's already in use.
 
-Changes since 20140902:
+Regards,
 
-The akpm-current tree lost its conflict against Linus' tree and two
-patches from it got applied.
-
-Non-merge commits (relative to Linus' tree): 3475
- 2949 files changed, 116735 insertions(+), 88213 deletions(-)
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git .
-If you are tracking the linux-next tree using git, you should not use
-git pull" to do so as that will try to merge the new linux-next release
-with the old one.  You should use "git fetch" and checkout or reset to
-the new master.
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with an
-allmodconfig for x86_64 and a multi_v7_defconfig for arm.
-
-Below is a summary of the state of the merge.
-
-I am currently merging 214 trees (counting Linus' and 30 trees of patches
-pending for Linus' tree).
-
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
-
-Status of Stephen's local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
---KXlsDDyIxzhAJBYd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUB2WWAAoJELSic+t+oim9J3QP/33WshgX12ARgNL0Cm2e74nx
-XHv/BWdMitfAxJTyHsoij9F76z41AS8rD3//x2TpBR02GwR4O2d0VevH/R4ySUiI
-zx9B+8SlZhQ+n0ANIY3gfj6yla66iIQwYGvUAnq4BT/LrfWE8Y4oPZNN0Zdg3Mv1
-j0e+nNLTUEgE8EAmQIEsdM2ez++M/VEv284gHYJAhQXD5r31aVAHBdYM6ikUiOgf
-1NhhDeNiYWNMK4yuHWNs2dwQ8vjPw6rIJLxpw5JkzW1w3+f2kGh1s4SFkfkgQUzB
-TvJercbtspHsJ+MzYn0b2BZqY3AASTmvhmenWnrGKxqq2U5Jo7ukDqe3AE9W/FK0
-m3D5I71KVf7fRGaGHh6xRkje6ygTuV8lKBGdmLoluZHmdSlwkW8D0CPNz4cXtpTd
-5v1HET+Kj6KI3TDrGBhJphN6mMzbOMWca/AXekhRvBWf+6WqNlkIBOz76XUAZ6C9
-YxAxkhMipPd6XOL1Qrtyf8xEeF8RmFA43+fx/WGayZoD7QabalnK5lPovZT6aBBw
-qS6DIwBorw8uQas+Y8UA9EmzZCiACYb/avBZMVTBRtmrTu395NO1jqFdR/DPsrD3
-VU7IgivKxbuQgcvjEkKDSiBfhaCmA0h10Os5X5yYcDLDxkLebdw/MQ7Sddf/Cia+
-vBCh/8am8BfcS5r1YAwb
-=xO2T
------END PGP SIGNATURE-----
-
---KXlsDDyIxzhAJBYd--
+Tony
