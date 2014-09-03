@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970AbaICWOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:14:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
+	id S1756954AbaICWOP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:14:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933650AbaICWIt (ORCPT
+	with ESMTP id S933654AbaICWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:08:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 55/88] hpsa: fix non-x86 builds
-Date: Wed,  3 Sep 2014 15:05:29 -0700
-Message-Id: <20140903220517.608065055@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH 3.14 56/88] xen/events/fifo: ensure all bitops are properly aligned even on x86
+Date: Wed,  3 Sep 2014 15:05:30 -0700
+Message-Id: <20140903220517.639091815@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -30,48 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 0b9e7b741f2bf8103b15bb14d5b4a6f5ee91c59a upstream.
+commit dcecb8fd93a65787130a74e61fdf29932c8d85eb upstream.
 
-commit 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
-turns on unit attention notifications, but got the change wrong for
-all architectures other than x86, which now store an uninitialized
-value into the device register.
+When using the FIFO-based ABI on x86_64, if the last port is at the
+end of an event array page then sync_test_bit() on this port's event
+word will read beyond the end of the page and in certain circumstances
+this may fault.
 
-Gcc helpfully warns about this:
+The fault requires the following page in the kernel's direct mapping
+to be not present, which would mean:
 
-../drivers/scsi/hpsa.c: In function 'hpsa_set_driver_support_bits':
-../drivers/scsi/hpsa.c:6373:17: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]
-  driver_support |= ENABLE_UNIT_ATTN;
-                 ^
+a) the array page is the last page of RAM; or
 
-This moves the #ifdef so only the prefetch-enable is conditional
-on x86, not also reading the initial register contents.
+b) the following page is ballooned out /and/ it has been used for a
+   foreign mapping by a kernel driver (such as netback or blkback)
+   /and/ the grant has been unmapped.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
-Acked-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Use the infrastructure added for arm64 to ensure that all bitops
+operating on event words are unsigned long aligned.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/hpsa.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/xen/events/events_fifo.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -4367,9 +4367,9 @@ static inline void hpsa_set_driver_suppo
- {
- 	u32 driver_support;
+--- a/drivers/xen/events/events_fifo.c
++++ b/drivers/xen/events/events_fifo.c
+@@ -67,10 +67,9 @@ static event_word_t *event_array[MAX_EVE
+ static unsigned event_array_pages __read_mostly;
  
--#ifdef CONFIG_X86
--	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
- 	driver_support = readl(&(h->cfgtable->driver_support));
-+	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
-+#ifdef CONFIG_X86
- 	driver_support |= ENABLE_SCSI_PREFETCH;
- #endif
- 	driver_support |= ENABLE_UNIT_ATTN;
+ /*
+- * sync_set_bit() and friends must be unsigned long aligned on non-x86
+- * platforms.
++ * sync_set_bit() and friends must be unsigned long aligned.
+  */
+-#if !defined(CONFIG_X86) && BITS_PER_LONG > 32
++#if BITS_PER_LONG > 32
+ 
+ #define BM(w) (unsigned long *)((unsigned long)w & ~0x7UL)
+ #define EVTCHN_FIFO_BIT(b, w) \
 
 
