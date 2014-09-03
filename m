@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575AbaICJ6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:58:45 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57464 "EHLO
+	id S932403AbaICJ6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:58:12 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57440 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932541AbaICJ6n (ORCPT
+	by vger.kernel.org with ESMTP id S932348AbaICJ6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:58:43 -0400
+	Wed, 3 Sep 2014 05:58:04 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Pratyush Anand <pratyush.anand@st.com>,
+Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 20/56] USB: Fix persist resume of some SS USB devices
-Date: Wed,  3 Sep 2014 11:26:39 +0200
-Message-Id: <c5b3795f9b7cab50c1d6d449fb2aa492d6ec2c45.1409735865.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 45/56] KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC redir table
+Date: Wed,  3 Sep 2014 11:27:04 +0200
+Message-Id: <46497989e1a3a3665cdf51475e21bc02ce106501.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
@@ -23,145 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratyush Anand <pratyush.anand@st.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a40178b2fa6ad87670fb1e5fa4024db00c149629 upstream.
+commit 0f6c0a740b7d3e1f3697395922d674000f83d060 upstream.
 
-Problem Summary: Problem has been observed generally with PM states
-where VBUS goes off during suspend. There are some SS USB devices which
-take longer time for link training compared to many others.  Such
-devices fail to reconnect with same old address which was associated
-with it before suspend.
+Currently, the EOI exit bitmap (used for APICv) does not include
+interrupts that are masked.  However, this can cause a bug that manifests
+as an interrupt storm inside the guest.  Alex Williamson reported the
+bug and is the one who really debugged this; I only wrote the patch. :)
 
-When system resumes, at some point of time (dpm_run_callback->
-usb_dev_resume->usb_resume->usb_resume_both->usb_resume_device->
-usb_port_resume) SW reads hub status. If device is present,
-then it finishes port resume and re-enumerates device with same
-address. If device is not present then, SW thinks that device was
-removed during suspend and therefore does logical disconnection
-and removes all the resource allocated for this device.
+The scenario involves a multi-function PCI device with OHCI and EHCI
+USB functions and an audio function, all assigned to the guest, where
+both USB functions use legacy INTx interrupts.
 
-Now, if I put sufficient delay just before root hub status read in
-usb_resume_device then, SW sees always that device is present. In normal
-course(without any delay) SW sees that no device is present and then SW
-removes all resource associated with the device at this port.  In the
-latter case, after sometime, device says that hey I am here, now host
-enumerates it, but with new address.
+As soon as the guest boots, interrupts for these devices turn into an
+interrupt storm in the guest; the host does not see the interrupt storm.
+Basically the EOI path does not work, and the guest continues to see the
+interrupt over and over, even after it attempts to mask it at the APIC.
+The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
+with not many changes in the area of APIC/IOAPIC handling).
 
-Problem had been reproduced when I connect verbatim USB3.0 hard disc
-with my STiH407 XHCI host running with 3.10 kernel.
+Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
+on in the eoi_exit_bitmap and TMR, and things then work.  What happens
+is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
+It does not have set bit 59 because the RTE was masked, so the IOAPIC
+never sees the EOI and the interrupt continues to fire in the guest.
 
-I see that similar problem has been reported here.
-https://bugzilla.kernel.org/show_bug.cgi?id=53211
-Reading above it seems that bug was not in 3.6.6 and was present in 3.8
-and again it was not present for some in 3.12.6, while it was present
-for few others. I tested with 3.13-FC19 running at i686 desktop, problem
-was still there. However, I was failed to reproduce it with 3.16-RC4
-running at same i686 machine. I would say it is just a random
-observation. Problem for few devices is always there, as I am unable to
-find a proper fix for the issue.
+My guess was that the guest is masking the interrupt in the redirection
+table in the interrupt routine, i.e. while the interrupt is set in a
+LAPIC's ISR, The simplest fix is to ignore the masking state, we would
+rather have an unnecessary exit rather than a missed IRQ ACK and anyway
+IOAPIC interrupts are not as performance-sensitive as for example MSIs.
+Alex tested this patch and it fixed his bug.
 
-So, now question is what should be the amount of delay so that host is
-always able to recognize suspended device after resume.
+[Thanks to Alex for his precise description of the problem
+ and initial debugging effort.  A lot of the text above is
+ based on emails exchanged with him.]
 
-XHCI specs 4.19.4 says that when Link training is successful, port sets
-CSC bit to 1. So if SW reads port status before successful link
-training, then it will not find device to be present.  USB Analyzer log
-with such buggy devices show that in some cases device switch on the
-RX termination after long delay of host enabling the VBUS. In few other
-cases it has been seen that device fails to negotiate link training in
-first attempt. It has been reported till now that few devices take as
-long as 2000 ms to train the link after host enabling its VBUS and
-RX termination. This patch implements a 2000 ms timeout for CSC bit to set
-ie for link training. If in a case link trains before timeout, loop will
-exit earlier.
-
-This patch implements above delay, but only for SS device and when
-persist is enabled.
-
-So, for the good device overhead is almost none. While for the bad
-devices penalty could be the time which it take for link training.
-But, If a device was connected before suspend, and was removed
-while system was asleep, then the penalty would be the timeout ie
-2000 ms.
-
-Results:
-
-Verbatim USB SS hard disk connected with STiH407 USB host running 3.10
-Kernel resumes in 461 msecs without this patch, but hard disk is
-assigned a new device address. Same system resumes in 790 msecs with
-this patch, but with old device address.
-
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/core/hub.c | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ virt/kvm/ioapic.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 9c63a76cfedd..557e8a9fe58a 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3168,6 +3168,43 @@ static int finish_port_resume(struct usb_device *udev)
- }
- 
- /*
-+ * There are some SS USB devices which take longer time for link training.
-+ * XHCI specs 4.19.4 says that when Link training is successful, port
-+ * sets CSC bit to 1. So if SW reads port status before successful link
-+ * training, then it will not find device to be present.
-+ * USB Analyzer log with such buggy devices show that in some cases
-+ * device switch on the RX termination after long delay of host enabling
-+ * the VBUS. In few other cases it has been seen that device fails to
-+ * negotiate link training in first attempt. It has been
-+ * reported till now that few devices take as long as 2000 ms to train
-+ * the link after host enabling its VBUS and termination. Following
-+ * routine implements a 2000 ms timeout for link training. If in a case
-+ * link trains before timeout, loop will exit earlier.
-+ *
-+ * FIXME: If a device was connected before suspend, but was removed
-+ * while system was asleep, then the loop in the following routine will
-+ * only exit at timeout.
-+ *
-+ * This routine should only be called when persist is enabled for a SS
-+ * device.
-+ */
-+static int wait_for_ss_port_enable(struct usb_device *udev,
-+		struct usb_hub *hub, int *port1,
-+		u16 *portchange, u16 *portstatus)
-+{
-+	int status = 0, delay_ms = 0;
-+
-+	while (delay_ms < 2000) {
-+		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
-+			break;
-+		msleep(20);
-+		delay_ms += 20;
-+		status = hub_port_status(hub, *port1, portstatus, portchange);
-+	}
-+	return status;
-+}
-+
-+/*
-  * usb_port_resume - re-activate a suspended usb device's upstream port
-  * @udev: device to re-activate, not a root hub
-  * Context: must be able to sleep; device not locked; pm locks held
-@@ -3269,6 +3306,10 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
- 
- 	clear_bit(port1, hub->busy_bits);
- 
-+	if (udev->persist_enabled && hub_is_superspeed(hub->hdev))
-+		status = wait_for_ss_port_enable(udev, hub, &port1, &portchange,
-+				&portstatus);
-+
- 	status = check_port_resume_type(udev,
- 			hub, port1, status, portchange, portstatus);
- 	if (status == 0)
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index 39dc5bc742e0..5eaf18f90e83 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -203,10 +203,9 @@ void kvm_ioapic_scan_entry(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap,
+ 	spin_lock(&ioapic->lock);
+ 	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
+ 		e = &ioapic->redirtbl[index];
+-		if (!e->fields.mask &&
+-			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
+-			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
+-				 index) || index == RTC_GSI)) {
++		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
++		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
++		    index == RTC_GSI) {
+ 			if (kvm_apic_match_dest(vcpu, NULL, 0,
+ 				e->fields.dest_id, e->fields.dest_mode)) {
+ 				__set_bit(e->fields.vector,
 -- 
 2.1.0
 
