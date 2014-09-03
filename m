@@ -1,84 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaICEkC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 00:40:02 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:55165 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaICEkA (ORCPT
+	id S1751687AbaICEza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 00:55:30 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:45113 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaICEz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 00:40:00 -0400
+	Wed, 3 Sep 2014 00:55:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
-References: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
-Date: Wed, 3 Sep 2014 10:09:58 +0530
-X-Google-Sender-Auth: 15VrssonLExpF1yDbmdbIjA3pIo
-Message-ID: <CAOh2x==TSbtOKBn6KOL9Z_M-nkzQOiO+EqSTmEtQeRLXROC1rw@mail.gmail.com>
-Subject: Re: [RFC PATCH] pm: prevent suspend until power supply events are processed
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Zoran Markovic <zoran.markovic@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1408129724-17669-1-git-send-email-vpalatin@chromium.org>
+References: <CACHYQ-rtHfVmF4DstxhWe0zWNH3ujjniVBwONBGW3f4Uw=rvkg@mail.gmail.com>
+ <1408129724-17669-1-git-send-email-vpalatin@chromium.org>
+From: Pawel Osciak <posciak@chromium.org>
+Date: Wed, 3 Sep 2014 13:54:46 +0900
+Message-ID: <CACHYQ-rB7mhiN_bGCPe4mrNLz2QoQ3mBtRhYyk8j+=F33dQWdQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] [media] V4L: Add camera pan/tilt speed controls
+To: Vincent Palatin <vpalatin@chromium.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olofj@chromium.org>, Zach Kuznia <zork@chromium.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't have Zoran's new email address, but probably other might have
-answers to my queries.
-
-I have just started with the power-supply framework a day or two back
-and so my understanding might not be good enough :)
-
-On Sat, Aug 3, 2013 at 2:08 AM, Zoran Markovic
-<zoran.markovic@linaro.org> wrote:
-> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-> index 3b2d5df..e68d598 100644
-> --- a/drivers/power/power_supply_core.c
-> +++ b/drivers/power/power_supply_core.c
-> @@ -67,23 +67,41 @@ static int __power_supply_changed_work(struct device *dev, void *data)
+On Sat, Aug 16, 2014 at 4:08 AM, Vincent Palatin <vpalatin@chromium.org> wrote:
 >
->  static void power_supply_changed_work(struct work_struct *work)
->  {
-> +       unsigned long flags;
->         struct power_supply *psy = container_of(work, struct power_supply,
->                                                 changed_work);
+> The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
+> camera by setting its rotation speed around its axis.
 >
->         dev_dbg(psy->dev, "%s\n", __func__);
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+
+Reviewed-by: Pawel Osciak <posciak@chromium.org>
+
 >
-> -       class_for_each_device(power_supply_class, NULL, psy,
-> -                             __power_supply_changed_work);
-> -
-> -       power_supply_update_leds(psy);
-> -
-> -       kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
-> +       spin_lock_irqsave(&psy->changed_lock, flags);
-> +       if (psy->changed) {
+> ---
+> Changes from v1:
+> - update the documentation wording according to Pawel suggestion.
+>
+>  Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
+>  Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
+>  include/uapi/linux/v4l2-controls.h           |  2 ++
+>  4 files changed, 35 insertions(+)
+>
+> diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
+> index eee6f0f..21910e9 100644
+> --- a/Documentation/DocBook/media/v4l/compat.xml
+> +++ b/Documentation/DocBook/media/v4l/compat.xml
+> @@ -2545,6 +2545,16 @@ fields changed from _s32 to _u32.
+>        </orderedlist>
+>      </section>
+>
+> +    <section>
+> +      <title>V4L2 in Linux 3.17</title>
 
-Can this be false here? We have reached here as the work was
-scheduled after setting it to true..
+This will need a bump.
 
-Maybe a WARN_ON(psy->changed) is more sensible here ?
-
-> +               psy->changed = false;
-> +               spin_unlock_irqrestore(&psy->changed_lock, flags);
-> +               class_for_each_device(power_supply_class, NULL, psy,
-> +                                     __power_supply_changed_work);
-> +               power_supply_update_leds(psy);
-> +               kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
-> +               spin_lock_irqsave(&psy->changed_lock, flags);
-> +       }
-> +       /* dependent power supplies (e.g. battery) may have changed
-> +        * state as a result of this event, so poll again and hold
-> +        * the wakeup_source until all events are processed.
-> +        */
-> +       if (!psy->changed)
-> +               pm_relax(psy->dev);
-
-I got a bit confused here. Does the above comment say this:
-
-The supplies dependent on 'psy' may change states and that *may*
-change the state of 'psy' again? And so psy->changed is set to true
-again?
+>
+> +      <orderedlist>
+> +       <listitem>
+> +         <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
+> + <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
+> +       </listitem>
+> +      </orderedlist>
+> +    </section>
+> +
+>      <section id="other">
+>        <title>Relation of V4L2 to other Linux multimedia APIs</title>
+>
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index 47198ee..be88e64 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -3914,6 +3914,27 @@ by exposure, white balance or focus controls.</entry>
+>           </row>
+>           <row><entry></entry></row>
+>
+> +         <row>
+> +           <entry spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
+> +           <entry>integer</entry>
+> +         </row><row><entry spanname="descr">This control turns the
+> +camera horizontally at the specific speed. The unit is undefined. A
+> +positive value moves the camera to the right (clockwise when viewed
+> +from above), a negative value to the left. A value of zero stops the motion
+> +if one is in progress and has no effect otherwise.</entry>
+> +         </row>
+> +         <row><entry></entry></row>
+> +
+> +         <row>
+> +           <entry spanname="id"><constant>V4L2_CID_TILT_SPEED</constant>&nbsp;</entry>
+> +           <entry>integer</entry>
+> +         </row><row><entry spanname="descr">This control turns the
+> +camera vertically at the specified speed. The unit is undefined. A
+> +positive value moves the camera up, a negative value down. A value of zero
+> +stops the motion if one is in progress and has no effect otherwise.</entry>
+> +         </row>
+> +         <row><entry></entry></row>
+> +
+>         </tbody>
+>        </tgroup>
+>      </table>
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index 55c6832..57ddaf4 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -787,6 +787,8 @@ const char *v4l2_ctrl_get_name(u32 id)
+>         case V4L2_CID_AUTO_FOCUS_STOP:          return "Auto Focus, Stop";
+>         case V4L2_CID_AUTO_FOCUS_STATUS:        return "Auto Focus, Status";
+>         case V4L2_CID_AUTO_FOCUS_RANGE:         return "Auto Focus, Range";
+> +       case V4L2_CID_PAN_SPEED:                return "Pan, Speed";
+> +       case V4L2_CID_TILT_SPEED:               return "Tilt, Speed";
+>
+>         /* FM Radio Modulator control */
+>         /* Keep the order of the 'case's the same as in videodev2.h! */
+> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+> index 2ac5597..5576044 100644
+> --- a/include/uapi/linux/v4l2-controls.h
+> +++ b/include/uapi/linux/v4l2-controls.h
+> @@ -745,6 +745,8 @@ enum v4l2_auto_focus_range {
+>         V4L2_AUTO_FOCUS_RANGE_INFINITY          = 3,
+>  };
+>
+> +#define V4L2_CID_PAN_SPEED                     (V4L2_CID_CAMERA_CLASS_BASE+32)
+> +#define V4L2_CID_TILT_SPEED                    (V4L2_CID_CAMERA_CLASS_BASE+33)
+>
+>  /* FM Modulator class control IDs */
+>
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
