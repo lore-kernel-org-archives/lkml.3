@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594AbaICKcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:32:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33478 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756011AbaICKcO (ORCPT
+	id S1756608AbaICKcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:32:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43211 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755979AbaICKcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:32:14 -0400
-Date: Wed, 3 Sep 2014 11:30:44 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>, Wang Nan <wangnan0@huawei.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David A. Long" <dave.long@linaro.org>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Pei Feiyue <peifeiyue@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/3] kprobes: arm: enable OPTPROBES for ARM 32
-Message-ID: <20140903103044.GC32378@arm.com>
-References: <1409144552-12751-1-git-send-email-wangnan0@huawei.com>
- <1409144552-12751-4-git-send-email-wangnan0@huawei.com>
- <1409665784.2873.49.camel@linaro1.home>
- <5406EADC.8080009@hitachi.com>
+	Wed, 3 Sep 2014 06:32:39 -0400
+Date: Wed, 3 Sep 2014 12:32:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Hugh Dickins <hughd@google.com>, Chintan Pandya <cpandya@codeaurora.org>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+In-Reply-To: <20140903095815.GK4783@worktop.ger.corp.intel.com>
+Message-ID: <alpine.DEB.2.10.1409031212300.3333@nanos>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5406EADC.8080009@hitachi.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 11:18:04AM +0100, Masami Hiramatsu wrote:
-> (2014/09/02 22:49), Jon Medhurst (Tixy) wrote:
-> > 1. On SMP systems it's very slow because of kprobe's use of stop_machine
-> > for applying and removing probes, this forces the system to idle and
-> > wait for the next scheduler tick for each probe change.
+On Wed, 3 Sep 2014, Peter Zijlstra wrote:
+> On Wed, Aug 27, 2014 at 11:02:20PM -0700, Hugh Dickins wrote:
+> > Sorry for holding you up, I'm slow. and needed to think about this more,
+> > 
+> > On Wed, 20 Aug 2014, Chintan Pandya wrote:
+> > 
+> > > KSM thread to scan pages is scheduled on definite timeout. That wakes up
+> > > CPU from idle state and hence may affect the power consumption. Provide
+> > > an optional support to use deferrable timer which suites low-power
+> > > use-cases.
+> > > 
+> > > Typically, on our setup we observed, 10% less power consumption with some
+> > > use-cases in which CPU goes to power collapse frequently. For example,
+> > > playing audio on Soc which has HW based Audio encoder/decoder, CPU
+> > > remains idle for longer duration of time. This idle state will save
+> > > significant CPU power consumption if KSM don't wakes them up
+> > > periodically.
+> > > 
+> > > Note that, deferrable timers won't be deferred if any CPU is active and
+> > > not in IDLE state.
+
+This is completely wrong. A deferrable timer enqueued on a given CPU
+is deferred if that very CPU goes idle. The timer subsystem does not
+care at all about the other CPUs.
+
+And that very much explains Hughs observations. If the ksm thread
+sleeps deferrable on a CPU which is idle for a very long time, it will
+be deferred despite work accumulating on other CPUs.
+
+> > > By default, deferrable timers is enabled. To disable deferrable timers,
+> > > $ echo 0 > /sys/kernel/mm/ksm/deferrable_timer
+> > 
+> > I have now experimented.  And, much as I wanted to eliminate the
+> > tunable, and just have deferrable timers on, I have come right back
+> > to your original position.
+> > 
+> > I was impressed by how quiet ksmd goes when there's nothing much
+> > happening on the machine; but equally, disappointed in how slow
+> > it then is to fulfil the outstanding merge work.  I agree with your
+> > original assessment, that not everybody will want deferrable timer,
+> > the way it is working at present.
+> > 
+> > I expect that can be fixed, partly by doing more work on wakeup from
+> > a deferred timer, according to how long it has been deferred; and
+> > partly by not deferring on idle until two passes of the list have been
+> > completed.  But that's easier said than done, and might turn out to
 > 
-> Hmm, agreed. It seems that arm32 limitation of self-modifying code on SMP.
-> I'm not sure how we can handle it, but I guess;
->  - for some processors which have better coherent cache for SMP, we can
->    atomically replace the breakpoint code with original code.
+> So why not have the timer cancel itself when there is no more work to do
+> and start itself up again when there's work added?
 
-Except that it's not an architected breakpoint instruction, as I mentioned
-before. It's also not really a property of the cache.
+Because that requires more work and thoughts than simply slapping a
+deferrable timer at the problem and creating a sysfs variable to turn
+it on/off.
 
->  - Even if we get an "undefined instruction" exception, its handler can
->    ask kprobes if the address is under modifying or not. And if it is,
->    we can just return from the exception to retry the execution.
+So looking at Hughs test results I'm quite sure that the deferrable
+timer is just another tunable bandaid with dubious value and the
+potential of predictable bug/regresssion reports.
 
-It's not as simple as that -- you could potentially see an interleaving of
-the two instructions. The architecture is even broader than that:
+So no, I wont merge the schedule_timeout_deferrable() hackery unless
+the whole mechanism is usable w/o tunables and regressions.
 
- Concurrent modification and execution of instructions can lead to the
- resulting instruction performing any behavior that can be achieved by
- executing any sequence of instructions that can be executed from the
- same Exception level,
+Thanks,
 
-There are additional guarantees for some instructions (like the architected
-BKPT instruction).
-
-Will
+	tglx
