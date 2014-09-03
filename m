@@ -1,100 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528AbaICVLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:11:40 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:60747 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756488AbaICVLh (ORCPT
+	id S932189AbaICVO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:14:56 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:56991 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140AbaICVOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:11:37 -0400
-Message-ID: <1409778695.5546.55.camel@x220>
-Subject: Re: [PATCH v2 4/4] kconfig: link CONFIG_CROSS_COMPILE with
- environment variable
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Wed, 03 Sep 2014 23:11:35 +0200
-In-Reply-To: <20140901071639.28909.88888.stgit@zurg>
-References: <20140901065916.28909.35097.stgit@zurg>
-	 <20140901071639.28909.88888.stgit@zurg>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Sep 2014 21:11:35.0054 (UTC) FILETIME=[A48CDAE0:01CFC7BB]
-X-RcptDomain: vger.kernel.org
+	Wed, 3 Sep 2014 17:14:54 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pinctrl: sh-pfc: rename confusing pinmux ops variable
+Date: Thu, 04 Sep 2014 00:14:49 +0300
+Message-ID: <1591463.JEteqGINz8@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1409745112-13652-1-git-send-email-linus.walleij@linaro.org>
+References: <1409745112-13652-1-git-send-email-linus.walleij@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konstantin,
+Hi Linus,
 
-On Mon, 2014-09-01 at 11:16 +0400, Konstantin Khlebnikov wrote:
-> Cross-compiler tool prefix can be set in command line, in the environment
-> variable CROSS_COMPILE or in config file, in option CONFIG_COROSS_COMPILE.
-> Also some arch/*/Makefile provides default value.
-> 
-> This patch links config option CONFIG_CROSS_COMPILE and variable CROSS_COMPILE
-> in both directions: environment/command line has higher priority and updates
-> value saved in the config file, config option acts as default value for it.
-> 
-> This is especially useful together with option O=dir which allows to create
-> separate directory for each target architecture and kernel flavor:
-> 
-> # make O=build/arm ARCH=arm CROSS_COMPILE=arm-none-eabi- defconfig
-> # make -C build/arm
-> 
-> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Thank you for the patch.
 
-I have only had a quick glance at this series. Just a quick question to
-help me understand where it is going.
+On Wednesday 03 September 2014 13:51:52 Linus Walleij wrote:
+> The vtable named *pinmux_ops in the affected files are not really
+> about pin multiplexing, but a struct related to some PFC-specific
+> operations, inclusing pin config (bias setting). Rename the variable
+> so as to avoid confusions.
+> 
+> Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Would this patch mean that, if a (def)config file has both ARCH and
-CROSS_COMPILE set, one could use that (def)config file and invoke "make
-$whatever_target" and expect it to do the right thing (provided a
-suitable cross compiler is installed)?
-
-This implies cross compiler prefixes are standardized across
-distributions, I guess. Maybe they're not.
+Acked-by: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>
 
 > ---
->  Makefile     |    6 +++++-
->  init/Kconfig |    1 +
->  2 files changed, 6 insertions(+), 1 deletion(-)
+>  drivers/pinctrl/sh-pfc/pfc-r8a73a4.c | 4 ++--
+>  drivers/pinctrl/sh-pfc/pfc-r8a7740.c | 4 ++--
+>  drivers/pinctrl/sh-pfc/pfc-sh7372.c  | 4 ++--
+>  drivers/pinctrl/sh-pfc/pfc-sh73a0.c  | 4 ++--
+>  4 files changed, 8 insertions(+), 8 deletions(-)
 > 
-> diff --git a/Makefile b/Makefile
-> index f648405..1044f40 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -263,7 +263,11 @@ endif
->  # "make" in the configured kernel build directory always uses that.
->  # Default value for CROSS_COMPILE is not to prefix executables
->  # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
-> -CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-> +ifndef CROSS_COMPILE
-> +	CROSS_COMPILE := $(shell $(srctree)/scripts/config \
-> +				--file $(KBUILD_OUTPUT)$(KCONFIG_CONFIG) \
-> +				--if-undef "" --state "CROSS_COMPILE")
-> +endif
->  
->  # Architecture as present in compile.h
->  UTS_MACHINE 	:= $(ARCH)
-> diff --git a/init/Kconfig b/init/Kconfig
-> index e84c642..1c2f621 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -47,6 +47,7 @@ config INIT_ENV_ARG_LIMIT
->  
->  config CROSS_COMPILE
->  	string "Cross-compiler tool prefix"
-> +	option env="CROSS_COMPILE"
->  	help
->  	  Same as running 'make CROSS_COMPILE=prefix-' but stored for
->  	  default make runs in this kernel build directory.  You don't
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a73a4.c
+> b/drivers/pinctrl/sh-pfc/pfc-r8a73a4.c index ce9fb7aa8ba3..280a56f97786
+> 100644
+> --- a/drivers/pinctrl/sh-pfc/pfc-r8a73a4.c
+> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a73a4.c
+> @@ -2717,14 +2717,14 @@ static void r8a73a4_pinmux_set_bias(struct sh_pfc
+> *pfc, unsigned int pin, iowrite8(value, addr);
+>  }
 > 
+> -static const struct sh_pfc_soc_operations r8a73a4_pinmux_ops = {
+> +static const struct sh_pfc_soc_operations r8a73a4_pfc_ops = {
+>  	.get_bias = r8a73a4_pinmux_get_bias,
+>  	.set_bias = r8a73a4_pinmux_set_bias,
+>  };
+> 
+>  const struct sh_pfc_soc_info r8a73a4_pinmux_info = {
+>  	.name		= "r8a73a4_pfc",
+> -	.ops		= &r8a73a4_pinmux_ops,
+> +	.ops		= &r8a73a4_pfc_ops,
+> 
+>  	.input = { PINMUX_INPUT_BEGIN, PINMUX_INPUT_END },
+>  	.output = { PINMUX_OUTPUT_BEGIN, PINMUX_OUTPUT_END },
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
+> b/drivers/pinctrl/sh-pfc/pfc-r8a7740.c index e4c1ef477053..b486e9d20cc2
+> 100644
+> --- a/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
+> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
+> @@ -3752,14 +3752,14 @@ static void r8a7740_pinmux_set_bias(struct sh_pfc
+> *pfc, unsigned int pin, iowrite8(value, addr);
+>  }
+> 
+> -static const struct sh_pfc_soc_operations r8a7740_pinmux_ops = {
+> +static const struct sh_pfc_soc_operations r8a7740_pfc_ops = {
+>  	.get_bias = r8a7740_pinmux_get_bias,
+>  	.set_bias = r8a7740_pinmux_set_bias,
+>  };
+> 
+>  const struct sh_pfc_soc_info r8a7740_pinmux_info = {
+>  	.name		= "r8a7740_pfc",
+> -	.ops		= &r8a7740_pinmux_ops,
+> +	.ops		= &r8a7740_pfc_ops,
+> 
+>  	.input		= { PINMUX_INPUT_BEGIN,
+>  			    PINMUX_INPUT_END },
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-sh7372.c
+> b/drivers/pinctrl/sh-pfc/pfc-sh7372.c index d9158b3b2919..8211f66a2f68
+> 100644
+> --- a/drivers/pinctrl/sh-pfc/pfc-sh7372.c
+> +++ b/drivers/pinctrl/sh-pfc/pfc-sh7372.c
+> @@ -2614,14 +2614,14 @@ static void sh7372_pinmux_set_bias(struct sh_pfc
+> *pfc, unsigned int pin, iowrite8(value, addr);
+>  }
+> 
+> -static const struct sh_pfc_soc_operations sh7372_pinmux_ops = {
+> +static const struct sh_pfc_soc_operations sh7372_pfc_ops = {
+>  	.get_bias = sh7372_pinmux_get_bias,
+>  	.set_bias = sh7372_pinmux_set_bias,
+>  };
+> 
+>  const struct sh_pfc_soc_info sh7372_pinmux_info = {
+>  	.name = "sh7372_pfc",
+> -	.ops = &sh7372_pinmux_ops,
+> +	.ops = &sh7372_pfc_ops,
+> 
+>  	.input = { PINMUX_INPUT_BEGIN, PINMUX_INPUT_END },
+>  	.output = { PINMUX_OUTPUT_BEGIN, PINMUX_OUTPUT_END },
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
+> b/drivers/pinctrl/sh-pfc/pfc-sh73a0.c index 0bd8f4401b42..2dd8fd524a80
+> 100644
+> --- a/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
+> +++ b/drivers/pinctrl/sh-pfc/pfc-sh73a0.c
+> @@ -3856,7 +3856,7 @@ static int sh73a0_pinmux_soc_init(struct sh_pfc *pfc)
+>  	return 0;
+>  }
+> 
+> -static const struct sh_pfc_soc_operations sh73a0_pinmux_ops = {
+> +static const struct sh_pfc_soc_operations sh73a0_pfc_ops = {
+>  	.init = sh73a0_pinmux_soc_init,
+>  	.get_bias = sh73a0_pinmux_get_bias,
+>  	.set_bias = sh73a0_pinmux_set_bias,
+> @@ -3864,7 +3864,7 @@ static const struct sh_pfc_soc_operations
+> sh73a0_pinmux_ops = {
+> 
+>  const struct sh_pfc_soc_info sh73a0_pinmux_info = {
+>  	.name = "sh73a0_pfc",
+> -	.ops = &sh73a0_pinmux_ops,
+> +	.ops = &sh73a0_pfc_ops,
+> 
+>  	.input = { PINMUX_INPUT_BEGIN, PINMUX_INPUT_END },
+>  	.output = { PINMUX_OUTPUT_BEGIN, PINMUX_OUTPUT_END },
 
+-- 
+Regards,
 
-Paul Bolle
+Laurent Pinchart
 
