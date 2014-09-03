@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449AbaICKaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:30:22 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:11925 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755808AbaICK3j (ORCPT
+	id S932378AbaICKaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:30:21 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:57021 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaICKaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:29:39 -0400
-X-IronPort-AV: E=Sophos;i="5.04,456,1406563200"; 
-   d="scan'208";a="35453954"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>
-Subject: [RFC PATCH 1/3] procfs: check uniq proc_dir_entry subdir name
-Date: Wed, 3 Sep 2014 18:29:58 +0800
-Message-ID: <1409740200-26461-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+	Wed, 3 Sep 2014 06:30:17 -0400
+Message-ID: <5406EDB8.8080401@linaro.org>
+Date: Wed, 03 Sep 2014 11:30:16 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.237]
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
+        kgdb-bugreport@lists.sourceforge.net, Nicolas Pitre <nico@linaro.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
+        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v11 00/19] arm: KGDB NMI/FIQ support
+References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.10.1409030032010.3333@nanos> <5406D91A.9090209@linaro.org> <alpine.DEB.2.10.1409031140350.3333@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409031140350.3333@nanos>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check whether a proc dir has a subdir
-with a specific name.
-Will be used in a later patch.
+On 03/09/14 11:06, Thomas Gleixner wrote:
+> On Wed, 3 Sep 2014, Daniel Thompson wrote:
+>> On 03/09/14 00:02, Thomas Gleixner wrote:
+>>> The use case you are looking for is the most irrelevant of all. Just
+>>> because KGDB is on some managerial "must have items" checklist does
+>>> not make it useful.
+>>
+>> The FIQ based interactive debugger use case is fairly common on Android,
+>> especially for Nexus devices (they have an out-of-tree debugger similar
+>> to kdb for this).
+>>
+>> I think it finds favour there because during the development phases
+>> where the console is unplugged to allow developers to go walkabout live
+>> with a prototype phone. The interactive debugger is used for
+>> post-morteming when something breaks. At this stage of development are
+>> reluctant to expose/consume hardware resources (JTAG pins, RAM, FLASH)
+>> for JTAG or kexec/kdump post-mortems.
+> 
+> If things are common and favoured for whatever reasons, that does not
+> make them a proper solution per se.
+> 
+> I rather have a kexec debug kernel started if my production/test
+> kernel explodes than hooking up a lousy debugger via serial, but thats
+> a matter of taste and reason.
+> 
+>>> The only relevant use cases of FIQs are the same as those of NMIs on
+>>> x86:
+>>>
+>>>   - Watchdog to detect stuck cpus and issue stack traces
+>>
+>> Russell put together a quick 'n dirty version of the NMI stack trace
+>> code based on a subset of my patchset. Based on his feedback, later
+>> revisions of my patchset are structured to simplify adding this code.
+> 
+> And I still say, that this is the first use case which should be
+> provided as it is simple enough, immediately usefull and testable for
+> everyone.
+> 
+> So, really what I want to see in the first place is a minimalistic
+> patch series which
+> 
+>  1) Implements the core infrastructure for FIQ support
+> 
+>  2) Converts a single interrupt controller to play with #1
+> 
+>  3) Provides the simplest useful use case using #1
+> 
+> That's at max 5 patches, which are easy enough to review, and not a
+> patch series which changes the world and some more in one go.
 
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
- fs/proc/generic.c       | 15 +++++++++++++++
- include/linux/proc_fs.h |  3 +++
- 2 files changed, 18 insertions(+)
+Ok. I'll look into this.
 
-diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-index b7f268e..4d576c2 100644
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -173,6 +173,21 @@ static const struct inode_operations proc_link_inode_operations = {
- 	.follow_link	= proc_follow_link,
- };
- 
-+/* check whether dir has @name member */
-+struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *de, char *name)
-+{
-+	spin_lock(&proc_subdir_lock);
-+	for (de = de->subdir; de ; de = de->next) {
-+		if (!strcmp(de->name, name)) {
-+			spin_unlock(&proc_subdir_lock);
-+			return de;
-+		}
-+	}
-+	spin_unlock(&proc_subdir_lock);
-+	return NULL;
-+}
-+EXPORT_SYMBOL(proc_uniq_dir);
-+
- /*
-  * Don't create negative dentries here, return -ENOENT by hand
-  * instead.
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 9d117f6..38e87aa 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -41,6 +41,7 @@ extern void *proc_get_parent_data(const struct inode *);
- extern void proc_remove(struct proc_dir_entry *);
- extern void remove_proc_entry(const char *, struct proc_dir_entry *);
- extern int remove_proc_subtree(const char *, struct proc_dir_entry *);
-+extern struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *, char *);
- 
- #else /* CONFIG_PROC_FS */
- 
-@@ -71,6 +72,8 @@ static inline void *proc_get_parent_data(const struct inode *inode) { BUG(); ret
- static inline void proc_remove(struct proc_dir_entry *de) {}
- #define remove_proc_entry(name, parent) do {} while (0)
- static inline int remove_proc_subtree(const char *name, struct proc_dir_entry *parent) { return 0; }
-+static inline struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *,
-+	char *) {return 0; }
- 
- #endif /* CONFIG_PROC_FS */
- 
--- 
-1.9.0
 
+> We need to get the design and the infrastructure right in the first
+> place. What I've seen so far is just a complete lack of design. If you
+> take off your KGDB blinkers, you might notice that yourself.
+
+Good point. I have tried shrinking the patchset previously but I ended
+up splitting it by sub-system rather than simplifying the use-case.
+
+The guess the effect of shrinking the patchset in this way was more to
+shrink the pool of likely reviewers than to shrink the size of the
+problem... Clearly not a good idea (and not intentional on my part).
+
+
+> As I said before:
+> 
+>>> KGDB falls into place once you solved the above.
+
+I hope so...
