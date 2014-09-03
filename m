@@ -1,218 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026AbaICIyv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:54:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4136 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753230AbaICIys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:54:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,456,1406617200"; 
-   d="scan'208";a="593807234"
-Message-ID: <5406D691.4020009@intel.com>
-Date: Wed, 03 Sep 2014 16:51:29 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, peterz@infradead.org,
-        mingo@kernel.org, srivatsa@mit.edu, akpm@linux-foundation.org,
-        laijs@cn.fujitsu.com, toshi.kani@hp.com, todd.e.brandt@linux.intel.com,
-        wangyun@linux.vnet.ibm.com, ego@linux.vnet.ibm.com, fabf@skynet.be,
-        linux@arm.linux.org.uk
-CC: oleg@redhat.com, srivatsa.bhat@linux.vnet.ibm.com,
+	id S1755437AbaICJAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:00:09 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:35788 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090AbaICJAG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 05:00:06 -0400
+Date: Wed, 3 Sep 2014 14:29:44 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, sparmaintainer@unisys.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V2] PM/CPU: Parallel enalbing nonboot cpus with resume
- devices
-References: <1408696420-2654-1-git-send-email-tianyu.lan@intel.com> <53FFF642.7010909@intel.com> <54011932.4060405@intel.com>
-In-Reply-To: <54011932.4060405@intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2] staging: unisys: uislib: uisqueue.c: rewrite of
+ do_locked_client_insert
+Message-ID: <20140903085944.GA1184@sudip-PC>
+References: <1409681795-23262-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <20140903084038.GE6600@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903084038.GE6600@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年08月30日 08:22, Rafael J. Wysocki wrote:
-> On 8/29/2014 5:40 AM, Lan Tianyu wrote:
->> On 2014年08月22日 16:33, Lan Tianyu wrote:
->>> In the current world, all nonboot cpus are enabled serially during
->>> system
->>> resume. System resume sequence is that boot cpu enables nonboot cpu
->>> one by
->>> one and then resume devices. Before resuming devices, there are few
->>> tasks
->>> assigned to nonboot cpus after they are brought up. This waste cpu
->>> usage.
->>>
->>> To accelerate S3, this patches allows boot cpu to go forward to resume
->>> devices after bringing up one nonboot cpu. The nonboot cpu will be in
->>> charge of bringing up other cpus. This makes enabling cpu2~x parallel
->>> with resuming devices.
->>>
->>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->>> ---
->>> Change since V1:
->>>     Remove PM_PARALLEL_CPU_UP_FOR_SUSPEND kernel config and make
->>> paralleling cpu as default behaviour. Add error handling for
->>> failure of the first frozen cpu online.
->>>
->>> So far, I just tested the patch on the Intel machines. It's better
->>> to test it on the others Arch platforms. Appreciate a lot if some
->>> one can help test it.
->>>
->> Hi All:
->>     Any comments on this patch?  Thanks.
+On Wed, Sep 03, 2014 at 11:40:38AM +0300, Dan Carpenter wrote:
+> On Tue, Sep 02, 2014 at 11:46:35PM +0530, Sudip Mukherjee wrote:
+> > From: Sudip Mukherjee <sudip@vectorindia.org>
 > 
-> You need to ensure that the async thing completes before
-> cpufreq_resume() or bad things will happen I think.
+> I really would prefer if you just figured out your email settings so
+> this isn't needed.  The From: header is mostly used for people
+> forwarding patches from other people.  We have allowed people to use
+> the From header like this if they can't get their corporate email
+> configured properly but I try to discorage it.  If everyone starts using
+> From headers like this then it becomes a pain to deal with.
 > 
+I will configure the corporate mail. I am the server admin , so there should
+not be any problem in settings. :)
 
-Hi Rafael:
-	Thanks for reminder. You are right. I checked cpufreq code and
-cpufreq_suspend will be set to false in the cpufreq_resume(). If cpu
-online is later than cpufreq_resume() and cpufreq policy on the cpu will
-not be recovered since cpufreq_suspend has been cleared.
-cpu_maps_update_begin() can be used to wait all cpu online before
-clearing cpufreq_suspend.
-
-
->>>   kernel/cpu.c | 70
->>> +++++++++++++++++++++++++++++++++++++++++++++++++-----------
->>>   1 file changed, 58 insertions(+), 12 deletions(-)
->>>
->>> diff --git a/kernel/cpu.c b/kernel/cpu.c
->>> index a343bde..9bc8497 100644
->>> --- a/kernel/cpu.c
->>> +++ b/kernel/cpu.c
->>> @@ -551,8 +551,42 @@ void __weak arch_enable_nonboot_cpus_end(void)
->>>   {
->>>   }
->>>   +static int _cpu_up_with_trace(int cpu)
+> > 
+> > removed unused variables
+> > fixed sparse warning of context imbalance in 'do_locked_client_insert'
+> >                          different lock contexts for basic block
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > ---
+> > 
 > 
-> Better name?
-
-How about _cpu_up_for_pm? The new function is only called during suspend
-and hibernation.
-
+> This patch is much better and more interesting, but I still want some
+> more changes.
 > 
->>> +{
->>> +    int error;
->>> +
->>> +    trace_suspend_resume(TPS("CPU_ON"), cpu, true);
->>> +    error = _cpu_up(cpu, 1);
->>> +    trace_suspend_resume(TPS("CPU_ON"), cpu, false);
->>> +    if (error) {
->>> +        pr_warn("Error taking CPU%d up: %d\n", cpu, error);
->>> +        return error;
->>> +    }
->>> +
->>> +    pr_info("CPU%d is up\n", cpu);
->>> +    return 0;
->>> +}
->>> +
->>> +static int async_enable_nonboot_cpus(void *data)
->>> +{
->>> +    int cpu;
->>> +
->>> +    cpu_maps_update_begin();
->>> +    arch_enable_nonboot_cpus_begin();
+I have already sent v3 of the patch just before your mail , based on 
+what greg k-h has suggested about the commnent. Please discard that.
+
+> > v1 of the patch of the patch just fixed the sparse warning.
+> > On suggestion of Dan Carpenter v2 is the total rewrite of the function.
+> > Two of the function arguments (interruptHandle,channelId) are also not used. Wanted to remove them as well , 
+> > but then thought maybe the original author have planned for some use of those variables.
 > 
-> Shouldn't you call this before trying to bring up the first one?
-
-arch_enable_nonboot_cpus_begin() is just to set a mtrr_aps_delayed_init
-flag in the mtrr code to delay all init mtrr during the following cpu
-online. arch_enable_nonboot_cpus_done() will do init mtrr on the all cpus.
-
-According SDM 11.11.8, all processors must have the same MTRR values.
-Original model of system resume is that all cpus are online serially,
-delay all init mtrr when one nonboot cpu is online and do it for all
-cpus at the end of enabling nonboot cpus. In the parallel situation,
-nonboot cpu will have task before all cpus online. So it's necessary to
-do init mtrr when the target cpu is online.
-
-Actually from my opinion, arch_enable_nonboot_cpus_begin/done() should
-not use in the parallel case. I plan to write another patch to do it.
-
+> In the kernel we don't put code in until we are ready to use it.  Don't
+> worry about future changes.  But on the other hand, don't remove the
+> parameters in this patch because that is doing too many changes in one
+> patch.  It would have to be done in a follow on patch if you decide to
+> do it.
 > 
->>> +
->>> +    for_each_cpu(cpu, frozen_cpus) {
->>> +        _cpu_up_with_trace(cpu);
->>> +    }
->>> +
->>> +    arch_enable_nonboot_cpus_end();
->>> +    cpumask_clear(frozen_cpus);
->>> +    cpu_maps_update_done();
->>> +    return 0;
->>> +}
->>> +
->>>   void __ref enable_nonboot_cpus(void)
->>>   {
->>> +    struct task_struct *tsk;
->>>       int cpu, error;
->>>         /* Allow everyone to use the CPU hotplug again */
->>> @@ -563,22 +597,34 @@ void __ref enable_nonboot_cpus(void)
->>>         pr_info("Enabling non-boot CPUs ...\n");
->>>   -    arch_enable_nonboot_cpus_begin();
->>> +    cpu = cpumask_first(frozen_cpus);
->>> +    cpumask_clear_cpu(cpu, frozen_cpus);
->>>   -    for_each_cpu(cpu, frozen_cpus) {
->>> -        trace_suspend_resume(TPS("CPU_ON"), cpu, true);
->>> -        error = _cpu_up(cpu, 1);
->>> -        trace_suspend_resume(TPS("CPU_ON"), cpu, false);
->>> -        if (!error) {
->>> -            pr_info("CPU%d is up\n", cpu);
->>> -            continue;
->>> +    error = _cpu_up_with_trace(cpu);
->>> +    if (cpumask_empty(frozen_cpus))
->>> +        goto out;
->>> +
->>> +    if (error) {
->>> +        /*
->>> +         * If fail to bring up the first frozen cpus,
->>> +         * enable the rest frozen cpus on the boot cpu.
->>> +         */
->>> +        arch_enable_nonboot_cpus_begin();
->>> +        for_each_cpu(cpu, frozen_cpus) {
->>> +            _cpu_up_with_trace(cpu);
->>>           }
->>> -        pr_warn("Error taking CPU%d up: %d\n", cpu, error);
->>> -    }
->>> +        arch_enable_nonboot_cpus_end();
->>>   -    arch_enable_nonboot_cpus_end();
->>> +    } else {
->>> +        tsk = kthread_create_on_cpu(async_enable_nonboot_cpus,
->>> +                NULL, cpu, "async-enable-nonboot-cpus");
+> > -	if (locked) {
+> > -		spin_unlock_irqrestore((spinlock_t *) lock, flags);
+> > -		locked = 0;
+> > +		goto unlock;
+> > +	visor_signalqueue_empty(queueinfo->chan, whichqueue);
 > 
-> Does it really need to run on the other CPU?  If the idea is to avoid
-> waiting mostly, the async thread can start running on the boot CPU just
-> fine I suppose.
-
-Running "enabling nonboot cpu" on the other CPU dedicates to avoid
-disturbing the start of resume task. If two threads run on one CPU, they
-will compete for CPU resource. Generally, when cpu1 up and there are two
-threads, they should run respectively on the cpu0 and cpu1.
-Any way, I will do test to compare the difference.
-
-Thanks for review.
-
+> Just remove this function.  But mention it in the changelog in case
+> there are side effects.
 > 
->>> +        if (IS_ERR(tsk)) {
->>> +            pr_err("Failed to create async enable nonboot cpus
->>> thread.\n");
->>> +            goto out;
->>> +        }
->>>   -    cpumask_clear(frozen_cpus);
->>> +        kthread_unpark(tsk);
->>> +    }
->>>   out:
->>>       cpu_maps_update_done();
->>>   }
->>>
->>
+> > +	/*visor_signal_insert() only return 0 or 1 */
 > 
-> Rafael
+> Don't put obvious comments like this.  A normal reader will assume that
+> this function is boolean based on how it is used.
 > 
+> > +	if (visor_signal_insert(queueinfo->chan, whichqueue, pSignal) == 1) {
+> 
+> Don't put the == 1.  In terms of English, 1 really is intended as
+> "success" and not the number one.  Also don't test for == true or
+> == false.
+> 
+> 	if (foo) {
+> 	if (foo == true) {
+> 
+> These two statement *mean* the same thing in terms of English, but the
+> first one is simpler and less wordy.
+> 
+> regards,
+> dan carpenter
 
-
--- 
-Best regards
-Tianyu Lan
+thanks
+sudip
