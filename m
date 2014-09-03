@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935489AbaICXnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:43:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
+	id S935449AbaICXnc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:43:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750AbaICWF4 (ORCPT
+	with ESMTP id S933333AbaICWF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:56 -0400
+	Wed, 3 Sep 2014 18:05:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.10 16/55] drm: omapdrm: fix compiler errors
-Date: Wed,  3 Sep 2014 15:05:06 -0700
-Message-Id: <20140903220456.520495378@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 29/55] KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC redir table
+Date: Wed,  3 Sep 2014 15:05:19 -0700
+Message-Id: <20140903220458.667203431@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -29,115 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 2d31ca3ad7d5d44c8adc7f253c96ce33f3a2e931 upstream.
+commit 0f6c0a740b7d3e1f3697395922d674000f83d060 upstream.
 
-Regular randconfig nightly testing has detected problems with omapdrm.
+Currently, the EOI exit bitmap (used for APICv) does not include
+interrupts that are masked.  However, this can cause a bug that manifests
+as an interrupt storm inside the guest.  Alex Williamson reported the
+bug and is the one who really debugged this; I only wrote the patch. :)
 
-omapdrm fails to build when the kernel is built to support 64-bit DMA
-addresses and/or 64-bit physical addresses due to an assumption about
-the width of these types.
+The scenario involves a multi-function PCI device with OHCI and EHCI
+USB functions and an audio function, all assigned to the guest, where
+both USB functions use legacy INTx interrupts.
 
-Use %pad to print DMA addresses, rather than %x or %Zx (which is even
-more wrong than %x).  Avoid passing a uint32_t pointer into a function
-which expects dma_addr_t pointer.
+As soon as the guest boots, interrupts for these devices turn into an
+interrupt storm in the guest; the host does not see the interrupt storm.
+Basically the EOI path does not work, and the guest continues to see the
+interrupt over and over, even after it attempts to mask it at the APIC.
+The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
+with not many changes in the area of APIC/IOAPIC handling).
 
-drivers/gpu/drm/omapdrm/omap_plane.c: In function 'omap_plane_pre_apply':
-drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_plane.c:145:2: error: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Werror=format]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_plane.o] Error 1
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_get_paddr':
-drivers/gpu/drm/omapdrm/omap_gem.c:794:4: error: format '%x' expects argument of type 'unsigned int', but argument 3 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_describe':
-drivers/gpu/drm/omapdrm/omap_gem.c:991:4: error: format '%Zx' expects argument of type 'size_t', but argument 7 has type 'dma_addr_t' [-Werror=format]
-drivers/gpu/drm/omapdrm/omap_gem.c: In function 'omap_gem_init':
-drivers/gpu/drm/omapdrm/omap_gem.c:1470:4: error: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Werror=format]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_gem.o] Error 1
-drivers/gpu/drm/omapdrm/omap_dmm_tiler.c: In function 'dmm_txn_append':
-drivers/gpu/drm/omapdrm/omap_dmm_tiler.c:226:2: error: passing argument 3 of 'alloc_dma' from incompatible pointer type [-Werror]
-make[5]: *** [drivers/gpu/drm/omapdrm/omap_dmm_tiler.o] Error 1
-make[5]: Target `__build' not remade because of errors.
-make[4]: *** [drivers/gpu/drm/omapdrm] Error 2
+Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
+on in the eoi_exit_bitmap and TMR, and things then work.  What happens
+is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
+It does not have set bit 59 because the RTE was masked, so the IOAPIC
+never sees the EOI and the interrupt continues to fire in the guest.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+My guess was that the guest is masking the interrupt in the redirection
+table in the interrupt routine, i.e. while the interrupt is set in a
+LAPIC's ISR, The simplest fix is to ignore the masking state, we would
+rather have an unnecessary exit rather than a missed IRQ ACK and anyway
+IOAPIC interrupts are not as performance-sensitive as for example MSIs.
+Alex tested this patch and it fixed his bug.
+
+[Thanks to Alex for his precise description of the problem
+ and initial debugging effort.  A lot of the text above is
+ based on emails exchanged with him.]
+
+Reported-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    6 ++++--
- drivers/gpu/drm/omapdrm/omap_gem.c       |   10 +++++-----
- drivers/gpu/drm/omapdrm/omap_plane.c     |    4 ++--
- 3 files changed, 11 insertions(+), 9 deletions(-)
+ virt/kvm/ioapic.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-+++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-@@ -199,7 +199,7 @@ static struct dmm_txn *dmm_txn_init(stru
- static void dmm_txn_append(struct dmm_txn *txn, struct pat_area *area,
- 		struct page **pages, uint32_t npages, uint32_t roll)
- {
--	dma_addr_t pat_pa = 0;
-+	dma_addr_t pat_pa = 0, data_pa = 0;
- 	uint32_t *data;
- 	struct pat *pat;
- 	struct refill_engine *engine = txn->engine_handle;
-@@ -223,7 +223,9 @@ static void dmm_txn_append(struct dmm_tx
- 			.lut_id = engine->tcm->lut_id,
- 		};
- 
--	data = alloc_dma(txn, 4*i, &pat->data_pa);
-+	data = alloc_dma(txn, 4*i, &data_pa);
-+	/* FIXME: what if data_pa is more than 32-bit ? */
-+	pat->data_pa = data_pa;
- 
- 	while (i--) {
- 		int n = i + roll;
---- a/drivers/gpu/drm/omapdrm/omap_gem.c
-+++ b/drivers/gpu/drm/omapdrm/omap_gem.c
-@@ -806,7 +806,7 @@ int omap_gem_get_paddr(struct drm_gem_ob
- 			omap_obj->paddr = tiler_ssptr(block);
- 			omap_obj->block = block;
- 
--			DBG("got paddr: %08x", omap_obj->paddr);
-+			DBG("got paddr: %pad", &omap_obj->paddr);
- 		}
- 
- 		omap_obj->paddr_cnt++;
-@@ -1004,9 +1004,9 @@ void omap_gem_describe(struct drm_gem_ob
- 	if (obj->map_list.map)
- 		off = (uint64_t)obj->map_list.hash.key;
- 
--	seq_printf(m, "%08x: %2d (%2d) %08llx %08Zx (%2d) %p %4d",
-+	seq_printf(m, "%08x: %2d (%2d) %08llx %pad (%2d) %p %4d",
- 			omap_obj->flags, obj->name, obj->refcount.refcount.counter,
--			off, omap_obj->paddr, omap_obj->paddr_cnt,
-+			off, &omap_obj->paddr, omap_obj->paddr_cnt,
- 			omap_obj->vaddr, omap_obj->roll);
- 
- 	if (omap_obj->flags & OMAP_BO_TILED) {
-@@ -1489,8 +1489,8 @@ void omap_gem_init(struct drm_device *de
- 			entry->paddr = tiler_ssptr(block);
- 			entry->block = block;
- 
--			DBG("%d:%d: %dx%d: paddr=%08x stride=%d", i, j, w, h,
--					entry->paddr,
-+			DBG("%d:%d: %dx%d: paddr=%pad stride=%d", i, j, w, h,
-+					&entry->paddr,
- 					usergart[i].stride_pfn << PAGE_SHIFT);
- 		}
- 	}
---- a/drivers/gpu/drm/omapdrm/omap_plane.c
-+++ b/drivers/gpu/drm/omapdrm/omap_plane.c
-@@ -146,8 +146,8 @@ static void omap_plane_pre_apply(struct
- 	DBG("%dx%d -> %dx%d (%d)", info->width, info->height,
- 			info->out_width, info->out_height,
- 			info->screen_width);
--	DBG("%d,%d %08x %08x", info->pos_x, info->pos_y,
--			info->paddr, info->p_uv_addr);
-+	DBG("%d,%d %pad %pad", info->pos_x, info->pos_y,
-+			&info->paddr, &info->p_uv_addr);
- 
- 	/* TODO: */
- 	ilace = false;
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -203,10 +203,9 @@ void kvm_ioapic_scan_entry(struct kvm_vc
+ 	spin_lock(&ioapic->lock);
+ 	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
+ 		e = &ioapic->redirtbl[index];
+-		if (!e->fields.mask &&
+-			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
+-			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
+-				 index) || index == RTC_GSI)) {
++		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
++		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
++		    index == RTC_GSI) {
+ 			if (kvm_apic_match_dest(vcpu, NULL, 0,
+ 				e->fields.dest_id, e->fields.dest_mode)) {
+ 				__set_bit(e->fields.vector,
 
 
