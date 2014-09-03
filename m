@@ -1,117 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935578AbaICXuf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:50:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933286AbaICWFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:52 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario <fugazzi99@gmail.com>, corubba <corubba@gmx.de>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 11/55] ALSA: virtuoso: add Xonar Essence STX II support
-Date: Wed,  3 Sep 2014 15:05:01 -0700
-Message-Id: <20140903220455.603868664@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S936356AbaICXuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:50:51 -0400
+Received: from mail.eperm.de ([89.247.134.16]:47010 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933286AbaICXul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 19:50:41 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] DRBG: remove check for uninitialized DRBG handle
+Date: Thu, 04 Sep 2014 01:50:32 +0200
+Message-ID: <8246803.Qk7EMfoFYT@myon.chronox.de>
+User-Agent: KMail/4.13.3 (Linux/3.15.10-201.fc20.x86_64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20140903232129.GA32264@gondor.apana.org.au>
+References: <20140826161456.7ad100e3@canb.auug.org.au> <3575659.BooajjTQie@myon.chronox.de> <20140903232129.GA32264@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Am Donnerstag, 4. September 2014, 07:21:29 schrieb Herbert Xu:
 
-------------------
+Hi Herbert,
 
-From: Clemens Ladisch <clemens@ladisch.de>
+> On Wed, Sep 03, 2014 at 03:33:16AM +0200, Stephan Mueller wrote:
+> > Am Montag, 1. September 2014, 07:11:20 schrieb Stephan Mueller:
+> > 
+> > Hi Herbert,
+> > 
+> > may I ask for consideration of this patch as this covers an oops FIPS
+> > mode?
+> > 
+> > In addition, may I ask for guidance on how to fix the 32 bit code path in
+> > Linus' tree as asked on 28.8? To quote: "Thus, the fix in
+> > b9347aff91ce4789619168539f08202d8d6a1177 works. However, this
+> > patch is based on 05c81ccd9087d238c10b234eadb55632742e5518. So, if we want
+> > to fix Linus' tree with minimal impact, either these two patches are
+> > pushed to Linus or I have to port
+> > b9347aff91ce4789619168539f08202d8d6a1177 to the current Linus tree."
+> 
+> I will take care of this.
 
-commit f42bb22243d2ae264d721b055f836059fe35321f upstream.
-
-Just add the PCI ID for the STX II.  It appears to work the same as the
-STX, except for the addition of the not-yet-supported daughterboard.
-
-Tested-by: Mario <fugazzi99@gmail.com>
-Tested-by: corubba <corubba@gmx.de>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- Documentation/sound/alsa/ALSA-Configuration.txt |    4 ++--
- sound/pci/Kconfig                               |    4 ++--
- sound/pci/oxygen/virtuoso.c                     |    1 +
- sound/pci/oxygen/xonar_pcm179x.c                |   12 ++++++++++--
- 4 files changed, 15 insertions(+), 6 deletions(-)
-
---- a/Documentation/sound/alsa/ALSA-Configuration.txt
-+++ b/Documentation/sound/alsa/ALSA-Configuration.txt
-@@ -2026,8 +2026,8 @@ Prior to version 0.9.0rc4 options had a
-   -------------------
- 
-     Module for sound cards based on the Asus AV66/AV100/AV200 chips,
--    i.e., Xonar D1, DX, D2, D2X, DS, Essence ST (Deluxe), Essence STX,
--    HDAV1.3 (Deluxe), and HDAV1.3 Slim.
-+    i.e., Xonar D1, DX, D2, D2X, DS, DSX, Essence ST (Deluxe),
-+    Essence STX (II), HDAV1.3 (Deluxe), and HDAV1.3 Slim.
- 
-     This module supports autoprobe and multiple cards.
- 
---- a/sound/pci/Kconfig
-+++ b/sound/pci/Kconfig
-@@ -856,8 +856,8 @@ config SND_VIRTUOSO
- 	select SND_JACK if INPUT=y || INPUT=SND
- 	help
- 	  Say Y here to include support for sound cards based on the
--	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS,
--	  Essence ST (Deluxe), and Essence STX.
-+	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS, DSX,
-+	  Essence ST (Deluxe), and Essence STX (II).
- 	  Support for the HDAV1.3 (Deluxe) and HDAV1.3 Slim is experimental;
- 	  for the Xense, missing.
- 
---- a/sound/pci/oxygen/virtuoso.c
-+++ b/sound/pci/oxygen/virtuoso.c
-@@ -53,6 +53,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x835e) },
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x838e) },
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
-+	{ OXYGEN_PCI_SUBID(0x1043, 0x85f4) },
- 	{ OXYGEN_PCI_SUBID_BROKEN_EEPROM },
- 	{ }
- };
---- a/sound/pci/oxygen/xonar_pcm179x.c
-+++ b/sound/pci/oxygen/xonar_pcm179x.c
-@@ -100,8 +100,8 @@
-  */
- 
- /*
-- * Xonar Essence ST (Deluxe)/STX
-- * -----------------------------
-+ * Xonar Essence ST (Deluxe)/STX (II)
-+ * ----------------------------------
-  *
-  * CMI8788:
-  *
-@@ -1137,6 +1137,14 @@ int get_xonar_pcm179x_model(struct oxyge
- 		chip->model.init = xonar_stx_init;
- 		chip->model.resume = xonar_stx_resume;
- 		chip->model.set_dac_params = set_pcm1796_params;
-+		break;
-+	case 0x85f4:
-+		chip->model = model_xonar_st;
-+		/* TODO: daughterboard support */
-+		chip->model.shortname = "Xonar STX II";
-+		chip->model.init = xonar_stx_init;
-+		chip->model.resume = xonar_stx_resume;
-+		chip->model.set_dac_params = set_pcm1796_params;
- 		break;
- 	default:
- 		return -EINVAL;
+Thank you.
+> 
+> Cheers,
 
 
+-- 
+Ciao
+Stephan
