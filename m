@@ -1,97 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674AbaICNhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:37:19 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:48054 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414AbaICNhR (ORCPT
+	id S932795AbaICNhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:37:38 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48133 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414AbaICNhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:37:17 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-30-5407198abae0
-Message-id: <540718DB.8060701@samsung.com>
-Date: Wed, 03 Sep 2014 16:34:19 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.0
-MIME-version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH 6/8] ima: remove unnecessary code
-References: <cover.1409728712.git.d.kasatkin@samsung.com>
- <b698bd0778ead0491205b0fda4bf5ed6c67ecec3.1409728712.git.d.kasatkin@samsung.com>
- <1409749704.21827.66.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-reply-to: <1409749704.21827.66.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xq7pdkuwhBgtfKlp8WVpn8XLGPHaL
-	y7vmsFl86HnEZvFpxSRmB1aPnbPusns8OLSZxWP3gs9MHp83yQWwRHHZpKTmZJalFunbJXBl
-	LLs7ha3gMW9F24v9jA2Mk7i7GDk5JARMJBbOXskOYYtJXLi3nq2LkYtDSGApo8SHe/+gnEYm
-	iWNfXzJBOLMYJVpez2LuYuTg4BXQkjjZzwzSzSKgKrFgwk4wm01AT2JD8w+wqaICYRLPfh1k
-	ArF5BQQlfky+xwJiiwhoShxr/cgIMpNZoJdRon9dH1izsICpxJxzr1gglp1ilPh5+S/YJE4B
-	D4nlXw+DLWYWUJeYMiUXJMwsIC+xec1bsF4hoCO6165lg3hHUeL05HPMExiFZyHZPQuhexaS
-	7gWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQuLhyw7GxcesDjEKcDAq8fAWqLGFCLEm
-	lhVX5h5ilOBgVhLh1WRmDxHiTUmsrEotyo8vKs1JLT7EyMTBKdXAGDSznEWugU/mePnDo5Md
-	0nZOfbJhjvWW4C9W0/hVLyxZbGK+d9v3vWUSETKH807ftCtgyTxas+HIwQkcRV+0uCfse7l4
-	w/Np9aJrJ8UnmGQvu50+2zBYTYAxTq+myMz4fP6Zy/fdliZnTzuxZurFkPyuiQG+e2Zt+7/e
-	LktXg31JQffhRZOk/yqxFGckGmoxFxUnAgC7PV1AZQIAAA==
+	Wed, 3 Sep 2014 09:37:36 -0400
+Date: Wed, 3 Sep 2014 14:37:29 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140903133729.GM29327@sirena.org.uk>
+References: <20140903143146.88d4b3ada1e3098989139540@kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vYlOGI1a8wP+YbIl"
+Content-Disposition: inline
+In-Reply-To: <20140903143146.88d4b3ada1e3098989139540@kernel.org>
+X-Cookie: Simulated picture.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: manual merge of the drm-intel tree with the  tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/14 16:08, Mimi Zohar wrote:
-> On Wed, 2014-09-03 at 10:19 +0300, Dmitry Kasatkin wrote: 
->> If ima_appraise is 0, then action would not mandate to perform
->> appraisal and ima_appraise_measurement will never be called.
->>
->> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> The policy determines whether or not a file should be appraised.
-> Whether IMA is configured and enabled to appraise files is a different
-> issue.  The test is not done in process_measurement(), but deferred to
-> here.
 
-Hi,
+--vYlOGI1a8wP+YbIl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Policy requests honors "ima_appraise" variable.
-There wont be any appraisal action if 'ima_appraise' is disabled.
+On Wed, Sep 03, 2014 at 02:31:46PM +0100, Mark Brown wrote:
 
-See bellow...
+> @@ -3923,7 +3942,9 @@ static void valleyview_irq_uninstall(struct drm_dev=
+ice *dev)
+> =20
+>  	I915_WRITE(VLV_MASTER_IER, 0);
+> =20
+> -	for_each_pipe(pipe)
+> +	intel_hpd_irq_uninstall(dev_priv);
+> +
+> +	for_each_pipe(dev_priv, pipe)
+>  		I915_WRITE(PIPESTAT(pipe), 0xffff);
+> =20
+>  	I915_WRITE(HWSTAM, 0xffffffff);
 
---------------------
-int ima_get_action(struct inode *inode, int mask, int function)
-{
-        .........
-        if (!ima_appraise)
-                flags &= ~IMA_APPRAISE;
-        ..........
---------------
+=2E..or actually this since the above doesn't build, I was too hasty:
 
-- Dmitry
-> Mimi
->
->> ---
->>  security/integrity/ima/ima_appraise.c | 2 --
->>  1 file changed, 2 deletions(-)
->>
->> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
->> index 225fd94..013ec3f 100644
->> --- a/security/integrity/ima/ima_appraise.c
->> +++ b/security/integrity/ima/ima_appraise.c
->> @@ -192,8 +192,6 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
->>  	enum integrity_status status = INTEGRITY_UNKNOWN;
->>  	int rc = xattr_len, hash_start = 0;
->>
->> -	if (!ima_appraise)
->> -		return 0;
->>  	if (!inode->i_op->getxattr)
->>  		return INTEGRITY_UNKNOWN;
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
 
+@@ -3923,7 +3942,9 @@ static void valleyview_irq_uninstall(struct drm_devic=
+e *dev)
+=20
+ 	I915_WRITE(VLV_MASTER_IER, 0);
+=20
+-	for_each_pipe(pipe)
++
++	for_each_pipe(dev_priv, pipe)
+ 		I915_WRITE(PIPESTAT(pipe), 0xffff);
+=20
+ 	I915_WRITE(HWSTAM, 0xffffffff);
+
+--vYlOGI1a8wP+YbIl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUBxmWAAoJELSic+t+oim9k5sP/itbgjrEkcfzVOngmJgkNeAE
+5db7Cfi8FBvqu45HCpNjdIngnl3VnvhaH3Y4G3MhZU6Ioz1Pcpvv2pIFCtMmrsjq
+0U4VRTT39oO0ZGKs1FTf+MDf8ve1mKW5G/6aMmRmW3bySBay/T/fHAGsRUQB5+FW
+i+oASE6f6+3atNQWyR1KIrIXgpBnczmevXKNPD6u1BhZHOZOYpQT6hdFHdLBbq4U
+63LWHyouwf+sOSwTAdSCuhKnyGYIXoF5kmAgnfcUb3hc8n4a1WRrIyfAZ0ylcAy/
+3ZGUi31MmetUvQKKI9DEtHrDvh14A7dhf4aZRSajbZc9j8CdWNofUgwEbPnBIFkW
+BaFEJSJu8NWjPrSL6Npbbvn3T6C/XiBTPSR0L8fC60siDUaSfZmepS79EhHPsAX8
+vFrQKuRhElTNOT7+laEcm62TMJSrkzStMfUdnYYxWK2FL4+xsnEdg6klfFzldUVg
+OV4tdI8ZUo7lDzSZ6u5fogrYLrrn2+PLHRQGoUIUyXN4NZSBO2eRT9ruBEXRDg1u
+hYmER5BJGLgAPhkOROwpJeDtw7G5a+ANLIrnzBFR/0TagJC1kXs5OvQIFU33dZU+
+zxZzXiCedsbMGPD/ZcAHbIBML3ZmUDyx+ui+J/pwOT7fXXuPtBqJh8HM/raly4aC
+PxTtSAtZ9M4UkxMwrv9q
+=Pywr
+-----END PGP SIGNATURE-----
+
+--vYlOGI1a8wP+YbIl--
