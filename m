@@ -1,88 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbaICTfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 15:35:14 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42366 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753119AbaICTfM (ORCPT
+	id S1755606AbaICTfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 15:35:42 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:33820 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276AbaICTfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 15:35:12 -0400
-Date: Wed, 3 Sep 2014 20:34:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-Message-ID: <20140903193453.GA30401@n2100.arm.linux.org.uk>
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk> <5405AEBC.9020904@linaro.org> <20140902164204.GT30401@n2100.arm.linux.org.uk> <5406EBAA.9040206@linaro.org>
+	Wed, 3 Sep 2014 15:35:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5406EBAA.9040206@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CACHYQ-rB7mhiN_bGCPe4mrNLz2QoQ3mBtRhYyk8j+=F33dQWdQ@mail.gmail.com>
+References: <CACHYQ-rtHfVmF4DstxhWe0zWNH3ujjniVBwONBGW3f4Uw=rvkg@mail.gmail.com>
+ <1408129724-17669-1-git-send-email-vpalatin@chromium.org> <CACHYQ-rB7mhiN_bGCPe4mrNLz2QoQ3mBtRhYyk8j+=F33dQWdQ@mail.gmail.com>
+From: Vincent Palatin <vpalatin@chromium.org>
+Date: Wed, 3 Sep 2014 12:35:18 -0700
+X-Google-Sender-Auth: XcTlhvyZHepVuqK6FZ2-TND3Mzs
+Message-ID: <CAP_ceTznJfoE2CNzU+=Ysnx_pNbmUeggOPCEzysvUP9YnSiGgg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] [media] V4L: Add camera pan/tilt speed controls
+To: Pawel Osciak <posciak@chromium.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olofj@chromium.org>, Zach Kuznia <zork@chromium.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 11:21:30AM +0100, Daniel Thompson wrote:
-> On 02/09/14 17:42, Russell King - ARM Linux wrote:
-> > Yes, it does, because unlike the x86 community, we have a wide range
-> > of platforms, and platform code does not go through the same path or
-> > get the same review as core ARM code.
-> > 
-> > As I already pointed out, with a notifier, it's very easy to sneak
-> > something into the FIQ path by submitting a patch for platform code
-> > which calls the registration function.  That's going to be pretty
-> > difficult to spot amongst the 3000+ messages on the linux-arm-kernel
-> > list each month in order to give it the review that it would need.
-> > That's especially true as I now ignore almost all most platform
-> > code patches as we have Arnd and Olof to look at that.
-> > 
-> > So, unless you can come up with a proposal which ensures that there
-> > is sufficient review triggered when someone decides to call the
-> > notifier registration function...
-> 
-> Reflecting upon this and upon Thomas' comments about only using FIQ for
-> watchdog, backtrace and performance monitoring...
-> 
-> The short version is, "I was wrong and should have done what you said in
-> the first place".
-> 
-> The long version adds, "because the coupling concerns were spurious; the
-> only proposed users of the default FIQ handler outside of core ARM code,
-> are ARM-centric irqchip drivers."
+On Tue, Sep 2, 2014 at 9:54 PM, Pawel Osciak <posciak@chromium.org> wrote:
+> On Sat, Aug 16, 2014 at 4:08 AM, Vincent Palatin <vpalatin@chromium.org> wrote:
+>>
+>> The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
+>> camera by setting its rotation speed around its axis.
+>>
+>> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+>
+> Reviewed-by: Pawel Osciak <posciak@chromium.org>
+>
+>>
+>> ---
+>> Changes from v1:
+>> - update the documentation wording according to Pawel suggestion.
+>>
+>>  Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
+>>  Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
+>>  drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
+>>  include/uapi/linux/v4l2-controls.h           |  2 ++
+>>  4 files changed, 35 insertions(+)
+>>
+>> diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
+>> index eee6f0f..21910e9 100644
+>> --- a/Documentation/DocBook/media/v4l/compat.xml
+>> +++ b/Documentation/DocBook/media/v4l/compat.xml
+>> @@ -2545,6 +2545,16 @@ fields changed from _s32 to _u32.
+>>        </orderedlist>
+>>      </section>
+>>
+>> +    <section>
+>> +      <title>V4L2 in Linux 3.17</title>
+>
+> This will need a bump.
 
-I would say that the ARM specific changes to entry-armv.S and setup.c
-are correct.  All that you're doing there is to replace the existing
-default no-op FIQ handler with some additional code which gets us into
-SVC mode and back out, but itself is also a no-op.  In other words, no
-real change.
+Yes, I did not expect to miss 3.17 window.
+I will send an updated v3 patch.
 
-That's a good first patch, and one which I would actually like to have
-in my tree sooner rather than later, so that I can split that out from
-my prototype code.
-
-I can also split out from it the ARM generic changes for implementing
-the FIQ dumping too, which gives us a second patch.  With a bit of
-additional work, much of that should actually be generic code, not
-ARM or x86 specific code.  That's going to annoy x86 people a little
-because some of that is being reworked...
-
-That will leave the problem of how to deal with the IRQ controller
-specifics, and how to properly wire it together with the IRQ controller
-in the loop - that is where Thomas' concerns are focused.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+>>
+>> +      <orderedlist>
+>> +       <listitem>
+>> +         <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
+>> + <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
+>> +       </listitem>
+>> +      </orderedlist>
+>> +    </section>
+>> +
+>>      <section id="other">
+>>        <title>Relation of V4L2 to other Linux multimedia APIs</title>
+>>
+>> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+>> index 47198ee..be88e64 100644
+>> --- a/Documentation/DocBook/media/v4l/controls.xml
+>> +++ b/Documentation/DocBook/media/v4l/controls.xml
+>> @@ -3914,6 +3914,27 @@ by exposure, white balance or focus controls.</entry>
+>>           </row>
+>>           <row><entry></entry></row>
+>>
+>> +         <row>
+>> +           <entry spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
+>> +           <entry>integer</entry>
+>> +         </row><row><entry spanname="descr">This control turns the
+>> +camera horizontally at the specific speed. The unit is undefined. A
+>> +positive value moves the camera to the right (clockwise when viewed
+>> +from above), a negative value to the left. A value of zero stops the motion
+>> +if one is in progress and has no effect otherwise.</entry>
+>> +         </row>
+>> +         <row><entry></entry></row>
+>> +
+>> +         <row>
+>> +           <entry spanname="id"><constant>V4L2_CID_TILT_SPEED</constant>&nbsp;</entry>
+>> +           <entry>integer</entry>
+>> +         </row><row><entry spanname="descr">This control turns the
+>> +camera vertically at the specified speed. The unit is undefined. A
+>> +positive value moves the camera up, a negative value down. A value of zero
+>> +stops the motion if one is in progress and has no effect otherwise.</entry>
+>> +         </row>
+>> +         <row><entry></entry></row>
+>> +
+>>         </tbody>
+>>        </tgroup>
+>>      </table>
+>> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+>> index 55c6832..57ddaf4 100644
+>> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+>> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+>> @@ -787,6 +787,8 @@ const char *v4l2_ctrl_get_name(u32 id)
+>>         case V4L2_CID_AUTO_FOCUS_STOP:          return "Auto Focus, Stop";
+>>         case V4L2_CID_AUTO_FOCUS_STATUS:        return "Auto Focus, Status";
+>>         case V4L2_CID_AUTO_FOCUS_RANGE:         return "Auto Focus, Range";
+>> +       case V4L2_CID_PAN_SPEED:                return "Pan, Speed";
+>> +       case V4L2_CID_TILT_SPEED:               return "Tilt, Speed";
+>>
+>>         /* FM Radio Modulator control */
+>>         /* Keep the order of the 'case's the same as in videodev2.h! */
+>> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+>> index 2ac5597..5576044 100644
+>> --- a/include/uapi/linux/v4l2-controls.h
+>> +++ b/include/uapi/linux/v4l2-controls.h
+>> @@ -745,6 +745,8 @@ enum v4l2_auto_focus_range {
+>>         V4L2_AUTO_FOCUS_RANGE_INFINITY          = 3,
+>>  };
+>>
+>> +#define V4L2_CID_PAN_SPEED                     (V4L2_CID_CAMERA_CLASS_BASE+32)
+>> +#define V4L2_CID_TILT_SPEED                    (V4L2_CID_CAMERA_CLASS_BASE+33)
+>>
+>>  /* FM Modulator class control IDs */
+>>
+>> --
+>> 2.1.0.rc2.206.gedb03e5
+>>
