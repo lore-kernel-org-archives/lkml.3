@@ -1,192 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaICKGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:06:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44574 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932215AbaICKGH convert rfc822-to-8bit (ORCPT
+	id S932769AbaICKL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:11:28 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53993 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471AbaICKLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:06:07 -0400
-Date: Wed, 3 Sep 2014 12:06:03 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: =?UTF-8?B?R2HDq2w=?= PORTAY <g.portay@overkiz.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        =?UTF-8?B?R2HDq2w=?= PORTAY <gael.portay@gmail.com>
-Subject: Re: [PATCHv2 3/4] ARM: at91/tclib: mask interruptions at shutdown
- and probe
-Message-ID: <20140903120603.6b73e2a7@bbrezillon>
-In-Reply-To: <1409329003-17252-4-git-send-email-g.portay@overkiz.com>
-References: <1409329003-17252-1-git-send-email-g.portay@overkiz.com>
-	<1409329003-17252-4-git-send-email-g.portay@overkiz.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 3 Sep 2014 06:11:24 -0400
+Subject: [PATCH 2/2] fuse: fuse_get_user_pages(): do not pack more data than
+ requested
+To: viro@zeniv.linux.org.uk
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, werner.baumann@onlinehome.de
+Date: Wed, 03 Sep 2014 14:11:21 +0400
+Message-ID: <20140903101109.23218.60234.stgit@localhost.localdomain>
+In-Reply-To: <20140903100826.23218.95122.stgit@localhost.localdomain>
+References: <20140903100826.23218.95122.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gael,
+The patch fixes a bug introduced by commit c9c37e2e6378 ("fuse: switch to
+iov_iter_get_pages()"):
 
-On Fri, 29 Aug 2014 18:16:42 +0200
-Gaël PORTAY <g.portay@overkiz.com> wrote:
+The third argument of fuse_get_user_pages() "nbytesp" refers to the number of
+bytes a caller asked to pack into fuse request. This value may be lesser
+than capacity of fuse request or iov_iter. So fuse_get_user_pages() must
+ensure that *nbytesp won't grow. Before that commit, it was ensured by:
 
-> Shutdown properly the timer counter block by masking interruptions. Otherwise,
-> a segmentation may happen when kexec-ing a new kernel (see backtrace below).
-> An interruption may happen before the handler is set, leading to a kernel
-> segmentation fault.
-> 
-> Furthermore, we make sure the interruptions are masked when the driver is
-> initialized. This will prevent freshly kexec-ed kernel from crashing when
-> launched from a kernel which does not properly mask interruptions at shutdown.
-> 
-> The backtrace below happened after kexec-ing a new kernel, from a kernel
-> that did not shut down properly leaving interruptions unmasked.
-> 
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> pgd = c0004000
-> [00000000] *pgd=00000000
-> Internal error: Oops: 80000005 [#1] ARM
-> Modules linked in:
-> CPU: 0 PID: 1 Comm: swapper Not tainted 3.16.0+ #144
-> task: c1828aa0 ti: c182a000 task.ti: c182a000
-> PC is at 0x0
-> LR is at ch2_irq+0x28/0x30
-> pc : [<00000000>]    lr : [<c01db904>]    psr: 000000d3
-> sp : c182bd38  ip : c182bd48  fp : c182bd44
-> r10: c0373390  r9 : c1825b00  r8 : 60000053
-> r7 : 00000000  r6 : 00000000  r5 : 00000013  r4 : c036e800
-> r3 : 00000000  r2 : 00002004  r1 : c036e760  r0 : c036e760
-> Flags: nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 0005317f  Table: 20004000  DAC: 00000017
-> Process swapper (pid: 1, stack limit = 0xc182a1c0)
-> Stack: (0xc182bd38 to 0xc182c000)
-> bd20:                                                       c182bd7c c182bd48
-> bd40: c0045430 c01db8ec 00000000 c18c6f40 c182bd74 c1825b00 c035cec4 00000000
-> bd60: c182be2c 60000053 c1825b34 00000000 c182bd94 c182bd80 c0045570 c0045408
-> bd80: 00000000 c1825b00 c182bdac c182bd98 c0047f34 c0045550 00000013 c036619c
-> bda0: c182bdc4 c182bdb0 c0044da4 c0047e98 0000007f 00000013 c182bde4 c182bdc8
-> bdc0: c0009e34 c0044d8c fefff000 c0046728 60000053 ffffffff c182bdf4 c182bde8
-> bde0: c00086a8 c0009ddc c182be74 c182bdf8 c000cb80 c0008674 00000000 00000013
-> be00: 00000000 00014200 c1825b00 c036e800 00000013 c035ed98 60000053 c1825b34
-> be20: 00000000 c182be74 c182be20 c182be40 c0047994 c0046728 60000053 ffffffff
-> be40: 00000013 c036e800 c182be64 c1825b00 00000013 c036e800 c035ed98 c03874bc
-> be60: 00000004 c036e700 c182be94 c182be78 c004689c c0046398 c036e760 c18c6080
-> be80: 00000000 c035ed10 c182bedc c182be98 c0348b08 c004684c 0000000c c034dac8
-> bea0: 004c4b3f c028c338 c036e760 00000013 c014ecc8 c18e67e0 c035b9c0 c0348884
-> bec0: c035b9c0 c182a020 00000000 00000000 c182bf54 c182bee0 c00089fc c0348894
-> bee0: c00da51c c1ffcc78 c182bf0c c182bef8 c002d100 c002d09c c1ffcc78 00000000
-> bf00: c182bf54 c182bf10 c002d308 c0336570 c182bf3c c0334e44 00000003 00000003
-> bf20: 00000030 c0334b44 c0044d74 00000003 00000003 c034dac8 c0350a94 c0373440
-> bf40: c0373440 00000030 c182bf94 c182bf58 c0336d24 c000890c 00000003 00000003
-> bf60: c0336560 c182bf64 c182bf64 6e616e0d 00000000 c0272fc8 00000000 00000000
-> bf80: 00000000 00000000 c182bfac c182bf98 c0272fd8 c0336bd8 c182a000 00000000
-> bfa0: 00000000 c182bfb0 c00095d0 c0272fd8 00000000 00000000 00000000 00000000
-> bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 374d27cd 33cc33e4
-> Backtrace:
-> [<c01db8dc>] (ch2_irq) from [<c0045430>] (handle_irq_event_percpu+0x38/0x148)
-> [<c00453f8>] (handle_irq_event_percpu) from [<c0045570>] (handle_irq_event+0x30/0x40)
->  r10:00000000 r9:c1825b34 r8:60000053 r7:c182be2c r6:00000000 r5:c035cec4
->  r4:c1825b00
-> [<c0045540>] (handle_irq_event) from [<c0047f34>] (handle_fasteoi_irq+0xac/0x11c)
->  r4:c1825b00 r3:00000000
-> [<c0047e88>] (handle_fasteoi_irq) from [<c0044da4>] (generic_handle_irq+0x28/0x38)
->  r5:c036619c r4:00000013
-> [<c0044d7c>] (generic_handle_irq) from [<c0009e34>] (handle_IRQ+0x68/0x88)
->  r4:00000013 r3:0000007f
-> [<c0009dcc>] (handle_IRQ) from [<c00086a8>] (at91_aic_handle_irq+0x44/0x4c)
->  r6:ffffffff r5:60000053 r4:c0046728 r3:fefff000
-> [<c0008664>] (at91_aic_handle_irq) from [<c000cb80>] (__irq_svc+0x40/0x4c)
-> Exception stack(0xc182bdf8 to 0xc182be40)
-> bde0:                                                       00000000 00000013
-> be00: 00000000 00014200 c1825b00 c036e800 00000013 c035ed98 60000053 c1825b34
-> be20: 00000000 c182be74 c182be20 c182be40 c0047994 c0046728 60000053 ffffffff
-> [<c0046388>] (__setup_irq) from [<c004689c>] (setup_irq+0x60/0x8c)
->  r10:c036e700 r9:00000004 r8:c03874bc r7:c035ed98 r6:c036e800 r5:00000013
->  r4:c1825b00
-> [<c004683c>] (setup_irq) from [<c0348b08>] (tcb_clksrc_init+0x284/0x31c)
->  r6:c035ed10 r5:00000000 r4:c18c6080 r3:c036e760
-> [<c0348884>] (tcb_clksrc_init) from [<c00089fc>] (do_one_initcall+0x100/0x1b4)
->  r10:00000000 r9:00000000 r8:c182a020 r7:c035b9c0 r6:c0348884 r5:c035b9c0
->  r4:c18e67e0
-> [<c00088fc>] (do_one_initcall) from [<c0336d24>] (kernel_init_freeable+0x15c/0x224)
->  r9:00000030 r8:c0373440 r7:c0373440 r6:c0350a94 r5:c034dac8 r4:00000003
-> [<c0336bc8>] (kernel_init_freeable) from [<c0272fd8>] (kernel_init+0x10/0xec)
->  r9:00000000 r8:00000000 r7:00000000 r6:00000000 r5:c0272fc8 r4:00000000
-> [<c0272fc8>] (kernel_init) from [<c00095d0>] (ret_from_fork+0x14/0x24)
->  r4:00000000 r3:c182a000
-> Code: bad PC value
-> ---[ end trace 5b30f0017e282e47 ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> 
-> Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
+>		ret = get_user_pages_fast(user_addr, npages, !write,
+>					  &req->pages[req->num_pages]);
+>		...
+>		npages = ret;
+>		frag_size = min_t(size_t, frag_size,
+>				  (npages << PAGE_SHIFT) - offset);
 
-Except for the nitpick you'll find below, you have my
+Now, when helper iov_iter_get_pages() performs all hard work of extracting
+pages from iov_iter, it can be done by passing properly calculated "maxsize"
+to the helper.
 
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Reported-by: Werner Baumann <werner.baumann@onlinehome.de>
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+---
+ fs/fuse/file.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-> ---
->  drivers/misc/atmel_tclib.c | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
-> index d505d1e..2f0d84c 100644
-> --- a/drivers/misc/atmel_tclib.c
-> +++ b/drivers/misc/atmel_tclib.c
-> @@ -109,6 +109,7 @@ static int __init tc_probe(struct platform_device *pdev)
->  	struct clk	*clk;
->  	int		irq;
->  	struct resource	*r;
-> +	unsigned int	i;
->  
->  	irq = platform_get_irq(pdev, 0);
->  	if (irq < 0)
-> @@ -157,18 +158,33 @@ static int __init tc_probe(struct platform_device *pdev)
->  	if (tc->irq[2] < 0)
->  		tc->irq[2] = irq;
->  
-> +	for (i = 0; i < 3; i++)
-> +		writel(0xff, tc->regs + ATMEL_TC_REG(i, IDR));
-> +
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 40ac262..1d2bb70 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1303,10 +1303,15 @@ static int fuse_get_user_pages(struct fuse_req *req, struct iov_iter *ii,
+ 	while (nbytes < *nbytesp && req->num_pages < req->max_pages) {
+ 		unsigned npages;
+ 		size_t start;
++		ssize_t ret;
+ 		unsigned n = req->max_pages - req->num_pages;
+-		ssize_t ret = iov_iter_get_pages(ii,
+-					&req->pages[req->num_pages],
+-					n * PAGE_SIZE, &start);
++		size_t frag_size = fuse_get_frag_size(ii, *nbytesp - nbytes);
++
++		frag_size = min_t(size_t, frag_size, n << PAGE_SHIFT);
++
++		ret = iov_iter_get_pages(ii,
++				&req->pages[req->num_pages],
++				frag_size, &start);
+ 		if (ret < 0)
+ 			return ret;
+ 
 
-How about using the IRQ flags defined in atmel_tc.h instead of the
-magic 0xff value ?
-
-		writel(ATMEL_TC_COVFS | ...,
-		       tc->regs + ATMEL_TC_REG(i, IDR));
-
->  	spin_lock(&tc_list_lock);
->  	list_add_tail(&tc->node, &tc_list);
->  	spin_unlock(&tc_list_lock);
->  
-> +	platform_set_drvdata(pdev, tc);
-> +
->  	return 0;
->  }
->  
-> +static void tc_shutdown (struct platform_device *pdev)
-> +{
-> +	int i;
-> +	struct atmel_tc *tc = platform_get_drvdata(pdev);
-> +
-> +	for (i = 0; i < 3; i++)
-> +		writel(0xff, tc->regs + ATMEL_TC_REG(i, IDR));
-
-Ditto
-
-Best Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
