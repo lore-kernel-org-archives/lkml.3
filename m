@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbaICWMm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:12:42 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:59813 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755898AbaICWMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:12:38 -0400
-Date: Wed, 3 Sep 2014 15:12:31 -0700
-From: Kees Cook <keescook@chromium.org>
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>
-Subject: [PULL] seccomp update (3.18)
-Message-ID: <20140903221231.GA21608@www.outflux.net>
+	id S1756896AbaICWNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:13:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933668AbaICWIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:08:52 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH 3.14 59/88] x86/xen: resume timer irqs early
+Date: Wed,  3 Sep 2014 15:05:33 -0700
+Message-Id: <20140903220517.725632506@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
+References: <20140903220515.958924632@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Please pull these seccomp changes for 3.18.
+------------------
 
-Thanks!
+From: David Vrabel <david.vrabel@citrix.com>
 
--Kees
+commit 8d5999df35314607c38fbd6bdd709e25c3a4eeab upstream.
 
-The following changes since commit c3ce6dfa48e3879206382cdfdc015bffc50dce30:
+If the timer irqs are resumed during device resume it is possible in
+certain circumstances for the resume to hang early on, before device
+interrupts are resumed.  For an Ubuntu 14.04 PVHVM guest this would
+occur in ~0.5% of resume attempts.
 
-  KEYS: Set pr_fmt() in asymmetric key signature handling (2014-09-03 11:08:45 +1000)
+It is not entirely clear what is occuring the point of the hang but I
+think a task necessary for the resume calls schedule_timeout(),
+waiting for a timer interrupt (which never arrives).  This failure may
+require specific tasks to be running on the other VCPUs to trigger
+(processes are not frozen during a suspend/resume if PREEMPT is
+disabled).
 
-are available in the git repository at:
+Add IRQF_EARLY_RESUME to the timer interrupts so they are resumed in
+syscore_resume().
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/seccomp-3.18
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-for you to fetch changes up to a0cfd75fdc46b56978ece383a7d6f6b04e9087ad:
+---
+ arch/x86/xen/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  seccomp: Add reviewers to MAINTAINERS (2014-09-03 15:09:54 -0700)
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -444,7 +444,7 @@ void xen_setup_timer(int cpu)
+ 
+ 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
+ 				      IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER|
+-				      IRQF_FORCE_RESUME,
++				      IRQF_FORCE_RESUME|IRQF_EARLY_RESUME,
+ 				      name, NULL);
+ 	(void)xen_set_irq_priority(irq, XEN_IRQ_PRIORITY_MAX);
+ 
 
-----------------------------------------------------------------
-adding reviewers
 
-----------------------------------------------------------------
-Kees Cook (1):
-      seccomp: Add reviewers to MAINTAINERS
-
- MAINTAINERS | 2 ++
- 1 file changed, 2 insertions(+)
-
--- 
-Kees Cook
-Chrome OS Security
