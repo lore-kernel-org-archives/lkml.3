@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935400AbaICXKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:10:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46063 "EHLO
+	id S935386AbaICXKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:10:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46069 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933487AbaICWSj (ORCPT
+	with ESMTP id S933710AbaICWSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>
-Subject: [PATCH 3.16 059/125] KVM: PPC: Book3S: Fix LPCR one_reg interface
-Date: Wed,  3 Sep 2014 15:06:56 -0700
-Message-Id: <20140903220625.449056707@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        "Liu, RongrongX" <rongrongx.liu@intel.com>,
+        Felipe Reyes <freyes@suse.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH 3.16 060/125] KVM: nVMX: fix "acknowledge interrupt on exit" when APICv is in use
+Date: Wed,  3 Sep 2014 15:06:57 -0700
+Message-Id: <20140903220625.484266562@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,118 +32,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-commit a0840240c0c6bcbac8f0f5db11f95c19aaf9b52f upstream.
+commit 56cc2406d68c0f09505c389e276f27a99f495cbd upstream.
 
-Unfortunately, the LPCR got defined as a 32-bit register in the
-one_reg interface.  This is unfortunate because KVM allows userspace
-to control the DPFD (default prefetch depth) field, which is in the
-upper 32 bits.  The result is that DPFD always get set to 0, which
-reduces performance in the guest.
+After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
+if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
+emulated. To do so, KVM will ask the APIC for the interrupt vector if
+during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
+kvm_get_apic_interrupt would return -1 and give the following WARNING:
 
-We can't just change KVM_REG_PPC_LPCR to be a 64-bit register ID,
-since that would break existing userspace binaries.  Instead we define
-a new KVM_REG_PPC_LPCR_64 id which is 64-bit.  Userspace can still use
-the old KVM_REG_PPC_LPCR id, but it now only modifies those fields in
-the bottom 32 bits that userspace can modify (ILE, TC and AIL).
-If userspace uses the new KVM_REG_PPC_LPCR_64 id, it can modify DPFD
-as well.
+Call Trace:
+ [<ffffffff81493563>] dump_stack+0x49/0x5e
+ [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
+ [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+ [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
+ [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
+ [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
+ [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
+ [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
+ [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
+ [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+To fix this, we cannot rely on the processor's virtual interrupt delivery,
+because "acknowledge interrupt on exit" must only update the virtual
+ISR/PPR/IRR registers (and SVI, which is just a cache of the virtual ISR)
+but it should not deliver the interrupt through the IDT.  Thus, KVM has
+to deliver the interrupt "by hand", similar to the treatment of EOI in
+commit fc57ac2c9ca8 (KVM: lapic: sync highest ISR to hardware apic on
+EOI, 2014-05-14).
+
+The patch modifies kvm_cpu_get_interrupt to always acknowledge an
+interrupt; there are only two callers, and the other is not affected
+because it is never reached with kvm_apic_vid_enabled() == true.  Then it
+modifies apic_set_isr and apic_clear_irr to update SVI and RVI in addition
+to the registers.
+
+Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Tested-by: Liu, RongrongX <rongrongx.liu@intel.com>
+Tested-by: Felipe Reyes <freyes@suse.com>
+Fixes: 77b0f5d67ff2781f36831cba79674c3e97bd7acf
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/virtual/kvm/api.txt   |    3 ++-
- arch/powerpc/include/uapi/asm/kvm.h |    1 +
- arch/powerpc/kvm/book3s_hv.c        |   13 +++++++++++--
- arch/powerpc/kvm/book3s_pr.c        |    2 ++
- 4 files changed, 16 insertions(+), 3 deletions(-)
+ arch/x86/kvm/irq.c   |    2 -
+ arch/x86/kvm/lapic.c |   52 ++++++++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 40 insertions(+), 14 deletions(-)
 
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1869,7 +1869,8 @@ registers, find a list below:
-   PPC   | KVM_REG_PPC_PID	| 64
-   PPC   | KVM_REG_PPC_ACOP	| 64
-   PPC   | KVM_REG_PPC_VRSAVE	| 32
--  PPC   | KVM_REG_PPC_LPCR	| 64
-+  PPC   | KVM_REG_PPC_LPCR	| 32
-+  PPC   | KVM_REG_PPC_LPCR_64	| 64
-   PPC   | KVM_REG_PPC_PPR	| 64
-   PPC   | KVM_REG_PPC_ARCH_COMPAT 32
-   PPC   | KVM_REG_PPC_DABRX     | 32
---- a/arch/powerpc/include/uapi/asm/kvm.h
-+++ b/arch/powerpc/include/uapi/asm/kvm.h
-@@ -548,6 +548,7 @@ struct kvm_get_htab_header {
+--- a/arch/x86/kvm/irq.c
++++ b/arch/x86/kvm/irq.c
+@@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcp
  
- #define KVM_REG_PPC_VRSAVE	(KVM_REG_PPC | KVM_REG_SIZE_U32 | 0xb4)
- #define KVM_REG_PPC_LPCR	(KVM_REG_PPC | KVM_REG_SIZE_U32 | 0xb5)
-+#define KVM_REG_PPC_LPCR_64	(KVM_REG_PPC | KVM_REG_SIZE_U64 | 0xb5)
- #define KVM_REG_PPC_PPR		(KVM_REG_PPC | KVM_REG_SIZE_U64 | 0xb6)
+ 	vector = kvm_cpu_get_extint(v);
  
- /* Architecture compatibility level */
---- a/arch/powerpc/kvm/book3s_hv.c
-+++ b/arch/powerpc/kvm/book3s_hv.c
-@@ -785,7 +785,8 @@ static int kvm_arch_vcpu_ioctl_set_sregs
- 	return 0;
- }
+-	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
++	if (vector != -1)
+ 		return vector;			/* PIC */
  
--static void kvmppc_set_lpcr(struct kvm_vcpu *vcpu, u64 new_lpcr)
-+static void kvmppc_set_lpcr(struct kvm_vcpu *vcpu, u64 new_lpcr,
-+		bool preserve_top32)
+ 	return kvm_get_apic_interrupt(v);	/* APIC */
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -352,25 +352,46 @@ static inline int apic_find_highest_irr(
+ 
+ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
  {
- 	struct kvmppc_vcore *vc = vcpu->arch.vcore;
- 	u64 mask;
-@@ -820,6 +821,10 @@ static void kvmppc_set_lpcr(struct kvm_v
- 	mask = LPCR_DPFD | LPCR_ILE | LPCR_TC;
- 	if (cpu_has_feature(CPU_FTR_ARCH_207S))
- 		mask |= LPCR_AIL;
+-	apic->irr_pending = false;
++	struct kvm_vcpu *vcpu;
 +
-+	/* Broken 32-bit version of LPCR must not clear top bits */
-+	if (preserve_top32)
-+		mask &= 0xFFFFFFFF;
- 	vc->lpcr = (vc->lpcr & ~mask) | (new_lpcr & mask);
- 	spin_unlock(&vc->lock);
++	vcpu = apic->vcpu;
++
+ 	apic_clear_vector(vec, apic->regs + APIC_IRR);
+-	if (apic_search_irr(apic) != -1)
+-		apic->irr_pending = true;
++	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
++		/* try to update RVI */
++		kvm_make_request(KVM_REQ_EVENT, vcpu);
++	else {
++		vec = apic_search_irr(apic);
++		apic->irr_pending = (vec != -1);
++	}
  }
-@@ -939,6 +944,7 @@ static int kvmppc_get_one_reg_hv(struct
- 		*val = get_reg_val(id, vcpu->arch.vcore->tb_offset);
- 		break;
- 	case KVM_REG_PPC_LPCR:
-+	case KVM_REG_PPC_LPCR_64:
- 		*val = get_reg_val(id, vcpu->arch.vcore->lpcr);
- 		break;
- 	case KVM_REG_PPC_PPR:
-@@ -1150,7 +1156,10 @@ static int kvmppc_set_one_reg_hv(struct
- 			ALIGN(set_reg_val(id, *val), 1UL << 24);
- 		break;
- 	case KVM_REG_PPC_LPCR:
--		kvmppc_set_lpcr(vcpu, set_reg_val(id, *val));
-+		kvmppc_set_lpcr(vcpu, set_reg_val(id, *val), true);
-+		break;
-+	case KVM_REG_PPC_LPCR_64:
-+		kvmppc_set_lpcr(vcpu, set_reg_val(id, *val), false);
- 		break;
- 	case KVM_REG_PPC_PPR:
- 		vcpu->arch.ppr = set_reg_val(id, *val);
---- a/arch/powerpc/kvm/book3s_pr.c
-+++ b/arch/powerpc/kvm/book3s_pr.c
-@@ -1233,6 +1233,7 @@ static int kvmppc_get_one_reg_pr(struct
- 		*val = get_reg_val(id, to_book3s(vcpu)->hior);
- 		break;
- 	case KVM_REG_PPC_LPCR:
-+	case KVM_REG_PPC_LPCR_64:
- 		/*
- 		 * We are only interested in the LPCR_ILE bit
- 		 */
-@@ -1268,6 +1269,7 @@ static int kvmppc_set_one_reg_pr(struct
- 		to_book3s(vcpu)->hior_explicit = true;
- 		break;
- 	case KVM_REG_PPC_LPCR:
-+	case KVM_REG_PPC_LPCR_64:
- 		kvmppc_set_lpcr_pr(vcpu, set_reg_val(id, *val));
- 		break;
- 	default:
+ 
+ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+ {
+-	/* Note that we never get here with APIC virtualization enabled.  */
++	struct kvm_vcpu *vcpu;
++
++	if (__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
++		return;
++
++	vcpu = apic->vcpu;
+ 
+-	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+-		++apic->isr_count;
+-	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
+ 	/*
+-	 * ISR (in service register) bit is set when injecting an interrupt.
+-	 * The highest vector is injected. Thus the latest bit set matches
+-	 * the highest bit in ISR.
++	 * With APIC virtualization enabled, all caching is disabled
++	 * because the processor can modify ISR under the hood.  Instead
++	 * just set SVI.
+ 	 */
+-	apic->highest_isr_cache = vec;
++	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
++		kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
++	else {
++		++apic->isr_count;
++		BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
++		/*
++		 * ISR (in service register) bit is set when injecting an interrupt.
++		 * The highest vector is injected. Thus the latest bit set matches
++		 * the highest bit in ISR.
++		 */
++		apic->highest_isr_cache = vec;
++	}
+ }
+ 
+ static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+@@ -1627,11 +1648,16 @@ int kvm_get_apic_interrupt(struct kvm_vc
+ 	int vector = kvm_apic_has_interrupt(vcpu);
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 
+-	/* Note that we never get here with APIC virtualization enabled.  */
+-
+ 	if (vector == -1)
+ 		return -1;
+ 
++	/*
++	 * We get here even with APIC virtualization enabled, if doing
++	 * nested virtualization and L1 runs with the "acknowledge interrupt
++	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
++	 * because the process would deliver it through the IDT.
++	 */
++
+ 	apic_set_isr(vector, apic);
+ 	apic_update_ppr(apic);
+ 	apic_clear_irr(vector, apic);
 
 
