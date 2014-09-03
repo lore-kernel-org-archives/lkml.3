@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934363AbaICXiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:38:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
+	id S934043AbaICXiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:38:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390AbaICWGD (ORCPT
+	with ESMTP id S933391AbaICWGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:06:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.10 41/55] mei: nfc: fix memory leak in error path
-Date: Wed,  3 Sep 2014 15:05:31 -0700
-Message-Id: <20140903220500.533843626@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.10 42/55] jbd2: fix infinite loop when recovering corrupt journal blocks
+Date: Wed,  3 Sep 2014 15:05:32 -0700
+Message-Id: <20140903220500.660947305@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -29,58 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 8e8248b1369c97c7bb6f8bcaee1f05deeabab8ef upstream.
+commit 022eaa7517017efe4f6538750c2b59a804dc7df7 upstream.
 
-NFC will leak buffer if send failed.
-Use single exit point that does the freeing
+When recovering the journal, don't fall into an infinite loop if we
+encounter a corrupt journal block.  Instead, just skip the block and
+return an error, which fails the mount and thus forces the user to run
+a full filesystem fsck.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/nfc.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ fs/jbd2/recovery.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -342,9 +342,10 @@ static int mei_nfc_send(struct mei_cl_de
- 	ndev = (struct mei_nfc_dev *) cldev->priv_data;
- 	dev = ndev->cl->dev;
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -427,6 +427,7 @@ static int do_one_pass(journal_t *journa
+ 	int			tag_bytes = journal_tag_bytes(journal);
+ 	__u32			crc32_sum = ~0; /* Transactional Checksums */
+ 	int			descr_csum_size = 0;
++	int			block_error = 0;
  
-+	err = -ENOMEM;
- 	mei_buf = kzalloc(length + MEI_NFC_HEADER_SIZE, GFP_KERNEL);
- 	if (!mei_buf)
--		return -ENOMEM;
-+		goto out;
+ 	/*
+ 	 * First thing is to establish what we expect to find in the log
+@@ -599,7 +600,8 @@ static int do_one_pass(journal_t *journa
+ 						       "checksum recovering "
+ 						       "block %llu in log\n",
+ 						       blocknr);
+-						continue;
++						block_error = 1;
++						goto skip_write;
+ 					}
  
- 	hdr = (struct mei_nfc_hci_hdr *) mei_buf;
- 	hdr->cmd = MEI_NFC_CMD_HCI_SEND;
-@@ -354,12 +355,9 @@ static int mei_nfc_send(struct mei_cl_de
- 	hdr->data_size = length;
- 
- 	memcpy(mei_buf + MEI_NFC_HEADER_SIZE, buf, length);
--
- 	err = __mei_cl_send(ndev->cl, mei_buf, length + MEI_NFC_HEADER_SIZE);
- 	if (err < 0)
--		return err;
--
--	kfree(mei_buf);
-+		goto out;
- 
- 	if (!wait_event_interruptible_timeout(ndev->send_wq,
- 				ndev->recv_req_id == ndev->req_id, HZ)) {
-@@ -368,7 +366,8 @@ static int mei_nfc_send(struct mei_cl_de
- 	} else {
- 		ndev->req_id++;
+ 					/* Find a buffer for the new
+@@ -798,7 +800,8 @@ static int do_one_pass(journal_t *journa
+ 				success = -EIO;
+ 		}
  	}
 -
-+out:
-+	kfree(mei_buf);
- 	return err;
- }
++	if (block_error && success == 0)
++		success = -EIO;
+ 	return success;
  
+  failed:
 
 
