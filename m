@@ -1,42 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183AbaICLyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:54:09 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19526 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669AbaICLyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:54:07 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/c+VHm65lSP/LYcvhfvPCzrtltRnO9LSM=
-X-DKIM: OpenDKIM Filter v2.0.1 titan A4F655D6A7E
-Date: Wed, 3 Sep 2014 07:54:02 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Add irqchip DT bindings doc path to
- IRQCHIP DRIVERS section
-Message-ID: <20140903115402.GI30467@titan.lakedaemon.net>
-References: <1409212607-4021-1-git-send-email-geert+renesas@glider.be>
+	id S932275AbaICLzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:55:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755776AbaICLzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 07:55:36 -0400
+Message-ID: <540701B5.3020409@redhat.com>
+Date: Wed, 03 Sep 2014 07:55:33 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409212607-4021-1-git-send-email-geert+renesas@glider.be>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-kernel@vger.kernel.org, Peter Tyser <ptyser@xes-inc.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] x86, lpc, Allow only one load of lpc_ich
+References: <1409695097-5831-1-git-send-email-prarit@redhat.com> <20140903074315.GB28985@lee--X1> <5406E9B0.101@redhat.com> <20140903113535.GE28985@lee--X1>
+In-Reply-To: <20140903113535.GE28985@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 09:56:47AM +0200, Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
 
-Applied to irqchip/core
 
-thx,
+On 09/03/2014 07:35 AM, Lee Jones wrote:
 
-Jason.
+<snip>
+
+>>>> This occurs because there are two LPC devices on the system:
+>>>>
+>>>> 00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
+>>>> 80:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
+>>>>
+>>>> which AFAICT is a hardware configuration error that can be resolved in
+>>>> firmware by hiding the second LPC device.  Having two of these results in
+>>>> two GPIO mappings and two Watchdog Timers which doesn't make much sense.
+>>>>
+>>>> An end user has no idea what the splats mean.  We should inform the user that
+>>>> the issue lies with the hardware and that they should contact their vendor
+>>>> for resolution.
+>>>
+>>> Why is it a problem for 2 of these devices to exist on a single system?
+>>>
+>>> Shouldn't the driver just be able to handle 2 devices?
+>>>
+
+>>
+>> You end up with two watchdogs on the same system (and more confusingly they use
+>> the same global interface).  Additionally you end up with two sets of GPIOs
+>> which also use the same global interface ... not good.
+> 
+> I understand the problem with the _driver_, but why is it a problem
+> that two of these _devices_ exist on one system?  Bailing out of the
+> second .probe() sounds hacky to me.  The driver should know that this
+> is possible and act accordingly, or the second devices shouldn't be
+> registered.
+> 
+> Can these devices be controlled seperately?  
+
+Let's just try and address this for now ... They can be controlled separately
+but that's not the issue here.
+
+Consider just the watchdog timer (because it is easier to explain).  The way the
+watchdog timer works is that we write to it every 30 seconds (or so ... it
+depends on your setup obviously).  If we don't write to it within 30 seconds the
+system will panic and reboot.
+
+Now ... suppose you have two on a system.  To what end? It doesn't make sense to
+have two.  Either you can write from userspace or you can't.  Now you have two
+running with different timeouts -- why?  That doesn't make sense either.  It
+isn't like the one with the longer timeout is ever going to cause a reboot.
+
+Does that explain things better?  It's a not a real-world scenario.
+
+You also asked ...
+
+> Then why do they [have two devices specified]?
+
+Because the vendor didn't/forgot to hide one from the kernel in BIOS -- hence
+FW_BUG.
+
+P.
