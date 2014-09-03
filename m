@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935654AbaICXTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:19:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
+	id S935701AbaICXTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:19:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209AbaICWQD (ORCPT
+	with ESMTP id S1757205AbaICWQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:16:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario <fugazzi99@gmail.com>, corubba <corubba@gmx.de>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 018/125] ALSA: virtuoso: add Xonar Essence STX II support
-Date: Wed,  3 Sep 2014 15:06:15 -0700
-Message-Id: <20140903220624.210481403@linuxfoundation.org>
+        Franz Hsieh <franz.hsieh@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.16 016/125] ALSA: hda - fix an external mic jack problem on a HP machine
+Date: Wed,  3 Sep 2014 15:06:13 -0700
+Message-Id: <20140903220624.152784692@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,89 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit f42bb22243d2ae264d721b055f836059fe35321f upstream.
+commit 7440850c20b69658f322119d20a94dc914127cc7 upstream.
 
-Just add the PCI ID for the STX II.  It appears to work the same as the
-STX, except for the addition of the not-yet-supported daughterboard.
+ON the machine, two pin complex (0xb and 0xe) are both routed to
+the same external right-side mic jack, this makes the jack can't work.
 
-Tested-by: Mario <fugazzi99@gmail.com>
-Tested-by: corubba <corubba@gmx.de>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+To fix this problem, set the 0xe to "not connected".
+
+BugLink: https://bugs.launchpad.net/bugs/1350148
+Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/sound/alsa/ALSA-Configuration.txt |    4 ++--
- sound/pci/Kconfig                               |    4 ++--
- sound/pci/oxygen/virtuoso.c                     |    1 +
- sound/pci/oxygen/xonar_pcm179x.c                |   12 ++++++++++--
- 4 files changed, 15 insertions(+), 6 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/Documentation/sound/alsa/ALSA-Configuration.txt
-+++ b/Documentation/sound/alsa/ALSA-Configuration.txt
-@@ -2026,8 +2026,8 @@ Prior to version 0.9.0rc4 options had a
-   -------------------
- 
-     Module for sound cards based on the Asus AV66/AV100/AV200 chips,
--    i.e., Xonar D1, DX, D2, D2X, DS, Essence ST (Deluxe), Essence STX,
--    HDAV1.3 (Deluxe), and HDAV1.3 Slim.
-+    i.e., Xonar D1, DX, D2, D2X, DS, DSX, Essence ST (Deluxe),
-+    Essence STX (II), HDAV1.3 (Deluxe), and HDAV1.3 Slim.
- 
-     This module supports autoprobe and multiple cards.
- 
---- a/sound/pci/Kconfig
-+++ b/sound/pci/Kconfig
-@@ -858,8 +858,8 @@ config SND_VIRTUOSO
- 	select SND_JACK if INPUT=y || INPUT=SND
- 	help
- 	  Say Y here to include support for sound cards based on the
--	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS,
--	  Essence ST (Deluxe), and Essence STX.
-+	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS, DSX,
-+	  Essence ST (Deluxe), and Essence STX (II).
- 	  Support for the HDAV1.3 (Deluxe) and HDAV1.3 Slim is experimental;
- 	  for the Xense, missing.
- 
---- a/sound/pci/oxygen/virtuoso.c
-+++ b/sound/pci/oxygen/virtuoso.c
-@@ -53,6 +53,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x835e) },
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x838e) },
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
-+	{ OXYGEN_PCI_SUBID(0x1043, 0x85f4) },
- 	{ OXYGEN_PCI_SUBID_BROKEN_EEPROM },
- 	{ }
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -84,6 +84,7 @@ enum {
+ 	STAC_DELL_EQ,
+ 	STAC_ALIENWARE_M17X,
+ 	STAC_92HD89XX_HP_FRONT_JACK,
++	STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK,
+ 	STAC_92HD73XX_MODELS
  };
---- a/sound/pci/oxygen/xonar_pcm179x.c
-+++ b/sound/pci/oxygen/xonar_pcm179x.c
-@@ -100,8 +100,8 @@
-  */
  
- /*
-- * Xonar Essence ST (Deluxe)/STX
-- * -----------------------------
-+ * Xonar Essence ST (Deluxe)/STX (II)
-+ * ----------------------------------
-  *
-  * CMI8788:
-  *
-@@ -1137,6 +1137,14 @@ int get_xonar_pcm179x_model(struct oxyge
- 		chip->model.init = xonar_stx_init;
- 		chip->model.resume = xonar_stx_resume;
- 		chip->model.set_dac_params = set_pcm1796_params;
-+		break;
-+	case 0x85f4:
-+		chip->model = model_xonar_st;
-+		/* TODO: daughterboard support */
-+		chip->model.shortname = "Xonar STX II";
-+		chip->model.init = xonar_stx_init;
-+		chip->model.resume = xonar_stx_resume;
-+		chip->model.set_dac_params = set_pcm1796_params;
- 		break;
- 	default:
- 		return -EINVAL;
+@@ -1809,6 +1810,11 @@ static const struct hda_pintbl stac92hd8
+ 	{}
+ };
+ 
++static const struct hda_pintbl stac92hd89xx_hp_z1_g2_right_mic_jack_pin_configs[] = {
++	{ 0x0e, 0x400000f0 },
++	{}
++};
++
+ static void stac92hd73xx_fixup_ref(struct hda_codec *codec,
+ 				   const struct hda_fixup *fix, int action)
+ {
+@@ -1931,6 +1937,10 @@ static const struct hda_fixup stac92hd73
+ 	[STAC_92HD89XX_HP_FRONT_JACK] = {
+ 		.type = HDA_FIXUP_PINS,
+ 		.v.pins = stac92hd89xx_hp_front_jack_pin_configs,
++	},
++	[STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = stac92hd89xx_hp_z1_g2_right_mic_jack_pin_configs,
+ 	}
+ };
+ 
+@@ -1991,6 +2001,8 @@ static const struct snd_pci_quirk stac92
+ 		      "Alienware M17x", STAC_ALIENWARE_M17X),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0490,
+ 		      "Alienware M17x R3", STAC_DELL_EQ),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1927,
++				"HP Z1 G2", STAC_92HD89XX_HP_Z1_G2_RIGHT_MIC_JACK),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x2b17,
+ 				"unknown HP", STAC_92HD89XX_HP_FRONT_JACK),
+ 	{} /* terminator */
 
 
