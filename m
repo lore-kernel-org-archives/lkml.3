@@ -1,64 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934921AbaICXLE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:11:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47054 "EHLO
+	id S935452AbaICXL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:11:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933716AbaICXKC (ORCPT
+	with ESMTP id S933673AbaICWSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 19:10:02 -0400
-Date: Wed, 3 Sep 2014 16:10:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: david@fromorbit.com, xuejiufei@huawei.com, ming.lei@canonical.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-Message-Id: <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
-In-Reply-To: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Sep 2014 18:18:38 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.16 055/125] debugfs: Fix corrupted loop in debugfs_remove_recursive
+Date: Wed,  3 Sep 2014 15:06:52 -0700
+Message-Id: <20140903220625.293675238@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Sep 2014 13:54:54 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-> commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
-> introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
-> when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
-> run into I/O, like in superblock shrinker.
+------------------
 
-Is there an actual bug which inspired this fix?  If so, please describe
+From: Steven Rostedt <rostedt@goodmis.org>
+
+commit 485d44022a152c0254dd63445fdb81c4194cbf0e upstream.
+
+[ I'm currently running my tests on it now, and so far, after a few
+ hours it has yet to blow up. I'll run it for 24 hours which it never
+ succeeded in the past. ]
+
+The tracing code has a way to make directories within the debugfs file
+system as well as deleting them using mkdir/rmdir in the instance
+directory. This is very limited in functionality, such as there is
+no renames, and the parent directory "instance" can not be modified.
+The tracing code creates the instance directory from the debugfs code
+and then replaces the dentry->d_inode->i_op with its own to allow
+for mkdir/rmdir to work.
+
+When these are called, the d_entry and inode locks need to be released
+to call the instance creation and deletion code. That code has its own
+accounting and locking to serialize everything to prevent multiple
+users from causing harm. As the parent "instance" directory can not
+be modified this simplifies things.
+
+I created a stress test that creates several threads that randomly
+creates and deletes directories thousands of times a second. The code
+stood up to this test and I submitted it a while ago.
+
+Recently I added a new test that adds readers to the mix. While the
+instance directories were being added and deleted, readers would read
+from these directories and even enable tracing within them. This test
+was able to trigger a bug:
+
+ general protection fault: 0000 [#1] PREEMPT SMP
+ Modules linked in: ...
+ CPU: 3 PID: 17789 Comm: rmdir Tainted: G        W     3.15.0-rc2-test+ #41
+ Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+ task: ffff88003786ca60 ti: ffff880077018000 task.ti: ffff880077018000
+ RIP: 0010:[<ffffffff811ed5eb>]  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
+ RSP: 0018:ffff880077019df8  EFLAGS: 00010246
+ RAX: 0000000000000002 RBX: ffff88006f0fe490 RCX: 0000000000000000
+ RDX: dead000000100058 RSI: 0000000000000246 RDI: ffff88003786d454
+ RBP: ffff88006f0fe640 R08: 0000000000000628 R09: 0000000000000000
+ R10: 0000000000000628 R11: ffff8800795110a0 R12: ffff88006f0fe640
+ R13: ffff88006f0fe640 R14: ffffffff81817d0b R15: ffffffff818188b7
+ FS:  00007ff13ae24700(0000) GS:ffff88007d580000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000003054ec7be0 CR3: 0000000076d51000 CR4: 00000000000007e0
+ Stack:
+  ffff88007a41ebe0 dead000000100058 00000000fffffffe ffff88006f0fe640
+  0000000000000000 ffff88006f0fe678 ffff88007a41ebe0 ffff88003793a000
+  00000000fffffffe ffffffff810bde82 ffff88006f0fe640 ffff88007a41eb28
+ Call Trace:
+  [<ffffffff810bde82>] ? instance_rmdir+0x15b/0x1de
+  [<ffffffff81132e2d>] ? vfs_rmdir+0x80/0xd3
+  [<ffffffff81132f51>] ? do_rmdir+0xd1/0x139
+  [<ffffffff8124ad9e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+  [<ffffffff814fea62>] ? system_call_fastpath+0x16/0x1b
+ Code: fe ff ff 48 8d 75 30 48 89 df e8 c9 fd ff ff 85 c0 75 13 48 c7 c6 b8 cc d2 81 48 c7 c7 b0 cc d2 81 e8 8c 7a f5 ff 48 8b 54 24 08 <48> 8b 82 a8 00 00 00 48 89 d3 48 2d a8 00 00 00 48 89 44 24 08
+ RIP  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
+  RSP <ffff880077019df8>
+
+It took a while, but every time it triggered, it was always in the
+same place:
+
+	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
+
+Where the child->d_u.d_child seemed to be corrupted.  I added lots of
+trace_printk()s to see what was wrong, and sure enough, it was always
+the child's d_u.d_child field. I looked around to see what touches
+it and noticed that in __dentry_kill() which calls dentry_free():
+
+static void dentry_free(struct dentry *dentry)
+{
+	/* if dentry was never visible to RCU, immediate free is OK */
+	if (!(dentry->d_flags & DCACHE_RCUACCESS))
+		__d_free(&dentry->d_u.d_rcu);
+	else
+		call_rcu(&dentry->d_u.d_rcu, __d_free);
+}
+
+I also noticed that __dentry_kill() unlinks the child->d_u.child
+under the parent->d_lock spin_lock.
+
+Looking back at the loop in debugfs_remove_recursive() it never takes the
+parent->d_lock to do the list walk. Adding more tracing, I was able to
+prove this was the issue:
+
+ ftrace-t-15385   1.... 246662024us : dentry_kill <ffffffff81138b91>: free ffff88006d573600
+    rmdir-15409   2.... 246662024us : debugfs_remove_recursive <ffffffff811ec7e5>: child=ffff88006d573600 next=dead000000100058
+
+The dentry_kill freed ffff88006d573600 just as the remove recursive was walking
 it.
 
-I don't think it's accurate to say that __GFP_FS implies __GFP_IO. 
-Where did that info come from?
+In order to fix this, the list walk needs to be modified a bit to take
+the parent->d_lock. The safe version is no longer necessary, as every
+time we remove a child, the parent->d_lock must be released and the
+list walk must start over. Each time a child is removed, even though it
+may still be on the list, it should be skipped by the first check
+in the loop:
 
-And the superblock shrinker is a good example of why this shouldn't be
-the case.  The main thing that code does is to reclaim clean fs objects
-without performing IO.  AFAICT the proposed patch will significantly
-weaken PF_MEMALLOC_NOIO allocation attempts by needlessly preventing
-the kernel from reclaiming such objects?
+		if (!debugfs_positive(child))
+			continue;
 
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1936,11 +1936,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
->  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
->  #define used_math() tsk_used_math(current)
->  
-> -/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
-> +/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
-> + * __GFP_FS is also cleared as it implies __GFP_IO.
-> + */
->  static inline gfp_t memalloc_noio_flags(gfp_t flags)
->  {
->  	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
-> -		flags &= ~__GFP_IO;
-> +		flags &= ~(__GFP_IO | __GFP_FS);
->  	return flags;
->  }
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/debugfs/inode.c |   33 ++++++++++++++++++++++++++-------
+ 1 file changed, 26 insertions(+), 7 deletions(-)
+
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -534,7 +534,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
+  */
+ void debugfs_remove_recursive(struct dentry *dentry)
+ {
+-	struct dentry *child, *next, *parent;
++	struct dentry *child, *parent;
+ 
+ 	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+@@ -546,30 +546,49 @@ void debugfs_remove_recursive(struct den
+ 	parent = dentry;
+  down:
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
++ loop:
++	/*
++	 * The parent->d_subdirs is protected by the d_lock. Outside that
++	 * lock, the child can be unlinked and set to be freed which can
++	 * use the d_u.d_child as the rcu head and corrupt this list.
++	 */
++	spin_lock(&parent->d_lock);
++	list_for_each_entry(child, &parent->d_subdirs, d_u.d_child) {
+ 		if (!debugfs_positive(child))
+ 			continue;
+ 
+ 		/* perhaps simple_empty(child) makes more sense */
+ 		if (!list_empty(&child->d_subdirs)) {
++			spin_unlock(&parent->d_lock);
+ 			mutex_unlock(&parent->d_inode->i_mutex);
+ 			parent = child;
+ 			goto down;
+ 		}
+- up:
++
++		spin_unlock(&parent->d_lock);
++
+ 		if (!__debugfs_remove(child, parent))
+ 			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++
++		/*
++		 * The parent->d_lock protects agaist child from unlinking
++		 * from d_subdirs. When releasing the parent->d_lock we can
++		 * no longer trust that the next pointer is valid.
++		 * Restart the loop. We'll skip this one with the
++		 * debugfs_positive() check.
++		 */
++		goto loop;
+ 	}
++	spin_unlock(&parent->d_lock);
+ 
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+ 	child = parent;
+ 	parent = parent->d_parent;
+ 	mutex_lock(&parent->d_inode->i_mutex);
+ 
+-	if (child != dentry) {
+-		next = list_next_entry(child, d_u.d_child);
+-		goto up;
+-	}
++	if (child != dentry)
++		/* go up */
++		goto loop;
+ 
+ 	if (!__debugfs_remove(child, parent))
+ 		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+
 
