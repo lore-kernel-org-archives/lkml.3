@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044AbaICMxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:53:43 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44685 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932652AbaICMqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:46:19 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 16/37] staging: comedi: ni_mio_common: use CMDF_WAKE_EOS
-Date: Wed,  3 Sep 2014 13:45:39 +0100
-Message-Id: <1409748360-17063-17-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
-References: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
+	id S933084AbaICMyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:54:47 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:32930 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932619AbaICMqR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 08:46:17 -0400
+Date: Wed, 3 Sep 2014 13:46:13 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Laszlo Ersek <lersek@redhat.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, x86@kernel.org,
+        linux-ia64@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com
+Subject: Re: [PATCH 2/5] efi: introduce efi_md_typeattr_format()
+Message-ID: <20140903124613.GD3001@console-pimps.org>
+References: <1409532820-5027-1-git-send-email-lersek@redhat.com>
+ <1409532820-5027-3-git-send-email-lersek@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409532820-5027-3-git-send-email-lersek@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace use of `TRIG_WAKE_EOS` command flag with the new name
-`CMDF_WAKE_EOS`.  The numeric value is the same.
+On Mon, 01 Sep, at 02:53:37AM, Laszlo Ersek wrote:
+> +char * __init efi_md_typeattr_format(char *buf, size_t size,
+> +				     const efi_memory_desc_t *md)
+> +{
+> +	char *pos;
+> +	int type_len;
+> +	register u64 attr;
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/ni_mio_common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+You can delete the 'register' keyword, since the compiler is free to
+ignore it (and will do so).
 
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index 237e3f8..584de17 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -2610,7 +2610,7 @@ static int ni_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		interrupt_a_enable |= AI_FIFO_Interrupt_Enable;
- #endif
- 
--		if (cmd->flags & TRIG_WAKE_EOS
-+		if (cmd->flags & CMDF_WAKE_EOS
- 		    || (devpriv->ai_cmd2 & AI_End_On_End_Of_Scan)) {
- 			/* wake on end-of-scan */
- 			devpriv->aimode = AIMODE_SCAN;
+Rest of the patch looks good.
+
 -- 
-2.1.0
-
+Matt Fleming, Intel Open Source Technology Center
