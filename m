@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934953AbaICXl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:41:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
+	id S935140AbaICXlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:41:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933218AbaICWF7 (ORCPT
+	with ESMTP id S933355AbaICWF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:05:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Resch <fli4l@robert.reschpara.de>,
-        Christoph Schulz <develop@kristov.de>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.10 35/55] x86: dont exclude low BIOS area when allocating address space for non-PCI cards
-Date: Wed,  3 Sep 2014 15:05:25 -0700
-Message-Id: <20140903220459.593822032@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 34/55] drm/radeon: add additional SI pci ids
+Date: Wed,  3 Sep 2014 15:05:24 -0700
+Message-Id: <20140903220459.417129419@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -30,90 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Schulz <develop@kristov.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit cbace46a9710a480cae51e4611697df5de41713e upstream.
+commit 37dbeab788a8f23fd946c0be083e5484d6f929a1 upstream.
 
-Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
-space") moved the test for resource allocations that fall within the first
-1MB of address space from the PCI-specific path to a generic path, such
-that all resource allocations will avoid this area.  However, this breaks
-ISA cards which need to allocate a memory region within the first 1MB.  An
-example is the i82365 PCMCIA controller and derivatives like the Ricoh
-RF5C296/396 which map part of the PCMCIA socket memory address space into
-the first 1MB of system memory address space.  They do not work anymore as
-no usable memory region exists due to this change:
-
-  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
-  host opts [0]: none
-  host opts [1]: none
-  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
-  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
-  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
-
-If filtering out the first 1MB is reverted, everything works as expected.
-
-Tested-by: Robert Resch <fli4l@robert.reschpara.de>
-Signed-off-by: Christoph Schulz <develop@kristov.de>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/resource.c |    8 +++++---
- arch/x86/pci/i386.c        |    4 ++++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ include/drm/drm_pciids.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/kernel/resource.c
-+++ b/arch/x86/kernel/resource.c
-@@ -37,10 +37,12 @@ static void remove_e820_regions(struct r
- 
- void arch_remove_reservations(struct resource *avail)
- {
--	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
-+	/*
-+	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
-+	 * the low 1MB unconditionally, as this area is needed for some ISA
-+	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
-+	 */
- 	if (avail->flags & IORESOURCE_MEM) {
--		if (avail->start < BIOS_END)
--			avail->start = BIOS_END;
- 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
- 
- 		remove_e820_regions(avail);
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const
- 			return start;
- 		if (start & 0x300)
- 			start = (start + 0x3ff) & ~0x3ff;
-+	} else if (res->flags & IORESOURCE_MEM) {
-+		/* The low 1MB range is reserved for ISA cards */
-+		if (start < BIOS_END)
-+			start = BIOS_END;
- 	}
- 	return start;
- }
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -143,8 +143,11 @@
+ 	{0x1002, 0x6601, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6602, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6603, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6604, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6605, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6606, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6607, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6608, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6610, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6611, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6613, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+@@ -256,6 +259,7 @@
+ 	{0x1002, 0x6829, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x682C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6830, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
 
 
