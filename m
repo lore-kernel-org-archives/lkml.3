@@ -1,396 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194AbaICRF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 13:05:28 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:41322 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932840AbaICRF0 (ORCPT
+	id S933071AbaICRGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 13:06:41 -0400
+Received: from mail-pd0-f196.google.com ([209.85.192.196]:35681 "EHLO
+	mail-pd0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932670AbaICRGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 13:05:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409763617-17074-2-git-send-email-sudeep.holla@arm.com>
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-2-git-send-email-sudeep.holla@arm.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 3 Sep 2014 11:05:04 -0600
-Message-ID: <CAErSpo6wOjh6PitcPudyZBVKy7vyEafNSzxgf5jSxFq+vrQHQQ@mail.gmail.com>
-Subject: Re: [PATCH v4 01/11] cpumask: factor out show_cpumap into separate
- helper function
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Sep 2014 13:06:38 -0400
+From: Chris Zhong <zyw@rock-chips.com>
+To: lee.jones@linaro.org, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org, akpm@linux-foundation.org,
+        dianders@chromium.org, heiko@sntech.de
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        grant.likely@linaro.org, hl@rock-chips.com, huangtao@rock-chips.com,
+        cf@rock-chips.com, zhangqing@rock-chips.com, xxx@rock-chips.com,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
+        Chris Zhong <zyw@rock-chips.com>
+Subject: [PATCH v8 5/5] regulator: RK808: Remove pdata from the regulator
+Date: Thu,  4 Sep 2014 01:06:14 +0800
+Message-Id: <1409763974-29854-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1409752307-29044-1-git-send-email-zyw@rock-chips.com>
+References: <1409752307-29044-1-git-send-email-zyw@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 3, 2014 at 11:00 AM, Sudeep Holla <sudeep.holla@arm.com> wrote:
-> From: Sudeep Holla <sudeep.holla@arm.com>
->
-> Many sysfs *_show function use cpu{list,mask}_scnprintf to copy cpumap
-> to the buffer aligned to PAGE_SIZE, append '\n' and '\0' to return null
-> terminated buffer with newline.
->
-> This patch creates a new helper function cpumap_copy_to_buf in
-> cpumask.h and consolidates most of them using this new helper.
->
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> Suggested-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: x86@kernel.org
-> Cc: linux-acpi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
+Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com> (drivers/pci part)
+Tested-by: Heiko <heiko@sntech.de>
+---
 
-I assume you'll merge this via a non-PCI tree.
+Changes in v8:
+Adviced by Doug
+- remove rk808_regulator_dts() function
+- remove the check about "client->dev.of_node"
 
-> ---
->  arch/x86/kernel/cpu/perf_event_amd_iommu.c    |  5 +---
->  arch/x86/kernel/cpu/perf_event_amd_uncore.c   |  6 +----
->  arch/x86/kernel/cpu/perf_event_intel_rapl.c   |  6 +----
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c |  6 +----
->  drivers/acpi/acpi_pad.c                       |  6 +----
->  drivers/base/cpu.c                            |  5 +---
->  drivers/base/node.c                           | 14 +++-------
->  drivers/base/topology.c                       | 22 ++-------------
->  drivers/pci/pci-sysfs.c                       | 39 +++++++--------------------
->  include/linux/cpumask.h                       | 27 +++++++++++++++++++
->  10 files changed, 49 insertions(+), 87 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.c b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-> index 639d1289b1ba..61a670de0ef2 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-> @@ -130,10 +130,7 @@ static ssize_t _iommu_cpumask_show(struct device *dev,
->                                    struct device_attribute *attr,
->                                    char *buf)
->  {
-> -       int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &iommu_cpumask);
-> -       buf[n++] = '\n';
-> -       buf[n] = '\0';
-> -       return n;
-> +       return cpumap_copy_to_buf(true, &iommu_cpumask, buf);
->  }
->  static DEVICE_ATTR(cpumask, S_IRUGO, _iommu_cpumask_show, NULL);
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd_uncore.c b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-> index 30790d798e6b..d96a37ed8570 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd_uncore.c
-> @@ -219,7 +219,6 @@ static ssize_t amd_uncore_attr_show_cpumask(struct device *dev,
->                                             struct device_attribute *attr,
->                                             char *buf)
->  {
-> -       int n;
->         cpumask_t *active_mask;
->         struct pmu *pmu = dev_get_drvdata(dev);
->
-> @@ -230,10 +229,7 @@ static ssize_t amd_uncore_attr_show_cpumask(struct device *dev,
->         else
->                 return 0;
->
-> -       n = cpulist_scnprintf(buf, PAGE_SIZE - 2, active_mask);
-> -       buf[n++] = '\n';
-> -       buf[n] = '\0';
-> -       return n;
-> +       return cpumap_copy_to_buf(true, active_mask, buf);
->  }
->  static DEVICE_ATTR(cpumask, S_IRUGO, amd_uncore_attr_show_cpumask, NULL);
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> index 619f7699487a..8a673e138e2e 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> @@ -365,11 +365,7 @@ static void rapl_pmu_event_read(struct perf_event *event)
->  static ssize_t rapl_get_attr_cpumask(struct device *dev,
->                                 struct device_attribute *attr, char *buf)
->  {
-> -       int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &rapl_cpu_mask);
-> -
-> -       buf[n++] = '\n';
-> -       buf[n] = '\0';
-> -       return n;
-> +       return cpumap_copy_to_buf(true, &rapl_cpu_mask, buf);
->  }
->
->  static DEVICE_ATTR(cpumask, S_IRUGO, rapl_get_attr_cpumask, NULL);
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index 0939f86f543d..a0b810951743 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -3617,11 +3617,7 @@ static int uncore_pmu_event_init(struct perf_event *event)
->  static ssize_t uncore_get_attr_cpumask(struct device *dev,
->                                 struct device_attribute *attr, char *buf)
->  {
-> -       int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
-> -
-> -       buf[n++] = '\n';
-> -       buf[n] = '\0';
-> -       return n;
-> +       return cpumap_copy_to_buf(true, &uncore_cpu_mask, buf);
->  }
->
->  static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
-> diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-> index f148a0580e04..0dbe52ed6a0d 100644
-> --- a/drivers/acpi/acpi_pad.c
-> +++ b/drivers/acpi/acpi_pad.c
-> @@ -350,11 +350,7 @@ static ssize_t acpi_pad_idlecpus_store(struct device *dev,
->  static ssize_t acpi_pad_idlecpus_show(struct device *dev,
->         struct device_attribute *attr, char *buf)
->  {
-> -       int n = 0;
-> -       n = cpumask_scnprintf(buf, PAGE_SIZE-2, to_cpumask(pad_busy_cpus_bits));
-> -       buf[n++] = '\n';
-> -       buf[n] = '\0';
-> -       return n;
-> +       return cpumap_copy_to_buf(false, to_cpumask(pad_busy_cpus_bits), buf);
->  }
->  static DEVICE_ATTR(idlecpus, S_IRUGO|S_IWUSR,
->         acpi_pad_idlecpus_show,
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> index 006b1bc5297d..277a9cfa9040 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -207,11 +207,8 @@ static ssize_t show_cpus_attr(struct device *dev,
->                               char *buf)
->  {
->         struct cpu_attr *ca = container_of(attr, struct cpu_attr, attr);
-> -       int n = cpulist_scnprintf(buf, PAGE_SIZE-2, *(ca->map));
->
-> -       buf[n++] = '\n';
-> -       buf[n] = '\0';
-> -       return n;
-> +       return cpumap_copy_to_buf(true, *ca->map, buf);
->  }
->
->  #define _CPU_ATTR(name, map) \
-> diff --git a/drivers/base/node.c b/drivers/base/node.c
-> index c6d3ae05f1ca..6e58ad566c13 100644
-> --- a/drivers/base/node.c
-> +++ b/drivers/base/node.c
-> @@ -25,32 +25,26 @@ static struct bus_type node_subsys = {
->  };
->
->
-> -static ssize_t node_read_cpumap(struct device *dev, int type, char *buf)
-> +static ssize_t node_read_cpumap(struct device *dev, bool list, char *buf)
->  {
->         struct node *node_dev = to_node(dev);
->         const struct cpumask *mask = cpumask_of_node(node_dev->dev.id);
-> -       int len;
->
->         /* 2008/04/07: buf currently PAGE_SIZE, need 9 chars per 32 bits. */
->         BUILD_BUG_ON((NR_CPUS/32 * 9) > (PAGE_SIZE-1));
->
-> -       len = type?
-> -               cpulist_scnprintf(buf, PAGE_SIZE-2, mask) :
-> -               cpumask_scnprintf(buf, PAGE_SIZE-2, mask);
-> -       buf[len++] = '\n';
-> -       buf[len] = '\0';
-> -       return len;
-> +       return cpumap_copy_to_buf(list, mask, buf);
->  }
->
->  static inline ssize_t node_read_cpumask(struct device *dev,
->                                 struct device_attribute *attr, char *buf)
->  {
-> -       return node_read_cpumap(dev, 0, buf);
-> +       return node_read_cpumap(dev, false, buf);
->  }
->  static inline ssize_t node_read_cpulist(struct device *dev,
->                                 struct device_attribute *attr, char *buf)
->  {
-> -       return node_read_cpumap(dev, 1, buf);
-> +       return node_read_cpumap(dev, true, buf);
->  }
->
->  static DEVICE_ATTR(cpumap,  S_IRUGO, node_read_cpumask, NULL);
-> diff --git a/drivers/base/topology.c b/drivers/base/topology.c
-> index be7c1fb7c0c9..39b294bd769b 100644
-> --- a/drivers/base/topology.c
-> +++ b/drivers/base/topology.c
-> @@ -42,29 +42,11 @@ static ssize_t show_##name(struct device *dev,                      \
->         return sprintf(buf, "%d\n", topology_##name(dev->id));  \
->  }
->
-> -#if defined(topology_thread_cpumask) || defined(topology_core_cpumask) || \
-> -    defined(topology_book_cpumask)
-> -static ssize_t show_cpumap(int type, const struct cpumask *mask, char *buf)
-> -{
-> -       ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf;
-> -       int n = 0;
-> -
-> -       if (len > 1) {
-> -               n = type?
-> -                       cpulist_scnprintf(buf, len-2, mask) :
-> -                       cpumask_scnprintf(buf, len-2, mask);
-> -               buf[n++] = '\n';
-> -               buf[n] = '\0';
-> -       }
-> -       return n;
-> -}
-> -#endif
-> -
->  #define define_siblings_show_map(name)                                 \
->  static ssize_t show_##name(struct device *dev,                         \
->                            struct device_attribute *attr, char *buf)    \
->  {                                                                      \
-> -       return show_cpumap(0, topology_##name(dev->id), buf);           \
-> +       return cpumap_copy_to_buf(false, topology_##name(dev->id), buf);\
->  }
->
->  #define define_siblings_show_list(name)                                        \
-> @@ -72,7 +54,7 @@ static ssize_t show_##name##_list(struct device *dev,                 \
->                                   struct device_attribute *attr,        \
->                                   char *buf)                            \
->  {                                                                      \
-> -       return show_cpumap(1, topology_##name(dev->id), buf);           \
-> +       return cpumap_copy_to_buf(true, topology_##name(dev->id), buf); \
->  }
->
->  #define define_siblings_show_func(name)                \
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 9ff0a901ecf7..aa0f1359ef30 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -77,11 +77,10 @@ static ssize_t broken_parity_status_store(struct device *dev,
->  }
->  static DEVICE_ATTR_RW(broken_parity_status);
->
-> -static ssize_t pci_dev_show_local_cpu(struct device *dev, int type,
-> +static ssize_t pci_dev_show_local_cpu(struct device *dev, bool list,
->                                       struct device_attribute *attr, char *buf)
->  {
->         const struct cpumask *mask;
-> -       int len;
->
->  #ifdef CONFIG_NUMA
->         mask = (dev_to_node(dev) == -1) ? cpu_online_mask :
-> @@ -89,59 +88,41 @@ static ssize_t pci_dev_show_local_cpu(struct device *dev, int type,
->  #else
->         mask = cpumask_of_pcibus(to_pci_dev(dev)->bus);
->  #endif
-> -       len = type ?
-> -               cpumask_scnprintf(buf, PAGE_SIZE-2, mask) :
-> -               cpulist_scnprintf(buf, PAGE_SIZE-2, mask);
-> -
-> -       buf[len++] = '\n';
-> -       buf[len] = '\0';
-> -       return len;
-> +       return cpumap_copy_to_buf(list, mask, buf);
->  }
->
->  static ssize_t local_cpus_show(struct device *dev,
->                                struct device_attribute *attr, char *buf)
->  {
-> -       return pci_dev_show_local_cpu(dev, 1, attr, buf);
-> +       return pci_dev_show_local_cpu(dev, false, attr, buf);
->  }
->  static DEVICE_ATTR_RO(local_cpus);
->
->  static ssize_t local_cpulist_show(struct device *dev,
->                                   struct device_attribute *attr, char *buf)
->  {
-> -       return pci_dev_show_local_cpu(dev, 0, attr, buf);
-> +       return pci_dev_show_local_cpu(dev, true, attr, buf);
->  }
->  static DEVICE_ATTR_RO(local_cpulist);
->
->  /*
->   * PCI Bus Class Devices
->   */
-> -static ssize_t pci_bus_show_cpuaffinity(struct device *dev, int type,
-> -                                       struct device_attribute *attr,
-> -                                       char *buf)
-> -{
-> -       int ret;
-> -       const struct cpumask *cpumask;
-> -
-> -       cpumask = cpumask_of_pcibus(to_pci_bus(dev));
-> -       ret = type ?
-> -               cpulist_scnprintf(buf, PAGE_SIZE-2, cpumask) :
-> -               cpumask_scnprintf(buf, PAGE_SIZE-2, cpumask);
-> -       buf[ret++] = '\n';
-> -       buf[ret] = '\0';
-> -       return ret;
-> -}
-> -
->  static ssize_t cpuaffinity_show(struct device *dev,
->                                 struct device_attribute *attr, char *buf)
->  {
-> -       return pci_bus_show_cpuaffinity(dev, 0, attr, buf);
-> +       const struct cpumask *cpumask = cpumask_of_pcibus(to_pci_bus(dev));
-> +
-> +       return cpumap_copy_to_buf(false, cpumask, buf);
->  }
->  static DEVICE_ATTR_RO(cpuaffinity);
->
->  static ssize_t cpulistaffinity_show(struct device *dev,
->                                     struct device_attribute *attr, char *buf)
->  {
-> -       return pci_bus_show_cpuaffinity(dev, 1, attr, buf);
-> +       const struct cpumask *cpumask = cpumask_of_pcibus(to_pci_bus(dev));
-> +
-> +       return cpumap_copy_to_buf(true, cpumask, buf);
->  }
->  static DEVICE_ATTR_RO(cpulistaffinity);
->
-> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-> index 2997af6d2ccd..26d8348292dd 100644
-> --- a/include/linux/cpumask.h
-> +++ b/include/linux/cpumask.h
-> @@ -11,6 +11,8 @@
->  #include <linux/bitmap.h>
->  #include <linux/bug.h>
->
-> +#include <asm/page.h>
-> +
->  typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
->
->  /**
-> @@ -792,6 +794,31 @@ static inline const struct cpumask *get_cpu_mask(unsigned int cpu)
->  }
->  #endif /* NR_CPUS > BITS_PER_LONG */
->
-> +/**
-> + * cpumap_copy_to_buf  - copies the cpumask into the buffer either
-> + *     as comma-separated list of cpus or hex values of cpumask
-> + * @list: indicates whether the cpumap must be list
-> + * @mask: the cpumask to copy
-> + * @buf: the buffer to copy into
-> + *
-> + * Returns the length of the (null-terminated) @buf string, zero if
-> + * nothing is copied.
-> + */
-> +static inline ssize_t
-> +cpumap_copy_to_buf(bool list, const struct cpumask *mask, char *buf)
-> +{
-> +       ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf - 2;
-> +       int n = 0;
-> +
-> +       if (len > 1) {
-> +               n = list ? cpulist_scnprintf(buf, len, mask) :
-> +                          cpumask_scnprintf(buf, len, mask);
-> +               buf[n++] = '\n';
-> +               buf[n] = '\0';
-> +       }
-> +       return n;
-> +}
-> +
->  /*
->   *
->   * From here down, all obsolete.  Use cpumask_ variants!
-> --
-> 1.8.3.2
->
+Changes in v7:
+- remove pdata struct from header file, add rk808_regulator struct
+
+Changes in v6:
+- remove the redundant code
+
+Changes in v5:
+- re-edit base on Mark's branch
+
+Changes in v4:
+- use &client->dev replace rk808->dev
+
+Changes in v3: None
+Changes in v2:
+Adviced by Mark Browm:
+- change of_find_node_by_name to find_child_by_name
+- use RK808_NUM_REGULATORS as the name of the constant
+- create a pdata when missing platform data
+- use the rk808_reg name to supply_regulator name
+- replace regulator_register with devm_regulator_register
+- some other problem with coding style
+
+ drivers/regulator/rk808-regulator.c |   89 +++++++----------------------------
+ 1 file changed, 17 insertions(+), 72 deletions(-)
+
+diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
+index e372008..1f6d108 100644
+--- a/drivers/regulator/rk808-regulator.c
++++ b/drivers/regulator/rk808-regulator.c
+@@ -3,8 +3,8 @@
+  *
+  * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+  *
+- * Author: Chris Zhong <zyw@rock-chips.com>
+- * Author: Zhang Qing <zhangqing@rock-chips.com>
++ * Author: Chris Zhong<zyw@rock-chips.com>
++ * Author: Zhang Qing<zhanqging@rock-chips.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms and conditions of the GNU General Public License,
+@@ -14,24 +14,16 @@
+  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+  * more details.
+- *
+  */
+ 
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+-#include <linux/err.h>
+-#include <linux/platform_device.h>
+ #include <linux/mfd/rk808.h>
+-#include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/of_regulator.h>
+-#include <linux/regmap.h>
+-#include <linux/slab.h>
+-/*
+- * Field Definitions.
+- */
++
++/* Field Definitions */
+ #define RK808_BUCK_VSEL_MASK	0x3f
+ #define RK808_BUCK4_VSEL_MASK	0xf
+ #define RK808_LDO_VSEL_MASK	0x1f
+@@ -50,10 +42,6 @@ static const int buck_contr_base_addr[] = {
+ 	RK808_BUCK4_CONFIG_REG,
+ };
+ 
+-#define rk808_BUCK_SET_VOL_REG(x) (buck_set_vol_base_addr[x])
+-#define rk808_BUCK_CONTR_REG(x) (buck_contr_base_addr[x])
+-#define rk808_LDO_SET_VOL_REG(x) (ldo_set_vol_base_addr[x])
+-
+ static const int ldo_set_vol_base_addr[] = {
+ 	RK808_LDO1_ON_VSEL_REG,
+ 	RK808_LDO2_ON_VSEL_REG,
+@@ -65,9 +53,7 @@ static const int ldo_set_vol_base_addr[] = {
+ 	RK808_LDO8_ON_VSEL_REG,
+ };
+ 
+-/*
+- * rk808 voltage number
+- */
++/* rk808 voltage number */
+ static const struct regulator_linear_range rk808_buck_voltage_ranges[] = {
+ 	REGULATOR_LINEAR_RANGE(700000, 0, 63, 12500),
+ };
+@@ -308,77 +294,35 @@ static struct of_regulator_match rk808_reg_matches[] = {
+ 	[RK808_ID_SWITCH2]	= { .name = "SWITCH_REG2" },
+ };
+ 
+-static int rk808_regulator_dts(struct i2c_client *client,
+-			       struct rk808_board *pdata)
+-{
+-	struct device_node *np, *reg_np;
+-	int i, ret;
+-
+-	np = client->dev.of_node;
+-	if (!np) {
+-		dev_err(&client->dev, "could not find pmic sub-node\n");
+-		return -ENXIO;
+-	}
+-
+-	reg_np = of_get_child_by_name(np, "regulators");
+-	if (!reg_np)
+-		return -ENXIO;
+-
+-	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
+-				 RK808_NUM_REGULATORS);
+-	if (ret < 0) {
+-		dev_err(&client->dev,
+-			"failed to parse regulator data: %d\n", ret);
+-		return ret;
+-	}
+-
+-	for (i = 0; i < RK808_NUM_REGULATORS; i++) {
+-		if (!rk808_reg_matches[i].init_data ||
+-		    !rk808_reg_matches[i].of_node)
+-			continue;
+-
+-		pdata->rk808_init_data[i] = rk808_reg_matches[i].init_data;
+-		pdata->of_node[i] = rk808_reg_matches[i].of_node;
+-	}
+-
+-	return 0;
+-}
+-
+ static int rk808_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
+ 	struct i2c_client *client = rk808->i2c;
+-	struct rk808_board *pdata = dev_get_platdata(&client->dev);
+ 	struct regulator_config config = {};
+ 	struct regulator_dev *rk808_rdev;
+-	struct regulator_init_data *reg_data;
+-	int i = 0;
+ 	int ret = 0;
++	int i = 0;
+ 
+-	if (!pdata) {
+-		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+-		if (!pdata)
+-			return -ENOMEM;
+-	}
++	reg_np = of_get_child_by_name(np, "regulators");
++	if (!reg_np)
++		return -ENXIO;
+ 
+-	ret = rk808_regulator_dts(client, pdata);
+-	if (ret)
++	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
++				 RK808_NUM_REGULATORS);
++	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Instantiate the regulators */
+ 	for (i = 0; i < RK808_NUM_REGULATORS; i++) {
+-		reg_data = pdata->rk808_init_data[i];
+-		if (!reg_data)
++		if (!rk808_reg_matches[i].init_data ||
++		    !rk808_reg_matches[i].of_node)
+ 			continue;
+ 
+ 		config.dev = &client->dev;
+ 		config.driver_data = rk808;
+ 		config.regmap = rk808->regmap;
+-
+-		if (client->dev.of_node)
+-			config.of_node = pdata->of_node[i];
+-
+-		config.init_data = reg_data;
++		config.of_node = rk808_reg_matches[i].of_node;
++		config.init_data = rk808_reg_matches[i].init_data;
+ 
+ 		rk808_rdev = devm_regulator_register(&pdev->dev,
+ 						     &rk808_reg[i], &config);
+@@ -388,6 +332,7 @@ static int rk808_regulator_probe(struct platform_device *pdev)
+ 			return PTR_ERR(rk808_rdev);
+ 		}
+ 	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
