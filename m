@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaICJze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:55:34 -0400
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57292 "EHLO
+	id S1756069AbaICJzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:55:50 -0400
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:57303 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751573AbaICJzd (ORCPT
+	by vger.kernel.org with ESMTP id S1756008AbaICJzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:55:33 -0400
-X-Greylist: delayed 1717 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Sep 2014 05:55:33 EDT
+	Wed, 3 Sep 2014 05:55:49 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 48/56] drm/radeon: add new KV pci id
-Date: Wed,  3 Sep 2014 11:27:07 +0200
-Message-Id: <ac2b1bd9835c088f1a591ec05ac93b6f28fb9b88.1409735865.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jeremy Vial <jvial@adeneo-embedded.com>,
+        Tony Lindgren <tony@atomide.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 28/56] ARM: OMAP3: Fix choice of omap3_restore_es function in OMAP34XX rev3.1.2 case.
+Date: Wed,  3 Sep 2014 11:26:47 +0200
+Message-Id: <3b663e168268f78ddec40117ebb6231e7cdab7ef.1409735865.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>
 In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
 References: <cover.1409735865.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jeremy Vial <jvial@adeneo-embedded.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6dc14baf4ced769017c7a7045019c7a19f373865 upstream.
+commit 9b5f7428f8b16bd8980213f2b70baf1dd0b9e36c upstream.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=82912
+According to the comment “restore_es3: applies to 34xx >= ES3.0" in
+"arch/arm/mach-omap2/sleep34xx.S”, omap3_restore_es3 should be used
+if the revision of an OMAP34xx is ES3.1.2.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Jeremy Vial <jvial@adeneo-embedded.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/cik.c | 1 +
- include/drm/drm_pciids.h     | 1 +
- 2 files changed, 2 insertions(+)
+ arch/arm/mach-omap2/control.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 14836dfd04e7..85ef9ff42aa6 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -2745,6 +2745,7 @@ static void cik_gpu_init(struct radeon_device *rdev)
- 			   (rdev->pdev->device == 0x130B) ||
- 			   (rdev->pdev->device == 0x130E) ||
- 			   (rdev->pdev->device == 0x1315) ||
-+			   (rdev->pdev->device == 0x1318) ||
- 			   (rdev->pdev->device == 0x131B)) {
- 			rdev->config.cik.max_cu_per_sh = 4;
- 			rdev->config.cik.max_backends_per_se = 1;
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index 0bd7a2ec8a45..8d32672681af 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -17,6 +17,7 @@
- 	{0x1002, 0x1315, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x1316, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x1317, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x1318, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x131B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x131C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x131D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+diff --git a/arch/arm/mach-omap2/control.c b/arch/arm/mach-omap2/control.c
+index 31e0dfe4a4ea..62a392bd0b57 100644
+--- a/arch/arm/mach-omap2/control.c
++++ b/arch/arm/mach-omap2/control.c
+@@ -324,7 +324,8 @@ void omap3_save_scratchpad_contents(void)
+ 		scratchpad_contents.public_restore_ptr =
+ 			virt_to_phys(omap3_restore_3630);
+ 	else if (omap_rev() != OMAP3430_REV_ES3_0 &&
+-					omap_rev() != OMAP3430_REV_ES3_1)
++					omap_rev() != OMAP3430_REV_ES3_1 &&
++					omap_rev() != OMAP3430_REV_ES3_1_2)
+ 		scratchpad_contents.public_restore_ptr =
+ 			virt_to_phys(omap3_restore);
+ 	else
 -- 
 2.1.0
 
