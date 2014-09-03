@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934325AbaICXEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:04:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46072 "EHLO
+	id S933749AbaICXET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:04:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46137 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933822AbaICWSq (ORCPT
+	with ESMTP id S933826AbaICWSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.16 075/125] x86_64/vsyscall: Fix warn_bad_vsyscall log output
-Date: Wed,  3 Sep 2014 15:07:12 -0700
-Message-Id: <20140903220625.926809419@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.16 076/125] hpsa: fix non-x86 builds
+Date: Wed,  3 Sep 2014 15:07:13 -0700
+Message-Id: <20140903220625.956396418@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,50 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 53b884ac3745353de220d92ef792515c3ae692f0 upstream.
+commit 0b9e7b741f2bf8103b15bb14d5b4a6f5ee91c59a upstream.
 
-This commit in Linux 3.6:
+commit 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
+turns on unit attention notifications, but got the change wrong for
+all architectures other than x86, which now store an uninitialized
+value into the device register.
 
-    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
-    Author: Joe Perches <joe@perches.com>
-    Date:   Mon May 21 19:50:07 2012 -0700
+Gcc helpfully warns about this:
 
-        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
+../drivers/scsi/hpsa.c: In function 'hpsa_set_driver_support_bits':
+../drivers/scsi/hpsa.c:6373:17: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]
+  driver_support |= ENABLE_UNIT_ATTN;
+                 ^
 
-caused warn_bad_vsyscall to output garbage in the middle of the
-line.  Revert the bad part of it.
+This moves the #ifdef so only the prefetch-enable is conditional
+on x86, not also reading the initial register contents.
 
-The printk in question isn't actually bare; the level is "%s".
-
-The bug this fixes is purely cosmetic; backports are optional.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/03eac1f24110bbe496ecc12a4df467e0d88466d4.1406330947.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 28e134464734 "[SCSI] hpsa: enable unit attention reporting"
+Acked-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/vsyscall_64.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/hpsa.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -81,10 +81,10 @@ static void warn_bad_vsyscall(const char
- 	if (!show_unhandled_signals)
- 		return;
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -6365,9 +6365,9 @@ static inline void hpsa_set_driver_suppo
+ {
+ 	u32 driver_support;
  
--	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
--			      level, current->comm, task_pid_nr(current),
--			      message, regs->ip, regs->cs,
--			      regs->sp, regs->ax, regs->si, regs->di);
-+	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
-+			   level, current->comm, task_pid_nr(current),
-+			   message, regs->ip, regs->cs,
-+			   regs->sp, regs->ax, regs->si, regs->di);
- }
- 
- static int addr_to_vsyscall_nr(unsigned long addr)
+-#ifdef CONFIG_X86
+-	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
+ 	driver_support = readl(&(h->cfgtable->driver_support));
++	/* Need to enable prefetch in the SCSI core for 6400 in x86 */
++#ifdef CONFIG_X86
+ 	driver_support |= ENABLE_SCSI_PREFETCH;
+ #endif
+ 	driver_support |= ENABLE_UNIT_ATTN;
 
 
