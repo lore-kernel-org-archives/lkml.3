@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935900AbaICXZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:25:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45837 "EHLO
+	id S933526AbaICWIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:08:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757150AbaICWP4 (ORCPT
+	with ESMTP id S933092AbaICWIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:56 -0400
+	Wed, 3 Sep 2014 18:08:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 86/88] NFSv3: Fix another acl regression
-Date: Wed,  3 Sep 2014 15:06:00 -0700
-Message-Id: <20140903220518.522036048@linuxfoundation.org>
+        Dave Chiluk <chiluk@canonical.com>
+Subject: [PATCH 3.14 01/88] stable_kernel_rules: Add pointer to netdev-FAQ for network patches
+Date: Wed,  3 Sep 2014 15:04:35 -0700
+Message-Id: <20140903220516.002924511@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,37 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Dave Chiluk <chiluk@canonical.com>
 
-commit f87d928f6d98644d39809a013a22f981d39017cf upstream.
+commit b76fc285337b6b256e9ba20a40cfd043f70c27af upstream.
 
-When creating a new object on the NFS server, we should not be sending
-posix setacl requests unless the preceding posix_acl_create returned a
-non-trivial acl. Doing so, causes Solaris servers in particular to
-return an EINVAL.
+Stable_kernel_rules should point submitters of network stable patches to the
+netdev_FAQ.txt as requests for stable network patches should go to netdev
+first.
 
-Fixes: 013cdf1088d72 (nfs: use generic posix ACL infrastructure,,,)
-Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1132786
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Dave Chiluk <chiluk@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs3acl.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ Documentation/stable_kernel_rules.txt |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/nfs/nfs3acl.c
-+++ b/fs/nfs/nfs3acl.c
-@@ -129,7 +129,10 @@ static int __nfs3_proc_setacls(struct in
- 		.rpc_argp	= &args,
- 		.rpc_resp	= &fattr,
- 	};
--	int status;
-+	int status = 0;
-+
-+	if (acl == NULL && (!S_ISDIR(inode->i_mode) || dfacl == NULL))
-+		goto out;
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -29,6 +29,9 @@ Rules on what kind of patches are accept
  
- 	status = -EOPNOTSUPP;
- 	if (!nfs_server_capable(inode, NFS_CAP_ACLS))
+ Procedure for submitting patches to the -stable tree:
+ 
++ - If the patch covers files in net/ or drivers/net please follow netdev stable
++   submission guidelines as described in
++   Documentation/networking/netdev-FAQ.txt
+  - Send the patch, after verifying that it follows the above rules, to
+    stable@vger.kernel.org.  You must note the upstream commit ID in the
+    changelog of your submission, as well as the kernel version you wish
 
 
