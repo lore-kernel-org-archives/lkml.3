@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911AbaICMsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:48:25 -0400
+	id S932871AbaICMsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:48:00 -0400
 Received: from mail.mev.co.uk ([62.49.15.74]:44685 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932747AbaICMqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:46:25 -0400
+	id S932770AbaICMq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 08:46:27 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 28/37] staging: comedi: das1800: use CMDF_ROUND_...
-Date: Wed,  3 Sep 2014 13:45:51 +0100
-Message-Id: <1409748360-17063-29-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 32/37] staging: comedi: ni_at_a2150: use CMDF_ROUND_...
+Date: Wed,  3 Sep 2014 13:45:55 +0100
+Message-Id: <1409748360-17063-33-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
 References: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
@@ -27,31 +27,35 @@ Replace use of the `TRIG_ROUND_...` macros with the new names
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/das1800.c | 8 ++++----
+ drivers/staging/comedi/drivers/ni_at_a2150.c | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
-index 951292d..9d0150d 100644
---- a/drivers/staging/comedi/drivers/das1800.c
-+++ b/drivers/staging/comedi/drivers/das1800.c
-@@ -731,15 +731,15 @@ static unsigned int burst_convert_arg(unsigned int convert_arg, int flags)
- 		convert_arg = 64000;
- 
- 	/*  the conversion time must be an integral number of microseconds */
+diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
+index fca22c5..c494e4e 100644
+--- a/drivers/staging/comedi/drivers/ni_at_a2150.c
++++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
+@@ -326,8 +326,8 @@ static int a2150_get_timing(struct comedi_device *dev, unsigned int *period,
+ 			}
+ 		}
+ 	}
 -	switch (flags & TRIG_ROUND_MASK) {
 -	case TRIG_ROUND_NEAREST:
 +	switch (flags & CMDF_ROUND_MASK) {
 +	case CMDF_ROUND_NEAREST:
  	default:
- 		micro_sec = (convert_arg + 500) / 1000;
- 		break;
--	case TRIG_ROUND_DOWN:
-+	case CMDF_ROUND_DOWN:
- 		micro_sec = convert_arg / 1000;
+ 		/*  if least upper bound is better approximation */
+ 		if (lub - *period < *period - glb)
+@@ -335,10 +335,10 @@ static int a2150_get_timing(struct comedi_device *dev, unsigned int *period,
+ 		else
+ 			*period = glb;
  		break;
 -	case TRIG_ROUND_UP:
 +	case CMDF_ROUND_UP:
- 		micro_sec = (convert_arg - 1) / 1000 + 1;
+ 		*period = lub;
+ 		break;
+-	case TRIG_ROUND_DOWN:
++	case CMDF_ROUND_DOWN:
+ 		*period = glb;
  		break;
  	}
 -- 
