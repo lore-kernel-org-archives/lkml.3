@@ -1,112 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103AbaICWAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:00:31 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:50091 "EHLO smtp.outflux.net"
+	id S932847AbaICWA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:00:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59419 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933065AbaICWAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:00:23 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
-        Will Deacon <will.deacon@arm.com>, Rabin Vincent <rabin@rab.in>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5 6/8] arm: kgdb: Handle read-only text / modules
-Date: Wed,  3 Sep 2014 14:57:07 -0700
-Message-Id: <1409781429-27593-7-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409781429-27593-1-git-send-email-keescook@chromium.org>
-References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S932179AbaICWAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:00:24 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/10] perf evlist: Introduce perf_evlist__filter_pollfd method
+Date: Wed,  3 Sep 2014 18:59:55 -0300
+Message-Id: <1409781604-16778-2-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409781604-16778-1-git-send-email-acme@kernel.org>
+References: <1409781604-16778-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Doug Anderson <dianders@chromium.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Handle the case where someone has set the text segment of the kernel
-as read-only by using the newly introduced "patch" mechanism.
+To remove all entries in evlist->pollfd[] that have revents matching at
+least one of the bits in the specified mask.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-[kees: switched structure size check to BUILD_BUG_ON (sboyd)]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
+It'll adjust evlist->nr_fds to the number of unfiltered fds and will
+return this value, as a convenience and to avoid requiring direct access
+to internal state of perf_evlist objects.
+
+This will be used after polling the evlist fds so that we remove fds
+that were closed by the kernel.
+
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-y2sca7z3wicvvy40a50lozwm@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/kernel/Makefile |  2 +-
- arch/arm/kernel/kgdb.c   | 29 +++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+), 1 deletion(-)
+ tools/perf/util/evlist.c | 21 +++++++++++++++++++++
+ tools/perf/util/evlist.h |  2 ++
+ 2 files changed, 23 insertions(+)
 
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f83d0e..70b730766330 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -67,7 +67,7 @@ test-kprobes-objs		+= kprobes-test-arm.o
- endif
- obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
- obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
--obj-$(CONFIG_KGDB)		+= kgdb.o
-+obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
- obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
- obj-$(CONFIG_HAVE_TCM)		+= tcm.o
- obj-$(CONFIG_OF)		+= devtree.o
-diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
-index a74b53c1b7df..07db2f8a1b45 100644
---- a/arch/arm/kernel/kgdb.c
-+++ b/arch/arm/kernel/kgdb.c
-@@ -12,8 +12,12 @@
- #include <linux/irq.h>
- #include <linux/kdebug.h>
- #include <linux/kgdb.h>
-+#include <linux/uaccess.h>
-+
- #include <asm/traps.h>
- 
-+#include "patch.h"
-+
- struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
- {
- 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
-@@ -244,6 +248,31 @@ void kgdb_arch_exit(void)
- 	unregister_die_notifier(&kgdb_notifier);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index a3e28b49128a..023bc3873ae9 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -428,6 +428,27 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
+ 	evlist->nr_fds++;
  }
  
-+int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
++int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask)
 +{
-+	int err;
++	int fd, nr_fds = 0;
 +
-+	/* patch_text() only supports int-sized breakpoints */
-+	BUILD_BUG_ON(sizeof(int) != BREAK_INSTR_SIZE);
++	if (evlist->nr_fds == 0)
++		return 0;
 +
-+	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
-+				BREAK_INSTR_SIZE);
-+	if (err)
-+		return err;
++	for (fd = 0; fd < evlist->nr_fds; ++fd) {
++		if (evlist->pollfd[fd].revents & revents_and_mask)
++			continue;
 +
-+	patch_text((void *)bpt->bpt_addr,
-+		   *(unsigned int *)arch_kgdb_ops.gdb_bpt_instr);
++		if (fd != nr_fds)
++			evlist->pollfd[nr_fds] = evlist->pollfd[fd];
 +
-+	return err;
++		++nr_fds;
++	}
++
++	evlist->nr_fds = nr_fds;
++	return nr_fds;
 +}
 +
-+int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
-+{
-+	patch_text((void *)bpt->bpt_addr, *(unsigned int *)bpt->saved_instr);
+ static void perf_evlist__id_hash(struct perf_evlist *evlist,
+ 				 struct perf_evsel *evsel,
+ 				 int cpu, int thread, u64 id)
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 106de53a6a74..1082420951f9 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -84,6 +84,8 @@ void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
+ 
+ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
+ 
++int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask);
 +
-+	return 0;
-+}
-+
- /*
-  * Register our undef instruction hooks with ARM undef core.
-  * We regsiter a hook specifically looking for the KGB break inst
+ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
+ 
+ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
 -- 
-1.9.1
+1.9.3
 
