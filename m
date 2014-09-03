@@ -1,385 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117AbaICRBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 13:01:51 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53768 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933048AbaICRBM (ORCPT
+	id S933159AbaICRC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 13:02:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41185 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932739AbaICRCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 13:01:12 -0400
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 11/11] ARM: kernel: add outer cache support for cacheinfo implementation
-Date: Wed,  3 Sep 2014 18:00:17 +0100
-Message-Id: <1409763617-17074-12-git-send-email-sudeep.holla@arm.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com>
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com>
+	Wed, 3 Sep 2014 13:02:53 -0400
+Message-ID: <540749B8.5090302@infradead.org>
+Date: Wed, 03 Sep 2014 10:02:48 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org
+Subject: Re: [PATCH/v2] perf/documentation: Fix typo in perf/Documentation
+References: <5405EDDC.4050808@infradead.org> <1409715963-513-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1409715963-513-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudeep Holla <sudeep.holla@arm.com>
+On 09/02/14 20:46, Masanari Iida wrote:
+> This patch fix spelling typo found in tool/perf/Documentation.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-In order to support outer cache in the cacheinfo infrastructure, a new
-function 'get_info' is added to outer_cache_fns. This function is used
-to get the outer cache information namely: line size, number of ways of
-associativity and number of sets.
+Sorry, I found a few more items that could be fixed...
+and I seem to have mucked up yesterday's comments.  :(
 
-This patch adds 'get_info' supports to all L2 cache implementations on
-ARM except Marvell's Feroceon L2 cache.
+> ---
+>  tools/perf/Documentation/perf-diff.txt          | 6 +++---
+>  tools/perf/Documentation/perf-kvm.txt           | 4 ++--
+>  tools/perf/Documentation/perf-list.txt          | 2 +-
+>  tools/perf/Documentation/perf-record.txt        | 2 +-
+>  tools/perf/Documentation/perf-script-perl.txt   | 4 ++--
+>  tools/perf/Documentation/perf-script-python.txt | 6 +++---
+>  tools/perf/Documentation/perf-script.txt        | 2 +-
+>  tools/perf/Documentation/perf-test.txt          | 2 +-
+>  tools/perf/Documentation/perf-trace.txt         | 2 +-
+>  9 files changed, 15 insertions(+), 15 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
+> index 6e689dc..4edbc2b 100644
+> --- a/tools/perf/Documentation/perf-kvm.txt
+> +++ b/tools/perf/Documentation/perf-kvm.txt
+> @@ -100,7 +100,7 @@ OPTIONS
+>  STAT REPORT OPTIONS
+>  -------------------
+>  --vcpu=<value>::
+> -       analyze events which occures on this vcpu. (default: all vcpus)
+> +       analyze events which occurs on this vcpu. (default: all vcpus)
 
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
----
- arch/arm/include/asm/outercache.h |  9 +++++++++
- arch/arm/kernel/cacheinfo.c       | 14 +++++++++++++-
- arch/arm/mm/cache-l2x0.c          | 35 ++++++++++++++++++++++++++++++++++-
- arch/arm/mm/cache-tauros2.c       | 36 ++++++++++++++++++++++++++++++++++++
- arch/arm/mm/cache-xsc3l2.c        | 17 +++++++++++++++++
- 5 files changed, 109 insertions(+), 2 deletions(-)
+	                       occur
 
-diff --git a/arch/arm/include/asm/outercache.h b/arch/arm/include/asm/outercache.h
-index 891a56b35bcf..e063d8c87077 100644
---- a/arch/arm/include/asm/outercache.h
-+++ b/arch/arm/include/asm/outercache.h
-@@ -23,7 +23,10 @@
- 
- #include <linux/types.h>
- 
-+struct cacheinfo;
-+
- struct outer_cache_fns {
-+	void (*get_info)(struct cacheinfo *);
- 	void (*inv_range)(unsigned long, unsigned long);
- 	void (*clean_range)(unsigned long, unsigned long);
- 	void (*flush_range)(unsigned long, unsigned long);
-@@ -112,6 +115,11 @@ static inline void outer_resume(void)
- 		outer_cache.resume();
- }
- 
-+static inline void outer_get_info(struct cacheinfo *this_leaf)
-+{
-+	if (outer_cache.get_info)
-+		outer_cache.get_info(this_leaf);
-+}
- #else
- 
- static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
-@@ -123,6 +131,7 @@ static inline void outer_flush_range(phys_addr_t start, phys_addr_t end)
- static inline void outer_flush_all(void) { }
- static inline void outer_disable(void) { }
- static inline void outer_resume(void) { }
-+static inline void outer_get_info(struct cacheinfo *this_leaf) { }
- 
- #endif
- 
-diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
-index d2659563de31..8b8043a2c73f 100644
---- a/arch/arm/kernel/cacheinfo.c
-+++ b/arch/arm/kernel/cacheinfo.c
-@@ -24,6 +24,7 @@
- #include <linux/of.h>
- 
- #include <asm/cputype.h>
-+#include <asm/outercache.h>
- #include <asm/processor.h>
- #include <asm/system_info.h>
- 
-@@ -220,11 +221,19 @@ static inline enum cache_type get_cache_type(int level)
- 	return __get_cache_type(level);
- }
- 
-+static inline void __outer_ci_leaf_init(struct cacheinfo *this_leaf)
-+{
-+	outer_get_info(this_leaf);
-+	BUG_ON(this_leaf->type == CACHE_TYPE_SEPARATE);
-+}
-+
- static void ci_leaf_init(struct cacheinfo *this_leaf,
- 			 enum cache_type type, unsigned int level)
- {
- 	this_leaf->level = level;
--	if (cache_is_armv7())
-+	if (type == CACHE_TYPE_NOCACHE)	/* must be outer cache */
-+		__outer_ci_leaf_init(this_leaf);
-+	else if (cache_is_armv7())
- 		__armv7_ci_leaf_init(type, this_leaf);
- 	else
- 		__ci_leaf_init(type, this_leaf);
-@@ -248,6 +257,9 @@ static int __init_cache_level(unsigned int cpu)
- 	this_cpu_ci->num_levels = level;
- 	this_cpu_ci->num_leaves = leaves;
- 
-+	if (IS_ENABLED(CONFIG_OUTER_CACHE) && outer_cache.get_info)
-+		this_cpu_ci->num_leaves++, this_cpu_ci->num_levels++;
-+
- 	return 0;
- }
- 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 5f2c988a06ac..4114b1944807 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -17,6 +17,7 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
- #include <linux/cpu.h>
-+#include <linux/cacheinfo.h>
- #include <linux/err.h>
- #include <linux/init.h>
- #include <linux/smp.h>
-@@ -105,6 +106,22 @@ static inline void l2c_unlock(void __iomem *base, unsigned num)
- 	}
- }
- 
-+static void __l2x0_getinfo(struct cacheinfo *this_leaf)
-+{
-+	unsigned int assoc = get_count_order(l2x0_way_mask);
-+
-+	this_leaf->size = l2x0_size;
-+	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
-+	this_leaf->ways_of_associativity = assoc;
-+	this_leaf->number_of_sets = l2x0_size / (assoc * CACHE_LINE_SIZE);
-+}
-+
-+static void l2x0_getinfo(struct cacheinfo *this_leaf)
-+{
-+	this_leaf->type = CACHE_TYPE_UNIFIED;
-+	__l2x0_getinfo(this_leaf);
-+}
-+
- /*
-  * Enable the L2 cache controller.  This function must only be
-  * called when the cache controller is known to be disabled.
-@@ -309,6 +326,7 @@ static const struct l2c_init_data l2c210_data __initconst = {
- 		.disable = l2c_disable,
- 		.sync = l2c210_sync,
- 		.resume = l2c210_resume,
-+		.get_info = l2x0_getinfo,
- 	},
- };
- 
-@@ -466,6 +484,7 @@ static const struct l2c_init_data l2c220_data = {
- 		.disable = l2c_disable,
- 		.sync = l2c220_sync,
- 		.resume = l2c210_resume,
-+		.get_info = l2x0_getinfo,
- 	},
- };
- 
-@@ -814,6 +833,7 @@ static const struct l2c_init_data l2c310_init_fns __initconst = {
- 		.disable = l2c310_disable,
- 		.sync = l2c210_sync,
- 		.resume = l2c310_resume,
-+		.get_info = l2x0_getinfo,
- 	},
- };
- 
-@@ -894,7 +914,6 @@ static void __init __l2c_init(const struct l2c_init_data *data,
- 		data->enable(l2x0_base, aux, data->num_lock);
- 
- 	outer_cache = fns;
--
- 	/*
- 	 * It is strange to save the register state before initialisation,
- 	 * but hey, this is what the DT implementations decided to do.
-@@ -994,6 +1013,7 @@ static const struct l2c_init_data of_l2c210_data __initconst = {
- 		.disable     = l2c_disable,
- 		.sync        = l2c210_sync,
- 		.resume      = l2c210_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1012,6 +1032,7 @@ static const struct l2c_init_data of_l2c220_data __initconst = {
- 		.disable     = l2c_disable,
- 		.sync        = l2c220_sync,
- 		.resume      = l2c210_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1065,6 +1086,7 @@ static const struct l2c_init_data of_l2c310_data __initconst = {
- 		.disable     = l2c310_disable,
- 		.sync        = l2c210_sync,
- 		.resume      = l2c310_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1092,6 +1114,7 @@ static const struct l2c_init_data of_l2c310_coherent_data __initconst = {
- 		.flush_all   = l2c210_flush_all,
- 		.disable     = l2c310_disable,
- 		.resume      = l2c310_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1255,6 +1278,12 @@ static void __init aurora_of_parse(const struct device_node *np,
- 	*aux_mask &= ~mask;
- }
- 
-+static void aurora_no_outer_data_getinfo(struct cacheinfo *this_leaf)
-+{
-+	this_leaf->type = CACHE_TYPE_INST;
-+	__l2x0_getinfo(this_leaf);
-+}
-+
- static const struct l2c_init_data of_aurora_with_outer_data __initconst = {
- 	.type = "Aurora",
- 	.way_size_0 = SZ_4K,
-@@ -1271,6 +1300,7 @@ static const struct l2c_init_data of_aurora_with_outer_data __initconst = {
- 		.disable     = l2x0_disable,
- 		.sync        = l2x0_cache_sync,
- 		.resume      = aurora_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1284,6 +1314,7 @@ static const struct l2c_init_data of_aurora_no_outer_data __initconst = {
- 	.save  = aurora_save,
- 	.outer_cache = {
- 		.resume      = aurora_resume,
-+		.get_info    = aurora_no_outer_data_getinfo,
- 	},
- };
- 
-@@ -1439,6 +1470,7 @@ static const struct l2c_init_data of_bcm_l2x0_data __initconst = {
- 		.disable     = l2c310_disable,
- 		.sync        = l2c210_sync,
- 		.resume      = l2c310_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1475,6 +1507,7 @@ static const struct l2c_init_data of_tauros3_data __initconst = {
- 	/* Tauros3 broadcasts L1 cache operations to L2 */
- 	.outer_cache = {
- 		.resume      = tauros3_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-diff --git a/arch/arm/mm/cache-tauros2.c b/arch/arm/mm/cache-tauros2.c
-index b273739e6359..0d4dd8ff6a56 100644
---- a/arch/arm/mm/cache-tauros2.c
-+++ b/arch/arm/mm/cache-tauros2.c
-@@ -14,6 +14,7 @@
-  *   Document ID MV-S105190-00, Rev 0.7, March 14 2008.
-  */
- 
-+#include <linux/cacheinfo.h>
- #include <linux/init.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -60,6 +61,7 @@ static inline void tauros2_inv_pa(unsigned long addr)
-  * noninclusive.
-  */
- #define CACHE_LINE_SIZE		32
-+#define CACHE_LINE_SHIFT	5
- 
- static void tauros2_inv_range(unsigned long start, unsigned long end)
- {
-@@ -131,6 +133,39 @@ static void tauros2_resume(void)
- 	"mcr	p15, 0, %0, c1, c0, 0 @Enable L2 Cache\n\t"
- 	: : "r" (0x0));
- }
-+
-+/*
-+ *  +----------------------------------------+
-+ *  | 11 10 9  8 | 7  6  5  4  3 | 2 |  1  0 |
-+ *  +----------------------------------------+
-+ *  |  way size  | associativity | - |line_sz|
-+ *  +----------------------------------------+
-+ */
-+#define L2CTR_ASSOCIAT_SHIFT	3
-+#define L2CTR_ASSOCIAT_MASK	0x1F
-+#define L2CTR_WAYSIZE_SHIFT	8
-+#define L2CTR_WAYSIZE_MASK	0xF
-+#define CACHE_WAY_PER_SET(l2ctr)	\
-+	(((l2_ctr) >> L2CTR_ASSOCIAT_SHIFT) & L2CTR_ASSOCIAT_MASK)
-+#define CACHE_WAY_SIZE(l2ctr)		\
-+	(8192 << (((l2ctr) >> L2CTR_WAYSIZE_SHIFT) & L2CTR_WAYSIZE_MASK))
-+#define CACHE_SET_SIZE(l2ctr)	(CACHE_WAY_SIZE(l2ctr) >> CACHE_LINE_SHIFT)
-+
-+static void tauros2_getinfo(struct cacheinfo *this_leaf)
-+{
-+	unsigned int l2_ctr;
-+
-+	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2_ctr));
-+
-+	this_leaf->type = CACHE_TYPE_UNIFIED;
-+	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
-+	this_leaf->ways_of_associativity = CACHE_WAY_PER_SET(l2_ctr);
-+	this_leaf->number_of_sets = CACHE_SET_SIZE(l2_ctr);
-+	this_leaf->size = this_leaf->coherency_line_size *
-+			  this_leaf->number_of_sets *
-+			  this_leaf->ways_of_associativity;
-+}
-+
- #endif
- 
- static inline u32 __init read_extra_features(void)
-@@ -226,6 +261,7 @@ static void __init tauros2_internal_init(unsigned int features)
- 		outer_cache.flush_range = tauros2_flush_range;
- 		outer_cache.disable = tauros2_disable;
- 		outer_cache.resume = tauros2_resume;
-+		outer_cache.get_info = tauros2_getinfo;
- 	}
- #endif
- 
-diff --git a/arch/arm/mm/cache-xsc3l2.c b/arch/arm/mm/cache-xsc3l2.c
-index 6c3edeb66e74..175bf44eb039 100644
---- a/arch/arm/mm/cache-xsc3l2.c
-+++ b/arch/arm/mm/cache-xsc3l2.c
-@@ -16,6 +16,7 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
-+#include <linux/cacheinfo.h>
- #include <linux/init.h>
- #include <linux/highmem.h>
- #include <asm/cp15.h>
-@@ -201,6 +202,21 @@ static void xsc3_l2_flush_range(unsigned long start, unsigned long end)
- 	dsb();
- }
- 
-+static void xsc3_l2_getinfo(struct cacheinfo *this_leaf)
-+{
-+	unsigned long l2ctype;
-+
-+	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2ctype));
-+
-+	this_leaf->type = CACHE_TYPE_UNIFIED;
-+	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
-+	this_leaf->ways_of_associativity = CACHE_WAY_PER_SET;
-+	this_leaf->number_of_sets = CACHE_SET_SIZE(l2ctype);
-+	this_leaf->size = this_leaf->coherency_line_size *
-+			  this_leaf->number_of_sets *
-+			  this_leaf->ways_of_associativity;
-+}
-+
- static int __init xsc3_l2_init(void)
- {
- 	if (!cpu_is_xsc3() || !xsc3_l2_present())
-@@ -213,6 +229,7 @@ static int __init xsc3_l2_init(void)
- 		outer_cache.inv_range = xsc3_l2_inv_range;
- 		outer_cache.clean_range = xsc3_l2_clean_range;
- 		outer_cache.flush_range = xsc3_l2_flush_range;
-+		outer_cache.get_info    = xsc3_l2_getinfo;
- 	}
- 
- 	return 0;
+>  
+>  --event=<value>::
+>         event to be analyzed. Possible values: vmexit, mmio (x86 only),
+> @@ -134,7 +134,7 @@ STAT LIVE OPTIONS
+>      Analyze events only for given process ID(s) (comma separated list).
+>  
+>  --vcpu=<value>::
+> -       analyze events which occures on this vcpu. (default: all vcpus)
+> +       analyze events which occurs on this vcpu. (default: all vcpus)
+
+	                       occur
+
+>  
+>  
+>  --event=<value>::
+> diff --git a/tools/perf/Documentation/perf-test.txt b/tools/perf/Documentation/perf-test.txt
+> index d1d3e5121..9fc5c5d 100644
+> --- a/tools/perf/Documentation/perf-test.txt
+> +++ b/tools/perf/Documentation/perf-test.txt
+> @@ -25,7 +25,7 @@ OPTIONS
+>  -------
+>  -s::
+>  --skip::
+> -	Tests to skip (comma separater numeric list).
+> +	Tests to skip (comma separator numeric list).
+
+	                     separated
+
+>  
+>  -v::
+>  --verbose::
+> diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+> index 02aac83..524c169 100644
+> --- a/tools/perf/Documentation/perf-trace.txt
+> +++ b/tools/perf/Documentation/perf-trace.txt
+> @@ -20,7 +20,7 @@ scheduling events, etc.
+>  This is a live mode tool in addition to working with perf.data files like
+>  the other perf tools. Files can be generated using the 'perf record' command
+>  but the session needs to include the raw_syscalls events (-e 'raw_syscalls:*').
+> -Alernatively, the 'perf trace record' can be used as a shortcut to
+> +Alternatively, the 'perf trace record' can be used as a shortcut to
+
+either:
+                  the 'perf trace record' command can be used ...
+or
+                  'perf trace record' can be used ...
+
+>  automatically include the raw_syscalls events when writing events to a file.
+>  
+>  The following options apply to perf trace; options to perf trace record are
+> 
+
+Thanks.
+
 -- 
-1.8.3.2
-
+~Randy
