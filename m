@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935638AbaICXTD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:19:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
+	id S935654AbaICXTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:19:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757213AbaICWQE (ORCPT
+	with ESMTP id S1757209AbaICWQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:04 -0400
+	Wed, 3 Sep 2014 18:16:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 019/125] ALSA: hda/ca0132 - Dont try loading firmware at resume when already failed
-Date: Wed,  3 Sep 2014 15:06:16 -0700
-Message-Id: <20140903220624.240167194@linuxfoundation.org>
+        Mario <fugazzi99@gmail.com>, corubba <corubba@gmx.de>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.16 018/125] ALSA: virtuoso: add Xonar Essence STX II support
+Date: Wed,  3 Sep 2014 15:06:15 -0700
+Message-Id: <20140903220624.210481403@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,58 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit e24aa0a4c5ac92a171d9dd74a8d3dbf652990d36 upstream.
+commit f42bb22243d2ae264d721b055f836059fe35321f upstream.
 
-CA0132 driver tries to reload the firmware at resume.  Usually this
-works since the firmware loader core caches the firmware contents by
-itself.  However, if the driver failed to load the firmwares
-(e.g. missing files), reloading the firmware at resume goes through
-the actual file loading code path, and triggers a kernel WARNING like:
+Just add the PCI ID for the STX II.  It appears to work the same as the
+STX, except for the addition of the not-yet-supported daughterboard.
 
- WARNING: CPU: 10 PID:11371 at drivers/base/firmware_class.c:1105 _request_firmware+0x9ab/0x9d0()
-
-For avoiding this situation, this patch makes CA0132 skipping the f/w
-loading at resume when it failed at probe time.
-
-Reported-and-tested-by: Janek Kozicki <cosurgi@gmail.com>
+Tested-by: Mario <fugazzi99@gmail.com>
+Tested-by: corubba <corubba@gmx.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_ca0132.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ Documentation/sound/alsa/ALSA-Configuration.txt |    4 ++--
+ sound/pci/Kconfig                               |    4 ++--
+ sound/pci/oxygen/virtuoso.c                     |    1 +
+ sound/pci/oxygen/xonar_pcm179x.c                |   12 ++++++++++--
+ 4 files changed, 15 insertions(+), 6 deletions(-)
 
---- a/sound/pci/hda/patch_ca0132.c
-+++ b/sound/pci/hda/patch_ca0132.c
-@@ -4376,6 +4376,9 @@ static void ca0132_download_dsp(struct h
- 	return; /* NOP */
- #endif
+--- a/Documentation/sound/alsa/ALSA-Configuration.txt
++++ b/Documentation/sound/alsa/ALSA-Configuration.txt
+@@ -2026,8 +2026,8 @@ Prior to version 0.9.0rc4 options had a
+   -------------------
  
-+	if (spec->dsp_state == DSP_DOWNLOAD_FAILED)
-+		return; /* don't retry failures */
-+
- 	chipio_enable_clocks(codec);
- 	spec->dsp_state = DSP_DOWNLOADING;
- 	if (!ca0132_download_dsp_images(codec))
-@@ -4552,7 +4555,8 @@ static int ca0132_init(struct hda_codec
- 	struct auto_pin_cfg *cfg = &spec->autocfg;
- 	int i;
+     Module for sound cards based on the Asus AV66/AV100/AV200 chips,
+-    i.e., Xonar D1, DX, D2, D2X, DS, Essence ST (Deluxe), Essence STX,
+-    HDAV1.3 (Deluxe), and HDAV1.3 Slim.
++    i.e., Xonar D1, DX, D2, D2X, DS, DSX, Essence ST (Deluxe),
++    Essence STX (II), HDAV1.3 (Deluxe), and HDAV1.3 Slim.
  
--	spec->dsp_state = DSP_DOWNLOAD_INIT;
-+	if (spec->dsp_state != DSP_DOWNLOAD_FAILED)
-+		spec->dsp_state = DSP_DOWNLOAD_INIT;
- 	spec->curr_chip_addx = INVALID_CHIP_ADDRESS;
+     This module supports autoprobe and multiple cards.
  
- 	snd_hda_power_up(codec);
-@@ -4663,6 +4667,7 @@ static int patch_ca0132(struct hda_codec
- 	codec->spec = spec;
- 	spec->codec = codec;
+--- a/sound/pci/Kconfig
++++ b/sound/pci/Kconfig
+@@ -858,8 +858,8 @@ config SND_VIRTUOSO
+ 	select SND_JACK if INPUT=y || INPUT=SND
+ 	help
+ 	  Say Y here to include support for sound cards based on the
+-	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS,
+-	  Essence ST (Deluxe), and Essence STX.
++	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS, DSX,
++	  Essence ST (Deluxe), and Essence STX (II).
+ 	  Support for the HDAV1.3 (Deluxe) and HDAV1.3 Slim is experimental;
+ 	  for the Xense, missing.
  
-+	spec->dsp_state = DSP_DOWNLOAD_INIT;
- 	spec->num_mixers = 1;
- 	spec->mixers[0] = ca0132_mixer;
+--- a/sound/pci/oxygen/virtuoso.c
++++ b/sound/pci/oxygen/virtuoso.c
+@@ -53,6 +53,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x835e) },
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x838e) },
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
++	{ OXYGEN_PCI_SUBID(0x1043, 0x85f4) },
+ 	{ OXYGEN_PCI_SUBID_BROKEN_EEPROM },
+ 	{ }
+ };
+--- a/sound/pci/oxygen/xonar_pcm179x.c
++++ b/sound/pci/oxygen/xonar_pcm179x.c
+@@ -100,8 +100,8 @@
+  */
  
+ /*
+- * Xonar Essence ST (Deluxe)/STX
+- * -----------------------------
++ * Xonar Essence ST (Deluxe)/STX (II)
++ * ----------------------------------
+  *
+  * CMI8788:
+  *
+@@ -1137,6 +1137,14 @@ int get_xonar_pcm179x_model(struct oxyge
+ 		chip->model.init = xonar_stx_init;
+ 		chip->model.resume = xonar_stx_resume;
+ 		chip->model.set_dac_params = set_pcm1796_params;
++		break;
++	case 0x85f4:
++		chip->model = model_xonar_st;
++		/* TODO: daughterboard support */
++		chip->model.shortname = "Xonar STX II";
++		chip->model.init = xonar_stx_init;
++		chip->model.resume = xonar_stx_resume;
++		chip->model.set_dac_params = set_pcm1796_params;
+ 		break;
+ 	default:
+ 		return -EINVAL;
 
 
