@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345AbaICFz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 01:55:59 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27346 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491AbaICFz6 (ORCPT
+	id S1755029AbaICGCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:02:12 -0400
+Received: from relmlor3.renesas.com ([210.160.252.173]:26896 "EHLO
+	relmlie2.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754601AbaICGCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 01:55:58 -0400
-X-AuditID: cbfee691-f79546d0000011a1-cf-5406ad6c1027
-Message-id: <5406AD6C.3090306@samsung.com>
-Date: Wed, 03 Sep 2014 14:55:56 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
-        r.baldyga@samsung.com
-Subject: Re: [PATCH] extcon: max77693: Fix a bug occured at changing ADC
- debounce time.
-References: <1409723407-21221-1-git-send-email-jonghwa3.lee@samsung.com>
-In-reply-to: <1409723407-21221-1-git-send-email-jonghwa3.lee@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSqJuzli3EYMN+ZYvOs0+YLS7vmsNm
-	cbtxBZvFg8M72R1YPPq2rGL0+LxJLoApissmJTUnsyy1SN8ugSvj788+1oL//BU3Ny9mb2D8
-	ztPFyMkhIWAiMf/PKnYIW0ziwr31bF2MHBxCAksZJV7YwJTs2LiWtYuRCyi8iFFi8dzbbBDO
-	a0aJ/x07WECqeAW0JG493sIKYrMIqEqs+L+HCcRmA4rvf3GDDcQWFQiTWDn9ClS9oMSPyffA
-	bBGgmmuP3zGC2MwCwRKT9nQwg9jCApESN59tBosLCXhIdHZ2g8U5BTwltrz4BVWvI7G/dRob
-	hC0vsXnNW2aQ4yQEprNLrFnziQniIAGJb5MPsYB8JiEgK7HpADPEZ5ISB1fcYJnAKDYLyUmz
-	kIydhWTsAkbmVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxiBkXP637OJOxjvH7A+xCjAwajE
-	w7sggC1EiDWxrLgy9xCjKdAVE5mlRJPzgfGZVxJvaGxmZGFqYmpsZG5ppiTOqyP9M1hIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QDY+ysl0t+r/pa87ZewLPslXw9ownX+rMb7vNvK1rq2jMh
-	2LP8AbPnNf/1wn28W4TCVpgodtsXnNo18due/puM26yvL5Wf+4Nv+e+DCTWPVlzpuZl7xHoO
-	s61WKsOvLwkng7gXsHI//OpqGedtEevykam1a7/ehrKWe682lUzWPKLBtzHe9GTrTSWW4oxE
-	Qy3mouJEAK7wFviXAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t9jAd2ctWwhBpcny1h0nn3CbHF51xw2
-	i9uNK9gsHhzeye7A4tG3ZRWjx+dNcgFMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
-	uoaWFuZKCnmJuam2Si4+AbpumTlAm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUY
-	GaCBhDWMGX9/9rEW/OevuLl5MXsD43eeLkZODgkBE4kdG9eyQthiEhfurWfrYuTiEBJYxCix
-	eO5tKOc1o8T/jh0sIFW8AloStx5vAetgEVCVWPF/DxOIzQYU3//iBhuILSoQJrFy+hWoekGJ
-	H5PvgdkiQDXXHr9jBLGZBYIlJu3pYAaxhQUiJW4+2wwWFxLwkOjs7AaLcwp4Smx58QuqXkdi
-	f+s0NghbXmLzmrfMExgFZiFZMQtJ2SwkZQsYmVcxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525i
-	BMfmM+kdjKsaLA4xCnAwKvHwLghgCxFiTSwrrsw9xCjBwawkwuubCBTiTUmsrEotyo8vKs1J
-	LT7EaAoMgYnMUqLJ+cC0kVcSb2hsYmZkaWRuaGFkbK4kznuw1TpQSCA9sSQ1OzW1ILUIpo+J
-	g1OqgdFTbf9H42+azUfO7tBw4AvLFyi6ZlhtJFhVxxA+4+/VuBMnclu3dQg62Z6YFXp15ZXV
-	m5Zxr3uRU/G+4dmjVesnZOSX5DjsTpJZulpfd7riZu6tvcqJSsfkJ26bnvrhmvqp7rXqk1fb
-	BeQZuTBNv3poQd1CpbUz7zadD3sooc/9onHxKc5+ofdKLMUZiYZazEXFiQCOrH6L4wIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 3 Sep 2014 02:02:10 -0400
+X-IronPort-AV: E=Sophos;i="5.04,455,1406559600"; 
+   d="scan'208";a="168203309"
+Message-ID: <5406AEDB.2040702@renesas.com>
+Date: Wed, 3 Sep 2014 15:02:03 +0900
+From: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Felipe Balbi <balbi@ti.com>,
+        kuninori morimoto <kuninori.morimoto.gx@renesas.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: USB_RENESAS_USBHS_UDC should depend on HAS_DMA
+References: <1409340700-2033-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1409340700-2033-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [211.11.155.147]
+X-ClientProxiedBy: HKXPR06CA015.apcprd06.prod.outlook.com (10.141.129.45) To
+ HKNPR06MB322.apcprd06.prod.outlook.com (10.141.38.16)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 032334F434
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019014)(6049001)(6009001)(51704005)(479174003)(199003)(24454002)(189002)(76482001)(21056001)(101416001)(46102001)(23756003)(64126003)(77982001)(90102001)(102836001)(79102001)(33656002)(76176999)(87266999)(99396002)(50986999)(54356999)(4396001)(50466002)(65816999)(19580405001)(80316001)(86362001)(31966008)(74662001)(74502001)(19580395003)(83322001)(92566001)(92726001)(87976001)(83072002)(85852003)(42186005)(64706001)(47776003)(20776003)(95666004)(85306004)(81342001)(106356001)(105586002)(66066001)(65956001)(80022001)(65806001)(77096002)(107046002)(36756003)(81542001);DIR:OUT;SFP:1102;SCL:1;SRVR:HKNPR06MB322;H:[10.161.20.147];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: renesas.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 02:50 PM, Jonghwa Lee wrote:
-> When it writes some value other than 0 to BTLDset and JIGset, muic device
-> will be reset automatically. And it happens during updating ADC debounce time,
-> because it shares same register. To update ADC debounce time without reset,
-> set value only to ADCDbset and 0 to BTLDset and JIGset.
+Hi Geert,
+
+(2014/08/30 4:31), Geert Uytterhoeven wrote:
+> If NO_DMA=y:
 > 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> drivers/built-in.o: In function `usbhsg_dma_map_ctrl':
+> mod_gadget.c:(.text+0x53b226): undefined reference to `usb_gadget_map_request'
+> mod_gadget.c:(.text+0x53b242): undefined reference to `usb_gadget_unmap_request'
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 > ---
->  drivers/extcon/extcon-max77693.c |   11 ++++++++---
->  1 file changed, 8 insertions(+), 3 deletions(-)
+>  drivers/usb/gadget/udc/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-> index 77460f2..661a3bb 100644
-> --- a/drivers/extcon/extcon-max77693.c
-> +++ b/drivers/extcon/extcon-max77693.c
-> @@ -255,10 +255,15 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
->  	case ADC_DEBOUNCE_TIME_10MS:
->  	case ADC_DEBOUNCE_TIME_25MS:
->  	case ADC_DEBOUNCE_TIME_38_62MS:
-> -		ret = regmap_update_bits(info->max77693->regmap_muic,
-> +		/*
-> +		 * Don't touch BTLDset, JIGset when you want to change adc
-> +		 * debounce time. BTLDset, JIGset reflects actual pin status
-> +		 * and are not configurable.
-> +		 */
-> +		ret = regmap_write_bits(info->max77693->regmap_muic,
->  					  MAX77693_MUIC_REG_CTRL3,
-> -					  CONTROL3_ADCDBSET_MASK,
-> -					  time << CONTROL3_ADCDBSET_SHIFT);
-> +					  (CONTROL3_ADCDBSET_MASK &
-> +					  time << CONTROL3_ADCDBSET_SHIFT));
+> diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
+> index 5151f947a4f5..00171d436cf8 100644
+> --- a/drivers/usb/gadget/udc/Kconfig
+> +++ b/drivers/usb/gadget/udc/Kconfig
+> @@ -163,7 +163,7 @@ config USB_R8A66597
+>  
+>  config USB_RENESAS_USBHS_UDC
+>  	tristate 'Renesas USBHS controller'
+> -	depends on USB_RENESAS_USBHS
+> +	depends on USB_RENESAS_USBHS && HAS_DMA
+>  	help
+>  	   Renesas USBHS is a discrete USB host and peripheral controller chip
+>  	   that supports both full and high speed USB 2.0 data transfers.
+> 
 
-Do you make this patch on extcon-next branch?
+Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
 
-The max77693_muic_set_debounce_time() of extcon-max77693.c
-use regmap_update_bits instead of regmap_write_bits as following:
-
-	switch (time) {
-	case ADC_DEBOUNCE_TIME_5MS:
-	case ADC_DEBOUNCE_TIME_10MS:
-	case ADC_DEBOUNCE_TIME_25MS:
-	case ADC_DEBOUNCE_TIME_38_62MS:
-		ret = regmap_update_bits(info->max77693->regmap_muic,
-					  MAX77693_MUIC_REG_CTRL3,
-					  CONTROL3_ADCDBSET_MASK,
-					  time << CONTROL3_ADCDBSET_SHIFT);
-		if (ret) {
-			dev_err(info->dev, "failed to set ADC debounce time\n");
-			return ret;
-		}
-
-
-Thanks,
-Chanwoo Choi
-
+Best regards,
+Yoshihiro Shimoda
 
