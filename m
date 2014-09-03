@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935303AbaICXHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:07:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46063 "EHLO
+	id S933752AbaICWSl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:18:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933759AbaICWSm (ORCPT
+	with ESMTP id S933488AbaICWSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:42 -0400
+	Wed, 3 Sep 2014 18:18:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Vidya Sagar <sagar.tv@gmail.com>
-Subject: [PATCH 3.16 067/125] PCI: Configure ASPM when enabling device
-Date: Wed,  3 Sep 2014 15:07:04 -0700
-Message-Id: <20140903220625.693286623@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.16 040/125] hwmon: (amc6821) Fix possible race condition bug
+Date: Wed,  3 Sep 2014 15:06:37 -0700
+Message-Id: <20140903220624.856910842@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,78 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vidya Sagar <sagar.tv@gmail.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 1f6ae47ecff7f23da73417e068018b311f3b5583 upstream.
+commit cf44819c98db11163f58f08b822d626c7a8f5188 upstream.
 
-We can't do ASPM configuration at enumeration-time because enabling it
-makes some defective hardware unresponsive, even if ASPM is disabled later
-(see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
-to veto it").  Therefore, we have to do it after a driver claims the
-device.
+Ensure mutex lock protects the read-modify-write period to prevent possible
+race condition bug.
+In additional, update data->valid should also be protected by the mutex lock.
 
-We previously configured ASPM in pci_set_power_state(), but that's not a
-very good place because it's not really related to setting the PCI device
-power state, and doing it there means:
-
-  - We incorrectly skipped ASPM config when setting a device that's
-    already in D0 to D0.
-
-  - We unnecessarily configured ASPM when setting a device to a low-power
-    state (the ASPM feature only applies when the device is in D0).
-
-  - We unnecessarily configured ASPM when called from a .resume() method
-    (ASPM configuration needs to be restored during resume, but
-    pci_restore_pcie_state() should already do this).
-
-Move ASPM configuration from pci_set_power_state() to
-do_pci_enable_device() so we do it when a driver enables a device.
-
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
-Fixes: db288c9c5f9d ("PCI / PM: restore the original behavior of pci_set_power_state()")
-Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/hwmon/amc6821.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -839,12 +839,6 @@ int pci_set_power_state(struct pci_dev *
+--- a/drivers/hwmon/amc6821.c
++++ b/drivers/hwmon/amc6821.c
+@@ -360,11 +360,13 @@ static ssize_t set_pwm1_enable(
+ 	if (config)
+ 		return config;
  
- 	if (!__pci_complete_power_transition(dev, state))
- 		error = 0;
--	/*
--	 * When aspm_policy is "powersave" this call ensures
--	 * that ASPM is configured.
--	 */
--	if (!error && dev->bus->self)
--		pcie_aspm_powersave_config_link(dev->bus->self);
++	mutex_lock(&data->update_lock);
+ 	config = i2c_smbus_read_byte_data(client, AMC6821_REG_CONF1);
+ 	if (config < 0) {
+ 			dev_err(&client->dev,
+ 			"Error reading configuration register, aborting.\n");
+-			return config;
++			count = config;
++			goto unlock;
+ 	}
  
- 	return error;
+ 	switch (val) {
+@@ -381,14 +383,15 @@ static ssize_t set_pwm1_enable(
+ 		config |= AMC6821_CONF1_FDRC1;
+ 		break;
+ 	default:
+-		return -EINVAL;
++		count = -EINVAL;
++		goto unlock;
+ 	}
+-	mutex_lock(&data->update_lock);
+ 	if (i2c_smbus_write_byte_data(client, AMC6821_REG_CONF1, config)) {
+ 			dev_err(&client->dev,
+ 			"Configuration register write error, aborting.\n");
+ 			count = -EIO;
+ 	}
++unlock:
+ 	mutex_unlock(&data->update_lock);
+ 	return count;
  }
-@@ -1195,12 +1189,18 @@ int __weak pcibios_enable_device(struct
- static int do_pci_enable_device(struct pci_dev *dev, int bars)
- {
- 	int err;
-+	struct pci_dev *bridge;
- 	u16 cmd;
- 	u8 pin;
+@@ -493,8 +496,9 @@ static ssize_t set_temp_auto_point_temp(
+ 		return -EINVAL;
+ 	}
  
- 	err = pci_set_power_state(dev, PCI_D0);
- 	if (err < 0 && err != -EIO)
- 		return err;
+-	data->valid = 0;
+ 	mutex_lock(&data->update_lock);
++	data->valid = 0;
 +
-+	bridge = pci_upstream_bridge(dev);
-+	if (bridge)
-+		pcie_aspm_powersave_config_link(bridge);
-+
- 	err = pcibios_enable_device(dev, bars);
- 	if (err < 0)
- 		return err;
+ 	switch (ix) {
+ 	case 0:
+ 		ptemp[0] = clamp_val(val / 1000, 0,
+@@ -658,13 +662,14 @@ static ssize_t set_fan1_div(
+ 	if (config)
+ 		return config;
+ 
++	mutex_lock(&data->update_lock);
+ 	config = i2c_smbus_read_byte_data(client, AMC6821_REG_CONF4);
+ 	if (config < 0) {
+ 		dev_err(&client->dev,
+ 			"Error reading configuration register, aborting.\n");
+-		return config;
++		count = config;
++		goto EXIT;
+ 	}
+-	mutex_lock(&data->update_lock);
+ 	switch (val) {
+ 	case 2:
+ 		config &= ~AMC6821_CONF4_PSPR;
 
 
