@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105AbaICFCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 01:02:46 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37810 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967AbaICFCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 01:02:42 -0400
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 4/6] f2fs: add BUG cases to initiate fsck.f2fs
-Date: Tue,  2 Sep 2014 22:02:32 -0700
-Message-Id: <1409720554-72925-4-git-send-email-jaegeuk@kernel.org>
-X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
-In-Reply-To: <1409720554-72925-1-git-send-email-jaegeuk@kernel.org>
-References: <1409720554-72925-1-git-send-email-jaegeuk@kernel.org>
+	id S1755180AbaICFCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 01:02:51 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:30085 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754975AbaICFCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 01:02:48 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmQfAHqgBlR5LDJ8/2dsb2JhbABagw2BKoIsrVIGoCkBAwEBAYEKF3eEAwEBBAEnExwjBQsIAxgJJQ8FJQMhE4g6B707ARcYhWSJUQeDL4EdBZxblR+Dcysvgk8BAQE
+Date: Wed, 3 Sep 2014 15:02:32 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: xuejiufei@huawei.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        "ocfs2-devel@oss.oracle.com" <ocfs2-devel@oss.oracle.com>
+Subject: Re: [PATCH] fs/super.c: do not shrink fs slab during direct memory
+ reclaim
+Message-ID: <20140903050232.GD20473@dastard>
+References: <54004E82.3060608@huawei.com>
+ <20140901235102.GI26465@dastard>
+ <540587DF.6040302@huawei.com>
+ <54067117.4060201@oracle.com>
+ <20140903031023.GC20473@dastard>
+ <54069744.7050509@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54069744.7050509@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces BUG cases with f2fs_bug_on to remain fsck.f2fs information.
-And it implements some void functions to initiate fsck.f2fs too.
+On Wed, Sep 03, 2014 at 12:21:24PM +0800, Junxiao Bi wrote:
+> On 09/03/2014 11:10 AM, Dave Chinner wrote:
+> > On Wed, Sep 03, 2014 at 09:38:31AM +0800, Junxiao Bi wrote:
+> >> Hi Jiufei,
+> >>
+> >> On 09/02/2014 05:03 PM, Xue jiufei wrote:
+> >>> Hi, Dave
+> >>> On 2014/9/2 7:51, Dave Chinner wrote:
+> >>>> On Fri, Aug 29, 2014 at 05:57:22PM +0800, Xue jiufei wrote:
+> >>>>> The patch trys to solve one deadlock problem caused by cluster
+> >>>>> fs, like ocfs2. And the problem may happen at least in the below
+> >>>>> situations:
+> >>>>> 1)Receiving a connect message from other nodes, node queues a
+> >>>>> work_struct o2net_listen_work.
+> >>>>> 2)o2net_wq processes this work and calls sock_alloc() to allocate
+> >>>>> memory for a new socket.
+> >>>>> 3)It would do direct memory reclaim when available memory is not
+> >>>>> enough and trigger the inode cleanup. That inode being cleaned up
+> >>>>> is happened to be ocfs2 inode, so call evict()->ocfs2_evict_inode()
+> >>>>> ->ocfs2_drop_lock()->dlmunlock()->o2net_send_message_vec(),
+> >>>>> and wait for the unlock response from master.
+> >>>>> 4)tcp layer received the response, call o2net_data_ready() and
+> >>>>> queue sc_rx_work, waiting o2net_wq to process this work.
+> >>>>> 5)o2net_wq is a single thread workqueue, it process the work one by
+> >>>>> one. Right now it is still doing o2net_listen_work and cannot handle
+> >>>>> sc_rx_work. so we deadlock.
+> >>>>>
+> >>>>> It is impossible to set GFP_NOFS for memory allocation in sock_alloc().
+> >>>>> So we use PF_FSTRANS to avoid the task reentering filesystem when
+> >>>>> available memory is not enough.
+> >>>>>
+> >>>>> Signed-off-by: joyce.xue <xuejiufei@huawei.com>
+> >>>>
+> >>>> For the second time: use memalloc_noio_save/memalloc_noio_restore.
+> >>>> And please put a great big comment in the code explaining why you
+> >>>> need to do this special thing with memory reclaim flags.
+> >>>>
+> >>>> Cheers,
+> >>>>
+> >>>> Dave.
+> >>>>
+> >>> Thanks for your reply. But I am afraid that memalloc_noio_save/
+> >>> memalloc_noio_restore can not solve my problem. __GFP_IO is cleared
+> >>> if PF_MEMALLOC_NOIO is set and can avoid doing IO in direct memory
+> >>> reclaim. However, __GFP_FS is still set that can not avoid pruning
+> >>> dcache and icache in memory allocation, resulting in the deadlock I
+> >>> described.
+> >>
+> >> You can use PF_MEMALLOC_NOIO to replace PF_FSTRANS, set this flag in
+> >> ocfs2 and check it in sb shrinker.
+> > 
+> > No changes to the superblock shrinker, please. The flag should
+> > modify the gfp_mask in the struct shrink_control passed to the
+> > shrinker, just like the noio flag is used in the rest of the mm
+> > code.
+> __GFP_FS seemed imply __GFP_IO,
 
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
----
- fs/f2fs/segment.c |  4 ++--
- fs/f2fs/segment.h | 38 +++++++++++++++++++++++++++++++++++---
- 2 files changed, 37 insertions(+), 5 deletions(-)
+Now you are starting to understand. Check what GFP_NOIO actually
+means, then tell me why memalloc_noio_flags() is not fully correct,
+needs fixing, and needs to be applied to all of reclaim.
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index abfbbca..46586d3 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -526,10 +526,10 @@ static void update_sit_entry(struct f2fs_sb_info *sbi, block_t blkaddr, int del)
- 	/* Update valid block bitmap */
- 	if (del > 0) {
- 		if (f2fs_set_bit(offset, se->cur_valid_map))
--			BUG();
-+			f2fs_bug_on(sbi, 1);
- 	} else {
- 		if (!f2fs_clear_bit(offset, se->cur_valid_map))
--			BUG();
-+			f2fs_bug_on(sbi, 1);
- 	}
- 	if (!f2fs_test_bit(offset, se->ckpt_valid_map))
- 		se->ckpt_valid_blocks += del;
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index 793ca27..d163fc8 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -583,9 +583,41 @@ static inline void check_block_count(struct f2fs_sb_info *sbi,
- 	BUG_ON(GET_SIT_VBLOCKS(raw_sit) != valid_blocks);
- }
- #else
--#define check_seg_range(sbi, segno)
--#define verify_block_addr(sbi, blk_addr)
--#define check_block_count(sbi, segno, raw_sit)
-+static inline void check_seg_range(struct f2fs_sb_info *sbi, unsigned int segno)
-+{
-+	unsigned int end_segno = SM_I(sbi)->segment_count - 1;
-+
-+	if (segno > end_segno)
-+		sbi->need_fsck = true;
-+}
-+
-+static inline void verify_block_addr(struct f2fs_sb_info *sbi, block_t blk_addr)
-+{
-+	struct f2fs_sm_info *sm_info = SM_I(sbi);
-+	block_t total_blks = sm_info->segment_count << sbi->log_blocks_per_seg;
-+	block_t start_addr = sm_info->seg0_blkaddr;
-+	block_t end_addr = start_addr + total_blks - 1;
-+
-+	if (blk_addr < start_addr || blk_addr > end_addr)
-+		sbi->need_fsck = true;
-+}
-+
-+/*
-+ * Summary block is always treated as an invalid block
-+ */
-+static inline void check_block_count(struct f2fs_sb_info *sbi,
-+		int segno, struct f2fs_sit_entry *raw_sit)
-+{
-+	unsigned int end_segno = SM_I(sbi)->segment_count - 1;
-+
-+	/* check segment usage */
-+	if (GET_SIT_VBLOCKS(raw_sit) > sbi->blocks_per_seg)
-+		sbi->need_fsck = true;
-+
-+	/* check boundary of a given segment number */
-+	if (segno > end_segno)
-+		sbi->need_fsck = true;
-+}
- #endif
- 
- static inline pgoff_t current_sit_addr(struct f2fs_sb_info *sbi,
+Hint: there's a heirarchy involved....
+
+> can superblock shrinker check
+> !(sc->gfp_mask & __GFP_IO) and stop?
+
+No. Go back and read what I said about the initial setting of
+sc->gfp_mask.
+
+Cheers,
+
+Dave.
 -- 
-1.8.5.2 (Apple Git-48)
-
+Dave Chinner
+david@fromorbit.com
