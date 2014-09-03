@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935983AbaICX1N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:27:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45837 "EHLO
+	id S964831AbaICX3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:29:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45611 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757136AbaICWPz (ORCPT
+	with ESMTP id S933592AbaICWIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:55 -0400
+	Wed, 3 Sep 2014 18:08:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 3.14 71/88] staging: et131x: Fix errors caused by phydev->addr accesses before initialisation
-Date: Wed,  3 Sep 2014 15:05:45 -0700
-Message-Id: <20140903220518.080570021@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 41/88] KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC redir table
+Date: Wed,  3 Sep 2014 15:05:15 -0700
+Message-Id: <20140903220517.202997943@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,189 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Einon <mark.einon@gmail.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit ec0a38bf8b28b036202070cf3ef271e343d9eafc upstream.
+commit 0f6c0a740b7d3e1f3697395922d674000f83d060 upstream.
 
-Fix two reported bugs, caused by et131x_adapter->phydev->addr being accessed
-before it is initialised, by:
+Currently, the EOI exit bitmap (used for APICv) does not include
+interrupts that are masked.  However, this can cause a bug that manifests
+as an interrupt storm inside the guest.  Alex Williamson reported the
+bug and is the one who really debugged this; I only wrote the patch. :)
 
-- letting et131x_mii_write() take a phydev address, instead of using the one
-  stored in adapter by default. This is so et131x_mdio_write() can use it's own
-  addr value.
-- removing implementation of et131x_mdio_reset(), as it's not needed.
-- moving a call to et131x_disable_phy_coma() in et131x_pci_setup(), which uses
-  phydev->addr, until after the mdiobus has been registered.
+The scenario involves a multi-function PCI device with OHCI and EHCI
+USB functions and an audio function, all assigned to the guest, where
+both USB functions use legacy INTx interrupts.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=80751
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=77121
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
+As soon as the guest boots, interrupts for these devices turn into an
+interrupt storm in the guest; the host does not see the interrupt storm.
+Basically the EOI path does not work, and the guest continues to see the
+interrupt over and over, even after it attempts to mask it at the APIC.
+The bug is only visible with older kernels (RHEL6.5, based on 2.6.32
+with not many changes in the area of APIC/IOAPIC handling).
+
+Alex then tried forcing bit 59 (corresponding to the USB functions' IRQ)
+on in the eoi_exit_bitmap and TMR, and things then work.  What happens
+is that VFIO asserts IRQ11, then KVM recomputes the EOI exit bitmap.
+It does not have set bit 59 because the RTE was masked, so the IOAPIC
+never sees the EOI and the interrupt continues to fire in the guest.
+
+My guess was that the guest is masking the interrupt in the redirection
+table in the interrupt routine, i.e. while the interrupt is set in a
+LAPIC's ISR, The simplest fix is to ignore the masking state, we would
+rather have an unnecessary exit rather than a missed IRQ ACK and anyway
+IOAPIC interrupts are not as performance-sensitive as for example MSIs.
+Alex tested this patch and it fixed his bug.
+
+[Thanks to Alex for his precise description of the problem
+ and initial debugging effort.  A lot of the text above is
+ based on emails exchanged with him.]
+
+Reported-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/et131x/et131x.c |   68 +++++++++++++++-------------------------
- 1 file changed, 27 insertions(+), 41 deletions(-)
+ virt/kvm/ioapic.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -1422,22 +1422,16 @@ static int et131x_mii_read(struct et131x
-  * @reg: the register to read
-  * @value: 16-bit value to write
-  */
--static int et131x_mii_write(struct et131x_adapter *adapter, u8 reg, u16 value)
-+static int et131x_mii_write(struct et131x_adapter *adapter, u8 addr, u8 reg,
-+			    u16 value)
- {
- 	struct mac_regs __iomem *mac = &adapter->regs->mac;
--	struct phy_device *phydev = adapter->phydev;
- 	int status = 0;
--	u8 addr;
- 	u32 delay = 0;
- 	u32 mii_addr;
- 	u32 mii_cmd;
- 	u32 mii_indicator;
- 
--	if (!phydev)
--		return -EIO;
--
--	addr = phydev->addr;
--
- 	/* Save a local copy of the registers we are dealing with so we can
- 	 * set them back
- 	 */
-@@ -1632,17 +1626,7 @@ static int et131x_mdio_write(struct mii_
- 	struct net_device *netdev = bus->priv;
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
- 
--	return et131x_mii_write(adapter, reg, value);
--}
--
--static int et131x_mdio_reset(struct mii_bus *bus)
--{
--	struct net_device *netdev = bus->priv;
--	struct et131x_adapter *adapter = netdev_priv(netdev);
--
--	et131x_mii_write(adapter, MII_BMCR, BMCR_RESET);
--
--	return 0;
-+	return et131x_mii_write(adapter, phy_addr, reg, value);
- }
- 
- /*	et1310_phy_power_switch	-	PHY power control
-@@ -1657,18 +1641,20 @@ static int et131x_mdio_reset(struct mii_
- static void et1310_phy_power_switch(struct et131x_adapter *adapter, bool down)
- {
- 	u16 data;
-+	struct  phy_device *phydev = adapter->phydev;
- 
- 	et131x_mii_read(adapter, MII_BMCR, &data);
- 	data &= ~BMCR_PDOWN;
- 	if (down)
- 		data |= BMCR_PDOWN;
--	et131x_mii_write(adapter, MII_BMCR, data);
-+	et131x_mii_write(adapter, phydev->addr, MII_BMCR, data);
- }
- 
- /* et131x_xcvr_init - Init the phy if we are setting it into force mode */
- static void et131x_xcvr_init(struct et131x_adapter *adapter)
- {
- 	u16 lcr2;
-+	struct  phy_device *phydev = adapter->phydev;
- 
- 	/* Set the LED behavior such that LED 1 indicates speed (off =
- 	 * 10Mbits, blink = 100Mbits, on = 1000Mbits) and LED 2 indicates
-@@ -1689,7 +1675,7 @@ static void et131x_xcvr_init(struct et13
- 		else
- 			lcr2 |= (LED_VAL_LINKON << LED_TXRX_SHIFT);
- 
--		et131x_mii_write(adapter, PHY_LED_2, lcr2);
-+		et131x_mii_write(adapter, phydev->addr, PHY_LED_2, lcr2);
- 	}
- }
- 
-@@ -3638,14 +3624,14 @@ static void et131x_adjust_link(struct ne
- 
- 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
- 					 &register18);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18 | 0x4);
--			et131x_mii_write(adapter, PHY_INDEX_REG,
-+			et131x_mii_write(adapter, phydev->addr,
-+					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
-+			et131x_mii_write(adapter, phydev->addr, PHY_INDEX_REG,
- 					 register18 | 0x8402);
--			et131x_mii_write(adapter, PHY_DATA_REG,
-+			et131x_mii_write(adapter, phydev->addr, PHY_DATA_REG,
- 					 register18 | 511);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18);
-+			et131x_mii_write(adapter, phydev->addr,
-+					 PHY_MPHY_CONTROL_REG, register18);
- 		}
- 
- 		et1310_config_flow_control(adapter);
-@@ -3657,7 +3643,8 @@ static void et131x_adjust_link(struct ne
- 			et131x_mii_read(adapter, PHY_CONFIG, &reg);
- 			reg &= ~ET_PHY_CONFIG_TX_FIFO_DEPTH;
- 			reg |= ET_PHY_CONFIG_FIFO_DEPTH_32;
--			et131x_mii_write(adapter, PHY_CONFIG, reg);
-+			et131x_mii_write(adapter, phydev->addr, PHY_CONFIG,
-+					 reg);
- 		}
- 
- 		et131x_set_rx_dma_timer(adapter);
-@@ -3670,14 +3657,14 @@ static void et131x_adjust_link(struct ne
- 
- 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
- 					 &register18);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18 | 0x4);
--			et131x_mii_write(adapter, PHY_INDEX_REG,
--					 register18 | 0x8402);
--			et131x_mii_write(adapter, PHY_DATA_REG,
--					 register18 | 511);
--			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
--					 register18);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_MPHY_CONTROL_REG, register18 | 0x4);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_INDEX_REG, register18 | 0x8402);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_DATA_REG, register18 | 511);
-+			et131x_mii_write(adapter, phydev->addr,
-+					PHY_MPHY_CONTROL_REG, register18);
- 		}
- 
- 		/* Free the packets being actively sent & stopped */
-@@ -4646,10 +4633,6 @@ static int et131x_pci_setup(struct pci_d
- 	/* Copy address into the net_device struct */
- 	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
- 
--	/* Init variable for counting how long we do not have link status */
--	adapter->boot_coma = 0;
--	et1310_disable_phy_coma(adapter);
--
- 	rc = -ENOMEM;
- 
- 	/* Setup the mii_bus struct */
-@@ -4665,7 +4648,6 @@ static int et131x_pci_setup(struct pci_d
- 	adapter->mii_bus->priv = netdev;
- 	adapter->mii_bus->read = et131x_mdio_read;
- 	adapter->mii_bus->write = et131x_mdio_write;
--	adapter->mii_bus->reset = et131x_mdio_reset;
- 	adapter->mii_bus->irq = kmalloc_array(PHY_MAX_ADDR, sizeof(int),
- 					      GFP_KERNEL);
- 	if (!adapter->mii_bus->irq)
-@@ -4689,6 +4671,10 @@ static int et131x_pci_setup(struct pci_d
- 	/* Setup et1310 as per the documentation */
- 	et131x_adapter_setup(adapter);
- 
-+	/* Init variable for counting how long we do not have link status */
-+	adapter->boot_coma = 0;
-+	et1310_disable_phy_coma(adapter);
-+
- 	/* We can enable interrupts now
- 	 *
- 	 *  NOTE - Because registration of interrupt handler is done in the
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -203,10 +203,9 @@ void kvm_ioapic_scan_entry(struct kvm_vc
+ 	spin_lock(&ioapic->lock);
+ 	for (index = 0; index < IOAPIC_NUM_PINS; index++) {
+ 		e = &ioapic->redirtbl[index];
+-		if (!e->fields.mask &&
+-			(e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
+-			 kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC,
+-				 index) || index == RTC_GSI)) {
++		if (e->fields.trig_mode == IOAPIC_LEVEL_TRIG ||
++		    kvm_irq_has_notifier(ioapic->kvm, KVM_IRQCHIP_IOAPIC, index) ||
++		    index == RTC_GSI) {
+ 			if (kvm_apic_match_dest(vcpu, NULL, 0,
+ 				e->fields.dest_id, e->fields.dest_mode)) {
+ 				__set_bit(e->fields.vector,
 
 
