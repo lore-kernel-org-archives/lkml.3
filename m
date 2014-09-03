@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935842AbaICXX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:23:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
+	id S935867AbaICXYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:24:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757170AbaICWP7 (ORCPT
+	with ESMTP id S1757161AbaICWP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:59 -0400
+	Wed, 3 Sep 2014 18:15:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kinglong Mee <kinglongmee@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 82/88] NFSD: Decrease nfsd_users in nfsd_startup_generic fail
-Date: Wed,  3 Sep 2014 15:05:56 -0700
-Message-Id: <20140903220518.407416458@linuxfoundation.org>
+        Peter Chen <peter.chen@freescale.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.14 80/88] usb: ehci: using wIndex + 1 for hub port
+Date: Wed,  3 Sep 2014 15:05:54 -0700
+Message-Id: <20140903220518.340692320@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,46 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kinglong Mee <kinglongmee@gmail.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit d9499a95716db0d4bc9b67e88fd162133e7d6b08 upstream.
+commit 5cbcc35e5bf0eae3c7494ce3efefffc9977827ae upstream.
 
-A memory allocation failure could cause nfsd_startup_generic to fail, in
-which case nfsd_users wouldn't be incorrectly left elevated.
+The roothub's index per controller is from 0, but the hub port index per hub
+is from 1, this patch fixes "can't find device at roohub" problem for connecting
+test fixture at roohub when do USB-IF Embedded Host High-Speed Electrical Test.
 
-After nfsd restarts nfsd_startup_generic will then succeed without doing
-anything--the first consequence is likely nfs4_start_net finding a bad
-laundry_wq and crashing.
+This patch is for v3.12+.
 
-Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
-Fixes: 4539f14981ce "nfsd: replace boolean nfsd_up flag by users counter"
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfssvc.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-hub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -221,7 +221,8 @@ static int nfsd_startup_generic(int nrse
- 	 */
- 	ret = nfsd_racache_init(2*nrservs);
- 	if (ret)
--		return ret;
-+		goto dec_users;
-+
- 	ret = nfs4_state_start();
- 	if (ret)
- 		goto out_racache;
-@@ -229,6 +230,8 @@ static int nfsd_startup_generic(int nrse
- 
- out_racache:
- 	nfsd_racache_shutdown();
-+dec_users:
-+	nfsd_users--;
- 	return ret;
- }
- 
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -1239,7 +1239,7 @@ static int ehci_hub_control (
+ 			if (selector == EHSET_TEST_SINGLE_STEP_SET_FEATURE) {
+ 				spin_unlock_irqrestore(&ehci->lock, flags);
+ 				retval = ehset_single_step_set_feature(hcd,
+-									wIndex);
++								wIndex + 1);
+ 				spin_lock_irqsave(&ehci->lock, flags);
+ 				break;
+ 			}
 
 
