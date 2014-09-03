@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086AbaICWPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:15:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
+	id S1757119AbaICWPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:15:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45652 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933637AbaICWIs (ORCPT
+	with ESMTP id S933635AbaICWIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:08:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyrel Datwyler <tyreld@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 52/88] powerpc/pci: Reorder pci bus/bridge unregistration during PHB removal
-Date: Wed,  3 Sep 2014 15:05:26 -0700
-Message-Id: <20140903220517.522038717@linuxfoundation.org>
+        Robert Resch <fli4l@robert.reschpara.de>,
+        Christoph Schulz <develop@kristov.de>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.14 51/88] x86: dont exclude low BIOS area when allocating address space for non-PCI cards
+Date: Wed,  3 Sep 2014 15:05:25 -0700
+Message-Id: <20140903220517.493082391@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,42 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+From: Christoph Schulz <develop@kristov.de>
 
-commit 7340056567e32b2c9d3554eb146e1977c93da116 upstream.
+commit cbace46a9710a480cae51e4611697df5de41713e upstream.
 
-Commit bcdde7e made __sysfs_remove_dir() recursive and introduced a BUG_ON
-during PHB removal while attempting to delete the power managment attribute
-group of the bus. This is a result of tearing the bridge and bus devices down
-out of order in remove_phb_dynamic. Since, the the bus resides below the bridge
-in the sysfs device tree it should be torn down first.
+Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
+space") moved the test for resource allocations that fall within the first
+1MB of address space from the PCI-specific path to a generic path, such
+that all resource allocations will avoid this area.  However, this breaks
+ISA cards which need to allocate a memory region within the first 1MB.  An
+example is the i82365 PCMCIA controller and derivatives like the Ricoh
+RF5C296/396 which map part of the PCMCIA socket memory address space into
+the first 1MB of system memory address space.  They do not work anymore as
+no usable memory region exists due to this change:
 
-This patch simply moves the device_unregister call for the PHB bridge device
-after the device_unregister call for the PHB bus.
+  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
+  host opts [0]: none
+  host opts [1]: none
+  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
+  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
+  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
 
-Fixes: bcdde7e221a8 ("sysfs: make __sysfs_remove_dir() recursive")
-Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+If filtering out the first 1MB is reverted, everything works as expected.
+
+Tested-by: Robert Resch <fli4l@robert.reschpara.de>
+Signed-off-by: Christoph Schulz <develop@kristov.de>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/pci_dlpar.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/resource.c |    8 +++++---
+ arch/x86/pci/i386.c        |    4 ++++
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/pci_dlpar.c
-+++ b/arch/powerpc/platforms/pseries/pci_dlpar.c
-@@ -118,10 +118,10 @@ int remove_phb_dynamic(struct pci_contro
- 		}
+--- a/arch/x86/kernel/resource.c
++++ b/arch/x86/kernel/resource.c
+@@ -37,10 +37,12 @@ static void remove_e820_regions(struct r
+ 
+ void arch_remove_reservations(struct resource *avail)
+ {
+-	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
++	/*
++	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
++	 * the low 1MB unconditionally, as this area is needed for some ISA
++	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
++	 */
+ 	if (avail->flags & IORESOURCE_MEM) {
+-		if (avail->start < BIOS_END)
+-			avail->start = BIOS_END;
+ 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
+ 
+ 		remove_e820_regions(avail);
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const
+ 			return start;
+ 		if (start & 0x300)
+ 			start = (start + 0x3ff) & ~0x3ff;
++	} else if (res->flags & IORESOURCE_MEM) {
++		/* The low 1MB range is reserved for ISA cards */
++		if (start < BIOS_END)
++			start = BIOS_END;
  	}
- 
--	/* Unregister the bridge device from sysfs and remove the PCI bus */
--	device_unregister(b->bridge);
-+	/* Remove the PCI bus and unregister the bridge device from sysfs */
- 	phb->bus = NULL;
- 	pci_remove_bus(b);
-+	device_unregister(b->bridge);
- 
- 	/* Now release the IO resource */
- 	if (res->flags & IORESOURCE_IO)
+ 	return start;
+ }
 
 
