@@ -1,117 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935350AbaICXIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:08:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933704AbaICWSk (ORCPT
+	id S935365AbaICXJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:09:04 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:34975 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935352AbaICXI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Morgenstein <jackm@mellanox.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.16 062/125] kvm: iommu: fix the third parameter of kvm_iommu_put_pages (CVE-2014-3601)
-Date: Wed,  3 Sep 2014 15:06:59 -0700
-Message-Id: <20140903220625.549152297@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
-References: <20140903220623.649748296@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 3 Sep 2014 19:08:59 -0400
 MIME-Version: 1.0
+X-Originating-IP: [2001:470:8:ee7:b1d3:270e:d486:bce3]
+In-Reply-To: <20140902232906.GG29327@sirena.org.uk>
+References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
+ <53FB9DA0.7000301@infradead.org> <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com>
+ <540651B3.8030400@infradead.org> <20140902232906.GG29327@sirena.org.uk>
+From: Peter Foley <pefoley2@pefoley.com>
+Date: Wed, 3 Sep 2014 19:08:38 -0400
+Message-ID: <CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
+ built-in.o files
+To: Mark Brown <broonie@kernel.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Sep 2, 2014 at 7:29 PM, Mark Brown <broonie@kernel.org> wrote:
+> Your tree either wasn't in the control file that Stephen handed off or
+> got eaten by one off his scripts for some reason.  I've tried adding it
+> back, we'll see if that works tomorrow.
 
-------------------
-
-From: "Michael S. Tsirkin" <mst@redhat.com>
-
-commit 350b8bdd689cd2ab2c67c8a86a0be86cfa0751a7 upstream.
-
-The third parameter of kvm_iommu_put_pages is wrong,
-It should be 'gfn - slot->base_gfn'.
-
-By making gfn very large, malicious guest or userspace can cause kvm to
-go to this error path, and subsequently to pass a huge value as size.
-Alternatively if gfn is small, then pages would be pinned but never
-unpinned, causing host memory leak and local DOS.
-
-Passing a reasonable but large value could be the most dangerous case,
-because it would unpin a page that should have stayed pinned, and thus
-allow the device to DMA into arbitrary memory.  However, this cannot
-happen because of the condition that can trigger the error:
-
-- out of memory (where you can't allocate even a single page)
-  should not be possible for the attacker to trigger
-
-- when exceeding the iommu's address space, guest pages after gfn
-  will also exceed the iommu's address space, and inside
-  kvm_iommu_put_pages() the iommu_iova_to_phys() will fail.  The
-  page thus would not be unpinned at all.
-
-Reported-by: Jack Morgenstein <jackm@mellanox.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- virt/kvm/iommu.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
-
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -61,6 +61,14 @@ static pfn_t kvm_pin_pages(struct kvm_me
- 	return pfn;
- }
- 
-+static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
-+{
-+	unsigned long i;
-+
-+	for (i = 0; i < npages; ++i)
-+		kvm_release_pfn_clean(pfn + i);
-+}
-+
- int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- {
- 	gfn_t gfn, end_gfn;
-@@ -123,6 +131,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
- 		if (r) {
- 			printk(KERN_ERR "kvm_iommu_map_address:"
- 			       "iommu failed to map pfn=%llx\n", pfn);
-+			kvm_unpin_pages(kvm, pfn, page_size);
- 			goto unmap_pages;
- 		}
- 
-@@ -134,7 +143,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
- 	return 0;
- 
- unmap_pages:
--	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn);
-+	kvm_iommu_put_pages(kvm, slot->base_gfn, gfn - slot->base_gfn);
- 	return r;
- }
- 
-@@ -266,14 +275,6 @@ out_unlock:
- 	return r;
- }
- 
--static void kvm_unpin_pages(struct kvm *kvm, pfn_t pfn, unsigned long npages)
--{
--	unsigned long i;
--
--	for (i = 0; i < npages; ++i)
--		kvm_release_pfn_clean(pfn + i);
--}
--
- static void kvm_iommu_put_pages(struct kvm *kvm,
- 				gfn_t base_gfn, unsigned long npages)
- {
-
-
+The patches still seem to be missing from the 20140903 -next tree,
+unfortunately.
