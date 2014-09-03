@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964878AbaICXbi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:31:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45560 "EHLO
+	id S964911AbaICXcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:32:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933552AbaICWIi (ORCPT
+	with ESMTP id S933536AbaICWIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:38 -0400
+	Wed, 3 Sep 2014 18:08:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Bristot de Oliveira <bristot@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 21/88] sched: Fix sched_setparam() policy == -1 logic
-Date: Wed,  3 Sep 2014 15:04:55 -0700
-Message-Id: <20140903220516.590374192@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.14 26/88] hwmon: (sis5595) Prevent overflow problem when writing large limits
+Date: Wed,  3 Sep 2014 15:05:00 -0700
+Message-Id: <20140903220516.732125309@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -32,66 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Bristot de Oliveira <bristot@redhat.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit d8d28c8f00e84a72e8bee39a85835635417bee49 upstream.
+commit cc336546ddca8c22de83720632431c16a5f9fe9a upstream.
 
-The scheduler uses policy == -1 to preserve the current policy state to
-implement sched_setparam(). But, as (int) -1 is equals to 0xffffffff,
-it's matching the if (policy & SCHED_RESET_ON_FORK) on
-_sched_setscheduler(). This match changes the policy value to an
-invalid value, breaking the sched_setparam() syscall.
+On platforms with sizeof(int) < sizeof(long), writing a temperature
+limit larger than MAXINT will result in unpredictable limit values
+written to the chip. Avoid auto-conversion from long to int to fix
+the problem.
 
-This patch checks policy == -1 before check the SCHED_RESET_ON_FORK flag.
-
-The following program shows the bug:
-
-int main(void)
-{
-	struct sched_param param = {
-		.sched_priority = 5,
-	};
-
-	sched_setscheduler(0, SCHED_FIFO, &param);
-	param.sched_priority = 1;
-	sched_setparam(0, &param);
-	param.sched_priority = 0;
-	sched_getparam(0, &param);
-	if (param.sched_priority != 1)
-		printf("failed priority setting (found %d instead of 1)\n",
-			param.sched_priority);
-	else
-		printf("priority setting fine\n");
-}
-
-Signed-off-by: Daniel Bristot de Oliveira <bristot@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Fixes: 7479f3c9cf67 "sched: Move SCHED_RESET_ON_FORK into attr::sched_flags"
-Link: http://lkml.kernel.org/r/9ebe0566a08dbbb3999759d3f20d6004bb2dbcfa.1406079891.git.bristot@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/hwmon/sis5595.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3511,9 +3511,10 @@ static int _sched_setscheduler(struct ta
- 	};
- 
- 	/*
--	 * Fixup the legacy SCHED_RESET_ON_FORK hack
-+	 * Fixup the legacy SCHED_RESET_ON_FORK hack, except if
-+	 * the policy=-1 was passed by sched_setparam().
- 	 */
--	if (policy & SCHED_RESET_ON_FORK) {
-+	if ((policy != -1) && (policy & SCHED_RESET_ON_FORK)) {
- 		attr.sched_flags |= SCHED_FLAG_RESET_ON_FORK;
- 		policy &= ~SCHED_RESET_ON_FORK;
- 		attr.sched_policy = policy;
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -159,7 +159,7 @@ static inline int TEMP_FROM_REG(s8 val)
+ {
+ 	return val * 830 + 52120;
+ }
+-static inline s8 TEMP_TO_REG(int val)
++static inline s8 TEMP_TO_REG(long val)
+ {
+ 	int nval = clamp_val(val, -54120, 157530) ;
+ 	return nval < 0 ? (nval - 5212 - 415) / 830 : (nval - 5212 + 415) / 830;
 
 
