@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935615AbaICXSb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:18:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
+	id S935627AbaICXSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:18:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757221AbaICWQE (ORCPT
+	with ESMTP id S1757217AbaICWQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:16:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 020/125] ALSA: usb-audio: fix BOSS ME-25 MIDI regression
-Date: Wed,  3 Sep 2014 15:06:17 -0700
-Message-Id: <20140903220624.269040754@linuxfoundation.org>
+        Aurelien Jarno <aurelien@aurel32.net>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Markos Chandras <markos.chandras@imgtec.com>
+Subject: [PATCH 3.16 002/125] MIPS: math-emu: Fix instruction decoding.
+Date: Wed,  3 Sep 2014 15:05:59 -0700
+Message-Id: <20140903220623.723822547@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,60 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Rob Kendrick <rob.kendrick@codethink.co.uk>
 
-commit 53da5ebfef66ea6e478ad9c6add3781472b79475 upstream.
+commit c3b9b945e02e011c63522761e91133ea43eb6939 upstream.
 
-The BOSS ME-25 turns out not to have any useful descriptors in its MIDI
-interface, so its needs a quirk entry after all.
-
-Reported-and-tested-by: Kees van Veen <kees.vanveen@gmail.com>
-Fixes: 8e5ced83dd1c ("ALSA: usb-audio: remove superfluous Roland quirks")
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Tested-by: Aurelien Jarno <aurelien@aurel32.net>
+Reviewed-by: Aurelien Jarno <aurelien@aurel32.net>
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Markos Chandras <markos.chandras@imgtec.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks-table.h |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ arch/mips/math-emu/cp1emu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -1581,6 +1581,35 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	}
- },
- {
-+	/* BOSS ME-25 */
-+	USB_DEVICE(0x0582, 0x0113),
-+	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = (const struct snd_usb_audio_quirk[]) {
-+			{
-+				.ifnum = 0,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 2,
-+				.type = QUIRK_MIDI_FIXED_ENDPOINT,
-+				.data = & (const struct snd_usb_midi_endpoint_info) {
-+					.out_cables = 0x0001,
-+					.in_cables  = 0x0001
-+				}
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
-+	}
-+},
-+{
- 	/* only 44.1 kHz works at the moment */
- 	USB_DEVICE(0x0582, 0x0120),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+--- a/arch/mips/math-emu/cp1emu.c
++++ b/arch/mips/math-emu/cp1emu.c
+@@ -1827,7 +1827,7 @@ dcopuop:
+ 	case -1:
+ 
+ 		if (cpu_has_mips_4_5_r)
+-			cbit = fpucondbit[MIPSInst_RT(ir) >> 2];
++			cbit = fpucondbit[MIPSInst_FD(ir) >> 2];
+ 		else
+ 			cbit = FPU_CSR_COND;
+ 		if (rv.w)
 
 
