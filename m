@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821AbaICPjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 11:39:04 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:56589 "EHLO
+	id S932880AbaICPjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 11:39:06 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:56588 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755309AbaICPi7 (ORCPT
+	by vger.kernel.org with ESMTP id S1754425AbaICPi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 11:38:59 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -20,11 +20,10 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Grant Likely <grant.likely@linaro.org>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        alexandre torgue <alexandre.torgue@st.com>
-Subject: [PATCH v2 2/8] phy: miphy28lp: Add MiPHY28lp header file for DT x Driver defines
-Date: Wed,  3 Sep 2014 17:37:11 +0200
-Message-Id: <1409758637-28654-3-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH v2 5/8] ARM: multi_v7_defconfig: Enable MiPHY28lp - ST's Generic (SATA, PCIe & USB3) PHY
+Date: Wed,  3 Sep 2014 17:37:14 +0200
+Message-Id: <1409758637-28654-6-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409758637-28654-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1409758637-28654-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -34,34 +33,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the shared header file which will be reference from both
-the MiPHY28lp driver and its associated Device Tree node(s).
-
-Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- include/dt-bindings/phy/phy-miphy.h | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
- create mode 100644 include/dt-bindings/phy/phy-miphy.h
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/dt-bindings/phy/phy-miphy.h b/include/dt-bindings/phy/phy-miphy.h
-new file mode 100644
-index 0000000..9bc49b9
---- /dev/null
-+++ b/include/dt-bindings/phy/phy-miphy.h
-@@ -0,0 +1,12 @@
-+/*
-+ * This header provides constants for the phy framework
-+ * based on the STMicroelectronics miphxxxx.
-+ */
-+#ifndef _DT_BINDINGS_PHY_MIPHY
-+#define _DT_BINDINGS_PHY_MIPHY
-+
-+#define MIPHY_TYPE_SATA		1
-+#define MIPHY_TYPE_PCIE		2
-+#define MIPHY_TYPE_USB		3
-+
-+#endif /* _DT_BINDINGS_PHY_MIPHY */
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 5fb95fb..641e367 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -386,6 +386,7 @@ CONFIG_PWM_TEGRA=y
+ CONFIG_PWM_VT8500=y
+ CONFIG_OMAP_USB2=y
+ CONFIG_TI_PIPE3=y
++CONFIG_PHY_MIPHY28LP=y
+ CONFIG_PHY_MIPHY365X=y
+ CONFIG_PHY_SUN4I_USB=y
+ CONFIG_EXT4_FS=y
 -- 
 1.9.1
 
