@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934666AbaICXjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:39:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45355 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933387AbaICWGC (ORCPT
+	id S934583AbaICXjE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:39:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42853 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933390AbaICXjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:06:02 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Michael Welling <mwelling@emacinc.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 50/55] usb: hub: Prevent hub autosuspend if usbcore.autosuspend is -1
-Date: Wed,  3 Sep 2014 15:05:40 -0700
-Message-Id: <20140903220501.949118517@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 3 Sep 2014 19:39:00 -0400
+Message-ID: <5407A68F.5090805@infradead.org>
+Date: Wed, 03 Sep 2014 16:38:55 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Peter Foley <pefoley2@pefoley.com>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
+ built-in.o files
+References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com> <53FB9DA0.7000301@infradead.org> <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com> <540651B3.8030400@infradead.org> <20140902232906.GG29327@sirena.org.uk> <CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com> <20140903232149.GG29327@sirena.org.uk>
+In-Reply-To: <20140903232149.GG29327@sirena.org.uk>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 09/03/14 16:21, Mark Brown wrote:
+> On Wed, Sep 03, 2014 at 07:08:38PM -0400, Peter Foley wrote:
+>> On Tue, Sep 2, 2014 at 7:29 PM, Mark Brown <broonie@kernel.org> wrote:
+>>> Your tree either wasn't in the control file that Stephen handed off or
+>>> got eaten by one off his scripts for some reason.  I've tried adding it
+>>> back, we'll see if that works tomorrow.
+> 
+>> The patches still seem to be missing from the 20140903 -next tree,
+>> unfortunately.
+> 
+> The update is not happening because:
+> 
+> | git am ../quilt/rd-docs/001-docum-use-subdiry-avoid-builtin.patch
+> | Patch format detection failed.
+> 
+> I guess either something changed in the way Randy is generating his
+> patches or I'm using a different version of git which doesn't like
+> them - looking at te patch files I'm not *entirely* surprised they 
+> have trouble.
+> 
 
-------------------
+Hm, it could be a problem with the Index line.  I'll disable that option
+in quilt and see if that helps for the next time.
 
-From: Roger Quadros <rogerq@ti.com>
+Thanks.
 
-commit bdd405d2a5287bdb9b04670ea255e1f122138e66 upstream.
-
-If user specifies that USB autosuspend must be disabled by module
-parameter "usbcore.autosuspend=-1" then we must prevent
-autosuspend of USB hub devices as well.
-
-commit 596d789a211d introduced in v3.8 changed the original behaivour
-and stopped respecting the usbcore.autosuspend parameter for hubs.
-
-Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Michael Welling <mwelling@emacinc.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/core/hub.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1699,8 +1699,12 @@ static int hub_probe(struct usb_interfac
- 	 * - Change autosuspend delay of hub can avoid unnecessary auto
- 	 *   suspend timer for hub, also may decrease power consumption
- 	 *   of USB bus.
-+	 *
-+	 * - If user has indicated to prevent autosuspend by passing
-+	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
- 	 */
--	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-+	if (hdev->dev.power.autosuspend_delay >= 0)
-+		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
- 
- 	/*
- 	 * Hubs have proper suspend/resume support, except for root hubs
-
-
+-- 
+~Randy
