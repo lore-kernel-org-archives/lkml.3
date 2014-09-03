@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938AbaICV7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 17:59:23 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:48929 "EHLO smtp.outflux.net"
+	id S932981AbaICV7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 17:59:55 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35605 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932433AbaICV7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 17:59:15 -0400
+	id S1756695AbaICV7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 17:59:19 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Will Deacon <will.deacon@arm.com>,
-        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
-        Rob Herring <robh@kernel.org>,
+Cc: Kees Cook <keescook@chromium.org>, Rob Herring <robh@kernel.org>,
+        Will Deacon <will.deacon@arm.com>, Rabin Vincent <rabin@rab.in>,
+        Laura Abbott <lauraa@codeaurora.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
         Nikolay Borisov <Nikolay.Borisov@arm.com>,
@@ -20,9 +20,9 @@ Cc: Kees Cook <keescook@chromium.org>, Will Deacon <will.deacon@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5 7/8] ARM: mm: allow non-text sections to be non-executable
-Date: Wed,  3 Sep 2014 14:57:08 -0700
-Message-Id: <1409781429-27593-8-git-send-email-keescook@chromium.org>
+Subject: [PATCH v5 2/8] ARM: expand fixmap region to 3MB
+Date: Wed,  3 Sep 2014 14:57:03 -0700
+Message-Id: <1409781429-27593-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409781429-27593-1-git-send-email-keescook@chromium.org>
 References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
@@ -31,250 +31,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds CONFIG_ARM_KERNMEM_PERMS to separate the kernel memory regions
-into section-sized areas that can have different permisions. Performs
-the NX permission changes during free_initmem, so that init memory can be
-reclaimed.
+From: Rob Herring <robh@kernel.org>
 
-This uses section size instead of PMD size to reduce memory lost to
-padding on non-LPAE systems.
+With commit a05e54c103b0 ("ARM: 8031/2: change fixmap mapping region to
+support 32 CPUs"), the fixmap region was expanded to 2MB, but it
+precluded any other uses of the fixmap region. In order to support other
+uses the fixmap region needs to be expanded beyond 2MB. Fortunately, the
+adjacent 1MB range 0xffe00000-0xfff00000 is availabe.
 
-Based on work by Brad Spengler, Larry Bassel, and Laura Abbott.
+Remove fixmap_page_table ptr and lookup the page table via the virtual
+address so that the fixmap region can span more that one pmd. The 2nd
+pmd is already created since it is shared with the vector page.
 
+Signed-off-by: Rob Herring <robh@kernel.org>
+[kees: fixed CONFIG_DEBUG_HIGHMEM get_fixmap() calls]
+[kees: moved pte allocation outside of CONFIG_HIGHMEM]
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Laura Abbott <lauraa@codeaurora.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
 ---
- arch/arm/kernel/vmlinux.lds.S |  17 +++++++
- arch/arm/mm/Kconfig           |   9 ++++
- arch/arm/mm/init.c            | 101 +++++++++++++++++++++++++++++++++++++++++-
- arch/arm/mm/mmu.c             |  13 +++++-
- 4 files changed, 138 insertions(+), 2 deletions(-)
+ Documentation/arm/memory.txt  |  2 +-
+ arch/arm/include/asm/fixmap.h |  2 +-
+ arch/arm/mm/highmem.c         | 15 ++++++++-------
+ arch/arm/mm/mmu.c             |  6 +++---
+ 4 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index 6f57cb94367f..a3d07ca2bbb4 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -8,6 +8,9 @@
- #include <asm/thread_info.h>
- #include <asm/memory.h>
- #include <asm/page.h>
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+#include <asm/pgtable.h>
-+#endif
- 	
- #define PROC_INFO							\
- 	. = ALIGN(4);							\
-@@ -90,6 +93,11 @@ SECTIONS
- 		_text = .;
- 		HEAD_TEXT
- 	}
-+
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+	. = ALIGN(1<<SECTION_SHIFT);
-+#endif
-+
- 	.text : {			/* Real text segment		*/
- 		_stext = .;		/* Text and read-only data	*/
- 			__exception_text_start = .;
-@@ -145,7 +153,11 @@ SECTIONS
- 	_etext = .;			/* End of text and rodata section */
+diff --git a/Documentation/arm/memory.txt b/Documentation/arm/memory.txt
+index 38dc06d0a791..4178ebda6e66 100644
+--- a/Documentation/arm/memory.txt
++++ b/Documentation/arm/memory.txt
+@@ -41,7 +41,7 @@ fffe8000	fffeffff	DTCM mapping area for platforms with
+ fffe0000	fffe7fff	ITCM mapping area for platforms with
+ 				ITCM mounted inside the CPU.
  
- #ifndef CONFIG_XIP_KERNEL
-+# ifdef CONFIG_ARM_KERNMEM_PERMS
-+	. = ALIGN(1<<SECTION_SHIFT);
-+# else
- 	. = ALIGN(PAGE_SIZE);
-+# endif
- 	__init_begin = .;
- #endif
- 	/*
-@@ -220,7 +232,12 @@ SECTIONS
- 	. = PAGE_OFFSET + TEXT_OFFSET;
- #else
- 	__init_end = .;
-+
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+	. = ALIGN(1<<SECTION_SHIFT);
-+#else
- 	. = ALIGN(THREAD_SIZE);
-+#endif
- 	__data_loc = .;
- #endif
+-ffc00000	ffdfffff	Fixmap mapping region.  Addresses provided
++ffc00000	ffefffff	Fixmap mapping region.  Addresses provided
+ 				by fix_to_virt() will be located here.
  
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index ae69809a9e47..7a0756df91a2 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -1008,3 +1008,12 @@ config ARCH_SUPPORTS_BIG_ENDIAN
- 	help
- 	  This option specifies the architecture can support big endian
- 	  operation.
-+
-+config ARM_KERNMEM_PERMS
-+	bool "Restrict kernel memory permissions"
-+	help
-+	  If this is set, kernel memory other than kernel text (and rodata)
-+	  will be made non-executable. The tradeoff is that each region is
-+	  padded to section-size (1MiB) boundaries (because their permissions
-+	  are different and splitting the 1M pages into 4K ones causes TLB
-+	  performance problems), wasting memory.
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index ad82c05bfc3a..e6bfe76b2f59 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -29,6 +29,7 @@
- #include <asm/prom.h>
- #include <asm/sections.h>
- #include <asm/setup.h>
-+#include <asm/system_info.h>
- #include <asm/tlb.h>
- #include <asm/fixmap.h>
+ fee00000	feffffff	Mapping of PCI I/O space. This is a static
+diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+index a7add6f9315d..d984ca69ce19 100644
+--- a/arch/arm/include/asm/fixmap.h
++++ b/arch/arm/include/asm/fixmap.h
+@@ -2,7 +2,7 @@
+ #define _ASM_FIXMAP_H
  
-@@ -615,7 +616,99 @@ void __init mem_init(void)
- 	}
+ #define FIXADDR_START		0xffc00000UL
+-#define FIXADDR_END		0xffe00000UL
++#define FIXADDR_END		0xfff00000UL
+ #define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
+ 
+ #include <asm/kmap_types.h>
+diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+index 45aeaaca9052..81061987ac45 100644
+--- a/arch/arm/mm/highmem.c
++++ b/arch/arm/mm/highmem.c
+@@ -18,19 +18,20 @@
+ #include <asm/tlbflush.h>
+ #include "mm.h"
+ 
+-pte_t *fixmap_page_table;
+-
+ static inline void set_fixmap_pte(int idx, pte_t pte)
+ {
+ 	unsigned long vaddr = __fix_to_virt(idx);
+-	set_pte_ext(fixmap_page_table + idx, pte, 0);
++	pte_t *ptep = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
++
++	set_pte_ext(ptep, pte, 0);
+ 	local_flush_tlb_kernel_page(vaddr);
  }
  
--void free_initmem(void)
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+struct section_perm {
-+	unsigned long start;
-+	unsigned long end;
-+	pmdval_t mask;
-+	pmdval_t prot;
-+};
-+
-+struct section_perm nx_perms[] = {
-+	/* Make pages tables, etc before _stext RW (set NX). */
-+	{
-+		.start	= PAGE_OFFSET,
-+		.end	= (unsigned long)_stext,
-+		.mask	= ~PMD_SECT_XN,
-+		.prot	= PMD_SECT_XN,
-+	},
-+	/* Make init RW (set NX). */
-+	{
-+		.start	= (unsigned long)__init_begin,
-+		.end	= (unsigned long)_sdata,
-+		.mask	= ~PMD_SECT_XN,
-+		.prot	= PMD_SECT_XN,
-+	},
-+};
-+
-+/*
-+ * Updates section permissions only for the current mm (sections are
-+ * copied into each mm). During startup, this is the init_mm. Is only
-+ * safe to be called with preemption disabled, as under stop_machine().
-+ */
-+static inline void section_update(unsigned long addr, pmdval_t mask,
-+				  pmdval_t prot)
-+{
-+	struct mm_struct *mm;
-+	pmd_t *pmd;
-+
-+	mm = current->active_mm;
-+	pmd = pmd_offset(pud_offset(pgd_offset(mm, addr), addr), addr);
-+
-+#ifdef CONFIG_ARM_LPAE
-+	pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
-+#else
-+	if (addr & SECTION_SIZE)
-+		pmd[1] = __pmd((pmd_val(pmd[1]) & mask) | prot);
-+	else
-+		pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
-+#endif
-+	flush_pmd_entry(pmd);
-+	local_flush_tlb_kernel_range(addr, addr + SECTION_SIZE);
-+}
-+
-+/* Make sure extended page tables are in use. */
-+static inline bool arch_has_strict_perms(void)
-+{
-+	if (cpu_architecture() < CPU_ARCH_ARMv6)
-+		return false;
-+
-+	return !!(get_cr() & CR_XP);
-+}
-+
-+#define set_section_perms(perms, field)	{				\
-+	size_t i;							\
-+	unsigned long addr;						\
-+									\
-+	if (!arch_has_strict_perms())					\
-+		return;							\
-+									\
-+	for (i = 0; i < ARRAY_SIZE(perms); i++) {			\
-+		if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||	\
-+		    !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {		\
-+			pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
-+				perms[i].start, perms[i].end,		\
-+				SECTION_SIZE);				\
-+			continue;					\
-+		}							\
-+									\
-+		for (addr = perms[i].start;				\
-+		     addr < perms[i].end;				\
-+		     addr += SECTION_SIZE)				\
-+			section_update(addr, perms[i].mask,		\
-+				       perms[i].field);			\
-+	}								\
-+}
-+
-+static inline void fix_kernmem_perms(void)
-+{
-+	set_section_perms(nx_perms, prot);
-+}
-+#else
-+static inline void fix_kernmem_perms(void) { }
-+#endif /* CONFIG_ARM_KERNMEM_PERMS */
-+
-+void free_tcmmem(void)
+ static inline pte_t get_fixmap_pte(unsigned long vaddr)
  {
- #ifdef CONFIG_HAVE_TCM
- 	extern char __tcm_start, __tcm_end;
-@@ -623,6 +716,12 @@ void free_initmem(void)
- 	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
- 	free_reserved_area(&__tcm_start, &__tcm_end, -1, "TCM link");
- #endif
-+}
+-	unsigned long idx = __virt_to_fix(vaddr);
+-	return *(fixmap_page_table + idx);
++	pte_t *ptep = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
 +
-+void free_initmem(void)
-+{
-+	fix_kernmem_perms();
-+	free_tcmmem();
++	return *ptep;
+ }
  
- 	poison_init_mem(__init_begin, __init_end - __init_begin);
- 	if (!machine_is_integrator() && !machine_is_cintegrator())
+ void *kmap(struct page *page)
+@@ -84,7 +85,7 @@ void *kmap_atomic(struct page *page)
+ 	 * With debugging enabled, kunmap_atomic forces that entry to 0.
+ 	 * Make sure it was indeed properly unmapped.
+ 	 */
+-	BUG_ON(!pte_none(*(fixmap_page_table + idx)));
++	BUG_ON(!pte_none(get_fixmap_pte(vaddr)));
+ #endif
+ 	/*
+ 	 * When debugging is off, kunmap_atomic leaves the previous mapping
+@@ -134,7 +135,7 @@ void *kmap_atomic_pfn(unsigned long pfn)
+ 	idx = type + KM_TYPE_NR * smp_processor_id();
+ 	vaddr = __fix_to_virt(idx);
+ #ifdef CONFIG_DEBUG_HIGHMEM
+-	BUG_ON(!pte_none(*(fixmap_page_table + idx)));
++	BUG_ON(!pte_none(get_fixmap_pte(vaddr)));
+ #endif
+ 	set_fixmap_pte(idx, pfn_pte(pfn, kmap_prot));
+ 
 diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index fa3a667852cb..c5e7e342ff69 100644
+index 8348ed6b2efe..7fa0966cd15f 100644
 --- a/arch/arm/mm/mmu.c
 +++ b/arch/arm/mm/mmu.c
-@@ -1374,13 +1374,24 @@ static void __init map_lowmem(void)
- 		if (start >= end)
- 			break;
- 
--		if (end < kernel_x_start || start >= kernel_x_end) {
-+		if (end < kernel_x_start) {
- 			map.pfn = __phys_to_pfn(start);
- 			map.virtual = __phys_to_virt(start);
- 			map.length = end - start;
- 			map.type = MT_MEMORY_RWX;
- 
- 			create_mapping(&map);
-+		} else if (start >= kernel_x_end) {
-+			map.pfn = __phys_to_pfn(start);
-+			map.virtual = __phys_to_virt(start);
-+			map.length = end - start;
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+			map.type = MT_MEMORY_RW;
-+#else
-+			map.type = MT_MEMORY_RWX;
-+#endif
+@@ -1326,10 +1326,10 @@ static void __init kmap_init(void)
+ #ifdef CONFIG_HIGHMEM
+ 	pkmap_page_table = early_pte_alloc(pmd_off_k(PKMAP_BASE),
+ 		PKMAP_BASE, _PAGE_KERNEL_TABLE);
+-
+-	fixmap_page_table = early_pte_alloc(pmd_off_k(FIXADDR_START),
+-		FIXADDR_START, _PAGE_KERNEL_TABLE);
+ #endif
 +
-+			create_mapping(&map);
- 		} else {
- 			/* This better cover the entire kernel */
- 			if (start < kernel_x_start) {
++	early_pte_alloc(pmd_off_k(FIXADDR_START), FIXADDR_START,
++			_PAGE_KERNEL_TABLE);
+ }
+ 
+ static void __init map_lowmem(void)
 -- 
 1.9.1
 
