@@ -1,228 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501AbaICMgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:36:49 -0400
-Received: from mail.bmw-carit.de ([62.245.222.98]:52565 "EHLO
-	linuxmail.bmw-carit.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932067AbaICMgr (ORCPT
+	id S932529AbaICMht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:37:49 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:16078 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932390AbaICMhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:36:47 -0400
-X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Sep 2014 08:36:47 EDT
-From: Daniel Wagner <daniel.wagner@bmw-carit.de>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: juri.lelli@gmail.com, linux-kernel@vger.kernel.org,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>
-Subject: [PATCH] sched: Reset bandwith on task when switching from SCHED_DEADLINE away
-Date: Wed,  3 Sep 2014 14:29:57 +0200
-Message-Id: <1409747397-23653-1-git-send-email-daniel.wagner@bmw-carit.de>
-X-Mailer: git-send-email 1.9.3
+	Wed, 3 Sep 2014 08:37:48 -0400
+Message-ID: <54070B93.7040104@arm.com>
+Date: Wed, 03 Sep 2014 13:37:39 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "tony@atomide.com" <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "jonas@southpole.se" <jonas@southpole.se>,
+        "shc_work@mail.ru" <shc_work@mail.ru>,
+        "baohua@kernel.org" <baohua@kernel.org>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "khilman@linaro.org" <khilman@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "larry.bassel@linaro.org" <larry.bassel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "stefan.kristiansson@saunalahti.fi" 
+	<stefan.kristiansson@saunalahti.fi>,
+        "vkale@apm.com" <vkale@apm.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH v2 00/26] genirq: fix use of irq_find_mapping outside
+ of legal RCU context
+References: <1409047421-27649-1-git-send-email-marc.zyngier@arm.com> <alpine.DEB.2.10.1408262333420.3323@nanos> <87y4uap98n.fsf@approximate.cambridge.arm.com> <20140903120406.GK30467@titan.lakedaemon.net> <alpine.DEB.2.10.1409031409160.3333@nanos> <540707B3.4050305@arm.com> <alpine.DEB.2.10.1409031424170.3333@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409031424170.3333@nanos>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Withouth reseting dl_bw the effect is any *new* task to switch
-SCHED_DEADLINE will be prevented. You will get EBUSY for new tasks.
+On 03/09/14 13:25, Thomas Gleixner wrote:
+> On Wed, 3 Sep 2014, Marc Zyngier wrote:
+>> [Dropping linux@openrisc.net from the CC list]
+>>
+>> On 03/09/14 13:09, Thomas Gleixner wrote:
+>>> On Wed, 3 Sep 2014, Jason Cooper wrote:
+>>>
+>>>> On Wed, Aug 27, 2014 at 10:33:44AM +0100, Marc Zyngier wrote:
+>>>>> Hi Thomas,
+>>>>>
+>>>>> On Tue, Aug 26 2014 at 10:34:51 pm BST, Thomas Gleixner <tglx@linutronix.de> wrote:
+>>>>>> On Tue, 26 Aug 2014, Marc Zyngier wrote:
+>>>>>>
+>>>>>>> A number of irqchip drivers are directly calling irq_find_mapping,
+>>>>>>> which may use a rcu_read_lock call when walking the radix tree.
+>>>>>>>
+>>>>>>> Turns out that if you hit that point with CONFIG_PROVE_RCU enabled,
+>>>>>>> the kernel will shout at you, as using RCU in this context may be
+>>>>>>> illegal (specially if coming from the idle state, where RCU would be
+>>>>>>> in a quiescent state).
+>>>>>>>
+>>>>>>> A possible fix would be to wrap calls to irq_find_mapping into a
+>>>>>>> RCU_NONIDLE macro, but that really looks ugly.
+>>>>>>>
+>>>>>>> This patch series introduce another generic IRQ entry point
+>>>>>>> (handle_domain_irq), which has the exact same behaviour as handle_IRQ
+>>>>>>> (as defined on arm, arm64 and openrisc), except that it also takes a
+>>>>>>> irq_domain pointer. This allows the logical IRQ lookup to be done
+>>>>>>> inside the irq_{enter,exit} section, which contains a
+>>>>>>> rcu_irq_{enter,exit}, making it safe.
+>>>>>>
+>>>>>> Looks good. Should this be routed to the genirq tree?
+>>>>>
+>>>>> I'm happy for you to take this series, provided the architecture
+>>>>> maintainers agree on it (I'm still to hear from the openrisc guys, and
+>>>>> their mailing-list seems to positively hate my guts).
+>>>>
+>>>> I think everyone's had a chance to look over it by now.  Thomas, shall I
+>>>> take the series?
+>>>
+>>> Yes please.
+>>
+>> Do you want a pull request? Or are you picking up the patches from the ML?
+> 
+> Did you pick up the Acked/Reviewed/Ignored-by tags?
 
-sched_setattr()
-   if (... dl_overflow(p, policy, attr) ...)
-   __setscheduler()
-      __setscheduler_params()
-        __setparam_dl()
+I have them in a separate branch that can be pushed out as required.
 
-sched_setattr() verifies if there is enough bandwith available before allowing
-to switch to SCHED_DEALINE. Because we do not set p->dl.dl_bw back to 0 after
-switching from SCHED_DEADLINE to any other scheduler we end up in dl_overflow()
-to underflow the total bandwith (dl_b->total_bw). This can be triggered by
-toggling between SCHED_DEADLINE and SCHED_OTHER.
+Thanks,
 
-kernel/sched/core.c:
-@@ -2039,8 +2039,12 @@ static int dl_overflow(struct task_struct *p, int policy,
- 	u64 new_bw = dl_policy(policy) ? to_ratio(period, runtime) : 0;
- 	int cpus, err = -1;
-
--	if (new_bw == p->dl.dl_bw)
-+	printk("dl_b->bw %llu dl_b->total_bw %llu p->dl.dl_bw %llu period %llu runtime %llu new_bw %llu -> ",
-+			 dl_b->bw, dl_b->total_bw, p->dl.dl_bw, period, runtime, new_bw);
-+
-+	if (new_bw == p->dl.dl_bw) {
-+		printk("1\n");
- 		return 0;
-+	}
-
- 	/*
- 	 * Either if a task, enters, leave, or stays -deadline but changes
-@@ -2053,14 +2057,17 @@ static int dl_overflow(struct task_struct *p, int policy,
- 	    !__dl_overflow(dl_b, cpus, 0, new_bw)) {
- 		__dl_add(dl_b, new_bw);
- 		err = 0;
-+		printk("2\n");
- 	} else if (dl_policy(policy) && task_has_dl_policy(p) &&
- 		   !__dl_overflow(dl_b, cpus, p->dl.dl_bw, new_bw)) {
- 		__dl_clear(dl_b, p->dl.dl_bw);
- 		__dl_add(dl_b, new_bw);
- 		err = 0;
-+		printk("3\n");
- 	} else if (!dl_policy(policy) && task_has_dl_policy(p)) {
- 		__dl_clear(dl_b, p->dl.dl_bw);
- 		err = 0;
-+		printk("4\n");
- 	}
- 	raw_spin_unlock(&dl_b->lock);
-
-[   19.506909] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   19.507906] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.508906] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.509908] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.510993] dl_b->bw 996147 dl_b->total_bw 18446744073709027328 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.513583] dl_b->bw 996147 dl_b->total_bw 18446744073709027328 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.515686] dl_b->bw 996147 dl_b->total_bw 18446744073708503040 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.517532] dl_b->bw 996147 dl_b->total_bw 18446744073708503040 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.518503] dl_b->bw 996147 dl_b->total_bw 18446744073707978752 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.519231] dl_b->bw 996147 dl_b->total_bw 18446744073707978752 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.520027] dl_b->bw 996147 dl_b->total_bw 18446744073707454464 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.520759] dl_b->bw 996147 dl_b->total_bw 18446744073707454464 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.521460] dl_b->bw 996147 dl_b->total_bw 18446744073706930176 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.522154] dl_b->bw 996147 dl_b->total_bw 18446744073706930176 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.522809] dl_b->bw 996147 dl_b->total_bw 18446744073706405888 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.523729] dl_b->bw 996147 dl_b->total_bw 18446744073706405888 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.524569] dl_b->bw 996147 dl_b->total_bw 18446744073705881600 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.525434] dl_b->bw 996147 dl_b->total_bw 18446744073705881600 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   19.526224] dl_b->bw 996147 dl_b->total_bw 18446744073705357312 p->dl.dl_bw 524288 period 200000 runtime 100000 new_bw 524288 -> 1
-[   19.527077] dl_b->bw 996147 dl_b->total_bw 18446744073705357312 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-
- With the patch applied I get this result:
-
-[   17.345812] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.346664] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.347333] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.347832] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.348369] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.348868] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.349456] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.349953] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.350598] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.351107] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.351637] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.352144] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.352805] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.353366] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.353867] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.354458] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.355066] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.355716] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-[   17.356414] dl_b->bw 996147 dl_b->total_bw 0 p->dl.dl_bw 0 period 200000 runtime 100000 new_bw 524288 -> 2
-[   17.356961] dl_b->bw 996147 dl_b->total_bw 524288 p->dl.dl_bw 524288 period 0 runtime 0 new_bw 0 -> 4
-
-Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org
----
-This patch is based on mainline 3.17-rc3
-
-And here my simple test program which triggers the problem.
-Run it twice on your machine to see the error.
-
-/*
- * Switch between SCHED_OTHER and SCHED_DEADLINE test.
- *
- * Parts stolen from libdl
- *  (C) Dario Faggioli <raistlin@linux.it>, 2009, 2010
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License (COPYING file) for more details.
- */
-
-struct sched_attr {
-	__u32 size;
-
-	__u32 sched_policy;
-	__u64 sched_flags;
-
-	/* SCHED_NORMAL, SCHED_BATCH */
-	__s32 sched_nice;
-
-	/* SCHED_FIFO, SCHED_RR */
-	__u32 sched_priority;
-
-	/* SCHED_DEADLINE */
-	__u64 sched_runtime;
-	__u64 sched_deadline;
-	__u64 sched_period;
-};
-
-static int sched_setattr(pid_t pid, const struct sched_attr *attr,
-			unsigned int flags)
-{
-	return syscall(__NR_sched_setattr, pid, attr, flags);
-}
-
-static void handle_err(const char *str)
-{
-	perror(str);
-	exit(EXIT_FAILURE);
-}
-
-int main(int argc, char *argv[])
-{
-	struct sched_attr other;
-	struct sched_attr dl;
-	int i, err;
-
-	dl.size = sizeof(struct sched_attr);
-	dl.sched_policy = SCHED_DEADLINE;
-	dl.sched_flags = 0;
-	dl.sched_nice = 0;
-	dl.sched_priority = 0;
-	dl.sched_runtime =  100000;
-	dl.sched_deadline = 200000;
-	dl.sched_period =   200000;
-
-	other.size = sizeof(struct sched_attr);
-	other.sched_policy = SCHED_OTHER;
-	other.sched_flags = 0;
-	other.sched_nice = 0;
-	other.sched_priority = 0;
-	other.sched_runtime =  0;
-	other.sched_deadline = 0;
-	other.sched_period = 0;
-
-	for (i = 0; i < 10; i++) {
-		err = sched_setattr(0, &dl, 0);
-		if (err < 0)
-			handle_err("Could not set SCHED_DEADLINE attributes");
-
-		err = sched_setattr(0, &other, 0);
-		if (err < 0)
-			handle_err("Could not set SCHED_OTHER attributes");
-	}
-
-	return 0;
-}
----
- kernel/sched/core.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ec1a286..1ce935e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3236,6 +3236,9 @@ static void __setscheduler_params(struct task_struct *p,
- {
- 	int policy = attr->sched_policy;
- 
-+	if (!dl_policy(policy) && task_has_dl_policy(p))
-+		p->dl.dl_bw = 0;
-+
- 	if (policy == SETPARAM_POLICY)
- 		policy = p->policy;
- 
+	M.
 -- 
-1.9.3
-
+Jazz is not dead. It just smells funny...
