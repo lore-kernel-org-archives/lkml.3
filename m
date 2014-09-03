@@ -1,161 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936AbaICNjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:39:55 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44847 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756105AbaICNju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932916AbaICNjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 09:39:54 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:35416 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756032AbaICNju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 09:39:50 -0400
-Message-ID: <540719DF.9020509@ti.com>
-Date: Wed, 3 Sep 2014 08:38:39 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Alessandro Zummo <a.zummo@towertech.it>
-CC: <rtc-linux@googlegroups.com>, Tony Lindgren <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/rtc/rtc-ds1307.c: Support optional wakeup interrupt
- source
-References: <1408637521-6764-1-git-send-email-nm@ti.com>
-In-Reply-To: <1408637521-6764-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140902152311.GY4894@localhost>
+References: <CAE1zotK0cddns4f4ay-GJie8O2pjb72+-yYndZvW0hbF0D83HA@mail.gmail.com>
+	<20140901095127.GK7374@lee--X1>
+	<CAE1zot+T6eq0jrL6_Qh=5nihNOgGEaWe5RCDk7_1XS8ZWaWKqA@mail.gmail.com>
+	<20140901113949.GP7374@lee--X1>
+	<CAE1zotKNBTEMX8DDYwdwOcq0qZgqxZWazE60TUQeiOmD0a4xbA@mail.gmail.com>
+	<20140901154626.GH8796@lee--X1>
+	<CAE1zotL-cjHqrdymzYhZq24zx+0qGY8-4JnrVZf-TGXDf5Sm3w@mail.gmail.com>
+	<20140901175453.GR4894@localhost>
+	<20140902080010.GD17117@lee--X1>
+	<CAE1zotJzFL0bZvNo4mHK3+EhURarhTPDE5n+SdNzof8Nc-CFew@mail.gmail.com>
+	<20140902152311.GY4894@localhost>
+Date: Wed, 3 Sep 2014 16:39:48 +0300
+Message-ID: <CAE1zotLnBZ83O23kaDz_xVhhSpPW6YyOQmkaTfZaicmf6MfOdQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        linux-gpio@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 11:12 AM, Nishanth Menon wrote:
-> With the recent pinctrl-single changes, SoCs such as Texas
-> Instrument's OMAP processors can treat wake-up events from deeper idle
-> states as interrupts.
-> 
-> Let's add support for the optional second interrupt for wake-up
-> events. And then SoC can wakeup and handle the event using it's
-> regular handler.
-> 
-> Finally, to pass the wake-up interrupt in the dts file,
-> interrupts-extended property needs to be passed.
-> 
-> This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
-> support for optional wake-up")
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
+On Tue, Sep 2, 2014 at 6:23 PM, Johan Hovold <johan@kernel.org> wrote:
+> On Tue, Sep 02, 2014 at 11:45:55AM +0300, Octavian Purdila wrote:
+>> On Tue, Sep 2, 2014 at 11:00 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > On Mon, 01 Sep 2014, Johan Hovold wrote:
+>
+>> >> I haven't looked at the details of the protocol for the device in
+>> >> question, but it might even be possible to use regmap here (as I
+>> >> mentioned in my comments on v1).
+>> >
+>> > Obviously that would be preferred.
+>> >
+>> > Octavian, did you look into that?
+>> >
+>> Yes, I did. Since this is the first time I am looking at regmap I may
+>> be wrong but I don't see a way to use it. The dln2 i2c driver needs to
+>> be able to send and receive arbitrary size buffers and this does not
+>> seem possible to do with the regmap API.
+>
+> That should be possible using the regmap bus read and write operations.
 
-Hi,
-Gentle Ping.
+I took a closer look on the regmap bus read/write operations and I
+think they are not fit for what we need in the driver. The driver uses
+a request/response model which, IMHO, does not fit well with a
+register read/write API. Yes, maybe we can emulate it, but why do
+that?
 
-Regards,
-Nishanth Menon
->  drivers/rtc/rtc-ds1307.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 57 insertions(+)
-> 
-> diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-> index f03d5ba..5feedfc 100644
-> --- a/drivers/rtc/rtc-ds1307.c
-> +++ b/drivers/rtc/rtc-ds1307.c
-> @@ -15,6 +15,8 @@
->  #include <linux/init.h>
->  #include <linux/slab.h>
->  #include <linux/i2c.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_irq.h>
->  #include <linux/string.h>
->  #include <linux/rtc.h>
->  #include <linux/bcd.h>
-> @@ -115,6 +117,7 @@ struct ds1307 {
->  	struct i2c_client	*client;
->  	struct rtc_device	*rtc;
->  	struct work_struct	work;
-> +	int			wakeirq;
->  	s32 (*read_block_data)(const struct i2c_client *client, u8 command,
->  			       u8 length, u8 *values);
->  	s32 (*write_block_data)(const struct i2c_client *client, u8 command,
-> @@ -835,6 +838,34 @@ ds1307_nvram_write(struct file *filp, struct kobject *kobj,
->  
->  /*----------------------------------------------------------------------*/
->  
-> +static int ds1307_i2c_suspend(struct i2c_client *client,  pm_message_t mesg)
-> +{
-> +	struct ds1307 *ds1307 = i2c_get_clientdata(client);
-> +	struct device *dev = &client->dev;
-> +
-> +	if (!ds1307->wakeirq)
-> +		return 0;
-> +
-> +	if (device_may_wakeup(dev))
-> +		enable_irq(ds1307->wakeirq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int ds1307_i2c_resume(struct i2c_client *client)
-> +{
-> +	struct ds1307 *ds1307 = i2c_get_clientdata(client);
-> +	struct device *dev = &client->dev;
-> +
-> +	if (!ds1307->wakeirq)
-> +		return 0;
-> +
-> +	if (device_may_wakeup(dev))
-> +		disable_irq_nosync(ds1307->wakeirq);
-> +
-> +	return 0;
-> +}
-> +
->  static int ds1307_probe(struct i2c_client *client,
->  			const struct i2c_device_id *id)
->  {
-> @@ -1116,6 +1147,8 @@ read_rtc:
->  	}
->  
->  	if (want_irq) {
-> +		struct device_node *node = client->dev.of_node;
-> +
->  		err = request_irq(client->irq, ds1307_irq, IRQF_SHARED,
->  			  ds1307->rtc->name, client);
->  		if (err) {
-> @@ -1125,6 +1158,28 @@ read_rtc:
->  
->  			set_bit(HAS_ALARM, &ds1307->flags);
->  			dev_dbg(&client->dev, "got IRQ %d\n", client->irq);
-> +			if (node)
-> +				ds1307->wakeirq = irq_of_parse_and_map(node, 1);
-> +
-> +			if (ds1307->wakeirq <= 0)
-> +				ds1307->wakeirq = 0;
-> +			else
-> +				err = devm_request_irq(&client->dev,
-> +						       ds1307->wakeirq,
-> +						       ds1307_irq,
-> +						       IRQF_ONESHOT,
-> +						       ds1307->rtc->name,
-> +						       client);
-> +			if (err) {
-> +				dev_err(&client->dev, "unable to get wakeIRQ %d\n",
-> +					err);
-> +				free_irq(client->irq, client);
-> +				goto exit;
-> +			}
-> +
-> +			/* We enable the interrupt only during suspend path */
-> +			if (ds1307->wakeirq)
-> +				disable_irq_nosync(ds1307->wakeirq);
->  		}
->  	}
->  
-> @@ -1189,6 +1244,8 @@ static struct i2c_driver ds1307_driver = {
->  	},
->  	.probe		= ds1307_probe,
->  	.remove		= ds1307_remove,
-> +	.suspend	= ds1307_i2c_suspend,
-> +	.resume		= ds1307_i2c_resume,
->  	.id_table	= ds1307_id,
->  };
->  
-> 
+>> (Also creating a regmap class for a particular device seems over
+>> engineering since nobody else is going to use it)
+>
+> Possibly, but it would allow subdrivers to be implemented using a
+> standard interface and also provide register caching for free.
+>
 
+Using a standard interface is nice, but I think that using the right
+interface type is more important. This hardware does not use registers
+but a messages to communicate with the OS.
 
--- 
-Regards,
-Nishanth Menon
+Also caching is not useful for i2c and only partially useful for GPIO
+(to cache the pin direction, and pin status in output mode only) so
+its not a big win.
