@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaICAzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 20:55:15 -0400
-Received: from tundra.namei.org ([65.99.196.166]:34415 "EHLO namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaICAzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 20:55:14 -0400
-Date: Wed, 3 Sep 2014 10:55:09 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] KEYS: Miscellaneous fixes
-In-Reply-To: <13491.1409681276@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.11.1409031054511.16251@namei.org>
-References: <alpine.LRH.2.11.1409030056130.7126@namei.org> <20140902125159.9247.11970.stgit@warthog.procyon.org.uk> <13491.1409681276@warthog.procyon.org.uk>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754308AbaICBA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 21:00:58 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50832 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaICBA5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 21:00:57 -0400
+From: An Ha <zero579911@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        An Ha <zero579911@gmail.com>
+Subject: [PATCH 1/5] Staging: rtl8821ae: hal_bt_coexist: fix commenting style
+Date: Tue,  2 Sep 2014 21:00:42 -0400
+Message-Id: <1409706046-23616-1-git-send-email-zero579911@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Sep 2014, David Howells wrote:
+Fix commenting style from C99 comments to C89 comments
 
-> James Morris <jmorris@namei.org> wrote:
-> 
-> > Which of these need to go into current Linus?
-> > 
-> > #4 looks like it should.
-> 
-> All of them, preferably, though I'm okay with #3 being deferred.
+Signed-off-by: An Ha <zero579911@gmail.com>
+---
+ drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ok, I applied #3 to next.
-
-
+diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c b/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c
+index 8bee772..cff300c 100644
+--- a/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c
++++ b/drivers/staging/rtl8821ae/rtl8821ae/hal_bt_coexist.c
+@@ -44,7 +44,7 @@ void rtl8821ae_dm_bt_reject_ap_aggregated_packet(struct ieee80211_hw *hw, bool b
+ 	PRX_TS_RECORD			pRxTs = NULL;
+ 
+ 	if(b_reject){
+-		// Do not allow receiving A-MPDU aggregation.
++		/* Do not allow receiving A-MPDU aggregation. */
+ 		if (rtlpriv->mac80211.vendor == PEER_CISCO) {
+ 				if (pHTInfo->bAcceptAddbaReq) {
+ 					RTPRINT(FBT, BT_TRACE, ("BT_Disallow AMPDU \n"));
 -- 
-James Morris
-<jmorris@namei.org>
+2.1.0
 
