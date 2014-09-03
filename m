@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356AbaICXCK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:02:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46320 "EHLO
+	id S1757395AbaICXCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:02:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756891AbaICWZ4 (ORCPT
+	with ESMTP id S933862AbaICWSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:25:56 -0400
+	Wed, 3 Sep 2014 18:18:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.16 109/125] xhci: Disable streams on Via XHCI with device-id 0x3432
-Date: Wed,  3 Sep 2014 15:07:46 -0700
-Message-Id: <20140903220626.967775778@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH 3.16 081/125] x86/xen: resume timer irqs early
+Date: Wed,  3 Sep 2014 15:07:18 -0700
+Message-Id: <20140903220626.102604805@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,41 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit e21eba05afd288a227320f797864ddd859397eed upstream.
+commit 8d5999df35314607c38fbd6bdd709e25c3a4eeab upstream.
 
-This is a bit bigger hammer then I would like to use for this, but for now
-it will have to make do. I'm working on getting my hands on one of these so
-that I can try to get streams to work (with a quirk flag if necessary) and
-then we can re-enable them.
+If the timer irqs are resumed during device resume it is possible in
+certain circumstances for the resume to hang early on, before device
+interrupts are resumed.  For an Ubuntu 14.04 PVHVM guest this would
+occur in ~0.5% of resume attempts.
 
-For now this at least makes uas capable disk enclosures work again by forcing
-fallback to the usb-storage driver.
+It is not entirely clear what is occuring the point of the hang but I
+think a task necessary for the resume calls schedule_timeout(),
+waiting for a timer interrupt (which never arrives).  This failure may
+require specific tasks to be running on the other VCPUs to trigger
+(processes are not frozen during a suspend/resume if PREEMPT is
+disabled).
 
-https://bugzilla.kernel.org/show_bug.cgi?id=79511
+Add IRQF_EARLY_RESUME to the timer interrupts so they are resumed in
+syscore_resume().
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/xen/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -155,6 +155,11 @@ static void xhci_pci_quirks(struct devic
- 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -444,7 +444,7 @@ void xen_setup_timer(int cpu)
  
-+	/* See https://bugzilla.kernel.org/show_bug.cgi?id=79511 */
-+	if (pdev->vendor == PCI_VENDOR_ID_VIA &&
-+			pdev->device == 0x3432)
-+		xhci->quirks |= XHCI_BROKEN_STREAMS;
-+
- 	if (xhci->quirks & XHCI_RESET_ON_RESUME)
- 		xhci_dbg_trace(xhci, trace_xhci_dbg_quirks,
- 				"QUIRK: Resetting on resume");
+ 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
+ 				      IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER|
+-				      IRQF_FORCE_RESUME,
++				      IRQF_FORCE_RESUME|IRQF_EARLY_RESUME,
+ 				      name, NULL);
+ 	(void)xen_set_irq_priority(irq, XEN_IRQ_PRIORITY_MAX);
+ 
 
 
