@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280AbaICLsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:48:22 -0400
-Received: from ezexch.ezchip.com ([212.179.42.101]:42506 "EHLO ezchip.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755478AbaICLsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:48:20 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Sep 2014 07:48:19 EDT
-From: Noam Camus <noamc@ezchip.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <torvalds@linux-foundation.org>, <Vineet.Gupta1@synopsys.com>,
-        Noam Camus <noamc@ezchip.com>
-Subject: [PATCH] ARC: [mm] Fix compilation breakage
-Date: Wed, 3 Sep 2014 14:41:11 +0300
-Message-ID: <1409744471-3698-1-git-send-email-noamc@ezchip.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756121AbaICLvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:51:09 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26388 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755341AbaICLvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 07:51:07 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+um8dOqRWNrlxzjyHUETsVeHLvy92mTdg=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 42B055D6A5A
+Date: Wed, 3 Sep 2014 07:51:00 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, santosh.shilimkar@ti.com,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: keystone: remove warning unsigned 'kirq->irq'
+ is never less than zero
+Message-ID: <20140903115100.GH30467@titan.lakedaemon.net>
+References: <1406126430-9978-1-git-send-email-grygorii.strashko@ti.com>
+ <1409246189-29727-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-Product-Ver: SMEX-11.0.0.1191-7.500.1018-20926.004
-X-TM-AS-Result: No--3.957000-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409246189-29727-1-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Noam Camus <noamc@ezchip.com>
+On Thu, Aug 28, 2014 at 08:16:29PM +0300, Grygorii Strashko wrote:
+> Remove static checker warning:
+> 
+> 	drivers/irqchip/irq-keystone.c:166 keystone_irq_probe()
+> 	warn: unsigned 'kirq->irq' is never less than zero.
+> 
+> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>  drivers/irqchip/irq-keystone.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Structure name and variable name were erroneously interchanged
-Signed-off-by: Noam Camus <noamc@ezchip.com>
----
- arch/arc/mm/cache_arc700.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Applied to irqchip/keystone
 
-diff --git a/arch/arc/mm/cache_arc700.c b/arch/arc/mm/cache_arc700.c
-index 4670afc..22df2d1 100644
---- a/arch/arc/mm/cache_arc700.c
-+++ b/arch/arc/mm/cache_arc700.c
-@@ -427,7 +427,7 @@ struct ic_inv_args {
- 
- static void __ic_line_inv_vaddr_helper(void *info)
- {
--        struct ic_inv *ic_inv_args = (struct ic_inv_args *) info;
-+        struct ic_inv_args *ic_inv = (struct ic_inv_args *) info;
- 
-         __ic_line_inv_vaddr_local(ic_inv->paddr, ic_inv->vaddr, ic_inv->sz);
- }
--- 
-1.7.1
+thx,
 
+Jason.
