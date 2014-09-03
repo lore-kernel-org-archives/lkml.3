@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181AbaICWRH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:17:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
+	id S933072AbaICWRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:17:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720AbaICWQJ (ORCPT
+	with ESMTP id S1757253AbaICWQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:16:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Semen Protsenko <semen.protsenko@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3.16 032/125] efi/arm64: Store Runtime Services revision
-Date: Wed,  3 Sep 2014 15:06:29 -0700
-Message-Id: <20140903220624.624226734@linuxfoundation.org>
+        Baruch Siach <baruch@tkos.co.il>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.16 034/125] ARM: 8097/1: unistd.h: relocate comments back to place
+Date: Wed,  3 Sep 2014 15:06:31 -0700
+Message-Id: <20140903220624.682344133@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,36 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Semen Protsenko <semen.protsenko@linaro.org>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit 6a7519e81321343165f89abb8b616df186d3e57a upstream.
+commit bc994c77ce82576209dcf08f71de9ae51b0b100f upstream.
 
-"efi" global data structure contains "runtime_version" field which must
-be assigned in order to use it later in Runtime Services virtual calls
-(virt_efi_* functions).
+Commit cb8db5d45 (UAPI: (Scripted) Disintegrate arch/arm/include/asm) moved
+these syscall comments out of their context into the UAPI headers. Fix this.
 
-Before this patch "runtime_version" was unassigned (0), so each
-Runtime Service virtual call that checks revision would fail.
+Fixes: cb8db5d4578a ("UAPI: (Scripted) Disintegrate arch/arm/include/asm")
 
-Signed-off-by: Semen Protsenko <semen.protsenko@linaro.org>
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/efi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/include/asm/unistd.h      |   10 ++++++++++
+ arch/arm/include/uapi/asm/unistd.h |   11 -----------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
---- a/arch/arm64/kernel/efi.c
-+++ b/arch/arm64/kernel/efi.c
-@@ -464,6 +464,8 @@ static int __init arm64_enter_virtual_mo
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -15,7 +15,17 @@
  
- 	set_bit(EFI_RUNTIME_SERVICES, &efi.flags);
+ #include <uapi/asm/unistd.h>
  
-+	efi.runtime_version = efi.systab->hdr.revision;
++/*
++ * This may need to be greater than __NR_last_syscall+1 in order to
++ * account for the padding in the syscall table
++ */
+ #define __NR_syscalls  (384)
 +
- 	return 0;
- }
- early_initcall(arm64_enter_virtual_mode);
++/*
++ * *NOTE*: This is a ghost syscall private to the kernel.  Only the
++ * __kuser_cmpxchg code in entry-armv.S should be aware of its
++ * existence.  Don't ever use this from user code.
++ */
+ #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
+ 
+ #define __ARCH_WANT_STAT64
+--- a/arch/arm/include/uapi/asm/unistd.h
++++ b/arch/arm/include/uapi/asm/unistd.h
+@@ -411,11 +411,6 @@
+ #define __NR_renameat2			(__NR_SYSCALL_BASE+382)
+ 
+ /*
+- * This may need to be greater than __NR_last_syscall+1 in order to
+- * account for the padding in the syscall table
+- */
+-
+-/*
+  * The following SWIs are ARM private.
+  */
+ #define __ARM_NR_BASE			(__NR_SYSCALL_BASE+0x0f0000)
+@@ -426,12 +421,6 @@
+ #define __ARM_NR_set_tls		(__ARM_NR_BASE+5)
+ 
+ /*
+- * *NOTE*: This is a ghost syscall private to the kernel.  Only the
+- * __kuser_cmpxchg code in entry-armv.S should be aware of its
+- * existence.  Don't ever use this from user code.
+- */
+-
+-/*
+  * The following syscalls are obsolete and no longer available for EABI.
+  */
+ #if !defined(__KERNEL__)
 
 
