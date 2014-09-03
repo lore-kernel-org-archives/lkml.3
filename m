@@ -1,94 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaICHj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:39:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56869 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaICHj0 (ORCPT
+	id S1753563AbaICHkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:40:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43124 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752355AbaICHkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:39:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <x498um26jos.fsf@segfault.boston.devel.redhat.com>
-References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com>
-	<5405EF48.9070601@kernel.dk>
-	<x498um26jos.fsf@segfault.boston.devel.redhat.com>
-Date: Wed, 3 Sep 2014 15:39:24 +0800
-Message-ID: <CACVXFVMZ6q5p9sivnRDmCo4jCVK6CdH-a2jmeADQnjdKU97qEQ@mail.gmail.com>
-Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
-From: Ming Lei <ming.lei@canonical.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kick In <pierre-andre.morey@canonical.com>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Sep 2014 03:40:43 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sergei.shtylyov@cogentembedded.com, yoshihiro.shimoda.uh@renesas.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/9] usb: add support for the generic PHY framework
+Date: Wed,  3 Sep 2014 09:40:31 +0200
+Message-Id: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 3, 2014 at 1:01 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Jens Axboe <axboe@kernel.dk> writes:
->
->> On 09/02/2014 09:02 AM, Ming Lei wrote:
->>> QUEUE_FLAG_NO_SG_MERGE is set at default for blk-mq devices,
->>> so bio->bi_phys_segment computed may be bigger than
->>> queue_max_segments(q) for blk-mq devices, then drivers will
->>> fail to handle the case, for example, BUG_ON() in
->>> virtio_queue_rq() can be triggerd for virtio-blk:
->>>
->>>      https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1359146
->>>
->>> This patch fixes the issue by ignoring the QUEUE_FLAG_NO_SG_MERGE
->>> flag if the computed bio->bi_phys_segment is bigger than
->>> queue_max_segments(q), and the regression is caused by commit
->>> 05f1dd53152173(block: add queue flag for disabling SG merging).
->>>
->>> Reported-by: Kick In <pierre-andre.morey@canonical.com>
->>> Tested-by: Chris J Arges <chris.j.arges@canonical.com>
->>> Signed-off-by: Ming Lei <ming.lei@canonical.com>
->>
->> Thanks Ming, this looks nice and clean. Will apply for 3.17.
->
-> This sounds an awful lot like the bug I fixed in dm:
+Hi all,
 
-Anyway block should respect max segments constraint even though
-QUEUE_FLAG_NO_SG_MERGE is set, that is what this patch does.
+This is an attempt to add more common USB code aware of the generic PHY
+framework, while keeping the compatibility for the USB PHY one. It does
+not add the full support, some USB PHY specific functions not being
+available currently in the generic PHY subsystem (e.g. usb_phy_set_power()).
+But it allows to use the generic PHY framework in other cases, and might
+help others to convert their USB PHY drivers.
 
->
-> commit 200612ec33e555a356eebc717630b866ae2b694f
-> Author: Jeff Moyer <jmoyer@redhat.com>
-> Date:   Fri Aug 8 11:03:41 2014 -0400
->
->     dm table: propagate QUEUE_FLAG_NO_SG_MERGE
->
->     Commit 05f1dd5 ("block: add queue flag for disabling SG merging")
->     introduced a new queue flag: QUEUE_FLAG_NO_SG_MERGE.  This gets set by
->     default in blk_mq_init_queue for mq-enabled devices.  The effect of
->     the flag is to bypass the SG segment merging.  Instead, the
->     bio->bi_vcnt is used as the number of hardware segments.
->
->     With a device mapper target on top of a device with
->     QUEUE_FLAG_NO_SG_MERGE set, we can end up sending down more segments
->     than a driver is prepared to handle.  I ran into this when backporting
->     the virtio_blk mq support.  It triggerred this BUG_ON, in
->     virtio_queue_rq:
->
->             BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
->
->     ...
->
-> Is bcache a stacking driver in this case?  Should it not inherit this
-> flag, just as DM now does?
+A little background: I submitted a series to support USB on Berlin SoCs[1].
+One patch added a new PHY driver in drivers/usb/phy and Felipe asked it to
+be in the generic PHY framework instead[2]. This PHY being used by a ChipIdea
+driver, changes were needed in ChipIdea, OTG and HCD.
 
-IMO your patch might make things complicated because:
+This is done in 3 steps:
+        1. moving the OTG state from the USB PHY structure to the OTG one
+        2. renaming the field 'phy' to 'usb_phy'
+        3. adding a field for the generic framework PHY and dissociating its
+           use from the USB PHY one
 
-- max segment constraint is HW related thing, so DM/bcache shouldn't
-have touched related flag
+Step 1 is in the first patch. Steps 2 and 3 are done for OTG, and ChipIdea
+subsystems in patches 2-3, 7 and 9.
 
-- it isn't good to let both DM and underlying device do SG merge or not
-do SG merge, performance may hurt if both do SG merge.
+HCD generic PHY support was made by Sergei and Yoshihiro[1]. I added some
+modifications to make this support consistent with this series in patches
+4-6.
 
-So why not let driver and block-core handle it? If driver has max segment
-constraint requirement, block core just meets its requirement like this patch.
+The usb_otg has been moved into the ci_hdrc structure in ChipIdea, in patch 8.
 
-Thanks,
+I tested it by using the ChipIdea driver I introduced, both with an USB PHY
+and a PHY driver successfully. I also compiled a multi_v7 kernel (ARM), with
+every driver I could enable in the USB section.
+
+Patches can also be found at:
+git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+
+The series applies on top of Sergei and Yoshihiro generic PHY support in
+HCD[2].
+
+Thanks a lot!
+
+Antoine
+
+
+Changes since v3:
+        - moved phy_exit() after phy_power_on()
+	- fixed the PHY handling in ci_hdrc_probe()
+	- some little fixes
+
+Changes since v2:
+        - rebased the series on top of v3.17-rc1 (and [2])
+        - switched to devm_phy_get() to handle non DT cases
+        - moved usb_otg into the ci_hdrc structure
+
+Changes since v1:
+        - rebased the series on top of [2] (generic PHY support for HCD)
+        - split s/phy/usb_phy/ renaming and generic PHY support in separate
+          patches
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/272840.html
+[2] https://www.mail-archive.com/linux-usb@vger.kernel.org/msg43471.html
+
+Antoine Tenart (9):
+  usb: move the OTG state from the USB PHY to the OTG structure
+  usb: rename phy to usb_phy in OTG
+  usb: add support to the generic PHY framework in OTG
+  usb: rename phy to usb_phy in HCD
+  usb: rename gen_phy to phy in HCD
+  usb: allow to supply the PHY in the drivers when using HCD
+  usb: rename transceiver and phy to usb_phy in ChipIdea
+  usb: chipidea: move usb_otg into struct ci_hdrc
+  usb: chipidea: add support to the generic PHY framework in ChipIdea
+
+ drivers/phy/phy-omap-usb2.c         | 14 ++----
+ drivers/usb/chipidea/ci.h           |  8 +++-
+ drivers/usb/chipidea/ci_hdrc_imx.c  |  2 +-
+ drivers/usb/chipidea/ci_hdrc_msm.c  |  8 ++--
+ drivers/usb/chipidea/core.c         | 74 ++++++++++++++++++++++++-----
+ drivers/usb/chipidea/debug.c        |  2 +-
+ drivers/usb/chipidea/host.c         | 10 ++--
+ drivers/usb/chipidea/otg_fsm.c      | 30 +++++-------
+ drivers/usb/chipidea/udc.c          |  4 +-
+ drivers/usb/common/usb-otg-fsm.c    |  8 ++--
+ drivers/usb/core/hcd.c              | 45 +++++++++---------
+ drivers/usb/core/hub.c              |  8 ++--
+ drivers/usb/host/ehci-fsl.c         | 16 +++----
+ drivers/usb/host/ehci-hub.c         |  2 +-
+ drivers/usb/host/ehci-msm.c         |  4 +-
+ drivers/usb/host/ehci-tegra.c       | 16 +++----
+ drivers/usb/host/ohci-omap.c        | 20 ++++----
+ drivers/usb/musb/am35x.c            | 28 +++++------
+ drivers/usb/musb/blackfin.c         | 18 +++----
+ drivers/usb/musb/da8xx.c            | 28 +++++------
+ drivers/usb/musb/davinci.c          | 18 +++----
+ drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++------------------
+ drivers/usb/musb/musb_dsps.c        | 26 +++++-----
+ drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
+ drivers/usb/musb/musb_host.c        |  8 ++--
+ drivers/usb/musb/musb_virthub.c     | 22 ++++-----
+ drivers/usb/musb/omap2430.c         | 30 ++++++------
+ drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
+ drivers/usb/musb/ux500.c            | 10 ++--
+ drivers/usb/phy/phy-ab8500-usb.c    | 16 +++----
+ drivers/usb/phy/phy-fsl-usb.c       | 23 ++++-----
+ drivers/usb/phy/phy-generic.c       |  6 +--
+ drivers/usb/phy/phy-gpio-vbus-usb.c | 14 +++---
+ drivers/usb/phy/phy-isp1301-omap.c  | 10 ++--
+ drivers/usb/phy/phy-msm-usb.c       | 95 +++++++++++++++++++------------------
+ drivers/usb/phy/phy-mv-usb.c        | 50 +++++++++----------
+ drivers/usb/phy/phy-samsung-usb2.c  |  2 +-
+ drivers/usb/phy/phy-tahvo.c         |  8 ++--
+ drivers/usb/phy/phy-ulpi.c          |  6 +--
+ include/linux/usb/chipidea.h        |  4 +-
+ include/linux/usb/hcd.h             |  6 ++-
+ include/linux/usb/otg.h             |  7 ++-
+ include/linux/usb/phy.h             |  1 -
+ 43 files changed, 469 insertions(+), 408 deletions(-)
+
+-- 
+1.9.1
+
