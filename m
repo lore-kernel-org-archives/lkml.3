@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935857AbaICXX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:23:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
+	id S935842AbaICXX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:23:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166AbaICWP7 (ORCPT
+	with ESMTP id S1757170AbaICWP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:15:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Michael Welling <mwelling@emacinc.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.14 81/88] usb: hub: Prevent hub autosuspend if usbcore.autosuspend is -1
-Date: Wed,  3 Sep 2014 15:05:55 -0700
-Message-Id: <20140903220518.369252517@linuxfoundation.org>
+        Kinglong Mee <kinglongmee@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 82/88] NFSD: Decrease nfsd_users in nfsd_startup_generic fail
+Date: Wed,  3 Sep 2014 15:05:56 -0700
+Message-Id: <20140903220518.407416458@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -29,43 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Kinglong Mee <kinglongmee@gmail.com>
 
-commit bdd405d2a5287bdb9b04670ea255e1f122138e66 upstream.
+commit d9499a95716db0d4bc9b67e88fd162133e7d6b08 upstream.
 
-If user specifies that USB autosuspend must be disabled by module
-parameter "usbcore.autosuspend=-1" then we must prevent
-autosuspend of USB hub devices as well.
+A memory allocation failure could cause nfsd_startup_generic to fail, in
+which case nfsd_users wouldn't be incorrectly left elevated.
 
-commit 596d789a211d introduced in v3.8 changed the original behaivour
-and stopped respecting the usbcore.autosuspend parameter for hubs.
+After nfsd restarts nfsd_startup_generic will then succeed without doing
+anything--the first consequence is likely nfs4_start_net finding a bad
+laundry_wq and crashing.
 
-Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Michael Welling <mwelling@emacinc.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
+Fixes: 4539f14981ce "nfsd: replace boolean nfsd_up flag by users counter"
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/nfsd/nfssvc.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1695,8 +1695,12 @@ static int hub_probe(struct usb_interfac
- 	 * - Change autosuspend delay of hub can avoid unnecessary auto
- 	 *   suspend timer for hub, also may decrease power consumption
- 	 *   of USB bus.
-+	 *
-+	 * - If user has indicated to prevent autosuspend by passing
-+	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -221,7 +221,8 @@ static int nfsd_startup_generic(int nrse
  	 */
--	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-+	if (hdev->dev.power.autosuspend_delay >= 0)
-+		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
+ 	ret = nfsd_racache_init(2*nrservs);
+ 	if (ret)
+-		return ret;
++		goto dec_users;
++
+ 	ret = nfs4_state_start();
+ 	if (ret)
+ 		goto out_racache;
+@@ -229,6 +230,8 @@ static int nfsd_startup_generic(int nrse
  
- 	/*
- 	 * Hubs have proper suspend/resume support, except for root hubs
+ out_racache:
+ 	nfsd_racache_shutdown();
++dec_users:
++	nfsd_users--;
+ 	return ret;
+ }
+ 
 
 
