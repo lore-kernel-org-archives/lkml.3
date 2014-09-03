@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479AbaICONA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 10:13:00 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:44888 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117AbaICOM7 (ORCPT
+	id S932666AbaICONm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:13:42 -0400
+Received: from fm1nodo1.polito.it ([130.192.180.11]:56479 "EHLO
+	antispam.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932495AbaICONk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 10:12:59 -0400
-Date: Wed, 3 Sep 2014 16:09:59 +0200
-From: Piotr Witoslawski <pwitos@gmail.com>
-To: lidza.louina@gmail.com
-Cc: driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        markh@compro.net
-Subject: [PATCH] drivers: staging: dgap: fix the checkpatch.pl issue
- "Warning: line over 80 characters"
-Message-ID: <20140903140959.GA24601@pwitoslawski.warsaw.osa>
+	Wed, 3 Sep 2014 10:13:40 -0400
+X-ExtScanner: Niversoft's FindAttachments (free)
+Message-ID: <54071B91.4020404@polito.it>
+Date: Wed, 03 Sep 2014 15:45:53 +0200
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>, zohar@linux.vnet.ibm.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [Linux-ima-devel] [PATCH 8/8] ima: initialize only required template
+References: <cover.1409728712.git.d.kasatkin@samsung.com> <ee009655866311106c98cdf87371d52f242782af.1409728712.git.d.kasatkin@samsung.com>
+In-Reply-To: <ee009655866311106c98cdf87371d52f242782af.1409728712.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-FEAS-SYSTEM-WL: 130.192.180.41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Done as Eudyptula task 10.
-Signed-off-by: Piotr Witoslawski <pwitos@gmail.com>
----
- drivers/staging/dgap/dgap.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+On 09/03/2014 09:20 AM, Dmitry Kasatkin wrote:
+> IMA uses only one template. This patch initializes only required
+> template to avoid unnecessary memory allocations.
+>
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> ---
+>   security/integrity/ima/ima_template.c | 28 ++++------------------------
+>   1 file changed, 4 insertions(+), 24 deletions(-)
+>
+> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+> index f682606..e854862 100644
+> --- a/security/integrity/ima/ima_template.c
+> +++ b/security/integrity/ima/ima_template.c
+> @@ -152,24 +152,6 @@ out:
+>   	return result;
+>   }
+>
+> -static int __init init_defined_templates(void)
+> -{
+> -	int i = 0;
+> -	int result = 0;
+> -
+> -	/* Init defined templates. */
+> -	for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
+> -		struct ima_template_desc *template = &defined_templates[i];
+> -
+> -		result = template_desc_init_fields(template->fmt,
+> -						   &(template->fields),
+> -						   &(template->num_fields));
+> -		if (result < 0)
+> -			return result;
+> -	}
+> -	return result;
+> -}
+> -
+>   struct ima_template_desc *ima_template_desc_current(void)
+>   {
+>   	if (!ima_template)
+> @@ -180,11 +162,9 @@ struct ima_template_desc *ima_template_desc_current(void)
+>
+>   int __init ima_init_template(void)
+>   {
+> -	int result;
+> -
+> -	result = init_defined_templates();
+> -	if (result < 0)
+> -		return result;
+> +	struct ima_template_desc *template = ima_template_desc_current();
+>
+> -	return 0;
+> +	return template_desc_init_fields(template->fmt,
+> +					 &(template->fields),
+> +					 &(template->num_fields));
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 8929dbf..67da1d5 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -88,7 +88,8 @@ static int dgap_block_til_ready(struct tty_struct *tty, struct file *file,
- 				struct channel_t *ch);
- static int dgap_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
- 				unsigned long arg);
--static int dgap_tty_digigeta(struct channel_t *ch, struct digi_t __user *retinfo);
-+static int dgap_tty_digigeta(struct channel_t *ch,
-+			     struct digi_t __user *retinfo);
- static int dgap_tty_digiseta(struct channel_t *ch, struct board_t *bd,
- 			     struct un_t *un, struct digi_t __user *new_info);
- static int dgap_tty_digigetedelay(struct tty_struct *tty, int __user *retinfo);
-@@ -104,8 +105,9 @@ static void dgap_tty_flush_chars(struct tty_struct *tty);
- static void dgap_tty_flush_buffer(struct tty_struct *tty);
- static void dgap_tty_hangup(struct tty_struct *tty);
- static int dgap_wait_for_drain(struct tty_struct *tty);
--static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct un_t *un,
--			       unsigned int command, unsigned int __user *value);
-+static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd,
-+			       struct un_t *un, unsigned int command,
-+			       unsigned int __user *value);
- static int dgap_get_modem_info(struct channel_t *ch,
- 				unsigned int __user *value);
- static int dgap_tty_digisetcustombaud(struct channel_t *ch, struct board_t *bd,
-@@ -3076,8 +3078,9 @@ static int dgap_get_modem_info(struct channel_t *ch, unsigned int __user *value)
-  *
-  * Set modem signals, called by ld.
-  */
--static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct un_t *un,
--			       unsigned int command, unsigned int __user *value)
-+static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd,
-+			       struct un_t *un, unsigned int command,
-+			       unsigned int __user *value)
- {
- 	int ret;
- 	unsigned int arg;
-@@ -3153,7 +3156,8 @@ static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct
-  *
-  *
-  */
--static int dgap_tty_digigeta(struct channel_t *ch, struct digi_t __user *retinfo)
-+static int dgap_tty_digigeta(struct channel_t *ch,
-+			     struct digi_t __user *retinfo)
- {
- 	struct digi_t tmp;
- 	ulong lock_flags;
--- 
-1.8.5.5
+Hi Dmitry
+
+ok, I'm fine with the change even if the template
+initialization routine will be used for other purposes
+(array items will be added in a linked list to permit
+templates dynamic registration).
+
+Thanks
+
+Roberto Sassu
+
+
+>   }
+>
 
