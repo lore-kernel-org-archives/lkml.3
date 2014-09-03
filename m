@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975AbaICHeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:34:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16447 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755652AbaICHeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:34:06 -0400
-Message-ID: <5406C443.5030109@redhat.com>
-Date: Wed, 03 Sep 2014 15:33:23 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751605AbaICHj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:39:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56869 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaICHj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 03:39:26 -0400
 MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com> <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net> <53F6F14B.1030609@redhat.com> <20140822074224.GB7372@gmail.com> <53FFEEC0.4000304@redhat.com> <540414AB.9000004@linux.intel.com> <54053998.4040604@redhat.com> <54056076.2030603@linux.intel.com> <20140902083124.GB10356@redhat.com> <5406B9E6.6050103@linux.intel.com>
-In-Reply-To: <5406B9E6.6050103@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <x498um26jos.fsf@segfault.boston.devel.redhat.com>
+References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com>
+	<5405EF48.9070601@kernel.dk>
+	<x498um26jos.fsf@segfault.boston.devel.redhat.com>
+Date: Wed, 3 Sep 2014 15:39:24 +0800
+Message-ID: <CACVXFVMZ6q5p9sivnRDmCo4jCVK6CdH-a2jmeADQnjdKU97qEQ@mail.gmail.com>
+Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
+From: Ming Lei <ming.lei@canonical.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kick In <pierre-andre.morey@canonical.com>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 02:49 PM, Eliezer Tamir wrote:
-> On 02/09/2014 11:31, Michael S. Tsirkin wrote:
->> On Tue, Sep 02, 2014 at 09:15:18AM +0300, Eliezer Tamir wrote:
->>> On 02/09/2014 06:29, Jason Wang wrote:
->>>> On 09/01/2014 02:39 PM, Eliezer Tamir wrote:
->>>>> On 29/08/2014 06:08, Jason Wang wrote:
->>>>>>> Yes, but rx busy polling only works in process context and does not
->>>>>>> disable bh, so it may be not an issue.
->>>>> sk_busy_loop() uses rcu_read_lock_bh(), so it does run with bh disabled.
->>>> True, so we need probably also exit the loop when there are pending bhs.
->>> I'm not so sure, in the typical busy poll scenario, the incoming
->>> traffic is the most time-critical thing in the system.
->>> It's so important that you are willing to trade lots of CPU power
->>> for better latency. The user has decided that he wants to dedicate
->>> this CPU mostly for that. This is not something that plays nice with
->>> other apps, but this is what the user wants.
->> I think most applications wouldn't interpret this flag as "burn up CPU I don't
->> care what is the result", what apps want is more of "maximise throughput
->> and minimise latency even if throughput/CPU ratio goes down".
->> Jason posted benchmarks that show throughput going up because other
->> processes get more of a chance to run, so this seems consistent
->> with that goal.
-> Busy polling is not a general purpose feature, it's not something you
-> can casually turn on and will "just work". Most applications should not
-> be using busy polling.
-
-How about busy read? It was enabled only through a global sysctl and
-then applications can make use of this without rewrite.
->  Currently it is used by multiserver applications
-> that you spend days tuning to specific platforms.
-
-I agree the polling code needs more thought but the patch only change
-busy read.
-
-A new issue is for virt users. I implement busy polling for virtio-net
-but we don't want one vcpu monopoly the cpu if there's some tasks on
-other vcpus. We may need some hint from host to guest to let it exit the
-loop if needed.
+On Wed, Sep 3, 2014 at 1:01 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Jens Axboe <axboe@kernel.dk> writes:
 >
-> What the user wants is to lower both avg and maximum latencies, at the
-> expense of everything else including power efficiency and sometimes
-> even throughput. The only exception is making the system crash ;)
+>> On 09/02/2014 09:02 AM, Ming Lei wrote:
+>>> QUEUE_FLAG_NO_SG_MERGE is set at default for blk-mq devices,
+>>> so bio->bi_phys_segment computed may be bigger than
+>>> queue_max_segments(q) for blk-mq devices, then drivers will
+>>> fail to handle the case, for example, BUG_ON() in
+>>> virtio_queue_rq() can be triggerd for virtio-blk:
+>>>
+>>>      https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1359146
+>>>
+>>> This patch fixes the issue by ignoring the QUEUE_FLAG_NO_SG_MERGE
+>>> flag if the computed bio->bi_phys_segment is bigger than
+>>> queue_max_segments(q), and the regression is caused by commit
+>>> 05f1dd53152173(block: add queue flag for disabling SG merging).
+>>>
+>>> Reported-by: Kick In <pierre-andre.morey@canonical.com>
+>>> Tested-by: Chris J Arges <chris.j.arges@canonical.com>
+>>> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+>>
+>> Thanks Ming, this looks nice and clean. Will apply for 3.17.
 >
-> While letting other things take precedence over busy polling might not
-> hurt the avg latency much, it will kill your maximum latency.
+> This sounds an awful lot like the bug I fixed in dm:
+
+Anyway block should respect max segments constraint even though
+QUEUE_FLAG_NO_SG_MERGE is set, that is what this patch does.
+
 >
-> -Eliezer
+> commit 200612ec33e555a356eebc717630b866ae2b694f
+> Author: Jeff Moyer <jmoyer@redhat.com>
+> Date:   Fri Aug 8 11:03:41 2014 -0400
+>
+>     dm table: propagate QUEUE_FLAG_NO_SG_MERGE
+>
+>     Commit 05f1dd5 ("block: add queue flag for disabling SG merging")
+>     introduced a new queue flag: QUEUE_FLAG_NO_SG_MERGE.  This gets set by
+>     default in blk_mq_init_queue for mq-enabled devices.  The effect of
+>     the flag is to bypass the SG segment merging.  Instead, the
+>     bio->bi_vcnt is used as the number of hardware segments.
+>
+>     With a device mapper target on top of a device with
+>     QUEUE_FLAG_NO_SG_MERGE set, we can end up sending down more segments
+>     than a driver is prepared to handle.  I ran into this when backporting
+>     the virtio_blk mq support.  It triggerred this BUG_ON, in
+>     virtio_queue_rq:
+>
+>             BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
+>
+>     ...
+>
+> Is bcache a stacking driver in this case?  Should it not inherit this
+> flag, just as DM now does?
 
+IMO your patch might make things complicated because:
 
+- max segment constraint is HW related thing, so DM/bcache shouldn't
+have touched related flag
+
+- it isn't good to let both DM and underlying device do SG merge or not
+do SG merge, performance may hurt if both do SG merge.
+
+So why not let driver and block-core handle it? If driver has max segment
+constraint requirement, block core just meets its requirement like this patch.
+
+Thanks,
