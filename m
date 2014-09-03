@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205AbaICWAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:00:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59578 "EHLO mail.kernel.org"
+	id S933237AbaICWBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:01:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59640 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932368AbaICWAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:00:51 -0400
+	id S932368AbaICWBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:01:01 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 07/10] perf tests: Add pollfd growing test
-Date: Wed,  3 Sep 2014 19:00:01 -0300
-Message-Id: <1409781604-16778-8-git-send-email-acme@kernel.org>
+Subject: [PATCH 09/10] perf evlist: Introduce poll method for common code idiom
+Date: Wed,  3 Sep 2014 19:00:03 -0300
+Message-Id: <1409781604-16778-10-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409781604-16778-1-git-send-email-acme@kernel.org>
 References: <1409781604-16778-1-git-send-email-acme@kernel.org>
@@ -29,20 +29,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-  [acme@ssdandy linux]$ perf test "Add fd"
-  34: Add fd to pollfd array, making it autogrow             : Ok
-  [acme@ssdandy linux]$ perf test -v "Add fd"
-  34: Add fd to pollfd array, making it autogrow             :
-  --- start ---
-  test child forked, pid 19817
+Since we have access two evlist members in all these poll calls, provide
+a helper.
 
-  before growing array:   2 [ 1, 2 ]
-  after 3rd add_pollfd:   3 [ 1, 2, 35 ]
-  after 4th add_pollfd:   4 [ 1, 2, 35, 88 ]
-  test child finished with 0
-  ---- end ----
-  Add fd to pollfd array, making it autogrow: Ok
-  [acme@ssdandy linux]$
+This will also help to make the patch introducing the pollfd class more
+clear, as the evlist specific uses will be hiden away
+perf_evlist__poll().
 
 Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
@@ -55,166 +47,149 @@ Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-smflpyta146bzog7z0effjss@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-hizx410uqouefj52jujubv2y@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/builtin-test.c |   4 ++
- tools/perf/tests/evlist.c       | 111 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |   1 +
- 3 files changed, 116 insertions(+)
+ tools/perf/builtin-record.c               | 2 +-
+ tools/perf/builtin-top.c                  | 4 ++--
+ tools/perf/builtin-trace.c                | 2 +-
+ tools/perf/tests/open-syscall-tp-fields.c | 2 +-
+ tools/perf/tests/perf-record.c            | 2 +-
+ tools/perf/tests/task-exit.c              | 2 +-
+ tools/perf/util/evlist.c                  | 5 +++++
+ tools/perf/util/evlist.h                  | 2 ++
+ tools/perf/util/python.c                  | 2 +-
+ 9 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 41e556edbe02..174c3ffc5713 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -162,6 +162,10 @@ static struct test {
- 		.func = test__perf_evlist__filter_pollfd,
- 	},
- 	{
-+		.desc = "Add fd to pollfd array, making it autogrow",
-+		.func = test__perf_evlist__add_pollfd,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/evlist.c b/tools/perf/tests/evlist.c
-index 77579158f4d9..99d7dfd4e20a 100644
---- a/tools/perf/tests/evlist.c
-+++ b/tools/perf/tests/evlist.c
-@@ -1,5 +1,7 @@
- #include "util/evlist.h"
- #include "util/debug.h"
-+#include "util/thread_map.h"
-+#include "util/cpumap.h"
- #include "tests/tests.h"
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index b87708ce09c9..aac86600b89e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -459,7 +459,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 		if (hits == rec->samples) {
+ 			if (done)
+ 				break;
+-			err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
++			err = perf_evlist__poll(rec->evlist, -1);
+ 			/*
+ 			 * Propagate error, only if there's any. Ignore positive
+ 			 * number of returned events and interrupt error.
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 9848e270b92c..ef7c808c8ce2 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -964,7 +964,7 @@ static int __cmd_top(struct perf_top *top)
+                 perf_evlist__enable(top->evlist);
  
- static void perf_evlist__init_pollfd(struct perf_evlist *evlist,
-@@ -101,3 +103,112 @@ int test__perf_evlist__filter_pollfd(void)
+ 	/* Wait for a minimal set of events before starting the snapshot */
+-	poll(top->evlist->pollfd, top->evlist->nr_fds, 100);
++	perf_evlist__poll(top->evlist, 100);
  
- 	return 0;
+ 	perf_top__mmap_read(top);
+ 
+@@ -991,7 +991,7 @@ static int __cmd_top(struct perf_top *top)
+ 		perf_top__mmap_read(top);
+ 
+ 		if (hits == top->samples)
+-			ret = poll(top->evlist->pollfd, top->evlist->nr_fds, 100);
++			ret = perf_evlist__poll(top->evlist, 100);
+ 	}
+ 
+ 	ret = 0;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 09d4bc44215e..970aa0297697 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2171,7 +2171,7 @@ next_event:
+ 	if (trace->nr_events == before) {
+ 		int timeout = done ? 100 : -1;
+ 
+-		if (poll(evlist->pollfd, evlist->nr_fds, timeout) > 0 &&
++		if (perf_evlist__poll(evlist, timeout) > 0 &&
+ 		    perf_evlist__filter_pollfd(evlist, POLLERR | POLLHUP) > 0)
+ 			goto again;
+ 	} else {
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+index 922bdb627950..127dcae0b760 100644
+--- a/tools/perf/tests/open-syscall-tp-fields.c
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -105,7 +105,7 @@ int test__syscall_open_tp_fields(void)
+ 		}
+ 
+ 		if (nr_events == before)
+-			poll(evlist->pollfd, evlist->nr_fds, 10);
++			perf_evlist__poll(evlist, 10);
+ 
+ 		if (++nr_polls > 5) {
+ 			pr_debug("%s: no events!\n", __func__);
+diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+index 2ce753c1db63..7a228a2a070b 100644
+--- a/tools/perf/tests/perf-record.c
++++ b/tools/perf/tests/perf-record.c
+@@ -268,7 +268,7 @@ int test__PERF_RECORD(void)
+ 		 * perf_event_attr.wakeup_events, just PERF_EVENT_SAMPLE does.
+ 		 */
+ 		if (total_events == before && false)
+-			poll(evlist->pollfd, evlist->nr_fds, -1);
++			perf_evlist__poll(evlist, -1);
+ 
+ 		sleep(1);
+ 		if (++wakeups > 5) {
+diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
+index 87522f01c7ad..3a8fedef83bc 100644
+--- a/tools/perf/tests/task-exit.c
++++ b/tools/perf/tests/task-exit.c
+@@ -105,7 +105,7 @@ retry:
+ 	}
+ 
+ 	if (!exited || !nr_exit) {
+-		poll(evlist->pollfd, evlist->nr_fds, -1);
++		perf_evlist__poll(evlist, -1);
+ 		goto retry;
+ 	}
+ 
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index f8064f3bb594..686f4a687493 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -475,6 +475,11 @@ int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mas
+ 	return nr_fds;
  }
-+
-+int test__perf_evlist__add_pollfd(void)
-+{
-+	struct perf_evsel evsel = {
-+		.system_wide = false,
-+	};
-+	struct thread_map threads = {
-+		.nr = 2,
-+	};
-+	struct perf_evlist evlist_alloc = {
-+		.pollfd	 = NULL,
-+		.threads = &threads,
-+	}, *evlist = &evlist_alloc;
-+
-+	INIT_LIST_HEAD(&evlist->entries);
-+	list_add(&evsel.node, &evlist->entries);
-+
-+	if (perf_evlist__alloc_pollfd(evlist) < 0) {
-+		pr_debug("\nperf_evlist__alloc_pollfd(evlist) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds_alloc != threads.nr) {
-+		pr_debug("\n_evlist__alloc_pollfd: nr_fds_alloc=%d != (threads->nr(%d) * cpu_map->nr(%d))=%d",
-+			 evlist->nr_fds_alloc, thread_map__nr(evlist->threads), cpu_map__nr(evlist->cpus),
-+			 thread_map__nr(evlist->threads) * cpu_map__nr(evlist->cpus));
-+		return TEST_FAIL;
-+	}
-+
-+	if (perf_evlist__add_pollfd(evlist, 1) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 1) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 1) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 1)=%d != 1", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	if (perf_evlist__add_pollfd(evlist, 2) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 2) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 2) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 2)=%d != 2", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__fprintf_pollfd(evlist, "before growing array", stderr);
-+
-+	if (perf_evlist__add_pollfd(evlist, 35) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 35) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 3) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 35)=%d != 3", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd == NULL) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 35) should have allocated evlist->pollfd!");
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__fprintf_pollfd(evlist, "after 3rd add_pollfd", stderr);
-+
-+	if (evlist->pollfd[2].fd != 35) {
-+		pr_debug("\nevlist->pollfd[2](%d) != 35!", evlist->pollfd[2].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (perf_evlist__add_pollfd(evlist, 88) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 88) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 4) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 88)=%d != 2", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__fprintf_pollfd(evlist, "after 4th add_pollfd", stderr);
-+
-+	if (evlist->pollfd[0].fd != 1) {
-+		pr_debug("\nevlist->pollfd[0](%d) != 1!", evlist->pollfd[0].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd[1].fd != 2) {
-+		pr_debug("\nevlist->pollfd[1](%d) != 2!", evlist->pollfd[1].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd[2].fd != 35) {
-+		pr_debug("\nevlist->pollfd[2](%d) != 35!", evlist->pollfd[2].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd[3].fd != 88) {
-+		pr_debug("\nevlist->pollfd[3](%d) != 88!", evlist->pollfd[3].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	pr_debug("\n");
-+
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 72c4c039bd80..699d4bb61dc7 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -50,6 +50,7 @@ int test__hists_output(void);
- int test__hists_cumulate(void);
- int test__switch_tracking(void);
- int test__perf_evlist__filter_pollfd(void);
-+int test__perf_evlist__add_pollfd(void);
  
- #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
++int perf_evlist__poll(struct perf_evlist *evlist, int timeout)
++{
++	return poll(evlist->pollfd, evlist->nr_fds, timeout);
++}
++
+ static void perf_evlist__id_hash(struct perf_evlist *evlist,
+ 				 struct perf_evsel *evsel,
+ 				 int cpu, int thread, u64 id)
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index bbc2fd01b5c5..d7e99b67c94f 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -87,6 +87,8 @@ int perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
+ int perf_evlist__alloc_pollfd(struct perf_evlist *evlist);
+ int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask);
+ 
++int perf_evlist__poll(struct perf_evlist *evlist, int timeout);
++
+ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
+ 
+ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 12aa9b0d0ba1..4472f8be8e35 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -736,7 +736,7 @@ static PyObject *pyrf_evlist__poll(struct pyrf_evlist *pevlist,
+ 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", kwlist, &timeout))
+ 		return NULL;
+ 
+-	n = poll(evlist->pollfd, evlist->nr_fds, timeout);
++	n = perf_evlist__poll(evlist, timeout);
+ 	if (n < 0) {
+ 		PyErr_SetFromErrno(PyExc_OSError);
+ 		return NULL;
 -- 
 1.9.3
 
