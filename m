@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766AbaICW6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:58:43 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:33215 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618AbaICW6l (ORCPT
+	id S1756946AbaICW70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:59:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46344 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756966AbaICW0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:58:41 -0400
-From: Frans Klaver <fransklaver@gmail.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Frans Klaver <fransklaver@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mod_devicetable: add space before */
-Date: Thu,  4 Sep 2014 00:58:23 +0200
-Message-Id: <1409785103-14262-2-git-send-email-fransklaver@gmail.com>
+	Wed, 3 Sep 2014 18:26:00 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Scott Mayhew <smayhew@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.16 120/125] nfs: reject changes to resvport and sharecache during remount
+Date: Wed,  3 Sep 2014 15:07:57 -0700
+Message-Id: <20140903220627.296900659@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409785103-14262-1-git-send-email-fransklaver@gmail.com>
-References: <1409785103-14262-1-git-send-email-fransklaver@gmail.com>
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Match the style of the other one-line comments.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+------------------
+
+From: Scott Mayhew <smayhew@redhat.com>
+
+commit 71a6ec8ac587418ceb6b420def1ca44b334c1ff7 upstream.
+
+Commit c8e47028 made it possible to change resvport/noresvport and
+sharecache/nosharecache via a remount operation, neither of which should be
+allowed.
+
+Signed-off-by: Scott Mayhew <smayhew@redhat.com>
+Fixes: c8e47028 (nfs: Apply NFS_MOUNT_CMP_FLAGMASK to nfs_compare_remount_data)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/linux/mod_devicetable.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/super.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 745def8..c471047 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -252,7 +252,7 @@ struct pcmcia_device_id {
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2180,7 +2180,7 @@ out_no_address:
+ 	return -EINVAL;
+ }
  
- 	__u32 		prod_id_hash[4];
+-#define NFS_MOUNT_CMP_FLAGMASK ~(NFS_MOUNT_INTR \
++#define NFS_REMOUNT_CMP_FLAGMASK ~(NFS_MOUNT_INTR \
+ 		| NFS_MOUNT_SECURE \
+ 		| NFS_MOUNT_TCP \
+ 		| NFS_MOUNT_VER3 \
+@@ -2188,15 +2188,16 @@ out_no_address:
+ 		| NFS_MOUNT_NONLM \
+ 		| NFS_MOUNT_BROKEN_SUID \
+ 		| NFS_MOUNT_STRICTLOCK \
+-		| NFS_MOUNT_UNSHARED \
+-		| NFS_MOUNT_NORESVPORT \
+ 		| NFS_MOUNT_LEGACY_INTERFACE)
  
--	/* not matched against in kernelspace*/
-+	/* not matched against in kernelspace */
- 	const char *	prod_id[4];
- 
- 	/* not matched against */
--- 
-2.1.0
++#define NFS_MOUNT_CMP_FLAGMASK (NFS_REMOUNT_CMP_FLAGMASK & \
++		~(NFS_MOUNT_UNSHARED | NFS_MOUNT_NORESVPORT))
++
+ static int
+ nfs_compare_remount_data(struct nfs_server *nfss,
+ 			 struct nfs_parsed_mount_data *data)
+ {
+-	if ((data->flags ^ nfss->flags) & NFS_MOUNT_CMP_FLAGMASK ||
++	if ((data->flags ^ nfss->flags) & NFS_REMOUNT_CMP_FLAGMASK ||
+ 	    data->rsize != nfss->rsize ||
+ 	    data->wsize != nfss->wsize ||
+ 	    data->version != nfss->nfs_client->rpc_ops->version ||
+
 
