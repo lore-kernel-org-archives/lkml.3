@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935627AbaICXSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:18:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
+	id S935638AbaICXTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:19:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757217AbaICWQE (ORCPT
+	with ESMTP id S1757213AbaICWQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:16:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aurelien Jarno <aurelien@aurel32.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Markos Chandras <markos.chandras@imgtec.com>
-Subject: [PATCH 3.16 002/125] MIPS: math-emu: Fix instruction decoding.
-Date: Wed,  3 Sep 2014 15:05:59 -0700
-Message-Id: <20140903220623.723822547@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.16 019/125] ALSA: hda/ca0132 - Dont try loading firmware at resume when already failed
+Date: Wed,  3 Sep 2014 15:06:16 -0700
+Message-Id: <20140903220624.240167194@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,30 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Kendrick <rob.kendrick@codethink.co.uk>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c3b9b945e02e011c63522761e91133ea43eb6939 upstream.
+commit e24aa0a4c5ac92a171d9dd74a8d3dbf652990d36 upstream.
 
-Tested-by: Aurelien Jarno <aurelien@aurel32.net>
-Reviewed-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Markos Chandras <markos.chandras@imgtec.com>
+CA0132 driver tries to reload the firmware at resume.  Usually this
+works since the firmware loader core caches the firmware contents by
+itself.  However, if the driver failed to load the firmwares
+(e.g. missing files), reloading the firmware at resume goes through
+the actual file loading code path, and triggers a kernel WARNING like:
+
+ WARNING: CPU: 10 PID:11371 at drivers/base/firmware_class.c:1105 _request_firmware+0x9ab/0x9d0()
+
+For avoiding this situation, this patch makes CA0132 skipping the f/w
+loading at resume when it failed at probe time.
+
+Reported-and-tested-by: Janek Kozicki <cosurgi@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/math-emu/cp1emu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_ca0132.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/mips/math-emu/cp1emu.c
-+++ b/arch/mips/math-emu/cp1emu.c
-@@ -1827,7 +1827,7 @@ dcopuop:
- 	case -1:
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -4376,6 +4376,9 @@ static void ca0132_download_dsp(struct h
+ 	return; /* NOP */
+ #endif
  
- 		if (cpu_has_mips_4_5_r)
--			cbit = fpucondbit[MIPSInst_RT(ir) >> 2];
-+			cbit = fpucondbit[MIPSInst_FD(ir) >> 2];
- 		else
- 			cbit = FPU_CSR_COND;
- 		if (rv.w)
++	if (spec->dsp_state == DSP_DOWNLOAD_FAILED)
++		return; /* don't retry failures */
++
+ 	chipio_enable_clocks(codec);
+ 	spec->dsp_state = DSP_DOWNLOADING;
+ 	if (!ca0132_download_dsp_images(codec))
+@@ -4552,7 +4555,8 @@ static int ca0132_init(struct hda_codec
+ 	struct auto_pin_cfg *cfg = &spec->autocfg;
+ 	int i;
+ 
+-	spec->dsp_state = DSP_DOWNLOAD_INIT;
++	if (spec->dsp_state != DSP_DOWNLOAD_FAILED)
++		spec->dsp_state = DSP_DOWNLOAD_INIT;
+ 	spec->curr_chip_addx = INVALID_CHIP_ADDRESS;
+ 
+ 	snd_hda_power_up(codec);
+@@ -4663,6 +4667,7 @@ static int patch_ca0132(struct hda_codec
+ 	codec->spec = spec;
+ 	spec->codec = codec;
+ 
++	spec->dsp_state = DSP_DOWNLOAD_INIT;
+ 	spec->num_mixers = 1;
+ 	spec->mixers[0] = ca0132_mixer;
+ 
 
 
