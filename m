@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934597AbaICXCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:02:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46166 "EHLO
+	id S933851AbaICWSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:18:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46124 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933856AbaICWSt (ORCPT
+	with ESMTP id S933807AbaICWSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:49 -0400
+	Wed, 3 Sep 2014 18:18:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: [PATCH 3.16 080/125] x86/xen: use vmap() to map grant table pages in PVH guests
-Date: Wed,  3 Sep 2014 15:07:17 -0700
-Message-Id: <20140903220626.073768295@linuxfoundation.org>
+        Robert Resch <fli4l@robert.reschpara.de>,
+        Christoph Schulz <develop@kristov.de>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.16 071/125] x86: dont exclude low BIOS area when allocating address space for non-PCI cards
+Date: Wed,  3 Sep 2014 15:07:08 -0700
+Message-Id: <20140903220625.809518983@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,63 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Christoph Schulz <develop@kristov.de>
 
-commit 7d951f3ccb0308c95bf76d5eef9886dea35a7013 upstream.
+commit cbace46a9710a480cae51e4611697df5de41713e upstream.
 
-Commit b7dd0e350e0b (x86/xen: safely map and unmap grant frames when
-in atomic context) causes PVH guests to crash in
-arch_gnttab_map_shared() when they attempted to map the pages for the
-grant table.
+Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
+space") moved the test for resource allocations that fall within the first
+1MB of address space from the PCI-specific path to a generic path, such
+that all resource allocations will avoid this area.  However, this breaks
+ISA cards which need to allocate a memory region within the first 1MB.  An
+example is the i82365 PCMCIA controller and derivatives like the Ricoh
+RF5C296/396 which map part of the PCMCIA socket memory address space into
+the first 1MB of system memory address space.  They do not work anymore as
+no usable memory region exists due to this change:
 
-This use of a PV-specific function during the PVH grant table setup is
-non-obvious and not needed.  The standard vmap() function does the
-right thing.
+  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
+  host opts [0]: none
+  host opts [1]: none
+  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
+  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
+  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-Tested-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+If filtering out the first 1MB is reverted, everything works as expected.
+
+Tested-by: Robert Resch <fli4l@robert.reschpara.de>
+Signed-off-by: Christoph Schulz <develop@kristov.de>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/grant-table.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/kernel/resource.c |    8 +++++---
+ arch/x86/pci/i386.c        |    4 ++++
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -168,6 +168,7 @@ static int __init xlated_setup_gnttab_pa
+--- a/arch/x86/kernel/resource.c
++++ b/arch/x86/kernel/resource.c
+@@ -37,10 +37,12 @@ static void remove_e820_regions(struct r
+ 
+ void arch_remove_reservations(struct resource *avail)
  {
- 	struct page **pages;
- 	xen_pfn_t *pfns;
-+	void *vaddr;
- 	int rc;
- 	unsigned int i;
- 	unsigned long nr_grant_frames = gnttab_max_grant_frames();
-@@ -193,21 +194,20 @@ static int __init xlated_setup_gnttab_pa
- 	for (i = 0; i < nr_grant_frames; i++)
- 		pfns[i] = page_to_pfn(pages[i]);
+-	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
++	/*
++	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
++	 * the low 1MB unconditionally, as this area is needed for some ISA
++	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
++	 */
+ 	if (avail->flags & IORESOURCE_MEM) {
+-		if (avail->start < BIOS_END)
+-			avail->start = BIOS_END;
+ 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
  
--	rc = arch_gnttab_map_shared(pfns, nr_grant_frames, nr_grant_frames,
--				    &xen_auto_xlat_grant_frames.vaddr);
--
--	if (rc) {
-+	vaddr = vmap(pages, nr_grant_frames, 0, PAGE_KERNEL);
-+	if (!vaddr) {
- 		pr_warn("%s Couldn't map %ld pfns rc:%d\n", __func__,
- 			nr_grant_frames, rc);
- 		free_xenballooned_pages(nr_grant_frames, pages);
- 		kfree(pages);
- 		kfree(pfns);
--		return rc;
-+		return -ENOMEM;
+ 		remove_e820_regions(avail);
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const
+ 			return start;
+ 		if (start & 0x300)
+ 			start = (start + 0x3ff) & ~0x3ff;
++	} else if (res->flags & IORESOURCE_MEM) {
++		/* The low 1MB range is reserved for ISA cards */
++		if (start < BIOS_END)
++			start = BIOS_END;
  	}
- 	kfree(pages);
- 
- 	xen_auto_xlat_grant_frames.pfn = pfns;
- 	xen_auto_xlat_grant_frames.count = nr_grant_frames;
-+	xen_auto_xlat_grant_frames.vaddr = vaddr;
- 
- 	return 0;
+ 	return start;
  }
 
 
