@@ -1,51 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919AbaICWZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:25:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30710 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756891AbaICWZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:25:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,460,1406617200"; 
-   d="scan'208";a="585894457"
-Message-ID: <5407955C.3040501@intel.com>
-Date: Wed, 03 Sep 2014 15:25:32 -0700
-From: "H. Peter Anvin" <h.peter.anvin@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S934259AbaICW0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:26:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46432 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934219AbaICW0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:26:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.16 094/125] ext4: propagate errors up to ext4_find_entry()s callers
+Date: Wed,  3 Sep 2014 15:07:31 -0700
+Message-Id: <20140903220626.495275137@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: RFC: Tainting the kernel on raw I/O access
-References: <5407863B.9030608@intel.com> <20140903232018.17bba503@alan.etchedpixels.co.uk>
-In-Reply-To: <20140903232018.17bba503@alan.etchedpixels.co.uk>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 03:20 PM, One Thousand Gnomes wrote:
-> 
-> If you just want some "detector bits" for bug report filtering them its
-> quite a different need to fixing "secure" boot mode. Even in the detector
-> bits case there should be an overall plan and some defined properties
-> that provide the security and which you can show should always be true.
-> 
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-As far as I'm concerning this is just a set of "detector bits".  My
-observation was simply that this is a *subset* of what "secure boot"
-will eventually need.
+------------------
 
-Secure boot will need the error path no matter what... tainting
-obviously doesn't.
+From: Theodore Ts'o <tytso@mit.edu>
 
-(As far as I'm concerned, I'd be happy tainting the kernel for any
-operation that requires CAP_RAWIO, but maybe that is too extreme.)
+commit 36de928641ee48b2078d3fe9514242aaa2f92013 upstream.
 
-	-hpa
+If we run into some kind of error, such as ENOMEM, while calling
+ext4_getblk() or ext4_dx_find_entry(), we need to make sure this error
+gets propagated up to ext4_find_entry() and then to its callers.  This
+way, transient errors such as ENOMEM can get propagated to the VFS.
+This is important so that the system calls return the appropriate
+error, and also so that in the case of ext4_lookup(), we return an
+error instead of a NULL inode, since that will result in a negative
+dentry cache entry that will stick around long past the OOM condition
+which caused a transient ENOMEM error.
+
+Google-Bug-Id: #17142205
+
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/ext4.h  |    2 +-
+ fs/ext4/namei.c |   35 +++++++++++++++++++++++++++++++++--
+ 2 files changed, 34 insertions(+), 3 deletions(-)
+
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1826,7 +1826,7 @@ ext4_group_first_block_no(struct super_b
+ /*
+  * Special error return code only used by dx_probe() and its callers.
+  */
+-#define ERR_BAD_DX_DIR	-75000
++#define ERR_BAD_DX_DIR	(-(MAX_ERRNO - 1))
+ 
+ /*
+  * Timeout and state flag for lazy initialization inode thread.
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1227,7 +1227,7 @@ static struct buffer_head * ext4_find_en
+ 				   buffer */
+ 	int num = 0;
+ 	ext4_lblk_t  nblocks;
+-	int i, err;
++	int i, err = 0;
+ 	int namelen;
+ 
+ 	*res_dir = NULL;
+@@ -1264,7 +1264,11 @@ static struct buffer_head * ext4_find_en
+ 		 * return.  Otherwise, fall back to doing a search the
+ 		 * old fashioned way.
+ 		 */
+-		if (bh || (err != ERR_BAD_DX_DIR))
++		if (err == -ENOENT)
++			return NULL;
++		if (err && err != ERR_BAD_DX_DIR)
++			return ERR_PTR(err);
++		if (bh)
+ 			return bh;
+ 		dxtrace(printk(KERN_DEBUG "ext4_find_entry: dx failed, "
+ 			       "falling back\n"));
+@@ -1295,6 +1299,11 @@ restart:
+ 				}
+ 				num++;
+ 				bh = ext4_getblk(NULL, dir, b++, 0, &err);
++				if (unlikely(err)) {
++					if (ra_max == 0)
++						return ERR_PTR(err);
++					break;
++				}
+ 				bh_use[ra_max] = bh;
+ 				if (bh)
+ 					ll_rw_block(READ | REQ_META | REQ_PRIO,
+@@ -1417,6 +1426,8 @@ static struct dentry *ext4_lookup(struct
+ 		return ERR_PTR(-ENAMETOOLONG);
+ 
+ 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return (struct dentry *) bh;
+ 	inode = NULL;
+ 	if (bh) {
+ 		__u32 ino = le32_to_cpu(de->inode);
+@@ -1450,6 +1461,8 @@ struct dentry *ext4_get_parent(struct de
+ 	struct buffer_head *bh;
+ 
+ 	bh = ext4_find_entry(child->d_inode, &dotdot, &de, NULL);
++	if (IS_ERR(bh))
++		return (struct dentry *) bh;
+ 	if (!bh)
+ 		return ERR_PTR(-ENOENT);
+ 	ino = le32_to_cpu(de->inode);
+@@ -2727,6 +2740,8 @@ static int ext4_rmdir(struct inode *dir,
+ 
+ 	retval = -ENOENT;
+ 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return PTR_ERR(bh);
+ 	if (!bh)
+ 		goto end_rmdir;
+ 
+@@ -2794,6 +2809,8 @@ static int ext4_unlink(struct inode *dir
+ 
+ 	retval = -ENOENT;
+ 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return PTR_ERR(bh);
+ 	if (!bh)
+ 		goto end_unlink;
+ 
+@@ -3121,6 +3138,8 @@ static int ext4_find_delete_entry(handle
+ 	struct ext4_dir_entry_2 *de;
+ 
+ 	bh = ext4_find_entry(dir, d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return PTR_ERR(bh);
+ 	if (bh) {
+ 		retval = ext4_delete_entry(handle, dir, de, bh);
+ 		brelse(bh);
+@@ -3202,6 +3221,8 @@ static int ext4_rename(struct inode *old
+ 		dquot_initialize(new.inode);
+ 
+ 	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name, &old.de, NULL);
++	if (IS_ERR(old.bh))
++		return PTR_ERR(old.bh);
+ 	/*
+ 	 *  Check for inode number is _not_ due to possible IO errors.
+ 	 *  We might rmdir the source, keep it as pwd of some process
+@@ -3214,6 +3235,10 @@ static int ext4_rename(struct inode *old
+ 
+ 	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
+ 				 &new.de, &new.inlined);
++	if (IS_ERR(new.bh)) {
++		retval = PTR_ERR(new.bh);
++		goto end_rename;
++	}
+ 	if (new.bh) {
+ 		if (!new.inode) {
+ 			brelse(new.bh);
+@@ -3330,6 +3355,8 @@ static int ext4_cross_rename(struct inod
+ 
+ 	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name,
+ 				 &old.de, &old.inlined);
++	if (IS_ERR(old.bh))
++		return PTR_ERR(old.bh);
+ 	/*
+ 	 *  Check for inode number is _not_ due to possible IO errors.
+ 	 *  We might rmdir the source, keep it as pwd of some process
+@@ -3342,6 +3369,10 @@ static int ext4_cross_rename(struct inod
+ 
+ 	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
+ 				 &new.de, &new.inlined);
++	if (IS_ERR(new.bh)) {
++		retval = PTR_ERR(new.bh);
++		goto end_rename;
++	}
+ 
+ 	/* RENAME_EXCHANGE case: old *and* new must both exist */
+ 	if (!new.bh || le32_to_cpu(new.de->inode) != new.inode->i_ino)
 
 
