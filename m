@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851AbaICAak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Sep 2014 20:30:40 -0400
-Received: from www.sr71.net ([198.145.64.142]:55002 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754491AbaICAaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Sep 2014 20:30:39 -0400
-Message-ID: <5406612E.8040802@sr71.net>
-Date: Tue, 02 Sep 2014 17:30:38 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755871AbaICAcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Sep 2014 20:32:05 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:56566 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855AbaICAcD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Sep 2014 20:32:03 -0400
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Michal Hocko <mhocko@suse.com>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-References: <54061505.8020500@sr71.net> <20140902221814.GA18069@cmpxchg.org> <5406466D.1020000@sr71.net> <20140903001009.GA25970@cmpxchg.org>
-In-Reply-To: <20140903001009.GA25970@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140829205015.GE16391@saruman.home>
+References: <1408700972-8518-1-git-send-email-kiran.kumar@linaro.org>
+	<20140822171210.GD27616@saruman.home>
+	<CAAW3YpZPOCkTkx=OM_0ZYA7brh5t32miprstLqGyurD9vN94yg@mail.gmail.com>
+	<20140829205015.GE16391@saruman.home>
+Date: Tue, 2 Sep 2014 17:32:01 -0700
+Message-ID: <CAAW3YpYBwPRa7E5iGDaUGi2gu5DHHE5F3hDexXns_Hd98mj-yg@mail.gmail.com>
+Subject: Re: [RFC 1/2] USB: OTG: Hold wakeupsource when VBUS present
+From: Todd Poynor <toddpoynor@google.com>
+To: balbi@ti.com
+Cc: Kiran Kumar Raparthy <kiran.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        =?UTF-8?B?QXJ2ZSBIau+/vW5uZXbvv71n?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>,
+        Ruchi Kandoi <kandoiruchi@google.com>,
+        Badhri Jagan Sridharan <badhri@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 05:10 PM, Johannes Weiner wrote:
-> On Tue, Sep 02, 2014 at 03:36:29PM -0700, Dave Hansen wrote:
->> On 09/02/2014 03:18 PM, Johannes Weiner wrote:
->>> Accounting new pages is buffered through per-cpu caches, but taking
->>> them off the counters on free is not, so I'm guessing that above a
->>> certain allocation rate the cost of locking and changing the counters
->>> takes over.  Is there a chance you could profile this to see if locks
->>> and res_counter-related operations show up?
+On Fri, Aug 29, 2014 at 1:50 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Wed, Aug 27, 2014 at 02:58:30PM -0700, Todd Poynor wrote:
+>> On Fri, Aug 22, 2014 at 10:12 AM, Felipe Balbi <balbi@ti.com> wrote:
+>> ...
+>> > you never explain why this is needed and you have also added some
+>> > information to commit log which shouldn't be here.
 >>
->> It looks pretty much the same, although it might have equalized the
->> charge and uncharge sides a bit.  Full 'perf top' output attached.
-> 
-> That looks like a partial profile, where did the page allocator, page
-> zeroing etc. go?  Because the distribution among these listed symbols
-> doesn't seem all that crazy:
+>> Android uses this to prevent suspend from interfering with USB
+>> peripheral traffic, notably adb.
+>
+> aaaaah, that's because Android freezes userspace right ?
 
-Perf was only outputting the top 20 functions.  Believe it or not, page
-zeroing and the rest of the allocator path wasn't even in the path of
-the top 20 functions because there is so much lock contention.
+Yes, and only wakeup interrupts will be enabled; it is a suspend-to-RAM.
 
-Here's a longer run of 'perf top' along with the top 100 functions:
 
-	http://www.sr71.net/~dave/intel/perf-top-1409702817.txt.gz
-
-you can at least see copy_page_rep in there.
+Todd
