@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936311AbaICXtB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:49:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933300AbaICWFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933301AbaICWFx (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 3 Sep 2014 18:05:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45223 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962AbaICWFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:05:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valerio Vanni <valerio.vanni@inwind.it>,
-        Alan Cox <alan@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.10 26/55] serial: core: Preserve termios c_cflag for console resume
-Date: Wed,  3 Sep 2014 15:05:16 -0700
-Message-Id: <20140903220458.181068922@linuxfoundation.org>
+        Dave Chiluk <chiluk@canonical.com>
+Subject: [PATCH 3.10 01/55] stable_kernel_rules: Add pointer to netdev-FAQ for network patches
+Date: Wed,  3 Sep 2014 15:04:51 -0700
+Message-Id: <20140903220453.887194257@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -30,40 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Dave Chiluk <chiluk@canonical.com>
 
-commit ae84db9661cafc63d179e1d985a2c5b841ff0ac4 upstream.
+commit b76fc285337b6b256e9ba20a40cfd043f70c27af upstream.
 
-When a tty is opened for the serial console, the termios c_cflag
-settings are inherited from the console line settings.
-However, if the tty is subsequently closed, the termios settings
-are lost. This results in a garbled console if the console is later
-suspended and resumed.
+Stable_kernel_rules should point submitters of network stable patches to the
+netdev_FAQ.txt as requests for stable network patches should go to netdev
+first.
 
-Preserve the termios c_cflag for the serial console when the tty
-is shutdown; this reflects the most recent line settings.
-
-Fixes: Bugzilla #69751, 'serial console does not wake from S3'
-Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Dave Chiluk <chiluk@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/serial_core.c |    3 +++
+ Documentation/stable_kernel_rules.txt |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -241,6 +241,9 @@ static void uart_shutdown(struct tty_str
- 		/*
- 		 * Turn off DTR and RTS early.
- 		 */
-+		if (uart_console(uport) && tty)
-+			uport->cons->cflag = tty->termios.c_cflag;
-+
- 		if (!tty || (tty->termios.c_cflag & HUPCL))
- 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -29,6 +29,9 @@ Rules on what kind of patches are accept
  
+ Procedure for submitting patches to the -stable tree:
+ 
++ - If the patch covers files in net/ or drivers/net please follow netdev stable
++   submission guidelines as described in
++   Documentation/networking/netdev-FAQ.txt
+  - Send the patch, after verifying that it follows the above rules, to
+    stable@vger.kernel.org.  You must note the upstream commit ID in the
+    changelog of your submission, as well as the kernel version you wish
 
 
