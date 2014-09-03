@@ -1,122 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaICIgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:36:41 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:43883 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545AbaICIgg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:36:36 -0400
+	id S1755685AbaICIhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:37:08 -0400
+Received: from mail3.unitn.it ([193.205.206.24]:63255 "EHLO mail3.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755397AbaICIhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 04:37:04 -0400
+Message-ID: <5406D32D.9030306@unitn.it>
+Date: Wed, 03 Sep 2014 10:37:01 +0200
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1409702308-3023-1-git-send-email-sboyd@codeaurora.org>
-References: <1409702308-3023-1-git-send-email-sboyd@codeaurora.org>
-Date: Wed, 3 Sep 2014 10:36:34 +0200
-Message-ID: <CAPDyKFoboJGTzF3aQ=YBpWyVT6opTMgz_6gpOo5BRX30+hfCBQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Content-Type: text/plain; charset=UTF-8
+To: Henrik Austad <henrik@austad.us>
+CC: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        rdunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Dario Faggioli <raistlin@linux.it>, Juri Lelli <juri.lelli@gmail.com>,
+        LKML doc <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] Documentation/scheduler/sched-deadline.txt: improve
+ and clarify AC bits
+References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com>	<1409220029-9002-4-git-send-email-juri.lelli@arm.com>	<20140902214538.GC22581@sisyphus.home.austad.us>	<5406BA02.20806@unitn.it> <CAM6o_m3VXiJO3ED_Rb-_Kfaw7mFyw_s4W0quQ_hSbpxgA_foLA@mail.gmail.com>
+In-Reply-To: <CAM6o_m3VXiJO3ED_Rb-_Kfaw7mFyw_s4W0quQ_hSbpxgA_foLA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 September 2014 01:58, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> If we're tuning on a big-endian CPU we'll never determine we properly
-> tuned the device because we compare the data we received from the
-> controller with a table that assumes the CPU is little-endian.
-> Change the table to be an array of bytes instead of 32-bit words
-> so we can use memcmp() without needing to byte-swap every word
-> depending on the endianess of the CPU.
+On 09/03/2014 09:48 AM, Henrik Austad wrote:
+> On Wed, Sep 3, 2014 at 8:49 AM, Luca Abeni <luca.abeni@unitn.it> wrote:
 >
-> Cc: Asutosh Das <asutoshd@codeaurora.org>
-> Cc: Venkat Gopalakrishnan <venkatg@codeaurora.org>
-> Cc: Georgi Djakov <gdjakov@mm-sol.com>
-> Fixes: 415b5a75da43 "mmc: sdhci-msm: Add platform_execute_tuning implementation"
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> Hi,
+>>
+>> On 09/02/2014 11:45 PM, Henrik Austad wrote:
+>> [...]
+>>
+>>   + On multiprocessor systems with global EDF scheduling (non partitioned
+>>>> + systems), a sufficient test for schedulability can not be based on the
+>>>> + utilisations (it can be shown that task sets with utilisations slightly
+>>>> + larger than 1 can miss deadlines regardless of the number of CPUs M).
+>>>> + However, as previously stated, enforcing that the total utilisation is
+>>>> smaller
+>>>> + than M is enough to guarantee that non real-time tasks are not starved
+>>>> and
+>>>> + that the tardiness of real-time tasks has an upper bound.
+>>>>
+>>>
+>>> I'd _really_ appreciate a link to a paper where all of this is presented
+>>> and proved!
+>>>
+>> Well, my original plan was to add the bibliography in the next round of
+>> patches...
+>> Is this ok?
+>>
+>
+> Sure, but I don't see why you cannot add this now
+Well, there are multiple papers to be cited here: the one showing that
+in a pathological case you can have missed deadlines on M CPUs with utilisation
+slightly larger than 1 (Dhall's effect), one or more papers presenting a more
+advanced admission control for global EDF, one or more papers showing the tardiness
+bound, ...
+So, I'd like to spend some time doing some research to properly cite the most
+appropriate references.
 
-Hi Stephen,
+> you (or Juri?) did update one of the papers in this series, right?
+In patch 1, I updated the URL for a publically available technical report I wrote
+in 1998 (the old URL was in a web site I cannot access anymore, so I changed the
+URL to point to a web site I can control).
 
-If you want me to pick this up, please repost to linux-mmc as well.
-Otherwise you have my ack for it!
+> As long as an article with all the headache ends up here, I'm happy :)
+As said, if possible I'd like to do it in the next batch of patches, so that
+these updates are not delayed... If this is not ok, I'll update the patch
+adding some references, but this will take some time.
 
-Kind regards
-Uffe
 
-> ---
->  drivers/mmc/host/sdhci-msm.c | 42 +++++++++++++++++++++++++++---------------
->  1 file changed, 27 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-> index 40573a58486a..5aabffc15ae8 100644
-> --- a/drivers/mmc/host/sdhci-msm.c
-> +++ b/drivers/mmc/host/sdhci-msm.c
-> @@ -47,22 +47,34 @@
->  #define CMUX_SHIFT_PHASE_SHIFT 24
->  #define CMUX_SHIFT_PHASE_MASK  (7 << CMUX_SHIFT_PHASE_SHIFT)
->
-> -static const u32 tuning_block_64[] = {
-> -       0x00ff0fff, 0xccc3ccff, 0xffcc3cc3, 0xeffefffe,
-> -       0xddffdfff, 0xfbfffbff, 0xff7fffbf, 0xefbdf777,
-> -       0xf0fff0ff, 0x3cccfc0f, 0xcfcc33cc, 0xeeffefff,
-> -       0xfdfffdff, 0xffbfffdf, 0xfff7ffbb, 0xde7b7ff7
-> +static const u8 tuning_block_64[] = {
-> +       0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
-> +       0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
-> +       0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
-> +       0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
-> +       0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
-> +       0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
-> +       0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
-> +       0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
->  };
->
-> -static const u32 tuning_block_128[] = {
-> -       0xff00ffff, 0x0000ffff, 0xccccffff, 0xcccc33cc,
-> -       0xcc3333cc, 0xffffcccc, 0xffffeeff, 0xffeeeeff,
-> -       0xffddffff, 0xddddffff, 0xbbffffff, 0xbbffffff,
-> -       0xffffffbb, 0xffffff77, 0x77ff7777, 0xffeeddbb,
-> -       0x00ffffff, 0x00ffffff, 0xccffff00, 0xcc33cccc,
-> -       0x3333cccc, 0xffcccccc, 0xffeeffff, 0xeeeeffff,
-> -       0xddffffff, 0xddffffff, 0xffffffdd, 0xffffffbb,
-> -       0xffffbbbb, 0xffff77ff, 0xff7777ff, 0xeeddbb77
-> +static const u8 tuning_block_128[] = {
-> +       0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-> +       0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
-> +       0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
-> +       0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
-> +       0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
-> +       0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
-> +       0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
-> +       0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
-> +       0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
-> +       0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
-> +       0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
-> +       0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
-> +       0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
-> +       0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
-> +       0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
-> +       0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
->  };
->
->  struct sdhci_msm_host {
-> @@ -359,7 +371,7 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
->  {
->         int tuning_seq_cnt = 3;
->         u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
-> -       const u32 *tuning_block_pattern = tuning_block_64;
-> +       const u8 *tuning_block_pattern = tuning_block_64;
->         int size = sizeof(tuning_block_64);     /* Pattern size in bytes */
->         int rc;
->         struct mmc_host *mmc = host->mmc;
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
+
+			Thanks,
+				Luca
