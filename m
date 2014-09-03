@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148AbaICWP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:15:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45799 "EHLO
+	id S932729AbaICWQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:16:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45964 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757122AbaICWPw (ORCPT
+	with ESMTP id S1757196AbaICWQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:15:52 -0400
+	Wed, 3 Sep 2014 18:16:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.14 67/88] mei: nfc: fix memory leak in error path
-Date: Wed,  3 Sep 2014 15:05:41 -0700
-Message-Id: <20140903220517.965288933@linuxfoundation.org>
+        Suman Anna <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.16 033/125] ARM: dts: AM4372: Correct mailbox node data
+Date: Wed,  3 Sep 2014 15:06:30 -0700
+Message-Id: <20140903220624.653635910@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
-References: <20140903220515.958924632@linuxfoundation.org>
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,62 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Suman Anna <s-anna@ti.com>
 
-commit 8e8248b1369c97c7bb6f8bcaee1f05deeabab8ef upstream.
+commit 44e6ab1b619853f05bf7250e55a6d82864e340d7 upstream.
 
-NFC will leak buffer if send failed.
-Use single exit point that does the freeing
+The mailbox DT node for AM4372 is enabled and is corrected to
+remove some properties that have crept in by mistake.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Fixes: 9e3269b (ARM: dts: AM4372: Add L2, EDMA, mailbox, MMC and SHAM nodes)
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/nfc.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/am4372.dtsi |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -342,9 +342,10 @@ static int mei_nfc_send(struct mei_cl_de
- 	ndev = (struct mei_nfc_dev *) cldev->priv_data;
- 	dev = ndev->cl->dev;
+--- a/arch/arm/boot/dts/am4372.dtsi
++++ b/arch/arm/boot/dts/am4372.dtsi
+@@ -168,9 +168,6 @@
+ 			ti,hwmods = "mailbox";
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <8>;
+-			ti,mbox-names = "wkup_m3";
+-			ti,mbox-data = <0 0 0 0>;
+-			status = "disabled";
+ 		};
  
-+	err = -ENOMEM;
- 	mei_buf = kzalloc(length + MEI_NFC_HEADER_SIZE, GFP_KERNEL);
- 	if (!mei_buf)
--		return -ENOMEM;
-+		goto out;
- 
- 	hdr = (struct mei_nfc_hci_hdr *) mei_buf;
- 	hdr->cmd = MEI_NFC_CMD_HCI_SEND;
-@@ -354,12 +355,9 @@ static int mei_nfc_send(struct mei_cl_de
- 	hdr->data_size = length;
- 
- 	memcpy(mei_buf + MEI_NFC_HEADER_SIZE, buf, length);
--
- 	err = __mei_cl_send(ndev->cl, mei_buf, length + MEI_NFC_HEADER_SIZE);
- 	if (err < 0)
--		return err;
--
--	kfree(mei_buf);
-+		goto out;
- 
- 	if (!wait_event_interruptible_timeout(ndev->send_wq,
- 				ndev->recv_req_id == ndev->req_id, HZ)) {
-@@ -368,7 +366,8 @@ static int mei_nfc_send(struct mei_cl_de
- 	} else {
- 		ndev->req_id++;
- 	}
--
-+out:
-+	kfree(mei_buf);
- 	return err;
- }
- 
+ 		timer1: timer@44e31000 {
 
 
