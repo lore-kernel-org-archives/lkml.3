@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990AbaICIqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 04:46:18 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:45450 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306AbaICIqP (ORCPT
+	id S1755875AbaICIpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 04:45:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43892 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754795AbaICIpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 04:46:15 -0400
-Date: Wed, 3 Sep 2014 10:46:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Henrik Austad <henrik@austad.us>
-Cc: Juri Lelli <juri.lelli@arm.com>, peterz@infradead.org, luca.abeni@unitn.it,
-        rdunlap@infradead.org, mingo@redhat.com, raistlin@linux.it,
-        juri.lelli@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/4] SCHED_DEADLINE documentation fixes and
- improvements
-Message-ID: <20140903084609.GA8021@gmail.com>
-References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com>
- <20140902215510.GE22581@sisyphus.home.austad.us>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140902215510.GE22581@sisyphus.home.austad.us>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 3 Sep 2014 04:45:38 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 0/5] rtc: at91sam9: add DT support
+Date: Wed,  3 Sep 2014 10:45:29 +0200
+Message-Id: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Henrik Austad <henrik@austad.us> wrote:
+This patch series adds DT support to the atmel at91sam9 RTC driver.
 
-> On Thu, Aug 28, 2014 at 11:00:25AM +0100, Juri Lelli wrote:
-> > Hello everyone,
-> > 
-> > This is version 3 of a small patchset that fixes and improves SCHED_DEADLINE
-> > documentation.
-> > 
-> > Patch 1/4 fixes and clarifies terminology; patch 2/4 aligns Section 4 to
-> > the current interface; patch 3/4 improves and clarifies what admission
-> > control means on UP an SMP systems; patch 4/4 introduces an appendix about
-> > testing.
-> 
-> For patch 1 & 2, please consider adding a Reviewed-by from me 
-> (there's some nitpick, but nothing serious).
-> 
-> For patch 3 & 4 I have some comments, but again, nothing 
-> severe. I'd like a short feedback before adding a reviewed-by 
-> though.
+It also removes any machine specific inclusions to prepare the migration
+to multi platform kernel support, and retain the slow clock to prevent
+the CCF from disabling it at the end of boot.
 
-I had these queued up, but I'll wait for the next round of 
-patches before applying them.
+Best Regards,
 
-Thanks,
+Boris
 
-	Ingo
+Boris BREZILLON (5):
+  rtc: at91sam9: remove references to mach specific headers
+  rtc: at91sam9: use standard readl/writel functions instead of raw
+    versions
+  rtc: at91sam9: add DT support
+  rtc: at91sam9: retain slow clock and check its rate
+  rtc: at91sam9: add DT bindings documentation
+
+ .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 20 +++++++
+ drivers/rtc/rtc-at91sam9.c                         | 63 +++++++++++++++++++---
+ 2 files changed, 75 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+
+-- 
+1.9.1
+
