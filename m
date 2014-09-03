@@ -1,221 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840AbaICWD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:03:28 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59450 "EHLO mail.kernel.org"
+	id S1756817AbaICWAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:00:05 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34867 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933079AbaICWA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:00:29 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/10] perf tests: Add test for perf_evlist__filter_pollfd()
-Date: Wed,  3 Sep 2014 18:59:56 -0300
-Message-Id: <1409781604-16778-3-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409781604-16778-1-git-send-email-acme@kernel.org>
-References: <1409781604-16778-1-git-send-email-acme@kernel.org>
+	id S1756636AbaICWAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 18:00:01 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Rabin Vincent <rabin@rab.in>,
+        Will Deacon <will.deacon@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+Date: Wed,  3 Sep 2014 14:57:04 -0700
+Message-Id: <1409781429-27593-4-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+This is used from set_fixmap() and clear_fixmap() via asm-generic/fixmap.h.
+Also makes sure that the fixmap allocation fits into the expected range.
 
-That will use a synthetic evlist with just what is touched by this new
-method to check that it works as expected.
+Based on patch by Rabin Vincent.
 
-Output in verbose mode:
-
-  $ perf test -v pollfd
-  33: Filter fds with revents mask in a pollfd array         :
-  --- start ---
-  filtering all but pollfd[2]:
-  before:   5 [ 5, 4, 3, 2, 1 ]
-   after:   1 [ 3 ]
-  filtering all but (pollfd[0], pollfd[3]):
-  before:   5 [ 5, 4, 3, 2, 1 ]
-   after:   2 [ 5, 2 ]
-  test child finished with 0
-  ---- end ----
-  Filter fds with revents mask in a pollfd array: Ok
-  $
-
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-x7c8liszdvc3ocmanf2cet8p@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Rabin Vincent <rabin@rab.in>
+Acked-by: Nicolas Pitre <nico@linaro.org>
 ---
- tools/perf/Makefile.perf        |   1 +
- tools/perf/tests/builtin-test.c |   4 ++
- tools/perf/tests/evlist.c       | 103 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |   1 +
- 4 files changed, 109 insertions(+)
- create mode 100644 tools/perf/tests/evlist.c
+ arch/arm/include/asm/fixmap.h |  2 ++
+ arch/arm/mm/mmu.c             | 25 +++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 95e832b1bc3c..9ce194fc00a0 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -399,6 +399,7 @@ LIB_OBJS += $(OUTPUT)tests/open-syscall-tp-fields.o
- LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
- LIB_OBJS += $(OUTPUT)tests/perf-record.o
- LIB_OBJS += $(OUTPUT)tests/rdpmc.o
-+LIB_OBJS += $(OUTPUT)tests/evlist.o
- LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/pmu.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 6a4145e5ad2c..41e556edbe02 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -158,6 +158,10 @@ static struct test {
- 		.func = test__switch_tracking,
- 	},
- 	{
-+		.desc = "Filter fds with revents mask in a pollfd array",
-+		.func = test__perf_evlist__filter_pollfd,
-+	},
-+	{
- 		.func = NULL,
- 	},
+diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+index d984ca69ce19..714606f70425 100644
+--- a/arch/arm/include/asm/fixmap.h
++++ b/arch/arm/include/asm/fixmap.h
+@@ -14,6 +14,8 @@ enum fixed_addresses {
+ 	__end_of_fixed_addresses
  };
-diff --git a/tools/perf/tests/evlist.c b/tools/perf/tests/evlist.c
-new file mode 100644
-index 000000000000..77579158f4d9
---- /dev/null
-+++ b/tools/perf/tests/evlist.c
-@@ -0,0 +1,103 @@
-+#include "util/evlist.h"
-+#include "util/debug.h"
-+#include "tests/tests.h"
-+
-+static void perf_evlist__init_pollfd(struct perf_evlist *evlist,
-+				     int nr_fds_alloc, short revents)
-+{
-+	int fd;
-+
-+	evlist->nr_fds = nr_fds_alloc;
-+
-+	for (fd = 0; fd < nr_fds_alloc; ++fd) {
-+		evlist->pollfd[fd].fd	   = nr_fds_alloc - fd;
-+		evlist->pollfd[fd].revents = revents;
-+	}
-+}
-+
-+static int perf_evlist__fprintf_pollfd(struct perf_evlist *evlist,
-+				       const char *prefix, FILE *fp)
-+{
-+	int printed = 0, fd;
-+
-+	if (!verbose)
-+		return 0;
-+
-+	printed += fprintf(fp, "\n%s: %3d [ ", prefix, evlist->nr_fds);
-+	for (fd = 0; fd < evlist->nr_fds; ++fd)
-+		printed += fprintf(fp, "%s%d", fd ? ", " : "", evlist->pollfd[fd].fd);
-+	printed += fprintf(fp, " ]");
-+	return printed;
-+}
-+
-+int test__perf_evlist__filter_pollfd(void)
-+{
-+	const int nr_fds_alloc = 5;
-+	int nr_fds, expected_fd[2], fd;
-+	struct pollfd pollfd[nr_fds_alloc];
-+	struct perf_evlist evlist_alloc = {
-+		.pollfd	= pollfd,
-+	}, *evlist = &evlist_alloc;
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLIN);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	if (nr_fds != nr_fds_alloc) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != %d shouldn't have filtered anything",
-+			 nr_fds, nr_fds_alloc);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLHUP);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	if (nr_fds != 0) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != %d, should have filtered all fds",
-+			 nr_fds, nr_fds_alloc);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLHUP);
-+	pollfd[2].revents = POLLIN;
-+	expected_fd[0] = pollfd[2].fd;
-+
-+	pr_debug("\nfiltering all but pollfd[2]:");
-+	perf_evlist__fprintf_pollfd(evlist, "before", stderr);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	perf_evlist__fprintf_pollfd(evlist, " after", stderr);
-+	if (nr_fds != 1) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != 1, should have left just one event",
-+			 nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	if (pollfd[0].fd != expected_fd[0]) {
-+		pr_debug("\npollfd[0].fd=%d != %d\n", pollfd[0].fd, expected_fd[0]);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLHUP);
-+	pollfd[0].revents = POLLIN;
-+	expected_fd[0] = pollfd[0].fd;
-+	pollfd[3].revents = POLLIN;
-+	expected_fd[1] = pollfd[3].fd;
-+
-+	pr_debug("\nfiltering all but (pollfd[0], pollfd[3]):");
-+	perf_evlist__fprintf_pollfd(evlist, "before", stderr);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	perf_evlist__fprintf_pollfd(evlist, " after", stderr);
-+	if (nr_fds != 2) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != 2, should have left just two events",
-+			 nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	for (fd = 0; fd < 2; ++fd) {
-+		if (pollfd[fd].fd != expected_fd[fd]) {
-+			pr_debug("\npollfd[%d].fd=%d != %d\n", fd, pollfd[fd].fd, expected_fd[fd]);
-+			return TEST_FAIL;
-+		}
-+	}
-+
-+	pr_debug("\n");
-+
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index be8be10e3957..72c4c039bd80 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -49,6 +49,7 @@ int test__thread_mg_share(void);
- int test__hists_output(void);
- int test__hists_cumulate(void);
- int test__switch_tracking(void);
-+int test__perf_evlist__filter_pollfd(void);
  
- #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
++void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot);
++
+ #include <asm-generic/fixmap.h>
+ 
+ #endif
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 7fa0966cd15f..fa3a667852cb 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -22,6 +22,7 @@
+ #include <asm/cputype.h>
+ #include <asm/sections.h>
+ #include <asm/cachetype.h>
++#include <asm/fixmap.h>
+ #include <asm/sections.h>
+ #include <asm/setup.h>
+ #include <asm/smp_plat.h>
+@@ -392,6 +393,30 @@ SET_MEMORY_FN(rw, pte_set_rw)
+ SET_MEMORY_FN(x, pte_set_x)
+ SET_MEMORY_FN(nx, pte_set_nx)
+ 
++void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot)
++{
++	unsigned long vaddr = __fix_to_virt(idx);
++	pte_t *pte = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
++
++	/* Make sure fixmap region does not exceed available allocation. */
++	BUILD_BUG_ON(FIXADDR_START + (__end_of_fixed_addresses * PAGE_SIZE) >
++		     FIXADDR_END);
++	BUG_ON(idx >= __end_of_fixed_addresses);
++
++	if (pgprot_val(prot))
++		set_pte_at(NULL, vaddr, pte,
++			pfn_pte(phys >> PAGE_SHIFT, prot));
++	else
++		pte_clear(NULL, vaddr, pte);
++
++	/*
++	 * Given the potential a15 tlbi errata, we can only do tlb flushes
++	 * with interrupts disabled. Callers must have taken care of this.
++	 */
++	WARN_ON_ONCE(!irqs_disabled());
++	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
++}
++
+ /*
+  * Adjust the PMD section entries according to the CPU in use.
+  */
 -- 
-1.9.3
+1.9.1
 
