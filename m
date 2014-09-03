@@ -1,229 +1,485 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936459AbaICXyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:54:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756762AbaICWFs (ORCPT
+	id S935136AbaICX7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:59:19 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:45839 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932561AbaICX7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:48 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Evans <cevans@google.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.10 04/55] isofs: Fix unbounded recursion when processing relocated directories
-Date: Wed,  3 Sep 2014 15:04:54 -0700
-Message-Id: <20140903220454.350652383@linuxfoundation.org>
+	Wed, 3 Sep 2014 19:59:17 -0400
+From: Chase Southwood <chase.southwood@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@gmail.com>
+Subject: [PATCH] staging: comedi: hwdrv_apci1500: use dev->class_dev in calls to dev_warn()
+Date: Wed,  3 Sep 2014 18:58:49 -0500
+Message-Id: <1409788729-22875-1-git-send-email-chase.southwood@gmail.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+git-grep reveals that hwdrv_apci1500.c is the only file in comedi that uses
+dev->hw_dev in calls to dev_{err,warn}().  The rest of the drivers pass
+dev->class_dev to these macros instead.  Switch the dev_warn() calls in
+this driver to use dev->class_dev as well, for consistency.
 
-------------------
-
-From: Jan Kara <jack@suse.cz>
-
-commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4 upstream.
-
-We did not check relocated directory in any way when processing Rock
-Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
-entry pointing to another CL entry leading to possibly unbounded
-recursion in kernel code and thus stack overflow or deadlocks (if there
-is a loop created from CL entries).
-
-Fix the problem by not allowing CL entry to point to a directory entry
-with CL entry (such use makes no good sense anyway) and by checking
-whether CL entry doesn't point to itself.
-
-Reported-by: Chris Evans <cevans@google.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 ---
- fs/isofs/inode.c |   15 ++++++++-------
- fs/isofs/isofs.h |   23 +++++++++++++++++++----
- fs/isofs/rock.c  |   39 ++++++++++++++++++++++++++++-----------
- 3 files changed, 55 insertions(+), 22 deletions(-)
+As an aside, it looks like lots of these cases are actually error
+conditions that might be more appropriate use cases for dev_err().  But
+they could be changed in a follow on patch, this is enough for this one.
+ .../comedi/drivers/addi-data/hwdrv_apci1500.c      | 104 ++++++++++-----------
+ 1 file changed, 52 insertions(+), 52 deletions(-)
 
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -69,7 +69,7 @@ static void isofs_put_super(struct super
- 	return;
- }
- 
--static int isofs_read_inode(struct inode *);
-+static int isofs_read_inode(struct inode *, int relocated);
- static int isofs_statfs (struct dentry *, struct kstatfs *);
- 
- static struct kmem_cache *isofs_inode_cachep;
-@@ -1274,7 +1274,7 @@ out_toomany:
- 	goto out;
- }
- 
--static int isofs_read_inode(struct inode *inode)
-+static int isofs_read_inode(struct inode *inode, int relocated)
- {
- 	struct super_block *sb = inode->i_sb;
- 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
-@@ -1419,7 +1419,7 @@ static int isofs_read_inode(struct inode
- 	 */
- 
- 	if (!high_sierra) {
--		parse_rock_ridge_inode(de, inode);
-+		parse_rock_ridge_inode(de, inode, relocated);
- 		/* if we want uid/gid set, override the rock ridge setting */
- 		if (sbi->s_uid_set)
- 			inode->i_uid = sbi->s_uid;
-@@ -1498,9 +1498,10 @@ static int isofs_iget5_set(struct inode
-  * offset that point to the underlying meta-data for the inode.  The
-  * code below is otherwise similar to the iget() code in
-  * include/linux/fs.h */
--struct inode *isofs_iget(struct super_block *sb,
--			 unsigned long block,
--			 unsigned long offset)
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated)
- {
- 	unsigned long hashval;
- 	struct inode *inode;
-@@ -1522,7 +1523,7 @@ struct inode *isofs_iget(struct super_bl
- 		return ERR_PTR(-ENOMEM);
- 
- 	if (inode->i_state & I_NEW) {
--		ret = isofs_read_inode(inode);
-+		ret = isofs_read_inode(inode, relocated);
- 		if (ret < 0) {
- 			iget_failed(inode);
- 			inode = ERR_PTR(ret);
---- a/fs/isofs/isofs.h
-+++ b/fs/isofs/isofs.h
-@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
- 
- struct inode;		/* To make gcc happy */
- 
--extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
-+extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
- extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
- extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
- 
-@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struc
- extern struct buffer_head *isofs_bread(struct inode *, sector_t);
- extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
- 
--extern struct inode *isofs_iget(struct super_block *sb,
--                                unsigned long block,
--                                unsigned long offset);
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated);
-+
-+static inline struct inode *isofs_iget(struct super_block *sb,
-+				       unsigned long block,
-+				       unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 0);
-+}
-+
-+static inline struct inode *isofs_iget_reloc(struct super_block *sb,
-+					     unsigned long block,
-+					     unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 1);
-+}
- 
- /* Because the inode number is no longer relevant to finding the
-  * underlying meta-data for an inode, we are free to choose a more
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -288,12 +288,16 @@ eio:
- 	goto out;
- }
- 
-+#define RR_REGARD_XA 1
-+#define RR_RELOC_DE 2
-+
- static int
- parse_rock_ridge_inode_internal(struct iso_directory_record *de,
--				struct inode *inode, int regard_xa)
-+				struct inode *inode, int flags)
- {
- 	int symlink_len = 0;
- 	int cnt, sig;
-+	unsigned int reloc_block;
- 	struct inode *reloc;
- 	struct rock_ridge *rr;
- 	int rootflag;
-@@ -305,7 +309,7 @@ parse_rock_ridge_inode_internal(struct i
- 
- 	init_rock_state(&rs, inode);
- 	setup_rock_ridge(de, inode, &rs);
--	if (regard_xa) {
-+	if (flags & RR_REGARD_XA) {
- 		rs.chr += 14;
- 		rs.len -= 14;
- 		if (rs.len < 0)
-@@ -485,12 +489,22 @@ repeat:
- 					"relocated directory\n");
- 			goto out;
- 		case SIG('C', 'L'):
--			ISOFS_I(inode)->i_first_extent =
--			    isonum_733(rr->u.CL.location);
--			reloc =
--			    isofs_iget(inode->i_sb,
--				       ISOFS_I(inode)->i_first_extent,
--				       0);
-+			if (flags & RR_RELOC_DE) {
-+				printk(KERN_ERR
-+				       "ISOFS: Recursive directory relocation "
-+				       "is not supported\n");
-+				goto eio;
-+			}
-+			reloc_block = isonum_733(rr->u.CL.location);
-+			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
-+			    ISOFS_I(inode)->i_iget5_offset == 0) {
-+				printk(KERN_ERR
-+				       "ISOFS: Directory relocation points to "
-+				       "itself\n");
-+				goto eio;
-+			}
-+			ISOFS_I(inode)->i_first_extent = reloc_block;
-+			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
- 			if (IS_ERR(reloc)) {
- 				ret = PTR_ERR(reloc);
- 				goto out;
-@@ -637,9 +651,11 @@ static char *get_symlink_chunk(char *rpn
- 	return rpnt;
- }
- 
--int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
-+int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
-+			   int relocated)
- {
--	int result = parse_rock_ridge_inode_internal(de, inode, 0);
-+	int flags = relocated ? RR_RELOC_DE : 0;
-+	int result = parse_rock_ridge_inode_internal(de, inode, flags);
- 
- 	/*
- 	 * if rockridge flag was reset and we didn't look for attributes
-@@ -647,7 +663,8 @@ int parse_rock_ridge_inode(struct iso_di
- 	 */
- 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
- 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
--		result = parse_rock_ridge_inode_internal(de, inode, 14);
-+		result = parse_rock_ridge_inode_internal(de, inode,
-+							 flags | RR_REGARD_XA);
+diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
+index e637be1..0ea081e 100644
+--- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
++++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
+@@ -176,7 +176,7 @@ static int apci1500_di_config(struct comedi_device *dev,
+ 		if (data[0] == 2) {
+ 			i_MaxChannel = 6;
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The specified port event does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -192,7 +192,7 @@ static int apci1500_di_config(struct comedi_device *dev,
+ 		data[1] = APCI1500_OR_PRIORITY;
+ 		break;
+ 	default:
+-		dev_warn(dev->hw_dev,
++		dev_warn(dev->class_dev,
+ 			"The specified interrupt logic does not exist\n");
+ 		return -EINVAL;
  	}
- 	return result;
- }
-
+@@ -237,7 +237,7 @@ static int apci1500_di_config(struct comedi_device *dev,
+ 		case 5:
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The option indicated in the event mask does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -254,7 +254,7 @@ static int apci1500_di_config(struct comedi_device *dev,
+ 
+ 			if (data[1] == APCI1500_OR_PRIORITY
+ 				&& i_PatternTransition != 0) {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Transition error on an OR PRIORITY logic\n");
+ 				return -EINVAL;
+ 			}
+@@ -272,7 +272,7 @@ static int apci1500_di_config(struct comedi_device *dev,
+ 				}
+ 
+ 				if (i_PatternTransitionCount > 1) {
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Transition error on an AND logic\n");
+ 					return -EINVAL;
+ 				}
+@@ -346,7 +346,7 @@ static int apci1500_di_config(struct comedi_device *dev,
+ 				APCI1500_Z8536_CONTROL_REGISTER);
+ 
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The choice for interrupt logic does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -446,7 +446,7 @@ static int apci1500_di_config(struct comedi_device *dev,
+ 				devpriv->iobase +
+ 				APCI1500_Z8536_CONTROL_REGISTER);
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The choice for interrupt logic does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -515,7 +515,7 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+ 
+ 				} else {
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Event 1 not initialised\n");
+ 					return -EINVAL;
+ 				}
+@@ -551,13 +551,13 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+ 					i_Event2InterruptStatus = 1;
+ 				} else {
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Event 2 not initialised\n");
+ 					return -EINVAL;
+ 				}
+ 			}
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The port parameter is in error\n");
+ 			return -EINVAL;
+ 		}
+@@ -594,7 +594,7 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+ 					i_Event1InterruptStatus = 0;
+ 				} else {
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Event 1 not initialised\n");
+ 					return -EINVAL;
+ 				}
+@@ -624,20 +624,20 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 					i_Event2InterruptStatus = 0;
+ 				} else {
+ 
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Event 2 not initialised\n");
+ 					return -EINVAL;
+ 				}
+ 			}
+ 
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The port parameter is in error\n");
+ 			return -EINVAL;
+ 		}
+ 		break;
+ 	default:
+-		dev_warn(dev->hw_dev,
++		dev_warn(dev->class_dev,
+ 			"The option of START/STOP logic does not exist\n");
+ 		return -EINVAL;
+ 	}
+@@ -871,7 +871,7 @@ static int apci1500_do_write(struct comedi_device *dev,
+ 					devpriv->i_IobaseAddon +
+ 					APCI1500_DIGITAL_OP);
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Specified channel not supported\n");
+ 				return -EINVAL;
+ 			}
+@@ -947,13 +947,13 @@ static int apci1500_do_write(struct comedi_device *dev,
+ 						devpriv->i_IobaseAddon +
+ 						APCI1500_DIGITAL_OP);
+ 				} else {
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Specified channel not supported\n");
+ 					return -EINVAL;
+ 				}
+ 			}
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"Specified functionality does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -991,7 +991,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 		outw(data[0], devpriv->i_IobaseAddon + APCI1500_CLK_SELECT);
+ 	} else {
+ 		if (data[0] != 3) {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The option for input clock selection does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1008,7 +1008,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[2] = APCI1500_TIMER;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This choice is not a timer nor a counter\n");
+ 			return -EINVAL;
+ 		}
+@@ -1022,7 +1022,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[4] = APCI1500_SINGLE;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This option for single/continuous mode does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1117,12 +1117,12 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 					devpriv->iobase +
+ 					APCI1500_Z8536_CONTROL_REGISTER);
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Error in selection of interrupt enable or disable\n");
+ 				return -EINVAL;
+ 			}
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"Error in selection of reload value\n");
+ 			return -EINVAL;
+ 		}
+@@ -1139,7 +1139,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[2] = APCI1500_TIMER;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This choice is not a timer nor a counter\n");
+ 			return -EINVAL;
+ 		}
+@@ -1153,7 +1153,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[4] = APCI1500_SINGLE;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This option for single/continuous mode does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1167,7 +1167,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[5] = APCI1500_HARDWARE_TRIGGER;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This choice for software or hardware trigger does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1181,7 +1181,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[6] = APCI1500_HARDWARE_GATE;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This choice for software or hardware gate does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1277,12 +1277,12 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 					devpriv->iobase +
+ 					APCI1500_Z8536_CONTROL_REGISTER);
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Error in selection of interrupt enable or disable\n");
+ 				return -EINVAL;
+ 			}
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"Error in selection of reload value\n");
+ 			return -EINVAL;
+ 		}
+@@ -1299,7 +1299,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[2] = APCI1500_WATCHDOG;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This choice is not a watchdog nor a counter\n");
+ 			return -EINVAL;
+ 		}
+@@ -1313,7 +1313,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[4] = APCI1500_SINGLE;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This option for single/continuous mode does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1327,7 +1327,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 			data[6] = APCI1500_HARDWARE_GATE;
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"This choice for software or hardware gate does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1437,12 +1437,12 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 
+ 			} else {
+ 
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Error in selection of interrupt enable or disable\n");
+ 				return -EINVAL;
+ 			}
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"Error in selection of reload value\n");
+ 			return -EINVAL;
+ 		}
+@@ -1451,7 +1451,7 @@ static int apci1500_timer_config(struct comedi_device *dev,
+ 		break;
+ 
+ 	default:
+-		dev_warn(dev->hw_dev,
++		dev_warn(dev->class_dev,
+ 			"The specified counter/timer option does not exist\n");
+ 		return -EINVAL;
+ 	}
+@@ -1494,7 +1494,7 @@ static int apci1500_timer_write(struct comedi_device *dev,
+ 					devpriv->iobase +
+ 					APCI1500_Z8536_CONTROL_REGISTER);
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Counter/Timer1 not configured\n");
+ 				return -EINVAL;
+ 			}
+@@ -1534,14 +1534,14 @@ static int apci1500_timer_write(struct comedi_device *dev,
+ 					devpriv->iobase +
+ 					APCI1500_Z8536_CONTROL_REGISTER);
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Counter/Timer1 not configured\n");
+ 				return -EINVAL;
+ 			}
+ 			break;
+ 
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The specified option for start/stop/trigger does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1566,7 +1566,7 @@ static int apci1500_timer_write(struct comedi_device *dev,
+ 					devpriv->iobase +
+ 					APCI1500_Z8536_CONTROL_REGISTER);
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Counter/Timer2 not configured\n");
+ 				return -EINVAL;
+ 			}
+@@ -1605,13 +1605,13 @@ static int apci1500_timer_write(struct comedi_device *dev,
+ 					devpriv->iobase +
+ 					APCI1500_Z8536_CONTROL_REGISTER);
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Counter/Timer2 not configured\n");
+ 				return -EINVAL;
+ 			}
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The specified option for start/stop/trigger does not exist\n");
+ 			return -EINVAL;
+ 		}
+@@ -1637,7 +1637,7 @@ static int apci1500_timer_write(struct comedi_device *dev,
+ 					APCI1500_Z8536_CONTROL_REGISTER);
+ 
+ 			} else {
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Watchdog/Counter3 not configured\n");
+ 				return -EINVAL;
+ 			}
+@@ -1679,7 +1679,7 @@ static int apci1500_timer_write(struct comedi_device *dev,
+ 						devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+ 				} else {
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Counter3 not configured\n");
+ 					return -EINVAL;
+ 				}
+@@ -1696,25 +1696,25 @@ static int apci1500_timer_write(struct comedi_device *dev,
+ 						devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+ 				} else {
+-					dev_warn(dev->hw_dev,
++					dev_warn(dev->class_dev,
+ 						"Watchdog 3 not configured\n");
+ 					return -EINVAL;
+ 				}
+ 				break;
+ 			default:
+-				dev_warn(dev->hw_dev,
++				dev_warn(dev->class_dev,
+ 					"Wrong choice of watchdog/counter3\n");
+ 				return -EINVAL;
+ 			}
+ 			break;
+ 		default:
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The specified option for start/stop/trigger does not exist\n");
+ 			return -EINVAL;
+ 		}
+ 		break;
+ 	default:
+-		dev_warn(dev->hw_dev,
++		dev_warn(dev->class_dev,
+ 			"The specified choice for counter/watchdog/timer does not exist\n");
+ 		return -EINVAL;
+ 	}
+@@ -1772,7 +1772,7 @@ static int apci1500_timer_bits(struct comedi_device *dev,
+ 				data[0] | inb(devpriv->iobase +
+ 				APCI1500_Z8536_CONTROL_REGISTER);
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"Timer/Counter1 not configured\n");
+ 			return -EINVAL;
+ 		}
+@@ -1814,7 +1814,7 @@ static int apci1500_timer_bits(struct comedi_device *dev,
+ 				data[0] | inb(devpriv->iobase +
+ 				APCI1500_Z8536_CONTROL_REGISTER);
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"Timer/Counter2 not configured\n");
+ 			return -EINVAL;
+ 		}
+@@ -1856,13 +1856,13 @@ static int apci1500_timer_bits(struct comedi_device *dev,
+ 				data[0] | inb(devpriv->iobase +
+ 				APCI1500_Z8536_CONTROL_REGISTER);
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"WatchdogCounter3 not configured\n");
+ 			return -EINVAL;
+ 		}
+ 		break;
+ 	default:
+-		dev_warn(dev->hw_dev,
++		dev_warn(dev->class_dev,
+ 			"The choice of timer/counter/watchdog does not exist\n");
+ 		return -EINVAL;
+ 	}
+@@ -1908,7 +1908,7 @@ static int apci1500_do_bits(struct comedi_device *dev,
+ 		if (data[0] == 0) {
+ 			i_Constant = 0x00;
+ 		} else {
+-			dev_warn(dev->hw_dev,
++			dev_warn(dev->class_dev,
+ 				"The parameter passed to driver is in error for enabling the voltage interrupt\n");
+ 			return -EINVAL;
+ 		}
+@@ -2176,7 +2176,7 @@ static void apci1500_interrupt(int irq, void *d)
+ 		/* Authorizes the main interrupt on the board */
+ 		outb(0xD0, devpriv->iobase + APCI1500_Z8536_CONTROL_REGISTER);
+ 	} else {
+-		dev_warn(dev->hw_dev,
++		dev_warn(dev->class_dev,
+ 			"Interrupt from unknown source\n");
+ 
+ 	}
+-- 
+2.1.0
 
