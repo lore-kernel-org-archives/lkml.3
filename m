@@ -1,130 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269AbaICLc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 07:32:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22374 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201AbaICLcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 07:32:54 -0400
-From: Laszlo Ersek <lersek@redhat.com>
-To: mingo@kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, x86@kernel.org,
-        linux-ia64@vger.kernel.org, matt.fleming@intel.com, msalter@redhat.com,
-        lersek@redhat.com
-Subject: [PATCH v2 2/5] efi: introduce efi_md_typeattr_format()
-Date: Wed,  3 Sep 2014 13:32:20 +0200
-Message-Id: <1409743943-16934-3-git-send-email-lersek@redhat.com>
-In-Reply-To: <1409743943-16934-1-git-send-email-lersek@redhat.com>
-References: <1409743943-16934-1-git-send-email-lersek@redhat.com>
+	id S1756473AbaICLeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 07:34:14 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:53883 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756419AbaICLeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 07:34:09 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dirk Behme <dirk.behme@de.bosch.com>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: [PATCH 3.17-rc3] serial: imx: clean up imx_poll_get_char()
+Date: Wed,  3 Sep 2014 12:33:53 +0100
+Message-Id: <1409744033-32741-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the moment, there are three architectures debug-printing the EFI memory
-map at initialization: x86, ia64, and arm64. They all use different format
-strings, plus the EFI memory type and the EFI memory attributes are
-similarly hard to decode for a human reader.
+From: Dirk Behme <dirk.behme@de.bosch.com>
 
-Introduce a helper __init function that formats the memory type and the
-memory attributes in a unified way, to a user-provided character buffer.
+Looking at the get_poll_char() function of the 8250.c serial driver,
+we learn:
 
-The array "memory_type_name" is copied from the arm64 code, temporarily
-duplicating it. The (otherwise optional) braces around each string literal
-in the initializer list are dropped in order to match the kernel coding
-style more closely. The element size is tightened from 32 to 20 bytes
-(maximum actual string length + 1) so that we can derive the field width
-from the element size.
+* poll_get_char() doesn't have to save/disable/restore the interrupt
+  registers. No interrupt handling is needed in this function at all.
+  Remove it.
 
-Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+* Don't block in case there is no data available. So instead blocking
+  in the do {} while loop, just return with NO_POLL_CHAR, immediately .
+
+Additionally, while the i.MX6 register URXD[7-0] contain the RX_DATA,
+the upper bits of this register (URXD[15-10]) might contain some
+control flags. To ensure that these are not returned with the data
+read, just mask out URXD[7-0].
+
+These changes fix the 'hang' working with kdb:
+
+$ echo ttymxc3 > /sys/module/kgdboc/parameters/kgdboc
+$ echo g >/proc/sysrq-trigger
+[0]kdb> help
+...
+<hang>
+
+Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
 ---
- include/linux/efi.h        |  7 ++++++
- drivers/firmware/efi/efi.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+)
+ drivers/tty/serial/imx.c | 29 ++++-------------------------
+ 1 file changed, 4 insertions(+), 25 deletions(-)
 
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index b4b1d8d..d04d618 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -887,6 +887,13 @@ extern bool efi_poweroff_required(void);
- 	     (md) <= (efi_memory_desc_t *)((m)->map_end - (m)->desc_size); \
- 	     (md) = (void *)(md) + (m)->desc_size)
- 
-+/*
-+ * Format an EFI memory descriptor's type and attributes to a user-provided
-+ * character buffer, as per snprintf(), and return the buffer.
-+ */
-+char * __init efi_md_typeattr_format(char *buf, size_t size,
-+				     const efi_memory_desc_t *md);
-+
- /**
-  * efi_range_is_wc - check the WC bit on an address range
-  * @start: starting kvirt address
-diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-index 64ecbb5..43d9d25 100644
---- a/drivers/firmware/efi/efi.c
-+++ b/drivers/firmware/efi/efi.c
-@@ -423,3 +423,60 @@ int __init efi_get_fdt_params(struct efi_fdt_params *params, int verbose)
- 	return ret;
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 044e86d..983668a 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -80,6 +80,7 @@
+ #define URXD_FRMERR	(1<<12)
+ #define URXD_BRK	(1<<11)
+ #define URXD_PRERR	(1<<10)
++#define URXD_RX_DATA	(0xFF<<0)
+ #define UCR1_ADEN	(1<<15) /* Auto detect interrupt */
+ #define UCR1_ADBR	(1<<14) /* Auto detect baud rate */
+ #define UCR1_TRDYEN	(1<<13) /* Transmitter ready interrupt enable */
+@@ -1506,32 +1507,10 @@ imx_verify_port(struct uart_port *port, struct serial_struct *ser)
+ #if defined(CONFIG_CONSOLE_POLL)
+ static int imx_poll_get_char(struct uart_port *port)
+ {
+-	struct imx_port_ucrs old_ucr;
+-	unsigned int status;
+-	unsigned char c;
+-
+-	/* save control registers */
+-	imx_port_ucrs_save(port, &old_ucr);
+-
+-	/* disable interrupts */
+-	writel(UCR1_UARTEN, port->membase + UCR1);
+-	writel(old_ucr.ucr2 & ~(UCR2_ATEN | UCR2_RTSEN | UCR2_ESCI),
+-	       port->membase + UCR2);
+-	writel(old_ucr.ucr3 & ~(UCR3_DCD | UCR3_RI | UCR3_DTREN),
+-	       port->membase + UCR3);
+-
+-	/* poll */
+-	do {
+-		status = readl(port->membase + USR2);
+-	} while (~status & USR2_RDR);
+-
+-	/* read */
+-	c = readl(port->membase + URXD0);
+-
+-	/* restore control registers */
+-	imx_port_ucrs_restore(port, &old_ucr);
++	if (!(readl(port->membase + USR2) & USR2_RDR))
++		return NO_POLL_CHAR;
+
+-	return c;
++	return readl(port->membase + URXD0) & URXD_RX_DATA;
  }
- #endif /* CONFIG_EFI_PARAMS_FROM_FDT */
-+
-+static __initdata char memory_type_name[][20] = {
-+	"Reserved",
-+	"Loader Code",
-+	"Loader Data",
-+	"Boot Code",
-+	"Boot Data",
-+	"Runtime Code",
-+	"Runtime Data",
-+	"Conventional Memory",
-+	"Unusable Memory",
-+	"ACPI Reclaim Memory",
-+	"ACPI Memory NVS",
-+	"Memory Mapped I/O",
-+	"MMIO Port Space",
-+	"PAL Code"
-+};
-+
-+char * __init efi_md_typeattr_format(char *buf, size_t size,
-+				     const efi_memory_desc_t *md)
-+{
-+	char *pos;
-+	int type_len;
-+	register u64 attr;
-+
-+	pos = buf;
-+	if (md->type >= ARRAY_SIZE(memory_type_name))
-+		type_len = snprintf(pos, size, "[type=%u", md->type);
-+	else
-+		type_len = snprintf(pos, size, "[%-*s",
-+				    (int)(sizeof(memory_type_name[0]) - 1),
-+				    memory_type_name[md->type]);
-+	if (type_len >= size)
-+		return buf;
-+
-+	pos += type_len;
-+	size -= type_len;
-+
-+	attr = md->attribute;
-+	if (attr & ~(EFI_MEMORY_UC | EFI_MEMORY_WC | EFI_MEMORY_WT |
-+		     EFI_MEMORY_WB | EFI_MEMORY_UCE | EFI_MEMORY_WP |
-+		     EFI_MEMORY_RP | EFI_MEMORY_XP | EFI_MEMORY_RUNTIME))
-+		snprintf(pos, size, "|attr=0x%016llx]",
-+			 (unsigned long long)attr);
-+	else
-+		snprintf(pos, size, "|%3s|%2s|%2s|%2s|%3s|%2s|%2s|%2s|%2s]",
-+			 attr & EFI_MEMORY_RUNTIME ? "RUN" : "",
-+			 attr & EFI_MEMORY_XP      ? "XP"  : "",
-+			 attr & EFI_MEMORY_RP      ? "RP"  : "",
-+			 attr & EFI_MEMORY_WP      ? "WP"  : "",
-+			 attr & EFI_MEMORY_UCE     ? "UCE" : "",
-+			 attr & EFI_MEMORY_WB      ? "WB"  : "",
-+			 attr & EFI_MEMORY_WT      ? "WT"  : "",
-+			 attr & EFI_MEMORY_WC      ? "WC"  : "",
-+			 attr & EFI_MEMORY_UC      ? "UC"  : "");
-+	return buf;
-+}
--- 
-1.8.3.1
 
+ static void imx_poll_put_char(struct uart_port *port, unsigned char c)
+--
+1.9.3
 
