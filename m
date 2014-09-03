@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213AbaICWF4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:05:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45237 "EHLO
+	id S936257AbaICXpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:45:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932995AbaICWFs (ORCPT
+	with ESMTP id S1755962AbaICWF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:48 -0400
+	Wed, 3 Sep 2014 18:05:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 05/55] USB: OHCI: dont lose track of EDs when a controller dies
-Date: Wed,  3 Sep 2014 15:04:55 -0700
-Message-Id: <20140903220454.507214807@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.10 25/55] ext4: fix ext4_discard_allocated_blocks() if we cant allocate the pa struct
+Date: Wed,  3 Sep 2014 15:05:15 -0700
+Message-Id: <20140903220458.010684264@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
 References: <20140903220453.653576908@linuxfoundation.org>
@@ -28,114 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 977dcfdc60311e7aa571cabf6f39c36dde13339e upstream.
+commit 86f0afd463215fc3e58020493482faa4ac3a4d69 upstream.
 
-This patch fixes a bug in ohci-hcd.  When an URB is unlinked, the
-corresponding Endpoint Descriptor is added to the ed_rm_list and taken
-off the hardware schedule.  Once the ED is no longer visible to the
-hardware, finish_unlinks() handles the URBs that were unlinked or have
-completed.  If any URBs remain attached to the ED, the ED is added
-back to the hardware schedule -- but only if the controller is
-running.
+If there is a failure while allocating the preallocation structure, a
+number of blocks can end up getting marked in the in-memory buddy
+bitmap, and then not getting released.  This can result in the
+following corruption getting reported by the kernel:
 
-This fails when a controller dies.  A non-empty ED does not get added
-back to the hardware schedule and does not remain on the ed_rm_list;
-ohci-hcd loses track of it.  The remaining URBs cannot be unlinked,
-which causes the USB stack to hang.
+EXT4-fs error (device sda3): ext4_mb_generate_buddy:758: group 1126,
+12793 clusters in bitmap, 12729 in gd
 
-The patch changes finish_unlinks() so that non-empty EDs remain on
-the ed_rm_list if the controller isn't running.  This requires moving
-some of the existing code around, to avoid modifying the ED's hardware
-fields more than once.
+In that case, we need to release the blocks using mb_free_blocks().
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested: fs smoke test; also demonstrated that with injected errors,
+	the file system is no longer getting corrupted
+
+Google-Bug-Id: 16657874
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ohci-q.c |   46 +++++++++++++++++++++++++++++-----------------
- 1 file changed, 29 insertions(+), 17 deletions(-)
+ fs/ext4/mballoc.c |   21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ohci-q.c
-+++ b/drivers/usb/host/ohci-q.c
-@@ -314,8 +314,7 @@ static void periodic_unlink (struct ohci
-  *  - ED_OPER: when there's any request queued, the ED gets rescheduled
-  *    immediately.  HC should be working on them.
-  *
-- *  - ED_IDLE:  when there's no TD queue. there's no reason for the HC
-- *    to care about this ED; safe to disable the endpoint.
-+ *  - ED_IDLE: when there's no TD queue or the HC isn't running.
-  *
-  * When finish_unlinks() runs later, after SOF interrupt, it will often
-  * complete one or more URB unlinks before making that state change.
-@@ -928,6 +927,10 @@ rescan_all:
- 		int			completed, modified;
- 		__hc32			*prev;
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3177,8 +3177,27 @@ static void ext4_mb_collect_stats(struct
+ static void ext4_discard_allocated_blocks(struct ext4_allocation_context *ac)
+ {
+ 	struct ext4_prealloc_space *pa = ac->ac_pa;
++	struct ext4_buddy e4b;
++	int err;
  
-+		/* Is this ED already invisible to the hardware? */
-+		if (ed->state == ED_IDLE)
-+			goto ed_idle;
-+
- 		/* only take off EDs that the HC isn't using, accounting for
- 		 * frame counter wraps and EDs with partially retired TDs
- 		 */
-@@ -957,12 +960,20 @@ skip_ed:
- 			}
- 		}
+-	if (pa && pa->pa_type == MB_INODE_PA)
++	if (pa == NULL) {
++		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
++		if (err) {
++			/*
++			 * This should never happen since we pin the
++			 * pages in the ext4_allocation_context so
++			 * ext4_mb_load_buddy() should never fail.
++			 */
++			WARN(1, "mb_load_buddy failed (%d)", err);
++			return;
++		}
++		ext4_lock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
++		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
++			       ac->ac_f_ex.fe_len);
++		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
++		return;
++	}
++	if (pa->pa_type == MB_INODE_PA)
+ 		pa->pa_free += ac->ac_b_ex.fe_len;
+ }
  
-+		/* ED's now officially unlinked, hc doesn't see */
-+		ed->state = ED_IDLE;
-+		if (quirk_zfmicro(ohci) && ed->type == PIPE_INTERRUPT)
-+			ohci->eds_scheduled--;
-+		ed->hwHeadP &= ~cpu_to_hc32(ohci, ED_H);
-+		ed->hwNextED = 0;
-+		wmb();
-+		ed->hwINFO &= ~cpu_to_hc32(ohci, ED_SKIP | ED_DEQUEUE);
-+ed_idle:
-+
- 		/* reentrancy:  if we drop the schedule lock, someone might
- 		 * have modified this list.  normally it's just prepending
- 		 * entries (which we'd ignore), but paranoia won't hurt.
- 		 */
--		*last = ed->ed_next;
--		ed->ed_next = NULL;
- 		modified = 0;
- 
- 		/* unlink urbs as requested, but rescan the list after
-@@ -1020,19 +1031,20 @@ rescan_this:
- 		if (completed && !list_empty (&ed->td_list))
- 			goto rescan_this;
- 
--		/* ED's now officially unlinked, hc doesn't see */
--		ed->state = ED_IDLE;
--		if (quirk_zfmicro(ohci) && ed->type == PIPE_INTERRUPT)
--			ohci->eds_scheduled--;
--		ed->hwHeadP &= ~cpu_to_hc32(ohci, ED_H);
--		ed->hwNextED = 0;
--		wmb ();
--		ed->hwINFO &= ~cpu_to_hc32 (ohci, ED_SKIP | ED_DEQUEUE);
--
--		/* but if there's work queued, reschedule */
--		if (!list_empty (&ed->td_list)) {
--			if (ohci->rh_state == OHCI_RH_RUNNING)
--				ed_schedule (ohci, ed);
-+		/*
-+		 * If no TDs are queued, take ED off the ed_rm_list.
-+		 * Otherwise, if the HC is running, reschedule.
-+		 * If not, leave it on the list for further dequeues.
-+		 */
-+		if (list_empty(&ed->td_list)) {
-+			*last = ed->ed_next;
-+			ed->ed_next = NULL;
-+		} else if (ohci->rh_state == OHCI_RH_RUNNING) {
-+			*last = ed->ed_next;
-+			ed->ed_next = NULL;
-+			ed_schedule(ohci, ed);
-+		} else {
-+			last = &ed->ed_next;
- 		}
- 
- 		if (modified)
 
 
