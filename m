@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbaICFFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 01:05:37 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:52306 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbaICFFf (ORCPT
+	id S1752215AbaICFUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 01:20:13 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:40270 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004AbaICFUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 01:05:35 -0400
+	Wed, 3 Sep 2014 01:20:11 -0400
+Message-ID: <5406A4FF.1090209@mentor.com>
+Date: Wed, 3 Sep 2014 10:49:59 +0530
+From: Harish Jenny Kandiga Nagaraj <harish_kandiga@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x==TSbtOKBn6KOL9Z_M-nkzQOiO+EqSTmEtQeRLXROC1rw@mail.gmail.com>
-References: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
-	<CAOh2x==TSbtOKBn6KOL9Z_M-nkzQOiO+EqSTmEtQeRLXROC1rw@mail.gmail.com>
-Date: Wed, 3 Sep 2014 10:35:35 +0530
-X-Google-Sender-Auth: -I4vHekl3FWVz5B9RVUBRXCGby8
-Message-ID: <CAOh2x=kNtcse_2sExDPCpRnCmxvmqq1++mkSW6HKY+Vn-SJ9QA@mail.gmail.com>
-Subject: Re: [RFC PATCH] pm: prevent suspend until power supply events are processed
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>, zrn.markovic@gmail.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>,
-        John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: <dborkman@redhat.com>, <tgraf@suug.ch>, <ebiederm@xmission.com>,
+        <darkjames-ws@darkjames.pl>, <rgb@redhat.com>,
+        <eric.dumazet@gmail.com>, <stephen@networkplumber.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] netlink: Safer deletion of sk_bind_node
+References: <1409555309-5893-1-git-send-email-harish_kandiga@mentor.com>	<20140901.220325.955861172520355423.davem@davemloft.net>	<54058376.9090700@mentor.com> <20140902.115215.1488500321662046816.davem@davemloft.net>
+In-Reply-To: <20140902.115215.1488500321662046816.davem@davemloft.net>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 3, 2014 at 10:09 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Don't have Zoran's new email address, but probably other might have
-> answers to my queries.
+If that is the case , then subscriptions of netlink_sock should have been updated after netlink_remove or netlink_release.
+I don't see that happening.
 
-Got Zoran's email id finally :)
+On Wednesday 03 September 2014 12:22 AM, David Miller wrote:
+> From: Harish Jenny Kandiga Nagaraj <harish_kandiga@mentor.com>
+> Date: Tue, 2 Sep 2014 14:14:38 +0530
+>
+>> In one of our random test runs we observed the crash mentioned in the previous mail.
+>>
+>> After debugging we found out that the call flow of the inline and static functions were
+>> netlink_release
+>> -----netlink_remove
+>> ---------__sk_del_bind_node
+>> --------------__hlist_del
+>>
+>> *pprev was NULL in __hlist_del function while deleting &sk->sk_bind_node hlist_node. Hence the patch was given.
+>>
+>> In netlink_remove function , first the sk_del_node_init function will be called. This internally calls __sk_del_node_init function. While deleting &sk->sk_node hlist_node using __sk_del_node function there is a NULL check with sk_hashed function.
+>>
+>> Why there is no NULL check for *pprev while deleting &sk->sk_bind_node ?
+> Because if ->subscriptions is non-zero, it must be on a list, and therefore
+> pprev must be non-NULL.
 
-> I have just started with the power-supply framework a day or two back
-> and so my understanding might not be good enough :)
->
-> On Sat, Aug 3, 2013 at 2:08 AM, Zoran Markovic
-> <zoran.markovic@linaro.org> wrote:
->> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
->> index 3b2d5df..e68d598 100644
->> --- a/drivers/power/power_supply_core.c
->> +++ b/drivers/power/power_supply_core.c
->> @@ -67,23 +67,41 @@ static int __power_supply_changed_work(struct device *dev, void *data)
->>
->>  static void power_supply_changed_work(struct work_struct *work)
->>  {
->> +       unsigned long flags;
->>         struct power_supply *psy = container_of(work, struct power_supply,
->>                                                 changed_work);
->>
->>         dev_dbg(psy->dev, "%s\n", __func__);
->>
->> -       class_for_each_device(power_supply_class, NULL, psy,
->> -                             __power_supply_changed_work);
->> -
->> -       power_supply_update_leds(psy);
->> -
->> -       kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
->> +       spin_lock_irqsave(&psy->changed_lock, flags);
->> +       if (psy->changed) {
->
-> Can this be false here? We have reached here as the work was
-> scheduled after setting it to true..
->
-> Maybe a WARN_ON(psy->changed) is more sensible here ?
->
->> +               psy->changed = false;
->> +               spin_unlock_irqrestore(&psy->changed_lock, flags);
->> +               class_for_each_device(power_supply_class, NULL, psy,
->> +                                     __power_supply_changed_work);
->> +               power_supply_update_leds(psy);
->> +               kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
->> +               spin_lock_irqsave(&psy->changed_lock, flags);
->> +       }
->> +       /* dependent power supplies (e.g. battery) may have changed
->> +        * state as a result of this event, so poll again and hold
->> +        * the wakeup_source until all events are processed.
->> +        */
->> +       if (!psy->changed)
->> +               pm_relax(psy->dev);
->
-> I got a bit confused here. Does the above comment say this:
->
-> The supplies dependent on 'psy' may change states and that *may*
-> change the state of 'psy' again? And so psy->changed is set to true
-> again?
