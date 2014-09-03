@@ -1,98 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934077AbaICWV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:21:59 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:53388 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933916AbaICWV4 (ORCPT
+	id S934110AbaICWWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:22:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46224 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933907AbaICWS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:21:56 -0400
-Date: Wed, 3 Sep 2014 23:20:18 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: RFC: Tainting the kernel on raw I/O access
-Message-ID: <20140903232018.17bba503@alan.etchedpixels.co.uk>
-In-Reply-To: <5407863B.9030608@intel.com>
-References: <5407863B.9030608@intel.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 3 Sep 2014 18:18:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lukas Czerner <lczerner@redhat.com>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.16 051/125] ext4: fix punch hole on files with indirect mapping
+Date: Wed,  3 Sep 2014 15:06:48 -0700
+Message-Id: <20140903220625.176239389@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
+References: <20140903220623.649748296@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Sep 2014 14:20:59 -0700
-"H. Peter Anvin" <h.peter.anvin@intel.com> wrote:
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-> In a meeting earlier today, we discussed MSR access and that it could be
-> used to do bad things.  The same applies to other forms of raw I/O
-> (/dev/mem, /dev/port, ioperm, iopl, etc.)
+------------------
 
-For MSR I assume writing primarily - but if you block read access you
-break a ton of tools, and if you block write access you stop things like
-DPTF working (which personally I couldn't care about, but other folks who
-are using it to power manage their boxes might be a bit more upset 8)).
-Fixing that takes you into the joyful world of whitelists.
+From: Lukas Czerner <lczerner@redhat.com>
 
-> This is basically the same problem with which the secure boot people
-> have been struggling.
+commit 4f579ae7de560e5f449587a6c3f02594d53d4d51 upstream.
 
-Not sure that is true
+Currently punch hole code on files with direct/indirect mapping has some
+problems which may lead to a data loss. For example (from Jan Kara):
 
-"secure" boot is based upon the premise that you can't fool the machine
-into booting a different OS image without the user choosing to do so in a
-protected manner that prevents impersonation.
+fallocate -n -p 10240000 4096
 
-"tainting" on raw I/O is a useful debug tool. There is at best only
-minimal overlap in the sense that one is a partial subset of the other
-(and only partial because there are safe MSRs, I/O ports and memory
-ranges).
+will punch the range 10240000 - 12632064 instead of the range 1024000 -
+10244096.
 
-> Peter Z. suggested we should taint the kernel on raw I/O access, and I
-> tend to concur.
-> 
-> So what I would like to suggest is that we create a new kernel helper
-> function which can return an error in secure boot mode and otherwise
-> taints the kernel with a raw I/O taint.
+Also the code is a bit weird and it's not using infrastructure provided
+by indirect.c, but rather creating it's own way.
 
-That makes the job instantly about ten times harder. You can add taints
-trivially to the kernel but every single taint that might error is a new
-error path, and no doubt a new exciting pile of kernel bugs.
+This patch fixes the issues as well as making the operation to run 4
+times faster from my testing (punching out 60GB file). It uses similar
+approach used in ext4_ind_truncate() which takes advantage of
+ext4_free_branches() function.
 
-> What do people think?
+Also rename the ext4_free_hole_blocks() to something more sensible, like
+the equivalent we have for extent mapped files. Call it
+ext4_ind_remove_space().
 
-The problem is that it's not just little bits of raw I/O. You've got a
-load of kernel command line options that have the same problem and you've
-got a load of things like firmware upload in the unsigned firmware case
-which may in some cases also need to count but not others. Even things
-like the features planned so you can inject missing DTD information int
-your ACPI tables (or fix the garbage your vendor provided) raise the same
-question.
+This has been tested mostly with fsx and some xfstests which are testing
+punch hole but does not require unwritten extents which are not
+supported with direct/indirect mapping. Not problems showed up even with
+1024k block size.
 
-What is the *actual* goal here, what is the security model, what is the
-at least basic proof that it works. We've got 20 years of layered
-insecurity by guesswork in the kernel already.
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Also how does this work for virtual machines ? Does the hypervisor do the
-taint management for ports it doesn't manage and that are not
-passthrough. What about passthrough devices on a non signed guest on a
-signed master.
+---
+ fs/ext4/ext4.h     |    4 
+ fs/ext4/indirect.c |  283 ++++++++++++++++++++++++++++++++++++++---------------
+ fs/ext4/inode.c    |    2 
+ 3 files changed, 206 insertions(+), 83 deletions(-)
 
-If you just want some "detector bits" for bug report filtering them its
-quite a different need to fixing "secure" boot mode. Even in the detector
-bits case there should be an overall plan and some defined properties
-that provide the security and which you can show should always be true.
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2144,8 +2144,8 @@ extern ssize_t ext4_ind_direct_IO(int rw
+ extern int ext4_ind_calc_metadata_amount(struct inode *inode, sector_t lblock);
+ extern int ext4_ind_trans_blocks(struct inode *inode, int nrblocks);
+ extern void ext4_ind_truncate(handle_t *, struct inode *inode);
+-extern int ext4_free_hole_blocks(handle_t *handle, struct inode *inode,
+-				 ext4_lblk_t first, ext4_lblk_t stop);
++extern int ext4_ind_remove_space(handle_t *handle, struct inode *inode,
++				 ext4_lblk_t start, ext4_lblk_t end);
+ 
+ /* ioctl.c */
+ extern long ext4_ioctl(struct file *, unsigned int, unsigned long);
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1295,97 +1295,220 @@ do_indirects:
+ 	}
+ }
+ 
+-static int free_hole_blocks(handle_t *handle, struct inode *inode,
+-			    struct buffer_head *parent_bh, __le32 *i_data,
+-			    int level, ext4_lblk_t first,
+-			    ext4_lblk_t count, int max)
++/**
++ *	ext4_ind_remove_space - remove space from the range
++ *	@handle: JBD handle for this transaction
++ *	@inode:	inode we are dealing with
++ *	@start:	First block to remove
++ *	@end:	One block after the last block to remove (exclusive)
++ *
++ *	Free the blocks in the defined range (end is exclusive endpoint of
++ *	range). This is used by ext4_punch_hole().
++ */
++int ext4_ind_remove_space(handle_t *handle, struct inode *inode,
++			  ext4_lblk_t start, ext4_lblk_t end)
+ {
+-	struct buffer_head *bh = NULL;
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	__le32 *i_data = ei->i_data;
+ 	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
+-	int ret = 0;
+-	int i, inc;
+-	ext4_lblk_t offset;
+-	__le32 blk;
+-
+-	inc = 1 << ((EXT4_BLOCK_SIZE_BITS(inode->i_sb) - 2) * level);
+-	for (i = 0, offset = 0; i < max; i++, i_data++, offset += inc) {
+-		if (offset >= count + first)
+-			break;
+-		if (*i_data == 0 || (offset + inc) <= first)
+-			continue;
+-		blk = *i_data;
+-		if (level > 0) {
+-			ext4_lblk_t first2;
+-			ext4_lblk_t count2;
+-
+-			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
+-			if (!bh) {
+-				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
+-						       "Read failure");
+-				return -EIO;
+-			}
+-			if (first > offset) {
+-				first2 = first - offset;
+-				count2 = count;
++	ext4_lblk_t offsets[4], offsets2[4];
++	Indirect chain[4], chain2[4];
++	Indirect *partial, *partial2;
++	ext4_lblk_t max_block;
++	__le32 nr = 0, nr2 = 0;
++	int n = 0, n2 = 0;
++	unsigned blocksize = inode->i_sb->s_blocksize;
++
++	max_block = (EXT4_SB(inode->i_sb)->s_bitmap_maxbytes + blocksize-1)
++					>> EXT4_BLOCK_SIZE_BITS(inode->i_sb);
++	if (end >= max_block)
++		end = max_block;
++	if ((start >= end) || (start > max_block))
++		return 0;
++
++	n = ext4_block_to_path(inode, start, offsets, NULL);
++	n2 = ext4_block_to_path(inode, end, offsets2, NULL);
++
++	BUG_ON(n > n2);
++
++	if ((n == 1) && (n == n2)) {
++		/* We're punching only within direct block range */
++		ext4_free_data(handle, inode, NULL, i_data + offsets[0],
++			       i_data + offsets2[0]);
++		return 0;
++	} else if (n2 > n) {
++		/*
++		 * Start and end are on a different levels so we're going to
++		 * free partial block at start, and partial block at end of
++		 * the range. If there are some levels in between then
++		 * do_indirects label will take care of that.
++		 */
++
++		if (n == 1) {
++			/*
++			 * Start is at the direct block level, free
++			 * everything to the end of the level.
++			 */
++			ext4_free_data(handle, inode, NULL, i_data + offsets[0],
++				       i_data + EXT4_NDIR_BLOCKS);
++			goto end_range;
++		}
++
++
++		partial = ext4_find_shared(inode, n, offsets, chain, &nr);
++		if (nr) {
++			if (partial == chain) {
++				/* Shared branch grows from the inode */
++				ext4_free_branches(handle, inode, NULL,
++					   &nr, &nr+1, (chain+n-1) - partial);
++				*partial->p = 0;
+ 			} else {
+-				first2 = 0;
+-				count2 = count - (offset - first);
++				/* Shared branch grows from an indirect block */
++				BUFFER_TRACE(partial->bh, "get_write_access");
++				ext4_free_branches(handle, inode, partial->bh,
++					partial->p,
++					partial->p+1, (chain+n-1) - partial);
+ 			}
+-			ret = free_hole_blocks(handle, inode, bh,
+-					       (__le32 *)bh->b_data, level - 1,
+-					       first2, count2,
+-					       inode->i_sb->s_blocksize >> 2);
+-			if (ret) {
+-				brelse(bh);
+-				goto err;
++		}
++
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the start of the range
++		 */
++		while (partial > chain) {
++			ext4_free_branches(handle, inode, partial->bh,
++				partial->p + 1,
++				(__le32 *)partial->bh->b_data+addr_per_block,
++				(chain+n-1) - partial);
++			BUFFER_TRACE(partial->bh, "call brelse");
++			brelse(partial->bh);
++			partial--;
++		}
++
++end_range:
++		partial2 = ext4_find_shared(inode, n2, offsets2, chain2, &nr2);
++		if (nr2) {
++			if (partial2 == chain2) {
++				/*
++				 * Remember, end is exclusive so here we're at
++				 * the start of the next level we're not going
++				 * to free. Everything was covered by the start
++				 * of the range.
++				 */
++				return 0;
++			} else {
++				/* Shared branch grows from an indirect block */
++				partial2--;
+ 			}
++		} else {
++			/*
++			 * ext4_find_shared returns Indirect structure which
++			 * points to the last element which should not be
++			 * removed by truncate. But this is end of the range
++			 * in punch_hole so we need to point to the next element
++			 */
++			partial2->p++;
+ 		}
+-		if (level == 0 ||
+-		    (bh && all_zeroes((__le32 *)bh->b_data,
+-				      (__le32 *)bh->b_data + addr_per_block))) {
+-			ext4_free_data(handle, inode, parent_bh,
+-				       i_data, i_data + 1);
++
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the end of the range
++		 */
++		while (partial2 > chain2) {
++			ext4_free_branches(handle, inode, partial2->bh,
++					   (__le32 *)partial2->bh->b_data,
++					   partial2->p,
++					   (chain2+n2-1) - partial2);
++			BUFFER_TRACE(partial2->bh, "call brelse");
++			brelse(partial2->bh);
++			partial2--;
+ 		}
+-		brelse(bh);
+-		bh = NULL;
++		goto do_indirects;
+ 	}
+ 
+-err:
+-	return ret;
+-}
+-
+-int ext4_free_hole_blocks(handle_t *handle, struct inode *inode,
+-			  ext4_lblk_t first, ext4_lblk_t stop)
+-{
+-	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
+-	int level, ret = 0;
+-	int num = EXT4_NDIR_BLOCKS;
+-	ext4_lblk_t count, max = EXT4_NDIR_BLOCKS;
+-	__le32 *i_data = EXT4_I(inode)->i_data;
+-
+-	count = stop - first;
+-	for (level = 0; level < 4; level++, max *= addr_per_block) {
+-		if (first < max) {
+-			ret = free_hole_blocks(handle, inode, NULL, i_data,
+-					       level, first, count, num);
+-			if (ret)
+-				goto err;
+-			if (count > max - first)
+-				count -= max - first;
+-			else
+-				break;
+-			first = 0;
+-		} else {
+-			first -= max;
++	/* Punch happened within the same level (n == n2) */
++	partial = ext4_find_shared(inode, n, offsets, chain, &nr);
++	partial2 = ext4_find_shared(inode, n2, offsets2, chain2, &nr2);
++	/*
++	 * ext4_find_shared returns Indirect structure which
++	 * points to the last element which should not be
++	 * removed by truncate. But this is end of the range
++	 * in punch_hole so we need to point to the next element
++	 */
++	partial2->p++;
++	while ((partial > chain) || (partial2 > chain2)) {
++		/* We're at the same block, so we're almost finished */
++		if ((partial->bh && partial2->bh) &&
++		    (partial->bh->b_blocknr == partial2->bh->b_blocknr)) {
++			if ((partial > chain) && (partial2 > chain2)) {
++				ext4_free_branches(handle, inode, partial->bh,
++						   partial->p + 1,
++						   partial2->p,
++						   (chain+n-1) - partial);
++				BUFFER_TRACE(partial->bh, "call brelse");
++				brelse(partial->bh);
++				BUFFER_TRACE(partial2->bh, "call brelse");
++				brelse(partial2->bh);
++			}
++			return 0;
++		}
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the start of the range
++		 */
++		if (partial > chain) {
++			ext4_free_branches(handle, inode, partial->bh,
++				   partial->p + 1,
++				   (__le32 *)partial->bh->b_data+addr_per_block,
++				   (chain+n-1) - partial);
++			BUFFER_TRACE(partial->bh, "call brelse");
++			brelse(partial->bh);
++			partial--;
+ 		}
+-		i_data += num;
+-		if (level == 0) {
+-			num = 1;
+-			max = 1;
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the end of the range
++		 */
++		if (partial2 > chain2) {
++			ext4_free_branches(handle, inode, partial2->bh,
++					   (__le32 *)partial2->bh->b_data,
++					   partial2->p,
++					   (chain2+n-1) - partial2);
++			BUFFER_TRACE(partial2->bh, "call brelse");
++			brelse(partial2->bh);
++			partial2--;
+ 		}
+ 	}
+ 
+-err:
+-	return ret;
++do_indirects:
++	/* Kill the remaining (whole) subtrees */
++	switch (offsets[0]) {
++	default:
++		if (++n >= n2)
++			return 0;
++		nr = i_data[EXT4_IND_BLOCK];
++		if (nr) {
++			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 1);
++			i_data[EXT4_IND_BLOCK] = 0;
++		}
++	case EXT4_IND_BLOCK:
++		if (++n >= n2)
++			return 0;
++		nr = i_data[EXT4_DIND_BLOCK];
++		if (nr) {
++			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 2);
++			i_data[EXT4_DIND_BLOCK] = 0;
++		}
++	case EXT4_DIND_BLOCK:
++		if (++n >= n2)
++			return 0;
++		nr = i_data[EXT4_TIND_BLOCK];
++		if (nr) {
++			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 3);
++			i_data[EXT4_TIND_BLOCK] = 0;
++		}
++	case EXT4_TIND_BLOCK:
++		;
++	}
++	return 0;
+ }
+-
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3624,7 +3624,7 @@ int ext4_punch_hole(struct inode *inode,
+ 		ret = ext4_ext_remove_space(inode, first_block,
+ 					    stop_block - 1);
+ 	else
+-		ret = ext4_free_hole_blocks(handle, inode, first_block,
++		ret = ext4_ind_remove_space(handle, inode, first_block,
+ 					    stop_block);
+ 
+ 	up_write(&EXT4_I(inode)->i_data_sem);
 
-The failure case for "detector bits" is 'the user did something dumb and
-we spent a while looking at a bug that was their fault' and the fix path
-is 'get around to adding a new taint'. The 'secure boot' case is a
-promise of a security model which implies you can prove its at least
-reasonably correct (and can be implemented to be correct).
 
-Alan
