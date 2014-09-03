@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936160AbaICXao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:30:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45560 "EHLO
+	id S964862AbaICXbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:31:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45581 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678AbaICWIk (ORCPT
+	with ESMTP id S933560AbaICWIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:08:40 -0400
+	Wed, 3 Sep 2014 18:08:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.14 28/88] hwmon: (lm78) Fix overflow problems seen when writing large temperature limits
-Date: Wed,  3 Sep 2014 15:05:02 -0700
-Message-Id: <20140903220516.789451701@linuxfoundation.org>
+        Baruch Siach <baruch@tkos.co.il>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.14 23/88] ARM: 8097/1: unistd.h: relocate comments back to place
+Date: Wed,  3 Sep 2014 15:04:57 -0700
+Message-Id: <20140903220516.647121300@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
 References: <20140903220515.958924632@linuxfoundation.org>
@@ -28,34 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit 1074d683a51f1aded3562add9ef313e75d557327 upstream.
+commit bc994c77ce82576209dcf08f71de9ae51b0b100f upstream.
 
-On platforms with sizeof(int) < sizeof(long), writing a temperature
-limit larger than MAXINT will result in unpredictable limit values
-written to the chip. Avoid auto-conversion from long to int to fix
-the problem.
+Commit cb8db5d45 (UAPI: (Scripted) Disintegrate arch/arm/include/asm) moved
+these syscall comments out of their context into the UAPI headers. Fix this.
 
-Cc: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Fixes: cb8db5d4578a ("UAPI: (Scripted) Disintegrate arch/arm/include/asm")
+
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/lm78.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/unistd.h      |   10 ++++++++++
+ arch/arm/include/uapi/asm/unistd.h |   11 -----------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
---- a/drivers/hwmon/lm78.c
-+++ b/drivers/hwmon/lm78.c
-@@ -108,7 +108,7 @@ static inline int FAN_FROM_REG(u8 val, i
-  * TEMP: mC (-128C to +127C)
-  * REG: 1C/bit, two's complement
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -15,7 +15,17 @@
+ 
+ #include <uapi/asm/unistd.h>
+ 
++/*
++ * This may need to be greater than __NR_last_syscall+1 in order to
++ * account for the padding in the syscall table
++ */
+ #define __NR_syscalls  (384)
++
++/*
++ * *NOTE*: This is a ghost syscall private to the kernel.  Only the
++ * __kuser_cmpxchg code in entry-armv.S should be aware of its
++ * existence.  Don't ever use this from user code.
++ */
+ #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
+ 
+ #define __ARCH_WANT_STAT64
+--- a/arch/arm/include/uapi/asm/unistd.h
++++ b/arch/arm/include/uapi/asm/unistd.h
+@@ -410,11 +410,6 @@
+ #define __NR_sched_getattr		(__NR_SYSCALL_BASE+381)
+ 
+ /*
+- * This may need to be greater than __NR_last_syscall+1 in order to
+- * account for the padding in the syscall table
+- */
+-
+-/*
+  * The following SWIs are ARM private.
   */
--static inline s8 TEMP_TO_REG(int val)
-+static inline s8 TEMP_TO_REG(long val)
- {
- 	int nval = clamp_val(val, -128000, 127000) ;
- 	return nval < 0 ? (nval - 500) / 1000 : (nval + 500) / 1000;
+ #define __ARM_NR_BASE			(__NR_SYSCALL_BASE+0x0f0000)
+@@ -425,12 +420,6 @@
+ #define __ARM_NR_set_tls		(__ARM_NR_BASE+5)
+ 
+ /*
+- * *NOTE*: This is a ghost syscall private to the kernel.  Only the
+- * __kuser_cmpxchg code in entry-armv.S should be aware of its
+- * existence.  Don't ever use this from user code.
+- */
+-
+-/*
+  * The following syscalls are obsolete and no longer available for EABI.
+  */
+ #if !defined(__KERNEL__)
 
 
