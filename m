@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934249AbaICXAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:00:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46344 "EHLO
+	id S933413AbaICXAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:00:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947AbaICWZ7 (ORCPT
+	with ESMTP id S1756960AbaICWZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:25:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.16 118/125] NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes
-Date: Wed,  3 Sep 2014 15:07:55 -0700
-Message-Id: <20140903220627.241051705@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.16 092/125] mei: reset client state on queued connect request
+Date: Wed,  3 Sep 2014 15:07:29 -0700
+Message-Id: <20140903220626.436851207@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,282 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit 65b38851a17472d31fec9019fc3a55b0802dab88 upstream.
+commit 73ab4232388b7a08f17c8d08141ff2099fa0b161 upstream.
 
-The usage of pid_ns->child_reaper->nsproxy->net_ns in
-nfs_server_list_open and nfs_client_list_open is not safe.
+If connect request is queued (e.g. device in pg) set client state
+to initializing, thus avoid preliminary exit in wait if current
+state is disconnected.
 
-/proc for a pid namespace can remain mounted after the all of the
-process in that pid namespace have exited.  There are also times
-before the initial process in a pid namespace has started or after the
-initial process in a pid namespace has exited where
-pid_ns->child_reaper can be NULL or stale.  Making the idiom
-pid_ns->child_reaper->nsproxy a double whammy of problems.
+This is regression from:
 
-Luckily all that needs to happen is to move /proc/fs/nfsfs/servers and
-/proc/fs/nfsfs/volumes under /proc/net to /proc/net/nfsfs/servers and
-/proc/net/nfsfs/volumes and add a symlink from the original location,
-and to use seq_open_net as it has been designed.
+commit e4d8270e604c3202131bac607969605ac397b893
+Author: Alexander Usyskin <alexander.usyskin@intel.com>
+mei: set connecting state just upon connection request is sent to the fw
 
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/client.c   |   95 +++++++++++++++++++++++++++++++-----------------------
- fs/nfs/inode.c    |    3 +
- fs/nfs/internal.h |    9 +++++
- fs/nfs/netns.h    |    3 +
- 4 files changed, 69 insertions(+), 41 deletions(-)
+ drivers/misc/mei/client.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1205,7 +1205,7 @@ static const struct file_operations nfs_
- 	.open		= nfs_server_list_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= seq_release,
-+	.release	= seq_release_net,
- 	.owner		= THIS_MODULE,
- };
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -601,6 +601,7 @@ int mei_cl_connect(struct mei_cl *cl, st
+ 		cl->timer_count = MEI_CONNECT_TIMEOUT;
+ 		list_add_tail(&cb->list, &dev->ctrl_rd_list.list);
+ 	} else {
++		cl->state = MEI_FILE_INITIALIZING;
+ 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
+ 	}
  
-@@ -1226,7 +1226,7 @@ static const struct file_operations nfs_
- 	.open		= nfs_volume_list_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= seq_release,
-+	.release	= seq_release_net,
- 	.owner		= THIS_MODULE,
- };
- 
-@@ -1236,19 +1236,8 @@ static const struct file_operations nfs_
-  */
- static int nfs_server_list_open(struct inode *inode, struct file *file)
- {
--	struct seq_file *m;
--	int ret;
--	struct pid_namespace *pid_ns = file->f_dentry->d_sb->s_fs_info;
--	struct net *net = pid_ns->child_reaper->nsproxy->net_ns;
--
--	ret = seq_open(file, &nfs_server_list_ops);
--	if (ret < 0)
--		return ret;
--
--	m = file->private_data;
--	m->private = net;
--
--	return 0;
-+	return seq_open_net(inode, file, &nfs_server_list_ops,
-+			   sizeof(struct seq_net_private));
- }
- 
- /*
-@@ -1256,7 +1245,7 @@ static int nfs_server_list_open(struct i
-  */
- static void *nfs_server_list_start(struct seq_file *m, loff_t *_pos)
- {
--	struct nfs_net *nn = net_generic(m->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(m), nfs_net_id);
- 
- 	/* lock the list against modification */
- 	spin_lock(&nn->nfs_client_lock);
-@@ -1268,7 +1257,7 @@ static void *nfs_server_list_start(struc
-  */
- static void *nfs_server_list_next(struct seq_file *p, void *v, loff_t *pos)
- {
--	struct nfs_net *nn = net_generic(p->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(p), nfs_net_id);
- 
- 	return seq_list_next(v, &nn->nfs_client_list, pos);
- }
-@@ -1278,7 +1267,7 @@ static void *nfs_server_list_next(struct
-  */
- static void nfs_server_list_stop(struct seq_file *p, void *v)
- {
--	struct nfs_net *nn = net_generic(p->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(p), nfs_net_id);
- 
- 	spin_unlock(&nn->nfs_client_lock);
- }
-@@ -1289,7 +1278,7 @@ static void nfs_server_list_stop(struct
- static int nfs_server_list_show(struct seq_file *m, void *v)
- {
- 	struct nfs_client *clp;
--	struct nfs_net *nn = net_generic(m->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(m), nfs_net_id);
- 
- 	/* display header on line 1 */
- 	if (v == &nn->nfs_client_list) {
-@@ -1321,19 +1310,8 @@ static int nfs_server_list_show(struct s
-  */
- static int nfs_volume_list_open(struct inode *inode, struct file *file)
- {
--	struct seq_file *m;
--	int ret;
--	struct pid_namespace *pid_ns = file->f_dentry->d_sb->s_fs_info;
--	struct net *net = pid_ns->child_reaper->nsproxy->net_ns;
--
--	ret = seq_open(file, &nfs_volume_list_ops);
--	if (ret < 0)
--		return ret;
--
--	m = file->private_data;
--	m->private = net;
--
--	return 0;
-+	return seq_open_net(inode, file, &nfs_server_list_ops,
-+			   sizeof(struct seq_net_private));
- }
- 
- /*
-@@ -1341,7 +1319,7 @@ static int nfs_volume_list_open(struct i
-  */
- static void *nfs_volume_list_start(struct seq_file *m, loff_t *_pos)
- {
--	struct nfs_net *nn = net_generic(m->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(m), nfs_net_id);
- 
- 	/* lock the list against modification */
- 	spin_lock(&nn->nfs_client_lock);
-@@ -1353,7 +1331,7 @@ static void *nfs_volume_list_start(struc
-  */
- static void *nfs_volume_list_next(struct seq_file *p, void *v, loff_t *pos)
- {
--	struct nfs_net *nn = net_generic(p->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(p), nfs_net_id);
- 
- 	return seq_list_next(v, &nn->nfs_volume_list, pos);
- }
-@@ -1363,7 +1341,7 @@ static void *nfs_volume_list_next(struct
-  */
- static void nfs_volume_list_stop(struct seq_file *p, void *v)
- {
--	struct nfs_net *nn = net_generic(p->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(p), nfs_net_id);
- 
- 	spin_unlock(&nn->nfs_client_lock);
- }
-@@ -1376,7 +1354,7 @@ static int nfs_volume_list_show(struct s
- 	struct nfs_server *server;
- 	struct nfs_client *clp;
- 	char dev[8], fsid[17];
--	struct nfs_net *nn = net_generic(m->private, nfs_net_id);
-+	struct nfs_net *nn = net_generic(seq_file_net(m), nfs_net_id);
- 
- 	/* display header on line 1 */
- 	if (v == &nn->nfs_volume_list) {
-@@ -1407,6 +1385,45 @@ static int nfs_volume_list_show(struct s
- 	return 0;
- }
- 
-+int nfs_fs_proc_net_init(struct net *net)
-+{
-+	struct nfs_net *nn = net_generic(net, nfs_net_id);
-+	struct proc_dir_entry *p;
-+
-+	nn->proc_nfsfs = proc_net_mkdir(net, "nfsfs", net->proc_net);
-+	if (!nn->proc_nfsfs)
-+		goto error_0;
-+
-+	/* a file of servers with which we're dealing */
-+	p = proc_create("servers", S_IFREG|S_IRUGO,
-+			nn->proc_nfsfs, &nfs_server_list_fops);
-+	if (!p)
-+		goto error_1;
-+
-+	/* a file of volumes that we have mounted */
-+	p = proc_create("volumes", S_IFREG|S_IRUGO,
-+			nn->proc_nfsfs, &nfs_volume_list_fops);
-+	if (!p)
-+		goto error_2;
-+	return 0;
-+
-+error_2:
-+	remove_proc_entry("servers", nn->proc_nfsfs);
-+error_1:
-+	remove_proc_entry("fs/nfsfs", NULL);
-+error_0:
-+	return -ENOMEM;
-+}
-+
-+void nfs_fs_proc_net_exit(struct net *net)
-+{
-+	struct nfs_net *nn = net_generic(net, nfs_net_id);
-+
-+	remove_proc_entry("volumes", nn->proc_nfsfs);
-+	remove_proc_entry("servers", nn->proc_nfsfs);
-+	remove_proc_entry("fs/nfsfs", NULL);
-+}
-+
- /*
-  * initialise the /proc/fs/nfsfs/ directory
-  */
-@@ -1419,14 +1436,12 @@ int __init nfs_fs_proc_init(void)
- 		goto error_0;
- 
- 	/* a file of servers with which we're dealing */
--	p = proc_create("servers", S_IFREG|S_IRUGO,
--			proc_fs_nfs, &nfs_server_list_fops);
-+	p = proc_symlink("servers", proc_fs_nfs, "../../net/nfsfs/servers");
- 	if (!p)
- 		goto error_1;
- 
- 	/* a file of volumes that we have mounted */
--	p = proc_create("volumes", S_IFREG|S_IRUGO,
--			proc_fs_nfs, &nfs_volume_list_fops);
-+	p = proc_symlink("volumes", proc_fs_nfs, "../../net/nfsfs/volumes");
- 	if (!p)
- 		goto error_2;
- 	return 0;
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1840,11 +1840,12 @@ EXPORT_SYMBOL_GPL(nfs_net_id);
- static int nfs_net_init(struct net *net)
- {
- 	nfs_clients_init(net);
--	return 0;
-+	return nfs_fs_proc_net_init(net);
- }
- 
- static void nfs_net_exit(struct net *net)
- {
-+	nfs_fs_proc_net_exit(net);
- 	nfs_cleanup_cb_ident_idr(net);
- }
- 
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -195,7 +195,16 @@ extern struct rpc_clnt *nfs4_find_or_cre
- #ifdef CONFIG_PROC_FS
- extern int __init nfs_fs_proc_init(void);
- extern void nfs_fs_proc_exit(void);
-+extern int nfs_fs_proc_net_init(struct net *net);
-+extern void nfs_fs_proc_net_exit(struct net *net);
- #else
-+static inline int nfs_fs_proc_net_init(struct net *net)
-+{
-+	return 0;
-+}
-+static inline void nfs_fs_proc_net_exit(struct net *net)
-+{
-+}
- static inline int nfs_fs_proc_init(void)
- {
- 	return 0;
---- a/fs/nfs/netns.h
-+++ b/fs/nfs/netns.h
-@@ -29,6 +29,9 @@ struct nfs_net {
- #endif
- 	spinlock_t nfs_client_lock;
- 	struct timespec boot_time;
-+#ifdef CONFIG_PROC_FS
-+	struct proc_dir_entry *proc_nfsfs;
-+#endif
- };
- 
- extern int nfs_net_id;
 
 
