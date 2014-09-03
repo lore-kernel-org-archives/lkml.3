@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019AbaICHur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 03:50:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43311 "EHLO
+	id S1756051AbaICHvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 03:51:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43281 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755801AbaICHsn (ORCPT
+	with ESMTP id S1755028AbaICHsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 03:48:43 -0400
+	Wed, 3 Sep 2014 03:48:40 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
         p.zabel@pengutronix.de
@@ -16,9 +16,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 06/12] Documentation: bindings: add doc for the Berlin USB PHY
-Date: Wed,  3 Sep 2014 09:48:25 +0200
-Message-Id: <1409730511-16101-7-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v4 04/12] ARM: dts: berlin: add a required reset property in the chip controller node
+Date: Wed,  3 Sep 2014 09:48:23 +0200
+Message-Id: <1409730511-16101-5-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -26,36 +26,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the bindings of the Marvell Berlin USB PHY driver.
+The chip controller node now also describes the Marvell Berlin reset
+controller. Add the required 'reset-cells' property.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- Documentation/devicetree/bindings/phy/berlin-usb-phy.txt | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+ arch/arm/boot/dts/berlin2.dtsi   | 1 +
+ arch/arm/boot/dts/berlin2cd.dtsi | 1 +
+ arch/arm/boot/dts/berlin2q.dtsi  | 1 +
+ 3 files changed, 3 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
-new file mode 100644
-index 000000000000..be33780f668e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
-@@ -0,0 +1,16 @@
-+* Marvell Berlin USB PHY
-+
-+Required properties:
-+- compatible: "marvell,berlin2-usb-phy" or "marvell,berlin2cd-usb-phy"
-+- reg: base address and length of the registers
-+- #phys-cells: should be 0
-+- resets: reference to the reset controller
-+
-+Example:
-+
-+	usb-phy@f774000 {
-+		compatible = "marvell,berlin2-usb-phy";
-+		reg = <0xf774000 0x128>;
-+		#phy-cells = <0>;
-+		resets = <&chip 0x104 14>;
-+	};
+diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+index 9d7c810ebd0b..d7e81e124de0 100644
+--- a/arch/arm/boot/dts/berlin2.dtsi
++++ b/arch/arm/boot/dts/berlin2.dtsi
+@@ -249,6 +249,7 @@
+ 		chip: chip-control@ea0000 {
+ 			compatible = "marvell,berlin2-chip-ctrl";
+ 			#clock-cells = <1>;
++			#reset-cells = <2>;
+ 			reg = <0xea0000 0x400>;
+ 			clocks = <&refclk>;
+ 			clock-names = "refclk";
+diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
+index cc1df65da504..68f7032b4686 100644
+--- a/arch/arm/boot/dts/berlin2cd.dtsi
++++ b/arch/arm/boot/dts/berlin2cd.dtsi
+@@ -231,6 +231,7 @@
+ 		chip: chip-control@ea0000 {
+ 			compatible = "marvell,berlin2cd-chip-ctrl";
+ 			#clock-cells = <1>;
++			#reset-cells = <2>;
+ 			reg = <0xea0000 0x400>;
+ 			clocks = <&refclk>;
+ 			clock-names = "refclk";
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 400c40fceccc..ffba5c3bdab8 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -332,6 +332,7 @@
+ 		chip: chip-control@ea0000 {
+ 			compatible = "marvell,berlin2q-chip-ctrl";
+ 			#clock-cells = <1>;
++			#reset-cells = <2>;
+ 			reg = <0xea0000 0x400>, <0xdd0170 0x10>;
+ 			clocks = <&refclk>;
+ 			clock-names = "refclk";
 -- 
 1.9.1
 
