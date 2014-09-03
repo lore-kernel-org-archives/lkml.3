@@ -1,244 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767AbaICN6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 09:58:09 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:1602 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478AbaICN6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 09:58:08 -0400
-X-IronPort-AV: E=Sophos;i="5.04,457,1406592000"; 
-   d="scan'208";a="168697129"
-Message-ID: <54071E6C.4080901@citrix.com>
-Date: Wed, 3 Sep 2014 14:58:04 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Mukesh Rathor <mukesh.rathor@oracle.com>, <boris.ostrovsky@oracle.com>,
-        <david.vrabel@citrix.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [V2 PATCH 1/1] PVH: set EFER.NX and EFER.SCE
-References: <1409707176-16487-1-git-send-email-mukesh.rathor@oracle.com> <1409707176-16487-2-git-send-email-mukesh.rathor@oracle.com>
-In-Reply-To: <1409707176-16487-2-git-send-email-mukesh.rathor@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+	id S1756146AbaICOK2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 10:10:28 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:37871 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752712AbaICOK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 10:10:27 -0400
+Date: Wed, 3 Sep 2014 09:10:24 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
+ this_cpu ops
+In-Reply-To: <20140903021152.GA14069@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1409030846310.9372@gentwo.org>
+References: <alpine.DEB.2.11.1409021513490.26284@gentwo.org> <20140902203743.GL5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021545370.32690@gentwo.org> <20140902211517.GO5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
+ <20140903021152.GA14069@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/14 02:19, Mukesh Rathor wrote:
-> This patch addresses two things for a pvh boot vcpu:
-> 
->   - NX bug on intel: It was recenlty discovered that NX is not being
->     honored in PVH on intel since EFER.NX is not being set.
-> 
->   - PVH boot hang on newer xen:  Following c/s on xen
-> 
->         c/s 7645640:  x86/PVH: don't set EFER_SCE for pvh guest
-> 
->     removes setting of EFER.SCE for PVH guests. As such, existing intel
->     pvh guest will no longer boot on xen after that c/s.
-> 
-> Both above changes will be applicable to AMD also when xen support
-> of AMD pvh is added.
-> 
-> Also, we create a new glue assembly entry point for secondary vcpus
-> because they come up on kernel page tables that have pte.NX
-> bits set. As such, before anything is touched in DS/SS, EFER.NX
-> must be set.
-[...]
-> --- a/arch/x86/xen/xen-head.S
-> +++ b/arch/x86/xen/xen-head.S
-> @@ -47,6 +47,35 @@ ENTRY(startup_xen)
->  
->  	__FINIT
->  
-> +#ifdef CONFIG_XEN_PVH
-> +#ifdef CONFIG_X86_64
-> +.macro PVH_EARLY_SET_EFER
+On Tue, 2 Sep 2014, Paul E. McKenney wrote:
 
-I don't think a macro is the right way to do this.  We can instead pass
-a parameter to say whether it is a boot or secondary CPU.
+> On Tue, Sep 02, 2014 at 06:22:52PM -0500, Christoph Lameter wrote:
+> > On Tue, 2 Sep 2014, Paul E. McKenney wrote:
+> >
+> > > Yep, these two have been on my "when I am feeling insanely gutsy" list
+> > > for quite some time.
+> > >
+> > > But I have to ask...  On x86, is a pair of mfence instructions really
+> > > cheaper than an atomic increment?
+> >
+> > Not sure why you would need an mfence instruction?
+>
+> Because otherwise RCU can break.  As soon as the grace-period machinery
+> sees that the value of this variable is even, it assumes a quiescent
+> state.  If there are no memory barriers, the non-quiescent code might
+> not have completed executing, and your kernel's actuarial statistics
+> become sub-optimal.
 
-Something like this (untested) patch?
+Synchronization using per cpu variables is bound to be problematic since
+they are simply not made for that. The per cpu variable usually can change
+without notice to the other cpu since typically per cpu processing is
+ongoing. The improvided performance of per cpu instructions is
+possible only because we exploit the fact that there is no need for
+synchronization.
 
-8<----------------------------
-x86/xen: Set EFER.NX and EFER.SCE in PVH guests
+Kernel statistics *are* suboptimal for that very reason because they
+typically sum up individual counters from multiple processors without
+regard to complete accuracy. The manipulation of the VM counters is very
+low overhead due to the lack of concern for synchronization. This is a
+tradeoff vs. performance. We actually can tune the the fuzziness of
+statistics in the VM which allows us to control the overhead generated by
+the need for more or less accurate statistics.
 
-This patch addresses two things for a pvh boot vcpu:
+Memory barriers ensure that the code has completed executing? I think what
+is meant is that they ensure that all modifications to cachelines before the
+change of state are visible and the other processor does not have stale
+cachelines around?
 
-  - NX bug on intel: It was recenlty discovered that NX is not being
-    honored in PVH on intel since EFER.NX is not being set.
-
-  - PVH boot hang on newer xen:  Following c/s on xen
-
-        c/s 7645640:  x86/PVH: don't set EFER_SCE for pvh guest
-
-    removes setting of EFER.SCE for PVH guests. As such, existing intel
-    pvh guest will no longer boot on xen after that c/s.
-
-Both above changes will be applicable to AMD also when xen support
-of AMD pvh is added.
-
-Also, we create a new glue assembly entry point for secondary vcpus
-because they come up on kernel page tables that have pte.NX
-bits set. As such, before anything is touched in DS/SS, EFER.NX
-must be set.
-
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
- arch/x86/xen/enlighten.c |    1 +
- arch/x86/xen/smp.c       |   34 +++++++++++++++++++++++-----------
- arch/x86/xen/smp.h       |    8 ++++++++
- arch/x86/xen/xen-head.S  |   34 ++++++++++++++++++++++++++++++++++
- 4 files changed, 66 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c0cb11f..b111035 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1508,6 +1508,7 @@ static void __init xen_pvh_early_guest_init(void)
- 		return;
- 
- 	xen_have_vector_callback = 1;
-+	xen_pvh_cpu_early_init(0, false);
- 	xen_pvh_set_cr_flags(0);
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 7005974..dd4ce0d 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -37,6 +37,7 @@
- #include <xen/hvc-console.h>
- #include "xen-ops.h"
- #include "mmu.h"
-+#include "smp.h"
- 
- cpumask_var_t xen_cpu_initialized_map;
- 
-@@ -99,8 +100,12 @@ static void cpu_bringup(void)
- 	wmb();			/* make sure everything is out */
- }
- 
--/* Note: cpu parameter is only relevant for PVH */
--static void cpu_bringup_and_idle(int cpu)
-+/*
-+ * Note: cpu parameter is only relevant for PVH. The reason for passing it
-+ * is we can't do smp_processor_id until the percpu segments are loaded, for
-+ * which we need the cpu number! So we pass it in rdi as first parameter.
-+ */
-+asmlinkage __visible void cpu_bringup_and_idle(int cpu)
- {
- #ifdef CONFIG_X86_64
- 	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-@@ -374,11 +379,10 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
- 	ctxt->user_regs.fs = __KERNEL_PERCPU;
- 	ctxt->user_regs.gs = __KERNEL_STACK_CANARY;
- #endif
--	ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
--
- 	memset(&ctxt->fpu_ctxt, 0, sizeof(ctxt->fpu_ctxt));
- 
- 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-+		ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
- 		ctxt->flags = VGCF_IN_KERNEL;
- 		ctxt->user_regs.eflags = 0x1000; /* IOPL_RING1 */
- 		ctxt->user_regs.ds = __USER_DS;
-@@ -413,15 +417,23 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
- 					(unsigned long)xen_failsafe_callback;
- 		ctxt->user_regs.cs = __KERNEL_CS;
- 		per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
--#ifdef CONFIG_X86_32
--	}
--#else
--	} else
--		/* N.B. The user_regs.eip (cpu_bringup_and_idle) is called with
--		 * %rdi having the cpu number - which means are passing in
--		 * as the first parameter the cpu. Subtle!
-+        }
-+#ifdef CONFIG_X86_64
-+	else {
-+		/*
-+		 * The vcpu comes on kernel page tables which have the NX pte
-+		 * bit set. This means before DS/SS is touched, NX in
-+		 * EFER must be set. Hence the following assembly glue code.
-+		 */
-+		ctxt->user_regs.eip = (unsigned long)xen_pvh_cpu_early_init;
-+
-+		/* N.B. The bringup function cpu_bringup_and_idle is called with
-+		 * %rdi having the cpu number - which means we are passing it in
-+		 * as the first parameter. Subtle!
- 		 */
- 		ctxt->user_regs.rdi = cpu;
-+		ctxt->user_regs.rsi = 1; /* secondary_cpu == true */
-+	}
- #endif
- 	ctxt->user_regs.esp = idle->thread.sp0 - sizeof(struct pt_regs);
- 	ctxt->ctrlreg[3] = xen_pfn_to_cr3(virt_to_mfn(swapper_pg_dir));
-diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
-index c7c2d89..fc2575a 100644
---- a/arch/x86/xen/smp.h
-+++ b/arch/x86/xen/smp.h
-@@ -8,4 +8,12 @@ extern void xen_send_IPI_allbutself(int vector);
- extern void xen_send_IPI_all(int vector);
- extern void xen_send_IPI_self(int vector);
- 
-+#if defined(CONFIG_XEN_PVH) && defined(CONFIG_X86_64)
-+extern void xen_pvh_cpu_early_init(int cpu, bool secondary_cpu);
-+#else
-+static inline void xen_pvh_cpu_early_init(int cpu, bool secondary_cpu)
-+{
-+}
-+#endif
-+
- #endif
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 485b695..a64b464 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -47,6 +47,40 @@ ENTRY(startup_xen)
- 
- 	__FINIT
- 
-+#ifdef CONFIG_XEN_PVH
-+#ifdef CONFIG_X86_64
-+
-+/**
-+ * xen_pvh_cpu_early_init() - early PVH VCPU initialization
-+ * @cpu:           this cpu number (%rdi)
-+ * @secondary_cpu: true if this is a secondary (non-boot) CPU (%rsi)
-+ *
-+ * Note: This is called as a function on the boot CPU and as the secondary
-+ * CPU entry point.
-+ */
-+ENTRY(xen_pvh_cpu_early_init)
-+        mov     %rsi, %r11
-+	/* Gather features to see if NX implemented. */
-+	mov     $0x80000001, %eax
-+	cpuid
-+	mov     %edx,%esi
-+
-+	mov     $MSR_EFER, %ecx
-+	rdmsr
-+	bts     $_EFER_SCE, %eax
-+
-+	bt      $20,%esi
-+	jnc     1f      /* No NX, skip setting it */
-+	bts     $_EFER_NX, %eax
-+1:	wrmsr
-+
-+	cmp     $0,%r11b /* non-zero => secondary cpu */
-+	jne     cpu_bringup_and_idle
-+	ret
-+        
-+#endif /* CONFIG_X86_64 */
-+#endif /* CONFIG_XEN_PVH */
-+
- .pushsection .text
- 	.balign PAGE_SIZE
- ENTRY(hypercall_page)
--- 
-1.7.10.4
+If the state variable is odd how does the other processor see a state
+change to even before processing is complete if the state is updated only
+at the end of processing?
 
