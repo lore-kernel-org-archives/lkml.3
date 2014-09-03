@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195AbaICJpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:45:30 -0400
-Received: from mail.vectorindia.org ([208.85.3.102]:45293 "EHLO
-	vectorindia.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756070AbaICJp3 (ORCPT
+	id S1756212AbaICJpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:45:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43069 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930AbaICJpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:45:29 -0400
-X-Greylist: delayed 940 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Sep 2014 05:45:29 EDT
-From: Sudip Mukherjee <sudip@vectorindia.org>
-To: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sudip Mukherjee <sudip@vectorindia.org>, sparmaintainer@unisys.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] staging: unisys: uislib: uisqueue.c: rewrite of do_locked_client_insert
-Date: Wed,  3 Sep 2014 14:59:21 +0530
-Message-Id: <1409736561-23883-1-git-send-email-sudip@vectorindia.org>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 3 Sep 2014 05:45:53 -0400
+Date: Wed, 3 Sep 2014 11:45:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Oleg Nesterov <oleg@redhat.com>, Kautuk Consul <consul.kautuk@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
+ with try_to_wake_up()
+Message-ID: <20140903094538.GF4783@worktop.ger.corp.intel.com>
+References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
+ <20140825155738.GA5944@redhat.com>
+ <3702911409735076@web26g.yandex.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3702911409735076@web26g.yandex.ru>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) removed unused variables
-2) fixed sparse warning of context imbalance in 'do_locked_client_insert'
-                         different lock contexts for basic block
-3) removed the call to visor_signalqueue_empty() , this function is
-   checking whether a signal queue is empty, but the return value
-   of the function is not beeing used, so it is safe to remove.
+On Wed, Sep 03, 2014 at 01:04:36PM +0400, Kirill Tkhai wrote:
+> 25.08.2014, 20:01, "Oleg Nesterov" <oleg@redhat.com>:
+> > Peter, do you remember another problem with TASK_DEAD we discussed recently?
+> > (prev_state == TASK_DEAD detection in finish_task_switch() still looks racy).
+> 
+> One more problem with task_dead just to mention it here.
+> 
+> Below is racy with the change of sched_class:
+> 
+>         if (prev->sched_class->task_dead)
+>                 prev->sched_class->task_dead(prev);
+> 
+> switched_from_dl() does not cancel running timers.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Well, it does a try_to_cancel() but yes, that can fail. Now I suspect
+you cannot actually do hrtimer_cancel() from switched_from because its
+called with locks held and the timer function will also try and acquire
+those locks.
 
-v1 of the patch of the patch just fixed the sparse warning.
-On suggestion of Dan Carpenter v2 is the total rewrite of the function.
-
-change from v2 to v3 : i messed up in writing a comment , which greg k-h pointed out.
-The comment was actually not needed , so that has been removed.
-
-change from v3 to v4 : call to visor_signalqueue_empty() was removed and
-in the if condition comparison with 1 was removed.
-
-
- drivers/staging/unisys/uislib/uisqueue.c | 37 ++++++--------------------------
- 1 file changed, 7 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/staging/unisys/uislib/uisqueue.c b/drivers/staging/unisys/uislib/uisqueue.c
-index f52bca1..83f8761 100644
---- a/drivers/staging/unisys/uislib/uisqueue.c
-+++ b/drivers/staging/unisys/uislib/uisqueue.c
-@@ -78,41 +78,18 @@ do_locked_client_insert(struct uisqueue_info *queueinfo,
- 			u64 interruptHandle, u8 *channelId)
- {
- 	unsigned long flags;
--	unsigned char queueWasEmpty;
--	unsigned int locked = 0;
--	unsigned int acquired = 0;
- 	u8 rc = 0;
-
- 	spin_lock_irqsave(lock, flags);
--	locked = 1;
--
- 	if (!ULTRA_CHANNEL_CLIENT_ACQUIRE_OS(queueinfo->chan, channelId, NULL))
--		goto Away;
--
--	acquired = 1;
--
--	queueWasEmpty = visor_signalqueue_empty(queueinfo->chan, whichqueue);
--	if (!visor_signal_insert(queueinfo->chan, whichqueue, pSignal))
--		goto Away;
--	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
--	acquired = 0;
--	spin_unlock_irqrestore(lock, flags);
--	locked = 0;
--
--	queueinfo->packets_sent++;
--
--	rc = 1;
--Away:
--	if (acquired) {
--		ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId,
--						NULL);
--		acquired = 0;
-+		goto unlock;
-+	if (visor_signal_insert(queueinfo->chan, whichqueue, pSignal)) {
-+		queueinfo->packets_sent++;
-+		rc = 1;
- 	}
--	if (locked) {
--		spin_unlock_irqrestore((spinlock_t *) lock, flags);
--		locked = 0;
--	}
--
-+	ULTRA_CHANNEL_CLIENT_RELEASE_OS(queueinfo->chan, channelId, NULL);
-+unlock:
-+	spin_unlock_irqrestore((spinlock_t *)lock, flags);
- 	return rc;
- }
-
---
-1.8.1.2
-
+But yes, that appears to be an actual problem indeed.
