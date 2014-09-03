@@ -1,153 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaICJHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:07:14 -0400
-Received: from mga14.intel.com ([192.55.52.115]:49159 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753452AbaICJHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:07:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="380724075"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: kmo@daterainc.com
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 1/2] md: Resolve shadow warnings
-Date: Wed,  3 Sep 2014 02:07:08 -0700
-Message-Id: <1409735229-24186-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1756016AbaICJH5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:07:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44132 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755996AbaICJHz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 05:07:55 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 0/5] irqchip: atmel-aic: add RTT irq fixup
+Date: Wed,  3 Sep 2014 11:07:46 +0200
+Message-Id: <1409735271-15353-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+Hello,
 
-Resolve shadow warnings caused by having the variable "ret"
-in the RB_* macros, which matches the same local name in
-functions that use the macros. Because these inner blocks
-are defined in a macro, if the outer "ret" were passed to
-the macro, madness would ensue. Reduce the hazard by prepending
-an _ to the names of the inner block symbols, which seems to
-be standard practice anyway.
+This patch series add a new fixup function for the RTT (Real Time Timer)
+block and make use of it on SoCs integrating at least one RTT to prevent
+spurious interrupts on the first interrupt line.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
- drivers/md/bcache/util.h | 80 ++++++++++++++++++++++++------------------------
- 1 file changed, 40 insertions(+), 40 deletions(-)
+This fixup function was previously implemented in
+arch/arm/mach-at91/sysirq_mask.c, but is now moved to the AIC driver so
+that we can remove SoC specific hooks in arch/arm/mach-at91/ when booting
+a DT kernel.
 
-diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
-index 98df757..508f68b 100644
---- a/drivers/md/bcache/util.h
-+++ b/drivers/md/bcache/util.h
-@@ -484,65 +484,65 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done);
- 
- #define RB_INSERT(root, new, member, cmp)				\
- ({									\
--	__label__ dup;							\
--	struct rb_node **n = &(root)->rb_node, *parent = NULL;		\
--	typeof(new) this;						\
--	int res, ret = -1;						\
-+	__label__ _dup;							\
-+	struct rb_node **_n = &(root)->rb_node, *_parent = NULL;	\
-+	typeof(new) _this;						\
-+	int _res, _ret = -1;						\
- 									\
--	while (*n) {							\
--		parent = *n;						\
--		this = container_of(*n, typeof(*(new)), member);	\
--		res = cmp(new, this);					\
--		if (!res)						\
--			goto dup;					\
--		n = res < 0						\
--			? &(*n)->rb_left				\
--			: &(*n)->rb_right;				\
-+	while (*_n) {							\
-+		_parent = *_n;						\
-+		_this = container_of(*_n, typeof(*(new)), member);	\
-+		_res = cmp(new, _this);					\
-+		if (!_res)						\
-+			goto _dup;					\
-+		_n = _res < 0						\
-+			? &(*_n)->rb_left				\
-+			: &(*_n)->rb_right;				\
- 	}								\
- 									\
--	rb_link_node(&(new)->member, parent, n);			\
-+	rb_link_node(&(new)->member, _parent, _n);			\
- 	rb_insert_color(&(new)->member, root);				\
--	ret = 0;							\
--dup:									\
--	ret;								\
-+	_ret = 0;							\
-+_dup:									\
-+	_ret;								\
- })
- 
- #define RB_SEARCH(root, search, member, cmp)				\
- ({									\
--	struct rb_node *n = (root)->rb_node;				\
--	typeof(&(search)) this, ret = NULL;				\
--	int res;							\
-+	struct rb_node *_n = (root)->rb_node;				\
-+	typeof(&(search)) _this, _ret = NULL;				\
-+	int _res;							\
- 									\
--	while (n) {							\
--		this = container_of(n, typeof(search), member);		\
--		res = cmp(&(search), this);				\
--		if (!res) {						\
--			ret = this;					\
-+	while (_n) {							\
-+		_this = container_of(_n, typeof(search), member);		\
-+		_res = cmp(&(search), _this);				\
-+		if (!_res) {						\
-+			_ret = _this;					\
- 			break;						\
- 		}							\
--		n = res < 0						\
--			? n->rb_left					\
--			: n->rb_right;					\
-+		_n = _res < 0						\
-+			? _n->rb_left					\
-+			: _n->rb_right;					\
- 	}								\
--	ret;								\
-+	_ret;								\
- })
- 
- #define RB_GREATER(root, search, member, cmp)				\
- ({									\
--	struct rb_node *n = (root)->rb_node;				\
--	typeof(&(search)) this, ret = NULL;				\
--	int res;							\
-+	struct rb_node *_n = (root)->rb_node;				\
-+	typeof(&(search)) _this, _ret = NULL;				\
-+	int _res;							\
- 									\
--	while (n) {							\
--		this = container_of(n, typeof(search), member);		\
--		res = cmp(&(search), this);				\
--		if (res < 0) {						\
--			ret = this;					\
--			n = n->rb_left;					\
-+	while (_n) {							\
-+		_this = container_of(_n, typeof(search), member);	\
-+		_res = cmp(&(search), _this);				\
-+		if (_res < 0) {						\
-+			_ret = _this;					\
-+			_n = _n->rb_left;					\
- 		} else							\
--			n = n->rb_right;				\
-+			_n = _n->rb_right;				\
- 	}								\
--	ret;								\
-+	_ret;								\
- })
- 
- #define RB_FIRST(root, type, member)					\
+This series also reworks the naming convention of the SoC specific fixup
+functions and add an entry for the at91rm9200.
+
+The series depends on the acceptation of the RTT DT bindings proposed here
+[1].
+
+Best Regards,
+
+Boris
+
+[1]https://lkml.org/lkml/2014/9/3/145
+
+Boris BREZILLON (5):
+  irqchip: atmel-aic: add irq fixup for RTT block
+  irqchip: atmel-aic: add irq fixups for at91sam926x SoCs
+  irqchip: atmel-aic: add specific irq fixup function for sam9g45 and
+    sam9rl
+  irqchip: atmel-aic: rename at91sam9_aic_irq_fixup for naming
+    consistency
+  irqchip: atmel-aic: add missing entry for rm9200 irq fixups
+
+ drivers/irqchip/irq-atmel-aic-common.c | 26 ++++++++++++++++++++++++++
+ drivers/irqchip/irq-atmel-aic-common.h |  2 ++
+ drivers/irqchip/irq-atmel-aic.c        | 26 +++++++++++++++++++++-----
+ 3 files changed, 49 insertions(+), 5 deletions(-)
+
 -- 
-1.9.3
+1.9.1
 
