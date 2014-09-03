@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933413AbaICXAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:00:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46336 "EHLO
+	id S934451AbaICXA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:00:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756960AbaICWZ7 (ORCPT
+	with ESMTP id S1756943AbaICWZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:25:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.16 092/125] mei: reset client state on queued connect request
-Date: Wed,  3 Sep 2014 15:07:29 -0700
-Message-Id: <20140903220626.436851207@linuxfoundation.org>
+        Kinglong Mee <kinglongmee@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.16 117/125] NFSD: Decrease nfsd_users in nfsd_startup_generic fail
+Date: Wed,  3 Sep 2014 15:07:54 -0700
+Message-Id: <20140903220627.210643731@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -29,37 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Kinglong Mee <kinglongmee@gmail.com>
 
-commit 73ab4232388b7a08f17c8d08141ff2099fa0b161 upstream.
+commit d9499a95716db0d4bc9b67e88fd162133e7d6b08 upstream.
 
-If connect request is queued (e.g. device in pg) set client state
-to initializing, thus avoid preliminary exit in wait if current
-state is disconnected.
+A memory allocation failure could cause nfsd_startup_generic to fail, in
+which case nfsd_users wouldn't be incorrectly left elevated.
 
-This is regression from:
+After nfsd restarts nfsd_startup_generic will then succeed without doing
+anything--the first consequence is likely nfs4_start_net finding a bad
+laundry_wq and crashing.
 
-commit e4d8270e604c3202131bac607969605ac397b893
-Author: Alexander Usyskin <alexander.usyskin@intel.com>
-mei: set connecting state just upon connection request is sent to the fw
-
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
+Fixes: 4539f14981ce "nfsd: replace boolean nfsd_up flag by users counter"
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/client.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfssvc.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -601,6 +601,7 @@ int mei_cl_connect(struct mei_cl *cl, st
- 		cl->timer_count = MEI_CONNECT_TIMEOUT;
- 		list_add_tail(&cb->list, &dev->ctrl_rd_list.list);
- 	} else {
-+		cl->state = MEI_FILE_INITIALIZING;
- 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
- 	}
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -221,7 +221,8 @@ static int nfsd_startup_generic(int nrse
+ 	 */
+ 	ret = nfsd_racache_init(2*nrservs);
+ 	if (ret)
+-		return ret;
++		goto dec_users;
++
+ 	ret = nfs4_state_start();
+ 	if (ret)
+ 		goto out_racache;
+@@ -229,6 +230,8 @@ static int nfsd_startup_generic(int nrse
+ 
+ out_racache:
+ 	nfsd_racache_shutdown();
++dec_users:
++	nfsd_users--;
+ 	return ret;
+ }
  
 
 
