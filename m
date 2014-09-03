@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453AbaICQcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 12:32:46 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:43822 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaICQcp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 12:32:45 -0400
-From: Vadim Bendebury <vbendeb@chromium.org>
-To: subssriprions@vsbe.com
-Cc: vb@vsbe.com, Vadim Bendebury <vbendeb@chromium.org>,
-        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: allow optional shorter config descriptions
-Date: Wed,  3 Sep 2014 09:32:25 -0700
-Message-Id: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S1756476AbaICQeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 12:34:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15285 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753294AbaICQeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 12:34:01 -0400
+Message-ID: <540742D1.3010102@redhat.com>
+Date: Wed, 03 Sep 2014 12:33:21 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>
+CC: Kautuk Consul <consul.kautuk@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: task_numa_fault() && TASK_DEAD
+References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com> <20140825155738.GA5944@redhat.com> <20140901153935.GQ27892@worktop.ger.corp.intel.com> <20140901175851.GA15210@redhat.com> <20140901190931.GD5806@worktop.ger.corp.intel.com> <20140902155208.GA28668@redhat.com> <20140902164714.GA17033@redhat.com> <20140903160819.GA7682@redhat.com>
+In-Reply-To: <20140903160819.GA7682@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script is used by many other projects, and in some of them the
-requirement of at least 4 line long description for all Kconfig items
-is excessive. This patch adds a command line option to control the
-required minimum length.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Tested running this script over a patch including a two line config
-description. The script generated a warning when invoked as is, and
-did not generate it when invoked with --min-conf-desc-length=2.
+On 09/03/2014 12:08 PM, Oleg Nesterov wrote:
+> On 09/02, Oleg Nesterov wrote:
+>> 
+>> The usage of TASK_DEAD in task_numa_fault() is wrong in any
+>> case.
+> 
+> Rik, I can't understand why task_numa_fault() needs this check at
+> all, but "if (p->state == TASK_DEAD)" looks certainly wrong. You
+> could replace this check with BUG_ON(p->state == TASK_DEAD).
+> Perhaps you meant PF_EXITING?
 
-Signed-off-by: Vadim Bendebury <vbendeb@chromium.org>
----
+I do not know why that code is in there, either.
 
- scripts/checkpatch.pl | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+I suspect it was added after some conversation on irc, with
+either Peter or Mel.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b385bcb..8808bde 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -43,6 +43,7 @@ my $configuration_file = ".checkpatch.conf";
- my $max_line_length = 80;
- my $ignore_perl_version = 0;
- my $minimum_perl_version = 5.10.0;
-+my $min_conf_desc_length = 4;
- 
- sub help {
- 	my ($exitcode) = @_;
-@@ -63,6 +64,7 @@ Options:
-   --types TYPE(,TYPE2...)    show only these comma separated message types
-   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
-   --max-line-length=n        set the maximum line length, if exceeded, warn
-+  --min-conf-desc-length=n   set the min description length, if shorter, warn
-   --show-types               show the message "types" in the output
-   --root=PATH                PATH to the kernel tree root
-   --no-summary               suppress the per-file summary
-@@ -131,6 +133,7 @@ GetOptions(
- 	'types=s'	=> \@use,
- 	'show-types!'	=> \$show_types,
- 	'max-line-length=i' => \$max_line_length,
-+	'min-conf-desc-length=i' => \$min_conf_desc_length,
- 	'root=s'	=> \$root,
- 	'summary!'	=> \$summary,
- 	'mailback!'	=> \$mailback,
-@@ -2281,7 +2284,8 @@ sub process {
- 				$length++;
- 			}
- 			WARN("CONFIG_DESCRIPTION",
--			     "please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($is_start && $is_end && $length < 4);
-+			     "please write a paragraph that describes the config symbol fully\n" . $herecurr)
-+			    if ($is_start && $is_end && $length < $min_conf_desc_length);
- 			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
- 		}
- 
--- 
-2.1.0.rc2.206.gedb03e5
+> And a stupid (really, I don't understand this code) question:
+> 
+> /* for example, ksmd faulting in a user's mm */ if (!p->mm) 
+> return;
+> 
+> OK, but perhaps it make sense to pass "mm" as another argument and
+> do
+> 
+> /* ksmd faulting in a user's mm, or debugger, or kthread use_mm()
+> caller */ if (p->mm != mm) return;
 
+I suppose that makes sense, since it would be possible for one task
+to cause a page fault in another task's mm, with eg. ptrace peek/poke
+or similar code paths.
+
+Currently the numa code could end up accounting such a fault in the
+wrong mm, when it would be better to not account the fault at all.
+
+This is a bit of a corner case, and probably not the highest priority
+thing to fix right now, but it would be fairly easy.
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUB0LQAAoJEM553pKExN6DGBEIALBBKq0N3GlzjRWBzxI361dg
++Xn/C789TZFhk2tvZMNYwJgZRS7xaTRr6IfNcMZNlT9enVlXtrPj2BFiTJ1dF+bh
+iwr2eS8c+VVHM+lvzEyiNbrTnvgVNgECI76qsjpvuS0BiUKLh51JSTNLdHA4/CEZ
+yJrd+WyulTrv9dHchIO53MQ8+ttCNdzQv/1JK+L2R7vizGnnwA6FysTVQFOPLDxd
+ZdvdlAb16uouYQ+1skufxwftvydkbv5voDzp2kb7W0vtwp45MEmj72KPCjHvm1JV
+XoX6x1tdNuuZtGdY6WQvFup9ABUnMnILHaX4bkYvxxUqE6/NbfNGOC0CBO41IjE=
+=NFQx
+-----END PGP SIGNATURE-----
