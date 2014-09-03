@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934558AbaICWds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:33:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46791 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933079AbaICWdp (ORCPT
+	id S934778AbaICWdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:33:53 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:65165 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933079AbaICWdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:33:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 53/55] NFSv3: Fix another acl regression
-Date: Wed,  3 Sep 2014 15:05:43 -0700
-Message-Id: <20140903220502.370544132@linuxfoundation.org>
+	Wed, 3 Sep 2014 18:33:50 -0400
+From: An Ha <zero579911@gmail.com>
+To: gregkh@linuxfoundation.org, gulsah.1004@gmail.com,
+        paulmck@linux.vnet.ibm.com, Larry.Finger@lwfinger.net,
+        linville@tuxdriver.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        An Ha <zero579911@gmail.com>
+Subject: [PATCH] Staging: rtl8821ae: base: add missing blank line after declaration
+Date: Wed,  3 Sep 2014 18:33:08 -0400
+Message-Id: <1409783588-8814-1-git-send-email-zero579911@gmail.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Add a missing blank line after declaration to fix coding style issue.
 
-------------------
-
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-
-commit f87d928f6d98644d39809a013a22f981d39017cf upstream.
-
-When creating a new object on the NFS server, we should not be sending
-posix setacl requests unless the preceding posix_acl_create returned a
-non-trivial acl. Doing so, causes Solaris servers in particular to
-return an EINVAL.
-
-Fixes: 013cdf1088d72 (nfs: use generic posix ACL infrastructure,,,)
-Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1132786
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: An Ha <zero579911@gmail.com>
 ---
- fs/nfs/nfs3acl.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/staging/rtl8821ae/base.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nfs/nfs3acl.c
-+++ b/fs/nfs/nfs3acl.c
-@@ -305,7 +305,10 @@ static int nfs3_proc_setacls(struct inod
- 		.rpc_argp	= &args,
- 		.rpc_resp	= &fattr,
- 	};
--	int status;
-+	int status = 0;
+diff --git a/drivers/staging/rtl8821ae/base.c b/drivers/staging/rtl8821ae/base.c
+index 4a36da0..dbf28ce 100644
+--- a/drivers/staging/rtl8821ae/base.c
++++ b/drivers/staging/rtl8821ae/base.c
+@@ -364,6 +364,7 @@ static void _rtl_init_mac80211(struct ieee80211_hw *hw)
+ 		SET_IEEE80211_PERM_ADDR(hw, rtlefuse->dev_addr);
+ 	} else {
+ 		u8 rtlmac[] = { 0x00, 0xe0, 0x4c, 0x81, 0x92, 0x00 };
 +
-+	if (acl == NULL && (!S_ISDIR(inode->i_mode) || dfacl == NULL))
-+		goto out;
+ 		get_random_bytes((rtlmac + (ETH_ALEN - 1)), 1);
+ 		SET_IEEE80211_PERM_ADDR(hw, rtlmac);
+ 	}
+@@ -553,6 +554,7 @@ static void _rtl_query_shortgi(struct ieee80211_hw *hw,
+ 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
+ 	u8 rate_flag = info->control.rates[0].flags;
+ 	u8 sgi_40 = 0, sgi_20 = 0, bw_40 = 0;
++
+ 	tcb_desc->use_shortgi = false;
  
- 	status = -EOPNOTSUPP;
- 	if (!nfs_server_capable(inode, NFS_CAP_ACLS))
-
+ 	if (sta == NULL)
+-- 
+2.1.0
 
