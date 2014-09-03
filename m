@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaICG3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:29:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47558 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274AbaICG3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:29:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,455,1406617200"; 
-   d="scan'208";a="567549058"
-From: Chen LinX <linx.z.chen@intel.com>
-To: rostedt@goodmis.org, mingo@redhat.com
-Cc: yanmin_zhang@linux.intel.com, linux-kernel@vger.kernel.org,
-        Chen LinX <linx.z.chen@intel.com>
-Subject: [PATCH] ftrace: The set_graph_function and set_graph_notrace file mode should be 0644 instead of 0444
-Date: Wed,  3 Sep 2014 14:31:09 +0800
-Message-Id: <1409725869-4501-1-git-send-email-linx.z.chen@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1755514AbaICGcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:32:18 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:38066 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404AbaICGcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 02:32:17 -0400
+Date: Wed, 3 Sep 2014 14:32:00 +0800
+From: "RAIN" <rainlee814@gmail.com>
+Reply-To: rain@topwayfreight.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: RE: SEA& AIR & COURIER FREIGHT FORWARDER IN CHINA
+Message-ID: <201409031432001414556@gmail.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s836WPls019101
 
-Signed-off-by: Chen LinX <linx.z.chen@intel.com>
----
- kernel/trace/ftrace.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 5916a8e..00e7b9a 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4406,10 +4406,10 @@ static __init int ftrace_init_dyn_debugfs(struct dentry *d_tracer)
- 	ftrace_create_filter_files(&global_ops, d_tracer);
+Dear Sir,
  
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
--	trace_create_file("set_graph_function", 0444, d_tracer,
-+	trace_create_file("set_graph_function", 0644, d_tracer,
- 				    NULL,
- 				    &ftrace_graph_fops);
--	trace_create_file("set_graph_notrace", 0444, d_tracer,
-+	trace_create_file("set_graph_notrace", 0644, d_tracer,
- 				    NULL,
- 				    &ftrace_graph_notrace_fops);
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
--- 
-1.9.1
+Good day! I'm Rain from Shenzhen Topway International Forwarding Co.,ltd
 
+We are providing the Shipping service for Courier, Air  and sea shipment from all cities of China
+Our competitive advantages :
+
+Full container shipment china ports to Russia,Central America and Africa ports
+
+DHL,UPS,FEDEX courier door to door price 30% discount to worldwide
+
+Especially: 
+Door to door sea freight cargo from Guangzhou to Singapore,Thailand,Malaysia,Phillippines, Kenya,Japan and Korea
+DDP( Double custom clearance service to these countries): Include custom declaration in China, shipping to your country, custom clearance, duty and vat taxes paid. and delivery to your door. you only need waiting goods in your place no need pay else when it arrive your door.
+
+To view more details, plz click in: www.topwayfreight.com  
+ 
+PS: Special sea freight by CMA CGM from China to North Africa, Black Sea,Adriatic Sea and Russia inland ports.
+ 
+
+Sincerely hope we can receive your response to get the valuable opportuntity to offer our best service and also believe that we will be your reliable partner in China to take care your goods.
+ 
+One chance, serve forever.
+
+
+Thanks&Best regards
+Ms.Rain 
+Shenzhen Top Way International Forwarding Co., Ltd
+MOBILE & WHATSAPP:+86-13528787227
+TEL:+86-755-89367755-802
+Email:rain@topwayfreight.com
+Skype:rain-blestocean
+QQ:840626628
+website: topwayfreight.com
+http://hkkingway.en.alibaba.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
