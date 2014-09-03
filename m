@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418AbaICWGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:06:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45384 "EHLO
+	id S933714AbaICWIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:08:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933394AbaICWGF (ORCPT
+	with ESMTP id S932432AbaICWIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:06:05 -0400
+	Wed, 3 Sep 2014 18:08:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Alt <n.alt@mytum.de>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 47/55] USB: ftdi_sio: add Basic Micro ATOM Nano USB2Serial PID
-Date: Wed,  3 Sep 2014 15:05:37 -0700
-Message-Id: <20140903220501.457199594@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>, Vidya Sagar <sagar.tv@gmail.com>
+Subject: [PATCH 3.14 49/88] PCI: Configure ASPM when enabling device
+Date: Wed,  3 Sep 2014 15:05:23 -0700
+Message-Id: <20140903220517.435906877@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
+In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
+References: <20140903220515.958924632@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,46 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Vidya Sagar <sagar.tv@gmail.com>
 
-commit 6552cc7f09261db2aeaae389aa2c05a74b3a93b4 upstream.
+commit 1f6ae47ecff7f23da73417e068018b311f3b5583 upstream.
 
-Add device id for Basic Micro ATOM Nano USB2Serial adapters.
+We can't do ASPM configuration at enumeration-time because enabling it
+makes some defective hardware unresponsive, even if ASPM is disabled later
+(see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
+to veto it").  Therefore, we have to do it after a driver claims the
+device.
 
-Reported-by: Nicolas Alt <n.alt@mytum.de>
-Tested-by: Nicolas Alt <n.alt@mytum.de>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+We previously configured ASPM in pci_set_power_state(), but that's not a
+very good place because it's not really related to setting the PCI device
+power state, and doing it there means:
+
+  - We incorrectly skipped ASPM config when setting a device that's
+    already in D0 to D0.
+
+  - We unnecessarily configured ASPM when setting a device to a low-power
+    state (the ASPM feature only applies when the device is in D0).
+
+  - We unnecessarily configured ASPM when called from a .resume() method
+    (ASPM configuration needs to be restored during resume, but
+    pci_restore_pcie_state() should already do this).
+
+Move ASPM configuration from pci_set_power_state() to
+do_pci_enable_device() so we do it when a driver enables a device.
+
+[bhelgaas: changelog]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
+Fixes: db288c9c5f9d ("PCI / PM: restore the original behavior of pci_set_power_state()")
+Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/pci/pci.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -154,6 +154,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_BM_ATOM_NANO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_EV3CON_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -42,6 +42,8 @@
- /* www.candapter.com Ewert Energy Systems CANdapter device */
- #define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -830,12 +830,6 @@ int pci_set_power_state(struct pci_dev *
  
-+#define FTDI_BM_ATOM_NANO_PID	0xa559	/* Basic Micro ATOM Nano USB2Serial */
+ 	if (!__pci_complete_power_transition(dev, state))
+ 		error = 0;
+-	/*
+-	 * When aspm_policy is "powersave" this call ensures
+-	 * that ASPM is configured.
+-	 */
+-	if (!error && dev->bus->self)
+-		pcie_aspm_powersave_config_link(dev->bus->self);
+ 
+ 	return error;
+ }
+@@ -1181,12 +1175,18 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_save
+ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+ {
+ 	int err;
++	struct pci_dev *bridge;
+ 	u16 cmd;
+ 	u8 pin;
+ 
+ 	err = pci_set_power_state(dev, PCI_D0);
+ 	if (err < 0 && err != -EIO)
+ 		return err;
 +
- /*
-  * Texas Instruments XDS100v2 JTAG / BeagleBone A3
-  * http://processors.wiki.ti.com/index.php/XDS100
++	bridge = pci_upstream_bridge(dev);
++	if (bridge)
++		pcie_aspm_powersave_config_link(bridge);
++
+ 	err = pcibios_enable_device(dev, bars);
+ 	if (err < 0)
+ 		return err;
 
 
