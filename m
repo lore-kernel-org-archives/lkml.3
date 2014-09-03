@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415AbaICWQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:16:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
+	id S1757272AbaICWQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:16:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757252AbaICWQI (ORCPT
+	with ESMTP id S1757248AbaICWQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:16:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Omar Sandoval <osandov@osandov.com>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.16 031/125] arm64: dont call break hooks for BRK exceptions from EL0
-Date: Wed,  3 Sep 2014 15:06:28 -0700
-Message-Id: <20140903220624.595480364@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.16 030/125] arm64: Fix barriers used for page table modifications
+Date: Wed,  3 Sep 2014 15:06:27 -0700
+Message-Id: <20140903220624.566101564@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,58 +31,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit c878e0cff5c5e56b216951cbe75f7a3dd500a736 upstream.
+commit 7f0b1bf04511348995d6fce38c87c98a3b5cb781 upstream.
 
-Our break hooks are used to handle brk exceptions from kgdb (and potentially
-kprobes if that code ever resurfaces), so don't bother calling them if
-the BRK exception comes from userspace.
+The architecture specification states that both DSB and ISB are required
+between page table modifications and subsequent memory accesses using the
+corresponding virtual address. When TLB invalidation takes place, the
+tlb_flush_* functions already have the necessary barriers. However, there are
+other functions like create_mapping() for which this is not the case.
 
-This prevents userspace from trapping to a kdb shell on systems where
-kgdb is enabled and active.
+The patch adds the DSB+ISB instructions in the set_pte() function for
+valid kernel mappings. The invalid pte case is handled by tlb_flush_*
+and the user mappings in general have a corresponding update_mmu_cache()
+call containing a DSB. Even when update_mmu_cache() isn't called, the
+kernel can still cope with an unlikely spurious page fault by
+re-executing the instruction.
 
-Reported-by: Omar Sandoval <osandov@osandov.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+In addition, the set_pmd, set_pud() functions gain an ISB for
+architecture compliance when block mappings are created.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Leif Lindholm <leif.lindholm@linaro.org>
+Acked-by: Steve Capper <steve.capper@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/debug-monitors.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ arch/arm64/include/asm/cacheflush.h |   11 +----------
+ arch/arm64/include/asm/pgtable.h    |   13 +++++++++++++
+ arch/arm64/include/asm/tlbflush.h   |    5 +++--
+ 3 files changed, 17 insertions(+), 12 deletions(-)
 
---- a/arch/arm64/kernel/debug-monitors.c
-+++ b/arch/arm64/kernel/debug-monitors.c
-@@ -315,20 +315,20 @@ static int brk_handler(unsigned long add
+--- a/arch/arm64/include/asm/cacheflush.h
++++ b/arch/arm64/include/asm/cacheflush.h
+@@ -138,19 +138,10 @@ static inline void __flush_icache_all(vo
+ #define flush_icache_page(vma,page)	do { } while (0)
+ 
+ /*
+- * flush_cache_vmap() is used when creating mappings (eg, via vmap,
+- * vmalloc, ioremap etc) in kernel space for pages.  On non-VIPT
+- * caches, since the direct-mappings of these pages may contain cached
+- * data, we need to do a full cache flush to ensure that writebacks
+- * don't corrupt data placed into these pages via the new mappings.
++ * Not required on AArch64 (PIPT or VIPT non-aliasing D-cache).
+  */
+ static inline void flush_cache_vmap(unsigned long start, unsigned long end)
  {
- 	siginfo_t info;
- 
--	if (call_break_hook(regs, esr) == DBG_HOOK_HANDLED)
--		return 0;
-+	if (user_mode(regs)) {
-+		info = (siginfo_t) {
-+			.si_signo = SIGTRAP,
-+			.si_errno = 0,
-+			.si_code  = TRAP_BRKPT,
-+			.si_addr  = (void __user *)instruction_pointer(regs),
-+		};
- 
--	if (!user_mode(regs))
-+		force_sig_info(SIGTRAP, &info, current);
-+	} else if (call_break_hook(regs, esr) != DBG_HOOK_HANDLED) {
-+		pr_warning("Unexpected kernel BRK exception at EL1\n");
- 		return -EFAULT;
-+	}
- 
--	info = (siginfo_t) {
--		.si_signo = SIGTRAP,
--		.si_errno = 0,
--		.si_code  = TRAP_BRKPT,
--		.si_addr  = (void __user *)instruction_pointer(regs),
--	};
--
--	force_sig_info(SIGTRAP, &info, current);
- 	return 0;
+-	/*
+-	 * set_pte_at() called from vmap_pte_range() does not
+-	 * have a DSB after cleaning the cache line.
+-	 */
+-	dsb(ish);
  }
  
+ static inline void flush_cache_vunmap(unsigned long start, unsigned long end)
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -138,6 +138,8 @@ extern struct page *empty_zero_page;
+ 
+ #define pte_valid_user(pte) \
+ 	((pte_val(pte) & (PTE_VALID | PTE_USER)) == (PTE_VALID | PTE_USER))
++#define pte_valid_not_user(pte) \
++	((pte_val(pte) & (PTE_VALID | PTE_USER)) == PTE_VALID)
+ 
+ static inline pte_t pte_wrprotect(pte_t pte)
+ {
+@@ -184,6 +186,15 @@ static inline pte_t pte_mkspecial(pte_t
+ static inline void set_pte(pte_t *ptep, pte_t pte)
+ {
+ 	*ptep = pte;
++
++	/*
++	 * Only if the new pte is valid and kernel, otherwise TLB maintenance
++	 * or update_mmu_cache() have the necessary barriers.
++	 */
++	if (pte_valid_not_user(pte)) {
++		dsb(ishst);
++		isb();
++	}
+ }
+ 
+ extern void __sync_icache_dcache(pte_t pteval, unsigned long addr);
+@@ -303,6 +314,7 @@ static inline void set_pmd(pmd_t *pmdp,
+ {
+ 	*pmdp = pmd;
+ 	dsb(ishst);
++	isb();
+ }
+ 
+ static inline void pmd_clear(pmd_t *pmdp)
+@@ -333,6 +345,7 @@ static inline void set_pud(pud_t *pudp,
+ {
+ 	*pudp = pud;
+ 	dsb(ishst);
++	isb();
+ }
+ 
+ static inline void pud_clear(pud_t *pudp)
+--- a/arch/arm64/include/asm/tlbflush.h
++++ b/arch/arm64/include/asm/tlbflush.h
+@@ -122,6 +122,7 @@ static inline void flush_tlb_kernel_rang
+ 	for (addr = start; addr < end; addr += 1 << (PAGE_SHIFT - 12))
+ 		asm("tlbi vaae1is, %0" : : "r"(addr));
+ 	dsb(ish);
++	isb();
+ }
+ 
+ /*
+@@ -131,8 +132,8 @@ static inline void update_mmu_cache(stru
+ 				    unsigned long addr, pte_t *ptep)
+ {
+ 	/*
+-	 * set_pte() does not have a DSB, so make sure that the page table
+-	 * write is visible.
++	 * set_pte() does not have a DSB for user mappings, so make sure that
++	 * the page table write is visible.
+ 	 */
+ 	dsb(ishst);
+ }
 
 
