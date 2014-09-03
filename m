@@ -1,100 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaICGtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:49:43 -0400
-Received: from mail3.unitn.it ([193.205.206.24]:53757 "EHLO mail3.unitn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755543AbaICGtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:49:41 -0400
-Message-ID: <5406BA02.20806@unitn.it>
-Date: Wed, 03 Sep 2014 08:49:38 +0200
-From: Luca Abeni <luca.abeni@unitn.it>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@arm.com>
-CC: peterz@infradead.org, rdunlap@infradead.org, mingo@redhat.com,
-        raistlin@linux.it, juri.lelli@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] Documentation/scheduler/sched-deadline.txt: improve
- and clarify AC bits
-References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com> <1409220029-9002-4-git-send-email-juri.lelli@arm.com> <20140902214538.GC22581@sisyphus.home.austad.us>
-In-Reply-To: <20140902214538.GC22581@sisyphus.home.austad.us>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754666AbaICG4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:56:10 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:24448 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385AbaICG4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 02:56:07 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68e-f79536d000000fd1-07-5406bb853df5
+Content-transfer-encoding: 8BIT
+Message-id: <5406BB85.1050903@samsung.com>
+Date: Wed, 03 Sep 2014 15:56:05 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+To: jonghwa3.lee@samsung.com
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        r.baldyga@samsung.com
+Subject: Re: [PATCH] extcon: max77693: Fix a bug occured at changing ADC
+ debounce time.
+References: <1409723407-21221-1-git-send-email-jonghwa3.lee@samsung.com>
+ <5406AD6C.3090306@samsung.com> <5406B786.3020301@samsung.com>
+In-reply-to: <5406B786.3020301@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42JZI2JSpNu6my3E4PwhWYvOs0+YLS7vmsNm
+	cbtxBZvFg8M72R1YPPq2rGL0+LxJLoApissmJTUnsyy1SN8ugStj0h71glsCFT2XfrM2MN7g
+	7WLk5JAQMJH4P+UdG4QtJnHh3nowW0hgKaPE94ZkmJq5//czdTFyAcUXMUqsnTQJrIhXQFDi
+	x+R7LF2MHBzMAvISRy5lg4SZBdQlJs1bxAxR/5pRomfCRxaIei2JlpebwHpZBFQl/ly8yQhi
+	swHF97+4ARYXFQiTWDn9Cli9iICMxMqrP5kghgZLTNrTwQxiCwtEStx8tpkRYkEHo8Sq10/A
+	ijgFtCWurP/GApKQEFjELrHs0QNWiG0CEt8mHwK7VEJAVmLTAWaIzyQlDq64wTKBUWwWkn9m
+	IfwzC8k/CxiZVzGKphYkFxQnpRcZ6RUn5haX5qXrJefnbmIExs3pf8/6djDePGB9iFGAg1GJ
+	h3dBAFuIEGtiWXFl7iFGU6AjJjJLiSbnA6MzryTe0NjMyMLUxNTYyNzSTEmcN0HqZ7CQQHpi
+	SWp2ampBalF8UWlOavEhRiYOTqkGxjZ+613HS156Bz8RqXwZtUbuQlxGlsa1k1UrrM5UNB03
+	nrz2uOymhzfdt4jzl2+a2+4y8eaExUkfqotM34uwSpnMamnZdCP1zIaC8ra4JK3EX5P9RZUn
+	NSkyr31p5O10ibV1QvX3j3KJoksZgje+ndt8s0hjQ1NNSG7tUfbNR//7GNp6Z0okKLEUZyQa
+	ajEXFScCAPzDiduWAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t9jAd3W3WwhBlNmill0nn3CbHF51xw2
+	i9uNK9gsHhzeye7A4tG3ZRWjx+dNcgFMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
+	uoaWFuZKCnmJuam2Si4+AbpumTlAm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUY
+	GaCBhDWMGZP2qBfcEqjoufSbtYHxBm8XIyeHhICJxNz/+5kgbDGJC/fWs3UxcnEICSxilFg7
+	aRIbSIJXQFDix+R7LF2MHBzMAvISRy5lg4SZBdQlJs1bxAxR/5pRomfCRxaIei2JlpebwHpZ
+	BFQl/ly8yQhiswHF97+4ARYXFQiTWDn9Cli9iICMxMqrP5kghgZLTNrTwQxiCwtEStx8tpkR
+	YkEHo8Sq10/AijgFtCWurP/GMoFRYBaS+2Yh3DcLyX0LGJlXMYqmFiQXFCel5xrqFSfmFpfm
+	pesl5+duYgTH5TOpHYwrGywOMQpwMCrx8C4IYAsRYk0sK67MPcQowcGsJMLrmwgU4k1JrKxK
+	LcqPLyrNSS0+xGgK9N1EZinR5HxgysgriTc0NjEzsjQyN7QwMjZXEuc90GodKCSQnliSmp2a
+	WpBaBNPHxMEp1cDYp8Uzw+3kpXk7a5e0rC06tp1L6t5UtfNl+nsLPEP1+j0m6l+dHWl5xVTU
+	epfsMgPbTakTN8hEcu6/eeyTp8PSF3+NBJas117QFfHf/uuUZe+zHv0+8XuaNcufbzkfE1Xd
+	9yn4XLkh22aQyvVx0X/lF3Nf/9L/r+mruYhNQ1VGVWW+vz1HXaicEktxRqKhFnNRcSIAthGF
+	HeECAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/03/2014 03:39 PM, jonghwa3.lee@samsung.com wrote:
+> On 2014년 09월 03일 14:55, Chanwoo Choi wrote:
+> 
+>> On 09/03/2014 02:50 PM, Jonghwa Lee wrote:
+>>> When it writes some value other than 0 to BTLDset and JIGset, muic device
+>>> will be reset automatically. And it happens during updating ADC debounce time,
+>>> because it shares same register. To update ADC debounce time without reset,
+>>> set value only to ADCDbset and 0 to BTLDset and JIGset.
+>>>
+>>> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>>> ---
+>>>  drivers/extcon/extcon-max77693.c |   11 ++++++++---
+>>>  1 file changed, 8 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+>>> index 77460f2..661a3bb 100644
+>>> --- a/drivers/extcon/extcon-max77693.c
+>>> +++ b/drivers/extcon/extcon-max77693.c
+>>> @@ -255,10 +255,15 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
+>>>  	case ADC_DEBOUNCE_TIME_10MS:
+>>>  	case ADC_DEBOUNCE_TIME_25MS:
+>>>  	case ADC_DEBOUNCE_TIME_38_62MS:
+>>> -		ret = regmap_update_bits(info->max77693->regmap_muic,
+>>> +		/*
+>>> +		 * Don't touch BTLDset, JIGset when you want to change adc
+>>> +		 * debounce time. BTLDset, JIGset reflects actual pin status
+>>> +		 * and are not configurable.
+>>> +		 */
+>>> +		ret = regmap_write_bits(info->max77693->regmap_muic,
+>>>  					  MAX77693_MUIC_REG_CTRL3,
+>>> -					  CONTROL3_ADCDBSET_MASK,
+>>> -					  time << CONTROL3_ADCDBSET_SHIFT);
+>>> +					  (CONTROL3_ADCDBSET_MASK &
+>>> +					  time << CONTROL3_ADCDBSET_SHIFT));
+>>
+>> Do you make this patch on extcon-next branch?
+>>
+>> The max77693_muic_set_debounce_time() of extcon-max77693.c
+>> use regmap_update_bits instead of regmap_write_bits as following:
+> 
+> 
+> This patch intends to use 'regmap_write_bits()' not 'regmap_update_bits()'.
 
-On 09/02/2014 11:45 PM, Henrik Austad wrote:
-[...]
->> + On multiprocessor systems with global EDF scheduling (non partitioned
->> + systems), a sufficient test for schedulability can not be based on the
->> + utilisations (it can be shown that task sets with utilisations slightly
->> + larger than 1 can miss deadlines regardless of the number of CPUs M).
->> + However, as previously stated, enforcing that the total utilisation is smaller
->> + than M is enough to guarantee that non real-time tasks are not starved and
->> + that the tardiness of real-time tasks has an upper bound.
->
-> I'd _really_ appreciate a link to a paper where all of this is presented
-> and proved!
-Well, my original plan was to add the bibliography in the next round of patches...
-Is this ok?
+You're right. It is my mistake to review this patch.
 
-[...]
->> + As already stated in Section 3, a necessary condition to be respected to
->> + correctly schedule a set of real-time tasks is that the total utilisation
->> + is smaller than M. When talking about -deadline tasks, this requires to
->> + impose that the sum of the ratio between runtime and period for all tasks
->> + is smaller than M.
->
-> "This requires to impose that .." uhm, what? Drop 'to impose'.
-Ok. I'll send an updated patch to Juri in few days
+> With using regmap_update_bits(), it would writes some value to BTLDset and
+> JIGset then muic device will loose current state.
 
+OK, I'll apply yout next patch(v2).
 
->> [...] Notice that the ratio runtime/period is equivalent to
->> + the utilisation of a "traditional" real-time task, and is also often
->> + referred to as "bandwidth".
->> + The interface used to control the CPU bandwidth that can be allocated
->> + to -deadline tasks is similar to the one already used for -rt
->>    tasks with real-time group scheduling (a.k.a. RT-throttling - see
->>    Documentation/scheduler/sched-rt-group.txt), and is based on readable/
->>    writable control files located in procfs (for system wide settings).
->> @@ -232,8 +285,16 @@ CONTENTS
->>    950000. With rt_period equal to 1000000, by default, it means that -deadline
->>    tasks can use at most 95%, multiplied by the number of CPUs that compose the
->>    root_domain, for each root_domain.
->> -
->> - A -deadline task cannot fork.
->> + This means that non -deadline tasks will receive at least 5% of the CPU time,
->> + and that -deadline tasks will receive their runtime with a guaranteed
->> + worst-case delay respect to the "deadline" parameter. If "deadline" = "period"
->> + and the cpuset mechanism is used to implement partitioned scheduling (see
->> + Section 5), then this simple setting of the bandwidth management is able to
->> + deterministically guarantee that -deadline tasks will receive their runtime
->> + in a period.
->
-> The whole 950000 / 1000000, is at least 50 *consecutive* ms given to non
-> rt/dl tasks every second, or is this more finegrained now?
->
-> If the 50ms can be given in a single go, then I don't think you can
-> guarantee that deadline-tasks will receive their runtime in a period - a
-> period can be <50ms, no?
-Uhmm... Maybe there is something I am missing in how the SCHED_DEADLINE admission
-control is implemented, but I do not know about any "50 consecutive ms to non dl
-tasks" rule. I agree that if there is such a rule then deadline tasks are screwed.
-Juri?
-
-
->> + Finally, notice that in order not to jeopardize this admission control a
->> + -deadline task cannot fork.
->
-> s/this/the
-> (there aren't any other admission controls in the kernel)
-Ok; this will go in my updated patch
-
-
-
-			Thanks,
-				Luca
+Thanks,
+Chanwoo Choi
