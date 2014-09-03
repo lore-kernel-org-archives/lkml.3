@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673AbaICWrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:47:14 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56113 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933475AbaICWrB (ORCPT
+	id S934321AbaICW1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:27:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46482 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934240AbaICW0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:47:01 -0400
-X-Greylist: delayed 1868 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Sep 2014 18:47:01 EDT
-Date: Wed, 3 Sep 2014 23:15:47 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: RFC: Tainting the kernel on raw I/O access
-Message-ID: <20140903221547.GA21800@srcf.ucam.org>
-References: <5407863B.9030608@intel.com>
+	Wed, 3 Sep 2014 18:26:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.14 66/88] mei: reset client state on queued connect request
+Date: Wed,  3 Sep 2014 15:05:40 -0700
+Message-Id: <20140903220517.930529107@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
+References: <20140903220515.958924632@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5407863B.9030608@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Cc: Kees)
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Sep 03, 2014 at 02:20:59PM -0700, H. Peter Anvin wrote:
-> In a meeting earlier today, we discussed MSR access and that it could be
-> used to do bad things.  The same applies to other forms of raw I/O
-> (/dev/mem, /dev/port, ioperm, iopl, etc.)
-> 
-> This is basically the same problem with which the secure boot people
-> have been struggling.
-> 
-> Peter Z. suggested we should taint the kernel on raw I/O access, and I
-> tend to concur.
-> 
-> So what I would like to suggest is that we create a new kernel helper
-> function which can return an error in secure boot mode and otherwise
-> taints the kernel with a raw I/O taint.
-> 
-> What do people think?
+------------------
 
-Not a bad plan, but there's a couple of places where you'd want to 
-forbid stuff in Secure Boot without tainting the kernel in the generic 
-use-case, so there's still some problem to solve there.
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+commit 73ab4232388b7a08f17c8d08141ff2099fa0b161 upstream.
+
+If connect request is queued (e.g. device in pg) set client state
+to initializing, thus avoid preliminary exit in wait if current
+state is disconnected.
+
+This is regression from:
+
+commit e4d8270e604c3202131bac607969605ac397b893
+Author: Alexander Usyskin <alexander.usyskin@intel.com>
+mei: set connecting state just upon connection request is sent to the fw
+
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/misc/mei/client.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -564,6 +564,7 @@ int mei_cl_connect(struct mei_cl *cl, st
+ 		cl->timer_count = MEI_CONNECT_TIMEOUT;
+ 		list_add_tail(&cb->list, &dev->ctrl_rd_list.list);
+ 	} else {
++		cl->state = MEI_FILE_INITIALIZING;
+ 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
+ 	}
+ 
+
+
