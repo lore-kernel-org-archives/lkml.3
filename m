@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935419AbaICXna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:43:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45239 "EHLO
+	id S935499AbaICXoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:44:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334AbaICWF5 (ORCPT
+	with ESMTP id S934295AbaICXoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:05:57 -0400
+	Wed, 3 Sep 2014 19:44:06 -0400
+Date: Wed, 3 Sep 2014 16:44:05 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Robert Elliott <elliott@hp.com>, Joe Handzik <joseph.t.handzik@hp.com>,
-        Scott Teel <scott.teel@hp.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.10 38/55] hpsa: fix bad -ENOMEM return value in hpsa_big_passthru_ioctl
-Date: Wed,  3 Sep 2014 15:05:28 -0700
-Message-Id: <20140903220500.077147233@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/55] 3.10.54-stable review
+Message-ID: <20140903234405.GA27174@kroah.com>
 References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Sep 03, 2014 at 03:04:50PM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.54 release.
+> There are 55 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Sep  5 22:04:21 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.54-rc1.gz
+> and the diffstat can be found below.
 
-------------------
-
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-
-commit 0758f4f732b08b6ef07f2e5f735655cf69fea477 upstream.
-
-When copy_from_user fails, return -EFAULT, not -ENOMEM
-
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Reported-by: Robert Elliott <elliott@hp.com>
-Reviewed-by: Joe Handzik <joseph.t.handzik@hp.com>
-Reviewed-by: Scott Teel <scott.teel@hp.com>
-Reviewed by: Mike MIller <michael.miller@canonical.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/hpsa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3118,7 +3118,7 @@ static int hpsa_big_passthru_ioctl(struc
- 		}
- 		if (ioc->Request.Type.Direction == XFER_WRITE) {
- 			if (copy_from_user(buff[sg_used], data_ptr, sz)) {
--				status = -ENOMEM;
-+				status = -EFAULT;
- 				goto cleanup1;
- 			}
- 		} else
-
-
+-rc2 is now out to resolve some reported errors:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.54-rc2.gz
