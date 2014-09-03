@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935785AbaICXWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:22:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
+	id S935816AbaICXXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:23:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142AbaICWQA (ORCPT
+	with ESMTP id S1757180AbaICWP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:16:00 -0400
+	Wed, 3 Sep 2014 18:15:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Chiluk <chiluk@canonical.com>
-Subject: [PATCH 3.16 001/125] stable_kernel_rules: Add pointer to netdev-FAQ for network patches
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 84/88] nfs3_list_one_acl(): check get_acl() result with IS_ERR_OR_NULL
 Date: Wed,  3 Sep 2014 15:05:58 -0700
-Message-Id: <20140903220623.695114432@linuxfoundation.org>
+Message-Id: <20140903220518.464263738@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
-References: <20140903220623.649748296@linuxfoundation.org>
+In-Reply-To: <20140903220515.958924632@linuxfoundation.org>
+References: <20140903220515.958924632@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,36 +26,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dave Chiluk <chiluk@canonical.com>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-commit b76fc285337b6b256e9ba20a40cfd043f70c27af upstream.
+commit 7a9e75a185e6b3a3860e6a26fb6e88691fc2c9d9 upstream.
 
-Stable_kernel_rules should point submitters of network stable patches to the
-netdev_FAQ.txt as requests for stable network patches should go to netdev
-first.
+There was a check for result being not NULL. But get_acl() may return
+NULL, or ERR_PTR, or actual pointer.
+The purpose of the function where current change is done is to "list
+ACLs only when they are available", so any error condition of get_acl()
+mustn't be elevated, and returning 0 there is still valid.
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81111
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Fixes: 74adf83f5d77 (nfs: only show Posix ACLs in listxattr if actually...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/stable_kernel_rules.txt |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/nfs3acl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -29,6 +29,9 @@ Rules on what kind of patches are accept
+--- a/fs/nfs/nfs3acl.c
++++ b/fs/nfs/nfs3acl.c
+@@ -256,7 +256,7 @@ nfs3_list_one_acl(struct inode *inode, i
+ 	char *p = data + *result;
  
- Procedure for submitting patches to the -stable tree:
+ 	acl = get_acl(inode, type);
+-	if (!acl)
++	if (IS_ERR_OR_NULL(acl))
+ 		return 0;
  
-+ - If the patch covers files in net/ or drivers/net please follow netdev stable
-+   submission guidelines as described in
-+   Documentation/networking/netdev-FAQ.txt
-  - Send the patch, after verifying that it follows the above rules, to
-    stable@vger.kernel.org.  You must note the upstream commit ID in the
-    changelog of your submission, as well as the kernel version you wish
+ 	posix_acl_release(acl);
 
 
