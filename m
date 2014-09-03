@@ -1,113 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109AbaICMzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 08:55:46 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44698 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932612AbaICMqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 08:46:17 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 09/37] staging: comedi: adl_pci9118: use CMDF_WAKE_EOS
-Date: Wed,  3 Sep 2014 13:45:32 +0100
-Message-Id: <1409748360-17063-10-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
-References: <1409748360-17063-1-git-send-email-abbotti@mev.co.uk>
+	id S932758AbaICM6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 08:58:54 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:43769 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195AbaICM6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 08:58:50 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-da-540710877ab8
+Message-id: <54070FD8.6060409@samsung.com>
+Date: Wed, 03 Sep 2014 15:55:52 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@gmail.com
+Subject: Re: [PATCH v2 2/3] integrity: move integrity subsystem options to a
+ separate menu
+References: <cover.1409728926.git.d.kasatkin@samsung.com>
+ <bce4893d9928b4c6ba9e69e8b4d858489acf6e9e.1409728926.git.d.kasatkin@samsung.com>
+ <1409747724.21827.48.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-reply-to: <1409747724.21827.48.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xy7rtAuwhBttn8Fl8WVpn8XLGPHaL
+	y7vmsFl86HnEZvFpxSRmB1aPnbPusns8OLSZxWP3gs9MHp83yQWwRHHZpKTmZJalFunbJXBl
+	XNu/hLXgsmzF1C1r2RoYH4p3MXJySAiYSByb8JoJwhaTuHBvPVsXIxeHkMBSRon2W5NZIJxG
+	JomrW4+xgVQJCcxilDgzQQXE5hXQklh+axkriM0ioCoxZ8JjZhCbTUBPYkPzD3YQW1QgTOLZ
+	r4NMEPWCEj8m32MBsUUENCWOtX5kBFnALNDLKNG/rg+omYNDWCBG4upOb4jFp4Cu2DANbCin
+	gIdE3+yZbCA1zALqElOm5IKEmQXkJTavecsMcZuqRPfatWwQ3yhKnJ58jnkCo/AsJKtnIXTP
+	QtK9gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZINHzZwbj4mNUhRgEORiUe3gI1thAh
+	1sSy4srcQ4wSHMxKIryazOwhQrwpiZVVqUX58UWlOanFhxiZODilGhiNd/S+urjIYNVTZvaI
+	Fq3pbm8r+qP3JLjOYrtd8PfHK/1LzO+yJjqtT2/fwSIr8s+C91R5/4XQIkHVHrXIdX+6Dk7L
+	FhbKnssZ8sVegEe5O1qqblvM33wHz+cf9VozNvz4sXGd1Pfym2qRqZO7HT7o/9onl+Kjz3X+
+	6+Zdn5ecyT7iu3LX9ntKLMUZiYZazEXFiQBmzSLMZAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace use of `TRIG_WAKE_EOS` command flag with the new name
-`CMDF_WAKE_EOS`.  The numeric value is unchanged.  Also change
-diagnostic messages to use "CMDF_WAKE_EOS" instead of "TRIG_WAKE_EOS"
-and change the Comedi driver description comment to use "CMDF_WAKE_EOS".
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/adl_pci9118.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+On 03/09/14 15:35, Mimi Zohar wrote:
+> On Wed, 2014-09-03 at 10:29 +0300, Dmitry Kasatkin wrote: 
+>> Integrity subsystem got lots of options and takes more than half
+>> of security menu.
+>>
+>> This patch moves integrity subsystem options to a separate menu.
+>> It does not affect existing configuration. Re-configuration is
+>> not needed.
+>>
+>> Changes in v2:
+>> - previous patch moved integrity out of the 'security' menu.
+>>   This version keeps integrity as a security option (Mimi).
+>>
+>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>> ---
+>>  security/integrity/Kconfig     | 14 ++++++++++++--
+>>  security/integrity/evm/Kconfig |  9 +--------
+>>  security/integrity/ima/Kconfig |  3 +--
+>>  3 files changed, 14 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+>> index f79d853..a734a83 100644
+>> --- a/security/integrity/Kconfig
+>> +++ b/security/integrity/Kconfig
+>> @@ -1,7 +1,13 @@
+>>  #
+>>  config INTEGRITY
+>> -	def_bool y
+>> -	depends on IMA || EVM
+>> +	bool "Integrity subsystem support"
+>> +	depends on SECURITY
+>> +	default y
+>> +
+>> +if INTEGRITY
+>> +
+>> +menu "Options"
+>> +
+> Instead of moving everything to a separate menu, I would leave the
+> ability to enable/disable IMA and EVM on the security page, but move
+> their options to separate pages.  So unless someone wants to change the
+> default options, they're hidden.
+>
+> There are Kconfig examples for enabling the option in the parent
+> directory and clicking on the option brings up a separate menu (eg. NET,
+> WIRELESS).
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
-index 6fc50b3..3e16b5f 100644
---- a/drivers/staging/comedi/drivers/adl_pci9118.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9118.c
-@@ -36,8 +36,8 @@
-  * b) DMA transfers must have the length aligned to two samples (32 bit),
-  *  so there is some problems if cmd->chanlist_len is odd. This driver tries
-  *  bypass this with adding one sample to the end of the every scan and discard
-- *  it on output but this cann't be used if cmd->scan_begin_src=TRIG_FOLLOW
-- *  and is used flag TRIG_WAKE_EOS, then driver switch to interrupt driven mode
-+ *  it on output but this can't be used if cmd->scan_begin_src=TRIG_FOLLOW
-+ *  and is used flag CMDF_WAKE_EOS, then driver switch to interrupt driven mode
-  *  with interrupt after every sample.
-  * c) If isn't used DMA then you can use only mode where
-  *  cmd->scan_begin_src=TRIG_FOLLOW.
-@@ -1294,12 +1294,12 @@ static int Compute_and_setup_dma(struct comedi_device *dev,
- 	}
- 
- 	/* we want wake up every scan? */
--	if (devpriv->ai_flags & TRIG_WAKE_EOS) {
-+	if (devpriv->ai_flags & CMDF_WAKE_EOS) {
- 		if (dmalen0 < (devpriv->ai_n_realscanlen << 1)) {
- 			/* uff, too short DMA buffer, disable EOS support! */
--			devpriv->ai_flags &= (~TRIG_WAKE_EOS);
-+			devpriv->ai_flags &= (~CMDF_WAKE_EOS);
- 			dev_info(dev->class_dev,
--				 "WAR: DMA0 buf too short, can't support TRIG_WAKE_EOS (%d<%d)\n",
-+				 "WAR: DMA0 buf too short, can't support CMDF_WAKE_EOS (%d<%d)\n",
- 				  dmalen0, devpriv->ai_n_realscanlen << 1);
- 		} else {
- 			/* short first DMA buffer to one scan */
-@@ -1312,12 +1312,12 @@ static int Compute_and_setup_dma(struct comedi_device *dev,
- 			}
- 		}
- 	}
--	if (devpriv->ai_flags & TRIG_WAKE_EOS) {
-+	if (devpriv->ai_flags & CMDF_WAKE_EOS) {
- 		if (dmalen1 < (devpriv->ai_n_realscanlen << 1)) {
- 			/* uff, too short DMA buffer, disable EOS support! */
--			devpriv->ai_flags &= (~TRIG_WAKE_EOS);
-+			devpriv->ai_flags &= (~CMDF_WAKE_EOS);
- 			dev_info(dev->class_dev,
--				 "WAR: DMA1 buf too short, can't support TRIG_WAKE_EOS (%d<%d)\n",
-+				 "WAR: DMA1 buf too short, can't support CMDF_WAKE_EOS (%d<%d)\n",
- 				 dmalen1, devpriv->ai_n_realscanlen << 1);
- 		} else {
- 			/* short second DMA buffer to one scan */
-@@ -1331,8 +1331,8 @@ static int Compute_and_setup_dma(struct comedi_device *dev,
- 		}
- 	}
- 
--	/* transfer without TRIG_WAKE_EOS */
--	if (!(devpriv->ai_flags & TRIG_WAKE_EOS)) {
-+	/* transfer without CMDF_WAKE_EOS */
-+	if (!(devpriv->ai_flags & CMDF_WAKE_EOS)) {
- 		/* if it's possible then align DMA buffers to length of scan */
- 		i = dmalen0;
- 		dmalen0 =
-@@ -1570,7 +1570,7 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	devpriv->ai_add_back = 0;
- 	if (devpriv->master) {
- 		devpriv->usedma = 1;
--		if ((cmd->flags & TRIG_WAKE_EOS) &&
-+		if ((cmd->flags & CMDF_WAKE_EOS) &&
- 		    (cmd->scan_end_arg == 1)) {
- 			if (cmd->convert_src == TRIG_NOW)
- 				devpriv->ai_add_back = 1;
-@@ -1582,7 +1582,7 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 					 */
- 			}
- 		}
--		if ((cmd->flags & TRIG_WAKE_EOS) &&
-+		if ((cmd->flags & CMDF_WAKE_EOS) &&
- 		    (cmd->scan_end_arg & 1) &&
- 		    (cmd->scan_end_arg > 1)) {
- 			if (cmd->scan_begin_src == TRIG_FOLLOW) {
--- 
-2.1.0
+Hi,
+
+I posted this patch already 3 times before. This is 4th time.
+
+In last post you answered:
+
+"Agreed, but this patch moves integrity out of the 'security' menu.  The
+following keeps integrity as a security option."
+
+Now you tell me this?
+
+- Dmitry
+
+>>  config INTEGRITY_SIGNATURE
+>>  	boolean "Digital signature verification using multiple keyrings"
+>> @@ -46,3 +52,7 @@ config INTEGRITY_AUDIT
+>>
+>>  source security/integrity/ima/Kconfig
+>>  source security/integrity/evm/Kconfig
+>> +
+>> +endmenu
+>> +
+>> +endif   # if INTEGRITY
+>> diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
+>> index d606f3d..df20a2f 100644
+>> --- a/security/integrity/evm/Kconfig
+>> +++ b/security/integrity/evm/Kconfig
+>> @@ -1,6 +1,6 @@
+>>  config EVM
+>>  	boolean "EVM support"
+>> -	depends on SECURITY
+>> +	depends on INTEGRITY
+> By adding the "if INTEGRITY",  the "depends on INTEGRITY" is redundant.
+> Please remove the depends here and in the other places.
+>
+> Mimi
+>
+>>  	select KEYS
+>>  	select ENCRYPTED_KEYS
+>>  	select CRYPTO_HMAC
+>> @@ -12,10 +12,6 @@ config EVM
+>>
+>>  	  If you are unsure how to answer this question, answer N.
+>>
+>> -if EVM
+>> -
+>> -menu "EVM options"
+>> -
+>>  config EVM_ATTR_FSUUID
+>>  	bool "FSUUID (version 2)"
+>>  	default y
+>> @@ -47,6 +43,3 @@ config EVM_EXTRA_SMACK_XATTRS
+>>  	  additional info to the calculation, requires existing EVM
+>>  	  labeled file systems to be relabeled.
+>>
+>> -endmenu
+>> -
+>> -endif
+>> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+>> index 08758fb..2477d1e 100644
+>> --- a/security/integrity/ima/Kconfig
+>> +++ b/security/integrity/ima/Kconfig
+>> @@ -2,8 +2,7 @@
+>>  #
+>>  config IMA
+>>  	bool "Integrity Measurement Architecture(IMA)"
+>> -	depends on SECURITY
+>> -	select INTEGRITY
+>> +	depends on INTEGRITY
+>>  	select SECURITYFS
+>>  	select CRYPTO
+>>  	select CRYPTO_HMAC
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
