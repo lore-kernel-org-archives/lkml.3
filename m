@@ -1,72 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934254AbaICXjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:39:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45352 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933379AbaICWGB (ORCPT
+	id S934627AbaICXj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:39:56 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35341 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932578AbaICXjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:06:01 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Forshaw <forshaw@google.com>
-Subject: [PATCH 3.10 49/55] USB: whiteheat: Added bounds checking for bulk command response
-Date: Wed,  3 Sep 2014 15:05:39 -0700
-Message-Id: <20140903220501.798935424@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
-References: <20140903220453.653576908@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 3 Sep 2014 19:39:40 -0400
+Message-ID: <5407A6B9.1080606@codeaurora.org>
+Date: Wed, 03 Sep 2014 16:39:37 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v9 5/6] clk: Add floor and ceiling constraints to clock
+ rates
+References: <1409758148-20104-1-git-send-email-tomeu.vizoso@collabora.com> <1409758434-20810-1-git-send-email-tomeu.vizoso@collabora.com> <1409758434-20810-3-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <1409758434-20810-3-git-send-email-tomeu.vizoso@collabora.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 09/03/14 08:33, Tomeu Vizoso wrote:
+> Adds a way for clock consumers to set maximum and minimum rates. This can be
+> used for thermal drivers to set ceiling rates, or by misc. drivers to set
+> floor rates to assure a minimum performance level.
+>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> Tested-by: Heiko Stuebner <heiko@sntech.de>
+>
+> ---
+>
+> v9: * Apply first all the floor constraints, then the ceiling constraints.
+>     * WARN on ceiling constraints below the current floor, for a given user clk
+>
+> v5: * Move the storage of constraints to the per-user clk struct, as suggested
+>       by Stephen Warren.
+> ---
+>  drivers/clk/clk.c           | 43 +++++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/clk.h           |  1 +
+>  drivers/clk/clkdev.c        |  2 +-
+>  include/linux/clk-private.h |  5 +++++
+>  include/linux/clk.h         | 18 ++++++++++++++++++
+>  5 files changed, 68 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 61a3492..3a961c6 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -560,6 +560,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
+>  	clk->dev_id = dev;
+>  	clk->con_id = con;
+>  
+> +	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
+> +
 
-------------------
+How is this safe with another thread that may be traversing the list? Or
+even two threads calling clk_get_parent() at the same time?
 
-From: James Forshaw <forshaw@google.com>
+>  	return clk;
+>  }
+>  
+> @@ -1625,6 +1627,7 @@ static void clk_change_rate(struct clk_core *clk)
+>  int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
+>  {
+>  	struct clk_core *top, *fail_clk;
+> +	struct clk *clk_user;
+>  	int ret = 0;
+>  
+>  	if (!clk)
+> @@ -1633,6 +1636,15 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
+>  	/* prevent racing with updates to the clock topology */
+>  	clk_prepare_lock();
+>  
+> +	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
+> +		rate = max(rate, clk_user->floor_constraint);
+> +	}
+> +
+> +	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
+> +		if (clk_user->ceiling_constraint > 0)
+> +			rate = min(rate, clk_user->ceiling_constraint);
+> +	}
+> +
+>  	/* bail early if nothing to do */
+>  	if (rate == clk_provider_get_rate(clk))
+>  		goto out;
+> @@ -1699,6 +1711,29 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
+>  }
+>  EXPORT_SYMBOL_GPL(clk_set_rate);
+>  
+> +int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
+> +{
+> +	struct clk_core *clk = clk_to_clk_core(clk_user);
+> +
+> +	clk_user->floor_constraint = rate;
+> +	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
 
-commit 6817ae225cd650fb1c3295d769298c38b1eba818 upstream.
+It would be nice if this was also locked around so that the
+floor_constraint or ceiling_constraint doesn't change while another
+thread is iterating the list. I guess we'll get by though because
+eventually things will settle and either this thread here will set the
+"final" rate, or the other thread in clk_provider_set_rate() will have
+already set the final rate. It just seems wrong to not hold the lock
+while updating what is supposed to be protected by the prepare lock.
 
-This patch fixes a potential security issue in the whiteheat USB driver
-which might allow a local attacker to cause kernel memory corrpution. This
-is due to an unchecked memcpy into a fixed size buffer (of 64 bytes). On
-EHCI and XHCI busses it's possible to craft responses greater than 64
-bytes leading a buffer overflow.
+> +}
+> +EXPORT_SYMBOL_GPL(clk_set_floor_rate);
+> +
+> +int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
+> +{
+> +	struct clk_core *clk = clk_to_clk_core(clk_user);
+> +
+> +	WARN(rate > 0 && rate < clk_user->floor_constraint,
+> +	     "clk %s dev %s con %s: new ceiling %lu lower than existing floor %lu\n",
+> +	     __clk_get_name(clk), clk_user->dev_id, clk_user->con_id, rate,
+> +	     clk_user->floor_constraint);
+> +
+> +	clk_user->ceiling_constraint = rate;
+> +	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
+> +}
+> +EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
 
-Signed-off-by: James Forshaw <forshaw@google.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Maybe I'm late to this patch series given that Mike applied it, but I
+wonder why we wouldn't just have one API that takes a min and a max,
+i.e. clk_set_rate_range(clk, min, max)? Then clk_set_rate() is a small
+wrapper on top that just sets min and max to the same value.
 
----
- drivers/usb/serial/whiteheat.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/serial/whiteheat.c
-+++ b/drivers/usb/serial/whiteheat.c
-@@ -521,6 +521,10 @@ static void command_port_read_callback(s
- 		dev_dbg(&urb->dev->dev, "%s - command_info is NULL, exiting.\n", __func__);
- 		return;
- 	}
-+	if (!urb->actual_length) {
-+		dev_dbg(&urb->dev->dev, "%s - empty response, exiting.\n", __func__);
-+		return;
-+	}
- 	if (status) {
- 		dev_dbg(&urb->dev->dev, "%s - nonzero urb status: %d\n", __func__, status);
- 		if (status != -ENOENT)
-@@ -541,7 +545,8 @@ static void command_port_read_callback(s
- 		/* These are unsolicited reports from the firmware, hence no
- 		   waiting command to wakeup */
- 		dev_dbg(&urb->dev->dev, "%s - event received\n", __func__);
--	} else if (data[0] == WHITEHEAT_GET_DTR_RTS) {
-+	} else if ((data[0] == WHITEHEAT_GET_DTR_RTS) &&
-+		(urb->actual_length - 1 <= sizeof(command_info->result_buffer))) {
- 		memcpy(command_info->result_buffer, &data[1],
- 						urb->actual_length - 1);
- 		command_info->command_finished = WHITEHEAT_CMD_COMPLETE;
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
