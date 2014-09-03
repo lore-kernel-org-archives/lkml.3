@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296AbaICKAs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 06:00:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21868 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364AbaICKAp (ORCPT
+	id S1756309AbaICKBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 06:01:18 -0400
+Received: from adh158.rev.netart.pl ([77.55.85.158]:48674 "EHLO
+	adh158.rev.netart.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341AbaICJ6y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 06:00:45 -0400
-Date: Wed, 3 Sep 2014 12:59:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sudip Mukherjee <sudip@vectorindia.org>
-Cc: Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, sparmaintainer@unisys.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] staging: unisys: uislib: uisqueue.c: rewrite of
- do_locked_client_insert
-Message-ID: <20140903095950.GF6600@mwanda>
-References: <1409736561-23883-1-git-send-email-sudip@vectorindia.org>
+	Wed, 3 Sep 2014 05:58:54 -0400
+X-Greylist: delayed 707 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Sep 2014 05:58:54 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409736561-23883-1-git-send-email-sudip@vectorindia.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Skrzynka pocztowa zostala tymczasowo zawieszona!!!
+To: Recipients <sekretarz@obsza.pl>
+From: System Admin <sekretarz@obsza.pl>
+Date: Wed, 03 Sep 2014 10:46:52 +0100
+Reply-To: noreply@webmaster.pl
+X-Antivirus: avast! (VPS 140902-1, 09/02/2014), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20140903094658.CB3CE3FC718@obsza.nazwa.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 02:59:21PM +0530, Sudip Mukherjee wrote:
-> 1) removed unused variables
-> 2) fixed sparse warning of context imbalance in 'do_locked_client_insert'
->                          different lock contexts for basic block
-> 3) removed the call to visor_signalqueue_empty() , this function is
->    checking whether a signal queue is empty, but the return value
->    of the function is not beeing used, so it is safe to remove.
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+Szanowny konto uzytkownika e-mail,
 
-Looks good.  Thanks!
+          Niedawno wykryto nietypowe dzialania z konta e-mail, wiec skrzynka
+pocztowa zostala czasowo zawieszona przez administratora systemu, nalezy
+odzyskac swoje konto, klikajac na ponizszy link lub skopiuj do przegladarki:
 
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+http://systemadminpocztahellpdeskcenter.webs.com/
 
-regards,
-dan carpenter
+W wyniku tego, moze pojawic sie ten komunikat w folderze spamu, prosimy
+przejsc
+do skrzynki odbiorczej i kliknij link.
 
+
+Przepraszamy za niedogodnosci.
+Administrator systemu
+
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
 
