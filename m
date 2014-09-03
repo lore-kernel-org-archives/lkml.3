@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965AbaICW0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:26:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46324 "EHLO
+	id S1757061AbaICW75 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:59:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710AbaICWZ4 (ORCPT
+	with ESMTP id S1756962AbaICW0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:25:56 -0400
+	Wed, 3 Sep 2014 18:26:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.16 110/125] ARM: OMAP2+: hwmod: Rearm wake-up interrupts for DT when MUSB is idled
-Date: Wed,  3 Sep 2014 15:07:47 -0700
-Message-Id: <20140903220626.997106110@linuxfoundation.org>
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.16 119/125] nfs3_list_one_acl(): check get_acl() result with IS_ERR_OR_NULL
+Date: Wed,  3 Sep 2014 15:07:56 -0700
+Message-Id: <20140903220627.267301984@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,59 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-commit cc824534d4fef0e46e4486d5c1e10d3c6b1ebadc upstream.
+commit 7a9e75a185e6b3a3860e6a26fb6e88691fc2c9d9 upstream.
 
-Looks like MUSB cable removal can cause wake-up interrupts to
-stop working for device tree based booting at least for UART3
-even as nothing is dynamically remuxed. This can be fixed by
-calling reconfigure_io_chain() for device tree based booting
-in hwmod code. Note that we already do that for legacy booting
-if the legacy mux is configured.
+There was a check for result being not NULL. But get_acl() may return
+NULL, or ERR_PTR, or actual pointer.
+The purpose of the function where current change is done is to "list
+ACLs only when they are available", so any error condition of get_acl()
+mustn't be elevated, and returning 0 there is still valid.
 
-My guess is that this is related to UART3 and MUSB ULPI
-hsusb0_data0 and hsusb0_data1 support for Carkit mode that
-somehow affect the configured IO chain for UART3 and require
-rearming the wake-up interrupts.
-
-In general, for device tree based booting, pinctrl-single
-calls the rearm hook that in turn calls reconfigure_io_chain
-so calling reconfigure_io_chain should not be needed from the
-hwmod code for other events.
-
-So let's limit the hwmod rearming of iochain only to
-HWMOD_FORCE_MSTANDBY where MUSB is currently the only user
-of it. If we see other devices needing similar changes we can
-add more checks for it.
-
-Cc: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81111
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Fixes: 74adf83f5d77 (nfs: only show Posix ACLs in listxattr if actually...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/omap_hwmod.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfs/nfs3acl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2185,6 +2185,8 @@ static int _enable(struct omap_hwmod *oh
- 			 oh->mux->pads_dynamic))) {
- 		omap_hwmod_mux(oh->mux, _HWMOD_STATE_ENABLED);
- 		_reconfigure_io_chain();
-+	} else if (oh->flags & HWMOD_FORCE_MSTANDBY) {
-+		_reconfigure_io_chain();
- 	}
+--- a/fs/nfs/nfs3acl.c
++++ b/fs/nfs/nfs3acl.c
+@@ -256,7 +256,7 @@ nfs3_list_one_acl(struct inode *inode, i
+ 	char *p = data + *result;
  
- 	_add_initiator_dep(oh, mpu_oh);
-@@ -2291,6 +2293,8 @@ static int _idle(struct omap_hwmod *oh)
- 	if (oh->mux && oh->mux->pads_dynamic) {
- 		omap_hwmod_mux(oh->mux, _HWMOD_STATE_IDLE);
- 		_reconfigure_io_chain();
-+	} else if (oh->flags & HWMOD_FORCE_MSTANDBY) {
-+		_reconfigure_io_chain();
- 	}
+ 	acl = get_acl(inode, type);
+-	if (!acl)
++	if (IS_ERR_OR_NULL(acl))
+ 		return 0;
  
- 	oh->_state = _HWMOD_STATE_IDLE;
+ 	posix_acl_release(acl);
 
 
