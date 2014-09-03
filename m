@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934852AbaICXGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:06:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46072 "EHLO
+	id S934938AbaICXGu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:06:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46069 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933791AbaICWSn (ORCPT
+	with ESMTP id S933773AbaICWSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:18:43 -0400
+	Wed, 3 Sep 2014 18:18:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simone Gotti <simone.gotti@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: [PATCH 3.16 070/125] ACPI / PCI: Fix sysfs acpi_index and label errors
-Date: Wed,  3 Sep 2014 15:07:07 -0700
-Message-Id: <20140903220625.780516552@linuxfoundation.org>
+        Guo Chao <yan@linux.vnet.ibm.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.16 068/125] PCI: Keep original resource if we fail to expand it
+Date: Wed,  3 Sep 2014 15:07:05 -0700
+Message-Id: <20140903220625.722313252@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -30,79 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simone Gotti <simone.gotti@gmail.com>
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-commit dcfa9be83866e28fcb8b7e22b4eeb4ba63bd3174 upstream.
+commit c33377082dd9ede1e998f7ce416077e4b1c2276c upstream.
 
-Fix errors in handling "device label" _DSM return values.
+If we have space assigned to a resource, we try to expand the resource
+(e.g., to accommodate SR-IOV resources), and the expansion attempt fails,
+we should keep the original assignment.
 
-If _DSM returns a Unicode string, the ACPI type is ACPI_TYPE_BUFFER, not
-ACPI_TYPE_STRING.  Fix dsm_label_utf16s_to_utf8s() to convert UTF-16 from
-acpi_object->buffer instead of acpi_object->string.
+After bd064f0a231a ("PCI: Mark resources as IORESOURCE_UNSET if we can't
+assign them"), we left the resource marked IORESOURCE_UNSET when the
+expansion failed, even if it had originally been set.  That caused errors
+like this:
 
-Prior to v3.14, we accepted Unicode labels (ACPI_TYPE_BUFFER return
-values).  But after 1d0fcef73283, we accepted only ASCII (ACPI_TYPE_STRING)
-(and we incorrectly tried to convert those ASCII labels from UTF-16 to
-UTF-8).
+  pci 0003:00:00.0: can't enable device: BAR 15 [mem size 0x0c000000 64bit pref] not assigned
+  pci 0003:00:00.0: Error enabling bridge (-22), continuing
 
-Rejecting Unicode labels made us return -EPERM when reading sysfs
-"acpi_index" or "label" files, which in turn caused on-board network
-interfaces on a Dell PowerEdge E420 to be renamed (by udev net_id internal)
-from eno1/eno2 to enp2s0f0/enp2s0f1.
+Fix this by restoring the original flags when reassignment fails.
 
-Fix this by accepting either ACPI_TYPE_STRING (and treating it as ASCII) or
-ACPI_TYPE_BUFFER (and converting from UTF-16 to UTF-8).
-
-[bhelgaas: changelog]
-Fixes: 1d0fcef73283 ("ACPI / PCI: replace open-coded _DSM code with helper functions")
-Signed-off-by: Simone Gotti <simone.gotti@gmail.com>
+[bhelgaas: reworked to simplify, changelog]
+Fixes: bd064f0a231a ("PCI: Mark resources as IORESOURCE_UNSET if we can't assign them")
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-label.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/pci/setup-res.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/pci/pci-label.c
-+++ b/drivers/pci/pci-label.c
-@@ -161,8 +161,8 @@ enum acpi_attr_enum {
- static void dsm_label_utf16s_to_utf8s(union acpi_object *obj, char *buf)
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -320,9 +320,11 @@ int pci_reassign_resource(struct pci_dev
+ 			resource_size_t min_align)
  {
- 	int len;
--	len = utf16s_to_utf8s((const wchar_t *)obj->string.pointer,
--			      obj->string.length,
-+	len = utf16s_to_utf8s((const wchar_t *)obj->buffer.pointer,
-+			      obj->buffer.length,
- 			      UTF16_LITTLE_ENDIAN,
- 			      buf, PAGE_SIZE);
- 	buf[len] = '\n';
-@@ -187,16 +187,22 @@ static int dsm_get_label(struct device *
- 	tmp = obj->package.elements;
- 	if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 2 &&
- 	    tmp[0].type == ACPI_TYPE_INTEGER &&
--	    tmp[1].type == ACPI_TYPE_STRING) {
-+	    (tmp[1].type == ACPI_TYPE_STRING ||
-+	     tmp[1].type == ACPI_TYPE_BUFFER)) {
- 		/*
- 		 * The second string element is optional even when
- 		 * this _DSM is implemented; when not implemented,
- 		 * this entry must return a null string.
- 		 */
--		if (attr == ACPI_ATTR_INDEX_SHOW)
-+		if (attr == ACPI_ATTR_INDEX_SHOW) {
- 			scnprintf(buf, PAGE_SIZE, "%llu\n", tmp->integer.value);
--		else if (attr == ACPI_ATTR_LABEL_SHOW)
--			dsm_label_utf16s_to_utf8s(tmp + 1, buf);
-+		} else if (attr == ACPI_ATTR_LABEL_SHOW) {
-+			if (tmp[1].type == ACPI_TYPE_STRING)
-+				scnprintf(buf, PAGE_SIZE, "%s\n",
-+					  tmp[1].string.pointer);
-+			else if (tmp[1].type == ACPI_TYPE_BUFFER)
-+				dsm_label_utf16s_to_utf8s(tmp + 1, buf);
-+		}
- 		len = strlen(buf) > 0 ? strlen(buf) : -1;
+ 	struct resource *res = dev->resource + resno;
++	unsigned long flags;
+ 	resource_size_t new_size;
+ 	int ret;
+ 
++	flags = res->flags;
+ 	res->flags |= IORESOURCE_UNSET;
+ 	if (!res->parent) {
+ 		dev_info(&dev->dev, "BAR %d: can't reassign an unassigned resource %pR\n",
+@@ -339,7 +341,12 @@ int pci_reassign_resource(struct pci_dev
+ 		dev_info(&dev->dev, "BAR %d: reassigned %pR\n", resno, res);
+ 		if (resno < PCI_BRIDGE_RESOURCES)
+ 			pci_update_resource(dev, resno);
++	} else {
++		res->flags = flags;
++		dev_info(&dev->dev, "BAR %d: %pR (failed to expand by %#llx)\n",
++			 resno, res, (unsigned long long) addsize);
  	}
++
+ 	return ret;
+ }
  
 
 
