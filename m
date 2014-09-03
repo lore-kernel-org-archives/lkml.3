@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935012AbaICXOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 19:14:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46028 "EHLO
+	id S935516AbaICXOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 19:14:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933513AbaICWSf (ORCPT
+	with ESMTP id S933504AbaICWSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Sep 2014 18:18:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.16 007/125] uas: Limit qdepth to 32 when connected over usb-2
-Date: Wed,  3 Sep 2014 15:06:04 -0700
-Message-Id: <20140903220623.890436935@linuxfoundation.org>
+        Chris Evans <cevans@google.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.16 006/125] isofs: Fix unbounded recursion when processing relocated directories
+Date: Wed,  3 Sep 2014 15:06:03 -0700
+Message-Id: <20140903220623.861188718@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,36 +28,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit e2875c33787ebda21aeecc1a9d3ff52b3aa413ec upstream.
+commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4 upstream.
 
-Some jmicron uas chipsets act up (they disconnect from the bus) when sending
-more then 32 commands to them at once.
+We did not check relocated directory in any way when processing Rock
+Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
+entry pointing to another CL entry leading to possibly unbounded
+recursion in kernel code and thus stack overflow or deadlocks (if there
+is a loop created from CL entries).
 
-Rather then building an ever growing list with usb-id based quirks for
-devices using this chipset, simply reduce the qdepth to 32 when connected
-over usb-2. 32 should be plenty to keep things close to maximum
-possible throughput on usb-2.
+Fix the problem by not allowing CL entry to point to a directory entry
+with CL entry (such use makes no good sense anyway) and by checking
+whether CL entry doesn't point to itself.
 
-Tested-and-reported-by: Laszlo T. <tlacix@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reported-by: Chris Evans <cevans@google.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/uas.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/isofs/inode.c |   15 ++++++++-------
+ fs/isofs/isofs.h |   23 +++++++++++++++++++----
+ fs/isofs/rock.c  |   39 ++++++++++++++++++++++++++++-----------
+ 3 files changed, 55 insertions(+), 22 deletions(-)
 
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -1026,7 +1026,7 @@ static int uas_configure_endpoints(struc
- 					    usb_endpoint_num(&eps[3]->desc));
+--- a/fs/isofs/inode.c
++++ b/fs/isofs/inode.c
+@@ -61,7 +61,7 @@ static void isofs_put_super(struct super
+ 	return;
+ }
  
- 	if (udev->speed != USB_SPEED_SUPER) {
--		devinfo->qdepth = 256;
-+		devinfo->qdepth = 32;
- 		devinfo->use_streams = 0;
- 	} else {
- 		devinfo->qdepth = usb_alloc_streams(devinfo->intf, eps + 1,
+-static int isofs_read_inode(struct inode *);
++static int isofs_read_inode(struct inode *, int relocated);
+ static int isofs_statfs (struct dentry *, struct kstatfs *);
+ 
+ static struct kmem_cache *isofs_inode_cachep;
+@@ -1259,7 +1259,7 @@ out_toomany:
+ 	goto out;
+ }
+ 
+-static int isofs_read_inode(struct inode *inode)
++static int isofs_read_inode(struct inode *inode, int relocated)
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
+@@ -1404,7 +1404,7 @@ static int isofs_read_inode(struct inode
+ 	 */
+ 
+ 	if (!high_sierra) {
+-		parse_rock_ridge_inode(de, inode);
++		parse_rock_ridge_inode(de, inode, relocated);
+ 		/* if we want uid/gid set, override the rock ridge setting */
+ 		if (sbi->s_uid_set)
+ 			inode->i_uid = sbi->s_uid;
+@@ -1483,9 +1483,10 @@ static int isofs_iget5_set(struct inode
+  * offset that point to the underlying meta-data for the inode.  The
+  * code below is otherwise similar to the iget() code in
+  * include/linux/fs.h */
+-struct inode *isofs_iget(struct super_block *sb,
+-			 unsigned long block,
+-			 unsigned long offset)
++struct inode *__isofs_iget(struct super_block *sb,
++			   unsigned long block,
++			   unsigned long offset,
++			   int relocated)
+ {
+ 	unsigned long hashval;
+ 	struct inode *inode;
+@@ -1507,7 +1508,7 @@ struct inode *isofs_iget(struct super_bl
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	if (inode->i_state & I_NEW) {
+-		ret = isofs_read_inode(inode);
++		ret = isofs_read_inode(inode, relocated);
+ 		if (ret < 0) {
+ 			iget_failed(inode);
+ 			inode = ERR_PTR(ret);
+--- a/fs/isofs/isofs.h
++++ b/fs/isofs/isofs.h
+@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
+ 
+ struct inode;		/* To make gcc happy */
+ 
+-extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
++extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
+ extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
+ extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
+ 
+@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struc
+ extern struct buffer_head *isofs_bread(struct inode *, sector_t);
+ extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
+ 
+-extern struct inode *isofs_iget(struct super_block *sb,
+-                                unsigned long block,
+-                                unsigned long offset);
++struct inode *__isofs_iget(struct super_block *sb,
++			   unsigned long block,
++			   unsigned long offset,
++			   int relocated);
++
++static inline struct inode *isofs_iget(struct super_block *sb,
++				       unsigned long block,
++				       unsigned long offset)
++{
++	return __isofs_iget(sb, block, offset, 0);
++}
++
++static inline struct inode *isofs_iget_reloc(struct super_block *sb,
++					     unsigned long block,
++					     unsigned long offset)
++{
++	return __isofs_iget(sb, block, offset, 1);
++}
+ 
+ /* Because the inode number is no longer relevant to finding the
+  * underlying meta-data for an inode, we are free to choose a more
+--- a/fs/isofs/rock.c
++++ b/fs/isofs/rock.c
+@@ -288,12 +288,16 @@ eio:
+ 	goto out;
+ }
+ 
++#define RR_REGARD_XA 1
++#define RR_RELOC_DE 2
++
+ static int
+ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
+-				struct inode *inode, int regard_xa)
++				struct inode *inode, int flags)
+ {
+ 	int symlink_len = 0;
+ 	int cnt, sig;
++	unsigned int reloc_block;
+ 	struct inode *reloc;
+ 	struct rock_ridge *rr;
+ 	int rootflag;
+@@ -305,7 +309,7 @@ parse_rock_ridge_inode_internal(struct i
+ 
+ 	init_rock_state(&rs, inode);
+ 	setup_rock_ridge(de, inode, &rs);
+-	if (regard_xa) {
++	if (flags & RR_REGARD_XA) {
+ 		rs.chr += 14;
+ 		rs.len -= 14;
+ 		if (rs.len < 0)
+@@ -485,12 +489,22 @@ repeat:
+ 					"relocated directory\n");
+ 			goto out;
+ 		case SIG('C', 'L'):
+-			ISOFS_I(inode)->i_first_extent =
+-			    isonum_733(rr->u.CL.location);
+-			reloc =
+-			    isofs_iget(inode->i_sb,
+-				       ISOFS_I(inode)->i_first_extent,
+-				       0);
++			if (flags & RR_RELOC_DE) {
++				printk(KERN_ERR
++				       "ISOFS: Recursive directory relocation "
++				       "is not supported\n");
++				goto eio;
++			}
++			reloc_block = isonum_733(rr->u.CL.location);
++			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
++			    ISOFS_I(inode)->i_iget5_offset == 0) {
++				printk(KERN_ERR
++				       "ISOFS: Directory relocation points to "
++				       "itself\n");
++				goto eio;
++			}
++			ISOFS_I(inode)->i_first_extent = reloc_block;
++			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
+ 			if (IS_ERR(reloc)) {
+ 				ret = PTR_ERR(reloc);
+ 				goto out;
+@@ -637,9 +651,11 @@ static char *get_symlink_chunk(char *rpn
+ 	return rpnt;
+ }
+ 
+-int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
++int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
++			   int relocated)
+ {
+-	int result = parse_rock_ridge_inode_internal(de, inode, 0);
++	int flags = relocated ? RR_RELOC_DE : 0;
++	int result = parse_rock_ridge_inode_internal(de, inode, flags);
+ 
+ 	/*
+ 	 * if rockridge flag was reset and we didn't look for attributes
+@@ -647,7 +663,8 @@ int parse_rock_ridge_inode(struct iso_di
+ 	 */
+ 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
+ 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
+-		result = parse_rock_ridge_inode_internal(de, inode, 14);
++		result = parse_rock_ridge_inode_internal(de, inode,
++							 flags | RR_REGARD_XA);
+ 	}
+ 	return result;
+ }
 
 
