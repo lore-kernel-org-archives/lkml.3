@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaICGGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 02:06:55 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:42825 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaICGGy (ORCPT
+	id S1755239AbaICGJc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 02:09:32 -0400
+Received: from mail.interact-automation.nl ([193.141.16.74]:39807 "EHLO
+	smtp.interact.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896AbaICGJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 02:06:54 -0400
+	Wed, 3 Sep 2014 02:09:31 -0400
+Message-ID: <5406B098.6020500@interact.nl>
+Date: Wed, 03 Sep 2014 08:09:28 +0200
+From: Erik van Luijk <evanluijk@interact.nl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <20140902192941.GB3001@console-pimps.org>
-References: <5405E186.2080406@canonical.com>
-	<20140902192941.GB3001@console-pimps.org>
-Date: Wed, 3 Sep 2014 08:06:53 +0200
-Message-ID: <CAKv+Gu_eSe+FeNkGm+w3sSsRn2_hr70xLVBieZgyhawAv6PQvw@mail.gmail.com>
-Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
- preparation patches
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ulf Winkelvos <ulf@winkelvos.de>,
-        Matt Fleming <matt.fleming@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH] ARM: at91/dt: at91sam9m10g45ek add rtc node
+References: <1409655132-17735-1-git-send-email-evanluijk@interact.nl> <20140902183356.7bcfdf84@bbrezillon>
+In-Reply-To: <20140902183356.7bcfdf84@bbrezillon>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 September 2014 21:29, Matt Fleming <matt@console-pimps.org> wrote:
-> On Tue, 02 Sep, at 05:25:58PM, Maarten Lankhorst wrote:
->> Hey,
->>
->> My macbook pro 8.2 fails to do a efi stub boot with these patches.
->>
->> Commit f23cf8bd5c1f49 "efi/x86: efistub: Move shared dependencies to <asm/efi.h>"
->> causes the first break, but this can be averted by changing
->>
->> struct efi_config *efi_early;
->>
->> to
->>
->> struct efi_config *efi_early __attribute__((visibility("hidden")));
->
-> Weird. That sounds like a bug in the Apple EFI PE loader. Does any other
-> visibility result in a working kernel?
->
->> I also need to revert commit f4f75ad5741fe "efi: efistub: Convert into static library"
->> to get boot working.
->
-> I'll take a look at the symbol changes between these commits and try and
-> guess what's going on.
->
->> I'm not an early boot expert, so I have no idea what's going on here.
->> Only console output I see when the boot fails is "setup_efi_pci() failed!" after
->> the commit that adds this message.
->
-> Yeah, that should be unrelated.
->
-> Thanks for the report.
->
 
-If x86 is anything like ARM in this respect, this is likely caused by
-the way PIC references to globals are emitted.
-When using default visibility, a reference to a global is emitted by a
-reference to the GOT, and an offset into the GOT, and the two are
-added and dereferenced at runtime. For this to work, the GOT needs to
-contain the correct absolute address for the global in question. This,
-in turn, relies on absolute relocations to be resolved at load time,
-which we don't do with the EFI stub. Could it be that the link address
-and load address are usually the same on x86 EFI but not on the Mac?
+Hi Boris, Nicolas,
 
-With hidden visibility, the PIC reference is emitted using a relative
-relocation, to which the value of the program counter is added at
-runtime, and no GOT is involved, and all relocations can be resolved
-at build time.
+Boris BREZILLON schreef op 2-9-2014 om 18:33:
+> Hi Erik,
+ >
+ > On Tue,  2 Sep 2014 12:52:12 +0200
+ > Erik van Luijk <evanluijk@interact.nl> wrote:
+ >
+ >> Signed-off-by: Erik van Luijk <evanluijk@interact.nl>
+ >
+ > Except for the nitpicks you'll find below, you have my
+ >
+ > Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+ >
+ >> ---
+ >>  arch/arm/boot/dts/at91sam9g45.dtsi     | 7 +++++++
+ >>  arch/arm/boot/dts/at91sam9m10g45ek.dts | 3 +++
+ >>  2 files changed, 10 insertions(+)
+ >>
+ >> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi 
+b/arch/arm/boot/dts/at91sam9g45.dtsi
+ >> index 932a669..bf62c18 100644
+ >> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
+ >> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+ >> @@ -1070,6 +1070,13 @@
+ >>                  status = "disabled";
+ >>              };
+ >>
+ >> +            rtc@fffffdb0 {
+ >> +                compatible = "atmel,at91rm9200-rtc";
+ >> +                reg = <0xfffffdb0 0x30>;
+ >
+ > The RTC registers goes from 0xfffffdb0 to 0xfffffdc0, which means the
+ > size is 0x10 and not 0x30. This is not important here, because the
+ > following region is marked as reserved, but we prefer to keep the DT
+ > consistent with the datasheet.
 
-I think it makes sense to add a #pragma GCC visibility push(hidden) to
-efistub.h (if pragmas are in fashion these days), making sure that no
-global references (not even externs) will generate GOT entries.
+This is an inconsistency in the datasheet of the AT91SAM9G45 (and at 
+least also
+AT91SAM9G15, AT91SAM9G25, AT91SAM9G35 and AT91SAM9M10).
+In the memory map (fig. 5-1) there is room for 16 bytes.
+But in the 'Real-time Clock (RTC) User Interface' (table 15-1) there is 
+room for
+48 bytes (0x30) excluding the Reserved Registers (which don't belong to 
+the RTC
+on the AT91SAM9M10). Perhaps Nicolas can draw some attention to this at 
+Atmel.
 
--- 
-Ard.
+>
+ >> +                interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+ >> +                status = "disabled";
+ >> +            };
+ >> +
+ >>              spi0: spi@fffa4000 {
+ >>                  #address-cells = <1>;
+ >>                  #size-cells = <0>;
+ >> diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts 
+b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+ >> index 96ccc7d..2dd2347 100644
+ >> --- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
+ >> +++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+ >> @@ -70,6 +70,9 @@
+ >>
+ >>              watchdog@fffffd40 {
+ >>                  status = "okay";
+ >> +
+ >> +            rtc@fffffdb0 {
+ >> +                status = "okay";
+ >
+ > Try to keep SoC and board changes in distinct commits.
+
+Understood.
+
+>
+ >>              };
+ >>
+ >>              mmc0: mmc@fff80000 {
+ >
+ >
+ > Best Regards,
+ >
+ > Boris
+ >
+
+Regards,
+
+Erik
