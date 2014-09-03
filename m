@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846AbaICJCY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 05:02:24 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:64493 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaICJCU (ORCPT
+	id S1755927AbaICJDX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 05:03:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64057 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752562AbaICJDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 05:02:20 -0400
-Message-ID: <5406D91A.9090209@linaro.org>
-Date: Wed, 03 Sep 2014 10:02:18 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 3 Sep 2014 05:03:22 -0400
+Date: Wed, 3 Sep 2014 10:03:01 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Gregory Fong <gregory.0xf0@gmail.com>, Matt Porter <mporter@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: drop ISAR0 workaround for B15
+Message-ID: <20140903090301.GA32378@arm.com>
+References: <1407797053-12544-1-git-send-email-gregory.0xf0@gmail.com>
+ <20140813194047.GA18411@ld-irv-0074>
+ <20140902234924.GZ18411@ld-irv-0074>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>, patches@linaro.org,
-        kgdb-bugreport@lists.sourceforge.net, Nicolas Pitre <nico@linaro.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Fabio Estevam <festevam@gmail.com>, Colin Cross <ccross@android.com>,
-        kernel-team@android.com, Dave Martin <Dave.Martin@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v11 00/19] arm: KGDB NMI/FIQ support
-References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.10.1409030032010.3333@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409030032010.3333@nanos>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140902234924.GZ18411@ld-irv-0074>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/14 00:02, Thomas Gleixner wrote:
-> On Tue, 2 Sep 2014, Daniel Thompson wrote:
+On Wed, Sep 03, 2014 at 12:49:24AM +0100, Brian Norris wrote:
+> Ping.
 > 
->> This patchset makes it possible to use kgdb's NMI infrastructure on ARM
->> platforms.
->>
->> The patches are seperated into three distinct groups:
->>
->> 1. arm specific changes; these provide multi-platform support for FIQ
->>    (including raising an IPI using FIQ to ensure effective SMP support)
->>    and extend ARM KGDB support to use the features provided.
->>
->> 2. irqchip changes; updates to the gic and vic drivers to provide
->>    support for routing certain interrupt sources to FIQ.
->>
->> 3. serial changes; driver support to allow the UART interrupt to be
->>    routed to FIQ. The already mainlined kgdb NMI infrastructure (mostly
->>    found in drivers/tty/serial/kgdb_nmi.c) will re-route the kgdb
->>    console UART's interrupt signal from IRQ to FIQ. Naturally the UART
->>    will no longer function normally and will instead be managed by kgdb
->>    using the polled I/O functions. Any character delivered to the UART
->>    causes the kgdb handler function to be called.
-> 
-> To be honest, what you are doing is just ass backwards.
-> 
-> The use case you are looking for is the most irrelevant of all. Just
-> because KGDB is on some managerial "must have items" checklist does
-> not make it useful.
+> Is this worthy of 3.17-rc? Or should it just be queued for 3.18, as it's
+> only removing redundant info?
 
-The FIQ based interactive debugger use case is fairly common on Android,
-especially for Nexus devices (they have an out-of-tree debugger similar
-to kdb for this).
+Since it's not actually fixing anything, I don't think it qualifies as a
+fix. You can still put it into rmk's patch system though, as I don't see
+this conflicting with anything in the pipeline.
 
-I think it finds favour there because during the development phases
-where the console is unplugged to allow developers to go walkabout live
-with a prototype phone. The interactive debugger is used for
-post-morteming when something breaks. At this stage of development are
-reluctant to expose/consume hardware resources (JTAG pins, RAM, FLASH)
-for JTAG or kexec/kdump post-mortems.
-
-
-> The only relevant use cases of FIQs are the same as those of NMIs on
-> x86:
-> 
->   - Watchdog to detect stuck cpus and issue stack traces
-
-Russell put together a quick 'n dirty version of the NMI stack trace
-code based on a subset of my patchset. Based on his feedback, later
-revisions of my patchset are structured to simplify adding this code.
-
-
-Daniel.
-
-
->   - Performace monitoring
-> 
-> KGDB falls into place once you solved the above.
->
-> That said for the general approach, I'll have a look at the irq
-> related patches in a minute.
-> 
-> Thanks,
-> 
-> 	tglx
-
-
+Will
