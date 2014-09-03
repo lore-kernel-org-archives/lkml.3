@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934213AbaICW0D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:26:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46329 "EHLO
+	id S935218AbaICW4t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:56:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756921AbaICWZ5 (ORCPT
+	with ESMTP id S933865AbaICW0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:25:57 -0400
+	Wed, 3 Sep 2014 18:26:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Alt <n.alt@mytum.de>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 111/125] USB: ftdi_sio: add Basic Micro ATOM Nano USB2Serial PID
-Date: Wed,  3 Sep 2014 15:07:48 -0700
-Message-Id: <20140903220627.025848507@linuxfoundation.org>
+        Peter Maydell <peter.maydell@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.16 037/125] mmc: mmci: Remove redundant check of status for DATA irq
+Date: Wed,  3 Sep 2014 15:06:34 -0700
+Message-Id: <20140903220624.769916934@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140903220623.649748296@linuxfoundation.org>
 References: <20140903220623.649748296@linuxfoundation.org>
@@ -28,42 +32,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Ulf Hansson <ulf.hansson@linaro.org>
 
-commit 6552cc7f09261db2aeaae389aa2c05a74b3a93b4 upstream.
+commit 1cb9da502835dad73dda772b20c1e792f4e71589 upstream.
 
-Add device id for Basic Micro ATOM Nano USB2Serial adapters.
+We don't need to verify the content of the status register twice, while
+we are about to handle a DATA irq. Instead let's leave all verification
+to be handled by mmci_data_irq().
 
-Reported-by: Nicolas Alt <n.alt@mytum.de>
-Tested-by: Nicolas Alt <n.alt@mytum.de>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Cc: Peter Maydell <peter.maydell@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Tested-by: Kees Cook <keescook@chromium.org>
+Tested-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/mmc/host/mmci.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -151,6 +151,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_BM_ATOM_NANO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_EV3CON_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -42,6 +42,8 @@
- /* www.candapter.com Ewert Energy Systems CANdapter device */
- #define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
- 
-+#define FTDI_BM_ATOM_NANO_PID	0xa559	/* Basic Micro ATOM Nano USB2Serial */
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -834,6 +834,10 @@ static void
+ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
+ 	      unsigned int status)
+ {
++	/* Make sure we have data to handle */
++	if (!data)
++		return;
 +
- /*
-  * Texas Instruments XDS100v2 JTAG / BeagleBone A3
-  * http://processors.wiki.ti.com/index.php/XDS100
+ 	/* First check for errors */
+ 	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
+ 		      MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
+@@ -1133,7 +1137,6 @@ static irqreturn_t mmci_irq(int irq, voi
+ 
+ 	do {
+ 		struct mmc_command *cmd;
+-		struct mmc_data *data;
+ 
+ 		status = readl(host->base + MMCISTATUS);
+ 
+@@ -1159,11 +1162,7 @@ static irqreturn_t mmci_irq(int irq, voi
+ 			MCI_CMDSENT|MCI_CMDRESPEND) && cmd)
+ 			mmci_cmd_irq(host, cmd, status);
+ 
+-		data = host->data;
+-		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
+-			      MCI_TXUNDERRUN|MCI_RXOVERRUN|MCI_DATAEND|
+-			      MCI_DATABLOCKEND) && data)
+-			mmci_data_irq(host, data, status);
++		mmci_data_irq(host, host->data, status);
+ 
+ 		/* Don't poll for busy completion in irq context. */
+ 		if (host->busy_status)
 
 
