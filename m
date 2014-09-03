@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290AbaICUpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 16:45:32 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:44907 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029AbaICUop (ORCPT
+	id S1753698AbaICUIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 16:08:16 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:56908 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaICUIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 16:44:45 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Brown <broonie@kernel.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Heiko Stuebner <heiko@sntech.de>
-Cc: Alexandru Stan <amstan@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, broonie@linaro.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
-        linux-spi@vger.kernel.org, galak@codeaurora.org
-Subject: [PATCH 0/3] SPI Fixes for spi-rockchip
-Date: Wed,  3 Sep 2014 13:44:24 -0700
-Message-Id: <1409777067-17422-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Wed, 3 Sep 2014 16:08:15 -0400
+Date: Wed, 3 Sep 2014 13:08:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: Prarit Bhargava <prarit@redhat.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] x86, lpc, Allow only one load of lpc_ich
+Message-ID: <20140903200811.GB7240@roeck-us.net>
+References: <1409695097-5831-1-git-send-email-prarit@redhat.com>
+ <1598720.9R5g9ohVoY@petert>
+ <54075663.8090204@redhat.com>
+ <2934553.BlOlR0jvHm@petert>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2934553.BlOlR0jvHm@petert>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These three patches are random SPI fixes for spi-rockchip.  They are
-unrelated and can be applied / NAKed separately.  They've been tested
-in PIO mode on an rk3288 board (since SPI DMA isn't currently working
-for some unknown reason).
+On Wed, Sep 03, 2014 at 02:13:55PM -0500, Peter Tyser wrote:
+> > > Can you give more background on your hardware and firmware setup?
+> > 
+> > Unfortunately I cannot :(  The system isn't "mine" per se.  It is (as the
+> > dumps show) IBM's.
+> 
+> Can you look at the IBM manual and see info about which chipsets are used, and 
+> how they are connected?
+> 
+> > Are there
+> > 
+> > > physically two ICH bridges, or just one that is showing up two times due
+> > > to a firmware bug?
+> > 
+> > I can answer that.  There are two physical ICH bridges, and according to
+> > Intel one should be masked off.  We shouldn't run with two.
+> 
+> Interesting.  The "normal" setup I'm familiar with is multiple CPUs wired up 
+> to one IOH, and that IOH would be wired up to the ICH10.  There'd only be one 
+> ICH10 in this configuration though.  An example is on page 30 of 
+> http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/5520-5500-chipset-ioh-datasheet.pdf  I'm not sure how it'd be possible to wire up 2 
+> ICH10s to one CPU?
+> 
+Multiple ICHs connected to multiple CPUs, maybe ?
 
-
-Doug Anderson (3):
-  spi/rockchip: Fix the wait_for_idle() timeout
-  spi/rockchip: Don't warn if SPI is busy but disabled
-  dt-bindings: spi/rockchip: Mark DMA as optional
-
- Documentation/devicetree/bindings/spi/spi-rockchip.txt | 8 ++++++--
- drivers/spi/spi-rockchip.c                             | 5 +++--
- 2 files changed, 9 insertions(+), 4 deletions(-)
-
--- 
-2.1.0.rc2.206.gedb03e5
-
+Guenter
