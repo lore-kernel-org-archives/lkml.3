@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934778AbaICWdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 18:33:53 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:65165 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933079AbaICWdu (ORCPT
+	id S932932AbaICWlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 18:41:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46929 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932191AbaICWlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 18:33:50 -0400
-From: An Ha <zero579911@gmail.com>
-To: gregkh@linuxfoundation.org, gulsah.1004@gmail.com,
-        paulmck@linux.vnet.ibm.com, Larry.Finger@lwfinger.net,
-        linville@tuxdriver.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        An Ha <zero579911@gmail.com>
-Subject: [PATCH] Staging: rtl8821ae: base: add missing blank line after declaration
-Date: Wed,  3 Sep 2014 18:33:08 -0400
-Message-Id: <1409783588-8814-1-git-send-email-zero579911@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Wed, 3 Sep 2014 18:41:20 -0400
+Date: Wed, 3 Sep 2014 15:41:19 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/55] 3.10.54-stable review
+Message-ID: <20140903224119.GA29638@kroah.com>
+References: <20140903220453.653576908@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903220453.653576908@linuxfoundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a missing blank line after declaration to fix coding style issue.
+On Wed, Sep 03, 2014 at 03:04:50PM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.54 release.
+> There are 55 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Sep  5 22:04:21 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.54-rc1.gz
+> and the diffstat can be found below.
 
-Signed-off-by: An Ha <zero579911@gmail.com>
----
- drivers/staging/rtl8821ae/base.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/staging/rtl8821ae/base.c b/drivers/staging/rtl8821ae/base.c
-index 4a36da0..dbf28ce 100644
---- a/drivers/staging/rtl8821ae/base.c
-+++ b/drivers/staging/rtl8821ae/base.c
-@@ -364,6 +364,7 @@ static void _rtl_init_mac80211(struct ieee80211_hw *hw)
- 		SET_IEEE80211_PERM_ADDR(hw, rtlefuse->dev_addr);
- 	} else {
- 		u8 rtlmac[] = { 0x00, 0xe0, 0x4c, 0x81, 0x92, 0x00 };
-+
- 		get_random_bytes((rtlmac + (ETH_ALEN - 1)), 1);
- 		SET_IEEE80211_PERM_ADDR(hw, rtlmac);
- 	}
-@@ -553,6 +554,7 @@ static void _rtl_query_shortgi(struct ieee80211_hw *hw,
- 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
- 	u8 rate_flag = info->control.rates[0].flags;
- 	u8 sgi_40 = 0, sgi_20 = 0, bw_40 = 0;
-+
- 	tcb_desc->use_shortgi = false;
- 
- 	if (sta == NULL)
--- 
-2.1.0
-
+And this kernel can't even build on x86-64, let me go fix this up and do
+a -rc2...
