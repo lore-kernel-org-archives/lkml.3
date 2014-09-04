@@ -1,153 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827AbaIDRPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:15:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753549AbaIDRPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:15:08 -0400
-Date: Thu, 4 Sep 2014 19:12:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] x86: reimplement ___preempt_schedule*() using THUNK
-	helpers
-Message-ID: <20140904171216.GB17355@redhat.com>
-References: <20140904134135.GA3309@redhat.com> <20140904134201.GA3312@redhat.com>
+	id S1754892AbaIDRPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:15:17 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:39077 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842AbaIDRPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 13:15:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904134201.GA3312@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <54045FA6.70602@mentor.com>
+References: <1409336356-27682-1-git-send-email-dmitry_eremin@mentor.com>
+	<20140829190129.GZ29327@sirena.org.uk>
+	<5404246E.4090908@de.bosch.com>
+	<20140901101512.GK29327@sirena.org.uk>
+	<54045FA6.70602@mentor.com>
+Date: Thu, 4 Sep 2014 19:15:13 +0200
+Message-ID: <CACRpkdZXDf0CX5yH3inoi4zu_gZ5-B9eMDY6aDN9b8m=rD61vw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: core: GPIO #0 is a valid GPIO
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+Cc: Mark Brown <broonie@kernel.org>, Dirk Behme <dirk.behme@de.bosch.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Gokulkrishnan Nagarajan <Gokulkrishnan.Nagarajan@in.bosch.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-___preempt_schedule() does SAVE_ALL/RESTORE_ALL but this is suboptimal,
-we do not need to save/restore the callee-saved register. And we already
-have arch/x86/lib/thunk_*.S which implements the similar asm wrappers,
-so it makes sense to redefine ___preempt_schedule() as "THUNK ..." and
-remove preempt.S altogether.
+On Mon, Sep 1, 2014 at 1:59 PM, Dmitry Eremin-Solenikov
+<dmitry_eremin@mentor.com> wrote:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/Makefile  |    2 --
- arch/x86/kernel/preempt.S |   25 -------------------------
- arch/x86/lib/thunk_32.S   |   20 ++++++++++++++++----
- arch/x86/lib/thunk_64.S   |    7 +++++++
- 4 files changed, 23 insertions(+), 31 deletions(-)
- delete mode 100644 arch/x86/kernel/preempt.S
+> Back in the time before DTS conversion started, the 0 was a correct GPIO
+> number. If somebody wanted to specify that no gpio is provided, he provided
+> -1 as an invalid number. I have the feeling that allowing users to use 0 as
+> 'no gpio' is a mistake. Or the API should be changed
+> to disallow GPIO 0 to exist at all.
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index b5ea75c..58cf60b 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -39,8 +39,6 @@ obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
- obj-y			+= pci-iommu_table.o
- obj-y			+= resource.o
- 
--obj-$(CONFIG_PREEMPT)	+= preempt.o
--
- obj-y				+= process.o
- obj-y				+= i387.o xsave.o
- obj-y				+= ptrace.o
-diff --git a/arch/x86/kernel/preempt.S b/arch/x86/kernel/preempt.S
-deleted file mode 100644
-index ca7f0d5..0000000
---- a/arch/x86/kernel/preempt.S
-+++ /dev/null
-@@ -1,25 +0,0 @@
--
--#include <linux/linkage.h>
--#include <asm/dwarf2.h>
--#include <asm/asm.h>
--#include <asm/calling.h>
--
--ENTRY(___preempt_schedule)
--	CFI_STARTPROC
--	SAVE_ALL
--	call preempt_schedule
--	RESTORE_ALL
--	ret
--	CFI_ENDPROC
--
--#ifdef CONFIG_CONTEXT_TRACKING
--
--ENTRY(___preempt_schedule_context)
--	CFI_STARTPROC
--	SAVE_ALL
--	call preempt_schedule_context
--	RESTORE_ALL
--	ret
--	CFI_ENDPROC
--
--#endif
-diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
-index 28f85c9..e9acf5f 100644
---- a/arch/x86/lib/thunk_32.S
-+++ b/arch/x86/lib/thunk_32.S
-@@ -7,16 +7,19 @@
- 	#include <linux/linkage.h>
- 	#include <asm/asm.h>
- 
--#ifdef CONFIG_TRACE_IRQFLAGS
- 	/* put return address in eax (arg1) */
--	.macro thunk_ra name,func
-+	.macro THUNK name, func, put_ret_addr_in_eax=0
- 	.globl \name
- \name:
- 	pushl %eax
- 	pushl %ecx
- 	pushl %edx
-+
-+	.if \put_ret_addr_in_eax
- 	/* Place EIP in the arg1 */
- 	movl 3*4(%esp), %eax
-+	.endif
-+
- 	call \func
- 	popl %edx
- 	popl %ecx
-@@ -25,6 +28,15 @@
- 	_ASM_NOKPROBE(\name)
- 	.endm
- 
--	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
--	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	THUNK trace_hardirqs_on_thunk,trace_hardirqs_on_caller,1
-+	THUNK trace_hardirqs_off_thunk,trace_hardirqs_off_caller,1
-+#endif
-+
-+#ifdef CONFIG_PREEMPT
-+	THUNK ___preempt_schedule, preempt_schedule
-+#ifdef CONFIG_CONTEXT_TRACKING
-+	THUNK ___preempt_schedule_context, preempt_schedule_context
- #endif
-+#endif
-+
-diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
-index 92d9fea..b30b5eb 100644
---- a/arch/x86/lib/thunk_64.S
-+++ b/arch/x86/lib/thunk_64.S
-@@ -38,6 +38,13 @@
- 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
- #endif
- 
-+#ifdef CONFIG_PREEMPT
-+	THUNK ___preempt_schedule, preempt_schedule
-+#ifdef CONFIG_CONTEXT_TRACKING
-+	THUNK ___preempt_schedule_context, preempt_schedule_context
-+#endif
-+#endif
-+
- 	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
- 	CFI_STARTPROC
- 	SAVE_ARGS
--- 
-1.5.5.1
+The API change that is going on is to switch platforms and subsystems
+to only deal with GPIO descriptors, which are pointer cookies such as
+is regulators and clocks. See Documentation/gpio/*
 
+Fixing the old global GPIO numberspace API is a waste of time IMO,
+it is just restricted by design and we want to get rid of it.
 
+Yours,
+Linus Walleij
