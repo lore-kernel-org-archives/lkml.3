@@ -1,51 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590AbaIDVQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:16:12 -0400
-Received: from smtprelay0174.hostedemail.com ([216.40.44.174]:46567 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754041AbaIDVQL (ORCPT
+	id S1755672AbaIDVSC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:18:02 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:43515 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711AbaIDVSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:16:11 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2687:2828:2915:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:7652:7875:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13141:13230:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fold69_35cfc85f1b953
-X-Filterd-Recvd-Size: 1672
-Message-ID: <1409865368.2770.20.camel@joe-AO725>
-Subject: Re: [PATCH v4] checkpatch: allow optional shorter config
- descriptions
-From: Joe Perches <joe@perches.com>
-To: Vadim Bendebury <vbendeb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andy Whitcroft <apw@canonical.com>
-Date: Thu, 04 Sep 2014 14:16:08 -0700
-In-Reply-To: <1409865234-19708-1-git-send-email-vbendeb@chromium.org>
-References: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
-	 <1409865234-19708-1-git-send-email-vbendeb@chromium.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Sep 2014 17:18:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALAqxLUHt=+L4XHFqsfNnB8LExtptXkqW58vKZ4JzwN49D+hOw@mail.gmail.com>
+References: <1407456558-18509-1-git-send-email-ahh@google.com>
+	<CALAqxLUHt=+L4XHFqsfNnB8LExtptXkqW58vKZ4JzwN49D+hOw@mail.gmail.com>
+Date: Thu, 4 Sep 2014 14:17:59 -0700
+Message-ID: <CADroS=5BcPqCdgYAMfdyod1PNeYFU_qQXNYYQnoPAtB6RdCLWQ@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix timeval conversion to jiffies
+From: Andrew Hunter <ahh@google.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Phil Miller <unmobile@gmail.com>, Paul Turner <pjt@google.com>,
+        Aaron Jacobs <jacobsa@google.com>, Ingo Molnar <mingo@elte.hu>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 14:13 -0700, Vadim Bendebury wrote:
-> This script is used by many other projects, and in some of them the
-> requirement of at least 4 line long description for all Kconfig items
-> is excessive. This patch adds a command line option to control the
-> required minimum length.
-> 
-> Tested running this script over a patch including a two line config
-> description. The script generated a warning when invoked as is, and
-> did not generate it when invoked with --min-conf-desc-length=2.
-> 
-> Signed-off-by: Vadim Bendebury <vbendeb@chromium.org>
-> ---
-> 
-> Changes in v4:
->   - added the missing trailing semicolon. Re-tested to verify that it
->     still works as expected.
+On Wed, Sep 3, 2014 at 5:06 PM, John Stultz <john.stultz@linaro.org> wrote:
+> Maybe with the next version of the patch, before you get into the
+> unwinding the math, you might practically describe what is broken,
+> then explain how its broken.
+>
 
-Acked-by: Joe Perches <joe@perches.com>
+Done.
 
+> My quick read here is that we're converting a timespec -> jiffies, and
+> in doing so we round up by one jiffy.
+>
+> This seems actually perfectly normal, as we usually end up rounding up
+> by a jiffy in many cases since we don't want to undershoot any
+> timeout, and we're always allowed return later then specified.
+
+Well, yes, timeouts can be longer than specified, but what you said
+technically applies just as much to code that arbitrarily multiplies
+jiffies by 10 before returning, no? :)
+
+The problem isn't the rounding, it's that the rounding is _wrong_: I'm
+fine rounding 10100usec / (1000 usec/jiffie) = 11 jiffies. The current
+code rounds 10000usec / (1000 usec/jiffies) to 11.  I've rewritten the
+description to make this clearer.
+
+>
+>> In particular, with HZ=1000, we consistently computed that 10000 usec
+>> was 11 jiffies; the same was true for any exact multiple of
+>> TICK_NSEC. This is obviously bad as a general rule, and caused
+>> observable user problems with setitimer() at the very least:
+>>
+>> setitimer(ITIMER_PROF, &val, NULL);
+>> setitimer(ITIMER_PROF, NULL, &val);
+>>
+>> would actually add a tick to val!
+>
+> So this looks like an issue. Since we convert and store the internal
+> representation in jiffies, when we pull it back out, we get the
+> rounded up value, which is larger then the timespec value originally
+> submitted.  This is really the core issue, correct?
+
+For the particular user bug reported to me, yes, this was the core
+issue: some code that stopped and restarted an itimer found the
+interval growing by 1ms each time.  But again, it wasn't that it was
+rounded:  if we initially passed e.g. 10500 usec and got back 11000,
+that'd be annoying but workable, because if we then went through
+another cycle of enabling/disabling itimer, we'd set it to 11000 usec
+and get back 11000 again.  What we have now instead adds a full jiffie
+_every time_.
+
+> Or does this
+> manifest in other ways that are problematic (the patch seems to hint
+> that it does)?
+>
+
+Um: hard to be sure. I can tell you that for PROF itimers we track the
+difference between the requested timeval in ns and the given number of
+jiffies (see the logic with it->error in check_cpu_itimer() in
+kernel/posix-cpu-timers.c), so over long periods we'll get the right
+sample rate (the only problem is the timeval reported back to
+userspace, and the samples might not quite be uniform.)  It appears
+there are no other uses of timeval_to_jiffies, so we're probably safe.
+But in any case it's wrong as currently coded so we should fix it.
+
+(Actually, one could use the same code tracking it->error to always
+return the exact--unrounded--interval to userspace, but that's minor
+compared to a constantly growing interval, and I'd rather not
+complicate this patch any more.)
+
+>> +       nsec = nsec + TICK_NSEC - 1;
+>
+>
+> If we're still rounding up one tick here, does the same issue not persist?
+>
+
+Nope (at least not in tested configurations.) Since jiffie is
+effectively defined as some integral number of nsec, this rounding
+DTRT to round up to an integral number of jiffies. (The scaled
+arithmetic might, for sufficiently large intervals/right values of
+timeval produce some error, but I haven't been able to make it do so.)
+
+> Overall the patch doesn't look too bad and does reduce the amount of
+> ugly math with simpler code reuse.  But I'd like the patch description
+> to be more clear about why this is needed and the impact.
+>
+
+Rewritten; sending v2.
