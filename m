@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449AbaIDInr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 04:43:47 -0400
-Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:31401
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754294AbaIDIno convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 04:43:44 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource read
- API.
-Thread-Topic: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource
- read API.
-Thread-Index: AQHPwPGfS8nkeT6FCkuUDVIJ9Bh425vvRJOAgAD90OCAAHITAIAAANvg
-Date: Thu, 4 Sep 2014 08:43:28 +0000
-Message-ID: <69c4ca3ee1324a3894a6d5dc0bde38ed@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
- <1409031951-39021-3-git-send-email-Li.Xiubo@freescale.com>
- <alpine.DEB.2.10.1409031236450.3333@nanos>
- <c5f60fc57cdf4cd3a01b8d3a87a4f3de@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <alpine.DEB.2.10.1409041032200.3333@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409041032200.3333@nanos>
-Accept-Language: en-US
+	id S1756682AbaIDIoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 04:44:30 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:47794 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756638AbaIDIo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 04:44:26 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+CC: Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        "Richard Henderson" <rth@twiddle.net>
+Subject: RE: bit fields && data tearing
+Thread-Topic: bit fields && data tearing
+Thread-Index: AQHPx8xmJXKiC/P/tUa9IYpE5+LVuZvwqAQg
+Date: Thu, 4 Sep 2014 08:43:13 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
+References: <20140712181328.GA8738@redhat.com>
+ <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>
+In-Reply-To: <1409785893.30640.118.camel@pasglop>
+Accept-Language: en-GB, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0324C2C0E2
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(189002)(199003)(164054003)(77982001)(106356001)(106116001)(66066001)(105586002)(4396001)(92566001)(20776003)(90102001)(46102001)(107046002)(64706001)(95666004)(76482001)(85852003)(74662001)(31966008)(79102001)(110136001)(74502001)(83322001)(101416001)(85306004)(83072002)(93886004)(99286002)(77096002)(2656002)(108616004)(99396002)(54356999)(74316001)(80022001)(33646002)(81542001)(76176999)(21056001)(81342001)(76576001)(87936001)(86362001)(50986999)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB181;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s848ifM8008450
 
+From:  Benjamin Herrenschmidt
+> On Wed, 2014-09-03 at 18:51 -0400, Peter Hurley wrote:
+> 
+> > Apologies for hijacking this thread but I need to extend this discussion
+> > somewhat regarding what a compiler might do with adjacent fields in a structure.
 > >
-> > Since the FTM will be in BE mode on LS1 platform, but will be in LE mode
-> > On LS2 platform.
+> > The tty subsystem defines a large aggregate structure, struct tty_struct.
+> > Importantly, several different locks apply to different fields within that
+> > structure; ie., a specific spinlock will be claimed before updating or accessing
+> > certain fields while a different spinlock will be claimed before updating or
+> > accessing certain _adjacent_ fields.
 > >
-> > And ftm_clocksource_read_up() will adapt to this different.
+> > What is necessary and sufficient to prevent accidental false-sharing?
+> > The patch below was flagged as insufficient on ia64, and possibly ARM.
 > 
-> You are missing the point. Why do you want a conditional in a hot
-> path? You know at init time whether the thing is BE or LE, so you can
-> have separate functions for BE/LE or whatever and register that with
-> clocksource_mmio_init(). i.e.
+> We expect native aligned scalar types to be accessed atomically (the
+> read/modify/write of a larger quantity that gcc does on some bitfield
+> cases has been flagged as a gcc bug, but shouldn't happen on normal
+> scalar types).
+
+That isn't true on all architectures for items smaller than a machine word.
+At least one has to do rmw for byte accesses.
+
+	David
+
+> I am not 100% certain of "bool" here, I assume it's treated as a normal
+> scalar and thus atomic but if unsure, you can always use int.
 > 
->      if (be)
->      	clocksource_mmio_init(....., cs_read_be);
->      else if (le)
->      	clocksource_mmio_init(....., cs_read_le);
->      else if (magic)
->      	clocksource_mmio_init(....., cs_read_magic);
+> Another option is to use the atomic bitops and make these bits in a
+> bitmask but that is probably unnecessary if you have locks already.
 > 
-
-There already has the following access interfaces:
-
-static inline u32 ftm_readl(void __iomem *addr)
-{
-        if (priv->big_endian)
-                return ioread32be(addr);
-        else
-                return ioread32(addr);
-}
-
-static inline void ftm_writel(u32 val, void __iomem *addr)
-{
-        if (priv->big_endian)
-                iowrite32be(val, addr);
-        else
-                iowrite32(val, addr);
-}
-
-So I added the following code:
-
-static cycle_t ftm_clocksource_read_up(struct clocksource *c)
-{
-        return ftm_readl(priv->clksrc_base + FTM_CNT) & 0xffff;
-}
-
-clocksource_mmio_init(.....,ftm_clocksource_read_up);
-
-Is this okay ?
-
-Thanks,
-
-BRs
-Xiubo
-
-
+> Cheers,
+> Ben.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
