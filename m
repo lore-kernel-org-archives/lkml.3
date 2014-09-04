@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269AbaIDPsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:48:03 -0400
+	id S1754344AbaIDPsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:48:31 -0400
 Received: from relais.videotron.ca ([24.201.245.36]:60017 "EHLO
 	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193AbaIDPr7 (ORCPT
+	with ESMTP id S1751437AbaIDPr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:47:59 -0400
+	Thu, 4 Sep 2014 11:47:58 -0400
 X-Greylist: delayed 918 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 11:47:57 EDT
 Content-transfer-encoding: 7BIT
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
@@ -14,10 +14,9 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
 Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH v2 2/2] sched/fair: leverage the idle state info when choosing
- the "idlest" cpu
-Date: Thu, 04 Sep 2014 11:32:10 -0400
-Message-id: <1409844730-12273-3-git-send-email-nicolas.pitre@linaro.org>
+Subject: [PATCH v2 1/2] sched: let the scheduler see CPU idle states
+Date: Thu, 04 Sep 2014 11:32:09 -0400
+Message-id: <1409844730-12273-2-git-send-email-nicolas.pitre@linaro.org>
 X-Mailer: git-send-email 1.8.4.108.g55ea5f6
 In-reply-to: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
 References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
@@ -25,106 +24,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code in find_idlest_cpu() looks for the CPU with the smallest load.
-However, if multiple CPUs are idle, the first idle CPU is selected
-irrespective of the depth of its idle state.
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Among the idle CPUs we should pick the one with with the shallowest idle
-state, or the latest to have gone idle if all idle CPUs are in the same
-state.  The later applies even when cpuidle is configured out.
+When the cpu enters idle, it stores the cpuidle state pointer in its
+struct rq instance which in turn could be used to make a better decision
+when balancing tasks.
 
-This patch doesn't cover the following issues:
+As soon as the cpu exits its idle state, the struct rq reference is
+cleared.
 
-- The idle exit latency of a CPU might be larger than the time needed
-  to migrate the waking task to an already running CPU with sufficient
-  capacity, and therefore performance would benefit from task packing
-  in such case (in most cases task packing is about power saving).
+There are a couple of situations where the idle state pointer could be changed
+while it is being consulted:
 
-- Some idle states have a non negligible and non abortable entry latency
-  which needs to run to completion before the exit latency can start.
-  A concurrent patch series is making this info available to the cpuidle
-  core.  Once available, the entry latency with the idle timestamp could
-  determine when the exit latency may be effective.
+1. For x86/acpi with dynamic c-states, when a laptop switches from battery
+   to AC that could result on removing the deeper idle state. The acpi driver
+   triggers:
+	'acpi_processor_cst_has_changed'
+		'cpuidle_pause_and_lock'
+			'cpuidle_uninstall_idle_handler'
+				'kick_all_cpus_sync'.
 
-Those issues will be handled in due course.  In the mean time, what
-is implemented here should improve things already compared to the current
-state of affairs.
+All cpus will exit their idle state and the pointed object will be set to
+NULL.
 
-Based on an initial patch from Daniel Lezcano.
+2. The cpuidle driver is unloaded. Logically that could happen but not
+in practice because the drivers are always compiled in and 95% of them are
+not coded to unregister themselves.  In any case, the unloading code must
+call 'cpuidle_unregister_device', that calls 'cpuidle_pause_and_lock'
+leading to 'kick_all_cpus_sync' as mentioned above.
 
+A race can happen if we use the pointer and then one of these two scenarios
+occurs at the same moment.
+
+In order to be safe, the idle state pointer stored in the rq must be
+used inside a rcu_read_lock section where we are protected with the
+'rcu_barrier' in the 'cpuidle_uninstall_idle_handler' function. The
+idle_get_state() and idle_put_state() accessors should be used to that
+effect.
+
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Signed-off-by: Nicolas Pitre <nico@linaro.org>
 ---
- kernel/sched/fair.c | 43 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 36 insertions(+), 7 deletions(-)
+ drivers/cpuidle/cpuidle.c |  6 ++++++
+ kernel/sched/idle.c       |  6 ++++++
+ kernel/sched/sched.h      | 39 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86d0d..416329e1a6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -23,6 +23,7 @@
- #include <linux/latencytop.h>
- #include <linux/sched.h>
- #include <linux/cpumask.h>
-+#include <linux/cpuidle.h>
- #include <linux/slab.h>
- #include <linux/profile.h>
- #include <linux/interrupt.h>
-@@ -4428,20 +4429,48 @@ static int
- find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
- {
- 	unsigned long load, min_load = ULONG_MAX;
--	int idlest = -1;
-+	unsigned int min_exit_latency = UINT_MAX;
-+	u64 latest_idle_timestamp = 0;
-+	int least_loaded_cpu = this_cpu;
-+	int shallowest_idle_cpu = -1;
- 	int i;
- 
- 	/* Traverse only the allowed CPUs */
- 	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
--		load = weighted_cpuload(i);
--
--		if (load < min_load || (load == min_load && i == this_cpu)) {
--			min_load = load;
--			idlest = i;
-+		if (idle_cpu(i)) {
-+			struct rq *rq = cpu_rq(i);
-+			struct cpuidle_state *idle = idle_get_state(rq);
-+			if (idle && idle->exit_latency < min_exit_latency) {
-+				/*
-+				 * We give priority to a CPU whose idle state
-+				 * has the smallest exit latency irrespective
-+				 * of any idle timestamp.
-+				 */
-+				min_exit_latency = idle->exit_latency;
-+				latest_idle_timestamp = rq->idle_stamp;
-+				shallowest_idle_cpu = i;
-+			} else if ((!idle || idle->exit_latency == min_exit_latency) &&
-+				   rq->idle_stamp > latest_idle_timestamp) {
-+				/*
-+				 * If equal or no active idle state, then
-+				 * the most recently idled CPU might have
-+				 * a warmer cache.
-+				 */
-+				latest_idle_timestamp = rq->idle_stamp;
-+				shallowest_idle_cpu = i;
-+			}
-+			cpuidle_put_state(rq);
-+		} else {
-+			load = weighted_cpuload(i);
-+			if (load < min_load ||
-+			    (load == min_load && i == this_cpu)) {
-+				min_load = load;
-+				least_loaded_cpu = i;
-+			}
- 		}
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index ee9df5e3f5..530e3055a2 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -225,6 +225,12 @@ void cpuidle_uninstall_idle_handler(void)
+ 		initialized = 0;
+ 		kick_all_cpus_sync();
  	}
- 
--	return idlest;
-+	return shallowest_idle_cpu != -1 ? shallowest_idle_cpu : least_loaded_cpu;
++
++	/*
++	 * Make sure external observers (such as the scheduler)
++	 * are done looking at pointed idle states.
++	 */
++	rcu_barrier();
  }
  
- /*
+ /**
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index 11e7bc434f..c47fce75e6 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -147,6 +147,9 @@ use_default:
+ 	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
+ 		goto use_default;
+ 
++	/* Take note of the planned idle state. */
++	idle_set_state(this_rq(), &drv->states[next_state]);
++
+ 	/*
+ 	 * Enter the idle state previously returned by the governor decision.
+ 	 * This function will block until an interrupt occurs and will take
+@@ -154,6 +157,9 @@ use_default:
+ 	 */
+ 	entered_state = cpuidle_enter(drv, dev, next_state);
+ 
++	/* The cpu is no longer idle or about to enter idle. */
++	idle_set_state(this_rq(), NULL);
++
+ 	if (broadcast)
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 579712f4e9..aea8baa7a5 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -14,6 +14,7 @@
+ #include "cpuacct.h"
+ 
+ struct rq;
++struct cpuidle_state;
+ 
+ extern __read_mostly int scheduler_running;
+ 
+@@ -636,6 +637,11 @@ struct rq {
+ #ifdef CONFIG_SMP
+ 	struct llist_head wake_list;
+ #endif
++
++#ifdef CONFIG_CPU_IDLE
++	/* Must be inspected within a rcu lock section */
++	struct cpuidle_state *idle_state;
++#endif
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
+@@ -1180,6 +1186,39 @@ static inline void idle_exit_fair(struct rq *rq) { }
+ 
+ #endif
+ 
++#ifdef CONFIG_CPU_IDLE
++static inline void idle_set_state(struct rq *rq,
++				  struct cpuidle_state *idle_state)
++{
++	rq->idle_state = idle_state;
++}
++
++static inline struct cpuidle_state *idle_get_state(struct rq *rq)
++{
++	rcu_read_lock();
++	return rq->idle_state;
++}
++
++static inline void cpuidle_put_state(struct rq *rq)
++{
++	rcu_read_unlock();
++}
++#else
++static inline void idle_set_state(struct rq *rq,
++				  struct cpuidle_state *idle_state)
++{
++}
++
++static inline struct cpuidle_state *idle_get_state(struct rq *rq)
++{
++	return NULL;
++}
++
++static inline void cpuidle_put_state(struct rq *rq)
++{
++}
++#endif
++
+ extern void sysrq_sched_debug_show(void);
+ extern void sched_init_granularity(void);
+ extern void update_max_interval(void);
 -- 
 1.8.4.108.g55ea5f6
 
