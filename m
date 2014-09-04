@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaIDFOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 01:14:19 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:62125 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaIDFOQ (ORCPT
+	id S1753390AbaIDFUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 01:20:41 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37196 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaIDFUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 01:14:16 -0400
-Date: Thu, 4 Sep 2014 07:14:11 +0200
+	Thu, 4 Sep 2014 01:20:40 -0400
+Date: Thu, 4 Sep 2014 07:20:34 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 13/26] locking: Add non-fatal spin lock assert
-Message-ID: <20140904051411.GA27350@gmail.com>
-References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
- <1409693975-1028-14-git-send-email-peter@hurleysoftware.com>
- <20140903092723.GA4783@worktop.ger.corp.intel.com>
- <5406F964.6060900@hurleysoftware.com>
- <20140903144029.GA7083@twins.programming.kicks-ass.net>
- <54072A99.1080306@hurleysoftware.com>
- <20140903150729.GA7436@twins.programming.kicks-ass.net>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: hpa@zytor.com, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org, Zhang Yang <yang.z.zhang@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v4] x86, hotplug: fix llc shared map unreleased during
+ cpu hotplug
+Message-ID: <20140904052034.GA29146@gmail.com>
+References: <1406625883-4972-1-git-send-email-wanpeng.li@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140903150729.GA7436@twins.programming.kicks-ass.net>
+In-Reply-To: <1406625883-4972-1-git-send-email-wanpeng.li@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
 
-> On Wed, Sep 03, 2014 at 10:50:01AM -0400, Peter Hurley wrote:
-> > So a lockdep-only assert is unlikely to draw attention to existing bugs,
-> > especially in established drivers.
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+> IP: [..] find_busiest_group
+> PGD 5a9d5067 PUD 13067 PMD 0
+> Oops: 0000 [#3] SMP
+> [...]
+> Call Trace:
+> load_balance
+> ? _raw_spin_unlock_irqrestore
+> idle_balance
+> __schedule
+> schedule
+> schedule_timeout
+> ? lock_timer_base
+> schedule_timeout_uninterruptible
+> msleep
+> lock_device_hotplug_sysfs
+> online_store
+> dev_attr_store
+> sysfs_write_file
+> vfs_write
+> SyS_write
+> system_call_fastpath
 > 
-> By the same logic lockdep will not find locking errors in established
-> drivers.
+> Last level cache shared map is built during cpu up and build sched domain 
+> routine takes advantage of it to setup sched domain cpu topology, however, 
+> llc shared map is unreleased during cpu disable which lead to invalid sched 
+> domain cpu topology. This patch fix it by release llc shared map correctly
+> during cpu disable.
 
-Indeed, this patch is ill-advised in several ways:
-
-  - it extends an API variant that we want to phase
-
-  - emits a warning even if say lockdep has already emitted a
-    warning and locking state is not guaranteed to be consistent. 
-
-  - makes the kernel more expensive once fully debugged, in that
-    non-fatal checks are unconditional.
-
-Also please submit locking related patches as standalone series 
-to the locking subsystem, not embedded in an unrelated series.
+Very little is said in this changelog about how the bug was 
+found, how likely it is to occur for others, what systems are 
+affected, etc.
 
 Thanks,
 
