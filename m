@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073AbaIDO2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:28:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22599 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753434AbaIDO1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:27:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,466,1406617200"; 
-   d="scan'208";a="475190083"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        Benjamin Romer <benjamin.romer@unisys.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v4 10/12] staging: unisys: use seq_hex_dump() to dump buffers
-Date: Thu,  4 Sep 2014 17:26:57 +0300
-Message-Id: <1409840819-18976-11-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1754251AbaIDO3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:29:52 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:49478 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434AbaIDO3O convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 4 Sep 2014 10:29:14 -0400
+Message-Id: <540893570200007800030E4C@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Thu, 04 Sep 2014 15:29:11 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "David Vrabel" <david.vrabel@citrix.com>
+Cc: <xen-devel@lists.xensource.com>, <boris.ostrovsky@oracle.com>,
+        <konrad.wilk@oracle.com>, "Juergen Gross" <JGross@suse.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] xen: eliminate scalability issues from initrd
+ handling
+References: <1409834326-29287-1-git-send-email-jgross@suse.com>
+ <1409834326-29287-3-git-send-email-jgross@suse.com>
+ <5408607F.6020108@citrix.com>
+In-Reply-To: <5408607F.6020108@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of custom approach let's use recently introduced seq_hex_dump() helper.
+>>> On 04.09.14 at 14:52, <david.vrabel@citrix.com> wrote:
+> On 04/09/14 13:38, Juergen Gross wrote:
+>> --- a/arch/x86/xen/xen-head.S
+>> +++ b/arch/x86/xen/xen-head.S
+>> @@ -124,6 +124,9 @@ NEXT_HYPERCALL(arch_6)
+>>  	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
+>>  		.quad _PAGE_PRESENT; .quad _PAGE_PRESENT)
+>>  	ELFNOTE(Xen, XEN_ELFNOTE_SUSPEND_CANCEL, .long 1)
+>> +#ifdef CONFIG_X86_64
+>> +	ELFNOTE(Xen, XEN_ELFNOTE_MOD_START_PFN,  .long 1)
+>> +#endif
+> 
+> Why X86_64 only?  If there's a good reason the commit message needs to
+> explain why.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- .../unisys/visorchannel/visorchannel_funcs.c       | 26 ++++------------------
- 1 file changed, 4 insertions(+), 22 deletions(-)
+Does native 32-bit support huge initrd?
 
-diff --git a/drivers/staging/unisys/visorchannel/visorchannel_funcs.c b/drivers/staging/unisys/visorchannel/visorchannel_funcs.c
-index 947b23c..d8345a6 100644
---- a/drivers/staging/unisys/visorchannel/visorchannel_funcs.c
-+++ b/drivers/staging/unisys/visorchannel/visorchannel_funcs.c
-@@ -633,15 +633,11 @@ void
- visorchannel_dump_section(VISORCHANNEL *chan, char *s,
- 			  int off, int len, struct seq_file *seq)
- {
--	char *buf, *tbuf, *fmtbuf;
--	int fmtbufsize = 0;
--	int i;
-+	char *buf;
- 	int errcode = 0;
- 
--	fmtbufsize = 100 * COVQ(len, 16);
- 	buf = kmalloc(len, GFP_KERNEL|__GFP_NORETRY);
--	fmtbuf = kmalloc(fmtbufsize, GFP_KERNEL|__GFP_NORETRY);
--	if (buf == NULL || fmtbuf == NULL)
-+	if (buf == NULL)
- 		goto Away;
- 
- 	errcode = visorchannel_read(chan, off, buf, len);
-@@ -651,23 +647,9 @@ visorchannel_dump_section(VISORCHANNEL *chan, char *s,
- 		goto Away;
- 	}
- 	seq_printf(seq, "channel %s:\n", s);
--	tbuf = buf;
--	while (len > 0) {
--		i = (len < 16) ? len : 16;
--		hex_dump_to_buffer(tbuf, i, 16, 1, fmtbuf, fmtbufsize, TRUE);
--		seq_printf(seq, "%s\n", fmtbuf);
--		tbuf += 16;
--		len -= 16;
--	}
-+	seq_hex_dump(seq, "", DUMP_PREFIX_NONE, 16, 1, buf, len, true);
- 
- Away:
--	if (buf != NULL) {
--		kfree(buf);
--		buf = NULL;
--	}
--	if (fmtbuf != NULL) {
--		kfree(fmtbuf);
--		fmtbuf = NULL;
--	}
-+	kfree(buf);
- }
- EXPORT_SYMBOL_GPL(visorchannel_dump_section);
--- 
-2.1.0
+Jan
 
