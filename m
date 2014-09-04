@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614AbaIDNUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 09:20:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59346 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784AbaIDNUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 09:20:38 -0400
-Date: Thu, 4 Sep 2014 14:29:39 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: James Smart <james.smart@emulex.com>
-Cc: linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 11/13] lpfc: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140904132939.GA1225@agordeev.usersys.redhat.com>
-References: <cover.1408335523.git.agordeev@redhat.com>
- <e7470e484083c9eeb6b4f34f3e69e332ad5998c2.1408335523.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e7470e484083c9eeb6b4f34f3e69e332ad5998c2.1408335523.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752419AbaIDNUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 09:20:52 -0400
+Received: from mail2.tiolive.com ([94.23.229.207]:39822 "EHLO
+	mail2.tiolive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904AbaIDNUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 09:20:51 -0400
+From: Kirill Smelkov <kirr@nexedi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kirill Smelkov <kirr@nexedi.com>, Ken Chen <kenchen@google.com>
+Subject: [PATCH] hugetlbfs: document that sticky mounts are allowed
+Date: Thu,  4 Sep 2014 17:20:33 +0400
+Message-Id: <1409836833-4320-1-git-send-email-kirr@nexedi.com>
+X-Mailer: git-send-email 2.1.0.61.g11be0d6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 08:01:51AM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+Commit 75897d60 (hugetlb: allow sticky directory mount option) added
+support for mounting hugetlbfs with sticky option set, like /tmp is
+usually mounted, but forgot to document that.
 
-James?
+Cc: Ken Chen <kenchen@google.com>
+Signed-off-by: Kirill Smelkov <kirr@nexedi.com>
+---
+ Documentation/vm/hugetlbpage.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/Documentation/vm/hugetlbpage.txt b/Documentation/vm/hugetlbpage.txt
+index bdd4bb9..b64e0af 100644
+--- a/Documentation/vm/hugetlbpage.txt
++++ b/Documentation/vm/hugetlbpage.txt
+@@ -274,7 +274,7 @@ This command mounts a (pseudo) filesystem of type hugetlbfs on the directory
+ /mnt/huge.  Any files created on /mnt/huge uses huge pages.  The uid and gid
+ options sets the owner and group of the root of the file system.  By default
+ the uid and gid of the current process are taken.  The mode option sets the
+-mode of root of file system to value & 0777.  This value is given in octal.
++mode of root of file system to value & 01777.  This value is given in octal.
+ By default the value 0755 is picked. The size option sets the maximum value of
+ memory (huge pages) allowed for that filesystem (/mnt/huge). The size is
+ rounded down to HPAGE_SIZE.  The option nr_inodes sets the maximum number of
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+2.1.0.61.g11be0d6
