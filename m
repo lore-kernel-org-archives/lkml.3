@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbaIDXiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 19:38:08 -0400
-Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:60255 "EHLO
-	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148AbaIDXiG (ORCPT
+	id S1755508AbaIDXkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 19:40:09 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:34108 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaIDXkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 19:38:06 -0400
-X-Greylist: delayed 17517 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 19:38:06 EDT
-Message-ID: <1409873255.28990.158.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-From: Toshi Kani <toshi.kani@hp.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        akpm@linuxfoundation.org, arnd@arndb.de, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net,
-        konrad.wilk@oracle.com
-Date: Thu, 04 Sep 2014 17:27:35 -0600
-In-Reply-To: <1409862708.28990.141.camel@misato.fc.hp.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
-	 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
-	 <20140904201123.GA9116@khazad-dum.debian.net>
-	 <1409862708.28990.141.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Sep 2014 19:40:08 -0400
+From: Nix <nix@esperi.org.uk>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [3.16.1 REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
+References: <878um4tg09.fsf@spindle.srvr.nix>
+	<1409569752.24385.12.camel@linux-fkkt.site>
+Emacs: the road to Hell is paved with extensibility.
+Date: Fri, 05 Sep 2014 00:40:02 +0100
+In-Reply-To: <1409569752.24385.12.camel@linux-fkkt.site> (Oliver Neukum's
+	message of "Mon, 01 Sep 2014 13:09:12 +0200")
+Message-ID: <874mwnosz1.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-dcc1-Metrics: spindle 1182; Body=2 Fuz1=2 Fuz2=2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 14:31 -0600, Toshi Kani wrote:
-> On Thu, 2014-09-04 at 17:11 -0300, Henrique de Moraes Holschuh wrote:
-> > On Thu, 04 Sep 2014, Toshi Kani wrote:
-> > > This patch sets WT to the PA4 slot in the PAT MSR when the processor
-> > > is not affected by the PAT errata.  The upper 4 slots of the PAT MSR
-> > > are continued to be unused on the following Intel processors.
-> > > 
-> > >   errata           cpuid
-> > >   --------------------------------------
-> > >   Pentium 2, A52   family 0x6, model 0x5
-> > >   Pentium 3, E27   family 0x6, model 0x7
-> > >   Pentium M, Y26   family 0x6, model 0x9
-> > >   Pentium 4, N46   family 0xf, model 0x0
-> > > 
-> > > For these affected processors, _PAGE_CACHE_MODE_WT is redirected to UC-
-> > > per the default setup in __cachemode2pte_tbl[].
-> > 
-> > There are at least two PAT errata.  The blacklist is in
-> > arch/x86/kernel/cpu/intel.c:
-> > 
-> >         if (c->x86 == 6 && c->x86_model < 15)
-> >                 clear_cpu_cap(c, X86_FEATURE_PAT);
-> > 
-> > It covers model 13, which is not in your blacklist.
-> > 
-> > It *is* possible that PAT would work on model 13, as I don't think it has
-> > any PAT errata listed and it was blacklisted "just in case" (from memory. I
-> > did not re-check), but this is untested, and unwise to enable on an aging
-> > platform.
-> > 
-> > I am worried of uncharted territory, here.  I'd actually advocate for not
-> > enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
-> > is using them as well.  Is this a real concern, or am I being overly
-> > cautious?
-> 
-> The blacklist you pointed out covers a different PAT errata, and is
-> still effective after this change.  pat_init() will call pat_disable()
-> and the PAT will continue to be disabled on these processors.  There is
-> no change for them.
-> 
-> My blacklist covers the PAT errata that makes the upper four bit
-> unusable when the PAT is enabled.
+On 1 Sep 2014, Oliver Neukum stated:
 
-I checked more carefully, and it turns out that the processors that have
-the WC bug with PAT/MTRR also have the upper four bit bug in PAT as
-well.  The updated blacklist is:
+>
+>> I'll do a bisection of the cdc-acm changes since 3.15 tomorrow night and
+>> see if I can find the commit at fault.
+>
+> Thank you for the report. Please let me know the results of your
+> bisection.
 
-   errata               cpuid
-   --------------------------------------
-   Pentium 2, A52       family 0x6, model 0x5
-   Pentium 3, E27       family 0x6, model 0x7, 0x8
-   Pentium 3 Xeon, G26  family 0x6, model 0x7, 0x8, 0xa
-   Pentium M, Y26       family 0x6, model 0x9
-   Pentium M 90nm, X9   family 0x6, model 0xd
-   Pentium 4, N46       family 0xf, model 0x0
-                
-So, the check can be the same as cpu/intel.c, except that early Pentium
-4 steppings also have the upper four bit bug.  I will update the check.
-In any case, this check is only meaningful for P4 since the PAT is
-disabled for P2/3/M. 
+Bisection underway (fifth attempt -- I *may* have characterized it well
+enough after a few hours of thrashing at it to bisect accurately this
+time).
 
-Thanks Henrique for pointing this out!
--Toshi
+Some more random info.
 
+btw, when the Entropy Key has ended up in a messed up state due to this
+bug, we sometimes see
+
+[    2.330158] usb 2-1: new full-speed USB device number 2 using ohci-pci
+[    2.552465] usb 2-1: device descriptor read/64, error -62
+[    2.870142] usb 2-1: device descriptor read/64, error -62
+[    3.190150] usb 2-1: new full-speed USB device number 3 using ohci-pci
+[    3.410137] usb 2-1: device descriptor read/64, error -62
+[    3.740142] usb 2-1: device descriptor read/64, error -62
+[    4.060146] usb 2-1: new full-speed USB device number 4 using ohci-pci
+[    4.520133] usb 2-1: device not accepting address 4, error -62
+[    4.730139] usb 2-1: new full-speed USB device number 5 using ohci-pci
+[    5.180117] usb 2-1: device not accepting address 5, error -62
+[    5.215194] hub 2-0:1.0: unable to enumerate USB device on port 1
+
+when starting up a working kernel (the key then doesn't work until
+physically disconnected and reconnected again).
+
+More generally, the problem may be at *shutdown* -- something goes wrong
+during link suspension or something, such that the link never comes up
+again until physically reconnected. So a straight bisect is misleading
+-- the error may have been in the *last* kernel tested -- and even then,
+some kernels (e.g. the 3.15.0 merge base) appear capable of making it
+work fine. But even this is not consistent: sometimes a kernel that
+works fine if you repeatedly reboot it (such as 3.15) malfunctions when
+you reboot into 3.16 -- but sometimes a newly plugged USB key on a 3.16
+kernel malfunctions upon reboot, even if you reboot into a working
+kernel such as 3.15 (and it then proceeds to work indefinitely if you
+unplug and replug it and stick with 3.15.x, but upon rebooting into
+3.16.x it goes wrong again).
+
+So sometimes a faulty kernel makes the key go wrong when you restart
+into another kernel (faulty or not), and sometimes it makes a key go
+wrong when it is restarted into. There doesn't seem to be any
+consistency to this that I've spotted, at least not yet.
+
+Upon physical reconnection, the USB key works again, even on afflicted
+kernels.
+
+I'm working around this confusing morass by rebooting into each test
+kernel, unplugging and replugging the entropy key if it was fubared,
+then rebooting into the same kernel again and seeing if it was still
+fubared. But this is not terribly fast, particularly not on a headless
+compact-flash-based Geode box which doesn't even complete booting
+without the entropy source which this bug cuts off :) so it'll be
+sometime tomorrow before I can get this bisection done, I'm afraid.
