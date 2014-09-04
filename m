@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323AbaIDRLb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:11:31 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:62198 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaIDRLa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:11:30 -0400
-Date: Fri, 5 Sep 2014 02:11:23 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: linux-next: Tree for Sep 1
-Message-ID: <20140904171123.GD26364@mtj.dyndns.org>
-References: <20140901230728.GM29327@sirena.org.uk>
- <1627064.QhxvejlWdk@amdc1032>
- <alpine.DEB.2.11.1409020857110.9201@gentwo.org>
- <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+	id S1754451AbaIDROD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:14:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751449AbaIDROB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 13:14:01 -0400
+Date: Thu, 4 Sep 2014 19:11:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, X86 ML <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86: reimplement ___preempt_schedule*() using
+	THUNK helpers
+Message-ID: <20140904171113.GA17355@redhat.com>
+References: <20140904134135.GA3309@redhat.com> <20140904134201.GA3312@redhat.com> <CAK1hOcMmOi4vNPrLUtZwtStbs52r15n+h8h+aKCNxTJ1dkOwpg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAK1hOcMmOi4vNPrLUtZwtStbs52r15n+h8h+aKCNxTJ1dkOwpg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
-> Subject: irqchip: Properly fetch the per cpu offset
-> 
-> The raw_cpu_read() conversion dropped the fetch of the offset
-> from base->percpu_base in gic_get_percpu_base.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/drivers/irqchip/irq-gic.c
-> ===================================================================
-> --- linux.orig/drivers/irqchip/irq-gic.c
-> +++ linux/drivers/irqchip/irq-gic.c
-> @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
->  #ifdef CONFIG_GIC_NON_BANKED
->  static void __iomem *gic_get_percpu_base(union gic_base *base)
->  {
-> -	return raw_cpu_read(base->percpu_base);
-> +	return raw_cpu_read(*base->percpu_base);
+On 09/04, Denys Vlasenko wrote:
+>
+> or thunk_ra should be renamed to THUNK (like it is in thunk_64.S)
 
-I suppose this should go through percpu/for-3.18-consistent-ops?  Can
-we please cc irq folks and get acks?
+Of course! Thanks a lot Denys.
 
-Thanks.
+Oleg.
 
--- 
-tejun
