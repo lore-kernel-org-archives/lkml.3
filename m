@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaIDEuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 00:50:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27131 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaIDEuw (ORCPT
+	id S932086AbaIDEvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 00:51:14 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:33265 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaIDEvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 00:50:52 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: =?UTF-8?q?Mantas=20Mikul=C4=97nas?= <grawity@gmail.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v4] x86: only load initrd above 4g on second try
-Date: Wed,  3 Sep 2014 21:50:07 -0700
-Message-Id: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
+	Thu, 4 Sep 2014 00:51:12 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+B8BG5Hf8=ki0JDeRR13Mo7QRFDmsDuEpW8ozepvCp5KsY8ZA@mail.gmail.com>
+References: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
+	<CAOh2x==TSbtOKBn6KOL9Z_M-nkzQOiO+EqSTmEtQeRLXROC1rw@mail.gmail.com>
+	<CAOh2x=kNtcse_2sExDPCpRnCmxvmqq1++mkSW6HKY+Vn-SJ9QA@mail.gmail.com>
+	<CA+B8BG5Hf8=ki0JDeRR13Mo7QRFDmsDuEpW8ozepvCp5KsY8ZA@mail.gmail.com>
+Date: Thu, 4 Sep 2014 10:21:09 +0530
+Message-ID: <CAKohpon7Uxndqg+0JSaJEhfousitDcCvpVLx1jtNtBFHh0WatQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] pm: prevent suspend until power supply events are processed
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Zoran Markovic <zrn.markovic@gmail.com>
+Cc: Anton Vorontsov <anton@enomsg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>,
+        John Stultz <john.stultz@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
-loaded above 4G"), the kernel freezes at the earliest possible moment
-when trying to boot via UEFI on Asus laptop.
+Thanks for your quick reply :)
 
-Revert to old way to load initrd under 4G on first try,
-second try will use above 4G buffer when initrd is too big
-and does not fit under 4G.
+On 4 September 2014 00:43, Zoran Markovic <zrn.markovic@gmail.com> wrote:
+> Note that power_supply_changed_work() could race with
+> power_supply_changed(), as well as with itself. You could theoretically run
+> power_supply_changed() several times and queue several
+> power_supply_changed_work() calls. The first run of
+> power_supply_changed_work() would cancel all previous power_supply_changed()
+> and the remaining runs would just encounter psy->changed == FALSE and fall
+> through.
 
--v2: add print out for second try, and print out files buf address.
--v3: can not snprintf
--v4: drop address print out for files buf
+That's not completely true. You can't queue the same work multiple times. And
+the work is queued only if its not pending. The pending bit is just
+cleared before calling
+the work-handler.
 
-Reported-by: Mantas Mikulėnas <grawity@gmail.com>
-Tested-by: Anders Darander <anders@chargestorm.se>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+The worst corner case is that the work-handler, i.e. power_supply_changed_work()
+is called and just before taking the lock, another work is enqueued. Now for the
+first iteration of power_supply_changed_work() we will surely get
+changes as TRUE,
+but for second one it may be FALSE.
 
----
- arch/x86/boot/compressed/eboot.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+So, yes my theory was incorrect.
 
-Index: linux-2.6/arch/x86/boot/compressed/eboot.c
-===================================================================
---- linux-2.6.orig/arch/x86/boot/compressed/eboot.c
-+++ linux-2.6/arch/x86/boot/compressed/eboot.c
-@@ -1032,7 +1032,6 @@ struct boot_params *make_boot_params(str
- 	int i;
- 	unsigned long ramdisk_addr;
- 	unsigned long ramdisk_size;
--	unsigned long initrd_addr_max;
- 
- 	efi_early = c;
- 	sys_table = (efi_system_table_t *)(unsigned long)efi_early->table;
-@@ -1095,15 +1094,20 @@ struct boot_params *make_boot_params(str
- 
- 	memset(sdt, 0, sizeof(*sdt));
- 
--	if (hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G)
--		initrd_addr_max = -1UL;
--	else
--		initrd_addr_max = hdr->initrd_addr_max;
--
- 	status = handle_cmdline_files(sys_table, image,
- 				      (char *)(unsigned long)hdr->cmd_line_ptr,
--				      "initrd=", initrd_addr_max,
-+				      "initrd=", hdr->initrd_addr_max,
- 				      &ramdisk_addr, &ramdisk_size);
-+
-+	if (status != EFI_SUCCESS &&
-+	    hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G) {
-+		efi_printk(sys_table, "Trying to load files to higher address\n");
-+		status = handle_cmdline_files(sys_table, image,
-+				      (char *)(unsigned long)hdr->cmd_line_ptr,
-+				      "initrd=", -1UL,
-+				      &ramdisk_addr, &ramdisk_size);
-+	}
-+
- 	if (status != EFI_SUCCESS)
- 		goto fail2;
- 	hdr->ramdisk_image = ramdisk_addr & 0xffffffff;
+>> >> +               psy->changed = false;
+>> >> +               spin_unlock_irqrestore(&psy->changed_lock, flags);
+>> >> +               class_for_each_device(power_supply_class, NULL, psy,
+>> >> +                                     __power_supply_changed_work);
+>> >> +               power_supply_update_leds(psy);
+>> >> +               kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
+>> >> +               spin_lock_irqsave(&psy->changed_lock, flags);
+>> >> +       }
+>> >> +       /* dependent power supplies (e.g. battery) may have changed
+>> >> +        * state as a result of this event, so poll again and hold
+>> >> +        * the wakeup_source until all events are processed.
+>> >> +        */
+>> >> +       if (!psy->changed)
+>> >> +               pm_relax(psy->dev);
+>> >
+>> > I got a bit confused here. Does the above comment say this:
+>> >
+>> > The supplies dependent on 'psy' may change states and that *may*
+>> > change the state of 'psy' again? And so psy->changed is set to true
+>> > again?
+>
+> This is where power_supply_changed_work() could race with another
+> power_supply_changed(). By the time you hit the check for !psy->changed,
+> another work may have been already queued. Calling pm_relax() without this
+> check could defer that work until next resume.
+
+Hmm.. Correct here as well.
+
+Thanks for your explanation.
