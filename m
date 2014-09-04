@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021AbaIDPTN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:19:13 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47987 "EHLO mail.kernel.org"
+	id S1753369AbaIDPVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:21:37 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:52888 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803AbaIDPTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:19:12 -0400
-Date: Thu, 4 Sep 2014 12:19:02 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
-Message-ID: <20140904151902.GE2997@kernel.org>
-References: <1409781604-16778-1-git-send-email-acme@kernel.org>
- <1409781604-16778-5-git-send-email-acme@kernel.org>
- <54085BC8.40403@intel.com>
+	id S1750953AbaIDPVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 11:21:35 -0400
+Message-ID: <5408837B.6040008@osg.samsung.com>
+Date: Thu, 04 Sep 2014 09:21:31 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54085BC8.40403@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Pranith Kumar <bobby.prani@gmail.com>
+CC: David Herrmann <dh.herrmann@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "open list:KERNEL SELFTEST F..." <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] selftests/memfd: fix mfd_fail_open() to pass in buf to
+ printf
+References: <1409843242-6596-1-git-send-email-shuahkh@osg.samsung.com> <CAJhHMCCuyC3HUfUktTpkQcxnqJDpA2O0Gqc8wZMq0TwB5PeY6w@mail.gmail.com>
+In-Reply-To: <CAJhHMCCuyC3HUfUktTpkQcxnqJDpA2O0Gqc8wZMq0TwB5PeY6w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 04, 2014 at 03:32:08PM +0300, Adrian Hunter escreveu:
-> On 09/04/2014 12:59 AM, Arnaldo Carvalho de Melo wrote:
-> > So that we don't continue polling on vanished file descriptors, i.e.
-> > file descriptors for events monitoring threads that exited.
-
-> > I.e. the following 'perf record' command now exits as expected, instead
-> > of staying in an eternal loop:
-
-> >   $ sleep 5s &
-> >   $ perf record -p `pidof sleep`
-
-> > Reported-by: Jiri Olsa <jolsa@redhat.com>
-<SNIP>
-> > +++ b/tools/perf/builtin-record.c
-> > @@ -467,6 +467,9 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
-> >  			if (err > 0 || (err < 0 && errno == EINTR))
-> >  				err = 0;
-> >  			waking++;
-> > +			if (perf_evlist__filter_pollfd(rec->evlist, POLLERR | POLLHUP) == 0)
+On 09/04/2014 09:16 AM, Pranith Kumar wrote:
+> On Thu, Sep 4, 2014 at 11:07 AM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+>> mfd_fail_open() doesn't pass in the buffer to printf resulting
+>> in the following warning:
+>>
+>> memfd_test.c: In function ‘mfd_fail_open’:
+>> memfd_test.c:208:3: warning: format ‘%s’ expects a matching ‘char *’ argument [-Wformat=]
+>>    printf("open(%s) didn't fail as expected\n");
+>>    ^
+>>
+>> This change fixes the problem.
+>>
+>> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 > 
-> If the poll fds only include the ones mmapped, then mightn't it filter out
-> ones still in use? e.g. what if you record two processes and one exits?
+> Hi Shuah,
+> 
+> I already sent in a patch to fix this:
+> 
+> https://lkml.org/lkml/2014/8/31/85
+> 
+> Can you please pick that up?
 
-Humm, without looking at the code, we would be needlessly looking at the
-mmaps for the threads that exited.
+Hi Pranith,
 
-I.e. we need to associate at the fdarray level the mmaps for the
-descriptors, so that we can, at fdarray__filter() time, munmap the
-POLLHUPed descriptors, right?
+Great. Could you please resend it to me cc'ing linux-api as well.
 
-I'll take a look at the code to see what is needed.
+thanks,
+-- Shuah
 
-But then this makes the patch set good for a class of problems while
-maintaining existing behaviour for the case you outlined, i.e. this is a
-partial fix and should go now, with further patches on top of it?
 
-- Arnaldo
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
