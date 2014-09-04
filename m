@@ -1,200 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786AbaIDH5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:57:45 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:63849 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177AbaIDH5n convert rfc822-to-8bit (ORCPT
+	id S932276AbaIDIFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 04:05:40 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:37548 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755833AbaIDIFd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:57:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409814488.5546.63.camel@x220>
-References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
-	<1409814488.5546.63.camel@x220>
-Date: Thu, 4 Sep 2014 09:57:42 +0200
-Message-ID: <CAH6sp9PSAM+gd-7xmQYrFBVg6_-ovmx5PD7mef75BE8CfJVR4g@mail.gmail.com>
-Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
-From: Frans Klaver <fransklaver@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Darren Hart <dvhart@infradead.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Sep 2014 04:05:33 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <20140903193058.2bc891a7.akpm@linux-foundation.org>
+Date: Thu, 4 Sep 2014 09:05:23 +0100
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, david@fromorbit.com,
+        xuejiufei@huawei.com, ming.lei@canonical.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
+Message-Id: <540555BE-7985-4468-BC03-45CDA7E2EB83@cam.ac.uk>
+References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com> <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org> <5407C989.50605@oracle.com> <20140903193058.2bc891a7.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 9:08 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Thu, 2014-09-04 at 00:53 +0200, Frans Klaver wrote:
->> In store_sys_acpi, if count equals zero, or parse_arg()s sscanf call
->> fails, 'value' remains possibly uninitialized. In that case 'value'
->> shouldn't be used to produce the store_sys_acpi()s return value.
->>
->> Only test the return value of set_acpi() if we can actually call it.
->> Return rv otherwise.
->>
->> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
->> ---
->>  drivers/platform/x86/eeepc-laptop.c | 8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
->> index bd533c2..41f12ba 100644
->> --- a/drivers/platform/x86/eeepc-laptop.c
->> +++ b/drivers/platform/x86/eeepc-laptop.c
->> @@ -279,10 +279,10 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
->>       int rv, value;
->>
->>       rv = parse_arg(buf, count, &value);
->> -     if (rv > 0)
->> -             value = set_acpi(eeepc, cm, value);
->> -     if (value < 0)
->> -             return -EIO;
->> +     if (rv > 0) {
->> +             if (set_acpi(eeepc, cm, value) < 0)
->> +                     return -EIO;
->> +     }
->>       return rv;
->>  }
->>
->
-> The warning that this code (currently) generated triggered me to submit
-> https://lkml.org/lkml/2014/7/1/150 , which uses a different approach to
-> get rid of it. I received no reactions so far. Here's that patch again:
->
-> ------------>8------------
-> From: Paul Bolle <pebolle@tiscali.nl>
-> Subject: [PATCH] eeepc-laptop: simplify parse_arg()
->
-> parse_arg() has three possible return values:
->     -EINVAL if sscanf(), in short, fails;
->     zero if "count" is zero; and
->     "count" in all other cases
->
-> But "count" will never be zero. See, parse_arg() is called by the
-> various store functions. And the callchain of these functions starts
-> with sysfs_kf_write(). And that function checks for a zero "count". So
-> we can stop checking for a zero "count", drop the "count" argument
-> entirely, and transform parse_arg() into a function that returns zero on
-> success or a negative error. That, in turn, allows to make those store
-> functions just return "count" on success. The net effect is that the
-> code becomes a bit easier to understand.
->
-> A nice side effect is that this GCC warning is silenced too:
->     drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
->     drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->       int rv, value;
->
-> Which is, of course, the reason to have a look at parse_arg().
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On 4 Sep 2014, at 03:30, Andrew Morton <akpm@linux-foundation.org> wrote:
+> __GFP_FS and __GFP_IO are (or were) for communicating to vmscan: don't
+> enter the fs for writepage, don't write back swapcache.
+> 
+> I guess those concepts have grown over time without a ton of thought
+> going into it.  Yes, I suppose that if a filesystem's writepage is
+> called (for example) it expects that it will be able to perform
+> writeback and it won't check (or even be passed) the __GFP_IO setting.
+> 
+> So I guess we could say that !__GFP_FS && GFP_IO is not implemented and
+> shouldn't occur.
+> 
+> That being said, it still seems quite bad to disable VFS cache
+> shrinking for PF_MEMALLOC_NOIO allocation attempts.
 
-Curious. I hadn't found this one when searching for earlier patches.
+I think what it really boils down to is that file systems cannot allow recursion into _that_ file system so if VFS/VM shrinking could skip over all inodes/dentries/pages that are associated with the superblock of the volume for which the allocation is being done then that would be just fine.
 
-Thanks,
-Frans
+An alternative would be that the file systems would need to be passed in a flag that will tell them that it is not safe to take locks and then file systems that need to take a lock could return with -EDEADLOCK and the VM can then skip over those entries and reclaim others.  Though I think it would be more efficient for the VFS/VM to simply not call into the file system that is doing the allocation as above...
 
+Best regards,
 
-> ---
->  drivers/platform/x86/eeepc-laptop.c | 34 +++++++++++++++++-----------------
->  1 file changed, 17 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index bd533c22be57..78515b850165 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -263,13 +263,11 @@ static int acpi_setter_handle(struct eeepc_laptop *eeepc, int cm,
->  /*
->   * Sys helpers
->   */
-> -static int parse_arg(const char *buf, unsigned long count, int *val)
-> +static int parse_arg(const char *buf, int *val)
->  {
-> -       if (!count)
-> -               return 0;
->         if (sscanf(buf, "%i", val) != 1)
->                 return -EINVAL;
-> -       return count;
-> +       return 0;
->  }
->
->  static ssize_t store_sys_acpi(struct device *dev, int cm,
-> @@ -278,12 +276,13 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
->         struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
->         int rv, value;
->
-> -       rv = parse_arg(buf, count, &value);
-> -       if (rv > 0)
-> -               value = set_acpi(eeepc, cm, value);
-> +       rv = parse_arg(buf, &value);
-> +       if (rv < 0)
-> +               return rv;
-> +       value = set_acpi(eeepc, cm, value);
->         if (value < 0)
->                 return -EIO;
-> -       return rv;
-> +       return count;
->  }
->
->  static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
-> @@ -377,13 +376,13 @@ static ssize_t store_cpufv(struct device *dev,
->                 return -EPERM;
->         if (get_cpufv(eeepc, &c))
->                 return -ENODEV;
-> -       rv = parse_arg(buf, count, &value);
-> +       rv = parse_arg(buf, &value);
->         if (rv < 0)
->                 return rv;
-> -       if (!rv || value < 0 || value >= c.num)
-> +       if (value < 0 || value >= c.num)
->                 return -EINVAL;
->         set_acpi(eeepc, CM_ASL_CPUFV, value);
-> -       return rv;
-> +       return count;
->  }
->
->  static ssize_t show_cpufv_disabled(struct device *dev,
-> @@ -402,7 +401,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
->         struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
->         int rv, value;
->
-> -       rv = parse_arg(buf, count, &value);
-> +       rv = parse_arg(buf, &value);
->         if (rv < 0)
->                 return rv;
->
-> @@ -412,7 +411,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
->                         pr_warn("cpufv enabled (not officially supported "
->                                 "on this model)\n");
->                 eeepc->cpufv_disabled = false;
-> -               return rv;
-> +               return count;
->         case 1:
->                 return -EPERM;
->         default:
-> @@ -1042,10 +1041,11 @@ static ssize_t store_sys_hwmon(void (*set)(int), const char *buf, size_t count)
->  {
->         int rv, value;
->
-> -       rv = parse_arg(buf, count, &value);
-> -       if (rv > 0)
-> -               set(value);
-> -       return rv;
-> +       rv = parse_arg(buf, &value);
-> +       if (rv < 0)
-> +               return rv;
-> +       set(value);
-> +       return count;
->  }
->
->  static ssize_t show_sys_hwmon(int (*get)(void), char *buf)
-> --
->
->
-> Paul Bolle
->
+	Anton
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+
