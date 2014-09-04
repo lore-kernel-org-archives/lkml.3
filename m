@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaIDJhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:37:20 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:53689 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329AbaIDJhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:37:16 -0400
+	id S1752689AbaIDJiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:38:05 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:7514
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750902AbaIDJiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 05:38:02 -0400
+From: Fancy Fang <chen.fang@freescale.com>
+To: <m.chehab@samsung.com>, <hverkuil@xs4all.nl>, <viro@ZenIV.linux.org.uk>
+CC: <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Fancy Fang <chen.fang@freescale.com>
+Subject: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory() with remap_pfn_range().
+Date: Thu, 4 Sep 2014 16:34:39 +0800
+Message-ID: <1409819679-31497-1-git-send-email-chen.fang@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(106466001)(4396001)(50226001)(575784001)(74662001)(79102001)(87286001)(105606002)(74502001)(46102001)(86362001)(95666004)(84676001)(62966002)(87936001)(93916002)(107046002)(77982001)(92726001)(47776003)(104166001)(102836001)(50466002)(230783001)(50986999)(85306004)(76482001)(21056001)(48376002)(88136002)(6806004)(229853001)(83322001)(81542001)(2201001)(68736004)(104016003)(85852003)(19580405001)(20776003)(33646002)(64706001)(31966008)(36756003)(26826002)(90102001)(97736001)(89996001)(80022001)(44976005)(92566001)(83072002)(99396002)(81342001)(77156001)(19580395003);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB547;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFoe6Zkr+QLZRc3azn8JvpsQXdSNLHTLmy5O-nnbVy9C1A@mail.gmail.com>
-References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
- <CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
- <5406D942.4080405@intel.com> <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
- <CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com> <CAPDyKFoe6Zkr+QLZRc3azn8JvpsQXdSNLHTLmy5O-nnbVy9C1A@mail.gmail.com>
-From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Date: Thu, 4 Sep 2014 11:37:00 +0200
-X-Google-Sender-Auth: 3lgzWjDz_znKocqilJZL_c8_Cuk
-Message-ID: <CAL8zT=i-T9DHd1F5=YpovM9i0LwpUswm6am1Qyf6kG_g3Xj2Qg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>, h80.chung@samsung.com,
-        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0324C2C0E2
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=chen.fang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core
+will assign the corresponding offset to the 'boff' field of the
+videobuf_buffer for each requested buffer sequentially. Later, user
+may call mmap() to map one or all of the buffers with the 'offset'
+parameter which is equal to its 'boff' value. Obviously, the 'offset'
+value is only used to find the matched buffer instead of to be the
+real offset from the buffer's physical start address as used by
+vm_iomap_memory(). So, in some case that if the offset is not zero,
+vm_iomap_memory() will fail.
 
-> I am not sure adding a DT binding for non access to rpmb would be
-> needed. At least until we heard of a similar case as Adrian describes
-> but for rpmb.
->
-> BTW, I just posted a patch which disabled partition scan of the boot
-> area, what to you think about that?
-> http://marc.info/?l=linux-mmc&m=140973496402028&w=2
->
-> Finally I am also wondering whether we could and thus should, handle
-> these situations entirely without using a host cap. In principle what
-> we need is a more sophisticated error handling when the switch errors
-> occurs, while trying to switch to the boot area/rpmb partitions. Could
-> you maybe investigate that option, before we decide to add a new DT
-> binding?
+Signed-off-by: Fancy Fang <chen.fang@freescale.com>
+---
+ drivers/media/v4l2-core/videobuf-dma-contig.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-According to me and what Hsin-Hsiang Tseng wrote, it seems that we
-should be able to have access to boot partitions if we want to give a
-possibility of writing u-boot in one (or both) of them. This is the
-way the i.MX6 will boot on a eMMC if I read the reference manual
-correctly, but I didn't tested it yet.
-But there is no need to scan those partitions at boot, as there will
-probably never be a partition table inside, as you said.
-All we need is providing access to mmc[n]blkpboot0 and mmc[n]blkpboot1
-and a way to tell which one is used as default boot partition.
+diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
+index bf80f0f..8bd9889 100644
+--- a/drivers/media/v4l2-core/videobuf-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
+@@ -305,7 +305,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 	/* Try to remap memory */
+ 	size = vma->vm_end - vma->vm_start;
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-	retval = vm_iomap_memory(vma, mem->dma_handle, size);
++	retval = remap_pfn_range(vma, vma->vm_start,
++				 mem->dma_handle >> PAGE_SHIFT,
++				 size, vma->vm_page_prot);
+ 	if (retval) {
+ 		dev_err(q->dev, "mmap: remap failed with error %d. ",
+ 			retval);
+-- 
+1.9.1
 
-This is my point of view, but I didn't read JESD84-A441 so I don't
-know if this is the good way.
-
-Regards,
-JM
