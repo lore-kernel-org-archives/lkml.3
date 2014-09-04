@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbaIDO3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:29:39 -0400
-Received: from mga14.intel.com ([192.55.52.115]:32828 "EHLO mga14.intel.com"
+	id S1754334AbaIDOaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:30:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22599 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754084AbaIDO3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:29:15 -0400
+	id S1753267AbaIDO1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:27:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,466,1406617200"; 
-   d="scan'208";a="586258467"
+   d="scan'208";a="597927972"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
@@ -23,234 +23,68 @@ To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Randy Dunlap <rdunlap@infradead.org>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v4 04/12] hexdump: makes it return amount of bytes placed in buffer
-Date: Thu,  4 Sep 2014 17:26:51 +0300
-Message-Id: <1409840819-18976-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v4 00/12] fs/seq_file: introduce seq_hex_dump() helper
+Date: Thu,  4 Sep 2014 17:26:47 +0300
+Message-Id: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes hexdump to return amount of bytes placed in the buffer
-excluding trailing NUL. In case of overflow it returns desired amount of bytes
-to place entire dump. Thus, it mimics snprintf().
+This introduces a new helper and switches current users to use it. All are
+compiled tested, hexdump and kmemleak are tested by their test suits.
 
-This will be useful for users that would like to repeat with bigger buffer.
+Changelog v4:
+- hexdump is amended to return value from which we can check an overflow
+ (patches 1/12 - 4/12)
+- seq_hex_dump pushes bytes directly to buffer and returns an error in case of
+  overflow (addresses Al Viro's comment)
+- append Acked-by for patches 8/12 and 9/12
+- convert more users (patches 10/12 - 12/12)
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- include/linux/printk.h |  6 ++---
- lib/hexdump.c          | 73 +++++++++++++++++++++++++++++++++++++-------------
- lib/test-hexdump.c     | 45 +++++++++++++++++++++++++++++++
- 3 files changed, 103 insertions(+), 21 deletions(-)
+Changelog v3:
+- append Mauro's Ack
+- rebase on top of recent linux-next
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index d78125f..a6c2771 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -407,9 +407,9 @@ enum {
- 	DUMP_PREFIX_ADDRESS,
- 	DUMP_PREFIX_OFFSET
- };
--extern void hex_dump_to_buffer(const void *buf, size_t len,
--			       int rowsize, int groupsize,
--			       char *linebuf, size_t linebuflen, bool ascii);
-+extern int hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
-+			      int groupsize, char *linebuf, size_t linebuflen,
-+			      bool ascii);
- #ifdef CONFIG_PRINTK
- extern void print_hex_dump(const char *level, const char *prefix_str,
- 			   int prefix_type, int rowsize, int groupsize,
-diff --git a/lib/hexdump.c b/lib/hexdump.c
-index b82418f..45eba39 100644
---- a/lib/hexdump.c
-+++ b/lib/hexdump.c
-@@ -81,22 +81,26 @@ EXPORT_SYMBOL(hex2bin);
-  *
-  * example output buffer:
-  * 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f  @ABCDEFGHIJKLMNO
-+ *
-+ * Return:
-+ * The amount of bytes placed in the buffer without terminating NUL. If the
-+ * output was truncated, then the return value is the number of bytes
-+ * (excluding the terminating NUL) which would have been written to the final
-+ * string if enough space had been available.
-  */
--void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
--			int groupsize, char *linebuf, size_t linebuflen,
--			bool ascii)
-+int hex_dump_to_buffer(const void *buf, size_t len, int rowsize, int groupsize,
-+		       char *linebuf, size_t linebuflen, bool ascii)
- {
- 	const u8 *ptr = buf;
- 	int ngroups;
- 	u8 ch;
- 	int j, lx = 0;
- 	int ascii_column;
-+	int ret;
- 
- 	if (rowsize != 16 && rowsize != 32)
- 		rowsize = 16;
- 
--	if (!len)
--		goto nil;
- 	if (len > rowsize)		/* limit to one line at a time */
- 		len = rowsize;
- 	if (!is_power_of_2(groupsize) || groupsize > 8)
-@@ -106,27 +110,50 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
- 
- 	ngroups = len / groupsize;
- 	ascii_column = rowsize * 2 + rowsize / groupsize + 1;
-+
-+	if (!linebuflen)
-+		goto overflow1;
-+
-+	if (!len)
-+		goto nil;
-+
- 	if (groupsize == 8) {
- 		const u64 *ptr8 = buf;
- 
--		for (j = 0; j < ngroups; j++)
--			lx += scnprintf(linebuf + lx, linebuflen - lx,
--					"%s%16.16llx", j ? " " : "",
--					(unsigned long long)*(ptr8 + j));
-+		for (j = 0; j < ngroups; j++) {
-+			ret = snprintf(linebuf + lx, linebuflen - lx,
-+				       "%s%16.16llx", j ? " " : "",
-+				       (unsigned long long)*(ptr8 + j));
-+			if (ret >= linebuflen - lx)
-+				goto overflow1;
-+			lx += ret;
-+		}
- 	} else if (groupsize == 4) {
- 		const u32 *ptr4 = buf;
- 
--		for (j = 0; j < ngroups; j++)
--			lx += scnprintf(linebuf + lx, linebuflen - lx,
--					"%s%8.8x", j ? " " : "", *(ptr4 + j));
-+		for (j = 0; j < ngroups; j++) {
-+			ret = snprintf(linebuf + lx, linebuflen - lx,
-+				       "%s%8.8x", j ? " " : "",
-+				       *(ptr4 + j));
-+			if (ret >= linebuflen - lx)
-+				goto overflow1;
-+			lx += ret;
-+		}
- 	} else if (groupsize == 2) {
- 		const u16 *ptr2 = buf;
- 
--		for (j = 0; j < ngroups; j++)
--			lx += scnprintf(linebuf + lx, linebuflen - lx,
--					"%s%4.4x", j ? " " : "", *(ptr2 + j));
-+		for (j = 0; j < ngroups; j++) {
-+			ret = snprintf(linebuf + lx, linebuflen - lx,
-+				       "%s%4.4x", j ? " " : "",
-+				       *(ptr2 + j));
-+			if (ret >= linebuflen - lx)
-+				goto overflow1;
-+			lx += ret;
-+		}
- 	} else {
--		for (j = 0; (j < len) && (lx + 3) <= linebuflen; j++) {
-+		for (j = 0; j < len; j++) {
-+			if (linebuflen < lx + 3)
-+				goto overflow2;
- 			ch = ptr[j];
- 			linebuf[lx++] = hex_asc_hi(ch);
- 			linebuf[lx++] = hex_asc_lo(ch);
-@@ -138,14 +165,24 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
- 	if (!ascii)
- 		goto nil;
- 
--	while (lx < (linebuflen - 1) && lx < ascii_column)
-+	while (lx < ascii_column) {
-+		if (linebuflen < lx + 2)
-+			goto overflow2;
- 		linebuf[lx++] = ' ';
--	for (j = 0; (j < len) && (lx + 2) < linebuflen; j++) {
-+	}
-+	for (j = 0; j < len; j++) {
-+		if (linebuflen < lx + 2)
-+			goto overflow2;
- 		ch = ptr[j];
- 		linebuf[lx++] = (isascii(ch) && isprint(ch)) ? ch : '.';
- 	}
- nil:
-+	linebuf[lx] = '\0';
-+	return lx;
-+overflow2:
- 	linebuf[lx++] = '\0';
-+overflow1:
-+	return ascii ? ascii_column + len : (groupsize * 2 + 1) * ngroups - 1;
- }
- EXPORT_SYMBOL(hex_dump_to_buffer);
- 
-diff --git a/lib/test-hexdump.c b/lib/test-hexdump.c
-index 9d3bd1e..d10f90b 100644
---- a/lib/test-hexdump.c
-+++ b/lib/test-hexdump.c
-@@ -114,6 +114,45 @@ static void __init test_hexdump_set(int rowsize, bool ascii)
- 	test_hexdump(len, rowsize, 1, ascii);
- }
- 
-+static void __init test_hexdump_overflow(bool ascii)
-+{
-+	char buf[56];
-+	const char *t = test_data_1_le[0];
-+	size_t l = get_random_int() % sizeof(buf);
-+	bool a;
-+	int e, r;
-+
-+	memset(buf, ' ', sizeof(buf));
-+
-+	r = hex_dump_to_buffer(data_b, 1, 16, 1, buf, l, ascii);
-+
-+	if (ascii)
-+		e = 50;
-+	else
-+		e = 2;
-+	buf[e + 2] = '\0';
-+
-+	if (!l) {
-+		a = r == e && buf[0] == ' ';
-+	} else if (l < 3) {
-+		a = r == e && buf[0] == '\0';
-+	} else if (l < 4) {
-+		a = r == e && !strcmp(buf, t);
-+	} else if (ascii) {
-+		if (l < 51)
-+			a = r == e && buf[l - 1] == '\0' && buf[l - 2] == ' ';
-+		else
-+			a = r == e && buf[50] == '\0' && buf[49] == '.';
-+	} else {
-+		a = r == e && buf[e] == '\0';
-+	}
-+
-+	if (!a) {
-+		pr_err("Len: %zu rc: %zu strlen: %zu\n", l, r, strlen(buf));
-+		pr_err("Result: '%s'\n", buf);
-+	}
-+}
-+
- static int __init test_hexdump_init(void)
- {
- 	unsigned int i;
-@@ -129,6 +168,12 @@ static int __init test_hexdump_init(void)
- 	for (i = 0; i < 16; i++)
- 		test_hexdump_set(rowsize, true);
- 
-+	for (i = 0; i < 16; i++)
-+		test_hexdump_overflow(false);
-+
-+	for (i = 0; i < 16; i++)
-+		test_hexdump_overflow(true);
-+
- 	return -EINVAL;
- }
- module_init(test_hexdump_init);
+Changelog v2:
+- append Acked-by and Reviewed-by tags
+- update commit messages in patches 3/5. and 5/5
+- update line size to be 32 bytes instead of 16 in patch 3/5
+- Joe found that output is changed in patch 4/5, thus I update commit message
+  there
+
+Andy Shevchenko (12):
+  hexdump: introduce test suite
+  hexdump: fix ascii column for the tail of a dump
+  hexdump: do few calculations ahead
+  hexdump: makes it return amount of bytes placed in buffer
+  seq_file: provide an analogue of print_hex_dump()
+  saa7164: convert to seq_hex_dump()
+  crypto: qat - use seq_hex_dump() to dump buffers
+  parisc: use seq_hex_dump() to dump buffers
+  [S390] zcrypt: use seq_hex_dump() to dump buffers
+  staging: unisys: use seq_hex_dump() to dump buffers
+  kmemleak: use seq_hex_dump() to dump buffers
+  wil6210: use seq_hex_dump() to dump buffers
+
+ .../crypto/qat/qat_common/adf_transport_debug.c    |  16 +-
+ drivers/media/pci/saa7164/saa7164-core.c           |  31 +---
+ drivers/net/wireless/ath/wil6210/debugfs.c         |  32 +---
+ drivers/parisc/ccio-dma.c                          |  14 +-
+ drivers/parisc/sba_iommu.c                         |  11 +-
+ drivers/s390/crypto/zcrypt_api.c                   |  10 +-
+ .../unisys/visorchannel/visorchannel_funcs.c       |  26 +--
+ fs/seq_file.c                                      |  50 ++++++
+ include/linux/printk.h                             |   6 +-
+ include/linux/seq_file.h                           |   4 +
+ lib/Kconfig.debug                                  |   3 +
+ lib/Makefile                                       |   4 +-
+ lib/hexdump.c                                      | 105 +++++++-----
+ lib/test-hexdump.c                                 | 180 +++++++++++++++++++++
+ mm/kmemleak.c                                      |  21 +--
+ 15 files changed, 337 insertions(+), 176 deletions(-)
+ create mode 100644 lib/test-hexdump.c
+
 -- 
 2.1.0
 
