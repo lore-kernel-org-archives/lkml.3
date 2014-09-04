@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaIDIP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 04:15:56 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:36987 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaIDIPv (ORCPT
+	id S1755884AbaIDIQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 04:16:48 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:45092 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300AbaIDIQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 04:15:51 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s848Fm9e014664, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH net-next v3 1/2] r8152: change the location of rtl8152_set_mac_address
-Date: Thu, 4 Sep 2014 16:15:41 +0800
-Message-ID: <1394712342-15778-33-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-32-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-26-Taiwan-albertk@realtek.com>
- <1394712342-15778-32-Taiwan-albertk@realtek.com>
+	Thu, 4 Sep 2014 04:16:45 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 4 Sep 2014 10:15:22 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 2/2] usb: serial: xsens_mt: always bind to
+ interface number 1
+Message-ID: <20140904081522.GD4894@localhost>
+References: <1409564362-27571-1-git-send-email-frans.klaver@xsens.com>
+ <1409564362-27571-2-git-send-email-frans.klaver@xsens.com>
+ <CAH6sp9Me6wVTnNGn9Z4pLDsFyTz27EgcEvedF8PrcH-fw+awBQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH6sp9Me6wVTnNGn9Z4pLDsFyTz27EgcEvedF8PrcH-fw+awBQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exchange the location of rtl8152_set_mac_address() and
-set_ethernet_addr(). Then, the set_ethernet_addr() could
-set the MAC address by calling rtl8152_set_mac_address()
-later.
+On Thu, Sep 04, 2014 at 09:12:05AM +0200, Frans Klaver wrote:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+> >  static int xsens_mt_probe(struct usb_serial *serial,
+> >                                         const struct usb_device_id *id)
+> >  {
+> > -       if (!has_required_endpoints(serial->interface->cur_altsetting))
+> > -               return -ENODEV;
+> > -       return 0;
+> > +       if (serial->interface->cur_altsetting.desc.bInterfaceNumber == 1)
+> 
+> This should be
+> 
+> if (serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 80b0179..b5ff933 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -975,6 +975,23 @@ void write_mii_word(struct net_device *netdev, int phy_id, int reg, int val)
- static int
- r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags);
- 
-+static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
-+{
-+	struct r8152 *tp = netdev_priv(netdev);
-+	struct sockaddr *addr = p;
-+
-+	if (!is_valid_ether_addr(addr->sa_data))
-+		return -EADDRNOTAVAIL;
-+
-+	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
-+
-+	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_CONFIG);
-+	pla_ocp_write(tp, PLA_IDR, BYTE_EN_SIX_BYTES, 8, addr->sa_data);
-+	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_NORAML);
-+
-+	return 0;
-+}
-+
- static inline void set_ethernet_addr(struct r8152 *tp)
- {
- 	struct net_device *dev = tp->netdev;
-@@ -1003,23 +1020,6 @@ static inline void set_ethernet_addr(struct r8152 *tp)
- 	}
- }
- 
--static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
--{
--	struct r8152 *tp = netdev_priv(netdev);
--	struct sockaddr *addr = p;
--
--	if (!is_valid_ether_addr(addr->sa_data))
--		return -EADDRNOTAVAIL;
--
--	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
--
--	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_CONFIG);
--	pla_ocp_write(tp, PLA_IDR, BYTE_EN_SIX_BYTES, 8, addr->sa_data);
--	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_NORAML);
--
--	return 0;
--}
--
- static void read_bulk_callback(struct urb *urb)
- {
- 	struct net_device *netdev;
--- 
-1.9.3
+So this wasn't even compile tested. Always test your patches before
+submission, including trivial ones.
 
+Is the new version tested on actual hardware?
+
+Johan
