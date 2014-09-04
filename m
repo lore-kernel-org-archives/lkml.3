@@ -1,259 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157AbaIDMl3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:41:29 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:65454 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844AbaIDMjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 08:39:14 -0400
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 11/17] locks: move freeing of leases outside of i_lock
-Date: Thu,  4 Sep 2014 08:38:37 -0400
-Message-Id: <1409834323-7171-12-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+	id S1754235AbaIDMlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:41:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56764 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752242AbaIDMjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 08:39:11 -0400
+From: Juergen Gross <jgross@suse.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, jbeulich@suse.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH 3/3] xen: eliminate scalability issues from initial mapping setup
+Date: Thu,  4 Sep 2014 14:38:46 +0200
+Message-Id: <1409834326-29287-4-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1409834326-29287-1-git-send-email-jgross@suse.com>
+References: <1409834326-29287-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was only one place where we still could free a file_lock while
-holding the i_lock -- lease_modify. Add a new list_head argument to the
-lm_change operation, pass in a private list when calling it, and fix
-those callers to dispose of the list once the lock has been dropped.
+Direct Xen to place the initial P->M table outside of the initial
+mapping, as otherwise the 1G (implementation) / 2G (theoretical)
+restriction on the size of the initial mapping limits the amount
+of memory a domain can be handed initially.
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+As the initial P->M table is copied rather early during boot to
+domain private memory and it's initial virtual mapping is dropped,
+the easiest way to avoid virtual address conflicts with other
+addresses in the kernel is to use a user address area for the
+virtual address of the initial P->M table. This allows us to just
+throw away the page tables of the initial mapping after the copy
+without having to care about address invalidation.
+
+Signed-off-by: Juergen Gross <jgross@suse.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 ---
- fs/locks.c          | 34 ++++++++++++++++++++++------------
- fs/nfsd/nfs4state.c |  6 +++---
- include/linux/fs.h  |  7 ++++---
- 3 files changed, 29 insertions(+), 18 deletions(-)
+ arch/x86/xen/mmu.c      | 116 +++++++++++++++++++++++++++++++++++++++++++++---
+ arch/x86/xen/setup.c    |  65 +++++++++++++++------------
+ arch/x86/xen/xen-head.S |   2 +
+ 3 files changed, 148 insertions(+), 35 deletions(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 5bc61091263f..dc2e9e18f32d 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1292,7 +1292,7 @@ static void lease_clear_pending(struct file_lock *fl, int arg)
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index e8a1201..555d01f 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1198,6 +1198,76 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
+ 	 * instead of somewhere later and be confusing. */
+ 	xen_mc_flush();
  }
- 
- /* We already had a lease on this file; just change its type */
--int lease_modify(struct file_lock **before, int arg)
-+int lease_modify(struct file_lock **before, int arg, struct list_head *dispose)
++
++/*
++ * Make a page range writeable and free it.
++ */
++static void __init xen_free_ro_pages(unsigned long paddr, unsigned long size)
++{
++	void *vaddr = __va(paddr);
++	void *vaddr_end = vaddr + size;
++
++	for (; vaddr < vaddr_end; vaddr += PAGE_SIZE)
++		make_lowmem_page_readwrite(vaddr);
++
++	memblock_free(paddr, size);
++}
++
++/*
++ * Since it is well isolated we can (and since it is perhaps large we should)
++ * also free the page tables mapping the initial P->M table.
++ */
++static void __init xen_cleanmfnmap(unsigned long vaddr)
++{
++	unsigned long va = vaddr & PMD_MASK;
++	unsigned long pa;
++	pgd_t *pgd = pgd_offset_k(va);
++	pud_t *pud_page = pud_offset(pgd, 0);
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *pte;
++	unsigned int i;
++
++	set_pgd(pgd, __pgd(0));
++	do {
++		pud = pud_page + pud_index(va);
++		if (pud_none(*pud)) {
++			va += PUD_SIZE;
++		} else if (pud_large(*pud)) {
++			pa = pud_val(*pud) & PHYSICAL_PAGE_MASK;
++			xen_free_ro_pages(pa, PUD_SIZE);
++			va += PUD_SIZE;
++		} else {
++			pmd = pmd_offset(pud, va);
++			if (pmd_large(*pmd)) {
++				pa = pmd_val(*pmd) & PHYSICAL_PAGE_MASK;
++				xen_free_ro_pages(pa, PMD_SIZE);
++			} else if (!pmd_none(*pmd)) {
++				pte = pte_offset_kernel(pmd, va);
++				for (i = 0; i < PTRS_PER_PTE; ++i) {
++					if (pte_none(pte[i]))
++						break;
++					pa = pte_pfn(pte[i]) << PAGE_SHIFT;
++					xen_free_ro_pages(pa, PAGE_SIZE);
++				}
++				pa = __pa(pte) & PHYSICAL_PAGE_MASK;
++				ClearPagePinned(virt_to_page(__va(pa)));
++				xen_free_ro_pages(pa, PAGE_SIZE);
++			}
++			va += PMD_SIZE;
++			if (pmd_index(va))
++				continue;
++			pa = __pa(pmd) & PHYSICAL_PAGE_MASK;
++			ClearPagePinned(virt_to_page(__va(pa)));
++			xen_free_ro_pages(pa, PAGE_SIZE);
++		}
++
++	} while (pud_index(va) || pmd_index(va));
++	pa = __pa(pud_page) & PHYSICAL_PAGE_MASK;
++	ClearPagePinned(virt_to_page(__va(pa)));
++	xen_free_ro_pages(pa, PAGE_SIZE);
++}
++
+ static void __init xen_pagetable_p2m_copy(void)
  {
- 	struct file_lock *fl = *before;
- 	int error = assign_type(fl, arg);
-@@ -1311,7 +1311,7 @@ int lease_modify(struct file_lock **before, int arg)
- 			printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
- 			fl->fl_fasync = NULL;
- 		}
--		locks_delete_lock(before, NULL);
-+		locks_delete_lock(before, dispose);
- 	}
- 	return 0;
- }
-@@ -1325,7 +1325,7 @@ static bool past_time(unsigned long then)
- 	return time_after(jiffies, then);
- }
+ 	unsigned long size;
+@@ -1217,18 +1287,23 @@ static void __init xen_pagetable_p2m_copy(void)
+ 	/* using __ka address and sticking INVALID_P2M_ENTRY! */
+ 	memset((void *)xen_start_info->mfn_list, 0xff, size);
  
--static void time_out_leases(struct inode *inode)
-+static void time_out_leases(struct inode *inode, struct list_head *dispose)
+-	/* We should be in __ka space. */
+-	BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
+ 	addr = xen_start_info->mfn_list;
+-	/* We roundup to the PMD, which means that if anybody at this stage is
++	/* We could be in __ka space.
++	 * We roundup to the PMD, which means that if anybody at this stage is
+ 	 * using the __ka address of xen_start_info or xen_start_info->shared_info
+ 	 * they are in going to crash. Fortunatly we have already revectored
+ 	 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
+ 	size = roundup(size, PMD_SIZE);
+-	xen_cleanhighmap(addr, addr + size);
+ 
+-	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
+-	memblock_free(__pa(xen_start_info->mfn_list), size);
++	if (addr >= __START_KERNEL_map) {
++		xen_cleanhighmap(addr, addr + size);
++		size = PAGE_ALIGN(xen_start_info->nr_pages *
++				  sizeof(unsigned long));
++		memblock_free(__pa(addr), size);
++	} else {
++		xen_cleanmfnmap(addr);
++	}
++
+ 	/* And revector! Bye bye old array */
+ 	xen_start_info->mfn_list = new_mfn_list;
+ 
+@@ -1529,6 +1604,22 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+ #else /* CONFIG_X86_64 */
+ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
  {
- 	struct file_lock **before;
- 	struct file_lock *fl;
-@@ -1336,9 +1336,9 @@ static void time_out_leases(struct inode *inode)
- 	while ((fl = *before) && IS_LEASE(fl) && lease_breaking(fl)) {
- 		trace_time_out_leases(inode, fl);
- 		if (past_time(fl->fl_downgrade_time))
--			lease_modify(before, F_RDLCK);
-+			lease_modify(before, F_RDLCK, dispose);
- 		if (past_time(fl->fl_break_time))
--			lease_modify(before, F_UNLCK);
-+			lease_modify(before, F_UNLCK, dispose);
- 		if (fl == *before)	/* lease_modify may have freed fl */
- 			before = &fl->fl_next;
++	unsigned long pfn;
++
++	if (xen_feature(XENFEAT_writable_page_tables) ||
++	    xen_feature(XENFEAT_auto_translated_physmap) ||
++	    xen_start_info->mfn_list >= __START_KERNEL_map)
++		return pte;
++
++	/*
++	 * Pages belonging to the initial p2m list mapped outside the default
++	 * address range must be mapped read-only.
++	 */
++	pfn = pte_pfn(pte);
++	if (pfn >= xen_start_info->first_p2m_pfn &&
++	    pfn < xen_start_info->first_p2m_pfn + xen_start_info->nr_p2m_frames)
++		pte = __pte_ma(pte_val_ma(pte) & ~_PAGE_RW);
++
+ 	return pte;
+ }
+ #endif /* CONFIG_X86_64 */
+@@ -1885,7 +1976,10 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	 * mappings. Considering that on Xen after the kernel mappings we
+ 	 * have the mappings of some pages that don't exist in pfn space, we
+ 	 * set max_pfn_mapped to the last real pfn mapped. */
+-	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
++	if (xen_start_info->mfn_list < __START_KERNEL_map)
++		max_pfn_mapped = xen_start_info->first_p2m_pfn;
++	else
++		max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
+ 
+ 	pt_base = PFN_DOWN(__pa(xen_start_info->pt_base));
+ 	pt_end = pt_base + xen_start_info->nr_pt_frames;
+@@ -1928,6 +2022,12 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	copy_page(level2_fixmap_pgt, l2);
+ 	/* Note that we don't do anything with level1_fixmap_pgt which
+ 	 * we don't need. */
++
++	/* Copy the initial P->M table mappings if necessary. */
++	i = pgd_index(xen_start_info->mfn_list);
++	if (i && i < pgd_index(__START_KERNEL_map))
++		init_level4_pgt[i] = ((pgd_t *)xen_start_info->pt_base)[i];
++
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+ 		/* Make pagetable pieces RO */
+ 		set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
+@@ -1967,6 +2067,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 
+ 	/* Our (by three pages) smaller Xen pagetable that we are using */
+ 	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
++	/* protect xen_start_info */
++	memblock_reserve(__pa(xen_start_info), PAGE_SIZE);
+ 	/* Revector the xen_start_info */
+ 	xen_start_info = (struct start_info *)__va(__pa(xen_start_info));
+ }
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 2e555163..6412367 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -333,6 +333,41 @@ void xen_ignore_unusable(struct e820entry *list, size_t map_size)
  	}
-@@ -1373,6 +1373,7 @@ int __break_lease(struct inode *inode, unsigned int mode, unsigned int type)
- 	int i_have_this_lease = 0;
- 	bool lease_conflict = false;
- 	int want_write = (mode & O_ACCMODE) != O_RDONLY;
-+	LIST_HEAD(dispose);
- 
- 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
- 	if (IS_ERR(new_fl))
-@@ -1381,7 +1382,7 @@ int __break_lease(struct inode *inode, unsigned int mode, unsigned int type)
- 
- 	spin_lock(&inode->i_lock);
- 
--	time_out_leases(inode);
-+	time_out_leases(inode, &dispose);
- 
- 	flock = inode->i_flock;
- 	if ((flock == NULL) || !IS_LEASE(flock))
-@@ -1436,6 +1437,7 @@ restart:
- 	locks_insert_block(flock, new_fl);
- 	trace_break_lease_block(inode, new_fl);
- 	spin_unlock(&inode->i_lock);
-+	locks_dispose_list(&dispose);
- 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
- 						!new_fl->fl_next, break_time);
- 	spin_lock(&inode->i_lock);
-@@ -1443,7 +1445,7 @@ restart:
- 	locks_delete_block(new_fl);
- 	if (error >= 0) {
- 		if (error == 0)
--			time_out_leases(inode);
-+			time_out_leases(inode, &dispose);
- 		/*
- 		 * Wait for the next conflicting lease that has not been
- 		 * broken yet
-@@ -1458,6 +1460,7 @@ restart:
- 
- out:
- 	spin_unlock(&inode->i_lock);
-+	locks_dispose_list(&dispose);
- 	locks_free_lock(new_fl);
- 	return error;
- }
-@@ -1522,9 +1525,10 @@ int fcntl_getlease(struct file *filp)
- 	struct file_lock *fl;
- 	struct inode *inode = file_inode(filp);
- 	int type = F_UNLCK;
-+	LIST_HEAD(dispose);
- 
- 	spin_lock(&inode->i_lock);
--	time_out_leases(file_inode(filp));
-+	time_out_leases(file_inode(filp), &dispose);
- 	for (fl = file_inode(filp)->i_flock; fl && IS_LEASE(fl);
- 			fl = fl->fl_next) {
- 		if (fl->fl_file == filp) {
-@@ -1533,6 +1537,7 @@ int fcntl_getlease(struct file *filp)
- 		}
- 	}
- 	spin_unlock(&inode->i_lock);
-+	locks_dispose_list(&dispose);
- 	return type;
  }
  
-@@ -1570,6 +1575,7 @@ generic_add_lease(struct file *filp, long arg, struct file_lock **flp, void **pr
- 	struct inode *inode = dentry->d_inode;
- 	bool is_deleg = (*flp)->fl_flags & FL_DELEG;
- 	int error;
-+	LIST_HEAD(dispose);
++/*
++ * Reserve Xen mfn_list.
++ * See comment above "struct start_info" in <xen/interface/xen.h>
++ * We tried to make the the memblock_reserve more selective so
++ * that it would be clear what region is reserved. Sadly we ran
++ * in the problem wherein on a 64-bit hypervisor with a 32-bit
++ * initial domain, the pt_base has the cr3 value which is not
++ * neccessarily where the pagetable starts! As Jan put it: "
++ * Actually, the adjustment turns out to be correct: The page
++ * tables for a 32-on-64 dom0 get allocated in the order "first L1",
++ * "first L2", "first L3", so the offset to the page table base is
++ * indeed 2. When reading xen/include/public/xen.h's comment
++ * very strictly, this is not a violation (since there nothing is said
++ * that the first thing in the page table space is pointed to by
++ * pt_base; I admit that this seems to be implied though, namely
++ * do I think that it is implied that the page table space is the
++ * range [pt_base, pt_base + nt_pt_frames), whereas that
++ * range here indeed is [pt_base - 2, pt_base - 2 + nt_pt_frames),
++ * which - without a priori knowledge - the kernel would have
++ * difficulty to figure out)." - so lets just fall back to the
++ * easy way and reserve the whole region.
++ */
++static void __init xen_reserve_xen_mfnlist(void)
++{
++	if (xen_start_info->mfn_list >= __START_KERNEL_map) {
++		memblock_reserve(__pa(xen_start_info->mfn_list),
++				 xen_start_info->pt_base -
++				 xen_start_info->mfn_list);
++		return;
++	}
++
++	memblock_reserve(PFN_PHYS(xen_start_info->first_p2m_pfn),
++			 PFN_PHYS(xen_start_info->nr_p2m_frames));
++}
++
+ /**
+  * machine_specific_memory_setup - Hook for machine specific memory setup.
+  **/
+@@ -467,32 +502,7 @@ char * __init xen_memory_setup(void)
+ 	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
+ 			E820_RESERVED);
  
- 	lease = *flp;
- 	trace_generic_add_lease(inode, lease);
-@@ -1593,7 +1599,7 @@ generic_add_lease(struct file *filp, long arg, struct file_lock **flp, void **pr
- 	}
+-	/*
+-	 * Reserve Xen bits:
+-	 *  - mfn_list
+-	 *  - xen_start_info
+-	 * See comment above "struct start_info" in <xen/interface/xen.h>
+-	 * We tried to make the the memblock_reserve more selective so
+-	 * that it would be clear what region is reserved. Sadly we ran
+-	 * in the problem wherein on a 64-bit hypervisor with a 32-bit
+-	 * initial domain, the pt_base has the cr3 value which is not
+-	 * neccessarily where the pagetable starts! As Jan put it: "
+-	 * Actually, the adjustment turns out to be correct: The page
+-	 * tables for a 32-on-64 dom0 get allocated in the order "first L1",
+-	 * "first L2", "first L3", so the offset to the page table base is
+-	 * indeed 2. When reading xen/include/public/xen.h's comment
+-	 * very strictly, this is not a violation (since there nothing is said
+-	 * that the first thing in the page table space is pointed to by
+-	 * pt_base; I admit that this seems to be implied though, namely
+-	 * do I think that it is implied that the page table space is the
+-	 * range [pt_base, pt_base + nt_pt_frames), whereas that
+-	 * range here indeed is [pt_base - 2, pt_base - 2 + nt_pt_frames),
+-	 * which - without a priori knowledge - the kernel would have
+-	 * difficulty to figure out)." - so lets just fall back to the
+-	 * easy way and reserve the whole region.
+-	 */
+-	memblock_reserve(__pa(xen_start_info->mfn_list),
+-			 xen_start_info->pt_base - xen_start_info->mfn_list);
++	xen_reserve_xen_mfnlist();
  
- 	spin_lock(&inode->i_lock);
--	time_out_leases(inode);
-+	time_out_leases(inode, &dispose);
- 	error = check_conflicting_open(dentry, arg);
- 	if (error)
- 		goto out;
-@@ -1630,7 +1636,7 @@ generic_add_lease(struct file *filp, long arg, struct file_lock **flp, void **pr
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
  
- 	if (my_before != NULL) {
- 		lease = *my_before;
--		error = lease->fl_lmops->lm_change(my_before, arg);
-+		error = lease->fl_lmops->lm_change(my_before, arg, &dispose);
- 		if (error)
- 			goto out;
- 		goto out_setup;
-@@ -1660,6 +1666,7 @@ out_setup:
- 		lease->fl_lmops->lm_setup(lease, priv);
- out:
- 	spin_unlock(&inode->i_lock);
-+	locks_dispose_list(&dispose);
- 	if (is_deleg)
- 		mutex_unlock(&inode->i_mutex);
- 	if (!error && !my_before)
-@@ -1676,8 +1683,10 @@ static int generic_delete_lease(struct file *filp)
- 	struct file_lock *fl, **before;
- 	struct dentry *dentry = filp->f_path.dentry;
- 	struct inode *inode = dentry->d_inode;
-+	LIST_HEAD(dispose);
+@@ -522,8 +532,7 @@ char * __init xen_auto_xlated_memory_setup(void)
+ 	for (i = 0; i < memmap.nr_entries; i++)
+ 		e820_add_region(map[i].addr, map[i].size, map[i].type);
  
- 	spin_lock(&inode->i_lock);
-+	time_out_leases(inode, &dispose);
- 	for (before = &inode->i_flock;
- 			((fl = *before) != NULL) && IS_LEASE(fl);
- 			before = &fl->fl_next) {
-@@ -1686,8 +1695,9 @@ static int generic_delete_lease(struct file *filp)
- 	}
- 	trace_generic_delete_lease(inode, fl);
- 	if (fl)
--		error = fl->fl_lmops->lm_change(before, F_UNLCK);
-+		error = fl->fl_lmops->lm_change(before, F_UNLCK, &dispose);
- 	spin_unlock(&inode->i_lock);
-+	locks_dispose_list(&dispose);
- 	return error;
+-	memblock_reserve(__pa(xen_start_info->mfn_list),
+-			 xen_start_info->pt_base - xen_start_info->mfn_list);
++	xen_reserve_xen_mfnlist();
+ 
+ 	return "Xen";
  }
- 
-@@ -2375,7 +2385,7 @@ void locks_remove_file(struct file *filp)
- 	while ((fl = *before) != NULL) {
- 		if (fl->fl_file == filp) {
- 			if (IS_LEASE(fl)) {
--				lease_modify(before, F_UNLCK);
-+				lease_modify(before, F_UNLCK, &dispose);
- 				continue;
- 			}
- 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 86eebf13b3d0..44e04d6be676 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3423,11 +3423,11 @@ static void nfsd_break_deleg_cb(struct file_lock *fl)
- 	spin_unlock(&fp->fi_lock);
- }
- 
--static
--int nfsd_change_deleg_cb(struct file_lock **onlist, int arg)
-+static int
-+nfsd_change_deleg_cb(struct file_lock **onlist, int arg, struct list_head *dispose)
- {
- 	if (arg & F_UNLCK)
--		return lease_modify(onlist, arg);
-+		return lease_modify(onlist, arg, dispose);
- 	else
- 		return -EAGAIN;
- }
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9a6d56154dd5..f419f718e447 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -873,7 +873,7 @@ struct lock_manager_operations {
- 	void (*lm_notify)(struct file_lock *);	/* unblock callback */
- 	int (*lm_grant)(struct file_lock *, int);
- 	void (*lm_break)(struct file_lock *);
--	int (*lm_change)(struct file_lock **, int);
-+	int (*lm_change)(struct file_lock **, int, struct list_head *);
- 	void (*lm_setup)(struct file_lock *, void **);
- };
- 
-@@ -985,7 +985,7 @@ extern int __break_lease(struct inode *inode, unsigned int flags, unsigned int t
- extern void lease_get_mtime(struct inode *, struct timespec *time);
- extern int generic_setlease(struct file *, long, struct file_lock **, void **priv);
- extern int vfs_setlease(struct file *, long, struct file_lock **, void **);
--extern int lease_modify(struct file_lock **, int);
-+extern int lease_modify(struct file_lock **, int, struct list_head *);
- #else /* !CONFIG_FILE_LOCKING */
- static inline int fcntl_getlk(struct file *file, unsigned int cmd,
- 			      struct flock __user *user)
-@@ -1112,7 +1112,8 @@ static inline int vfs_setlease(struct file *filp, long arg,
- 	return -EINVAL;
- }
- 
--static inline int lease_modify(struct file_lock **before, int arg)
-+static inline int lease_modify(struct file_lock **before, int arg,
-+			       struct list_head *dispose)
- {
- 	return -EINVAL;
- }
+diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+index a458fd7..2998033 100644
+--- a/arch/x86/xen/xen-head.S
++++ b/arch/x86/xen/xen-head.S
+@@ -112,6 +112,8 @@ NEXT_HYPERCALL(arch_6)
+ 	ELFNOTE(Xen, XEN_ELFNOTE_VIRT_BASE,      _ASM_PTR __PAGE_OFFSET)
+ #else
+ 	ELFNOTE(Xen, XEN_ELFNOTE_VIRT_BASE,      _ASM_PTR __START_KERNEL_map)
++	/* Map the p2m table to a 512GB-aligned user address. */
++	ELFNOTE(Xen, XEN_ELFNOTE_INIT_P2M,       .quad PGDIR_SIZE)
+ #endif
+ 	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
+ 	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
 -- 
-1.9.3
+1.8.4.5
 
