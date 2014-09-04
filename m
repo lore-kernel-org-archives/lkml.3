@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547AbaIDUiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:38:16 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44646 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343AbaIDUiN (ORCPT
+	id S1754889AbaIDUnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:43:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38925 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaIDUnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:38:13 -0400
-From: Vadim Bendebury <vbendeb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Vadim Bendebury <vbendeb@chromium.org>,
-        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Subject: [PATCH v3] checkpatch: allow optional shorter config descriptions
-Date: Thu,  4 Sep 2014 13:37:52 -0700
-Message-Id: <1409863072-14789-1-git-send-email-vbendeb@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
-References: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
+	Thu, 4 Sep 2014 16:43:09 -0400
+Message-ID: <5408CEDA.7090209@canonical.com>
+Date: Thu, 04 Sep 2014 15:43:06 -0500
+From: Chris J Arges <chris.j.arges@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
+References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <54088CB5.6050406@canonical.com> <54089DDE.6010004@redhat.com> <5408AC76.6030404@canonical.com> <5408BA6D.1070602@redhat.com> <5408C0B4.5040207@redhat.com> <5408CD83.50904@canonical.com> <5408CE32.8010204@redhat.com>
+In-Reply-To: <5408CE32.8010204@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script is used by many other projects, and in some of them the
-requirement of at least 4 line long description for all Kconfig items
-is excessive. This patch adds a command line option to control the
-required minimum length.
 
-Tested running this script over a patch including a two line config
-description. The script generated a warning when invoked as is, and
-did not generate it when invoked with --min-conf-desc-length=2.
 
-Signed-off-by: Vadim Bendebury <vbendeb@chromium.org>
----
+On 09/04/2014 03:40 PM, Paolo Bonzini wrote:
+> Il 04/09/2014 22:37, Chris J Arges ha scritto:
+>>>> -	boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
+>>>> +	boot_ns = ktime_to_ns(ktime_sub(tk->offs_real, tk->offs_boot));
+>>>>  
+>>>>  	write_seqcount_begin(&vdata->seq);
+>>>>
+>>>> If it doesn't work, then commit 02cba1598a2a3b689e79ad6dad2532521f638271
+>>>> is also broken.
+>>>>
+>>>> Paolo
+>>>>
+>> Paolo,
+>> That modification do your additional patch didn't work. However I was
+>> able to modify the code as follows to get this test case working. The
+>> only additional modification was:
+>> +	vdata->nsec_base		= tk->xtime_sec * (u64)NSEC_PER_SEC
+>> +					- boot_ns;
+> 
+> Right, it should have been
+> 
+> 	boot_ns = ktime_to_ns(ktime_sub(tk->offs_boot, tk->offs_real));
+> 
+> I'll post the patch shortly.
+> 
+> Thanks!
+> 
+> Paolo
+> 
 
-Changes in v3:
-  - fixed the indentation problem
+Paolo,
 
- scripts/checkpatch.pl | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Great, tested that modification really quick and it also works for me!
+All test cases are now passing on my machine; thanks for all the
+debugging and help.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b385bcb..aa111e5 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -43,6 +43,7 @@ my $configuration_file = ".checkpatch.conf";
- my $max_line_length = 80;
- my $ignore_perl_version = 0;
- my $minimum_perl_version = 5.10.0;
-+my $min_conf_desc_length = 4;
- 
- sub help {
- 	my ($exitcode) = @_;
-@@ -63,6 +64,7 @@ Options:
-   --types TYPE(,TYPE2...)    show only these comma separated message types
-   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
-   --max-line-length=n        set the maximum line length, if exceeded, warn
-+  --min-conf-desc-length=n   set the min description length, if shorter, warn
-   --show-types               show the message "types" in the output
-   --root=PATH                PATH to the kernel tree root
-   --no-summary               suppress the per-file summary
-@@ -131,6 +133,7 @@ GetOptions(
- 	'types=s'	=> \@use,
- 	'show-types!'	=> \$show_types,
- 	'max-line-length=i' => \$max_line_length,
-+	'min-conf-desc-length=i' => \$min_conf_desc_length,
- 	'root=s'	=> \$root,
- 	'summary!'	=> \$summary,
- 	'mailback!'	=> \$mailback,
-@@ -2280,8 +2283,10 @@ sub process {
- 				}
- 				$length++;
- 			}
--			WARN("CONFIG_DESCRIPTION",
--			     "please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($is_start && $is_end && $length < 4);
-+			if ($is_start && $is_end && $length < $min_conf_desc_length) {
-+				WARN("CONFIG_DESCRIPTION",
-+				     "please write a paragraph that describes the config symbol fully\n" . $herecurr)
-+			}
- 			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
- 		}
- 
--- 
-2.1.0.rc2.206.gedb03e5
-
+--chris
