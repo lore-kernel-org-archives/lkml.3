@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428AbaIDWQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 18:16:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39128 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaIDWQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 18:16:03 -0400
-Message-ID: <5408E458.3@zytor.com>
-Date: Thu, 04 Sep 2014 15:14:48 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>
-CC: Peter Hurley <peter@hurleysoftware.com>, Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: bit fields && data tearing
-References: <20140712181328.GA8738@redhat.com>	 <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>	 <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop>
-In-Reply-To: <1409824374.4246.62.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+	id S1755607AbaIDWQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 18:16:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56593 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467AbaIDWQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 18:16:14 -0400
+Date: Thu, 4 Sep 2014 15:16:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: jack@suse.cz, tytso@mit.edu, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, paulmck@linux.vnet.ibm.com,
+        peterz@infradead.org, adilger.kernel@dilger.ca, minchan@kernel.org,
+        js1304@gmail.com, gunho.lee@lge.com
+Subject: Re: [PATCHv4 0/3] new APIs to allocate buffer-cache with user
+ specific flag
+Message-Id: <20140904151612.7bf5b813069ff78973e01571@linux-foundation.org>
+In-Reply-To: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
+References: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 02:52 AM, Benjamin Herrenschmidt wrote:
+On Thu,  4 Sep 2014 16:29:38 +0900 Gioh Kim <gioh.kim@lge.com> wrote:
+
+> This patch try to solve problem that a long-lasting page caches of
+> ext4 superblock and journaling of superblock disturb page migration.
 > 
-> Yeah correct, alpha and bytes right ? Is there any other ? That's why I
-> suggested int.
+> I've been testing CMA feature on my ARM-based platform
+> and found that two page caches cannot be migrated.
+> They are page caches of superblock of ext4 filesystem and its journaling data.
 > 
+> Current ext4 reads superblock with sb_bread() that allocates page
+> from movable area. But the problem is that ext4 hold the page until
+> it is unmounted. If root filesystem is ext4 the page cannot be migrated
+> forever.
+> And also the journaling data for the superblock cannot be migreated.
+> 
+> I introduce new APIs that allocates page cache with specific flag passed by an
+> argument.
+> *_gfp APIs are for user want to set page allocation flag for page cache
+> allocation.
+> And *_unmovable APIs are for the user wants to allocate page cache from
+> non-movable area.
+> 
+> It is useful for ext4/ext3 and others that want to hold page cache for a long
+> time.
 
-Even for Alpha it is only the 21064 AFAIK.
+Could we please have some detailed information about the real-world
+effect of this patchset?
 
-	-hpa
+You earlier said "My test platform is currently selling item in the
+market.  And also I test my patch when my platform is working as if
+real user uses it.".
 
+But what were the problems which were observed in standard kernels and
+what effect did this patchset have upon them?  Some quantitative
+measurements will really help here.
 
+I'm trying to get an understanding of how effective and important the
+change is, whether others will see similar benefits.  I'd also like to
+understand how *complete* the fix is - were the problems which you
+observed completely fixed, or do outstanding problems remain?
+
+Thanks.
