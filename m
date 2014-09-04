@@ -1,155 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbaIDMDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:03:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63521 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774AbaIDMDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 08:03:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,465,1406617200"; 
-   d="scan'208";a="597859834"
-From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-To: "Chen, Alvin" <alvin.chen@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "dvhart@linux.intel.com" <dvhart@linux.intel.com>
-Subject: Re: [PATCH 1/3] GPIO: gpio-dwapb: Enable platform driver binding to
- MFD driver
-Thread-Topic: [PATCH 1/3] GPIO: gpio-dwapb: Enable platform driver binding
- to MFD driver
-Thread-Index: AQHPwdzvzgkEadzfZk2atT5kA+h7W5vvz6QAgABjwICAAFxQgIAANG+AgAAXPgA=
-Date: Thu, 4 Sep 2014 12:01:22 +0000
-Message-ID: <1409832078.30155.80.camel@intel.com>
-References: <1409161588-19417-1-git-send-email-alvin.chen@intel.com>
-	 <1409161588-19417-2-git-send-email-alvin.chen@intel.com>
-	 <20140903200302.GA7673@breakpoint.cc>
-	 <4656BEB6164FC34F8171C6538F1A595B2E982384@SHSMSX101.ccr.corp.intel.com>
-	 <20140904073027.GA3336@breakpoint.cc>
-	 <4656BEB6164FC34F8171C6538F1A595B2E982558@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E982558@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.168]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E684FAA9DB49924C991BF71905AB9111@intel.com>
+	id S1754121AbaIDMOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:14:44 -0400
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:10584
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753777AbaIDMOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 08:14:42 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <alex.williamson@redhat.com>, <Emilian.Medve@freescale.com>,
+        <linuxppc-dev@ozlabs.org>, <linux-kernel@vger.kernel.org>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH v2] iommu/fsl: Fix warning resulting from adding PCI device twice
+Date: Thu, 4 Sep 2014 17:08:45 +0530
+Message-ID: <1409830725-4469-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(81542001)(95666004)(2201001)(86362001)(229853001)(31966008)(92566001)(26826002)(21056001)(74502001)(105606002)(44976005)(107046002)(87936001)(68736004)(575784001)(47776003)(92726001)(97736001)(81342001)(19580395003)(50986999)(93916002)(46102001)(74662001)(106466001)(89996001)(84676001)(85852003)(77982001)(79102001)(76482001)(4396001)(88136002)(48376002)(99396002)(50226001)(50466002)(104016003)(87286001)(80022001)(85306004)(6806004)(104166001)(77156001)(36756003)(19580405001)(83322001)(102836001)(64706001)(62966002)(20776003)(90102001)(83072002)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB468;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0324C2C0E2
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Varun.Sethi@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s84C3ENN009408
 
-On Thu, 2014-09-04 at 10:38 +0000, Chen, Alvin wrote:
-> 
-> > > Since we enable this module not only support OF devices, but also support
-> > MFD devices, so we remove OF_GPIO dependenc
-> > > For 'PCI', the original code is also not depended on PCI, and this patch also
-> > not, do you think it is necessary?
-> > 
-> > if not PCI then you should add something likwe
-> > 	"depends on OF_GPIO || MFD"
-> > 
-> > looking further, you need also HAS_IOMEM for things like
-> > devm_ioremap_resource(). Linus, wouldn't it make sense to group this driver
-> > and make the block depend on it?
-> > 
-> I can add "depends on OF_GPIO || INTEL_QUARK_I2C_GPIO_MFD", since now the MFD path only support Intel Quark.
-> 
-> Andriy, how do you think?
+iommu_group_get_for_dev determines the iommu group for the PCI device and adds
+the device to the group.
 
-I think we don't need that dependency at all since OF_GPIO has stubs for
-non-OF case. Am I missing something?
+In the PAMU driver we were again adding the device to the same group without checking
+if the device already had an iommu group. This resulted in the following warning.
 
-GPIOLIB dependency is implied in Kconfig, by the way.
-
-P.S. See, for example, leds-gpio.c
-
-> 
-> > > > >  struct dwapb_gpio {
-> > > > >  	struct	device		*dev;
-> > > > >  	void __iomem		*regs;
-> > > > >  	struct dwapb_gpio_port	*ports;
-> > > > > -	unsigned int		nr_ports;
-> > > > you could keep this the way it is
-> > > It has been moved to 'pdata'.
-> > 
-> > I saw that. But there is no need keep a pointer to pdata across the whole driver
-> > since only need nr_ports in the driver removal part of the whole driver.
-> Got your idea. So can I just use a global static pdata pointer instead of adding it as a member of ' struct dwapb_gpio'?
-> Since pdata is used in all 'probe' functions, and make pdata as global static make programming more easy.
-> 
-> > 
-> > > > >  	struct irq_domain	*domain;
-> > > > > +	const struct dwapb_gpio_platform_data	*pdata;
-> > > >
-> > > > and not making this a member of this struct. I've been going up and
-> > > > down the source and I don't see the need to marry dwapb_gpio to
-> > > > dwapb_gpio_platform_data.
-> > > > That dwapb_gpio_port_property thing has a long name. Could you just
-> > > > set it up, pass it for registration and the free it? You can't free
-> > > > the pdata for the non-OF tree but for the OF case you keep that struct
-> > around for no reason.
-> > > > You could safe some memory and use pdata directly for setup.
-> > > Here, 'pdata' is used for both OF and MFD. For MFD, 'pdata' is passed from
-> > MFD.
-> > > For OF, 'pdata' is getting from device nodes properties. Why do we
-> > > have such design? Because it can make the handling more easy for
-> > > flowing routine. All necessary properties get from 'pdata', never care it is
-> > from OF or MFD. And someone are working on replacing OF interface with a
-> > firmware agnostic device_property* interface which will work with both OF and
-> > ACPI.
-> > > More information for this design, please contact Darren Hart
-> > <dvhart@linux.intel.com>. Darren Hart wrote to me:
-> > > "Generally speaking, rather than if/else blocks throughout the code
-> > > checking if it is enumerated via open firmware or as a platform device, a
-> > cleaner approach is to check if the pdata is null, and if so, populate the pdata
-> > from the open firmware description if present.
-> > > Then use the pdata throughout the driver.
-> > 
-> > But isn't it enough to hold on to this pdata thing through the probe function
-> > only? After probe is done you could drop that memory in the OF-case, right?
-> OK. If it is OF-case, pdata can be freed in the end of probe.
-> 
-> 
-> > > > > +	irq_set_handler_data(port->pp->irq, gpio);
-> > > >
-> > > > This does not look like it belongs here. It should only be used
-> > > > together with
-> > > > irq_set_chained_handler() or am I missing here something?
-> > > This patch reused ' dwapb_irq_handler', it needs the irq handler data. For '
-> > irq_set_handler_data', it just sets the irq data.
-> > > Why do you think it must be used together with ' irq_set_chained_handler'?
-> > 
-> > because you do request_irq(‚Ä¶, driver_data). If you you look close to
-> > irq_set_chained_handler() it does not have such a member. Thus it uses
-> > irq_set_handler_data() for that same purpose.
-> > 
-> OK. I can improve it.
+sysfs: cannot create duplicate filename '/devices/ffe200000.pcie/pci0000:00/0000:00:00.0/iommu_group'
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:31
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc3-00002-g7505cea-dirty #126
+task: c0000001fe0a0000 ti: c0000001fe044000 task.ti: c0000001fe044000
+NIP: c00000000018879c LR: c000000000188798 CTR: c00000000001ea50
+REGS: c0000001fe047040 TRAP: 0700   Not tainted  (3.17.0-rc3-00002-g7505cea-dirty)
+MSR: 0000000080029000 <CE,EE,ME>  CR: 24ad8e22  XER: 20000000
+SOFTE: 1 
+GPR00: c000000000188798 c0000001fe0472c0 c0000000009a52e0 0000000000000065 
+GPR04: 0000000000000001 0000000000000000 3a30303a00000000 0000000027000000 
+GPR08: 2f696f6d00000000 c0000000008d3830 c0000000009b3938 c0000000009bb3d0 
+GPR12: 0000000028ad8e24 c00000000fff4000 c00000000000205c 0000000000000000 
+GPR16: 0000000000000000 0000000000000000 0000000000000000 0000000000000000 
+GPR20: 0000000000000000 0000000000000000 0000000000000000 c0000000008a4c70 
+GPR24: c0000000007e9010 c0000001fe0140a8 ffffffffffffffef 0000000000000001 
+GPR28: c0000001fe22ebb8 c0000000007e9010 c00000000090bf10 c0000001fe220000 
+NIP [c00000000018879c] .sysfs_warn_dup+0x74/0xa4
+LR [c000000000188798] .sysfs_warn_dup+0x70/0xa4
+Call Trace:
+[c0000001fe0472c0] [c000000000188798] .sysfs_warn_dup+0x70/0xa4 (unreliable)
+[c0000001fe047350] [c000000000188d34] .sysfs_do_create_link_sd.clone.2+0x168/0x174
+[c0000001fe047400] [c0000000004b3cf8] .iommu_group_add_device+0x78/0x244
+[c0000001fe0474b0] [c0000000004b6964] .fsl_pamu_add_device+0x88/0x1a8
+[c0000001fe047570] [c0000000004b3960] .iommu_bus_notifier+0xdc/0x15c
+[c0000001fe047600] [c000000000059848] .notifier_call_chain+0x8c/0xe8
+[c0000001fe0476a0] [c000000000059d04] .__blocking_notifier_call_chain+0x58/0x84
+[c0000001fe047750] [c00000000036619c] .device_add+0x464/0x5c8
+[c0000001fe047820] [c000000000300ebc] .pci_device_add+0x14c/0x17c
+[c0000001fe0478c0] [c000000000300fbc] .pci_scan_single_device+0xd0/0xf4
+[c0000001fe047970] [c00000000030104c] .pci_scan_slot+0x6c/0x18c
+[c0000001fe047a10] [c00000000030226c] .pci_scan_child_bus+0x40/0x114
+[c0000001fe047ac0] [c000000000021974] .pcibios_scan_phb+0x240/0x2c8
+[c0000001fe047b70] [c00000000085a970] .pcibios_init+0x64/0xc8
+[c0000001fe047c00] [c000000000001884] .do_one_initcall+0xbc/0x224
+[c0000001fe047d00] [c000000000852d50] .kernel_init_freeable+0x14c/0x21c
+[c0000001fe047db0] [c000000000002078] .kernel_init+0x1c/0xfa4
+[c0000001fe047e30] [c000000000000884] .ret_from_kernel_thread+0x58/0xd4
+Instruction dump:
+7c7f1b79 4182001c 7fe4fb78 7f83e378 38a01000 4bffc905 60000000 7c641b78 
+e87e8008 7fa5eb78 48482ff5 60000000 <0fe00000> 7fe3fb78 4bf7bd39 60000000 
 
 
+
+Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+---
+v2 changes
+- directly check for the device iommu_group
+
+ drivers/iommu/fsl_pamu_domain.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+index 61d1daf..56feed7 100644
+--- a/drivers/iommu/fsl_pamu_domain.c
++++ b/drivers/iommu/fsl_pamu_domain.c
+@@ -984,7 +984,7 @@ static int fsl_pamu_add_device(struct device *dev)
+ 	struct iommu_group *group = ERR_PTR(-ENODEV);
+ 	struct pci_dev *pdev;
+ 	const u32 *prop;
+-	int ret, len;
++	int ret = 0, len;
+ 
+ 	/*
+ 	 * For platform devices we allocate a separate group for
+@@ -1007,7 +1007,13 @@ static int fsl_pamu_add_device(struct device *dev)
+ 	if (IS_ERR(group))
+ 		return PTR_ERR(group);
+ 
+-	ret = iommu_group_add_device(group, dev);
++	/*
++	 * Check if device has already been added to an iommu group.
++	 * Group could have already been created for a PCI device in
++	 * the iommu_group_get_for_dev path.
++	 */
++	if (!dev->iommu_group)
++		ret = iommu_group_add_device(group, dev);
+ 
+ 	iommu_group_put(group);
+ 	return ret;
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
+1.7.9.5
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
