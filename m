@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaIDNbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 09:31:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35037 "EHLO bear.ext.ti.com"
+	id S1751361AbaIDNdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 09:33:42 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:52857 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788AbaIDNbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 09:31:12 -0400
-Message-ID: <54086983.3010407@ti.com>
-Date: Thu, 4 Sep 2014 19:00:43 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1750723AbaIDNdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 09:33:40 -0400
+Message-ID: <54086A2B.9030801@osg.samsung.com>
+Date: Thu, 04 Sep 2014 07:33:31 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL 0/5] PHY: Fixes for 3.17 -rc cycle
-References: <1409221506-6262-1-git-send-email-kishon@ti.com> <5406A590.7050703@ti.com> <20140903182636.GA10460@kroah.com>
-In-Reply-To: <20140903182636.GA10460@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH 3.12 00/56] 3.12.28-stable review
+References: <cover.1409735865.git.jslaby@suse.cz>
+In-Reply-To: <cover.1409735865.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wednesday 03 September 2014 11:56 PM, Greg KH wrote:
-> On Wed, Sep 03, 2014 at 10:52:24AM +0530, Kishon Vijay Abraham I wrote:
->> Hi Greg,
->>
->> On Thursday 28 August 2014 03:55 PM, Kishon Vijay Abraham I wrote:
->>> Hi Greg,
->>>
->>> Please find the pull request for this -rc cycle. It consistes of a regression
->>> fix to runtime PM on OMAP (cc'ed stable) and few other minor fixes.
->>>
->>> Please consider merging it in this -rc cycle.
->>> Let me know If I have to make any changes.
->>
->> Can we have this merged in this -rc cycle?
+On 09/03/2014 03:26 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.28 release.
+> There are 56 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Sorry for the delay, now merged.
+> Responses should be made by Fri Sep  5 11:17:45 CEST 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.28-rc1.xz
+> and the diffstat can be found below.
+> 
+> thanks,
+> js
+> 
 
-Thanks Greg :-)
+Compiled and booted on my test system. No dmesg regressions.
 
--Kishon
+-- Shuah
+
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
