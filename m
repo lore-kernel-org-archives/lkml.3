@@ -1,195 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaIDMQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:16:15 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:57410 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057AbaIDMQN (ORCPT
+	id S1754179AbaIDMYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:24:24 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43796 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753179AbaIDMYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 08:16:13 -0400
-Message-ID: <54085809.9050605@linaro.org>
-Date: Thu, 04 Sep 2014 14:16:09 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 08:24:22 -0400
+Message-ID: <540859EC.5000407@hurleysoftware.com>
+Date: Thu, 04 Sep 2014 08:24:12 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 4/9] ARM: zynq: PM: Enable DDR clock stop
-References: <1409692754-13437-1-git-send-email-soren.brinkmann@xilinx.com> <1409692754-13437-5-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1409692754-13437-5-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Jakub Jelinek <jakub@redhat.com>, Mikael Pettersson <mikpelinux@gmail.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com> <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <21512.10628.412205.873477@gargle.gargle.HOWL> <20140904090952.GW17454@tucnak.redhat.com>
+In-Reply-To: <20140904090952.GW17454@tucnak.redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 11:19 PM, Soren Brinkmann wrote:
-> The DDR controller can detect idle periods and leverage low power
-> features clock stop. When new requests occur, the DDRC resumes
-> normal operation.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+On 09/04/2014 05:09 AM, Jakub Jelinek wrote:
+> On Thu, Sep 04, 2014 at 10:57:40AM +0200, Mikael Pettersson wrote:
+>> Benjamin Herrenschmidt writes:
+>>  > On Wed, 2014-09-03 at 18:51 -0400, Peter Hurley wrote:
+>>  > 
+>>  > > Apologies for hijacking this thread but I need to extend this discussion
+>>  > > somewhat regarding what a compiler might do with adjacent fields in a structure.
+>>  > > 
+>>  > > The tty subsystem defines a large aggregate structure, struct tty_struct.
+>>  > > Importantly, several different locks apply to different fields within that
+>>  > > structure; ie., a specific spinlock will be claimed before updating or accessing
+>>  > > certain fields while a different spinlock will be claimed before updating or
+>>  > > accessing certain _adjacent_ fields.
+>>  > > 
+>>  > > What is necessary and sufficient to prevent accidental false-sharing?
+>>  > > The patch below was flagged as insufficient on ia64, and possibly ARM.
+>>  > 
+>>  > We expect native aligned scalar types to be accessed atomically (the
+>>  > read/modify/write of a larger quantity that gcc does on some bitfield
+>>  > cases has been flagged as a gcc bug, but shouldn't happen on normal
+>>  > scalar types).
+>>  > 
+>>  > I am not 100% certain of "bool" here, I assume it's treated as a normal
+>>  > scalar and thus atomic but if unsure, you can always use int.
+>>
+>> Please use an aligned int or long.  Some machines cannot do atomic
+>> accesses on sub-int/long quantities, so 'bool' may cause unexpected
+>> rmw cycles on adjacent fields.
+> 
+> Yeah, at least pre-EV56 Alpha performs rmw cycles on char/short accesses
+> and thus those are not atomic.
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Ok, thanks.
 
-> ---
-> v2:
->   - properly document return value for zynq_pm_ioremap
->   - change zynq_pm_late_init signature to return void
->   - add kernel doc to late_init()
->   - fix kernel doc
->   - only enable clock-stop during boot and leave out self-refresh. The
->     self-refresh penalty is apparently not-negligible
-> ---
->   arch/arm/mach-zynq/Makefile |  2 +-
->   arch/arm/mach-zynq/common.c |  1 +
->   arch/arm/mach-zynq/common.h |  2 ++
->   arch/arm/mach-zynq/pm.c     | 83 +++++++++++++++++++++++++++++++++++++++++++++
->   4 files changed, 87 insertions(+), 1 deletion(-)
->   create mode 100644 arch/arm/mach-zynq/pm.c
->
-> diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefile
-> index 1b25d92ebf22..820dff6e1eba 100644
-> --- a/arch/arm/mach-zynq/Makefile
-> +++ b/arch/arm/mach-zynq/Makefile
-> @@ -3,7 +3,7 @@
->   #
->
->   # Common support
-> -obj-y				:= common.o slcr.o
-> +obj-y				:= common.o slcr.o pm.o
->   CFLAGS_REMOVE_hotplug.o		=-march=armv6k
->   CFLAGS_hotplug.o 		=-Wa,-march=armv7-a -mcpu=cortex-a9
->   obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
-> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-> index 3cb7c198615a..6bd13e5ce6b7 100644
-> --- a/arch/arm/mach-zynq/common.c
-> +++ b/arch/arm/mach-zynq/common.c
-> @@ -101,6 +101,7 @@ static int __init zynq_get_revision(void)
->   static void __init zynq_init_late(void)
->   {
->   	zynq_core_pm_init();
-> +	zynq_pm_late_init();
->   }
->
->   /**
-> diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h
-> index 596ef0b5067c..0edbb6997b1c 100644
-> --- a/arch/arm/mach-zynq/common.h
-> +++ b/arch/arm/mach-zynq/common.h
-> @@ -40,6 +40,8 @@ extern void __iomem *zynq_scu_base;
->   /* Hotplug */
->   extern void zynq_platform_cpu_die(unsigned int cpu);
->
-> +void zynq_pm_late_init(void);
-> +
->   static inline void zynq_core_pm_init(void)
->   {
->   	/* A9 clock gating */
-> diff --git a/arch/arm/mach-zynq/pm.c b/arch/arm/mach-zynq/pm.c
-> new file mode 100644
-> index 000000000000..911fcf865be8
-> --- /dev/null
-> +++ b/arch/arm/mach-zynq/pm.c
-> @@ -0,0 +1,83 @@
-> +/*
-> + * Zynq power management
-> + *
-> + *  Copyright (C) 2012 - 2014 Xilinx
-> + *
-> + *  Sören Brinkmann <soren.brinkmann@xilinx.com>
-> + *
-> + * This program is free software: you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation, either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_device.h>
-> +#include "common.h"
-> +
-> +/* register offsets */
-> +#define DDRC_CTRL_REG1_OFFS		0x60
-> +#define DDRC_DRAM_PARAM_REG3_OFFS	0x20
-> +
-> +/* bitfields */
-> +#define DDRC_CLOCKSTOP_MASK	BIT(23)
-> +#define DDRC_SELFREFRESH_MASK	BIT(12)
-> +
-> +static void __iomem *ddrc_base;
-> +
-> +/**
-> + * zynq_pm_ioremap() - Create IO mappings
-> + * @comp:	DT compatible string
-> + * Return: Pointer to the mapped memory or NULL.
-> + *
-> + * Remap the memory region for a compatible DT node.
-> + */
-> +static void __iomem *zynq_pm_ioremap(const char *comp)
-> +{
-> +	struct device_node *np;
-> +	void __iomem *base = NULL;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, comp);
-> +	if (np) {
-> +		base = of_iomap(np, 0);
-> +		of_node_put(np);
-> +	} else {
-> +		pr_warn("%s: no compatible node found for '%s'\n", __func__,
-> +				comp);
-> +	}
-> +
-> +	return base;
-> +}
-> +
-> +/**
-> + * zynq_pm_late_init() - Power management init
-> + *
-> + * Initialization of power management related featurs and infrastructure.
-> + */
-> +void __init zynq_pm_late_init(void)
-> +{
-> +	u32 reg;
-> +
-> +	ddrc_base = zynq_pm_ioremap("xlnx,zynq-ddrc-a05");
-> +	if (!ddrc_base) {
-> +		pr_warn("%s: Unable to map DDRC IO memory.\n", __func__);
-> +	} else {
-> +		/*
-> +		 * Enable DDRC clock stop feature. The HW takes care of
-> +		 * entering/exiting the correct mode depending
-> +		 * on activity state.
-> +		 */
-> +		reg = readl(ddrc_base + DDRC_DRAM_PARAM_REG3_OFFS);
-> +		reg |= DDRC_CLOCKSTOP_MASK;
-> +		writel(reg, ddrc_base + DDRC_DRAM_PARAM_REG3_OFFS);
-> +	}
-> +}
->
+And I just confirmed with the Alpha cross-compiler that the fields are
+not 'padded out' if volatile either.
 
+Do any arches consider this an 'optimization'?  I ask because this kind of
+accidental adjacency sharing may be common. Even RCU has a char field,
+rcu_read_unlock_special, in the middle of the task_struct; luckily the
+adjacent field is a list_head.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Besides updating the documentation, it may make sense to do something
+arch-specific. Just bumping out storage on arches that don't need it
+seems wasteful, as does generating bus locks on arches that don't need it.
+Unfortunately, the code churn looks unavoidable.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Regards,
+Peter Hurley
