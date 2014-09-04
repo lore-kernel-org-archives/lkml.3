@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaIDRFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:05:43 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:46040 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262AbaIDRFl (ORCPT
+	id S1754914AbaIDRGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:06:07 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:57515 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849AbaIDRGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:05:41 -0400
+	Thu, 4 Sep 2014 13:06:04 -0400
+Date: Thu, 4 Sep 2014 10:06:00 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, zyw@rock-chips.com, addy.ke@rock-chips.com,
+        zhaoyifeng <zyf@rock-chips.com>
+Subject: Re: [PATCH v4 1/4] thermal: rockchip: add driver for thermal
+Message-ID: <20140904170559.GB10224@core.coreip.homeip.net>
+References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
+ <1409710239-19941-2-git-send-email-caesar.wang@rock-chips.com>
 MIME-Version: 1.0
-In-Reply-To: <1409576021-24828-3-git-send-email-anders.berg@avagotech.com>
-References: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com>
-	<1409576021-24828-3-git-send-email-anders.berg@avagotech.com>
-Date: Thu, 4 Sep 2014 19:05:40 +0200
-Message-ID: <CACRpkdZZfSR18acUm8U7aM5uxdX8gefN-Lbw7of5qqEe=Pddqg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Documentation: DT bindings for AXM55xx SSP CS
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Anders Berg <anders.berg@avagotech.com>, Mark Brown <broonie@kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409710239-19941-2-git-send-email-caesar.wang@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I bet Mark and linux-spi are interested in this patch too.
+Hi Caesar,
 
-Yours,
-Linus Walleij
+On Wed, Sep 03, 2014 at 10:10:36AM +0800, Caesar Wang wrote:
+> +static int rockchip_thermal_remove(struct platform_device *pdev)
+> +{
+> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
+> +
+> +	rockchip_thermal_control(data, false);
+> +
+> +	thermal_zone_device_unregister(data->tz);
+> +	cpufreq_cooling_unregister(data->cdev);
+> +	cpufreq_cooling_unregister(data->cdev);
 
-On Mon, Sep 1, 2014 at 2:53 PM, Anders Berg <anders.berg@avagotech.com> wrote:
-> Bindings and documentation for AXM55xx SSP chip select controller.
->
-> Signed-off-by: Anders Berg <anders.berg@avagotech.com>
-> ---
->  .../devicetree/bindings/gpio/gpio-axxia-sspcs.txt  | 36 ++++++++++++++++++++++
->  1 file changed, 36 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt
->
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt b/Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt
-> new file mode 100644
-> index 0000000..a64c695
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt
-> @@ -0,0 +1,36 @@
-> +* Axxia SSP GPIO chip-select driver
-> +
-> +The Axxia device has a ARM PL022 Prime Cell SSP controller with an extension of
-> +five chip select signals that may be controlled by software. This driver
-> +exports them as GPIOs.
-> +
-> +Required properties:
-> +
-> +  * compatible: should be "lsi,ssp-gpio"
-> +  * reg: address of the chip select control register.
-> +  * gpio-controller: mark the device as gpio controller
-> +  * #gpio-cells: should be 1 and this field specifies the chip select number
-> +
-> +Example:
-> +-------
-> +
-> +       spics: sspgpio@2010088030 {
-> +               compatible = "lsi,ssp-gpio";
-> +               #gpio-cells = <1>;
-> +               reg = <0x20 0x10088030 0x00 0x4>;
-> +               gpio-controller;
-> +       };
-> +
-> +       spi0: ssp@2010088000 {
-> +               compatible = "arm,pl022", "arm,primecell";
-> +               #address-cells = <1>;
-> +               #size-cells = <0>;
-> +               reg = <0x20 0x10088000 0x00 0x1000>;
-> +               num-cs = <5>;
-> +               cs-gpios = <&spics 0>,
-> +                          <&spics 1>,
-> +                          <&spics 2>,
-> +                          <&spics 3>,
-> +                          <&spics 4>;
-> +               ...
-> +      };
-> --
-> 1.9.1
->
+It looks like we are unregistering the same cooling device one too many times.
+
+Thanks.
+
+-- 
+Dmitry
