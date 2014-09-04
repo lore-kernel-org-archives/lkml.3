@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393AbaIDQC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:02:57 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:49467 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140AbaIDQC4 (ORCPT
+	id S1754472AbaIDQDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:03:52 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:40158 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaIDQDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:02:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH 11/19] ARM: S5PV210: Remove support for board files
-Date: Thu, 4 Sep 2014 18:02:36 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com> <53C675E4.4020502@samsung.com> <1409825105.5546.91.camel@x220>
-In-Reply-To: <1409825105.5546.91.camel@x220>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409041802.36466.arnd@arndb.de>
-X-Provags-ID: V02:K0:3vjil+7WPaKF0ZsIc27cjgCZrlqPLmrtndKA2eSH60Q
- YPviZgx6YyhCHGHeDt2H5JBno8+TqwsnKzvuQZTTkPDfuAmsCj
- odzn6d8/NeC1rOm4aDGF2KBFKrHMnrjfHYpEnapGsgwqmX2mPp
- j4RT2FwZxSz+XYAnGvR80w1Wa6AzA4YWd8153GQV8N3rsyohKQ
- kory6UiW1j9q+OknXAnT1DMhYZrAHxReG24miknxj+L81myFUm
- S9xGh78r1noT6qsMZ3hVbLbPEOpptzE9anp7jWEUeBGnahlK0l
- s4ij4qTLRrB+lMiXU7p2tNP/vp5hYrw0/EXH4i4KFGsHTLkBaa
- uW+Ue7GBdIFY0j9wPews=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 4 Sep 2014 12:03:50 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [PATCH v1 0/6] arm: Implement arch_trigger_all_cpu_backtrace
+Date: Thu,  4 Sep 2014 17:03:34 +0100
+Message-Id: <1409846620-14542-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org>
+References: <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 September 2014, Paul Bolle wrote:
-> 
-> On Wed, 2014-07-16 at 14:53 +0200, Tomasz Figa wrote:
-> > I believe that both sound card drivers for Goni and Aquilla could be
-> > replaced with simple cards in DT, so I'll send a follow-up patch for this.
-> 
-> References to MACH_GONI and MACH_AQUILA can still be seen in v3.17-rc3
-> and next-20140903. Note that as consequence SND_SOC_GONI_AQUILA_WM8994
-> can not be set anymore.
-> 
-> > Most likely the same is the case for SMDK boards, but they don't seem to
-> > have any active users (see cover letter for more details), which means
-> > that probably they could be simply dropped from
-> > sound/soc/samsung/Kconfig in another follow-up patch.
-> 
-> Ditto for MACH_SMDKC100, MACH_SMDKC110, and MACH_SMDKV210. Note that
-> here SND_SOC_SMDK_WM8580_PCM can not be set anymore.
-> 
-> (This is intended to be a gentile reminder. I hope it actually comes
-> across like that.)
+This patchset implements arch_trigger_all_cpu_backtrace for arm.
 
-At least I find those reminders useful. We clearly have a bug here
-that was recently introduced, and we should fix that.
+Non-maskable signalling relies on the kernel being able to access FIQ
+and therefore, for devices that implement TrustZone, it will work only on
+systems that boot the kernel in secure mode.
 
-I think it would be nice if you could submit a patch to remove the
-drivers from ASoC, then we can see if anybody complains.
+Tested on Freescale iMX.6 (both via SysRq-l and by deliberately locking
+up the kernel with CONFIG_DEBUG_SPINLOCK=y).
 
-	Arnd
+Changes *before* v1:
+
+- This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
+  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
+  the new structure. For historic details see:
+        https://lkml.org/lkml/2014/9/2/227
+
+- Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
+  In fixing this we also remove the useless indirection previously
+  found in the fiq_handler macro.
+
+- Make default fiq handler "always on" by migrating from fiq.c to
+  traps.c and replace do_unexp_fiq with the new handler (Russell
+  King).
+
+- Add arm64 version of fiq.h (Russell King)
+
+- Removed conditional branching and code from irq-gic.c, this is
+  replaced by much simpler code that relies on the GIC specification's
+  heavy use of read-as-zero/write-ignored (Russell King)
+
+
+Daniel Thompson (5):
+  arm: fiq: Replace default FIQ handler
+  arm: smp: Introduce a non-maskable IPI
+  arm64: Introduce dummy version of asm/fiq.h
+  irqchip: gic: Add support for IPI FIQ
+  irqchip: gic: Group 0 workaround.
+
+Russell King (1):
+  arm: Implement arch_trigger_all_cpu_backtrace
+
+ arch/arm/Kconfig.debug          |  14 +++
+ arch/arm/include/asm/hardirq.h  |   2 +-
+ arch/arm/include/asm/irq.h      |   5 +
+ arch/arm/include/asm/smp.h      |   7 ++
+ arch/arm/kernel/entry-armv.S    | 110 ++++++++++++++++++--
+ arch/arm/kernel/setup.c         |   8 +-
+ arch/arm/kernel/smp.c           |  67 ++++++++++++
+ arch/arm/kernel/traps.c         |  34 +++++-
+ arch/arm64/include/asm/fiq.h    |  18 ++++
+ drivers/irqchip/irq-gic.c       | 223 +++++++++++++++++++++++++++++++++++++---
+ include/linux/irqchip/arm-gic.h |   3 +
+ 11 files changed, 464 insertions(+), 27 deletions(-)
+ create mode 100644 arch/arm64/include/asm/fiq.h
+
+--
+1.9.3
+
