@@ -1,198 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaIDOpB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:45:01 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59256 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079AbaIDOo7 (ORCPT
+	id S1753362AbaIDOwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:52:16 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47029 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750797AbaIDOwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:44:59 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, rdunlap@infradead.org,
-        netdev@vger.kernel.org, davem@davemloft.net, linux-doc@vger.kernel.org,
-        trivial@kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v2] net: treewide: Fix typo found in DocBook/networking.xml
-Date: Thu,  4 Sep 2014 23:44:36 +0900
-Message-Id: <1409841876-26567-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.0.60.g85f0837
-In-Reply-To: <20140903.203814.642492840095995090.davem@davemloft.net>
-References: <20140903.203814.642492840095995090.davem@davemloft.net>
+	Thu, 4 Sep 2014 10:52:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19vm4y+sTOskOrLOkcV4MwA
+Date: Thu, 4 Sep 2014 07:52:04 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
+Message-ID: <20140904145203.GR11766@atomide.com>
+References: <53FF84DF.7080406@linutronix.de>
+ <20140828225454.GM16006@atomide.com>
+ <540048B4.7010807@linutronix.de>
+ <20140829161221.GO16006@atomide.com>
+ <5404B149.6010400@linutronix.de>
+ <54060EDA.6060204@linutronix.de>
+ <20140902201536.GC11766@atomide.com>
+ <540745CC.2090901@linutronix.de>
+ <20140903174845.GE11766@atomide.com>
+ <54086CA7.8020507@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54086CA7.8020507@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix spelling typo found in DocBook/networking.xml.
-It is because the neworking.xml is generated from comments
-in the source, I have to fix typo in comments within the source.
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140904 06:46]:
+> On 09/03/2014 07:48 PM, Tony Lindgren wrote:
+> 
+> I will check this upper part of this email soon…
+> 
+> > OK. At least it's starting to now sound that the bugs are pretty much
+> > the same with 8250 and serial-omap :)
+> 
+> Do you see a reason for not posting the entire series again since now I
+> am bug compatible in the pm-runtime part? We have -rc3 and I would like
+> to get this merge the series I have now and this seems to be the only
+> problem I am aware of.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
----
- include/linux/netdevice.h  | 4 ++--
- include/net/wimax.h        | 2 +-
- include/trace/events/irq.h | 4 ++--
- net/core/datagram.c        | 2 +-
- net/core/gen_estimator.c   | 2 +-
- net/core/gen_stats.c       | 2 +-
- net/core/skbuff.c          | 4 ++--
- net/core/sock.c            | 4 ++--
- net/socket.c               | 2 +-
- 9 files changed, 13 insertions(+), 13 deletions(-)
+Yeah makes sense to me. Thanks for ensuring the bug
+compability :)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 039b237..d2b1704 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -3249,7 +3249,7 @@ static inline int __dev_uc_sync(struct net_device *dev,
- }
- 
- /**
-- *  __dev_uc_unsync - Remove synchonized addresses from device
-+ *  __dev_uc_unsync - Remove synchronized addresses from device
-  *  @dev:  device to sync
-  *  @unsync: function to call if address should be removed
-  *
-@@ -3293,7 +3293,7 @@ static inline int __dev_mc_sync(struct net_device *dev,
- }
- 
- /**
-- *  __dev_mc_unsync - Remove synchonized addresses from device
-+ *  __dev_mc_unsync - Remove synchronized addresses from device
-  *  @dev:  device to sync
-  *  @unsync: function to call if address should be removed
-  *
-diff --git a/include/net/wimax.h b/include/net/wimax.h
-index e52ef53..c52b685 100644
---- a/include/net/wimax.h
-+++ b/include/net/wimax.h
-@@ -290,7 +290,7 @@ struct wimax_dev;
-  *     This operation has to be synchronous, and return only when the
-  *     reset is complete. In case of having had to resort to bus/cold
-  *     reset implying a device disconnection, the call is allowed to
-- *     return inmediately.
-+ *     return immediately.
-  *     NOTE: wimax_dev->mutex is NOT locked when this op is being
-  *     called; however, wimax_dev->mutex_reset IS locked to ensure
-  *     serialization of calls to wimax_reset().
-diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-index 1c09820..3608beb 100644
---- a/include/trace/events/irq.h
-+++ b/include/trace/events/irq.h
-@@ -107,7 +107,7 @@ DECLARE_EVENT_CLASS(softirq,
-  * @vec_nr:  softirq vector number
-  *
-  * When used in combination with the softirq_exit tracepoint
-- * we can determine the softirq handler runtine.
-+ * we can determine the softirq handler routine.
-  */
- DEFINE_EVENT(softirq, softirq_entry,
- 
-@@ -121,7 +121,7 @@ DEFINE_EVENT(softirq, softirq_entry,
-  * @vec_nr:  softirq vector number
-  *
-  * When used in combination with the softirq_entry tracepoint
-- * we can determine the softirq handler runtine.
-+ * we can determine the softirq handler routine.
-  */
- DEFINE_EVENT(softirq, softirq_exit,
- 
-diff --git a/net/core/datagram.c b/net/core/datagram.c
-index 488dd1a..fdbc9a8 100644
---- a/net/core/datagram.c
-+++ b/net/core/datagram.c
-@@ -775,7 +775,7 @@ __sum16 __skb_checksum_complete(struct sk_buff *skb)
- EXPORT_SYMBOL(__skb_checksum_complete);
- 
- /**
-- *	skb_copy_and_csum_datagram_iovec - Copy and checkum skb to user iovec.
-+ *	skb_copy_and_csum_datagram_iovec - Copy and checksum skb to user iovec.
-  *	@skb: skbuff
-  *	@hlen: hardware length
-  *	@iov: io vector
-diff --git a/net/core/gen_estimator.c b/net/core/gen_estimator.c
-index 6b5b6e7..9d33dff 100644
---- a/net/core/gen_estimator.c
-+++ b/net/core/gen_estimator.c
-@@ -197,7 +197,7 @@ struct gen_estimator *gen_find_node(const struct gnet_stats_basic_packed *bstats
-  * as destination. A new timer with the interval specified in the
-  * configuration TLV is created. Upon each interval, the latest statistics
-  * will be read from &bstats and the estimated rate will be stored in
-- * &rate_est with the statistics lock grabed during this period.
-+ * &rate_est with the statistics lock grabbed during this period.
-  *
-  * Returns 0 on success or a negative error code.
-  *
-diff --git a/net/core/gen_stats.c b/net/core/gen_stats.c
-index 9d3d9e7..2ddbce4 100644
---- a/net/core/gen_stats.c
-+++ b/net/core/gen_stats.c
-@@ -206,7 +206,7 @@ EXPORT_SYMBOL(gnet_stats_copy_queue);
-  * @st: application specific statistics data
-  * @len: length of data
-  *
-- * Appends the application sepecific statistics to the top level TLV created by
-+ * Appends the application specific statistics to the top level TLV created by
-  * gnet_stats_start_copy() and remembers the data for XSTATS if the dumping
-  * handle is in backward compatibility mode.
-  *
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index adfc7ee..2d9f117 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2647,7 +2647,7 @@ EXPORT_SYMBOL(skb_prepare_seq_read);
-  * skb_seq_read() will return the remaining part of the block.
-  *
-  * Note 1: The size of each block of data returned can be arbitrary,
-- *       this limitation is the cost for zerocopy seqeuental
-+ *       this limitation is the cost for zerocopy sequential
-  *       reads of potentially non linear data.
-  *
-  * Note 2: Fragment lists within fragments are not implemented
-@@ -2781,7 +2781,7 @@ EXPORT_SYMBOL(skb_find_text);
- /**
-  * skb_append_datato_frags - append the user data to a skb
-  * @sk: sock  structure
-- * @skb: skb structure to be appened with user data.
-+ * @skb: skb structure to be appended with user data.
-  * @getfrag: call back function to be used for getting the user data
-  * @from: pointer to user message iov
-  * @length: length of the iov message
-diff --git a/net/core/sock.c b/net/core/sock.c
-index f7f2352..8bde925 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -166,7 +166,7 @@ EXPORT_SYMBOL(sk_ns_capable);
- /**
-  * sk_capable - Socket global capability test
-  * @sk: Socket to use a capability on or through
-- * @cap: The global capbility to use
-+ * @cap: The global capability to use
-  *
-  * Test to see if the opener of the socket had when the socket was
-  * created and the current process has the capability @cap in all user
-@@ -183,7 +183,7 @@ EXPORT_SYMBOL(sk_capable);
-  * @sk: Socket to use a capability on or through
-  * @cap: The capability to use
-  *
-- * Test to see if the opener of the socket had when the socke was created
-+ * Test to see if the opener of the socket had when the socket was created
-  * and the current process has the capability @cap over the network namespace
-  * the socket is a member of.
-  */
-diff --git a/net/socket.c b/net/socket.c
-index 95ee7d8..0593ebd 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2602,7 +2602,7 @@ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
-  *
-  *	This function is called by a protocol handler that wants to
-  *	advertise its address family, and have it linked into the
-- *	socket interface. The value ops->family coresponds to the
-+ *	socket interface. The value ops->family corresponds to the
-  *	socket system call protocol family.
-  */
- int sock_register(const struct net_proto_family *ops)
--- 
-2.1.0.24.g4109c28
+Regards,
 
+Tony
