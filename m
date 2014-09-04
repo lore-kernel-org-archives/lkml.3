@@ -1,91 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaIDOM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:12:27 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:54596 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbaIDOMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:12:25 -0400
-Message-ID: <54087343.5050409@redhat.com>
-Date: Thu, 04 Sep 2014 16:12:19 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@cloudius-systems.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, jroedel@suse.de,
-        agraf@suse.de, valentine.sinitsyn@gmail.com, jan.kiszka@siemens.com,
-        avi@cloudius-systems.com
-Subject: Re: [PATCH 3/4] KVM: x86: inject nested page faults on emulated instructions
-References: <1409670830-14544-1-git-send-email-pbonzini@redhat.com> <1409670830-14544-4-git-send-email-pbonzini@redhat.com> <20140904070220.GL9842@cloudius-systems.com>
-In-Reply-To: <20140904070220.GL9842@cloudius-systems.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1753520AbaIDOMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:12:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36141 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753434AbaIDOMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:12:52 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 1/3] uprobes: add comment with insn opcodes, mnemonics and why we dont support them
+Date: Thu,  4 Sep 2014 16:12:29 +0200
+Message-Id: <1409839951-8073-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2014 09:02, Gleb Natapov ha scritto:
-> On Tue, Sep 02, 2014 at 05:13:49PM +0200, Paolo Bonzini wrote:
->> > This is required for the following patch to work correctly.  If a nested page
->> > fault happens during emulation, we must inject a vmexit, not a page fault.
->> > Luckily we already have the required machinery: it is enough to return
->> > X86EMUL_INTERCEPTED instead of X86EMUL_PROPAGATE_FAULT.
->> > 
-> I wonder why this patch is needed. X86EMUL_PROPAGATE_FAULT causes
-> ctxt->have_exception to be set to true in x86_emulate_insn().
-> x86_emulate_instruction() checks ctxt->have_exception and calls
-> inject_emulated_exception() if it is true. inject_emulated_exception()
-> calls kvm_propagate_fault() where we check if the fault was nested and
-> generate vmexit or a page fault accordingly.
+After adding these, it's clear we have some awkward choices there.
+Some valid instructions are prohibited from uprobing while
+several invalid ones are allowed.
 
-Good question. :)
+Hopefully future edits to the good-opcode tables will fix wrong bits
+or explain why those bits are not wrong.
 
-If you do that, KVM gets down to the "if (writeback)" and writes the 
-ctxt->eip from L2 into the L1 EIP.
+No actual code changes.
 
-Possibly this patch can be replaced by just this?
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+CC: Jim Keniston <jkenisto@us.ibm.com>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/uprobes.c | 153 ++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 134 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 022513b..475e979 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5312,7 +5312,7 @@ restart:
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 5d1cbfe..9ba2fb2 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -66,6 +66,49 @@
+  * Good-instruction tables for 32-bit apps.  This is non-const and volatile
+  * to keep gcc from statically optimizing it out, as variable_test_bit makes
+  * some versions of gcc to think only *(unsigned long*) is used.
++ *
++ * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
++ * won't report *prefixes* as OPCODE1(insn).
++ * 0f - 2-byte opcode prefix
++ * 26,2e,36,3e - es:/cs:/ss:/ds:
++ * 64 - fs: (marked as "good", why?)
++ * 65 - gs: (marked as "good", why?)
++ * 66 - operand-size prefix
++ * 67 - address-size prefix
++ * f0 - lock prefix
++ * f2 - repnz    (marked as "good", why?)
++ * f3 - rep/repz (marked as "good", why?)
++ *
++ * Opcodes we'll probably never support:
++ * 6c-6f - ins,outs. SEGVs if used in userspace
++ * e4-e7 - in,out imm. SEGVs if used in userspace
++ * ec-ef - in,out acc. SEGVs if used in userspace
++ * cc - int3. SIGTRAP if used in userspace
++ * ce - into. Not used in userspace - no kernel support to make it useful. SEGVs
++ *	(why we support bound (62) then? it's similar, and similarly unused...)
++ * f1 - int1. SIGTRAP if used in userspace
++ * f4 - hlt. SEGVs if used in userspace
++ * fa - cli. SEGVs if used in userspace
++ * fb - sti. SEGVs if used in userspace
++ *
++ * Opcodes which need some work to be supported:
++ * 07,17,1f - pop es/ss/ds
++ *	Normally not used in userspace, but would execute if used.
++ *	Can cause GP or stack exception if tries to load wrong segment descriptor.
++ *	We hesitate to run them under single step since kernel's handling
++ *	of userspace single-stepping (TF flag) is fragile.
++ *	We can easily refuse to support push es/cs/ss/ds (06/0e/16/1e)
++ *	on the same grounds that they are never used.
++ * cd - int N.
++ *	Used by userspace for "int 80" syscall entry. (Other "int N"
++ *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
++ *	Not supported since kernel's handling of userspace single-stepping
++ *	(TF flag) is fragile.
++ * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
++ *
++ * Opcodes which can be enabled right away:
++ * 63 - arpl. This insn has no unusual exceptions (it's basically an arith op).
++ * d6 - salc. Undocumented "sign-extend carry flag to AL" insn
+  */
+ #if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
+ static volatile u32 good_insns_32[256 / 32] = {
+@@ -94,7 +137,55 @@ static volatile u32 good_insns_32[256 / 32] = {
+ #define good_insns_32	NULL
+ #endif
  
-        if (ctxt->have_exception) {
-                inject_emulated_exception(vcpu);
--               r = EMULATE_DONE;
-+               return EMULATE_DONE;
-        } else if (vcpu->arch.pio.count) {
-                if (!vcpu->arch.pio.in) {
-                        /* FIXME: return into emulator if single-stepping.  */
+-/* Good-instruction tables for 64-bit apps */
++/* Good-instruction tables for 64-bit apps.
++ *
++ * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
++ * won't report *prefixes* as OPCODE1(insn).
++ * 0f - 2-byte opcode prefix
++ * 26,2e,36,3e - es:/cs:/ss:/ds:
++ * 40-4f - rex prefixes
++ * 64 - fs: (marked as "good", why?)
++ * 65 - gs: (marked as "good", why?)
++ * 66 - operand-size prefix
++ * 67 - address-size prefix
++ * f0 - lock prefix
++ * f2 - repnz    (marked as "good", why?)
++ * f3 - rep/repz (marked as "good", why?)
++ *
++ * Genuinely invalid opcodes:
++ * 06,07 - formerly push/pop es
++ * 0e - formerly push cs
++ * 16,17 - formerly push/pop ss
++ * 1e,1f - formerly push/pop ds
++ * 27,2f,37,3f - formerly daa/das/aaa/aas
++ * 60,61 - formerly pusha/popa
++ * 62 - formerly bound. EVEX prefix for AVX512
++ * 82 - formerly redundant encoding of Group1
++ * 9a - formerly call seg:ofs (marked as "supported"???)
++ * c4,c5 - formerly les/lds. VEX prefixes for AVX
++ * ce - formerly into
++ * d4,d5 - formerly aam/aad
++ * d6 - formerly undocumented salc
++ * ea - formerly jmp seg:ofs (marked as "supported"???)
++ *
++ * Opcodes we'll probably never support:
++ * 6c-6f - ins,outs. SEGVs if used in userspace
++ * e4-e7 - in,out imm. SEGVs if used in userspace
++ * ec-ef - in,out acc. SEGVs if used in userspace
++ * cc - int3. SIGTRAP if used in userspace
++ * f1 - int1. SIGTRAP if used in userspace
++ * f4 - hlt. SEGVs if used in userspace
++ * fa - cli. SEGVs if used in userspace
++ * fb - sti. SEGVs if used in userspace
++ *
++ * Opcodes which need some work to be supported:
++ * cd - int N.
++ *	Used by userspace for "int 80" syscall entry. (Other "int N"
++ *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
++ *	Not supported since kernel's handling of userspace single-stepping
++ *	(TF flag) is fragile.
++ * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
++ */
+ #if defined(CONFIG_X86_64)
+ static volatile u32 good_insns_64[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+@@ -122,7 +213,48 @@ static volatile u32 good_insns_64[256 / 32] = {
+ #define good_insns_64	NULL
+ #endif
+ 
+-/* Using this for both 64-bit and 32-bit apps */
++/* Using this for both 64-bit and 32-bit apps.
++ * Opcodes we don't support:
++ * 0f 00 - SLDT/STR/LLDT/LTR/VERR/VERW/-/- group. System insns
++ * 0f 01 - SGDT/SIDT/LGDT/LIDT/SMSW/-/LMSW/INVLPG group.
++ *	Also encodes tons of other system insns if mod=11.
++ *	Some are in fact non-system: xend, xtest, rdtscp, maybe more
++ * 0f 02 - lar (why? should be safe, it throws no exceptipons)
++ * 0f 03 - lsl (why? should be safe, it throws no exceptipons)
++ * 0f 04 - undefined
++ * 0f 05 - syscall
++ * 0f 06 - clts (CPL0 insn)
++ * 0f 07 - sysret
++ * 0f 08 - invd (CPL0 insn)
++ * 0f 09 - wbinvd (CPL0 insn)
++ * 0f 0a - undefined
++ * 0f 0b - ud2
++ * 0f 0c - undefined
++ * 0f 0d - prefetchFOO (amd prefetch insns)
++ * 0f 18 - prefetchBAR (intel prefetch insns)
++ * 0f 24 - mov from test regs (perhaps entire 20-27 area can be disabled (special reg ops))
++ * 0f 25 - undefined
++ * 0f 26 - mov to test regs
++ * 0f 27 - undefined
++ * 0f 30 - wrmsr (CPL0 insn)
++ * 0f 34 - sysenter
++ * 0f 35 - sysexit
++ * 0f 36 - undefined
++ * 0f 37 - getsec
++ * 0f 38-3f - 3-byte opcodes (why?? all look safe)
++ * 0f 78 - vmread
++ * 0f 79 - vmwrite
++ * 0f 7a - undefined
++ * 0f 7b - undefined
++ * 0f 7c - undefined
++ * 0f 7d - undefined
++ * 0f a6 - undefined
++ * 0f a7 - undefined
++ * 0f b8 - popcnt (why?? it's an ordinary ALU op)
++ * 0f d0 - undefined
++ * 0f f0 - lddqu (why?? it's an ordinary vector load op)
++ * 0f ff - undefined
++ */
+ static volatile u32 good_2byte_insns[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ 	/*      ----------------------------------------------         */
+@@ -148,23 +280,6 @@ static volatile u32 good_2byte_insns[256 / 32] = {
+ #undef W
+ 
+ /*
+- * opcodes we'll probably never support:
+- *
+- *  6c-6d, e4-e5, ec-ed - in
+- *  6e-6f, e6-e7, ee-ef - out
+- *  cc, cd - int3, int
+- *  cf - iret
+- *  d6 - illegal instruction
+- *  f1 - int1/icebp
+- *  f4 - hlt
+- *  fa, fb - cli, sti
+- *  0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
+- *
+- * invalid opcodes in 64-bit mode:
+- *
+- *  06, 0e, 16, 1e, 27, 2f, 37, 3f, 60-62, 82, c4-c5, d4-d5
+- *  63 - we support this opcode in x86_64 but not in i386.
+- *
+  * opcodes we may need to refine support for:
+  *
+  *  0f - 2-byte instructions: For many of these instructions, the validity
+-- 
+1.8.1.4
 
-But I'm not sure how to test it, and I like the idea of treating nested page
-faults like other nested vmexits during emulation (which is what this patch
-does).
-
-If I included this patch, I could then remove kvm_propagate_fault
-like (I think) this:
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 92493e10937c..e096db566ac2 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4910,9 +4902,10 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
- static void inject_emulated_exception(struct kvm_vcpu *vcpu)
- {
- 	struct x86_emulate_ctxt *ctxt = &vcpu->arch.emulate_ctxt;
--	if (ctxt->exception.vector == PF_VECTOR)
--		kvm_propagate_fault(vcpu, &ctxt->exception);
--	else if (ctxt->exception.error_code_valid)
-+	if (ctxt->exception.vector == PF_VECTOR) {
-+		WARN_ON(fault->nested_page_fault);
-+		vcpu->arch.walk_mmu->inject_page_fault(vcpu, fault);
-+	} else if (ctxt->exception.error_code_valid)
- 		kvm_queue_exception_e(vcpu, ctxt->exception.vector,
- 				      ctxt->exception.error_code);
- 	else
-
-What do you think?
-
-Paolo
