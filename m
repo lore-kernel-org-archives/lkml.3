@@ -1,88 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440AbaIDEVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 00:21:24 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:50055 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaIDEVW (ORCPT
+	id S1755079AbaIDEhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 00:37:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:43554 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaIDEhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 00:21:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409793159-2573-4-git-send-email-zyw@rock-chips.com>
-References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
-	<1409793159-2573-4-git-send-email-zyw@rock-chips.com>
-Date: Wed, 3 Sep 2014 21:21:21 -0700
-X-Google-Sender-Auth: -bf0D0Ha3sOfXUh-ThXfsmxtbjY
-Message-ID: <CAD=FV=VpJtc+t7qsofjyDncTsVZS3VCuAn0SvKsTjGhxMtyw3Q@mail.gmail.com>
-Subject: Re: [PATCH v9 3/3] regulator: RK808: Remove pdata from the regulator
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>, Dmitry Torokhov <dtor@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Sep 2014 00:37:18 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-30-5407ec7babcb
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
+        kgene.kim@samsung.com, linux@arm.linux.org.uk,
+        vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
+        thomas.ab@samsung.com, chow.kim@samsung.com, tomasz.figa@gmail.com,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Alexander Shiyan'" <shc_work@mail.ru>,
+        "'Michal Simek'" <michal.simek@xilinx.com>
+References: <1409668935-10667-1-git-send-email-pankaj.dubey@samsung.com>
+ <6034841.GFrG3XCMdb@wuerfel>
+In-reply-to: <6034841.GFrG3XCMdb@wuerfel>
+Subject: RE: [PATCH v2] mfd: syscon: Decouple syscon interface from platform
+ devices
+Date: Thu, 04 Sep 2014 10:09:19 +0530
+Message-id: <002601cfc7fa$39413580$abc3a080$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIt001XuICEdFXqks+cH6c/XVPcogHeMPhCmyVSLjA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsWyRsSkSrf6DXuIweMueYu/k46xWyybdJfN
+	4vuuL+wWvQuuslnc/3qU0WLT42usFpd3zWGzmHF+H5PF7cu8Fu9eRlh8Ovqf1WLSDimLjmWM
+	Fqt2/WG0uPlsO5MDv0dLcw+bx+9fkxg9ds66y+5x59oeNo/NS+o9psw9wurRt2UVo8fnTXIe
+	ez//ZgngjOKySUnNySxLLdK3S+DKWPzsP3vBK72Kw89sGxivq3YxcnBICJhI/PmQ28XICWSK
+	SVy4t56ti5GLQ0hgKaPEoTlrWWBqjv6rhYgvYpT4/mcCO4Tzl1HizLEuJpBuNgFdiSfv5zKD
+	2CICyhLHX95hASliFtjMLLF9/QFGkISQQLrE5+adrCA2p4CmxI0jT1hAbGGBMIlZj5vAbBYB
+	VYlfUxeD1fMKWErc2v+JCcIWlPgx+R5YDbOAlsT6nceZIGx5ic1r3jJDvKAgsePsa0aII6wk
+	7vV+YoeoEZeY9OAh2NUSAns4JP6f2McKsUxA4tvkQ1BvykpsOgA1R1Li4IobLBMYJWYhWT0L
+	yepZSFbPQrJiASPLKkbR1ILkguKk9CJDveLE3OLSvHS95PzcTYzAVHH637PeHYy3D1gfYhTg
+	YFTi4S14wR4ixJpYVlyZe4jRFOiiicxSosn5wISUVxJvaGxmZGFqYmpsZG5ppiTOqyj1MxgY
+	iIklqdmpqQWpRfFFpTmpxYcYmTg4pRoYg0yDuqa+0Ao80nMvNCdMfePe4OKjqbJK3ewzzjwt
+	dWY5tmFzXl+k9fSNqWsT/3I1Nb/I/Xbex+TRuo7nrg8WPOG7/k39+FGV1JJ9C5d2CawzbFfc
+	Lb7G5uTjm2Y/Jxvr3dne9FdOo3LFo59+Z24aufzO2f8vyjikMW1iW5ykgHDzrl+KDNcfKLEU
+	ZyQaajEXFScCAJag31gQAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jAd3qN+whBn82i1j8nXSM3WLZpLts
+	Ft93fWG36F1wlc3i/tejjBabHl9jtbi8aw6bxYzz+5gsbl/mtXj3MsLi09H/rBaTdkhZdCxj
+	tFi16w+jxc1n25kc+D1amnvYPH7/msTosXPWXXaPO9f2sHlsXlLvMWXuEVaPvi2rGD0+b5Lz
+	2Pv5N0sAZ1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4Cu
+	W2YO0PlKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxozFz/6zF7zSqzj8
+	zLaB8bpqFyMHh4SAicTRf7VdjJxAppjEhXvr2boYuTiEBBYxSnz/M4EdwvnLKHHmWBcTSBWb
+	gK7Ek/dzmUFsEQFlieMv77CAFDELbGaW2L7+ACNIQkggXeJz805WEJtTQFPixpEnLCC2sECY
+	xKzHTWA2i4CqxK+pi8HqeQUsJW7t/8QEYQtK/Jh8D6yGWUBLYv3O40wQtrzE5jVvmSFOVZDY
+	cfY1I8QRVhL3ej+xQ9SIS0x68JB9AqPQLCSjZiEZNQvJqFlIWhYwsqxiFE0tSC4oTkrPNdIr
+	TswtLs1L10vOz93ECE5Fz6R3MK5qsDjEKMDBqMTDW/CCPUSINbGsuDL3EKMEB7OSCO/ss0Ah
+	3pTEyqrUovz4otKc1OJDjKZAn05klhJNzgemybySeENjE3NTY1NLEwsTM0slcd6DrdaBwPBK
+	LEnNTk0tSC2C6WPi4JRqYIxg2uzirl4y/8bnOdf8L7Vu/MLvs7Ccq/bP9HW/Ete99LmQlfP4
+	kVZfp3YVm26JJ/NEAa6rVcqVB+auyDgfus7l5xVzpXkLos5o5q387HP+zkXhpipZC//PKg9e
+	eKsbTTzzKjbD6cCjhpudrH0LC+QVTFkXKF9Qalx3N/jEmfhrbZ9Uq9njuZRYijMSDbWYi4oT
+	AQUMin9bAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+Hi Arnd,
 
-On Wed, Sep 3, 2014 at 6:12 PM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->
-> Tested-by: Heiko Stuebner <heiko@sntech.de>
-> ---
->
-> Changes in v9:
-> Adviced by Doug
-> - add reg_np
->
-> Changes in v8:
-> Adviced by Doug
-> - remove rk808_regulator_dts() function
-> - remove the check about "client->dev.of_node"
->
-> Changes in v7:
-> - remove pdata struct from header file, add rk808_regulator struct
->
-> Changes in v6:
-> - remove the redundant code
->
-> Changes in v5:
-> - re-edit base on Mark's branch
->
-> Changes in v4:
-> - use &client->dev replace rk808->dev
->
-> Changes in v3: None
-> Changes in v2:
-> Adviced by Mark Browm:
-> - change of_find_node_by_name to find_child_by_name
-> - use RK808_NUM_REGULATORS as the name of the constant
-> - create a pdata when missing platform data
-> - use the rk808_reg name to supply_regulator name
-> - replace regulator_register with devm_regulator_register
-> - some other problem with coding style
->
->  drivers/regulator/rk808-regulator.c |   91 +++++++----------------------------
->  1 file changed, 18 insertions(+), 73 deletions(-)
+On Tuesday, September 02, 2014 Arnd Bergmann wrote,
+> To: Pankaj Dubey
+> Cc: linux-arm-kernel@lists.infradead.org;
+linux-samsung-soc@vger.kernel.org; linux-
+> kernel@vger.kernel.org; lee.jones@linaro.org; kgene.kim@samsung.com;
+> linux@arm.linux.org.uk; vikas.sajjan@samsung.com; joshi@samsung.com;
+> naushad@samsung.com; thomas.ab@samsung.com; chow.kim@samsung.com;
+> tomasz.figa@gmail.com; Tomasz Figa; Alexander Shiyan; Michal Simek
+> Subject: Re: [PATCH v2] mfd: syscon: Decouple syscon interface from
+platform
+> devices
+> 
+> On Tuesday 02 September 2014 20:12:15 Pankaj Dubey wrote:
+> > Currently a syscon entity can only be registered directly through a
+> > platform device that binds to a dedicated syscon driver. However in
+> > certain cases it is required to bind a device with it's dedicated
+> > driver rather than binding with syscon driver.
+> >
+> > For example, certain SoCs (e.g. Exynos) contain system controller
+> > blocks which perform various functions such as power domain control,
+> > CPU power management, low power mode control, but in addition contain
+> > certain IP integration glue, such as various signal masks, coprocessor
+> > power control, etc. In such case, there is a need to have a dedicated
+> > driver for such system controller but also share registers with other
+> > drivers. The latter is where the syscon interface is helpful.
+> >
+> > This patch decouples syscon object from syscon platform driver, and
+> > allows to create syscon objects first time when it is required by
+> > calling of syscon_regmap_lookup_by APIs and keeps a list of such
+> > syscon objects along with syscon provider device_nodes and regmap
+handles.
+> >
+> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> > ---
+> > V1 of this patchset [1] and related discussion can be found here [1].
+> >
+> > Changes since v1:
+> >  - Removed of_syscon_unregister function.
+> >  - Modified of_syscon_register function and it will be used by syscon.c
+> >    to create syscon objects whenever required.
+> >  - Removed platform device support from syscon.
+> >  - Removed syscon_regmap_lookup_by_pdevname API support.
+> >  - As there are significant changes w.r.t patchset v1, I am taking over
+> >    author for this patchset from Tomasz Figa.
+> 
+> Note that you got the Signed-off-by: list wrong, you should never have any
+people
+> listed as Signed-off-by after your own name, and they should be listed
+before your
+> name only when you are forwarding their patches.
+> 
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
+Sorry, I was not aware of this. I will take care in future.
+
+> > Note: Current kernel has clps711x user of
+> > syscon_regmap_lookup_by_pdevname and will be broken after this patch.
+> > As per discussion over here [1], patches for making these drivers DT
+> > based are ready and once that is done they can use
+> syscon_regmap_lookup_by_phandle or syscon_regmap_lookup_by_compatible.
+> >
+> > [1]: https://lkml.org/lkml/2014/8/22/81
+> 
+> Adding Alexander Shiyan to Cc here, so we can make sure this is well
+coordinated.
+> 
+> I'm also adding Michal Simek, since here was involved in earlier
+discussions about
+> doing this.
+> 
+
+Thanks.
+
+> >  drivers/mfd/syscon.c       |  143
++++++++++++++-------------------------------
+> >  include/linux/mfd/syscon.h |    1 +
+> >  2 files changed, 44 insertions(+), 100 deletions(-)
+> 
+> I certainly like the diffstat ;-)
+> 
+> >  struct syscon {
+> > +	struct device_node *np;
+> >  	struct regmap *regmap;
+> > +	struct list_head list;
+> >  };
+> 
+> Right
+> 
+> > @@ -68,27 +72,6 @@ struct regmap
+> > *syscon_regmap_lookup_by_compatible(const char *s)  }
+> > EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
+> >
+> > -static int syscon_match_pdevname(struct device *dev, void *data) -{
+> > -	return !strcmp(dev_name(dev), (const char *)data);
+> > -}
+> > -
+> > -struct regmap *syscon_regmap_lookup_by_pdevname(const char *s) -{
+> > -	struct device *dev;
+> > -	struct syscon *syscon;
+> > -
+> > -	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+> > -				 syscon_match_pdevname);
+> > -	if (!dev)
+> > -		return ERR_PTR(-EPROBE_DEFER);
+> > -
+> > -	syscon = dev_get_drvdata(dev);
+> > -
+> > -	return syscon->regmap;
+> > -}
+> > -EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+> 
+> I think this can actually be left intact if that helps with clps71xx.
+> It could be done in a hacky way using bus_find_device_by_name() to keep it
+simple,
+> or in a somewhat nicer way by keeping the syscon platform_driver around
+for the
+> non-DT case.
+> 
+
+Ok as per our last discussion you mentioned that clps71xx will be soon
+migrating to DT.
+So if that is not going to happen sooner, I would also prefer better keep
+syscon_regmap_lookup_by_pdevname and syscon platform_driver for non-DT case,
+so that this issue should not block this patch.
+
+So please let's make final call to keep syscon platform_driver for non-DT
+case which eventually
+can be dropped once clps71xx driver migrates to DT based. So that I can
+prepare next patchset
+keeping syscon platform_driver support  and syscon_regmap_lookup_by_pdevname
+API support
+for non-DT case and send across for review. 
+
+
+> 
+> > +	regmap = regmap_init_mmio(NULL, base, &syscon_regmap_config);
+> > +	if (IS_ERR(regmap)) {
+> > +		pr_err("regmap init failed\n");
+> > +		return ERR_CAST(regmap);
+> > +	}
+> 
+> The last time I looked over this code, I think it was not safe to
+> call regmap_init_mmio() with a NULL device pointer, and we decided
+> that should be fixed. Have you checked whether it is ok now?
+> 
+
+At least we could not see any issues with this. We have tested it one
+Exynos5250 board
+where syscon object is getting created first time when other drivers (USB,
+SATA Phy, Watchdog)
+are calling helper function syscon_regmap_lookup_by_phandle and able to
+access regmap handle
+and able to use regmap_read/write APIs.
+
+> 	Arnd
+
