@@ -1,80 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaIDRDd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:03:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61064 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754806AbaIDRDb (ORCPT
+	id S1754540AbaIDREs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:04:48 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:33681 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140AbaIDREp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:03:31 -0400
-Date: Thu, 4 Sep 2014 18:03:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
-        Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
-Message-ID: <20140904170349.GL7156@arm.com>
-References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
- <1409781429-27593-4-git-send-email-keescook@chromium.org>
+	Thu, 4 Sep 2014 13:04:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409781429-27593-4-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1409576021-24828-2-git-send-email-anders.berg@avagotech.com>
+References: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com>
+	<1409576021-24828-2-git-send-email-anders.berg@avagotech.com>
+Date: Thu, 4 Sep 2014 19:04:44 +0200
+Message-ID: <CACRpkdby4H-fivNn_kG2uL0EjsCGAc+t6OyFi0+VcNGf2Z9NQA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: Add driver for AXM55xx SSP chip selects
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Anders Berg <anders.berg@avagotech.com>, Mark Brown <broonie@kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+I need an ACK from Mark Brown on this before I apply.
+The driver seems to do what it should, but I need Mark to
+be OK with exporting the CS signals from an SSP/SPI block
+to be exposed to Linux as GPIOs.
 
-On Wed, Sep 03, 2014 at 10:57:04PM +0100, Kees Cook wrote:
-> This is used from set_fixmap() and clear_fixmap() via asm-generic/fixmap.h.
-> Also makes sure that the fixmap allocation fits into the expected range.
-> 
-> Based on patch by Rabin Vincent.
+(Top-posting and quoting patch verbatim so Mark gets it.)
 
-[...]
+Yours,
+Linus Walleij
 
-> +void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot)
+On Mon, Sep 1, 2014 at 2:53 PM, Anders Berg <anders.berg@avagotech.com> wrote:
+> The AXM55xx device has a ARM PL022 SSP controller with an extension that
+> enables the control of up to five chip select signals. This driver implements
+> the logic to control these signals and exports them as GPIOs.
+>
+> Signed-off-by: Anders Berg <anders.berg@avagotech.com>
+> ---
+>  drivers/gpio/Kconfig          |   8 +++
+>  drivers/gpio/Makefile         |   1 +
+>  drivers/gpio/gpio-axxia-ssp.c | 128 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 137 insertions(+)
+>  create mode 100644 drivers/gpio/gpio-axxia-ssp.c
+>
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 9de1515..c2f2686 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -112,6 +112,14 @@ config GPIO_MAX730X
+>
+>  comment "Memory mapped GPIO drivers:"
+>
+> +config GPIO_AXXIA_SSP
+> +       tristate "AXM55xx SSP chip select pins as GPIO"
+> +       depends on ARCH_AXXIA
+> +       default y if SPI_MASTER
+> +       select GPIO_GENERIC
+> +       help
+> +         Say yes here to get GPIO interface for AXM55xx SSP chip select signals.
+> +
+>  config GPIO_CLPS711X
+>         tristate "CLPS711X GPIO support"
+>         depends on ARCH_CLPS711X || COMPILE_TEST
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 5d024e3..01e1869 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -18,6 +18,7 @@ obj-$(CONFIG_GPIO_ADP5520)    += gpio-adp5520.o
+>  obj-$(CONFIG_GPIO_ADP5588)     += gpio-adp5588.o
+>  obj-$(CONFIG_GPIO_AMD8111)     += gpio-amd8111.o
+>  obj-$(CONFIG_GPIO_ARIZONA)     += gpio-arizona.o
+> +obj-$(CONFIG_GPIO_AXXIA_SSP)   += gpio-axxia-ssp.o
+>  obj-$(CONFIG_GPIO_BCM_KONA)    += gpio-bcm-kona.o
+>  obj-$(CONFIG_GPIO_BT8XX)       += gpio-bt8xx.o
+>  obj-$(CONFIG_GPIO_CLPS711X)    += gpio-clps711x.o
+> diff --git a/drivers/gpio/gpio-axxia-ssp.c b/drivers/gpio/gpio-axxia-ssp.c
+> new file mode 100644
+> index 0000000..5884206
+> --- /dev/null
+> +++ b/drivers/gpio/gpio-axxia-ssp.c
+> @@ -0,0 +1,128 @@
+> +/*
+> + * GPIO interface for SSP chip select outputs.
+> + *
+> + * Copyright (C) 2013 LSI Corporation
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/bitops.h>
+> +#include <linux/init.h>
+> +#include <linux/gpio.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +
+> +struct gpio_dev {
+> +       void __iomem    *reg;
+> +       struct gpio_chip gpio_chip;
+> +};
+> +
+> +static int ssp_gpio_direction_out(struct gpio_chip *chip,
+> +                                 unsigned offset, int value)
 > +{
-> +	unsigned long vaddr = __fix_to_virt(idx);
-> +	pte_t *pte = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
+> +       /* Always outputs */
+> +       return 0;
+> +}
 > +
-> +	/* Make sure fixmap region does not exceed available allocation. */
-> +	BUILD_BUG_ON(FIXADDR_START + (__end_of_fixed_addresses * PAGE_SIZE) >
-> +		     FIXADDR_END);
-> +	BUG_ON(idx >= __end_of_fixed_addresses);
+> +static int ssp_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       return -ENXIO;
+> +}
 > +
-> +	if (pgprot_val(prot))
-> +		set_pte_at(NULL, vaddr, pte,
-> +			pfn_pte(phys >> PAGE_SHIFT, prot));
-> +	else
-> +		pte_clear(NULL, vaddr, pte);
+> +static int ssp_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       struct gpio_dev *priv = dev_get_drvdata(chip->dev);
+> +       u32 tmp;
 > +
-> +	/*
-> +	 * Given the potential a15 tlbi errata, we can only do tlb flushes
-> +	 * with interrupts disabled. Callers must have taken care of this.
-> +	 */
-> +	WARN_ON_ONCE(!irqs_disabled());
-> +	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
-
-Aha, this explains why we were confusing each other! The issue is that
-interrupts must be *enabled*, so this code does the exact opposite of
-what we need.
-
-I think this got lost in a sea of double negatives during the last round
-of review.
-
-Will
+> +       tmp = readl(priv->reg);
+> +       return !!(tmp & BIT(offset));
+> +}
+> +
+> +static void ssp_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +       struct gpio_dev *priv = dev_get_drvdata(chip->dev);
+> +       u32 tmp;
+> +
+> +       tmp = readl(priv->reg);
+> +       if (value)
+> +               tmp |= BIT(offset);
+> +       else
+> +               tmp &= ~BIT(offset);
+> +       writel(tmp, priv->reg);
+> +}
+> +
+> +static int ssp_gpio_probe(struct platform_device *pdev)
+> +{
+> +       struct gpio_dev *priv;
+> +       struct resource *io;
+> +       struct gpio_chip *chip;
+> +       int ret;
+> +
+> +       priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+> +       if (!priv)
+> +               return -ENOMEM;
+> +
+> +       io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       priv->reg = devm_ioremap(&pdev->dev, io->start, resource_size(io));
+> +       if (!priv->reg)
+> +               return -ENXIO;
+> +
+> +       platform_set_drvdata(pdev, priv);
+> +
+> +       chip = &priv->gpio_chip;
+> +       chip->dev = &pdev->dev;
+> +#ifdef CONFIG_OF_GPIO
+> +       chip->of_node = pdev->dev.of_node;
+> +#endif
+> +       chip->direction_input = ssp_gpio_direction_in;
+> +       chip->direction_output = ssp_gpio_direction_out;
+> +       chip->get = ssp_gpio_get;
+> +       chip->set = ssp_gpio_set;
+> +       chip->label = "ssp-gpio";
+> +       chip->owner = THIS_MODULE;
+> +       chip->base = -1;
+> +       chip->ngpio = 5;
+> +
+> +       /* Set all 5 chip-selects high (de-asserted) by default */
+> +       writel(0x1f, priv->reg);
+> +
+> +       ret = gpiochip_add(chip);
+> +       if (ret < 0)
+> +               dev_err(&pdev->dev, "failed to register chip, %d\n", ret);
+> +
+> +       return ret;
+> +}
+> +
+> +static int ssp_gpio_remove(struct platform_device *pdev)
+> +{
+> +       struct gpio_dev *priv = dev_get_drvdata(&pdev->dev);
+> +
+> +       return gpiochip_remove(&priv->gpio_chip);
+> +}
+> +
+> +static const struct of_device_id ssp_gpio_id_table[] = {
+> +       { .compatible = "lsi,ssp-gpio" },
+> +       {}
+> +};
+> +MODULE_DEVICE_TABLE(platform, ssp_gpio_id_table);
+> +
+> +static struct platform_driver ssp_gpio_driver = {
+> +       .driver = {
+> +               .name = "ssp-gpio",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = ssp_gpio_id_table
+> +       },
+> +       .probe = ssp_gpio_probe,
+> +       .remove = ssp_gpio_remove,
+> +};
+> +
+> +module_platform_driver(ssp_gpio_driver);
+> +
+> +MODULE_AUTHOR("LSI Corporation");
+> +MODULE_DESCRIPTION("GPIO interface for SSP chip selects");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.9.1
+>
