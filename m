@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716AbaIDGnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 02:43:49 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:29899 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaIDGnr (ORCPT
+	id S933121AbaIDGoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 02:44:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44511 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756545AbaIDGoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 02:43:47 -0400
-Message-ID: <54080A1A.7070207@huawei.com>
-Date: Thu, 4 Sep 2014 14:43:38 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 4 Sep 2014 02:44:19 -0400
+Date: Thu, 4 Sep 2014 08:32:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Kautuk Consul <consul.kautuk@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
+ with try_to_wake_up()
+Message-ID: <20140904063200.GE3190@worktop.ger.corp.intel.com>
+References: <20140825155738.GA5944@redhat.com>
+ <20140901153935.GQ27892@worktop.ger.corp.intel.com>
+ <20140901175851.GA15210@redhat.com>
+ <20140901190931.GD5806@worktop.ger.corp.intel.com>
+ <20140902155208.GA28668@redhat.com>
+ <20140902164714.GA17033@redhat.com>
+ <20140902173910.GF27892@worktop.ger.corp.intel.com>
+ <20140903133640.GA25439@redhat.com>
+ <20140903144450.GB7083@twins.programming.kicks-ass.net>
+ <20140904050424.GA26756@gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2 2/2] cgroup: check cgroup liveliness before unbreaking
- kernfs
-References: <540809FB.8020901@huawei.com>
-In-Reply-To: <540809FB.8020901@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.54080A21.00C8,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 35dd51037958a2b54fe1bd3ddac17595
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904050424.GA26756@gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cgroup_kn_lock_live() is called through some kernfs operation and
-another thread is calling cgroup_rmdir(), we'll trigger the warning in
-cgroup_get().
+On Thu, Sep 04, 2014 at 07:04:24AM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > > Ah, I simply do not know what is cheaper, even on x86. Well, 
+> > > we need to enable/disable irqs, but again I do not really 
+> > > know how much does this cost.
+> > 
+> > Ah good point about that IRQ thing, yes that's horribly 
+> > expensive.
+> 
+> Enabling/disabling local IRQs is not really expensive (it's a 
+> flat cost essentially - below 10 cycles on modern x86 CPUs) - 
+> especially if we consider the 100x-1000x frequency difference 
+> between schedule() and exit(), on typical systems:
+> 
+>   $ grep -E 'ctxt|processes' /proc/stat 
+>   ctxt 47166536
+>   processes 91876
+> 
+> And that's from a system that emphatically does not schedule 
+> much. On others the difference is much larger.
+> 
+> So please don't push complexity into the scheduler from 
+> lower-freq areas of the kernel!
 
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 1228 at kernel/cgroup.c:1034 cgroup_get+0x89/0xa0()
-...
-Call Trace:
- [<c16ee73d>] dump_stack+0x41/0x52
- [<c10468ef>] warn_slowpath_common+0x7f/0xa0
- [<c104692d>] warn_slowpath_null+0x1d/0x20
- [<c10bb999>] cgroup_get+0x89/0xa0
- [<c10bbe58>] cgroup_kn_lock_live+0x28/0x70
- [<c10be3c1>] __cgroup_procs_write.isra.26+0x51/0x230
- [<c10be5b2>] cgroup_tasks_write+0x12/0x20
- [<c10bb7b0>] cgroup_file_write+0x40/0x130
- [<c11aee71>] kernfs_fop_write+0xd1/0x160
- [<c1148e58>] vfs_write+0x98/0x1e0
- [<c114934d>] SyS_write+0x4d/0xa0
- [<c16f656b>] sysenter_do_call+0x12/0x12
----[ end trace 6f2e0c38c2108a74 ]---
+We were very much not going to make schedule() more expensive, just
+figuring out other ways.
 
-Fix this by calling css_tryget() instead of cgroup_get().
-
-v2:
-- move cgroup_tryget() right below cgroup_get() definition. (Tejun)
-
-Cc: <stable@vger.kernel.org> # 3.15+
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
----
- kernel/cgroup.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 709a6a0..51dd46e 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1031,6 +1031,11 @@ static void cgroup_get(struct cgroup *cgrp)
- 	css_get(&cgrp->self);
- }
- 
-+static bool cgroup_tryget(struct cgroup *cgrp)
-+{
-+	return css_tryget(&cgrp->self);
-+}
-+
- static void cgroup_put(struct cgroup *cgrp)
- {
- 	css_put(&cgrp->self);
-@@ -1091,7 +1096,8 @@ static struct cgroup *cgroup_kn_lock_live(struct kernfs_node *kn)
- 	 * protection against removal.  Ensure @cgrp stays accessible and
- 	 * break the active_ref protection.
- 	 */
--	cgroup_get(cgrp);
-+	if (!cgroup_tryget(cgrp))
-+		return NULL;
- 	kernfs_break_active_protection(kn);
- 
- 	mutex_lock(&cgroup_mutex);
--- 
-1.8.0.2
-
+And while its good to know modern x86 has cheap INT flag poking, this is
+very much not true for other archs and not even older x86 (remember P4?
+:-).
