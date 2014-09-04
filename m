@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933692AbaIDBN1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:13:27 -0400
-Received: from mail-pd0-f193.google.com ([209.85.192.193]:64245 "EHLO
-	mail-pd0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933454AbaIDBNZ (ORCPT
+	id S933723AbaIDBNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:13:35 -0400
+Received: from mail-pa0-f65.google.com ([209.85.220.65]:39445 "EHLO
+	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933454AbaIDBNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:13:25 -0400
+	Wed, 3 Sep 2014 21:13:33 -0400
 From: Chris Zhong <zyw@rock-chips.com>
 To: dianders@chromium.org, heiko@sntech.de
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -20,9 +20,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
         javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
         Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH v9 2/3] clk: RK808: Add clkout driver for RK808
-Date: Thu,  4 Sep 2014 09:12:38 +0800
-Message-Id: <1409793159-2573-3-git-send-email-zyw@rock-chips.com>
+Subject: [PATCH v9 3/3] regulator: RK808: Remove pdata from the regulator
+Date: Thu,  4 Sep 2014 09:12:39 +0800
+Message-Id: <1409793159-2573-4-git-send-email-zyw@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
 References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
@@ -32,250 +32,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
 Tested-by: Heiko Stuebner <heiko@sntech.de>
 ---
 
-Changes in v9: None
+Changes in v9:
+Adviced by Doug
+- add reg_np
+
 Changes in v8:
-Adviced by Mike
--rename "control" to "enable"
--define RK808_NR_OUTPUT 2
+Adviced by Doug
+- remove rk808_regulator_dts() function
+- remove the check about "client->dev.of_node"
 
 Changes in v7:
-Adviced by doug
--fix coding style problems
+- remove pdata struct from header file, add rk808_regulator struct
 
 Changes in v6:
-Adviced by doug
-- use correct argument call of_clk_add_provider in probe
+- remove the redundant code
 
 Changes in v5:
-Adviced by doug
-- add some error checking in probe
-- move "rockchip,rk808.h" into the patch about dt-bindings
+- re-edit base on Mark's branch
 
 Changes in v4:
-Adviced by doug
-- add "clock-output-names" propertiey
-- add a header file "rockchip,rk808.h"
+- use &client->dev replace rk808->dev
 
-Changes in v3:
-- fix compile err
-
+Changes in v3: None
 Changes in v2:
-Adviced by javier.martinez
-- separated from rtc-rk808.c
+Adviced by Mark Browm:
+- change of_find_node_by_name to find_child_by_name
+- use RK808_NUM_REGULATORS as the name of the constant
+- create a pdata when missing platform data
+- use the rk808_reg name to supply_regulator name
+- replace regulator_register with devm_regulator_register
+- some other problem with coding style
 
- drivers/clk/Kconfig     |    9 +++
- drivers/clk/Makefile    |    1 +
- drivers/clk/clk-rk808.c |  164 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 174 insertions(+)
- create mode 100644 drivers/clk/clk-rk808.c
+ drivers/regulator/rk808-regulator.c |   91 +++++++----------------------------
+ 1 file changed, 18 insertions(+), 73 deletions(-)
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index cfd3af7..84e0590 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -38,6 +38,15 @@ config COMMON_CLK_MAX77686
- 	---help---
- 	  This driver supports Maxim 77686 crystal oscillator clock. 
+diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
+index e372008..0d5afc4 100644
+--- a/drivers/regulator/rk808-regulator.c
++++ b/drivers/regulator/rk808-regulator.c
+@@ -3,8 +3,8 @@
+  *
+  * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+  *
+- * Author: Chris Zhong <zyw@rock-chips.com>
+- * Author: Zhang Qing <zhangqing@rock-chips.com>
++ * Author: Chris Zhong<zyw@rock-chips.com>
++ * Author: Zhang Qing<zhanqging@rock-chips.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms and conditions of the GNU General Public License,
+@@ -14,24 +14,16 @@
+  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+  * more details.
+- *
+  */
  
-+config COMMON_CLK_RK808
-+	tristate "Clock driver for RK808"
-+	depends on MFD_RK808
-+	---help---
-+	  This driver supports RK808 crystal oscillator clock. These
-+	  multi-function devices have two fixed-rate oscillators,
-+	  clocked at 32KHz each. Clkout1 is always on, Clkout2 can off
-+	  by control register.
+ #include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/i2c.h>
+-#include <linux/err.h>
+-#include <linux/platform_device.h>
+ #include <linux/mfd/rk808.h>
+-#include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/of_regulator.h>
+-#include <linux/regmap.h>
+-#include <linux/slab.h>
+-/*
+- * Field Definitions.
+- */
 +
- config COMMON_CLK_SI5351
- 	tristate "Clock driver for SiLabs 5351A/B/C"
- 	depends on I2C
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index f537a0b..99f53d5 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
- obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
- obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
- obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
-+obj-$(CONFIG_COMMON_CLK_RK808)		+= clk-rk808.o
- obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
- obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
- obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
-diff --git a/drivers/clk/clk-rk808.c b/drivers/clk/clk-rk808.c
-new file mode 100644
-index 0000000..8981346
---- /dev/null
-+++ b/drivers/clk/clk-rk808.c
-@@ -0,0 +1,164 @@
-+/*
-+ * Clkout driver for Rockchip RK808
-+ *
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * Author:Chris Zhong <zyw@rock-chips.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/rk808.h>
-+#include <linux/i2c.h>
-+
-+#define RK808_NR_OUTPUT 2
-+
-+struct rk808_clkout {
-+	struct rk808 *rk808;
-+	struct clk_onecell_data clk_data;
-+	struct clk_hw		clkout1_hw;
-+	struct clk_hw		clkout2_hw;
-+};
-+
-+static unsigned long rk808_clkout_recalc_rate(struct clk_hw *hw,
-+					      unsigned long parent_rate)
-+{
-+	return 32768;
-+}
-+
-+static int rk808_clkout1_is_prepared(struct clk_hw *hw)
-+{
-+	return 1;
-+}
-+
-+static int rk808_clkout2_enable(struct clk_hw *hw, bool enable)
-+{
-+	struct rk808_clkout *rk808_clkout = container_of(hw,
-+							 struct rk808_clkout,
-+							 clkout2_hw);
-+	struct rk808 *rk808 = rk808_clkout->rk808;
-+
-+	return regmap_update_bits(rk808->regmap, RK808_CLK32OUT_REG,
-+				  CLK32KOUT2_EN, enable ? CLK32KOUT2_EN : 0);
-+}
-+
-+static int rk808_clkout2_prepare(struct clk_hw *hw)
-+{
-+	return rk808_clkout2_enable(hw, true);
-+}
-+
-+static void rk808_clkout2_unprepare(struct clk_hw *hw)
-+{
-+	rk808_clkout2_enable(hw, false);
-+}
-+
-+static int rk808_clkout2_is_prepared(struct clk_hw *hw)
-+{
-+	struct rk808_clkout *rk808_clkout = container_of(hw,
-+							 struct rk808_clkout,
-+							 clkout2_hw);
-+	struct rk808 *rk808 = rk808_clkout->rk808;
-+	uint32_t val;
-+
-+	int ret = regmap_read(rk808->regmap, RK808_CLK32OUT_REG, &val);
-+
++/* Field Definitions */
+ #define RK808_BUCK_VSEL_MASK	0x3f
+ #define RK808_BUCK4_VSEL_MASK	0xf
+ #define RK808_LDO_VSEL_MASK	0x1f
+@@ -50,10 +42,6 @@ static const int buck_contr_base_addr[] = {
+ 	RK808_BUCK4_CONFIG_REG,
+ };
+ 
+-#define rk808_BUCK_SET_VOL_REG(x) (buck_set_vol_base_addr[x])
+-#define rk808_BUCK_CONTR_REG(x) (buck_contr_base_addr[x])
+-#define rk808_LDO_SET_VOL_REG(x) (ldo_set_vol_base_addr[x])
+-
+ static const int ldo_set_vol_base_addr[] = {
+ 	RK808_LDO1_ON_VSEL_REG,
+ 	RK808_LDO2_ON_VSEL_REG,
+@@ -65,9 +53,7 @@ static const int ldo_set_vol_base_addr[] = {
+ 	RK808_LDO8_ON_VSEL_REG,
+ };
+ 
+-/*
+- * rk808 voltage number
+- */
++/* rk808 voltage number */
+ static const struct regulator_linear_range rk808_buck_voltage_ranges[] = {
+ 	REGULATOR_LINEAR_RANGE(700000, 0, 63, 12500),
+ };
+@@ -308,77 +294,35 @@ static struct of_regulator_match rk808_reg_matches[] = {
+ 	[RK808_ID_SWITCH2]	= { .name = "SWITCH_REG2" },
+ };
+ 
+-static int rk808_regulator_dts(struct i2c_client *client,
+-			       struct rk808_board *pdata)
+-{
+-	struct device_node *np, *reg_np;
+-	int i, ret;
+-
+-	np = client->dev.of_node;
+-	if (!np) {
+-		dev_err(&client->dev, "could not find pmic sub-node\n");
+-		return -ENXIO;
+-	}
+-
+-	reg_np = of_get_child_by_name(np, "regulators");
+-	if (!reg_np)
+-		return -ENXIO;
+-
+-	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
+-				 RK808_NUM_REGULATORS);
+-	if (ret < 0) {
+-		dev_err(&client->dev,
+-			"failed to parse regulator data: %d\n", ret);
+-		return ret;
+-	}
+-
+-	for (i = 0; i < RK808_NUM_REGULATORS; i++) {
+-		if (!rk808_reg_matches[i].init_data ||
+-		    !rk808_reg_matches[i].of_node)
+-			continue;
+-
+-		pdata->rk808_init_data[i] = rk808_reg_matches[i].init_data;
+-		pdata->of_node[i] = rk808_reg_matches[i].of_node;
+-	}
+-
+-	return 0;
+-}
+-
+ static int rk808_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
+ 	struct i2c_client *client = rk808->i2c;
+-	struct rk808_board *pdata = dev_get_platdata(&client->dev);
++	struct device_node *reg_np;
+ 	struct regulator_config config = {};
+ 	struct regulator_dev *rk808_rdev;
+-	struct regulator_init_data *reg_data;
+-	int i = 0;
+-	int ret = 0;
++	int ret, i;
+ 
+-	if (!pdata) {
+-		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+-		if (!pdata)
+-			return -ENOMEM;
+-	}
++	reg_np = of_get_child_by_name(client->dev.of_node, "regulators");
++	if (!reg_np)
++		return -ENXIO;
+ 
+-	ret = rk808_regulator_dts(client, pdata);
+-	if (ret)
++	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
++				 RK808_NUM_REGULATORS);
 +	if (ret < 0)
-+		return ret;
+ 		return ret;
+ 
+ 	/* Instantiate the regulators */
+ 	for (i = 0; i < RK808_NUM_REGULATORS; i++) {
+-		reg_data = pdata->rk808_init_data[i];
+-		if (!reg_data)
++		if (!rk808_reg_matches[i].init_data ||
++		    !rk808_reg_matches[i].of_node)
+ 			continue;
+ 
+ 		config.dev = &client->dev;
+ 		config.driver_data = rk808;
+ 		config.regmap = rk808->regmap;
+-
+-		if (client->dev.of_node)
+-			config.of_node = pdata->of_node[i];
+-
+-		config.init_data = reg_data;
++		config.of_node = rk808_reg_matches[i].of_node;
++		config.init_data = rk808_reg_matches[i].init_data;
+ 
+ 		rk808_rdev = devm_regulator_register(&pdev->dev,
+ 						     &rk808_reg[i], &config);
+@@ -388,6 +332,7 @@ static int rk808_regulator_probe(struct platform_device *pdev)
+ 			return PTR_ERR(rk808_rdev);
+ 		}
+ 	}
 +
-+	return (val & CLK32KOUT2_EN) ? 1 : 0;
-+}
-+
-+static const struct clk_ops rk808_clkout1_ops = {
-+	.is_prepared = rk808_clkout1_is_prepared,
-+	.recalc_rate = rk808_clkout_recalc_rate,
-+};
-+
-+static const struct clk_ops rk808_clkout2_ops = {
-+	.prepare = rk808_clkout2_prepare,
-+	.unprepare = rk808_clkout2_unprepare,
-+	.is_prepared = rk808_clkout2_is_prepared,
-+	.recalc_rate = rk808_clkout_recalc_rate,
-+};
-+
-+static int rk808_clkout_probe(struct platform_device *pdev)
-+{
-+	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
-+	struct i2c_client *client = rk808->i2c;
-+	struct device_node *node = client->dev.of_node;
-+	struct clk_init_data init = {};
-+	struct clk **clk_table;
-+	struct rk808_clkout *rk808_clkout;
-+
-+	rk808_clkout = devm_kzalloc(&client->dev,
-+				    sizeof(*rk808_clkout), GFP_KERNEL);
-+	if (!rk808_clkout)
-+		return -ENOMEM;
-+
-+	rk808_clkout->rk808 = rk808;
-+
-+	clk_table = devm_kcalloc(&client->dev, RK808_NR_OUTPUT,
-+				 sizeof(struct clk *), GFP_KERNEL);
-+	if (!clk_table)
-+		return -ENOMEM;
-+
-+	init.flags = CLK_IS_ROOT;
-+	init.parent_names = NULL;
-+	init.num_parents = 0;
-+	init.name = "rk808-clkout1";
-+	init.ops = &rk808_clkout1_ops;
-+	rk808_clkout->clkout1_hw.init = &init;
-+
-+	/* optional override of the clockname */
-+	of_property_read_string_index(node, "clock-output-names",
-+				      0, &init.name);
-+
-+	clk_table[0] = devm_clk_register(&client->dev,
-+					 &rk808_clkout->clkout1_hw);
-+	if (IS_ERR(clk_table[0]))
-+		return PTR_ERR(clk_table[0]);
-+
-+	init.name = "rk808-clkout2";
-+	init.ops = &rk808_clkout2_ops;
-+	rk808_clkout->clkout2_hw.init = &init;
-+
-+	/* optional override of the clockname */
-+	of_property_read_string_index(node, "clock-output-names",
-+				      1, &init.name);
-+
-+	clk_table[1] = devm_clk_register(&client->dev,
-+					 &rk808_clkout->clkout2_hw);
-+	if (IS_ERR(clk_table[1]))
-+		return PTR_ERR(clk_table[1]);
-+
-+	rk808_clkout->clk_data.clks = clk_table;
-+	rk808_clkout->clk_data.clk_num = RK808_NR_OUTPUT;
-+
-+	return of_clk_add_provider(node, of_clk_src_onecell_get,
-+				   &rk808_clkout->clk_data);
-+}
-+
-+static struct platform_driver rk808_clkout_driver = {
-+	.probe = rk808_clkout_probe,
-+	.driver		= {
-+		.name	= "rk808-clkout",
-+	},
-+};
-+
-+module_platform_driver(rk808_clkout_driver);
-+
-+MODULE_DESCRIPTION("Clkout driver for the rk808 series PMICs");
-+MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:rk808-clkout");
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.5
 
