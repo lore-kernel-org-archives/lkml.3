@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988AbaIDVjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:39:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56199 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856AbaIDVjG (ORCPT
+	id S1755739AbaIDVkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:40:22 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:41315 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317AbaIDVkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:39:06 -0400
-Date: Thu, 4 Sep 2014 14:38:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andreea Bernat <bernat.ada@gmail.com>
-Cc: Larry.Finger@lwfinger.net, Elena Oat <oat.elena@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] rtl8188eu: Replace rcu_dereference() with
- rcu_access_pointer()
-Message-ID: <20140904213821.GB356@kroah.com>
-References: <20140817114336.GA24984@ada>
- <20140830204246.GA16563@kroah.com>
- <CALDM6bpomcGJk1Ut2hb8qO0gYeKkHruJZ0duBwAaonFf6HbZwA@mail.gmail.com>
+	Thu, 4 Sep 2014 17:40:20 -0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, yoshihiro.shimoda.uh@renesas.com,
+        Peter.Chen@freescale.com, stern@rowland.harvard.edu,
+        swarren@wwwdotorg.org, thierry.reding@gmail.com, balbi@ti.com,
+        linux-tegra@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, antoine.tenart@free-electrons.com
+Subject: [PATCH v5 0/2] Add generic PHY support to USB HCD
+Date: Fri, 05 Sep 2014 01:40:15 +0400
+Message-ID: <5072811.p8odmvpxdS@wasted.cogentembedded.com>
+Organization: Cogent Embedded Inc.
+User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALDM6bpomcGJk1Ut2hb8qO0gYeKkHruJZ0duBwAaonFf6HbZwA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 11:58:36PM +0300, Andreea Bernat wrote:
-> Hello,
-> 
-> I cloned this:
-> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
-> 
-> and after moved to staging-next branch, but in both cases, in
-> those files I don't find any use of rcu_dereference() call (the call
-> which I am looking for to modify).
+Hello.
 
-Then there's nothing left to be done here, right?  :)
+   This patchset is against the usb-next' branch of Greg KH's 'usb.git' repo.
+Here I add support for the generic PHY to the 'struct usb_hcd' (having to
+rename the existing 'phy' field to 'usb_phy' beforehand). This was mainly
+intended to be used with the PCI OHCI/EHCI drivers and also xHCI driver;
+however there are several more dependent patchsets now posted to 'linux-usb'.
+   Greg, if you want links to these patchsets and the device tree patches using
+this patchset in order to link the PCI OHCI/EHCI devices to the PHY, just ask
+(I have already posted the previously but will probably have to repost them
+again)...
 
-thanks,
+[1/2] usb: rename phy to usb_phy in HCD
+[2/2] usb: hcd: add generic PHY support
 
-greg k-h
+WBR, Sergei
+
