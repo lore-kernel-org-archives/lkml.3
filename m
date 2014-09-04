@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaIDPFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:05:08 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:33866 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbaIDPFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:05:06 -0400
-Date: Thu, 4 Sep 2014 18:05:00 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@cloudius-systems.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, jroedel@suse.de, agraf@suse.de,
-        valentine.sinitsyn@gmail.com, jan.kiszka@siemens.com,
-        avi@cloudius-systems.com
-Subject: Re: [PATCH 3/4] KVM: x86: inject nested page faults on emulated
- instructions
-Message-ID: <20140904150500.GA25317@minantech.com>
-References: <1409670830-14544-1-git-send-email-pbonzini@redhat.com>
- <1409670830-14544-4-git-send-email-pbonzini@redhat.com>
- <20140904070220.GL9842@cloudius-systems.com>
- <54087343.5050409@redhat.com>
+	id S1754084AbaIDPFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:05:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65153 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752254AbaIDPFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 11:05:40 -0400
+Date: Thu, 4 Sep 2014 17:02:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Aaron Tomlin <atomlin@redhat.com>
+Cc: peterz@infradead.org, mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com,
+        jcastillo@redhat.com, pzijlstr@redhat.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
+        rostedt@goodmis.org, hannes@cmpxchg.org,
+        aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
+Subject: Re: [PATCH 1/2] sched: Add helper for task stack page overrun
+	checking
+Message-ID: <20140904150234.GA6480@redhat.com>
+References: <1409842224-11847-1-git-send-email-atomlin@redhat.com> <1409842224-11847-2-git-send-email-atomlin@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54087343.5050409@redhat.com>
+In-Reply-To: <1409842224-11847-2-git-send-email-atomlin@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 04:12:19PM +0200, Paolo Bonzini wrote:
-> Il 04/09/2014 09:02, Gleb Natapov ha scritto:
-> > On Tue, Sep 02, 2014 at 05:13:49PM +0200, Paolo Bonzini wrote:
-> >> > This is required for the following patch to work correctly.  If a nested page
-> >> > fault happens during emulation, we must inject a vmexit, not a page fault.
-> >> > Luckily we already have the required machinery: it is enough to return
-> >> > X86EMUL_INTERCEPTED instead of X86EMUL_PROPAGATE_FAULT.
-> >> > 
-> > I wonder why this patch is needed. X86EMUL_PROPAGATE_FAULT causes
-> > ctxt->have_exception to be set to true in x86_emulate_insn().
-> > x86_emulate_instruction() checks ctxt->have_exception and calls
-> > inject_emulated_exception() if it is true. inject_emulated_exception()
-> > calls kvm_propagate_fault() where we check if the fault was nested and
-> > generate vmexit or a page fault accordingly.
-> 
-> Good question. :)
-> 
-> If you do that, KVM gets down to the "if (writeback)" and writes the 
-> ctxt->eip from L2 into the L1 EIP.
-Heh, that's a bummer. We should not write back if an instruction caused a vmexit.
+On 09/04, Aaron Tomlin wrote:
+>
+> +#define task_stack_end_corrupted(task) \
+> +		(*(end_of_stack(task)) != STACK_END_MAGIC)
 
-> 
-> Possibly this patch can be replaced by just this?
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 022513b..475e979 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5312,7 +5312,7 @@ restart:
+and it is always used along with "tsk != init_task".
+
+But why we exclude swapper/0? Can't we add
+
+	end_of_stack(current) = STACK_END_MAGIC;
+
+somewhere at the start of start_kernel() ?
+
+If not, perhaps this new helper should check "task != &init_task"
+itself so that we can simplify its users?
+
+Oleg.
+
 >  
->         if (ctxt->have_exception) {
->                 inject_emulated_exception(vcpu);
-> -               r = EMULATE_DONE;
-> +               return EMULATE_DONE;
-If there was no vmexit we still want to writeback. Perhaps:
-    writeback = inject_emulated_exception(vcpu);
-and return false if there was vmexit due to nested page fault (or any fault,
-can't L1 ask for #GP/#UD intercept that need to be handled here too?)
-
->         } else if (vcpu->arch.pio.count) {
->                 if (!vcpu->arch.pio.in) {
->                         /* FIXME: return into emulator if single-stepping.  */
+>  static inline int object_is_on_stack(void *obj)
+>  {
+> diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+> index 8a4e5cb..06c7390 100644
+> --- a/kernel/trace/trace_stack.c
+> +++ b/kernel/trace/trace_stack.c
+> @@ -13,7 +13,6 @@
+>  #include <linux/sysctl.h>
+>  #include <linux/init.h>
+>  #include <linux/fs.h>
+> -#include <linux/magic.h>
+>  
+>  #include <asm/setup.h>
+>  
+> @@ -171,8 +170,8 @@ check_stack(unsigned long ip, unsigned long *stack)
+>  			i++;
+>  	}
+>  
+> -	if ((current != &init_task &&
+> -		*(end_of_stack(current)) != STACK_END_MAGIC)) {
+> +	if (current != &init_task &&
+> +		task_stack_end_corrupted(current)) {
+>  		print_max_stack();
+>  		BUG();
+>  	}
+> -- 
+> 1.9.3
 > 
-> But I'm not sure how to test it, and I like the idea of treating nested page
-> faults like other nested vmexits during emulation (which is what this patch
-> does).
-IMO exits due to instruction intercept and exits due to other interceptable events
-that may happen during instruction emulation are sufficiently different to be handled
-slightly different. If my assumption about #GP above are correct with current approach it
-can be easily handled inside inject_emulated_exception().
 
---
-			Gleb.
