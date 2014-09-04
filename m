@@ -1,203 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaIDKnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:43:22 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:60471 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615AbaIDKnU convert rfc822-to-8bit (ORCPT
+	id S1753494AbaIDKoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:44:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47072 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaIDKoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:43:20 -0400
-Message-ID: <54084246.7010705@arm.com>
-Date: Thu, 04 Sep 2014 11:43:18 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 4 Sep 2014 06:44:10 -0400
+Date: Thu, 4 Sep 2014 12:44:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yan Zheng <zheng.z.yan@intel.com>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
+Message-ID: <20140904104402.GS4783@worktop.ger.corp.intel.com>
+References: <20140901181808.GA6427@leverpostej>
+ <20140901190534.GC5806@worktop.ger.corp.intel.com>
+ <20140902185807.GA7434@leverpostej>
+ <20140903115013.GA3127@leverpostej>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v4 01/11] cpumask: factor out show_cpumap into separate
- helper function
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-2-git-send-email-sudeep.holla@arm.com> <20140904062006.GC3190@worktop.ger.corp.intel.com> <54082ADD.6040004@arm.com> <20140904092135.GA346@worktop.programming.kicks-ass.net>
-In-Reply-To: <20140904092135.GA346@worktop.programming.kicks-ass.net>
-X-OriginalArrivalTime: 04 Sep 2014 10:43:15.0936 (UTC) FILETIME=[0889B600:01CFC82D]
-X-MC-Unique: 114090411431704701
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903115013.GA3127@leverpostej>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Wed, Sep 03, 2014 at 12:50:14PM +0100, Mark Rutland wrote:
+> From 6465beace3ad9b12039127468f4596b8e87a53e8 Mon Sep 17 00:00:00 2001
+> From: Mark Rutland <mark.rutland@arm.com>
+> Date: Wed, 3 Sep 2014 11:06:22 +0100
+> Subject: [PATCH] perf: prevent hotplug race on event->ctx
+> 
+> The perf_pmu_migrate_context code introduced in 0cda4c023132 (perf:
+> Introduce perf_pmu_migrate_context()) didn't take the tear-down of
+> events into account, and left open a race with put_event on event->ctx.
+> A resulting duplicate put_ctx of an event's original context can lead to
+> the context being erroneously kfreed via RCU, resulting in the below
+> splat with the intel uncore_imc PMU driver:
 
-On 04/09/14 10:21, Peter Zijlstra wrote:
-> On Thu, Sep 04, 2014 at 10:03:25AM +0100, Sudeep Holla wrote:
->> If I don't, every file including this header generates "warning:
->> ‘cpumap_copy_to_buf’ defined but not used". Alternatively I can just
->> declare here and define it elsewhere but I could not find more apt
->> place than this. Any suggestions ? kernel/cpu.c ?
->
-> Sure the tail of cpu.c seems to have various other cpumask gunk in
-> already so it fits there. The other alternative would've been
-> lib/bitmap.c since that's where the various bitmap printf
-> implementations live.
->
-> You could make it bitmap_copy_to_buf() I suppose, and then have a
-> cpumask inline wrapper, to be fully consistent with the rest of the
-> implementations.
->
+<snip>
 
-I liked the second approach, how about patch below ?
-If will munge it into original patch.
+> In response to a CPU notifier an uncore PMU driver calls
+> perf_pmu_migrate context, which will remove all events from the old CPU
+> context before placing them all into the new CPU context. For a short
+> period the events are in limbo and are part of neither context, though
+> their event->ctx pointers still point at the old context.
+> 
+> During this period another CPU may enter put_event, which will try to
+> remove the event from event->ctx. As this may still point at the old
+> context, put_ctx can be called twice for a given event on the original
+> context. The context's refcount may drop to zero unexpectedly, whereupon
+> put_ctx will queue up a kfree with RCU. This blows up at the end of the
+> next grace period as the uncore PMU contexts are housed within
+> perf_cpu_context and weren't directly allocated with k*alloc.
+> 
+> This patch prevents the issue by inhibiting hotplug for the portion of
+> put_event which must access event->ctx, preventing the notifiers which
+> call perf_pmu_migrate_context from running concurrently. Once the event
+> has been removed from its context perf_pmu_migrate_context will no
+> longer be able to access it, so it is not necessary to inhibit hotplug
+> for the duration of event tear-down.
 
---->8
+Right, so that works I suppose. The thing is, get_online_cpus() is a
+global lock and we can potentially do a lot of put_event()s. I had a
+patch a while back that rewrote the cpuhotplug locking, but Linus didn't
+particularly like that at the time.
 
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index e1c8d080c427..34586d386c1f 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -60,6 +60,7 @@
-    * bitmap_find_free_region(bitmap, bits, order)        Find and 
-allocate bit region
-    * bitmap_release_region(bitmap, pos, order)   Free specified bit region
-    * bitmap_allocate_region(bitmap, pos, order)  Allocate specified bit 
-region
-+ * bitmap_copy_to_pagebuf(list, src, buf)      Print bitmap src as 
-list/hex to buf
-    */
-
-   /*
-@@ -145,6 +146,8 @@ extern void bitmap_release_region(unsigned long 
-*bitmap, unsigned int pos, int o
-   extern int bitmap_allocate_region(unsigned long *bitmap, unsigned int 
-pos, int order);
-   extern void bitmap_copy_le(void *dst, const unsigned long *src, int 
-nbits);
-   extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int 
-bits);
-+extern int bitmap_copy_to_pagebuf(bool list, const unsigned long *maskp,
-+                                 char *buf);
-
-   #define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
-   #define BITMAP_LAST_WORD_MASK(nbits)                                   \
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 26d8348292dd..5b3bd163c5a0 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -807,16 +807,7 @@ static inline const struct cpumask 
-*get_cpu_mask(unsigned int cpu)
-   static inline ssize_t
-   cpumap_copy_to_buf(bool list, const struct cpumask *mask, char *buf)
-   {
--       ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf - 2;
--       int n = 0;
--
--       if (len > 1) {
--               n = list ? cpulist_scnprintf(buf, len, mask) :
--                          cpumask_scnprintf(buf, len, mask);
--               buf[n++] = '\n';
--               buf[n] = '\0';
--       }
--       return n;
-+       return bitmap_copy_to_pagebuf(list, cpumask_bits(mask), buf);
-   }
-
-sudeep@e103737-lin:~/work/power/kernel$ git diff > /tmp/log
-sudeep@e103737-lin:~/work/power/kernel$ cat /tmp/log
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index e1c8d080c427..34586d386c1f 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -60,6 +60,7 @@
-    * bitmap_find_free_region(bitmap, bits, order)	Find and allocate bit 
-region
-    * bitmap_release_region(bitmap, pos, order)	Free specified bit region
-    * bitmap_allocate_region(bitmap, pos, order)	Allocate specified bit 
-region
-+ * bitmap_copy_to_pagebuf(list, src, buf)	Print bitmap src as list/hex 
-to buf
-    */
-
-   /*
-@@ -145,6 +146,8 @@ extern void bitmap_release_region(unsigned long 
-*bitmap, unsigned int pos, int o
-   extern int bitmap_allocate_region(unsigned long *bitmap, unsigned int 
-pos, int order);
-   extern void bitmap_copy_le(void *dst, const unsigned long *src, int 
-nbits);
-   extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int 
-bits);
-+extern int bitmap_copy_to_pagebuf(bool list, const unsigned long *maskp,
-+				  char *buf);
-
-   #define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
-   #define BITMAP_LAST_WORD_MASK(nbits)					\
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 26d8348292dd..5b3bd163c5a0 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -807,16 +807,7 @@ static inline const struct cpumask 
-*get_cpu_mask(unsigned int cpu)
-   static inline ssize_t
-   cpumap_copy_to_buf(bool list, const struct cpumask *mask, char *buf)
-   {
--	ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf - 2;
--	int n = 0;
--
--	if (len > 1) {
--		n = list ? cpulist_scnprintf(buf, len, mask) :
--			   cpumask_scnprintf(buf, len, mask);
--		buf[n++] = '\n';
--		buf[n] = '\0';
--	}
--	return n;
-+	return bitmap_copy_to_pagebuf(list, cpumask_bits(mask), buf);
-   }
-
-   /*
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 1e031f2c9aba..b23adef04d7e 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -580,6 +580,32 @@ int bitmap_scnlistprintf(char *buf, unsigned int 
-buflen,
-   EXPORT_SYMBOL(bitmap_scnlistprintf);
-
-   /**
-+ * bitmap_copy_to_pagebuf - convert bitmap to list or hex format ASCII 
-string
-+ * @list: indicates whether the bitmap must be list
-+ * @maskp: pointer to bitmap to convert
-+ * @buf: page aligned buffer into which string is placed
-+ *
-+ * Output format is a comma-separated list of decimal numbers and
-+ * ranges if list is specified or hex digits grouped into comma-separated
-+ * sets of 8 digits/set. Returns the number of characters written to buf.
-+ */
-+int bitmap_copy_to_pagebuf(bool list, const unsigned long *maskp, char 
-*buf)
-+{
-+	ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf - 2;
-+	int n = 0;
-+
-+	if (len > 1) {
-+		n = list ?
-+		    bitmap_scnlistprintf(buf, len, maskp, nr_cpumask_bits) :
-+		    bitmap_scnprintf(buf, len, maskp, nr_cpumask_bits);
-+		buf[n++] = '\n';
-+		buf[n] = '\0';
-+	}
-+	return n;
-+}
-+EXPORT_SYMBOL(bitmap_copy_to_pagebuf);
-+
-+/**
-    * __bitmap_parselist - convert list format ASCII string to bitmap
-    * @buf: read nul-terminated user string from this buffer
-    * @buflen: buffer size in bytes.  If string is smaller than this
-
+I'll try and see if I can come up with anything else, but so far I've
+only discovered a lot of ways that don't work (like I'm sure you did
+too).
