@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaIDNC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 09:02:58 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:30207 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489AbaIDNC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 09:02:57 -0400
-X-IronPort-AV: E=Sophos;i="5.04,465,1406592000"; 
-   d="scan'208";a="169069444"
-Message-ID: <540862FE.7070108@citrix.com>
-Date: Thu, 4 Sep 2014 14:02:54 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, Juergen Gross <jgross@suse.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
-        <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen: eliminate scalability issues from
- initial mapping setup
-References: <1409834326-29287-1-git-send-email-jgross@suse.com>	<1409834326-29287-4-git-send-email-jgross@suse.com> <54086244.7020601@citrix.com>
-In-Reply-To: <54086244.7020601@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+	id S1751095AbaIDNTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 09:19:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41308 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750723AbaIDNTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 09:19:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,465,1406617200"; 
+   d="scan'208";a="475176131"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: akpm@linux-foundation.org
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] kernel: Resolve a shadow warning
+Date: Thu,  4 Sep 2014 06:18:57 -0700
+Message-Id: <1409836737-29469-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/14 13:59, David Vrabel wrote:
-> On 04/09/14 13:38, Juergen Gross wrote:
->> Direct Xen to place the initial P->M table outside of the initial
->> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
->> restriction on the size of the initial mapping limits the amount
->> of memory a domain can be handed initially.
-> The three level p2m limits memory to 512 GiB on x86-64 but this patch
-> doesn't seem to address this limit and thus seems a bit useless to me.
->
-> David
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-Any increase of the p2m beyond 3 levels will need to come with
-substantial libxc changes first.  3 level p2ms are hard coded throughout
-all the PV build and migrate code.
+Resolve a shadow warning in W=2 builds arising from min/max macro
+references in a parameter to a min3/max3 macro. There is no
+functional issue - the warning is benign - but simply changing
+some local variable names will eliminate it.
 
-~Andrew
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ include/linux/kernel.h | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 95624be..c653902 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -716,22 +716,22 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ 	_max1 > _max2 ? _max1 : _max2; })
+ 
+ #define min3(x, y, z) ({			\
+-	typeof(x) _min1 = (x);			\
+-	typeof(y) _min2 = (y);			\
+-	typeof(z) _min3 = (z);			\
+-	(void) (&_min1 == &_min2);		\
+-	(void) (&_min1 == &_min3);		\
+-	_min1 < _min2 ? (_min1 < _min3 ? _min1 : _min3) : \
+-		(_min2 < _min3 ? _min2 : _min3); })
++	typeof(x) _min31 = (x);			\
++	typeof(y) _min32 = (y);			\
++	typeof(z) _min33 = (z);			\
++	(void) (&_min31 == &_min32);		\
++	(void) (&_min31 == &_min33);		\
++	_min31 < _min32 ? (_min31 < _min33 ? _min31 : _min33) : \
++		(_min32 < _min33 ? _min32 : _min33); })
+ 
+ #define max3(x, y, z) ({			\
+-	typeof(x) _max1 = (x);			\
+-	typeof(y) _max2 = (y);			\
+-	typeof(z) _max3 = (z);			\
+-	(void) (&_max1 == &_max2);		\
+-	(void) (&_max1 == &_max3);		\
+-	_max1 > _max2 ? (_max1 > _max3 ? _max1 : _max3) : \
+-		(_max2 > _max3 ? _max2 : _max3); })
++	typeof(x) _max31 = (x);			\
++	typeof(y) _max32 = (y);			\
++	typeof(z) _max33 = (z);			\
++	(void) (&_max31 == &_max32);		\
++	(void) (&_max31 == &_max33);		\
++	_max31 > _max32 ? (_max31 > _max33 ? _max31 : _max33) : \
++		(_max32 > _max33 ? _max32 : _max33); })
+ 
+ /**
+  * min_not_zero - return the minimum that is _not_ zero, unless both are zero
+-- 
+1.9.3
+
