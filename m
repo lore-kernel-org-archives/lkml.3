@@ -1,83 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341AbaIDTSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:18:13 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:41937 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764AbaIDTSL (ORCPT
+	id S1755215AbaIDTUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:20:04 -0400
+Received: from pegasus3.altlinux.org ([194.107.17.103]:39483 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754700AbaIDTUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:18:11 -0400
-MIME-Version: 1.0
-X-Originating-IP: [12.227.248.5]
-In-Reply-To: <5408B069.9080708@ahsoftware.de>
-References: <20140812153812.2923046a@monolith.infinux.org>
-	<20140812202129.GA20344@home.goodmis.org>
-	<yw1xr40l2whi.fsf@unicorn.mansr.com>
-	<20140813082756.GB2923@twins.programming.kicks-ass.net>
-	<20140813090013.GA20581@pd.tnic>
-	<53F242D1.4050506@ahsoftware.de>
-	<CANszf4jauBAhaTogvSprhhspKywXSu_8xkWh+ETsWMMUDKo0=g@mail.gmail.com>
-	<5408B069.9080708@ahsoftware.de>
-Date: Thu, 4 Sep 2014 14:18:08 -0500
-Message-ID: <CAOS_Y6RAiwY=Zh4g6Ei4UYm3FMybwf+bSo_CwqQhaMsaJh10uw@mail.gmail.com>
-Subject: Re: OT: Open letter to the Linux World
-From: Rob Landley <rob@landley.net>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Rogelio Serrano <rogelio.serrano@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Sep 2014 15:20:02 -0400
+Date: Thu, 4 Sep 2014 23:20:00 +0400
+From: Michael Shigorin <mike@altlinux.org>
+To: RICARD Christophe <christophe.ricard@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: 3.17-rc3 module dependency loops
+Message-ID: <20140904192000.GL2515@imap.altlinux.org>
+Mail-Followup-To: RICARD Christophe <christophe.ricard@gmail.com>,
+	Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+References: <20140904165500.GK2515@imap.altlinux.org> <5408B5CB.9040906@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5408B5CB.9040906@gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 1:33 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->>> Hmm, a sane and maintainable solution would use C++ with which people
->>> don't
->>> have to manually build lists or hashes for every structure like in the
->>> kernel (generic programming done right). So you won't find much kernel
->>> developers there. ;)
->>>
->>
->> Seriously Dude?
->>
->> Have you tried it? I was using c++ before during and after the stl was
->> standardised
->> and the memories of the resulting induced self hair pulling still
->> gives me the shivers.
->> Try writing a real time kernel with full c++ support. You have to
->> provide the entire c++
->> runtime in the kernel!
->>
->> I still do a little c++ programming when i am forced to but its only
->> in small pieces.
->> Ill go crazy otherwise.
->
->
-> I've started to use C++ when only precompilers (to translate C++ to C) were
-> available. That was long before the STL was standardised.
+On Thu, Sep 04, 2014 at 08:56:11PM +0200, RICARD Christophe wrote:
+> However, the issue got already reported and a fix proposal was
+> done at the following location:
 
-What's actually wrong with C++ at a language design level.
+Ah, sorry for list mismatch and thank you for the fix :-)
 
-Short version:
-
-http://lwn.net/Articles/504751/
-
-Long version (parts 1, 2, 3):
-
-http://landley.net/notes-2011.html#16-03-2011
-http://landley.net/notes-2011.html#19-03-2011
-http://landley.net/notes-2011.html#20-03-2011
-
-Seriously, saying C++ is a good language because it contains the whole
-of C is like saying a mud pie is a good beverage because it contains
-an entire glass of water.
-
-Do you honestly think this is the first time this topic has come up?
-
-http://harmful.cat-v.org/software/c++/linus
-
-Rob
+-- 
+š---- WBR, Michael Shigorin / http://altlinux.org
+šš------ http://opennet.ru / http://anna-news.info
