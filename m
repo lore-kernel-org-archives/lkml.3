@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaIDMd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:33:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50598 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784AbaIDMd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 08:33:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,465,1406617200"; 
-   d="scan'208";a="568275824"
-Message-ID: <54085BC8.40403@intel.com>
-Date: Thu, 04 Sep 2014 15:32:08 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
-References: <1409781604-16778-1-git-send-email-acme@kernel.org> <1409781604-16778-5-git-send-email-acme@kernel.org>
-In-Reply-To: <1409781604-16778-5-git-send-email-acme@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750970AbaIDMi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:38:56 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:36339 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaIDMiy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 08:38:54 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 00/17] locks: internal lease API overhaul
+Date: Thu,  4 Sep 2014 08:38:26 -0400
+Message-Id: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 12:59 AM, Arnaldo Carvalho de Melo wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> So that we don't continue polling on vanished file descriptors, i.e.
-> file descriptors for events monitoring threads that exited.
-> 
-> I.e. the following 'perf record' command now exits as expected, instead
-> of staying in an eternal loop:
-> 
->   $ sleep 5s &
->   $ perf record -p `pidof sleep`
-> 
-> Reported-by: Jiri Olsa <jolsa@redhat.com>
-> Acked-by: Jiri Olsa <jolsa@kernel.org>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Don Zickus <dzickus@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> Link: http://lkml.kernel.org/n/tip-ftg46awsyfjc3axb0xm63oig@git.kernel.org
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/builtin-record.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 87e28a4e33ba..b87708ce09c9 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -467,6 +467,9 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->  			if (err > 0 || (err < 0 && errno == EINTR))
->  				err = 0;
->  			waking++;
-> +
-> +			if (perf_evlist__filter_pollfd(rec->evlist, POLLERR | POLLHUP) == 0)
+v2:
+- cleanups and fixes in response to HCH's review
+- make security_file_set_fowner a void return operation
+- consolidate "nosetlease" routines
+- remove "deadlock protection" from generic_add_lease routine
+- add return value to lm_break op to allow for direct lease removal
 
-If the poll fds only include the ones mmapped, then mightn't it filter out
-ones still in use? e.g. what if you record two processes and one exits?
+The internal "API" for handling leases has a lot of problems. The main
+one is that on success it can return a pointer to a lease that sits on
+the inode's i_flock list. That pointer is only guaranteed to be valid
+until the i_lock is dropped, which makes it a bit dangerous to use.
 
-> +				done = 1;
->  		}
->  
->  		/*
-> 
+Also, the i_lock is held over much too much of the code, which
+precludes any hope of ever adding proper support for leases to
+distributed filesystems.
+
+This patchset is a cleanup and overhaul of the internal lease API, and a
+few stray locking-related patches. It fixes a number of problems in that
+code and makes an attempt at making that API more sane to use.
+
+The only real consumer of that API is knfsd, but this should make it
+easier for others to do so, reduce and clarify the spinlocking involved
+in handling leases, and get us a step closer toward allowing lease
+implementations that can block.
+
+I'm targeting this work for v3.18. Review would be welcome...
+
+Jeff Layton (17):
+  locks: consolidate "nolease" routines
+  security: make security_file_set_fowner, f_setown and __f_setown void
+    return
+  locks: close potential race in lease_get_mtime
+  nfsd: fix potential lease memory leak in nfs4_setlease
+  locks: generic_delete_lease doesn't need a file_lock at all
+  locks: clean up vfs_setlease kerneldoc comments
+  nfsd: don't keep a pointer to the lease in nfs4_file
+  locks: plumb a "priv" pointer into the setlease routines
+  locks: define a lm_setup handler for leases
+  locks: move i_lock acquisition into generic_*_lease handlers
+  locks: move freeing of leases outside of i_lock
+  locks: update Documentation/filesystems with new setlease semantics
+  locks: remove i_have_this_lease check from __break_lease
+  locks: __break_lease cleanup in preparation of allowing direct removal
+    of leases
+  locks: give lm_break a return value
+  locks: set fl_owner for leases to filp instead of current->files
+  locks: clean up comments over fl_owner_t definition
+
+ Documentation/filesystems/Locking |  11 +-
+ Documentation/filesystems/vfs.txt |   7 +-
+ drivers/net/tun.c                 |   4 +-
+ drivers/tty/tty_io.c              |   3 +-
+ fs/cifs/cifsfs.c                  |   7 +-
+ fs/fcntl.c                        |  21 +--
+ fs/gfs2/file.c                    |  22 +--
+ fs/libfs.c                        |  18 +++
+ fs/locks.c                        | 297 ++++++++++++++++++++------------------
+ fs/nfs/file.c                     |  13 +-
+ fs/nfs/internal.h                 |   1 -
+ fs/nfs/nfs4file.c                 |   2 +-
+ fs/nfsd/nfs4state.c               |  44 +++---
+ fs/nfsd/state.h                   |   1 -
+ fs/notify/dnotify/dnotify.c       |   8 +-
+ include/linux/fs.h                |  41 ++++--
+ include/linux/security.h          |   8 +-
+ include/trace/events/filelock.h   |  14 +-
+ net/socket.c                      |   3 +-
+ security/capability.c             |   4 +-
+ security/security.c               |   2 +-
+ security/selinux/hooks.c          |   4 +-
+ security/smack/smack_lsm.c        |   3 +-
+ 23 files changed, 269 insertions(+), 269 deletions(-)
+
+-- 
+1.9.3
 
