@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaIDKCA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:02:00 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:50666 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304AbaIDKB6 (ORCPT
+	id S1752521AbaIDKBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:01:46 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:58325 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaIDKBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:01:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Andrew Pinski <apinski@cavium.com>, linux-kernel@vger.kernel.org,
-        pinskia@gmail.com
-Subject: Re: [PATCH 24/24] Add documentation about ARM64 ILP32 ABI
-Date: Thu, 04 Sep 2014 12:01:52 +0200
-Message-ID: <4031586.MjMM3BtNgn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409779158-30963-25-git-send-email-apinski@cavium.com>
-References: <1409779158-30963-1-git-send-email-apinski@cavium.com> <1409779158-30963-25-git-send-email-apinski@cavium.com>
+	Thu, 4 Sep 2014 06:01:44 -0400
+Date: Thu, 4 Sep 2014 11:01:37 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>,
+        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
+Message-ID: <20140904100137.GK3001@console-pimps.org>
+References: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:gfbSkqXEqO09ZOZ5IJU7S6e09L2/Cen/pT49KtaJVO3
- abMsPih+Kr2tgSST+TxnrEerhXzEmSm/MTsEYM6z8Wrrfk3Scb
- mqVQyGpLeRESv1bOK5Kaf+ZnZY/PEPt+R/OloWbQBIZdfA24C7
- pQ6IfhyisVm+oqlQGsgJLTZBz2YfCjE9/CLn01CTOT+u+/ogdt
- nLHCbQCrAGepCJQQxHXTMxDWfSgHcuVIn5c1ZM809m+gzNPrR1
- 2D//ibo7Zvrqh1n3RxoHqtgzvIDssMipkkVUonWFdowq1UXXL9
- AhetWp40n27AOgt3VgCDMNhwL+K7Bzk7wJrEu82G8K65ofRm3H
- W3yFPmLZo5zGXIX+qeno=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 September 2014 14:19:18 Andrew Pinski wrote:
-> +This document describes the ILP32 syscall ABI and where it differs
-> +from the generic linux syscall interface.
-> +ILP32 sets __kernel_long_t and __kernel_ulong_t both to 64bit
-> +(long long).  This effects the following types:
-> +* time_t: unsigned long long
-> +* clock_t: unsigned long long
-> +* fsword_t: long long
-> +* suseconds_t: long long
-> +* swblk_t: long long
-> +* fd_mask_t: long long
+On Wed, 03 Sep, at 09:50:07PM, Yinghai Lu wrote:
+> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
+> loaded above 4G"), the kernel freezes at the earliest possible moment
+> when trying to boot via UEFI on Asus laptop.
+> 
+> Revert to old way to load initrd under 4G on first try,
+> second try will use above 4G buffer when initrd is too big
+> and does not fit under 4G.
+> 
+> -v2: add print out for second try, and print out files buf address.
+> -v3: can not snprintf
+> -v4: drop address print out for files buf
+> 
+> Reported-by: Mantas Mikulėnas <grawity@gmail.com>
+> Tested-by: Anders Darander <anders@chargestorm.se>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/boot/compressed/eboot.c |   18 +++++++++++-------
+>  1 file changed, 11 insertions(+), 7 deletions(-)
 
-What about data structures derived from these? I'm worried that
-some of them (in particular time_t) leak into ioctl interfaces
-when they are getting included in some other data structure that
-is used as an ioctl argument.
+Thanks, I've picked this up and expanded on the commit message because a
+lot of useful information was discussed on the mailing list that we
+should definitely include.
 
-Do you have a list of which data structures change based on the
-scalar type changes?
+  http://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/commit/?h=urgent&id=b524e05df6d466af2f7eea1f044369109e48e641
 
-	Arnd
+-- 
+Matt Fleming, Intel Open Source Technology Center
