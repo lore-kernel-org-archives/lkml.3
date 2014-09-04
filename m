@@ -1,142 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514AbaIDUfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:35:40 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:57854 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314AbaIDUf2 (ORCPT
+	id S1755451AbaIDUxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:53:55 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43788 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaIDUxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:35:28 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Vincent Palatin <vpalatin@chromium.org>
-Cc: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olofj@chromium.org>, Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [PATCH v4 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
-Date: Thu, 04 Sep 2014 23:35:25 +0300
-Message-ID: <3751957.rA6PG2ReCf@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1409791668-18715-1-git-send-email-vpalatin@chromium.org>
-References: <CACHYQ-r-+czyEBySdjNWr-3XmY1C2ErDJV0dnL=GDJOYPi1asw@mail.gmail.com> <1409791668-18715-1-git-send-email-vpalatin@chromium.org>
+	Thu, 4 Sep 2014 16:53:52 -0400
+Date: Thu, 4 Sep 2014 14:53:48 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-pci@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] resource: Add device-managed
+ request/release_resource()
+Message-ID: <20140904205348.GC17125@google.com>
+References: <1406895311-18869-1-git-send-email-thierry.reding@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406895311-18869-1-git-send-email-thierry.reding@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
-
-On Wednesday 03 September 2014 17:47:48 Vincent Palatin wrote:
-> Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
-> CT_PANTILT_RELATIVE_CONTROL terminal control request.
+On Fri, Aug 01, 2014 at 02:15:10PM +0200, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
 > 
-> Tested by plugging a Logitech ConferenceCam C3000e USB camera
-> and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
-> Verified that it can pan and tilt at the same time in both directions.
+> Provide device-managed implementations of the request_resource() and
+> release_resource() functions. Upon failure to request a resource, the
+> new devm_request_resource() function will output an error message for
+> consistent error reporting.
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
-By the way, what is the control value reported by the device after it stops 
-moving by itself due to reaching a limit position ?
+Applied both, with Tejun's ack on the first, for v3.18, thanks!
 
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
 > ---
-> Changes from v1/v2:
-> - rebased
-> Changes from v3:
-> - removed gerrit-id
+> Changes in v2:
+> - use more natural flow for error handling
+> - don't needlessly check for NULL pointers
 > 
->  drivers/media/usb/uvc/uvc_ctrl.c | 58 ++++++++++++++++++++++++++++++++++---
->  1 file changed, 55 insertions(+), 3 deletions(-)
+>  Documentation/driver-model/devres.txt |  2 +
+>  include/linux/ioport.h                |  5 +++
+>  kernel/resource.c                     | 70 +++++++++++++++++++++++++++++++++++
+>  3 files changed, 77 insertions(+)
 > 
-> diff --git a/drivers/media/usb/uvc/uvc_ctrl.c
-> b/drivers/media/usb/uvc/uvc_ctrl.c index 0eb82106..d703cb0 100644
-> --- a/drivers/media/usb/uvc/uvc_ctrl.c
-> +++ b/drivers/media/usb/uvc/uvc_ctrl.c
-> @@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
->  		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
->  		.index		= 12,
->  		.size		= 4,
-> -		.flags		= UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
-> -				| UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
-> -				| UVC_CTRL_FLAG_GET_DEF
-> +		.flags		= UVC_CTRL_FLAG_SET_CUR
-> +				| UVC_CTRL_FLAG_GET_RANGE
-> 
->  				| UVC_CTRL_FLAG_AUTO_UPDATE,
-> 
->  	},
->  	{
-> @@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct
-> uvc_control_mapping *mapping, data[2] = min((int)abs(value), 0xff);
->  }
-> 
-> +static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
-> +	__u8 query, const __u8 *data)
-> +{
-> +	int first = mapping->offset / 8;
-> +	__s8 rel = (__s8)data[first];
+> diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+> index d14710b04439..befc3fe12ba6 100644
+> --- a/Documentation/driver-model/devres.txt
+> +++ b/Documentation/driver-model/devres.txt
+> @@ -264,8 +264,10 @@ IIO
+>  IO region
+>    devm_release_mem_region()
+>    devm_release_region()
+> +  devm_release_resource()
+>    devm_request_mem_region()
+>    devm_request_region()
+> +  devm_request_resource()
+>  
+>  IOMAP
+>    devm_ioport_map()
+> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> index 142ec544167c..2c5250222278 100644
+> --- a/include/linux/ioport.h
+> +++ b/include/linux/ioport.h
+> @@ -215,6 +215,11 @@ static inline int __deprecated check_region(resource_size_t s,
+>  
+>  /* Wrappers for managed devices */
+>  struct device;
 > +
-> +	switch (query) {
-> +	case UVC_GET_CUR:
-> +		return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
-> +						 : -data[first+1]);
-> +	case UVC_GET_MIN:
-> +		return -data[first+1];
-> +	case UVC_GET_MAX:
-> +	case UVC_GET_RES:
-> +	case UVC_GET_DEF:
-> +	default:
-> +		return data[first+1];
+> +extern int devm_request_resource(struct device *dev, struct resource *root,
+> +				 struct resource *new);
+> +extern void devm_release_resource(struct device *dev, struct resource *new);
+> +
+>  #define devm_request_region(dev,start,n,name) \
+>  	__devm_request_region(dev, &ioport_resource, (start), (n), (name))
+>  #define devm_request_mem_region(dev,start,n,name) \
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index da14b8d09296..ca24f19f9d18 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -1248,6 +1248,76 @@ int release_mem_region_adjustable(struct resource *parent,
+>  /*
+>   * Managed region resource
+>   */
+> +static void devm_resource_release(struct device *dev, void *ptr)
+> +{
+> +	struct resource **r = ptr;
+> +
+> +	release_resource(*r);
+> +}
+> +
+> +/**
+> + * devm_request_resource() - request and reserve an I/O or memory resource
+> + * @dev: device for which to request the resource
+> + * @root: root of the resource tree from which to request the resource
+> + * @new: descriptor of the resource to request
+> + *
+> + * This is a device-managed version of request_resource(). There is usually
+> + * no need to release resources requested by this function explicitly since
+> + * that will be taken care of when the device is unbound from its driver.
+> + * If for some reason the resource needs to be released explicitly, because
+> + * of ordering issues for example, drivers must call devm_release_resource()
+> + * rather than the regular release_resource().
+> + *
+> + * When a conflict is detected between any existing resources and the newly
+> + * requested resource, an error message will be printed.
+> + *
+> + * Returns 0 on success or a negative error code on failure.
+> + */
+> +int devm_request_resource(struct device *dev, struct resource *root,
+> +			  struct resource *new)
+> +{
+> +	struct resource *conflict, **ptr;
+> +
+> +	ptr = devres_alloc(devm_resource_release, sizeof(*ptr), GFP_KERNEL);
+> +	if (!ptr)
+> +		return -ENOMEM;
+> +
+> +	*ptr = new;
+> +
+> +	conflict = request_resource_conflict(root, new);
+> +	if (conflict) {
+> +		dev_err(dev, "resource collision: %pR conflicts with %s %pR\n",
+> +			new, conflict->name, conflict);
+> +		devres_free(ptr);
+> +		return -EBUSY;
 > +	}
-> +}
 > +
-> +static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
-> +	__s32 value, __u8 *data)
+> +	devres_add(dev, ptr);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(devm_request_resource);
+> +
+> +static int devm_resource_match(struct device *dev, void *res, void *data)
 > +{
-> +	int first = mapping->offset / 8;
+> +	struct resource **ptr = res;
 > +
-> +	data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
-> +	data[first+1] = min_t(int, abs(value), 0xff);
+> +	return *ptr == data;
 > +}
 > +
->  static struct uvc_control_mapping uvc_ctrl_mappings[] = {
->  	{
->  		.id		= V4L2_CID_BRIGHTNESS,
-> @@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] =
-> { .data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
->  	},
->  	{
-> +		.id		= V4L2_CID_PAN_SPEED,
-> +		.name		= "Pan (Speed)",
-> +		.entity		= UVC_GUID_UVC_CAMERA,
-> +		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
-> +		.size		= 16,
-> +		.offset		= 0,
-> +		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
-> +		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
-> +		.get		= uvc_ctrl_get_rel_speed,
-> +		.set		= uvc_ctrl_set_rel_speed,
-> +	},
-> +	{
-> +		.id		= V4L2_CID_TILT_SPEED,
-> +		.name		= "Tilt (Speed)",
-> +		.entity		= UVC_GUID_UVC_CAMERA,
-> +		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
-> +		.size		= 16,
-> +		.offset		= 16,
-> +		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
-> +		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
-> +		.get		= uvc_ctrl_get_rel_speed,
-> +		.set		= uvc_ctrl_set_rel_speed,
-> +	},
-> +	{
->  		.id		= V4L2_CID_PRIVACY,
->  		.name		= "Privacy",
->  		.entity		= UVC_GUID_UVC_CAMERA,
-
--- 
-Regards,
-
-Laurent Pinchart
-
+> +/**
+> + * devm_release_resource() - release a previously requested resource
+> + * @dev: device for which to release the resource
+> + * @new: descriptor of the resource to release
+> + *
+> + * Releases a resource previously requested using devm_request_resource().
+> + */
+> +void devm_release_resource(struct device *dev, struct resource *new)
+> +{
+> +	WARN_ON(devres_release(dev, devm_resource_release, devm_resource_match,
+> +			       new));
+> +}
+> +EXPORT_SYMBOL(devm_release_resource);
+> +
+>  struct region_devres {
+>  	struct resource *parent;
+>  	resource_size_t start;
+> -- 
+> 2.0.3
+> 
