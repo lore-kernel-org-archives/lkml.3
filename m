@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369AbaIDUWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:22:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37905 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202AbaIDUWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:22:19 -0400
-Message-ID: <5408C9C4.1010705@zytor.com>
-Date: Thu, 04 Sep 2014 13:21:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755395AbaIDUZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:25:56 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31322 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920AbaIDUZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 16:25:54 -0400
+Date: Thu, 4 Sep 2014 23:25:38 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Sudip Mukherjee <sudip@vectorindia.org>,
+        Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, sparmaintainer@unisys.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] staging: unisys: uislib: uisqueue.c: rewrite of
+ do_locked_client_insert
+Message-ID: <20140904202538.GS6549@mwanda>
+References: <1409736561-23883-1-git-send-email-sudip@vectorindia.org>
+ <20140903095950.GF6600@mwanda>
+ <20140904164116.GA1084@sudip-PC>
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Toshi Kani <toshi.kani@hp.com>
-CC: tglx@linutronix.de, mingo@redhat.com, akpm@linuxfoundation.org,
-        arnd@arndb.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        jgross@suse.com, stefan.bader@canonical.com, luto@amacapital.net,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com> <1409855739-8985-2-git-send-email-toshi.kani@hp.com> <20140904201123.GA9116@khazad-dum.debian.net>
-In-Reply-To: <20140904201123.GA9116@khazad-dum.debian.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904164116.GA1084@sudip-PC>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 01:11 PM, Henrique de Moraes Holschuh wrote:
+On Thu, Sep 04, 2014 at 10:11:16PM +0530, Sudip Mukherjee wrote:
+> On Wed, Sep 03, 2014 at 12:59:50PM +0300, Dan Carpenter wrote:
+> > On Wed, Sep 03, 2014 at 02:59:21PM +0530, Sudip Mukherjee wrote:
+> > > 1) removed unused variables
+> > > 2) fixed sparse warning of context imbalance in 'do_locked_client_insert'
+> > >                          different lock contexts for basic block
+> > > 3) removed the call to visor_signalqueue_empty() , this function is
+> > >    checking whether a signal queue is empty, but the return value
+> > >    of the function is not beeing used, so it is safe to remove.
+> > > 
+> > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > 
+> > Looks good.  Thanks!
+> > 
+> > Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > 
+> > regards,
+> > dan carpenter
 > 
-> I am worried of uncharted territory, here.  I'd actually advocate for not
-> enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
-> is using them as well.  Is this a real concern, or am I being overly
-> cautious?
+> do i need to resend the patch after adding Reviewed-by to it ?
 > 
 
-It is extremely unlikely that we'd have PAT issues in 32-bit mode and
-not in 64-bit mode on the same CPU.
+No.  Greg will reply (perhaps an automated message) when he gets to the
+patch.  Otherwise your job is done.
 
-As far as I know, the current blacklist rule is very conservative due to
-lack of testing more than anything else.
-
-	-hpa
+regards,
+dan carpenter
 
