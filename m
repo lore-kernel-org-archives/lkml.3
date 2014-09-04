@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760AbaIDBt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:49:28 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:54455 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaIDBt0 (ORCPT
+	id S1756816AbaIDBt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:49:29 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:25132
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756667AbaIDBt2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:49:26 -0400
-Date: Wed, 3 Sep 2014 18:47:38 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v3 5/6] mm/hugetlb: add migration entry check in
- __unmap_hugepage_range
-In-Reply-To: <1409276340-7054-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.LSU.2.11.1409031821220.11485@eggly.anvils>
-References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1409276340-7054-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 3 Sep 2014 21:49:28 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource read
+ API.
+Thread-Topic: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource
+ read API.
+Thread-Index: AQHPwPGfS8nkeT6FCkuUDVIJ9Bh425vvRJOAgAD90OA=
+Date: Thu, 4 Sep 2014 01:49:23 +0000
+Message-ID: <c5f60fc57cdf4cd3a01b8d3a87a4f3de@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
+ <1409031951-39021-3-git-send-email-Li.Xiubo@freescale.com>
+ <alpine.DEB.2.10.1409031236450.3333@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409031236450.3333@nanos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0324C2C0E2
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(24454002)(164054003)(189002)(199003)(86362001)(74316001)(2656002)(105586002)(92566001)(87936001)(77982001)(101416001)(90102001)(64706001)(80022001)(85852003)(66066001)(79102001)(83072002)(20776003)(76482001)(81542001)(107046002)(106116001)(106356001)(4396001)(76576001)(95666004)(81342001)(99286002)(54356999)(85306004)(74662001)(31966008)(74502001)(77096002)(108616004)(46102001)(83322001)(21056001)(76176999)(110136001)(99396002)(50986999)(33646002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB185;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
-
-> If __unmap_hugepage_range() tries to unmap the address range over which
-> hugepage migration is on the way, we get the wrong page because pte_page()
-> doesn't work for migration entries. This patch calls pte_to_swp_entry() and
-> migration_entry_to_page() to get the right page for migration entries.
+> Subject: Re: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource read
+> API.
 > 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: <stable@vger.kernel.org>  # [2.6.36+]
-
-2.6.36+?  But this one doesn't affect hwpoisoned.
-I admit I've lost track of how far back hugetlb migration goes:
-oh, to 2.6.37+, that fits with what you marked on some commits earlier.
-But then 2/6 says 3.12+.  Help!  Please remind me of the sequence of events.
-
-> ---
->  mm/hugetlb.c | 9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
+> On Tue, 26 Aug 2014, Xiubo Li wrote:
 > 
-> diff --git mmotm-2014-08-25-16-52.orig/mm/hugetlb.c mmotm-2014-08-25-16-52/mm/hugetlb.c
-> index 1ed9df6def54..0a4511115ee0 100644
-> --- mmotm-2014-08-25-16-52.orig/mm/hugetlb.c
-> +++ mmotm-2014-08-25-16-52/mm/hugetlb.c
-> @@ -2652,6 +2652,13 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  		if (huge_pte_none(pte))
->  			goto unlock;
->  
-> +		if (unlikely(is_hugetlb_entry_migration(pte))) {
-> +			swp_entry_t entry = pte_to_swp_entry(pte);
-> +
-> +			page = migration_entry_to_page(entry);
-> +			goto clear;
-> +		}
-> +
+> > Since the Flextimer device will be implemented in BE mode on
+> > LS1 SoC, and in LE mode on Vybrid, LS2 SoCs, so here we need
+> > the endianness judgment before doing the mmio.
+> 
+> Brilliant. So for every clocksource read you take a conditional.
+> 
+> > @@ -238,7 +243,7 @@ static int __init ftm_clocksource_init(unsigned long
+> freq)
+> >  	sched_clock_register(ftm_read_sched_clock, 16, freq / (1 << priv->ps));
+> >  	err = clocksource_mmio_init(priv->clksrc_base + FTM_CNT, "fsl-ftm",
+> >  				    freq / (1 << priv->ps), 300, 16,
+> > -				    clocksource_mmio_readl_up);
+> > +				    ftm_clocksource_read_up);
+> 
+> What's wrong with having endianess aware clocksource_mmio functions
+> and make the decision at init time?
+> 
 
-This surprises me: are you sure?  Obviously you know hugetlb migration
-much better than I do: is it done in a significantly different way from
-order:0 page migration?  In the order:0 case, there is no reference to
-the page corresponding to the migration entry placed in a page table,
-just the remaining reference held by the task doing the migration.  But
-here you are jumping to the code which unmaps and frees a present page.
+Since the FTM will be in BE mode on LS1 platform, but will be in LE mode
+On LS2 platform.
 
-I can see that a fix is necessary, but I would have expected it to
-consist of merely changing the "HWPoisoned" comment below to include
-migration entries, and changing its test from
-		if (unlikely(is_hugetlb_entry_hwpoisoned(pte))) {
-to
-		if (unlikely(!pte_present(pte))) {
+And ftm_clocksource_read_up() will adapt to this different.
 
->  		/*
->  		 * HWPoisoned hugepage is already unmapped and dropped reference
->  		 */
-> @@ -2677,7 +2684,7 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  			 */
->  			set_vma_resv_flags(vma, HPAGE_RESV_UNMAPPED);
->  		}
-> -
-> +clear:
->  		pte = huge_ptep_get_and_clear(mm, address, ptep);
->  		tlb_remove_tlb_entry(tlb, ptep, address);
->  		if (huge_pte_dirty(pte))
-> -- 
-> 1.9.3
+Thanks,
+
+BRs
+Xiubo
