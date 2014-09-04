@@ -1,163 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272AbaIDAGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 20:06:32 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39694 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaIDAGa (ORCPT
+	id S932433AbaIDAGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 20:06:37 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:37389 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaIDAGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 20:06:30 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: "Rafael J. Wysocki\"" <rjw@rjwysocki.net>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>
-Subject: [PATCH] PM / sleep: add configurable delay for pm_test
-Date: Wed,  3 Sep 2014 16:55:35 -0700
-Message-Id: <1409788535-28264-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 3 Sep 2014 20:06:34 -0400
+Message-ID: <5407AD06.6070402@gmail.com>
+Date: Wed, 03 Sep 2014 17:06:30 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/12] of: Add binding document for MIPS GIC
+References: <1409350479-19108-1-git-send-email-abrestic@chromium.org> <1409350479-19108-4-git-send-email-abrestic@chromium.org> <5405FE07.4030400@gmail.com> <CAL1qeaHcV_4Z9n_THEN_aST3smgaW1vwn81SkmbU0AUJ_rdB1Q@mail.gmail.com> <540665BA.3080702@gmail.com> <CAL1qeaG_vSiBToi9ZU2=+Guj98gWE_AgmrR7=Z6-PxSNfdH9sA@mail.gmail.com>
+In-Reply-To: <CAL1qeaG_vSiBToi9ZU2=+Guj98gWE_AgmrR7=Z6-PxSNfdH9sA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_PM_DEBUG=y, we provide a sysfs file (/sys/power/pm_test) for
-selecting one of a few suspend test modes, where rather than entering a
-full suspend state, the kernel will perform some subset of suspend
-steps, wait 5 seconds, and then resume back to normal operation.
+On 09/03/2014 04:53 PM, Andrew Bresticker wrote:
+> On Tue, Sep 2, 2014 at 5:50 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+[...]
+>>
+>> Your comments don't really make sense to me in the context of my knowledge
+>> of the GIC.
+>>
+>> Of course all the CP0 timer and performance counter interrupts are per-CPU
+>> and routed directly to the corresponding CP0_Cause[IP7..IP2] bits.  We are
+>> don't need to give them further consideration.
+>>
+>>
+>> Here is the scenario you should consider:
+>>
+>>    o 16 CPU cores.
+>>    o 1 GIC routing interrupts from external sources to the 16 CPUs.
+>>    o 2 network controllers each with an interrupt line routed to the GIC.
+>>
+>> Q: What would the GIC "interrupts" property look like?
+>>
+>> Note that the GIC doesn't have a single "interrupt-parent", as it can route
+>> interrupts to *all* 16 CPUs.
+>>
+>> I propose that the GIC have neither an "interrupt-parent", nor "interrupts".
+>> The fact that it is an "mti,global-interrupt-controller", means that the
+>> software drivers for the GIC already know how to route interrupts, and any
+>> information the device tree could contain is redundant.
+>
+> Ok, I misunderstood your opposition to the binding.
+>
+> My intention for the "interrupt-parent" and "interrupts" property of
+> the GIC was to express that GIC interrupts are routed to the CPU
+> interrupt vectors and that a certain set of these vectors are
+> available for use by the GIC.  I would agree that these are mostly
+> redundant (obviously the GIC routes interrupts to CPU interrupt
+> vecotrs) and that it is not the most accurate description of the
+> GIC-CPU relationship (the CPU interrupt controller are per-CPU, not
+> global, and the GIC can route interrupts to any of them), though I'm
+> not sure that there's a better way of describing it in DT.
+>
+> So that leaves us with something like this:
+>
+> interrupt-controller@1bdc0000 {
+>          compatible = "mti,global-interrupt-controller";
+>
+>          interrupt-controller;
+>          #interrupt-cells = <2>;
+>
+>          available-cpu-vectors = <2>, <3>, ...
 
-This mode is useful for (among other things) observing the state of the
-system just before entering a sleep mode, for debugging or analysis
-purposes. However, a constant 5 second wait is not sufficient for some
-sorts of analysis; for example, on an SoC, one might want to use
-external tools to probe the power states of various on-chip controllers
-or clocks.
 
-This patch adds a companion sysfs file (/sys/power/pm_test_delay) that
-allows user-space to configure how long the system waits in this test
-state before resuming. It also updates the PM debugging documentation to
-mention the new file.
+Exactly what I had in mind, except for the missing "reg" property.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
----
- Documentation/power/basic-pm-debugging.txt | 14 ++++++++------
- kernel/power/main.c                        | 27 +++++++++++++++++++++++++++
- kernel/power/power.h                       |  5 +++++
- kernel/power/suspend.c                     |  8 ++++++--
- 4 files changed, 46 insertions(+), 8 deletions(-)
+This gives software the information it needs, but doesn't impose any policy.
 
-diff --git a/Documentation/power/basic-pm-debugging.txt b/Documentation/power/basic-pm-debugging.txt
-index edeecd447d23..bd9f27ae99fe 100644
---- a/Documentation/power/basic-pm-debugging.txt
-+++ b/Documentation/power/basic-pm-debugging.txt
-@@ -75,12 +75,14 @@ you should do the following:
- # echo platform > /sys/power/disk
- # echo disk > /sys/power/state
- 
--Then, the kernel will try to freeze processes, suspend devices, wait 5 seconds,
--resume devices and thaw processes.  If "platform" is written to
--/sys/power/pm_test , then after suspending devices the kernel will additionally
--invoke the global control methods (eg. ACPI global control methods) used to
--prepare the platform firmware for hibernation.  Next, it will wait 5 seconds and
--invoke the platform (eg. ACPI) global methods used to cancel hibernation etc.
-+Then, the kernel will try to freeze processes, suspend devices, wait a few
-+seconds (5 by default, but configurable via /sys/power/pm_test_delay), resume
-+devices and thaw processes.  If "platform" is written to /sys/power/pm_test,
-+then after suspending devices the kernel will additionally invoke the global
-+control methods (eg. ACPI global control methods) used to prepare the platform
-+firmware for hibernation.  Next, it will wait a configurable number of seconds
-+and invoke the platform (eg. ACPI) global methods used to cancel hibernation
-+etc.
- 
- Writing "none" to /sys/power/pm_test causes the kernel to switch to the normal
- hibernation/suspend operations.  Also, when open for reading, /sys/power/pm_test
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index 9a59d042ea84..4d242c8b43a0 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -73,6 +73,7 @@ power_attr(pm_async);
- 
- #ifdef CONFIG_PM_DEBUG
- int pm_test_level = TEST_NONE;
-+int pm_test_seconds = PM_TEST_DELAY_DEFAULT;
- 
- static const char * const pm_tests[__TEST_AFTER_LAST] = {
- 	[TEST_NONE] = "none",
-@@ -132,6 +133,31 @@ static ssize_t pm_test_store(struct kobject *kobj, struct kobj_attribute *attr,
- }
- 
- power_attr(pm_test);
-+
-+static ssize_t pm_test_delay_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%d\n", pm_test_seconds);
-+}
-+
-+static ssize_t pm_test_delay_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t n)
-+{
-+	int val;
-+
-+	if (kstrtoint(buf, 10, &val))
-+		return -EINVAL;
-+
-+	if (val < 0)
-+		return -EINVAL;
-+
-+	pm_test_seconds = val;
-+
-+	return n;
-+}
-+
-+power_attr(pm_test_delay);
- #endif /* CONFIG_PM_DEBUG */
- 
- #ifdef CONFIG_DEBUG_FS
-@@ -601,6 +627,7 @@ static struct attribute * g[] = {
- #endif
- #ifdef CONFIG_PM_DEBUG
- 	&pm_test_attr.attr,
-+	&pm_test_delay_attr.attr,
- #endif
- #ifdef CONFIG_PM_SLEEP_DEBUG
- 	&pm_print_times_attr.attr,
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 5d49dcac2537..28111795da71 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -230,6 +230,11 @@ enum {
- 
- extern int pm_test_level;
- 
-+/* Default to 5 second delay */
-+#define PM_TEST_DELAY_DEFAULT		5
-+
-+extern int pm_test_seconds;
-+
- #ifdef CONFIG_SUSPEND_FREEZER
- static inline int suspend_freeze_processes(void)
- {
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 6dadb25cb0d8..2372a99d4356 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -196,8 +196,12 @@ static int suspend_test(int level)
- {
- #ifdef CONFIG_PM_DEBUG
- 	if (pm_test_level == level) {
--		printk(KERN_INFO "suspend debug: Waiting for 5 seconds.\n");
--		mdelay(5000);
-+		int i;
-+
-+		pr_info("suspend debug: waiting for %d second(s)\n",
-+				pm_test_seconds);
-+		for (i = 0; i < pm_test_seconds; i++)
-+			mdelay(1000);
- 		return 1;
- 	}
- #endif /* !CONFIG_PM_DEBUG */
--- 
-1.9.1
+I will defer to others on the exact name the "available-cpu-vectors" 
+should have.
+
+
+
+
+> };
+>
+> DT folks, thoughts?
+>
+>
 
