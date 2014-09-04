@@ -1,36 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780AbaIDQnp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:43:45 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:41899 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486AbaIDQno (ORCPT
+	id S1754666AbaIDQpG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:45:06 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:44265 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222AbaIDQpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:43:44 -0400
+	Thu, 4 Sep 2014 12:45:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409848803-17893-1-git-send-email-linux@roeck-us.net>
-References: <1409848803-17893-1-git-send-email-linux@roeck-us.net>
-Date: Thu, 4 Sep 2014 09:43:43 -0700
-X-Google-Sender-Auth: Gmbe43xrzDGCs7i2o3iBGZmgeiM
-Message-ID: <CA+55aFwEDkjkuSfLufqyHhGYxJhXVeh56JXE5Fbo4v29YRcb=A@mail.gmail.com>
-Subject: Re: [GIT PULL resend] hwmon fixes for 3.17-rc4
-From: Linus Torvalds <linus@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+In-Reply-To: <1409161588-19417-4-git-send-email-alvin.chen@intel.com>
+References: <1409161588-19417-1-git-send-email-alvin.chen@intel.com>
+	<1409161588-19417-4-git-send-email-alvin.chen@intel.com>
+Date: Thu, 4 Sep 2014 18:45:02 +0200
+Message-ID: <CACRpkdZJSf+EfYN=hHxRnpjQZGuqroBL0c+08Ng=dRkS0GZySA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Weike Chen <alvin.chen@intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 9:40 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> I know my e-mail service is acting up again, so I don't know if there
-> is a problem with linux-foundation.org or with my e-mail service or if I
-> should have used linuxfoundation.org all along
+On Wed, Aug 27, 2014 at 7:46 PM, Weike Chen <alvin.chen@intel.com> wrote:
 
-There's some silly DNS problem with "linux-foundation.org" - it's
-*supposed* to alias to the non-dashed version, but somehow that alias
-disappeared. It hopefully gets fixed soon, in the meantime people get
-bounces. Oh well.
+> This patch enables suspend and resume mode for the power management, and
+> it is based on Josef Ahmad's previous work.
+>
+> Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
+> Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
+> Signed-off-by: Weike Chen <alvin.chen@intel.com>
 
-                Linus
+(...)
+
+> +#if defined CONFIG_PM_SLEEP
+
+I wonder whether it's worth #ifdef:in out such things, it clutters
+the place.
+
+> +/* Store GPIO context across system-wide suspend/resume transitions */
+> +static struct gpio_saved_regs {
+
+Call the struct:
+
+struct dwapb_context
+
+because that is easier to understand.
+
+> +       unsigned long data;
+> +       unsigned long dir;
+> +       unsigned long int_en;
+> +       unsigned long int_mask;
+> +       unsigned long int_type;
+> +       unsigned long int_pol;
+> +       unsigned long int_deb;
+> +} saved_regs;
+
+Singleton huh?
+
+Insert this into the dynamically allocated per-port or chip struct
+instead.
+
++       dwapb_write(gpio, GPIO_SWPORTA_DR, saved_regs.data);
++       dwapb_write(gpio, GPIO_SWPORTA_DDR, saved_regs.dir);
+
+And port B, C, D?
+
+This looks like a crude hack.
+
+Yours,
+Linus Walleij
