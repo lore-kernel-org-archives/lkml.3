@@ -1,51 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937AbaIDW3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 18:29:40 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:57384 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754790AbaIDW3j (ORCPT
+	id S1755975AbaIDWas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 18:30:48 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:62808 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755948AbaIDWar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 18:29:39 -0400
-Message-ID: <1409869776.5546.123.camel@x220>
-Subject: Re: [4/5] IBM Akebono: Add the Akebono platform
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alistair Popple <alistair@popple.id.au>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Fri, 05 Sep 2014 00:29:36 +0200
-In-Reply-To: <10214508.Vq3Ynjy2Co@mexican>
-References: <1394077948-8395-5-git-send-email-alistair@popple.id.au>
-	 <1398936447.4121.12.camel@x220> <10214508.Vq3Ynjy2Co@mexican>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Sep 2014 22:29:37.0071 (UTC) FILETIME=[B5A9B3F0:01CFC88F]
-X-RcptDomain: vger.kernel.org
+	Thu, 4 Sep 2014 18:30:47 -0400
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Date: Thu,  4 Sep 2014 15:30:41 -0700
+Message-Id: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alistair,
+There is a race condition between OOM killer and freezer when
+they try to operate on the same process, something like below:
 
-On Fri, 2014-05-02 at 10:35 +1000, Alistair Popple wrote:
-> On Thu, 1 May 2014 11:27:27 Paul Bolle wrote:
-> > On Thu, 2014-03-06 at 14:52 +1100, Alistair Popple wrote:
-> > > This patch adds support for the IBM Akebono board.
-> > > +	select IBM_EMAC_RGMII_WOL
-> > 
-> > The patch that added this symbol (and the related driver) was submitted
-> > in https://lkml.org/lkml/2014/2/21/25 . It's not (yet) included in
-> > linux-next. Is it queued somewhere else?
-> 
-> To be honest I'm not sure. I will follow this up on the netdev list.
+        Process A       Process B               Process C
+trigger page fault
+then trigger oom
+B=oom_scan_process_thread()
+                                        cgroup freezer freeze(A, B)
+                        ...
+                        try_to_freeze()
+                        stay in D state
+oom_kill_process(B)
+restart page fault
+...
 
-I noticed that this symbol (and its driver) are still not in v3.17-rc3
-nor in next-20140904. Any update on this?
+In this case, process A triggered a page fault in user-space,
+and the kernel page fault handler triggered OOM, then kernel
+selected process B as the victim, right before being killed
+process B was frozen by process C therefore went to D state,
+then kernel sent SIGKILL but it is already too late as
+process B will not care about pending signals any more.
 
-Thanks,
+David Rientjes tried to fix same issue with commit
+f660daac474c6f (oom: thaw threads if oom killed thread is
+frozen before deferring) but it doesn't work any more, because
+__thaw_task() just checks if it's frozen and then wakes it up,
+but the frozen task, after waking up, will check if freezing()
+is still true and continue to freeze itself if so. __thaw_task()
+can't make freezing() return false since it doesn't change any
+of these conditions, especially cgroup_freezing().
 
+Fix this straightly by checking if the frozen process itself
+has been killed by OOM killer, so that the frozen process will
+thaw itself and be killed finally.
 
-Paul Bolle
+Cc: David Rientjes <rientjes@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+---
+ kernel/freezer.c | 18 ++++++++++++++++--
+ mm/oom_kill.c    |  2 --
+ 2 files changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index aa6a8aa..dbcb87c 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -52,6 +52,21 @@ bool freezing_slow_path(struct task_struct *p)
+ }
+ EXPORT_SYMBOL(freezing_slow_path);
+ 
++static bool should_thaw_current(bool check_kthr_stop)
++{
++	if (!freezing(current))
++		return true;
++
++	if (check_kthr_stop && kthread_should_stop())
++		return true;
++
++	/* It might not be safe to check TIF_MEMDIE for pm freeze. */
++	if (cgroup_freezing(current) && test_thread_flag(TIF_MEMDIE))
++		return true;
++
++	return false;
++}
++
+ /* Refrigerator is place where frozen processes are stored :-). */
+ bool __refrigerator(bool check_kthr_stop)
+ {
+@@ -67,8 +82,7 @@ bool __refrigerator(bool check_kthr_stop)
+ 
+ 		spin_lock_irq(&freezer_lock);
+ 		current->flags |= PF_FROZEN;
+-		if (!freezing(current) ||
+-		    (check_kthr_stop && kthread_should_stop()))
++		if (should_thaw_current(check_kthr_stop))
+ 			current->flags &= ~PF_FROZEN;
+ 		spin_unlock_irq(&freezer_lock);
+ 
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 1e11df8..112c278 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -266,8 +266,6 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+ 	 * Don't allow any other task to have access to the reserves.
+ 	 */
+ 	if (test_tsk_thread_flag(task, TIF_MEMDIE)) {
+-		if (unlikely(frozen(task)))
+-			__thaw_task(task);
+ 		if (!force_kill)
+ 			return OOM_SCAN_ABORT;
+ 	}
+-- 
+1.8.3.1
 
