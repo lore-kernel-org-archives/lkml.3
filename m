@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353AbaIDTmx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:42:53 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47254 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754983AbaIDTmu (ORCPT
+	id S1755375AbaIDTm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:42:59 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:61136 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292AbaIDTmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:42:50 -0400
-Message-ID: <5408C0AB.6050801@hurleysoftware.com>
-Date: Thu, 04 Sep 2014 15:42:35 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
+	Thu, 4 Sep 2014 15:42:52 -0400
+Message-ID: <5408C0B4.5040207@redhat.com>
+Date: Thu, 04 Sep 2014 21:42:44 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Jakub Jelinek <jakub@redhat.com>, Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <20140712181328.GA8738@redhat.com>	<54079B70.4050200@hurleysoftware.com>	<1409785893.30640.118.camel@pasglop>	<21512.10628.412205.873477@gargle.gargle.HOWL>	<20140904090952.GW17454@tucnak.redhat.com>	<540859EC.5000407@hurleysoftware.com> <20140904175044.4697aee4@alan.etchedpixels.co.uk>
-In-Reply-To: <20140904175044.4697aee4@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+To: Chris J Arges <chris.j.arges@canonical.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
+References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <54088CB5.6050406@canonical.com> <54089DDE.6010004@redhat.com> <5408AC76.6030404@canonical.com> <5408BA6D.1070602@redhat.com>
+In-Reply-To: <5408BA6D.1070602@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 12:50 PM, One Thousand Gnomes wrote:
->> Besides updating the documentation, it may make sense to do something
->> arch-specific. Just bumping out storage on arches that don't need it
->> seems wasteful, as does generating bus locks on arches that don't need it.
->> Unfortunately, the code churn looks unavoidable.
+Il 04/09/2014 21:15, Paolo Bonzini ha scritto:
+> Il 04/09/2014 20:16, Chris J Arges ha scritto:
+>>> +	boot_ns = timespec_to_ns(&tk->total_sleep_time)
+>>> +		+ tk->wall_to_monotonic.tv_sec * (u64)NSEC_PER_SEC
+>>> +		+ tk->wall_to_monotonic.tv_nsec
+>>> +		+ tk->xtime_sec * (u64)NSEC_PER_SEC;
 > 
-> The arch specific is pretty much set_bit and friends. Bus locks on a
-> locally owned cache line should not be very expensive on anything vaguely
-> modern, while uniprocessor boxes usually only have to generate set_bit
-> as a single instruction so it is interrupt safe.
+> So this means that the above 3.16-based code is not the same as
+> 
+>         boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
+> 
+> in 3.17.  Everything else in the patch you tested is the same as the
+> code that is in 3.17, so that's a start.
+> 
+> Paolo
+> 
 
-Or we could give up on the Alpha.
+Based on commit 02cba1598a2a3b689e79ad6dad2532521f638271 we have:
 
-It's not just the non-atomic bytes; we could do away with the
-read_barrier_depends() which hardly any code gets correctly anyway.
+   offs_real - offs_boot = wall_to_monotonic + total_sleep_time
 
-Regards,
-Peter Hurley
+The patch I posted this morning separates tk->xtime_sec out of boot_ns, so
+all that is missing should be a change in boot_ns from base_mono + offs_boot
+to offs_real - offs_boot.
 
+Chris, can you try this patch on top of the previous one:
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 92493e10937c..811eecc43fe8 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1031,7 +1031,7 @@ static void update_pvclock_gtod(struct timekeeper *tk)
+ 	struct pvclock_gtod_data *vdata = &pvclock_gtod_data;
+ 	u64 boot_ns;
+ 
+-	boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
++	boot_ns = ktime_to_ns(ktime_sub(tk->offs_real, tk->offs_boot));
+ 
+ 	write_seqcount_begin(&vdata->seq);
+
+If it doesn't work, then commit 02cba1598a2a3b689e79ad6dad2532521f638271
+is also broken.
+
+Paolo
