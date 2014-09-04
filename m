@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaIDOki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:40:38 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:49875 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaIDOkg (ORCPT
+	id S1753940AbaIDOkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:40:49 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:36666 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816AbaIDOkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:40:36 -0400
+	Thu, 4 Sep 2014 10:40:46 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, David Paris <david.paris@st.com>
-Subject: [PATCH 1/4] ARM: STi: DT: STiH407: Add Device Tree node for LPC Watchdog
-Date: Thu,  4 Sep 2014 15:39:48 +0100
-Message-Id: <1409841592-18890-2-git-send-email-lee.jones@linaro.org>
+        linux-watchdog@vger.kernel.org
+Subject: [PATCH 2/4] ARM: multi_v7_defconfig: Enable support for ST's LPC Watchdog
+Date: Thu,  4 Sep 2014 15:39:49 +0100
+Message-Id: <1409841592-18890-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
 References: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
@@ -21,32 +21,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Paris <david.paris@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/stih407.dtsi | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
-index f539627a..303df6c 100644
---- a/arch/arm/boot/dts/stih407.dtsi
-+++ b/arch/arm/boot/dts/stih407.dtsi
-@@ -259,5 +259,15 @@
- 
- 			status = "disabled";
- 		};
-+
-+		watchdog@0x8787000 {
-+			compatible = "st,stih407-watchdog";
-+			reg = <0x8787000 0x1000>, <0x204 0x4>;
-+			reg-names = "base", "syscfg-en";
-+			clock-names = "st_wdog";
-+			clocks = <&clk_s_d3_flexgen CLK_LPC_0>;
-+			timeout-sec = <600>;
-+			st,syscfg = <&syscfg_core>;
-+		};
- 	};
- };
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 5fb95fb..034aeab 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -238,6 +238,7 @@ CONFIG_ST_THERMAL_SYSCFG=y
+ CONFIG_ST_THERMAL_MEMMAP=y
+ CONFIG_WATCHDOG=y
+ CONFIG_ORION_WATCHDOG=y
++CONFIG_ST_WATCHDOG=y
+ CONFIG_SUNXI_WATCHDOG=y
+ CONFIG_MFD_AS3722=y
+ CONFIG_MFD_BCM590XX=y
 -- 
 1.9.1
 
