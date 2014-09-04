@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaIDJgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:36:47 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:11660
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752334AbaIDJgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:36:45 -0400
-From: Fancy Fang <chen.fang@freescale.com>
-To: <shawn.guo@freescale.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: clk-imx6sl: correct the pxp and epdc axi clock selections
-Date: Thu, 4 Sep 2014 16:33:12 +0800
-Message-ID: <1409819592-31462-1-git-send-email-chen.fang@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(89996001)(87286001)(102836001)(48376002)(33646002)(81342001)(50466002)(85306004)(68736004)(76482001)(79102001)(83072002)(87936001)(85852003)(77982001)(104016003)(50226001)(47776003)(80022001)(92726001)(26826002)(2371004)(46102001)(81542001)(4396001)(21056001)(20776003)(99396002)(104166001)(92566001)(88136002)(84676001)(36756003)(64706001)(110136001)(81156004)(50986999)(97736001)(77156001)(95666004)(106466001)(86362001)(93916002)(62966002)(107046002)(69596002)(44976005)(2351001)(74502001)(74662001)(19580395003)(19580405001)(83322001)(105606002)(31966008)(90102001)(229853001)(6806004);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB352;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:;
+	id S1752674AbaIDJhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:37:20 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:53689 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329AbaIDJhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 05:37:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0324C2C0E2
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=chen.fang@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAPDyKFoe6Zkr+QLZRc3azn8JvpsQXdSNLHTLmy5O-nnbVy9C1A@mail.gmail.com>
+References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
+ <CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
+ <5406D942.4080405@intel.com> <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
+ <CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com> <CAPDyKFoe6Zkr+QLZRc3azn8JvpsQXdSNLHTLmy5O-nnbVy9C1A@mail.gmail.com>
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Thu, 4 Sep 2014 11:37:00 +0200
+X-Google-Sender-Auth: 3lgzWjDz_znKocqilJZL_c8_Cuk
+Message-ID: <CAL8zT=i-T9DHd1F5=YpovM9i0LwpUswm6am1Qyf6kG_g3Xj2Qg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>, h80.chung@samsung.com,
+        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The parent clocks of IMX6SL_CLK_PXP_AXI_SEL and IMX6SL_CLK_EPDC_AXI_SEL
-clocks are not the same. So split the epdc_pxp_sels into two different
-clock selections 'pxp_axi_sels' and 'epdc_axi_sels'.
+Hi Ulf,
 
-Signed-off-by: Fancy Fang <chen.fang@freescale.com>
-Signed-off-by: Robby Cai <R63905@freescale.com>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
----
- arch/arm/mach-imx/clk-imx6sl.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+> I am not sure adding a DT binding for non access to rpmb would be
+> needed. At least until we heard of a similar case as Adrian describes
+> but for rpmb.
+>
+> BTW, I just posted a patch which disabled partition scan of the boot
+> area, what to you think about that?
+> http://marc.info/?l=linux-mmc&m=140973496402028&w=2
+>
+> Finally I am also wondering whether we could and thus should, handle
+> these situations entirely without using a host cap. In principle what
+> we need is a more sophisticated error handling when the switch errors
+> occurs, while trying to switch to the boot area/rpmb partitions. Could
+> you maybe investigate that option, before we decide to add a new DT
+> binding?
 
-diff --git a/arch/arm/mach-imx/clk-imx6sl.c b/arch/arm/mach-imx/clk-imx6sl.c
-index 43261ea..d730dfa 100644
---- a/arch/arm/mach-imx/clk-imx6sl.c
-+++ b/arch/arm/mach-imx/clk-imx6sl.c
-@@ -47,7 +47,8 @@ static const char *csi_lcdif_sels[]	= { "mmdc", "pll2_pfd2", "pll3_120m", "pll3_
- static const char *usdhc_sels[]		= { "pll2_pfd2", "pll2_pfd0", };
- static const char *ssi_sels[]		= { "pll3_pfd2", "pll3_pfd3", "pll4_audio_div", "dummy", };
- static const char *perclk_sels[]	= { "ipg", "osc", };
--static const char *epdc_pxp_sels[]	= { "mmdc", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll2_pfd2", "pll3_pfd1", };
-+static const char *pxp_axi_sels[]	= { "pll2_bus", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll2_pfd2", "pll3_pfd3", };
-+static const char *epdc_axi_sels[]	= { "pll2_bus", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll2_pfd2", "pll3_pfd2", };
- static const char *gpu2d_ovg_sels[]	= { "pll3_pfd1", "pll3_usb_otg", "pll2_bus", "pll2_pfd2", };
- static const char *gpu2d_sels[]		= { "pll2_pfd2", "pll3_usb_otg", "pll3_pfd1", "pll2_bus", };
- static const char *lcdif_pix_sels[]	= { "pll2_bus", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll3_pfd0", "pll3_pfd1", };
-@@ -251,8 +252,8 @@ static void __init imx6sl_clocks_init(struct device_node *ccm_node)
- 	clks[IMX6SL_CLK_SSI2_SEL]         = imx_clk_fixup_mux("ssi2_sel",   base + 0x1c, 12, 2, ssi_sels,          ARRAY_SIZE(ssi_sels),    imx_cscmr1_fixup);
- 	clks[IMX6SL_CLK_SSI3_SEL]         = imx_clk_fixup_mux("ssi3_sel",   base + 0x1c, 14, 2, ssi_sels,          ARRAY_SIZE(ssi_sels),    imx_cscmr1_fixup);
- 	clks[IMX6SL_CLK_PERCLK_SEL]       = imx_clk_fixup_mux("perclk_sel", base + 0x1c, 6,  1, perclk_sels,       ARRAY_SIZE(perclk_sels), imx_cscmr1_fixup);
--	clks[IMX6SL_CLK_PXP_AXI_SEL]      = imx_clk_mux("pxp_axi_sel",      base + 0x34, 6,  3, epdc_pxp_sels,     ARRAY_SIZE(epdc_pxp_sels));
--	clks[IMX6SL_CLK_EPDC_AXI_SEL]     = imx_clk_mux("epdc_axi_sel",     base + 0x34, 15, 3, epdc_pxp_sels,     ARRAY_SIZE(epdc_pxp_sels));
-+	clks[IMX6SL_CLK_PXP_AXI_SEL]      = imx_clk_mux("pxp_axi_sel",      base + 0x34, 6,  3, pxp_axi_sels,      ARRAY_SIZE(pxp_axi_sels));
-+	clks[IMX6SL_CLK_EPDC_AXI_SEL]     = imx_clk_mux("epdc_axi_sel",     base + 0x34, 15, 3, epdc_axi_sels,     ARRAY_SIZE(epdc_axi_sels));
- 	clks[IMX6SL_CLK_GPU2D_OVG_SEL]    = imx_clk_mux("gpu2d_ovg_sel",    base + 0x18, 4,  2, gpu2d_ovg_sels,    ARRAY_SIZE(gpu2d_ovg_sels));
- 	clks[IMX6SL_CLK_GPU2D_SEL]        = imx_clk_mux("gpu2d_sel",        base + 0x18, 8,  2, gpu2d_sels,        ARRAY_SIZE(gpu2d_sels));
- 	clks[IMX6SL_CLK_LCDIF_PIX_SEL]    = imx_clk_mux("lcdif_pix_sel",    base + 0x38, 6,  3, lcdif_pix_sels,    ARRAY_SIZE(lcdif_pix_sels));
--- 
-1.9.1
+According to me and what Hsin-Hsiang Tseng wrote, it seems that we
+should be able to have access to boot partitions if we want to give a
+possibility of writing u-boot in one (or both) of them. This is the
+way the i.MX6 will boot on a eMMC if I read the reference manual
+correctly, but I didn't tested it yet.
+But there is no need to scan those partitions at boot, as there will
+probably never be a partition table inside, as you said.
+All we need is providing access to mmc[n]blkpboot0 and mmc[n]blkpboot1
+and a way to tell which one is used as default boot partition.
 
+This is my point of view, but I didn't read JESD84-A441 so I don't
+know if this is the good way.
+
+Regards,
+JM
