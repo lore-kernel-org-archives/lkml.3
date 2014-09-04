@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507AbaIDBC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:02:28 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:45999 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933102AbaIDBCZ (ORCPT
+	id S933557AbaIDBDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:03:05 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:30518 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933102AbaIDBDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:02:25 -0400
-Date: Wed, 3 Sep 2014 18:02:19 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: stable@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Zhang Rui <rui.zhang@intel.com>
-Subject: [stable -3.14] PM backports for pm_test / CONFIG_PM_DEBUG
-Message-ID: <20140904010219.GA18411@ld-irv-0074>
+	Wed, 3 Sep 2014 21:03:03 -0400
+Message-ID: <5407B9F5.2090000@huawei.com>
+Date: Thu, 4 Sep 2014 09:01:41 +0800
+From: "long.wanglong" <long.wanglong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <santosh.shilimkar@ti.com>, <victor.kamensky@linaro.org>,
+        <nico@linaro.org>, <ben.dooks@codethink.co.uk>, <cov@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [SMP BUG?] the return value of is_smp() is bug?
+References: <1409571334-2814-1-git-send-email-long.wanglong@huawei.com> <20140901101952.GF30401@n2100.arm.linux.org.uk>
+In-Reply-To: <20140901101952.GF30401@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.88.174]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A02020A.5407BA04.014C,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 0e34727ccfe9845b9ebc6300ba5ca814
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2014/9/1 18:19, Russell King - ARM Linux wrote:
+> Firstly, do not send multiple copies of your message to mailing lists,
+> certainly not within the three hours that you sent your three copies.
+> If one of the addresses you sent the message to bounces, then it is
+> *only* that one recipient who doesn't get your message, everyone else
+> receives a copy.  So, there's now three copies of your message in the
+> list archives, and people could end up replying to different messages.
+> 
+> On Mon, Sep 01, 2014 at 07:35:34PM +0800, Wang Long wrote:
+>> Hi,all
+>>
+>> In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
+>> in .config file. the secondary core can not boot.
+>>
+>> when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
+>> the secondary core can boot.
+>>
+>> But this does not happen in kernel 3.10 lts kernel, Whether the 
+>> CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
+>>
+>> Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel 3.17-rc2 ? 
+> 
+> I think the answer is neither, because when the kernel is run on /real/
+> hardware:
+> 
+> http://www.arm.linux.org.uk/developer/build/result.php?type=boot&idx=2514
+> 
+> it boots fine, bringing up all four CPUs.
+> 
+>> config:     set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y
+>> command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
+> 
+> I've no idea how qemu works here, but if the CPU doesn't indicate that
+> it's a SMP capable CPU, we will disable SMP extensions.
+> 
+>> The output:
+>>
+>> ..........
+>> is_smp() return false;
+>> CPU: Testing write buffer coherency: ok
+>> missing device node for CPU 0
+>> CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+>> Setting up static identity map for 0x604643d8 - 0x60464430
+>> Brought up 1 CPUs
+>> SMP: Total of 1 processors activated.
+>> CPU: All CPU(s) started in SVC mode.
+>> ...........
+> 
+> You have decided that you'll edit the kernel messages, removing at least
+> some of the information that could be relevant to the issue.  Please,
+> only cut kernel messages when you are absolutely certain that they are
+> not relevant to the problem you're reporting.
+> 
+> However, I don't think it would help much - I suspect that qemu doesn't
+> provide emulation of the SCU base address register, and that's what your
+> problem is.  qemu needs to be fixed in that regard.
+> 
 
-If I enable CONFIG_PM_DEBUG on a 3.14.y kernel, I can see the following
-results:
+Hi,Russell King
 
-    # cat /sys/power/state
-    freeze standby mem
-    # cat /sys/power/pm_test
-    [none] core processors platform devices freezer
-    # echo core > /sys/power/pm_test
-    # cat /sys/power/state
-    [   22.581289] Unsupported pm_test mode for freeze state, please choose none/freezer/devices/platform.
-    standby mem
+Thank you for your reply. I will not send multiple copies of message to mailing lists.
+The problem is that qemu doesn't provide emulation of the SCU base address register.
 
-Note how 'freeze' is dropped from the supported states, and I get an
-extra printk message when I'm just checking if the state is valid.
 
-It looks like if I backport a few fixes, I get more sane behavior, where
-the warnings (and -EAGAIN) appear only when I actually try to enter an
-unsupported test mode:
-
-    # echo core > /sys/power/pm_test
-    # cat /sys/power/state
-    freeze standby mem
-    # echo freeze > /sys/power/state
-    [   27.833141] PM: Unsupported test mode for freeze state,please choose none/freezer/devices/platform.
-    sh: echo: write error: Resource temporarily unavailable
-
-I think I've narrowed it down to this commit that should be backported
-to -stable (for 3.9+?):
-
-    43e8317b0bba PM / sleep: Use valid_state() for platform-dependent sleep states only
-
-But it needs to drag along this dependency too:
-
-    27ddcc6596e5 PM / sleep: Add state field to pm_states[] entries
-
-While at this, it looks like this commit might be deserving of -stable
-(3.9+). I haven't tested this one, as I don't have a good freeze+cpuidle
-setup; it just shows up in the commit log with an interesting
-description and a 'Fixes' tag:
-
-    f3f125324fc1 PM / suspend: Make cpuidle work in the "freeze" state
-
-Regards,
-Brian
