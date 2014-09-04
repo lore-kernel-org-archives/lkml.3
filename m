@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116AbaIDJD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:03:29 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:51865 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395AbaIDJD0 convert rfc822-to-8bit (ORCPT
+	id S1755173AbaIDJF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:05:27 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:48700 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753620AbaIDJFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:03:26 -0400
-Message-ID: <54082ADD.6040004@arm.com>
-Date: Thu, 04 Sep 2014 10:03:25 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 4 Sep 2014 05:05:24 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugrABoqCFR5LKYhPGdsb2JhbABZgw2DVoUHqAYGmkGFaQEDAQEBgQgXBQEBAQE4NoQDAQEEATocIwULCAMOCgklDwUlAwcaE4g6B75WARcYhWSJUQeETAWca4whjHUrL4JPAQEB
+Date: Thu, 4 Sep 2014 19:05:12 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, xuejiufei@huawei.com,
+        ming.lei@canonical.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
+Message-ID: <20140904090512.GL20473@dastard>
+References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
+ <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v4 01/11] cpumask: factor out show_cpumap into separate
- helper function
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-2-git-send-email-sudeep.holla@arm.com> <20140904062006.GC3190@worktop.ger.corp.intel.com>
-In-Reply-To: <20140904062006.GC3190@worktop.ger.corp.intel.com>
-X-OriginalArrivalTime: 04 Sep 2014 09:03:23.0691 (UTC) FILETIME=[14E1AFB0:01CFC81F]
-X-MC-Unique: 114090410032405601
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Wed, Sep 03, 2014 at 04:10:00PM -0700, Andrew Morton wrote:
+> On Wed,  3 Sep 2014 13:54:54 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
+> 
+> > commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
+> > introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
+> > when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
+> > run into I/O, like in superblock shrinker.
+> 
+> Is there an actual bug which inspired this fix?  If so, please describe
+> it.
+> 
+> I don't think it's accurate to say that __GFP_FS implies __GFP_IO. 
+> Where did that info come from?
 
-On 04/09/14 07:20, Peter Zijlstra wrote:
-> On Wed, Sep 03, 2014 at 06:00:07PM +0100, Sudeep Holla wrote:
->> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
->> index 2997af6d2ccd..26d8348292dd 100644
->> --- a/include/linux/cpumask.h
->> +++ b/include/linux/cpumask.h
->> @@ -11,6 +11,8 @@
->>   #include <linux/bitmap.h>
->>   #include <linux/bug.h>
->>
->> +#include <asm/page.h>
->> +
->>   typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
->>
->>   /**
->> @@ -792,6 +794,31 @@ static inline const struct cpumask *get_cpu_mask(unsigned int cpu)
->>   }
->>   #endif /* NR_CPUS > BITS_PER_LONG */
->>
->> +/**
->> + * cpumap_copy_to_buf  - copies the cpumask into the buffer either
->> + *	as comma-separated list of cpus or hex values of cpumask
->> + * @list: indicates whether the cpumap must be list
->> + * @mask: the cpumask to copy
->> + * @buf: the buffer to copy into
->> + *
->> + * Returns the length of the (null-terminated) @buf string, zero if
->> + * nothing is copied.
->> + */
->> +static inline ssize_t
->> +cpumap_copy_to_buf(bool list, const struct cpumask *mask, char *buf)
->> +{
->> +	ptrdiff_t len = PTR_ALIGN(buf + PAGE_SIZE - 1, PAGE_SIZE) - buf - 2;
->> +	int n = 0;
->> +
->> +	if (len > 1) {
->> +		n = list ? cpulist_scnprintf(buf, len, mask) :
->> +			   cpumask_scnprintf(buf, len, mask);
->> +		buf[n++] = '\n';
->> +		buf[n] = '\0';
->> +	}
->> +	return n;
->> +}
->> +
->
-> Does that really make sense as an inline?
->
+Pretty damn clear to me:
 
-If I don't, every file including this header generates "warning:
-‘cpumap_copy_to_buf’ defined but not used". Alternatively I can just
-declare here and define it elsewhere but I could not find more apt
-place than this. Any suggestions ? kernel/cpu.c ?
+#define GFP_ATOMIC      (__GFP_HIGH)
+#define GFP_NOIO        (__GFP_WAIT)
+#define GFP_NOFS        (__GFP_WAIT | __GFP_IO)
+#define GFP_KERNEL      (__GFP_WAIT | __GFP_IO | __GFP_FS)
 
-Regards,
-Sudeep
+especially when you consider the layering of the subsystems that use
+these contexts. i.e. KERNEL on top of FS on top of IO on top of
+ATOMIC....
 
+IOWs, asking for (__GFP_WAIT | __GFP_FS) reclaim context is
+something outside the defined reclaim heirarchy. Filesystems
+*depend* on being about to do IO to perform recalim of dirty
+objects, whether it be the page cache, inode cache or any other
+filesystem cache that can hold dirty objects.
+
+> And the superblock shrinker is a good example of why this shouldn't be
+> the case.  The main thing that code does is to reclaim clean fs objects
+> without performing IO.
+
+Filesystem shrinkers do indeed perform IO from the superblock
+shrinker and have for years. Even clean inodes can require IO before
+they can be freed - e.g. on an orphan list, need truncation of
+post-eof blocks, need to wait for ordered operations to complete
+before it can be freed, etc.
+
+IOWs, Ext4, btrfs and XFS all can issue and/or block on
+arbitrary amounts of IO in the superblock shrinker context. XFS, in
+particular, has been doing transactions and IO from the VFS inode
+cache shrinker since it was first introduced....
+
+> AFAICT the proposed patch will significantly
+> weaken PF_MEMALLOC_NOIO allocation attempts by needlessly preventing
+> the kernel from reclaiming such objects?
+
+PF_MEMALLOC_NOIO is the anomolous case. It also has very few users,
+who all happen to be working around very rare deadlocks caused by
+vmalloc() hard coding GFP_KERNEL allocations deep in it's stack. So
+the impact of fixing this anomoly is going to be completely
+unnoticable...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
