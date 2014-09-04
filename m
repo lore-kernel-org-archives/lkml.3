@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769AbaIDVWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:22:41 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57149 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755058AbaIDVWj (ORCPT
+	id S1755827AbaIDVX0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:23:26 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:54463 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230AbaIDVXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:22:39 -0400
-Message-ID: <5408D81C.7070602@codeaurora.org>
-Date: Thu, 04 Sep 2014 14:22:36 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 4 Sep 2014 17:23:25 -0400
+Message-ID: <5408D84B.7040302@lwfinger.net>
+Date: Thu, 04 Sep 2014 16:23:23 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        Georgi Djakov <gdjakov@mm-sol.com>,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>
-Subject: Re: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
-References: <1409752622-7564-1-git-send-email-sboyd@codeaurora.org>	<5407F364.9030303@samsung.com> <CAPDyKFp0LwK=DABHaP-Ke=QZFP8bY5MO9RnYmUBqeEdDKp63BA@mail.gmail.com>
-In-Reply-To: <CAPDyKFp0LwK=DABHaP-Ke=QZFP8bY5MO9RnYmUBqeEdDKp63BA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andreea Bernat <bernat.ada@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: Elena Oat <oat.elena@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] rtl8188eu: Replace rcu_dereference() with rcu_access_pointer()
+References: <20140817114336.GA24984@ada>	<20140830204246.GA16563@kroah.com> <CALDM6bpomcGJk1Ut2hb8qO0gYeKkHruJZ0duBwAaonFf6HbZwA@mail.gmail.com>
+In-Reply-To: <CALDM6bpomcGJk1Ut2hb8qO0gYeKkHruJZ0duBwAaonFf6HbZwA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/14 03:53, Ulf Hansson wrote:
-> On 4 September 2014 07:06, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->>
->> In dw-mmc.c, tuning_block values are same.
->> So I think we can move these value into generic header. how about?
-> Actually, I believe these values comes from the eMMC specification?
-> Shouldn't they be moved to the mmc core instead?
+On 09/04/2014 03:58 PM, Andreea Bernat wrote:
+> Hello,
+>
+> I cloned this:
+> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+>
+> and after moved to staging-next branch, but in both cases, in
+> those files I don't find any use of rcu_dereference() call (the call
+> which I am looking for to modify).
 
-That sounds like good consolidation, but can we do that in a follow-up
-patch? This fixes the driver for me and I was hoping to make something
-minimal to go back to stable trees.
+The rcu_dereference() call in core/rtw_mlme.c is no longer there in mainline 
+3.17, thus it was removed some time ago.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+There is a similar reference in os_dep/recv_linux.c. Perhaps it should be removed.
+
+This problem shows the importance of working with the latest pull of the staging 
+repo when working with staging code. Even then patches may suffer mid-air 
+collisions if multiple devs are working on a particular piece of code.
+
+Larry
+
 
