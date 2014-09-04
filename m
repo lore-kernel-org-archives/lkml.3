@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722AbaIDHPb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:15:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44700 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaIDHPa (ORCPT
+	id S1756729AbaIDHSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:18:10 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:36276 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710AbaIDHSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:15:30 -0400
-Date: Thu, 4 Sep 2014 09:15:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kautuk Consul <consul.kautuk@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
- with try_to_wake_up()
-Message-ID: <20140904071526.GI3190@worktop.ger.corp.intel.com>
-References: <20140825155738.GA5944@redhat.com>
- <20140901153935.GQ27892@worktop.ger.corp.intel.com>
- <20140901175851.GA15210@redhat.com>
- <20140901190931.GD5806@worktop.ger.corp.intel.com>
- <20140902155208.GA28668@redhat.com>
- <20140902164714.GA17033@redhat.com>
- <20140902173910.GF27892@worktop.ger.corp.intel.com>
- <20140903133640.GA25439@redhat.com>
- <20140903144450.GB7083@twins.programming.kicks-ass.net>
- <20140903151848.GA6312@redhat.com>
+	Thu, 4 Sep 2014 03:18:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140903151848.GA6312@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1409787800.31585.26.camel@schen9-desk2.jf.intel.com>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-4-git-send-email-vincent.guittot@linaro.org>
+ <5401BCDF.3040503@linux.vnet.ibm.com> <CAKfTPtAt_X99p4KHNmZtVAnMdYm8_QLZ796WO+McqGf5RyM+iQ@mail.gmail.com>
+ <1409787800.31585.26.camel@schen9-desk2.jf.intel.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Thu, 4 Sep 2014 09:17:47 +0200
+Message-ID: <CAKfTPtCd02JLyd335WUpU5RRUYmS=Ni9S0U_U1uDsYjs59oQ1A@mail.gmail.com>
+Subject: Re: [PATCH v5 03/12] sched: fix avg_load computation
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 05:18:48PM +0200, Oleg Nesterov wrote:
-> On 09/03, Peter Zijlstra wrote:
-> >
-> > On Wed, Sep 03, 2014 at 03:36:40PM +0200, Oleg Nesterov wrote:
-> > >
-> > > 	// Ensure that the previous __set_current_state(RUNNING) can't
-> > > 	// leak after spin_unlock_wait()
-> > > 	smp_mb();
-> > > 	spin_unlock_wait();
-> > > 	// Another mb to ensure this too can't be reordered with unlock_wait
-> > > 	set_current_state(TASK_DEAD);
-> > >
-> > > What do you think looks better?
-> >
-> > spin_unlock_wait() would be a control dependency right? Therefore that
-> > store could not creep up anyhow.
-> 
-> Hmm. indeed, thanks! This probably means that task_work_run() can use
-> rmb() instead of mb().
-> 
-> What I can't understand is do we still need a compiler barrier or not.
-> Probably "in theory yes" ?
+On 4 September 2014 01:43, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> On Wed, 2014-09-03 at 13:09 +0200, Vincent Guittot wrote:
+>> On 30 August 2014 14:00, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>> > Hi Vincent,
+>> >
+>> > On 08/26/2014 04:36 PM, Vincent Guittot wrote:
+>> >> The computation of avg_load and avg_load_per_task should only takes into
+>> >> account the number of cfs tasks. The non cfs task are already taken into
+>> >> account by decreasing the cpu's capacity and they will be tracked in the
+>> >> CPU's utilization (group_utilization) of the next patches
+>> >>
+>> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> >> ---
+>> >>  kernel/sched/fair.c | 4 ++--
+>> >>  1 file changed, 2 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> >> index 87b9dc7..b85e9f7 100644
+>> >> --- a/kernel/sched/fair.c
+>> >> +++ b/kernel/sched/fair.c
+>> >> @@ -4092,7 +4092,7 @@ static unsigned long capacity_of(int cpu)
+>> >>  static unsigned long cpu_avg_load_per_task(int cpu)
+>> >>  {
+>> >>       struct rq *rq = cpu_rq(cpu);
+>> >> -     unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+>> >> +     unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
+>> >>       unsigned long load_avg = rq->cfs.runnable_load_avg;
+>> >>
+>> >>       if (nr_running)
+>> >> @@ -5985,7 +5985,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>> >>                       load = source_load(i, load_idx);
+>> >>
+>> >>               sgs->group_load += load;
+>> >> -             sgs->sum_nr_running += rq->nr_running;
+>> >> +             sgs->sum_nr_running += rq->cfs.h_nr_running;
+>> >>
+>> >>               if (rq->nr_running > 1)
+>> >>                       *overload = true;
+>> >>
+>> >
+>> > Why do we probe rq->nr_running while we do load balancing? Should not we
+>> > be probing cfs_rq->nr_running instead? We are interested after all in
+>> > load balancing fair tasks right? The reason I ask this is, I was
+>> > wondering if we need to make the above similar change in more places in
+>> > load balancing.
+>>
+>> Hi Preeti,
+>>
+>> Yes, we should probably the test   rq->cfs.h_nr_running > 0 before
+>> setting overload.
+>>
+>
+> The overload indicator is used for knowing when we can totally avoid
+> load balancing to a cpu that is about to go idle.
+> We can avoid load balancing when no cpu has more than 1 task.  So if you
+> have say just one fair task and multiple deadline tasks on a cpu,
+> and another cpu about to go idle, you should turn on normal load
+> balancing in the idle path by setting overload to true.
 
-Yes, this is where I'm forever in doubt as well. The worry is the
-compiler reordering things, but I'm not sure how it would do that in
-this case, then again, I've been shown to not be creative enough in
-these cases many times before.
+The newly idle load balancing can only affect CFS tasks so triggering
+a load_balance because a cpu is overloaded by rt tasks only, will not
+change anything.
 
-Paul might know, he's had much more exposure to compiler people.
+>
+> So setting overload should be set based on rq->nr_running and not on
+> rq->cfs.h_nr_running.
+
+We should probably use both values like below
+
+if ((rq->nr_running > 1) && ( rq->cfs.h_nr_running > 0))
+
+Regards,
+Vincent
+>
+> Thanks.
+>
+> Tim
+>
+>
