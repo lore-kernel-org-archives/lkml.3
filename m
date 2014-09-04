@@ -1,57 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874AbaIDVh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:37:59 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:37371 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573AbaIDVh5 (ORCPT
+	id S1755908AbaIDVig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:38:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56194 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400AbaIDVif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:37:57 -0400
-Date: Thu, 4 Sep 2014 22:37:53 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Michael Brown <mbrown@fensystems.co.uk>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ulf Winkelvos <ulf@winkelvos.de>,
-        Matt Fleming <matt.fleming@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
- preparation patches
-Message-ID: <20140904213753.GM3001@console-pimps.org>
-References: <5406D0DB.90401@canonical.com>
- <CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com>
- <54073409.6030004@canonical.com>
- <CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com>
- <20140903175948.GH3001@console-pimps.org>
- <CAKv+Gu9tejixb3Kb3YM_7sLcpKNuRHN+Dn+twFyCAXx99wYRCw@mail.gmail.com>
- <54084376.8090002@canonical.com>
- <540860F1.6060801@fensystems.co.uk>
- <CAKv+Gu8wALTqtNQK_855A7M5f2a+EB1JyLxo=j6G0T1cf8ZFog@mail.gmail.com>
- <CAKv+Gu_sLmkBHF-9GyPUgfAbLYirQTD4vk63o6HzdZhm6s_e0g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu_sLmkBHF-9GyPUgfAbLYirQTD4vk63o6HzdZhm6s_e0g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Sep 2014 17:38:35 -0400
+Date: Thu, 4 Sep 2014 14:38:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: kernel: Resolve a shadow warning
+Message-Id: <20140904143833.434f9e27765b74c90c91798e@linux-foundation.org>
+In-Reply-To: <1409837300.2460.10.camel@jtkirshe-mobl>
+References: <1409837300.2460.10.camel@jtkirshe-mobl>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Sep, at 11:25:48PM, Ard Biesheuvel wrote:
+> From: Mark Rustad <mark.d.rustad@intel.com>
 > 
-> As it turns out, this breaks 32-bit, and the linker script is shared.
+> Resolve a shadow warning in W=2 builds arising from min/max macro
+> references in a parameter to a min3/max3 macro. There is no
+> functional issue - the warning is benign - but simply changing
+> some local variable names will eliminate it.
 > 
-> So I suggest that we go with Matt's suggestion, i.e., move/clone the
-> GOT fixup code so that it runs exactly once in each code path, but
-> early enough so that the embedded EFI application gets the treatment
-> too.
-> And don't forget head_32.S ...
+> ...
+>
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -716,22 +716,22 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+>  	_max1 > _max2 ? _max1 : _max2; })
+>  
+>  #define min3(x, y, z) ({			\
+> -	typeof(x) _min1 = (x);			\
+> -	typeof(y) _min2 = (y);			\
+> -	typeof(z) _min3 = (z);			\
+> -	(void) (&_min1 == &_min2);		\
+> -	(void) (&_min1 == &_min3);		\
+> -	_min1 < _min2 ? (_min1 < _min3 ? _min1 : _min3) : \
+> -		(_min2 < _min3 ? _min2 : _min3); })
+> +	typeof(x) _min31 = (x);			\
+> +	typeof(y) _min32 = (y);			\
+> +	typeof(z) _min33 = (z);			\
+> +	(void) (&_min31 == &_min32);		\
+> +	(void) (&_min31 == &_min33);		\
+> +	_min31 < _min32 ? (_min31 < _min33 ? _min31 : _min33) : \
+> +		(_min32 < _min33 ? _min32 : _min33); })
+>  
+>  #define max3(x, y, z) ({			\
+> -	typeof(x) _max1 = (x);			\
+> -	typeof(y) _max2 = (y);			\
+> -	typeof(z) _max3 = (z);			\
+> -	(void) (&_max1 == &_max2);		\
+> -	(void) (&_max1 == &_max3);		\
+> -	_max1 > _max2 ? (_max1 > _max3 ? _max1 : _max3) : \
+> -		(_max2 > _max3 ? _max2 : _max3); })
+> +	typeof(x) _max31 = (x);			\
+> +	typeof(y) _max32 = (y);			\
+> +	typeof(z) _max33 = (z);			\
+> +	(void) (&_max31 == &_max32);		\
+> +	(void) (&_max31 == &_max33);		\
+> +	_max31 > _max32 ? (_max31 > _max33 ? _max31 : _max33) : \
+> +		(_max32 > _max33 ? _max32 : _max33); })
+>  
+>  /**
+>   * min_not_zero - return the minimum that is _not_ zero, unless both are zero
 
-Thanks Ard, I'll take a look in the morning.
+I'm still sitting on the below patch.  It's stalled because I have a
+note that David potentially found issues with it.  But on rechecking,
+that appears to be stale, or not serious enough to prevent inclusion.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+I can't (be bothered to) check whether this patch fixes the warnings
+because your changelog didn't tell me how to trigger the warnings (bad
+changelog).  But it might fix them!  Can you please test it?
+
+
+
+From: Michal Nazarewicz <mina86@mina86.com>
+Subject: include/linux/kernel.h: rewrite min3, max3 and clamp using min and max
+
+It appears that gcc is better at optimising a double call to min and max
+rather than open coded min3 and max3.  This can be observed here:
+
+    $ cat min-max.c
+    #define min(x, y) ({				\
+    	typeof(x) _min1 = (x);			\
+    	typeof(y) _min2 = (y);			\
+    	(void) (&_min1 == &_min2);		\
+    	_min1 < _min2 ? _min1 : _min2; })
+    #define min3(x, y, z) ({			\
+    	typeof(x) _min1 = (x);			\
+    	typeof(y) _min2 = (y);			\
+    	typeof(z) _min3 = (z);			\
+    	(void) (&_min1 == &_min2);		\
+    	(void) (&_min1 == &_min3);		\
+    	_min1 < _min2 ? (_min1 < _min3 ? _min1 : _min3) : \
+    		(_min2 < _min3 ? _min2 : _min3); })
+
+    int fmin3(int x, int y, int z) { return min3(x, y, z); }
+    int fmin2(int x, int y, int z) { return min(min(x, y), z); }
+
+    $ gcc -O2 -o min-max.s -S min-max.c; cat min-max.s
+    	.file	"min-max.c"
+    	.text
+    	.p2align 4,,15
+    	.globl	fmin3
+    	.type	fmin3, @function
+    fmin3:
+    .LFB0:
+    	.cfi_startproc
+    	cmpl	%esi, %edi
+    	jl	.L5
+    	cmpl	%esi, %edx
+    	movl	%esi, %eax
+    	cmovle	%edx, %eax
+    	ret
+    	.p2align 4,,10
+    	.p2align 3
+    .L5:
+    	cmpl	%edi, %edx
+    	movl	%edi, %eax
+    	cmovle	%edx, %eax
+    	ret
+    	.cfi_endproc
+    .LFE0:
+    	.size	fmin3, .-fmin3
+    	.p2align 4,,15
+    	.globl	fmin2
+    	.type	fmin2, @function
+    fmin2:
+    .LFB1:
+    	.cfi_startproc
+    	cmpl	%edi, %esi
+    	movl	%edx, %eax
+    	cmovle	%esi, %edi
+    	cmpl	%edx, %edi
+    	cmovle	%edi, %eax
+    	ret
+    	.cfi_endproc
+    .LFE1:
+    	.size	fmin2, .-fmin2
+    	.ident	"GCC: (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3"
+    	.section	.note.GNU-stack,"",@progbits
+
+fmin3 function, which uses open-coded min3 macro, is compiled into total
+of ten instructions including a conditional branch, whereas fmin2
+function, which uses two calls to min2 macro, is compiled into six
+instructions with no branches.
+
+Similarly, open-coded clamp produces the same code as clamp using min and
+max macros, but the latter is much shorter:
+
+    $ cat clamp.c
+    #define clamp(val, min, max) ({			\
+    	typeof(val) __val = (val);		\
+    	typeof(min) __min = (min);		\
+    	typeof(max) __max = (max);		\
+    	(void) (&__val == &__min);		\
+    	(void) (&__val == &__max);		\
+    	__val = __val < __min ? __min: __val;	\
+    	__val > __max ? __max: __val; })
+    #define min(x, y) ({				\
+    	typeof(x) _min1 = (x);			\
+    	typeof(y) _min2 = (y);			\
+    	(void) (&_min1 == &_min2);		\
+    	_min1 < _min2 ? _min1 : _min2; })
+    #define max(x, y) ({				\
+    	typeof(x) _max1 = (x);			\
+    	typeof(y) _max2 = (y);			\
+    	(void) (&_max1 == &_max2);		\
+    	_max1 > _max2 ? _max1 : _max2; })
+
+    int fclamp(int v, int min, int max) { return clamp(v, min, max); }
+    int fclampmm(int v, int min, int max) { return min(max(v, min), max); }
+
+    $ gcc -O2 -o clamp.s -S clamp.c; cat clamp.s
+    	.file	"clamp.c"
+    	.text
+    	.p2align 4,,15
+    	.globl	fclamp
+    	.type	fclamp, @function
+    fclamp:
+    .LFB0:
+    	.cfi_startproc
+    	cmpl	%edi, %esi
+    	movl	%edx, %eax
+    	cmovge	%esi, %edi
+    	cmpl	%edx, %edi
+    	cmovle	%edi, %eax
+    	ret
+    	.cfi_endproc
+    .LFE0:
+    	.size	fclamp, .-fclamp
+    	.p2align 4,,15
+    	.globl	fclampmm
+    	.type	fclampmm, @function
+    fclampmm:
+    .LFB1:
+    	.cfi_startproc
+    	cmpl	%edi, %esi
+    	cmovge	%esi, %edi
+    	cmpl	%edi, %edx
+    	movl	%edi, %eax
+    	cmovle	%edx, %eax
+    	ret
+    	.cfi_endproc
+    .LFE1:
+    	.size	fclampmm, .-fclampmm
+    	.ident	"GCC: (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3"
+    	.section	.note.GNU-stack,"",@progbits
+
+    Linux mpn-glaptop 3.13.0-29-generic #53~precise1-Ubuntu SMP Wed Jun 4 22:06:25 UTC 2014 x86_64 x86_64 x86_64 GNU/Linux
+    gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3
+    Copyright (C) 2011 Free Software Foundation, Inc.
+    This is free software; see the source for copying conditions.  There is NO
+    warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    
+    -rwx------ 1 mpn eng 51224656 Jun 17 14:15 vmlinux.before
+    -rwx------ 1 mpn eng 51224608 Jun 17 13:57 vmlinux.after
+
+48 bytes reduction.  The do_fault_around was a few instruction shorter
+and as far as I can tell saved 12 bytes on the stack, i.e.:
+
+    $ grep -e rsp -e pop -e push do_fault_around.*
+    do_fault_around.before.s:push   %rbp
+    do_fault_around.before.s:mov    %rsp,%rbp
+    do_fault_around.before.s:push   %r13
+    do_fault_around.before.s:push   %r12
+    do_fault_around.before.s:push   %rbx
+    do_fault_around.before.s:sub    $0x38,%rsp
+    do_fault_around.before.s:add    $0x38,%rsp
+    do_fault_around.before.s:pop    %rbx
+    do_fault_around.before.s:pop    %r12
+    do_fault_around.before.s:pop    %r13
+    do_fault_around.before.s:pop    %rbp
+
+    do_fault_around.after.s:push   %rbp
+    do_fault_around.after.s:mov    %rsp,%rbp
+    do_fault_around.after.s:push   %r12
+    do_fault_around.after.s:push   %rbx
+    do_fault_around.after.s:sub    $0x30,%rsp
+    do_fault_around.after.s:add    $0x30,%rsp
+    do_fault_around.after.s:pop    %rbx
+    do_fault_around.after.s:pop    %r12
+    do_fault_around.after.s:pop    %rbp
+
+or here side-by-side:
+
+    Before                    After
+    push   %rbp               push   %rbp          
+    mov    %rsp,%rbp          mov    %rsp,%rbp     
+    push   %r13                                    
+    push   %r12               push   %r12          
+    push   %rbx               push   %rbx          
+    sub    $0x38,%rsp         sub    $0x30,%rsp    
+    add    $0x38,%rsp         add    $0x30,%rsp    
+    pop    %rbx               pop    %rbx          
+    pop    %r12               pop    %r12          
+    pop    %r13                                    
+    pop    %rbp               pop    %rbp          
+
+There are also fewer branches:
+
+    $ grep ^j do_fault_around.*
+    do_fault_around.before.s:jae    ffffffff812079b7
+    do_fault_around.before.s:jmp    ffffffff812079c5
+    do_fault_around.before.s:jmp    ffffffff81207a14
+    do_fault_around.before.s:ja     ffffffff812079f9
+    do_fault_around.before.s:jb     ffffffff81207a10
+    do_fault_around.before.s:jmp    ffffffff81207a63
+    do_fault_around.before.s:jne    ffffffff812079df
+    
+    do_fault_around.after.s:jmp    ffffffff812079fd
+    do_fault_around.after.s:ja     ffffffff812079e2
+    do_fault_around.after.s:jb     ffffffff812079f9
+    do_fault_around.after.s:jmp    ffffffff81207a4c
+    do_fault_around.after.s:jne    ffffffff812079c8
+
+And here's with allyesconfig on a different machine:
+
+    $ uname -a; gcc --version; ls -l vmlinux.*
+    Linux erwin 3.14.7-mn #54 SMP Sun Jun 15 11:25:08 CEST 2014 x86_64 AMD Phenom(tm) II X3 710 Processor AuthenticAMD GNU/Linux
+    gcc (GCC) 4.8.3
+    Copyright (C) 2013 Free Software Foundation, Inc.
+    This is free software; see the source for copying conditions.  There is NO
+    warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+    -rwx------ 1 mpn eng 437027411 Jun 20 16:04 vmlinux.before
+    -rwx------ 1 mpn eng 437026881 Jun 20 15:30 vmlinux.after
+
+530 bytes reduction.
+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ include/linux/kernel.h |   32 +++++---------------------------
+ 1 file changed, 5 insertions(+), 27 deletions(-)
+
+diff -puN include/linux/kernel.h~include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max include/linux/kernel.h
+--- a/include/linux/kernel.h~include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max
++++ a/include/linux/kernel.h
+@@ -715,23 +715,8 @@ static inline void ftrace_dump(enum ftra
+ 	(void) (&_max1 == &_max2);		\
+ 	_max1 > _max2 ? _max1 : _max2; })
+ 
+-#define min3(x, y, z) ({			\
+-	typeof(x) _min1 = (x);			\
+-	typeof(y) _min2 = (y);			\
+-	typeof(z) _min3 = (z);			\
+-	(void) (&_min1 == &_min2);		\
+-	(void) (&_min1 == &_min3);		\
+-	_min1 < _min2 ? (_min1 < _min3 ? _min1 : _min3) : \
+-		(_min2 < _min3 ? _min2 : _min3); })
+-
+-#define max3(x, y, z) ({			\
+-	typeof(x) _max1 = (x);			\
+-	typeof(y) _max2 = (y);			\
+-	typeof(z) _max3 = (z);			\
+-	(void) (&_max1 == &_max2);		\
+-	(void) (&_max1 == &_max3);		\
+-	_max1 > _max2 ? (_max1 > _max3 ? _max1 : _max3) : \
+-		(_max2 > _max3 ? _max2 : _max3); })
++#define min3(x, y, z) min((typeof(x))min(x, y), z)
++#define max3(x, y, z) max((typeof(x))max(x, y), z)
+ 
+ /**
+  * min_not_zero - return the minimum that is _not_ zero, unless both are zero
+@@ -746,20 +731,13 @@ static inline void ftrace_dump(enum ftra
+ /**
+  * clamp - return a value clamped to a given range with strict typechecking
+  * @val: current value
+- * @min: minimum allowable value
+- * @max: maximum allowable value
++ * @lo: lowest allowable value
++ * @hi: highest allowable value
+  *
+  * This macro does strict typechecking of min/max to make sure they are of the
+  * same type as val.  See the unnecessary pointer comparisons.
+  */
+-#define clamp(val, min, max) ({			\
+-	typeof(val) __val = (val);		\
+-	typeof(min) __min = (min);		\
+-	typeof(max) __max = (max);		\
+-	(void) (&__val == &__min);		\
+-	(void) (&__val == &__max);		\
+-	__val = __val < __min ? __min: __val;	\
+-	__val > __max ? __max: __val; })
++#define clamp(val, lo, hi) min((typeof(val))max(val, lo), hi)
+ 
+ /*
+  * ..and if you can't take the strict
+_
+
