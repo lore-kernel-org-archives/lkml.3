@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaIDJiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:38:05 -0400
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:7514
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750902AbaIDJiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:38:02 -0400
-From: Fancy Fang <chen.fang@freescale.com>
-To: <m.chehab@samsung.com>, <hverkuil@xs4all.nl>, <viro@ZenIV.linux.org.uk>
-CC: <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Fancy Fang <chen.fang@freescale.com>
-Subject: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory() with remap_pfn_range().
-Date: Thu, 4 Sep 2014 16:34:39 +0800
-Message-ID: <1409819679-31497-1-git-send-email-chen.fang@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(106466001)(4396001)(50226001)(575784001)(74662001)(79102001)(87286001)(105606002)(74502001)(46102001)(86362001)(95666004)(84676001)(62966002)(87936001)(93916002)(107046002)(77982001)(92726001)(47776003)(104166001)(102836001)(50466002)(230783001)(50986999)(85306004)(76482001)(21056001)(48376002)(88136002)(6806004)(229853001)(83322001)(81542001)(2201001)(68736004)(104016003)(85852003)(19580405001)(20776003)(33646002)(64706001)(31966008)(36756003)(26826002)(90102001)(97736001)(89996001)(80022001)(44976005)(92566001)(83072002)(99396002)(81342001)(77156001)(19580395003);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB547;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0324C2C0E2
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=chen.fang@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1751726AbaIDJjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:39:33 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54754 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750778AbaIDJja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 05:39:30 -0400
+Message-ID: <1409823567.5546.80.camel@x220>
+Subject: Re: [PATCH 04/19] serial: samsung: Remove support for legacy clock
+ code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Date: Thu, 04 Sep 2014 11:39:27 +0200
+In-Reply-To: <53C68FAB.9070102@samsung.com>
+References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+	 <1404496099-26708-5-git-send-email-t.figa@samsung.com>
+	 <1405502840.4408.2.camel@x220> <53C67386.5070401@samsung.com>
+	 <1405520767.4408.39.camel@x220> <1405521324.4408.44.camel@x220>
+	 <53C68FAB.9070102@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Sep 2014 09:39:28.0376 (UTC) FILETIME=[1F226780:01CFC824]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core
-will assign the corresponding offset to the 'boff' field of the
-videobuf_buffer for each requested buffer sequentially. Later, user
-may call mmap() to map one or all of the buffers with the 'offset'
-parameter which is equal to its 'boff' value. Obviously, the 'offset'
-value is only used to find the matched buffer instead of to be the
-real offset from the buffer's physical start address as used by
-vm_iomap_memory(). So, in some case that if the offset is not zero,
-vm_iomap_memory() will fail.
+On Wed, 2014-07-16 at 16:43 +0200, Tomasz Figa wrote:
+> On 16.07.2014 16:35, Paul Bolle wrote:
+> > On Wed, 2014-07-16 at 16:26 +0200, Paul Bolle wrote:
+> >> On Wed, 2014-07-16 at 14:43 +0200, Tomasz Figa wrote:
+> >>> That's right. Apparently I missed them. I guess that's not critical,
+> >>> though, and could be done in separate patch, right?
+> >>
+> >> This is not critical at all, so that's fine with me. 
+> > 
+> > Actually, that's only correct if the solution here is to just remove the
+> > (currently) dead code hidden behind CONFIG_SAMSUNG_CLOCK. But if the
+> > solution requires something less trivial, that might be quite wrong.
+> > 
+> > So please disregard my comment!
+> 
+> The code between those ifdefs is no longer used, because all Samsung
+> platforms use the Common Clock Framework after this series. So I believe
+> we can safely remove this dead code.
 
-Signed-off-by: Fancy Fang <chen.fang@freescale.com>
----
- drivers/media/v4l2-core/videobuf-dma-contig.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+The three checks for CONFIG_SAMSUNG_CLOCK can still be seen in v3.17-rc3
+and next-20140903. Should I perhaps submit the trivial patch to remove
+them (and the code they hide) or did things turn out to be more
+complicated?
 
-diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
-index bf80f0f..8bd9889 100644
---- a/drivers/media/v4l2-core/videobuf-dma-contig.c
-+++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
-@@ -305,7 +305,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
- 	/* Try to remap memory */
- 	size = vma->vm_end - vma->vm_start;
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
--	retval = vm_iomap_memory(vma, mem->dma_handle, size);
-+	retval = remap_pfn_range(vma, vma->vm_start,
-+				 mem->dma_handle >> PAGE_SHIFT,
-+				 size, vma->vm_page_prot);
- 	if (retval) {
- 		dev_err(q->dev, "mmap: remap failed with error %d. ",
- 			retval);
--- 
-1.9.1
+
+Paul Bolle
 
