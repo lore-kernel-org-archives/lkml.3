@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaIDSYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:24:14 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:38498 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523AbaIDSYN (ORCPT
+	id S1754904AbaIDSZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:25:38 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:51374 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713AbaIDSZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:24:13 -0400
-From: Vadim Bendebury <vbendeb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Vadim Bendebury <vbendeb@chromium.org>,
-        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Subject: [PATCH v2] checkpatch: allow optional shorter config descriptions
-Date: Thu,  4 Sep 2014 11:23:49 -0700
-Message-Id: <1409855029-22598-1-git-send-email-vbendeb@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
-References: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
+	Thu, 4 Sep 2014 14:25:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140904084938.2664bf0a@tlielax.poochiereds.net>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+	<1409834323-7171-2-git-send-email-jlayton@primarydata.com>
+	<CAHQdGtTqG8aW-cte2PW6pVw+OeCXATgr1BZwdhponuWMjzNg8g@mail.gmail.com>
+	<20140904084938.2664bf0a@tlielax.poochiereds.net>
+Date: Thu, 4 Sep 2014 14:25:35 -0400
+X-Google-Sender-Auth: h1J_ihLUYwPbm0oso0GGUuuCWzo
+Message-ID: <CAABAsM6v3-f_7cco8f_F5Wpy7PWJOUywQHH7A=mZ-LyHRASZ7Q@mail.gmail.com>
+Subject: Re: [PATCH v2 01/17] locks: consolidate "nolease" routines
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: Devel FS Linux <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        cluster-devel <cluster-devel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script is used by many other projects, and in some of them the
-requirement of at least 4 line long description for all Kconfig items
-is excessive. This patch adds a command line option to control the
-required minimum length.
+On Thu, Sep 4, 2014 at 8:49 AM, Jeff Layton <jeff.layton@primarydata.com> wrote:
+> On Thu, 4 Sep 2014 08:41:51 -0400
+> Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+>
+>> On Thu, Sep 4, 2014 at 8:38 AM, Jeff Layton <jlayton@primarydata.com> wrote:
+>> > GFS2 and NFS have setlease routines that always just return -EINVAL.
+>> > Turn that into a generic routine that can live in fs/libfs.c.
+>> >
+>> > Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+>> > Cc: <linux-nfs@vger.kernel.org>
+>> > Cc: Steven Whitehouse <swhiteho@redhat.com>
+>> > Cc: <cluster-devel@redhat.com>
+>> > Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+>> > ---
+>> >  fs/gfs2/file.c     | 22 +---------------------
+>> >  fs/libfs.c         | 16 ++++++++++++++++
+>> >  fs/nfs/file.c      | 13 +------------
+>> >  fs/nfs/internal.h  |  1 -
+>> >  fs/nfs/nfs4file.c  |  2 +-
+>> >  include/linux/fs.h |  1 +
+>> >  6 files changed, 20 insertions(+), 35 deletions(-)
+>>
+>> Acked-by: Trond Myklebust <trond.myklebust@primarydata.com>
+>>
+>
+> Thanks. While spinning this up, I did have a momentary pause to wonder
+> if -ENOLCK would be a better return value here.
+>
+> It would make it easier to distinguish this from from "oops, I passed
+> in bogus arguments". For now, I'll leave it as -EINVAL, but it's
+> something to consider...
+>
 
-Tested running this script over a patch including a two line config
-description. The script generated a warning when invoked as is, and
-did not generate it when invoked with --min-conf-desc-length=2.
+Actually, it looks as if when you compile with !CONFIG_FILE_LOCKING,
+then fcntl_setlease() returns the value '0' (which would be
+"success!"). The word "confusing" only begins to describe it all.
 
-Signed-off-by: Vadim Bendebury <vbendeb@chromium.org>
----
-
-Changes in v2:
-  - modified the condition check as requested
-
- scripts/checkpatch.pl | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b385bcb..b0adae9 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -43,6 +43,7 @@ my $configuration_file = ".checkpatch.conf";
- my $max_line_length = 80;
- my $ignore_perl_version = 0;
- my $minimum_perl_version = 5.10.0;
-+my $min_conf_desc_length = 4;
- 
- sub help {
- 	my ($exitcode) = @_;
-@@ -63,6 +64,7 @@ Options:
-   --types TYPE(,TYPE2...)    show only these comma separated message types
-   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
-   --max-line-length=n        set the maximum line length, if exceeded, warn
-+  --min-conf-desc-length=n   set the min description length, if shorter, warn
-   --show-types               show the message "types" in the output
-   --root=PATH                PATH to the kernel tree root
-   --no-summary               suppress the per-file summary
-@@ -131,6 +133,7 @@ GetOptions(
- 	'types=s'	=> \@use,
- 	'show-types!'	=> \$show_types,
- 	'max-line-length=i' => \$max_line_length,
-+	'min-conf-desc-length=i' => \$min_conf_desc_length,
- 	'root=s'	=> \$root,
- 	'summary!'	=> \$summary,
- 	'mailback!'	=> \$mailback,
-@@ -2280,8 +2283,10 @@ sub process {
- 				}
- 				$length++;
- 			}
--			WARN("CONFIG_DESCRIPTION",
--			     "please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($is_start && $is_end && $length < 4);
-+			if ($is_start && $is_end && $length < $min_conf_desc_length) {
-+			    WARN("CONFIG_DESCRIPTION",
-+				 "please write a paragraph that describes the config symbol fully\n" . $herecurr)
-+			}
- 			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
- 		}
- 
--- 
-2.1.0.rc2.206.gedb03e5
-
+Cheers
+  Trond
