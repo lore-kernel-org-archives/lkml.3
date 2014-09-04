@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaIDPBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:01:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:55302 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaIDPBu (ORCPT
+	id S1753976AbaIDPCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:02:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:47058 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379AbaIDPBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:01:50 -0400
-X-AuditID: cbfee690-f79ce6d00000115a-5f-54087edccbf8
+	Thu, 4 Sep 2014 11:01:52 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-95-54087edd8f74
 From: Jaewon Kim <jaewon02.kim@samsung.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH v2 0/4] Add max77693 haptic driver
-Date: Fri, 05 Sep 2014 00:01:27 +0900
-Message-id: <1409842891-26549-1-git-send-email-jaewon02.kim@samsung.com>
+Subject: [PATCH v2 3/4] mfd: max77693: add haptic of_compatible in mfd_cell
+Date: Fri, 05 Sep 2014 00:01:30 +0900
+Message-id: <1409842891-26549-4-git-send-email-jaewon02.kim@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsWyRsSkRPdOHUeIQecTK4vrX56zWhxe9ILR
-	YkfDEVaL+1+PMlrc/PSN1eLyrjlsFqe7WR3YPXbOusvucefaHjaPeScDPfq2rGL0+LxJLoA1
-	issmJTUnsyy1SN8ugSvj+KEVzAVbOCsOXrjA3MDYwN7FyMkhIWAisejmPyhbTOLCvfVsXYxc
-	HEICSxklvnXOZIQperxsLTNEYjqjxIcNnxkhnDYmiWsLOsDa2QS0Jb6vX8wKYosIVEr0d79g
-	BSliFuhhlPjevpoZJCEsYCRxa8pvJhCbRUBVYsacFWAreAU8JFbv+QpkcwCtU5CYM8kGpFdC
-	4D+bxOEzbWwQ9QIS3yYfYoGokZXYdIAZ4jpJiYMrbrBMYBRcwMiwilE0tSC5oDgpvchErzgx
-	t7g0L10vOT93EyMwaE//ezZhB+O9A9aHGAU4GJV4eAtesIcIsSaWFVfmHmI0BdowkVlKNDkf
-	GBt5JfGGxmZGFqYmpsZG5pZmSuK8r6V+BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgdGFn
-	mr91r41W/xFHb+3jJZWK71cFv+VtK75isja10N2Is6TlxlfeXrtXk5R3Sn7TNs/fl237VeuC
-	1n+m5rf2t+TOzvVsapF8+i+0UjzsxHqRkJIHFhcES5rf6dkt91y+dU6UjG9UnXgzt2r8SQ+h
-	Kr4Uu/vT00/U6LwLYf+xKe7/0WCrt8eVWIozEg21mIuKEwE7cPh+VQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42I5/e+xoO6dOo4QgxlHjC2uf3nOanF40QtG
-	ix0NR1gt7n89ymhx89M3VovLu+awWZzuZnVg99g56y67x51re9g85p0M9OjbsorR4/MmuQDW
-	qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygK5QU
-	yhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGccPrWAu2MJZcfDCBeYGxgb2
-	LkZODgkBE4nHy9YyQ9hiEhfurWfrYuTiEBKYzijxYcNnRginjUni2oIOsA42AW2J7+sXs4LY
-	IgKVEv3dL1hBipgFehglvrevBhslLGAkcWvKbyYQm0VAVWLGnBWMIDavgIfE6j1fgWwOoHUK
-	EnMm2Uxg5F7AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzgmnkntYFzZYHGIUYCDUYmH
-	t+AFe4gQa2JZcWXuIUYJDmYlEV73PI4QId6UxMqq1KL8+KLSnNTiQ4ymQMsnMkuJJucD4zWv
-	JN7Q2MTMyNLI3NDCyNhcSZz3QKt1oJBAemJJanZqakFqEUwfEwenVAPjRcmc8MylWz8kCT1f
-	ssfDp15Iy1tVTEF8usLZk5clDJWVRZSd3FVtt674Jmu6eN2r+rbkRAexNTcaZKOXbefWb7/N
-	Wv5mv8QcH/Od36Ju9y4ov+q0LzQm/eq69cYV9yS1/9cW8Zg0vZb9bpYsc3RVyict9YM+vDyd
-	ne3lbkl/gjZHX7d+4qvEUpyRaKjFXFScCADR77oQnwIAAA==
+In-reply-to: <1409842891-26549-1-git-send-email-jaewon02.kim@samsung.com>
+References: <1409842891-26549-1-git-send-email-jaewon02.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsWyRsSkUPduHUeIwcwPAhbXvzxntTi86AWj
+	xY6GI6wW978eZbS4+ekbq8XlXXPYLE53szqwe+ycdZfd4861PWwe804GevRtWcXo8XmTXABr
+	FJdNSmpOZllqkb5dAldG1/n1LAUH2Cr+PIpqYFzJ2sXIySEhYCKx9vlvZghbTOLCvfVsXYxc
+	HEICSxklGo50wRVta53FCpGYzihxZvVJFginjUni2oIOdpAqNgFtie/rF4N1iAhUSvR3vwDr
+	YBboYZT43r4abIewgLdE2+k3YEUsAqoSW55MZwSxeQU8JBo7jgDZHEDrFCTmTLIBCXMKeEp0
+	PVjBAmILAZUsmPINbLGEwHR2ifY3Cxkh5ghIfJt8iAWiV1Zi0wGodyQlDq64wTKBUXgBI8Mq
+	RtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjMAQP/3vWd8OxpsHrA8xCnAwKvHwFrxgDxFiTSwr
+	rsw9xGgKtGEis5Rocj4wkvJK4g2NzYwsTE1MjY3MLc2UxHkTpH4GCwmkJ5akZqemFqQWxReV
+	5qQWH2Jk4uCUamBUDjlifGS9yqyP226L3Y5dcD2qLtuSsfOKXUiTtk5AcIT710Ob9E4+Zpt9
+	b1pHoL5CnlCpfkld/tYZ/Bsmdtol+H1aNdcq/fGxOxKRsddv1L0v/nI28UYvo77ve37Hii1v
+	sra57Lyy7uy+sovz3D5t7J1wVE84bJ9pfsmV1amLv+QWT8vW7uJQYinOSDTUYi4qTgQAV52N
+	gWwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t9jQd27dRwhBtf/clpc//Kc1eLwoheM
+	FjsajrBa3P96lNHi5qdvrBaXd81hszjdzerA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx+dNcgGs
+	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
+	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM7rOr2cpOMBW8ecR0EErWbsY
+	OTkkBEwktrXOgrLFJC7cW8/WxcjFISQwnVHizOqTLBBOG5PEtQUd7CBVbALaEt/XLwbrEBGo
+	lOjvfsEKUsQs0MMo8b19NTNIQljAW6Lt9BuwIhYBVYktT6Yzgti8Ah4SjR1HgGwOoHUKEnMm
+	2YCEOQU8JboerGABsYWAShZM+cYygZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg
+	CHomtYNxZYPFIUYBDkYlHt6CF+whQqyJZcWVuYcYJTiYlUR43fM4QoR4UxIrq1KL8uOLSnNS
+	iw8xmgIdNZFZSjQ5HxjdeSXxhsYmZkaWRuaGFkbG5krivAdarQOFBNITS1KzU1MLUotg+pg4
+	OKUaGK3l1goZFblrTf3vv71j1/anzQonNy79HfRtXqakp0v/xu3mBu6VTKdvsywR2Xsx4cHG
+	2cqnFq3csmr5zANlk+Y8kn5e53Rb6fQW5+hZxe4SO8y2etyb3WwZrPFlyq/U4z8VnKLD3mi9
+	lI8uFJN4Up4kWha3lfGwtcaxhW2p8SpWPxfbHAr7tlSJpTgj0VCLuag4EQDfILFptgIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,32 +51,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds max77693 haptic driver.
-The max77693 is a Multifunction device with PMIC, CHARGER, LED,
-MUIC, HAPTIC and this series is haptic device driver in MAX77693.
-The haptic driver use regmap method for i2c communication and
-support force feedback framework in input device.
+This patch add haptic of_compatible in order to use the haptic
+device driver using Devicetree.
 
-Changes in v2:
- - split to documentation and mfd patchs.
- - Documentation : change explanation of haptic 
- - Documentation : remove pwm-names propertie in example
+Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ drivers/mfd/max77693.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Jaewon Kim (4):
-  mfd: max77693: Initialize haptic register map
-  Input: misc: Add haptic driver on max77693
-  mfd: max77693: add haptic of_compatible in mfd_cell
-  mfd: max77693: Update DT binding to support haptic
-
- Documentation/devicetree/bindings/mfd/max77693.txt |   18 ++
- drivers/input/misc/Kconfig                         |   12 +
- drivers/input/misc/Makefile                        |    1 +
- drivers/input/misc/max77693-haptic.c               |  333 ++++++++++++++++++++
- drivers/mfd/max77693.c                             |   26 +-
- include/linux/mfd/max77693-private.h               |    9 +
- 6 files changed, 395 insertions(+), 4 deletions(-)
- create mode 100644 drivers/input/misc/max77693-haptic.c
-
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index fbfed56..03fd431 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -46,7 +46,10 @@ static const struct mfd_cell max77693_devs[] = {
+ 	{ .name = "max77693-charger", },
+ 	{ .name = "max77693-flash", },
+ 	{ .name = "max77693-muic", },
+-	{ .name = "max77693-haptic", },
++	{
++	  .name = "max77693-haptic",
++	  .of_compatible = "maxim,max77693-haptic",
++	},
+ };
+ 
+ static const struct regmap_config max77693_regmap_config = {
 -- 
 1.7.9.5
 
