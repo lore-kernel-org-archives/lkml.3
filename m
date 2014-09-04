@@ -1,162 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaIDJZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:25:33 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53020 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212AbaIDJZ3 convert rfc822-to-8bit (ORCPT
+	id S1755381AbaIDJ1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:27:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53151 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753121AbaIDJ1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:25:29 -0400
-Message-ID: <54083019.4060907@arm.com>
-Date: Thu, 04 Sep 2014 10:25:45 +0100
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 05:27:04 -0400
+Date: Thu, 4 Sep 2014 10:27:21 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Rob Herring <robh@kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 4/8] arm: use fixmap for text patching when text is RO
+Message-ID: <20140904092720.GA7156@arm.com>
+References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+ <1407949593-16121-5-git-send-email-keescook@chromium.org>
+ <20140819122933.GI23128@arm.com>
+ <CAGXu5jLxqyfJtg8rR9nzOrSBSsRC6y34rG6mZ8bb=AoxbSHkWQ@mail.gmail.com>
+ <CAGXu5jJ890ruLO8Nit2exMSWigSM71kfZOkLoF0DcY1viFiX_A@mail.gmail.com>
 MIME-Version: 1.0
-To: Luca Abeni <luca.abeni@unitn.it>, Henrik Austad <henrik@austad.us>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "raistlin@linux.it" <raistlin@linux.it>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] Documentation/scheduler/sched-deadline.txt: improve
- and clarify AC bits
-References: <1409220029-9002-1-git-send-email-juri.lelli@arm.com> <1409220029-9002-4-git-send-email-juri.lelli@arm.com> <20140902214538.GC22581@sisyphus.home.austad.us> <5406BA02.20806@unitn.it> <5406DCE6.7@arm.com>
-In-Reply-To: <5406DCE6.7@arm.com>
-X-OriginalArrivalTime: 04 Sep 2014 09:25:25.0070 (UTC) FILETIME=[287C1EE0:01CFC822]
-X-MC-Unique: 114090410252706101
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJ890ruLO8Nit2exMSWigSM71kfZOkLoF0DcY1viFiX_A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Sep 03, 2014 at 10:43:58PM +0100, Kees Cook wrote:
+> On Wed, Aug 20, 2014 at 5:28 AM, Kees Cook <keescook@chromium.org> wrote:
+> > On Tue, Aug 19, 2014 at 7:29 AM, Will Deacon <will.deacon@arm.com> wrote:
+> >> On Wed, Aug 13, 2014 at 06:06:29PM +0100, Kees Cook wrote:
+> >>> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
+> >>> +     __acquires(&patch_lock)
+> >>> +{
+> >>> +     unsigned int uintaddr = (uintptr_t) addr;
+> >>> +     bool module = !core_kernel_text(uintaddr);
+> >>> +     struct page *page;
+> >>> +
+> >>> +     if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
+> >>> +             page = vmalloc_to_page(addr);
+> >>> +     else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
+> >>> +             page = virt_to_page(addr);
+> >>> +     else
+> >>> +             return addr;
+> >>> +
+> >>> +     if (flags)
+> >>> +             spin_lock_irqsave(&patch_lock, *flags);
+> >>> +     else
+> >>> +             __acquire(&patch_lock);
+> >>
+> >> I don't understand the locking here. Why is it conditional, why do we need
+> >> to disable interrupts, and are you just racing against yourself?
+> >
+> > AIUI, the locking is here to avoid multiple users of the text poking
+> > fixmaps. It's conditional because there are two fixmaps
+> > (FIX_TEXT_POKE0 and FIX_TEXT_POKE1). Locking happens around 0 so
+> > locking around 1 is not needed since it is only ever used when 0 is in
+> > use. (__patch_text_real locks patch_lock before setting 0 when it uses
+> > remapping, and if it also needs 1, it doesn't have to lock since the
+> > lock is already held.)
+> >
+> >>> +     set_fixmap(fixmap, page_to_phys(page));
+> >>
+> >> set_fixmap does TLB invalidation, right? I think that means it can block on
+> >> 11MPCore and A15 w/ the TLBI erratum, so it's not safe to call this with
+> >> interrupts disabled anyway.
+> >
+> > Oh right. Hrm.
+> >
+> > In an earlier version of this series set_fixmap did not perform TLB
+> > invalidation. I wonder if this is not needed at all? (Wouldn't that be
+> > nice...)
+> 
+> As suspected, my tests fail spectacularly without the TLB flush.
+> Adding WARN_ON(!irqs_disabled()) doesn't warn, so I think we're safe
+> here. Should I leave the WARN_ON in place for clarity, or some other
+> comments?
 
-On 03/09/14 10:18, Juri Lelli wrote:
-> Hi,
-> 
-> On 03/09/14 07:49, Luca Abeni wrote:
->> Hi,
->>
->> On 09/02/2014 11:45 PM, Henrik Austad wrote:
->> [...]
->>>> + On multiprocessor systems with global EDF scheduling (non partitioned
->>>> + systems), a sufficient test for schedulability can not be based on the
->>>> + utilisations (it can be shown that task sets with utilisations slightly
->>>> + larger than 1 can miss deadlines regardless of the number of CPUs M).
->>>> + However, as previously stated, enforcing that the total utilisation is smaller
->>>> + than M is enough to guarantee that non real-time tasks are not starved and
->>>> + that the tardiness of real-time tasks has an upper bound.
->>>
->>> I'd _really_ appreciate a link to a paper where all of this is presented
->>> and proved!
->> Well, my original plan was to add the bibliography in the next round of patches...
->> Is this ok?
->>
->> [...]
->>>> + As already stated in Section 3, a necessary condition to be respected to
->>>> + correctly schedule a set of real-time tasks is that the total utilisation
->>>> + is smaller than M. When talking about -deadline tasks, this requires to
->>>> + impose that the sum of the ratio between runtime and period for all tasks
->>>> + is smaller than M.
->>>
->>> "This requires to impose that .." uhm, what? Drop 'to impose'.
->> Ok. I'll send an updated patch to Juri in few days
->>
->>
->>>> [...] Notice that the ratio runtime/period is equivalent to
->>>> + the utilisation of a "traditional" real-time task, and is also often
->>>> + referred to as "bandwidth".
->>>> + The interface used to control the CPU bandwidth that can be allocated
->>>> + to -deadline tasks is similar to the one already used for -rt
->>>>    tasks with real-time group scheduling (a.k.a. RT-throttling - see
->>>>    Documentation/scheduler/sched-rt-group.txt), and is based on readable/
->>>>    writable control files located in procfs (for system wide settings).
->>>> @@ -232,8 +285,16 @@ CONTENTS
->>>>    950000. With rt_period equal to 1000000, by default, it means that -deadline
->>>>    tasks can use at most 95%, multiplied by the number of CPUs that compose the
->>>>    root_domain, for each root_domain.
->>>> -
->>>> - A -deadline task cannot fork.
->>>> + This means that non -deadline tasks will receive at least 5% of the CPU time,
->>>> + and that -deadline tasks will receive their runtime with a guaranteed
->>>> + worst-case delay respect to the "deadline" parameter. If "deadline" = "period"
->>>> + and the cpuset mechanism is used to implement partitioned scheduling (see
->>>> + Section 5), then this simple setting of the bandwidth management is able to
->>>> + deterministically guarantee that -deadline tasks will receive their runtime
->>>> + in a period.
->>>
->>> The whole 950000 / 1000000, is at least 50 *consecutive* ms given to non
->>> rt/dl tasks every second, or is this more finegrained now?
->>>
->>> If the 50ms can be given in a single go, then I don't think you can
->>> guarantee that deadline-tasks will receive their runtime in a period - a
->>> period can be <50ms, no?
->> Uhmm... Maybe there is something I am missing in how the SCHED_DEADLINE admission
->> control is implemented, but I do not know about any "50 consecutive ms to non dl
->> tasks" rule. I agree that if there is such a rule then deadline tasks are screwed.
->> Juri?
->>
->>
-> 
-> In SCHED_DEADLINE we use those values only at admission control time (when
-> the user calls sched_setattr()). Then, at runtime, we use tasks' parameters
-> to perform scheduling. So there is no consecutive 50ms time for !SCHED_DEADLINE
-> tasks.
-> 
-> We could probably clarify this aspect in the previous patch with something
-> like this:
-> 
-> [snip]
-> + The interface used to control the fraction of CPU bandwidth that can be
-> + allocated to -deadline tasks is similar to the one already used for -rt
-> + tasks with real-time group scheduling (a.k.a. RT-throttling - see
-> + Documentation/scheduler/sched-rt-group.txt), and is based on readable/
-> + writable control files located in procfs (for system wide settings).
-> + Notice that per-group settings (controlled through cgroupfs) are still not
-> + defined for -deadline tasks, because more discussion is needed in order to
-> + figure out how we want to manage SCHED_DEADLINE bandwidth at the task group
-> + level.
-> +
-> + A main difference between deadline bandwidth management and RT-throttling
->   is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
-> - and thus we don't need an higher level throttling mechanism to enforce the
-> - desired bandwidth.
-> + and thus we don't need a higher level throttling mechanism to enforce the
-> ---->
-> + desired bandwidth. In other words, this means that interface parameters are
-> + only used at admission control time (i.e., when the user calls
-> + sched_setattr()). Scheduling is then performed considering actual tasks'
-> + parameters, so that CPU bandwidth is allocated to SCHED_DEADLINE tasks
-> + respecting their needs in terms of granularity. Therefore, using this simple
-> <---
-> + interface we can put a cap on total utilization of -deadline tasks (i.e.,
-> + \Sum (runtime_i / period_i) < some_desired_value).
-> [snip]
-> 
-> What you think?
-> 
+I thought there was a potential call to spin_lock_irqsave right before
+this TLB flush?
 
-As agreed on IRC I fixed this, and the other typos.
-
-Thanks,
-
-- Juri
-
->>>> + Finally, notice that in order not to jeopardize this admission control a
->>>> + -deadline task cannot fork.
->>>
->>> s/this/the
->>> (there aren't any other admission controls in the kernel)
->> Ok; this will go in my updated patch
->>
->>
->>
->> 			Thanks,
->> 				Luca
->>
-> 
-> 
-
+Will
