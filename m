@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbaIDWUq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 18:20:46 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:58764 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755621AbaIDWUo (ORCPT
+	id S1755906AbaIDWYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 18:24:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55220 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343AbaIDWYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 18:20:44 -0400
-Message-ID: <1409869242.5546.119.camel@x220>
-Subject: Re: [PATCH] IBM Akebono: Remove obsolete config select
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alistair Popple <alistair@popple.id.au>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Fri, 05 Sep 2014 00:20:42 +0200
-In-Reply-To: <1774195.a1B25gz7RT@mexican>
-References: <1398998002.2925.15.camel@pasglop>
-	 <1399018005-23136-1-git-send-email-alistair@popple.id.au>
-	 <1402660592.28881.22.camel@x220> <1774195.a1B25gz7RT@mexican>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Sep 2014 22:20:42.0089 (UTC) FILETIME=[76C9ED90:01CFC88E]
-X-RcptDomain: vger.kernel.org
+	Thu, 4 Sep 2014 18:24:19 -0400
+Date: Fri, 5 Sep 2014 00:24:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+cc: linux-kernel@vger.kernel.org, chris.j.arges@canonical.com,
+        kvm@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch
+ merge
+In-Reply-To: <5408D815.9090105@redhat.com>
+Message-ID: <alpine.DEB.2.10.1409050021240.3333@nanos>
+References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <alpine.DEB.2.10.1409042230020.3333@nanos> <5408D815.9090105@redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-20 at 10:10 +1000, Alistair Popple wrote:
-> Hi Ben,
+On Thu, 4 Sep 2014, Paolo Bonzini wrote:
+> Il 04/09/2014 22:58, Thomas Gleixner ha scritto:
+> > This is simply wrong.
 > 
-> It looks like we may have missed this trivial fix? Can you please apply it to 
-> your tree?
+> It is.
 > 
-> Regards,
+> > Now I have no idea why you think it needs to add xtime_sec. If the
+> > result is wrong, then we need to figure out which one of the supplied
+> > values is wrong and not blindly add xtime_sec just because that makes
+> > it magically correct.
+> > 
+> > Can you please provide a proper background why you think that adding
+> > xtime_sec is a good idea?
 > 
-> Alistair
+> It's not a good idea indeed.  I didn't fully digest the 3.16->3.17
+> timekeeping changes and messed up this patch.
 > 
-> On Fri, 13 Jun 2014 13:56:32 Paul Bolle wrote:
-> > On Fri, 2014-05-02 at 18:06 +1000, Alistair Popple wrote:
-> > > The original implementation of MMC support for Akebono introduced a
-> > > new configuration symbol (MMC_SDHCI_OF_476GTR). This symbol has been
-> > > dropped in favour of using the generic platform driver however the
-> > > select for this symbol was mistakenly left in the platform
-> > > configuration.
-> > > 
-> > > This patch removes the obsolete symbol selection.
-> > > 
-> > > Signed-off-by: Alistair Popple <alistair@popple.id.au>
-> > 
-> > This patch hasn't yet entered linux-next nor Linus' tree. Is it queued
-> > somewhere? If not, would a
-> >     Acked-by: Paul Bolle <pebolle@tiscali.nl>
-> > 
-> > help to get this trivial patch queued for either of those trees?
-> > 
-> > 
-> > Paul Bolle
-> > 
-> > > ---
-> > > 
-> > >  arch/powerpc/platforms/44x/Kconfig | 1 -
-> > >  1 file changed, 1 deletion(-)
-> > > 
-> > > diff --git a/arch/powerpc/platforms/44x/Kconfig
-> > > b/arch/powerpc/platforms/44x/Kconfig index 8beec7d..908bf11 100644
-> > > --- a/arch/powerpc/platforms/44x/Kconfig
-> > > +++ b/arch/powerpc/platforms/44x/Kconfig
-> > > @@ -220,7 +220,6 @@ config AKEBONO
-> > > 
-> > >  	select USB_EHCI_HCD_PLATFORM
-> > >  	select MMC_SDHCI
-> > >  	select MMC_SDHCI_PLTFM
-> > > 
-> > > -	select MMC_SDHCI_OF_476GTR
-> > > 
-> > >  	select ATA
-> > >  	select SATA_AHCI_PLATFORM
-> > >  	help
+> However, there is a bug in the "base_mono + offs_boot" formula, given
+> that:
+> 
+> - bisection leads to the merge commit of John's timers branch
+> 
+> - bisecting within John's timers branch, with a KVM commit on top to
+>   make the code much easier to trigger, leads to commit cbcf2dd3b3d4
+>   (x86: kvm: Make kvm_get_time_and_clockread() nanoseconds based,
+>   2014-07-16).
+> 
+> - I backported your patch to 3.16, using wall_to_monotonic +
+>   total_sleep_time + xtime_sec (wtm+xtime_sec as in pre-cbcf2dd3b3d4
+>   code, total_sleep_time from 3.16 monotonic_to_bootbased) and it works
+> 
+> - In v2 of the patch I fixed the bug by changing the formula
+>   "base_mono + offs_boot" to "offs_boot - offs_real" (and then adding
+>   xtime_sec separately as in the 3.16 backport), but the two formulas
+>   "base_mono + offs_boot" and "offs_boot - offs_real + xtime_sec" ought
+>   to be identical.
+> 
+> I find "offs_boot - offs_real + xtime" more readable than the
+> alternative "base_mono + offs_boot + xtime_nsec", so the fix doubles as
+> a cleanup for me and I'm fine with it.  But something must be wrong in
+> the timekeeping code.
 
-This trivial cleanup is still not in linux-next nor in Linus' tree.
-Could someone else please have a look at it?
+I think I have a vague idea what happened, but I'm way too tired now
+to write it up fully. I'll do that tomorrow morning with brain awake.
 
 Thanks,
 
+	tglx
 
-Paul Bolle
 
