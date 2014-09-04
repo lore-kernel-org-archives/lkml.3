@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaIDQQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:16:48 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:53426 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624AbaIDQQp (ORCPT
+	id S1754264AbaIDQR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:17:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48968 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaIDQR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:16:45 -0400
+	Thu, 4 Sep 2014 12:17:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409761696-15435-2-git-send-email-gdjakov@mm-sol.com>
+In-Reply-To: <1409761696-15435-3-git-send-email-gdjakov@mm-sol.com>
 References: <1409761696-15435-1-git-send-email-gdjakov@mm-sol.com>
-	<1409761696-15435-2-git-send-email-gdjakov@mm-sol.com>
-Date: Thu, 4 Sep 2014 18:16:40 +0200
-Message-ID: <CACRpkdZE=Torp_s9M+NrVEwYXU3XVzWDzGO6u84ZqtxW4HUJGg@mail.gmail.com>
-Subject: Re: [PATCH v4 1/4] pinctrl: qcom: Add APQ8084 pinctrl support
+	<1409761696-15435-3-git-send-email-gdjakov@mm-sol.com>
+Date: Thu, 4 Sep 2014 18:17:55 +0200
+Message-ID: <CACRpkdbGTer98kSrG84PRthuK3wiHiL+pfM6rf3MmDrLC8fVXA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/4] dt: Document Qualcomm APQ8084 pinctrl binding
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Georgi Djakov <gdjakov@mm-sol.com>
 Cc: Kumar Gala <galak@codeaurora.org>,
@@ -35,14 +35,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Sep 3, 2014 at 6:28 PM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
 
-> This patchset adds pinctrl support for the Qualcomm APQ8084 platform.
+> Define a new binding for the Qualcomm TLMM (Top-Level Mode Mux) based pin
+> controller inside the APQ8084.
 >
-> Reviewed-by: Andy Gross <agross@codeaurora.org>
 > Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 > Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
 
-Patch applied, after taking the liberty to copy the changelog into
-the commit message.
+Patch applied.
 
 Yours,
 Linus Walleij
