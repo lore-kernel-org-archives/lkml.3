@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933750AbaIDBOW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:14:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47979 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933250AbaIDBOV (ORCPT
+	id S933782AbaIDBOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:14:31 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:11267 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933250AbaIDBO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:14:21 -0400
-Date: Wed, 3 Sep 2014 18:14:20 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Frans Klaver <fransklaver@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
-Message-ID: <20140904011420.GA31350@kroah.com>
-References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
- <20140904004947.GA17138@vmdeb7>
+	Wed, 3 Sep 2014 21:14:29 -0400
+Message-ID: <5407BCAE.7030606@huawei.com>
+Date: Thu, 4 Sep 2014 09:13:18 +0800
+From: "long.wanglong" <long.wanglong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904004947.GA17138@vmdeb7>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux@arm.linux.org.uk>, <santosh.shilimkar@ti.com>,
+        <victor.kamensky@linaro.org>, <nico@linaro.org>,
+        <ben.dooks@codethink.co.uk>, <cov@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [SMP BUG?] the return value of is_smp() is bug?
+References: <1409550563-92081-1-git-send-email-long.wanglong@huawei.com> <540443DA.7030502@huawei.com> <25226905.0IHWyHSRxb@wuerfel>
+In-Reply-To: <25226905.0IHWyHSRxb@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.88.174]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 05:49:47PM -0700, Darren Hart wrote:
-> On Thu, Sep 04, 2014 at 12:53:25AM +0200, Frans Klaver wrote:
-> > In store_sys_acpi, if count equals zero, or parse_arg()s sscanf call
-> > fails, 'value' remains possibly uninitialized. In that case 'value'
-> > shouldn't be used to produce the store_sys_acpi()s return value.
-> > 
-> > Only test the return value of set_acpi() if we can actually call it.
-> > Return rv otherwise.
-> > 
-> > Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> > ---
-> >  drivers/platform/x86/eeepc-laptop.c | 8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> > index bd533c2..41f12ba 100644
-> > --- a/drivers/platform/x86/eeepc-laptop.c
-> > +++ b/drivers/platform/x86/eeepc-laptop.c
-> > @@ -279,10 +279,10 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
-> >  	int rv, value;
-> >  
-> >  	rv = parse_arg(buf, count, &value);
-> > -	if (rv > 0)
-> > -		value = set_acpi(eeepc, cm, value);
+On 2014/9/1 18:26, Arnd Bergmann wrote:
+> On Monday 01 September 2014 18:00:58 long.wanglong wrote:
+>> On 2014/9/1 13:49, Wang Long wrote:
+>>>
+>>> Hi,all
+>>>
+>>> In kernel 3.17-rc2, when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y 
+>>> in .config file. the secondary core can not boot.
+>>>
+>>> when i set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = n in .config file,
+>>> the secondary core can boot.
+>>>
+>>> But this does not happen in kernel 3.10 lts kernel, Whether the 
+>>> CONFIG_SMP_ON_UP is set yes or no ,the secondary core can boot.
+>>>
+>>> Does the meaning of CONFIG_SMP_ON_UP changed or this is a bug in kernel 3.17-rc2 ? 
+>>>
+>>>
+>>
+>> hi Arnd
+>>
+>> In above two cases, i also set  CONFIG_SMP = y. in addtion,
+>> the CONFIG_SMP_ON_UP depends on CONFIG_SMP. when set
+>> CONFIG_SMP_ON_UP = y, the value of CONFIG_SMP must be y.
 > 
-> That was rather horrible wasn't it? :-)
+> I see.
 > 
-> > -	if (value < 0)
-> > -		return -EIO;
-> > +	if (rv > 0) {
-> > +		if (set_acpi(eeepc, cm, value) < 0)
-> > +			return -EIO;
+> I'm looking at the code more closely now:
 > 
-> Is there a compelling reason not to propogate the return code of set_acpi?
-> (ENODEV specifically). I see -EIO in Documentation/filesystems/sysfs.txt, but
-> it's used by default if the show() pointer is NULL (for example), but otherwise
-> propogates the error.
+>>> config:     set CONFIG_HAVE_SMP = y and CONFIG_SMP_ON_UP = y
+>>> command:    # qemu-system-arm -M vexpress-a9 -smp 2  -m 128M -kernel arch/arm/boot/zImage -nographic
+>>> The output:
+>>>
+>>> ..........
+>>> is_smp() return false;
 > 
-> Specifically it states:
+> This test basically checks whether the __fixup_smp_on_up code was
+> run or not. This has changed in bc41b8724f24 "ARM: 7846/1: Update
+> SMP_ON_UP code to detect A9MPCore with 1 CPU devices", in order
+> to support a quirk in the Aegis platform. Can you try reverting
+> that commit?
 > 
-> - show() or store() can always return errors. If a bad value comes
->   through, be sure to return an error.
+> 	Arnd
 > 
-> Greg, does this need to be -EIO? or is returning someting like ENODEV preferable
-> if it more accurately reflects the error?
+> .
+> 
 
-Just return the value of set_acpi() and you should be fine.
 
-thanks,
+Hi Arnd
 
-greg k-h
+When i revert the commit bc41b8724f24, the secondary core can boot.
+The problem is that qemu doesn't provide emulation of the SCU base
+address register. When reading the SCU base, qemu just return 0.
+
+In the real hardware, there is no this problem.
+
