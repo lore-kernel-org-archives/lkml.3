@@ -1,122 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387AbaIDRpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:45:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753140AbaIDRpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:45:06 -0400
-Message-ID: <5408A513.6090603@redhat.com>
-Date: Thu, 04 Sep 2014 19:44:51 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754868AbaIDRpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:45:31 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:49841 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586AbaIDRpY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 13:45:24 -0400
+Date: Thu, 4 Sep 2014 13:45:17 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: Latchesar Ionkov <lionkov@lanl.gov>, Or Gerlitz <gerlitz.or@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 for-next 00/16] On demand paging
+Message-ID: <20140904174517.GA2685@gmail.com>
+References: <1404377069-20585-1-git-send-email-haggaie@mellanox.com>
+ <5405D2D8.1040700@mellanox.com>
+ <CAJ3xEMj8BJLJvetNoqGOFhqeJHupEd=kbnFeO_Na=1ZYbvBk9g@mail.gmail.com>
+ <CAOha14xthZHSpS_T+XRgZcPqwaZvtMw0iGTzKjTyjdBuLhJ4Eg@mail.gmail.com>
+ <CAG4TOxO54LJgSjFFDge4X9OpaBNrM1z=iGSV0GEY+0iFFSs9sw@mail.gmail.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: Gleb Natapov <gleb@cloudius-systems.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, jroedel@suse.de, agraf@suse.de,
-        valentine.sinitsyn@gmail.com, jan.kiszka@siemens.com,
-        avi@cloudius-systems.com
-Subject: Re: [PATCH 3/4] KVM: x86: inject nested page faults on emulated instructions
-References: <1409670830-14544-1-git-send-email-pbonzini@redhat.com> <1409670830-14544-4-git-send-email-pbonzini@redhat.com> <20140904070220.GL9842@cloudius-systems.com> <54087343.5050409@redhat.com> <20140904150500.GA25317@minantech.com>
-In-Reply-To: <20140904150500.GA25317@minantech.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG4TOxO54LJgSjFFDge4X9OpaBNrM1z=iGSV0GEY+0iFFSs9sw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2014 17:05, Gleb Natapov ha scritto:
->> > 
->> > If you do that, KVM gets down to the "if (writeback)" and writes the 
->> > ctxt->eip from L2 into the L1 EIP.
-> Heh, that's a bummer. We should not write back if an instruction caused a vmexit.
+On Wed, Sep 03, 2014 at 02:15:51PM -0700, Roland Dreier wrote:
+> > I would like to note that we at Los Alamos National Laboratory are very
+> > interested in this functionality and it would be great if it gets accepted.
 > 
+> Have you done any review or testing of these changes?  If so can you
+> share the results?
 
-You're right, that works.
+So jumping in here. I am working on a similar issue, ie on a subsystem that
+allow a device to mirror a process address space (or part of it) using its
+own mmu and page table.
 
-Paolo
+While i am aiming at providing a generic API, it is not yet fully cook thus
+i think having a driver implement its own code in the meantime is something
+we have to live with. I am sharing the frustration of Sagi or Haggai on how
+hard it is to get any kind of review.
 
--------------- 8< -------------
-Subject: [PATCH] KVM: x86: skip writeback on injection of nested exception
+I have not yet reviewed this code but it's nearing the top of on my todo list.
+Even thought i am not an authoritative figure in either mm or rdma.
 
-If a nested page fault happens during emulation, we will inject a vmexit,
-not a page fault.  However because writeback happens after the injection,
-we will write ctxt->eip from L2 into the L1 EIP.  We do not write back
-if an instruction caused an interception vmexit---do the same for page
-faults.
+For anyone interested in taking a peak at HMM (subsystem i am working on to
+provide same functionality and more) :
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/include/asm/kvm_host.h |  1 -
- arch/x86/kvm/x86.c              | 15 ++++++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+http://marc.info/?l=linux-mm&m=140933942705466&w=4
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 08cc299..c989651 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -893,7 +893,6 @@ void kvm_inject_page_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
- int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
- 			    gfn_t gfn, void *data, int offset, int len,
- 			    u32 access);
--void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
- bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
- 
- static inline int __kvm_irq_line_state(unsigned long *irq_state,
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index e4ed85e..3541946 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -408,12 +408,14 @@ void kvm_inject_page_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault)
- }
- EXPORT_SYMBOL_GPL(kvm_inject_page_fault);
- 
--void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault)
-+static bool kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault)
- {
- 	if (mmu_is_nested(vcpu) && !fault->nested_page_fault)
- 		vcpu->arch.nested_mmu.inject_page_fault(vcpu, fault);
- 	else
- 		vcpu->arch.mmu.inject_page_fault(vcpu, fault);
-+
-+	return fault->nested_page_fault;
- }
- 
- void kvm_inject_nmi(struct kvm_vcpu *vcpu)
-@@ -4929,16 +4931,18 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
- 	}
- }
- 
--static void inject_emulated_exception(struct kvm_vcpu *vcpu)
-+static bool inject_emulated_exception(struct kvm_vcpu *vcpu)
- {
- 	struct x86_emulate_ctxt *ctxt = &vcpu->arch.emulate_ctxt;
- 	if (ctxt->exception.vector == PF_VECTOR)
--		kvm_propagate_fault(vcpu, &ctxt->exception);
--	else if (ctxt->exception.error_code_valid)
-+		return kvm_propagate_fault(vcpu, &ctxt->exception);
-+
-+	if (ctxt->exception.error_code_valid)
- 		kvm_queue_exception_e(vcpu, ctxt->exception.vector,
- 				      ctxt->exception.error_code);
- 	else
- 		kvm_queue_exception(vcpu, ctxt->exception.vector);
-+	return false;
- }
- 
- static void init_emulate_ctxt(struct kvm_vcpu *vcpu)
-@@ -5300,8 +5304,9 @@ restart:
- 	}
- 
- 	if (ctxt->have_exception) {
--		inject_emulated_exception(vcpu);
- 		r = EMULATE_DONE;
-+		if (inject_emulated_exception(vcpu))
-+			return r;
- 	} else if (vcpu->arch.pio.count) {
- 		if (!vcpu->arch.pio.in) {
- 			/* FIXME: return into emulator if single-stepping.  */
--- 
-1.9.3
+Cheers,
+Jérôme
 
-
+> 
+>  - R.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
