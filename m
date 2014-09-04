@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974AbaIDCbu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 22:31:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48519 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944AbaIDCbs (ORCPT
+	id S1757194AbaIDCmy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 22:42:54 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46238 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417AbaIDCmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 22:31:48 -0400
-Date: Wed, 3 Sep 2014 19:30:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: david@fromorbit.com, xuejiufei@huawei.com, ming.lei@canonical.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-Message-Id: <20140903193058.2bc891a7.akpm@linux-foundation.org>
-In-Reply-To: <5407C989.50605@oracle.com>
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
-	<20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
-	<5407C989.50605@oracle.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Sep 2014 22:42:53 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v3 0/4] ftrace: Add a ftrace test collection
+References: <20140902110632.3207.20043.stgit@kbuild-f20.novalocal>
+Date: Thu, 04 Sep 2014 11:42:51 +0900
+In-Reply-To: <20140902110632.3207.20043.stgit@kbuild-f20.novalocal> (Masami
+	Hiramatsu's message of "Tue, 02 Sep 2014 11:06:32 +0000")
+Message-ID: <87iol49kd0.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Sep 2014 10:08:09 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
+On Tue, 02 Sep 2014 11:06:32 +0000, Masami Hiramatsu wrote:
+> Hi,
+>
+> Here is the collection of testcases for ftrace version 3.
+> This is just some updates and fixes according to the 
+> discussion at previous version.
+>   https://lkml.org/lkml/2014/8/26/304
+>
+> The major updates are:
+>  - Fix some expressions to work on dash (Thanks Luis!)
+>  - Support UNRESOLVED/UNTESTED/UNSUPPORTED results for testcase.
+>    Those are POSIX 1003.3 standard.
+>    (see http://www.gnu.org/software/dejagnu/manual/x47.html for
+>     more details)
+>  - Fix to show error logs.
+>
+> ftracetest is a small dash script for testing ftrace features.
+> It will be required to add a unit test for each new feature
+> after this is merged, because of preventing feature regressions.
+>
+> This version still be out of the selftest. However, at the kernel
+> summit, I talked with Shuah about that. And since the kselftest
+> will be the standard kernel unit test framework, I agreed to
+> move this under the selftest. But I also would like to ask Steven
+> and Namhyung to agree with it before moving.
+>
+> Actually, since we've already has similar shell-script base
+> testcase under kselftest, we can easily move this under
+> selftests.
 
-> On 09/04/2014 07:10 AM, Andrew Morton wrote:
-> > On Wed,  3 Sep 2014 13:54:54 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
-> > 
-> >> commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
-> >> introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
-> >> when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
-> >> run into I/O, like in superblock shrinker.
-> > 
-> > Is there an actual bug which inspired this fix?  If so, please describe
-> > it.
-> > 
-> Yes, an ocfs2 deadlock bug is related to this, there is a workqueue in
-> ocfs2 who is for building tcp connections and processing ocfs2 message.
-> Like when an new node is up in ocfs2 cluster, the workqueue will try to
-> build the connections to it, since there are some common code in
-> networking like sock_alloc() using GFP_KERNEL to allocate memory, direct
-> reclaim will be triggered and call into superblock shrinker if available
-> memory is not enough even set PF_MEMALLOC_NOIO for the workqueue. To
-> shrink the inode cache, ocfs2 needs release cluster lock and this
-> depends on workqueue to do it, so cause the deadlock. Not sure whether
-> there are similar issue for other cluster fs, like nfs, it is possible
-> rpciod hung like the ocfs2 workqueue?
+By [k]selftest, did you mean tools/testing/selftests/ ?
 
-All this info should be in the changelog.
+Anyway I have no objection to the move.
 
-> 
-> > I don't think it's accurate to say that __GFP_FS implies __GFP_IO. 
-> > Where did that info come from?
-> __GFP_FS allowed callback into fs during memory allocation, and fs may
-> do io whatever __GFP_IO is set?
-
-__GFP_FS and __GFP_IO are (or were) for communicating to vmscan: don't
-enter the fs for writepage, don't write back swapcache.
-
-I guess those concepts have grown over time without a ton of thought
-going into it.  Yes, I suppose that if a filesystem's writepage is
-called (for example) it expects that it will be able to perform
-writeback and it won't check (or even be passed) the __GFP_IO setting.
-
-So I guess we could say that !__GFP_FS && GFP_IO is not implemented and
-shouldn't occur.
-
-That being said, it still seems quite bad to disable VFS cache
-shrinking for PF_MEMALLOC_NOIO allocation attempts.
-
-> > 
-> > And the superblock shrinker is a good example of why this shouldn't be
-> > the case.  The main thing that code does is to reclaim clean fs objects
-> > without performing IO.  AFAICT the proposed patch will significantly
-> > weaken PF_MEMALLOC_NOIO allocation attempts by needlessly preventing
-> > the kernel from reclaiming such objects?
-> Even fs didn't do io in superblock shrinker, it is possible for a fs
-> process who is not convenient to set GFP_NOFS holding some fs lock and
-> call back fs again?
-> 
-> PF_MEMALLOC_NOIO is only set for some special processes. I think it
-> won't affect much.
-
-Maybe not now.  But once we add hacks like this, people say "goody" and
-go and use them rather than exerting the effort to sort out their
-deadlocks properly :( There will be more PF_MEMALLOC_NOIO users in
-2019.
-
-Dunno, I'd like to hear David's thoughts but perhaps it would be better
-to find some way to continue to permit PF_MEMALLOC_NOIO to shrink VFS
-caches for most filesystems and find some fs-specific fix for ocfs2. 
-That would mean testing PF_MEMALLOC_NOIO directly I guess.
+Thanks for your work!
+Namhyung
