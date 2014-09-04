@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510AbaIDHeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:34:07 -0400
-Received: from mga14.intel.com ([192.55.52.115]:34371 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252AbaIDHeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:34:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="381246371"
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: peterz@infradead.org, luto@amacapital.net, daniel.lezcano@linaro.org,
-        rjw@rjwysocki.net, mingo@redhat.com
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        changcheng.liu@intel.com, xiaoming.wang@intel.com,
-        souvik.k.chakravarty@intel.com, chuansheng.liu@intel.com
-Subject: [PATCH 3/3] cpuidle: Using the wake_up_all_idle_cpus() to wake up all idle cpus
-Date: Thu,  4 Sep 2014 15:17:55 +0800
-Message-Id: <1409815075-4180-3-git-send-email-chuansheng.liu@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409815075-4180-1-git-send-email-chuansheng.liu@intel.com>
-References: <1409815075-4180-1-git-send-email-chuansheng.liu@intel.com>
+	id S1756681AbaIDHfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:35:11 -0400
+Received: from message.langara.bc.ca ([142.35.159.25]:53916 "EHLO
+	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaIDHfJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 03:35:09 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+Content-type: text/plain; charset=us-ascii
+From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org
+Message-id: <faeccadf18ff.5408162c@langara.bc.ca>
+Date: Thu, 04 Sep 2014 07:35:08 +0000 (GMT)
+X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
+ 32bit)
+Content-language: en
+Subject: Re: How is pivot_root intended to be used?
+X-Accept-Language: en
+In-reply-to: <5406202A.30401@amacapital.net>
+References: <fc0cb509956.5404e2cc@langara.bc.ca> <5406202A.30401@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kick_all_cpus_sync() or smp_call_function() can not
-break the polling idle cpu immediately.
+Thank you, I think I will change the code to be like:
 
-Here using wake_up_all_idle_cpus() which can wake up the polling idle
-cpu quickly is much helpful for power.
+    int old_root = open("/", O_DIRECTORY);
+    if (-1 == old_root) {
+        perror("open");
+        return EXIT_FAILURE;
+    }
 
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
----
- drivers/cpuidle/cpuidle.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+    if (-1 == syscall(__NR_pivot_root, ".", ".")) {
+        perror("pivot_root");
+        return EXIT_FAILURE;
+    }
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index ee9df5e..d31e04c 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -223,7 +223,7 @@ void cpuidle_uninstall_idle_handler(void)
- {
- 	if (enabled_devices) {
- 		initialized = 0;
--		kick_all_cpus_sync();
-+		wake_up_all_idle_cpus();
- 	}
- }
- 
-@@ -530,11 +530,6 @@ EXPORT_SYMBOL_GPL(cpuidle_register);
- 
- #ifdef CONFIG_SMP
- 
--static void smp_callback(void *v)
--{
--	/* we already woke the CPU up, nothing more to do */
--}
--
- /*
-  * This function gets called when a part of the kernel has a new latency
-  * requirement.  This means we need to get all processors out of their C-state,
-@@ -544,7 +539,7 @@ static void smp_callback(void *v)
- static int cpuidle_latency_notify(struct notifier_block *b,
- 		unsigned long l, void *v)
- {
--	smp_call_function(smp_callback, NULL, 1);
-+	wake_up_all_idle_cpus();
- 	return NOTIFY_OK;
- }
- 
--- 
-1.7.9.5
+    if (-1 == fchdir(old_root)) {
+        perror("fchdir");
+        return EXIT_FAILURE;
+    }
 
+    if (-1 == umount2(".", MNT_DETACH)) {
+        perror("umount");
+        return EXIT_FAILURE;
+    }
+
+    if (-1 == close(old_root)) {
+        perror("close");
+        return EXIT_FAILURE;
+    }
+
+    if (-1 == chdir("/")) {
+        perror("chdir");
+        return EXIT_FAILURE;
+    }
+
+This seems more understandable to me and less likely to have bugs later on.
