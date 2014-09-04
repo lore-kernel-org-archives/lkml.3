@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751AbaIDP4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:56:18 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:34614 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224AbaIDP4R (ORCPT
+	id S1753814AbaIDP61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:58:27 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:34504 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaIDP60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:56:17 -0400
-Date: Thu, 4 Sep 2014 17:56:13 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf/x86/intel: Add Haswell-EP uncore support
-Message-ID: <20140904155613.GD4120@two.firstfloor.org>
-References: <1408499458-6555-1-git-send-email-zheng.z.yan@intel.com>
- <20140822052926.GM4120@two.firstfloor.org>
- <20140904081928.GL3190@worktop.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904081928.GL3190@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 4 Sep 2014 11:58:26 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Shuah Khan <shuahkh@osg.samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        linux-api@vger.kernel.org (open list:KERNEL SELFTEST F...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH Resend] memfd_test: Add missing argument to printf()
+Date: Thu,  4 Sep 2014 11:58:19 -0400
+Message-Id: <1409846302-3513-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 10:19:28AM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 22, 2014 at 07:29:26AM +0200, Andi Kleen wrote:
-> > > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > > index 4785ee8..2485fd9 100644
-> > > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> > > @@ -883,6 +883,8 @@ static int __init uncore_pci_init(void)
-> > >  	case 62: /* Ivy Bridge-EP */
-> > >  		ret = ivbep_uncore_pci_init();
-> > >  		break;
-> > > +	case 63: /* Haswell-EP */
-> > > +		ret = hswep_uncore_pci_init();
-> > 
-> > Is the lack of break intentional? If yes please add a /* FALL THROUGH */
-> > comment.
-> 
-> This does look inconsistent with the surrounding code, which does
-> suggest it was indeed an oversight and not on purpose.
-> 
-> Zheng?
+Add a missing path argument buf to printf() 
 
-Yes it was a bug. Zheng left Intel and I have taken over the driver.
-I'll send a version with this and some other issues fixed shortly.
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+---
+ tools/testing/selftests/memfd/memfd_test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--Andi
-
+diff --git a/tools/testing/selftests/memfd/memfd_test.c b/tools/testing/selftests/memfd/memfd_test.c
+index 3634c90..c343df8 100644
+--- a/tools/testing/selftests/memfd/memfd_test.c
++++ b/tools/testing/selftests/memfd/memfd_test.c
+@@ -205,7 +205,7 @@ static void mfd_fail_open(int fd, int flags, mode_t mode)
+ 	sprintf(buf, "/proc/self/fd/%d", fd);
+ 	r = open(buf, flags, mode);
+ 	if (r >= 0) {
+-		printf("open(%s) didn't fail as expected\n");
++		printf("open(%s) didn't fail as expected\n", buf);
+ 		abort();
+ 	}
+ }
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+2.1.0
+
