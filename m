@@ -1,373 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749AbaIDQFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:05:21 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:63819 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479AbaIDQEE (ORCPT
+	id S1754112AbaIDQIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:08:22 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42668 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751228AbaIDQIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:04:04 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH v1 4/6] irqchip: gic: Add support for IPI FIQ
-Date: Thu,  4 Sep 2014 17:03:38 +0100
-Message-Id: <1409846620-14542-5-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409846620-14542-1-git-send-email-daniel.thompson@linaro.org>
-References: <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org>
- <1409846620-14542-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 4 Sep 2014 12:08:19 -0400
+Message-ID: <54088E6C.2020209@hurleysoftware.com>
+Date: Thu, 04 Sep 2014 12:08:12 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 21/26] tty: Convert tty_struct bitfield to bools
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <1409693975-1028-22-git-send-email-peter@hurleysoftware.com> <20140903115852.5a720754@alan.etchedpixels.co.uk> <54070643.9080903@hurleysoftware.com> <20140903131919.0d970b6f@alan.etchedpixels.co.uk> <54072F75.70107@hurleysoftware.com> <20140903175606.GA9740@kroah.com>
+In-Reply-To: <20140903175606.GA9740@kroah.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides support for arm's newly added IPI FIQ. It works
-by placing all interrupt sources *except* IPI FIQ in group 1 and
-then flips a configuration bit in the GIC such that group 1
-interrupts use IRQ and group 0 interrupts use FIQ.
+On 09/03/2014 01:56 PM, Greg Kroah-Hartman wrote:
+> On Wed, Sep 03, 2014 at 11:10:45AM -0400, Peter Hurley wrote:
+>> On 09/03/2014 08:19 AM, One Thousand Gnomes wrote:
+>>>> Ahh. Thanks for the insight, Alan.
+>>>>
+>>>> But set_bit() et. al. will generate an incredible amount of churn;
+>>>> what if I split the fields up to prevent false-sharing?
+>>>
+>>> Do you feel lucky ;-)
+>>
+>> Hahaha  :)
+>>
+>>> I'd rather set_bit and friends were used. They exist largely for this
+>>> kind of reason and they also have atomic test/set methods which may in
+>>> the longer term be very useful.
+>>>
+>>> Yes it is churn can't argue with that.
+>>
+>> Yuck. There should be a better way. IXANY mode is suddenly going to
+>> have a ton of unnecessary bus locks on x86.
+> 
+> True, but at least it will be correct, which I'm guessing today it isn't
+> :(
+> 
+>> Note the ctrl_status field is a byte as well, which can't be RMW'ed by
+>> the bit-locked primitives, and definitely should not be aggregated with
+>> any adjacent field.
+> 
+> Never trust what an ia64 compiler can, and will, do...
 
-All GIC hardware except GICv1-without-TrustZone support provides a means
-to group exceptions into group 0 and group 1. However the hardware
-functionality is unavailable to the kernel when a secure monitor is
-present because access to the grouping registers are prohibited outside
-"secure world" (a feature that allows grouping to be used to allow
-hardware peripherals to send interrupts into the secure world). However
-when grouping is not available we can rely on the GIC's RAZ/WI semantics
-and avoid conditional code.
+I could not get the ia64 compiler to merge adjacent reads or writes on
+bools or chars, at all.
 
-Tested on Freescale i.MX6 (quad A9, GICv1-with-TrustZone running in
-secure mode).
+However, Alan's point applies anyway --
+because the Alpha is not byte-addressable.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
----
- arch/arm/kernel/traps.c         |   7 +-
- drivers/irqchip/irq-gic.c       | 171 +++++++++++++++++++++++++++++++++++++---
- include/linux/irqchip/arm-gic.h |   3 +
- 3 files changed, 171 insertions(+), 10 deletions(-)
+This means that smaller-than-int storage is _always_ read-modify-write.
 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 7912a9e..2c219c7 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -26,6 +26,7 @@
- #include <linux/init.h>
- #include <linux/sched.h>
- #include <linux/irq.h>
-+#include <linux/irqchip/arm-gic.h>
- 
- #include <linux/atomic.h>
- #include <asm/cacheflush.h>
-@@ -479,7 +480,11 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
- 	nmi_enter();
--	/* nop for now */
-+
-+#ifdef CONFIG_ARM_GIC
-+	gic_handle_fiq_ipi();
-+#endif
-+
- 	nmi_exit();
- 
- 	set_irq_regs(old_regs);
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 4b959e6..ffc64ed 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -39,8 +39,10 @@
- #include <linux/slab.h>
- #include <linux/irqchip/chained_irq.h>
- #include <linux/irqchip/arm-gic.h>
-+#include <linux/ratelimit.h>
- 
- #include <asm/cputype.h>
-+#include <asm/fiq.h>
- #include <asm/irq.h>
- #include <asm/exception.h>
- #include <asm/smp_plat.h>
-@@ -48,6 +50,10 @@
- #include "irq-gic-common.h"
- #include "irqchip.h"
- 
-+#ifndef SMP_IPI_FIQ_MASK
-+#define SMP_IPI_FIQ_MASK 0
-+#endif
-+
- union gic_base {
- 	void __iomem *common_base;
- 	void __percpu * __iomem *percpu_base;
-@@ -71,6 +77,8 @@ struct gic_chip_data {
- };
- 
- static DEFINE_RAW_SPINLOCK(irq_controller_lock);
-+/* A fiq-safe spinlock must only be locked when the FIQ is masked */
-+static DEFINE_RAW_SPINLOCK(fiq_safe_migration_lock);
- 
- /*
-  * The GIC mapping of CPU interfaces does not necessarily match
-@@ -325,6 +333,106 @@ static struct irq_chip gic_chip = {
- 	.irq_set_wake		= gic_set_wake,
- };
- 
-+#ifdef CONFIG_FIQ
-+/*
-+ * Shift an interrupt between Group 0 and Group 1.
-+ *
-+ * In addition to changing the group we also modify the priority to
-+ * match what "ARM strongly recommends" for a system where no Group 1
-+ * interrupt must ever preempt a Group 0 interrupt.
-+ *
-+ * If is safe to call this function on systems which do not support
-+ * grouping (it will have no effect).
-+ */
-+static void gic_set_group_irq(void __iomem *base, unsigned int hwirq,
-+				int group)
-+{
-+	unsigned int grp_reg = hwirq / 32 * 4;
-+	u32 grp_mask = BIT(hwirq % 32);
-+	u32 grp_val;
-+
-+	unsigned int pri_reg = (hwirq / 4) * 4;
-+	u32 pri_mask = BIT(7 + ((hwirq % 4) * 8));
-+	u32 pri_val;
-+
-+	/*
-+	 * Systems which do not support grouping will have no bits
-+	 * set in IGROUP[0] (and all systems which do will have set bits).
-+	 */
-+	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + 0);
-+	if (!grp_val)
-+		return;
-+
-+	raw_spin_lock(&irq_controller_lock);
-+
-+	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
-+	pri_val = readl_relaxed(base + GIC_DIST_PRI + pri_reg);
-+
-+	if (group) {
-+		grp_val |= grp_mask;
-+		pri_val |= pri_mask;
-+	} else {
-+		grp_val &= ~grp_mask;
-+		pri_val &= ~pri_mask;
-+	}
-+
-+	writel_relaxed(grp_val, base + GIC_DIST_IGROUP + grp_reg);
-+	writel_relaxed(pri_val, base + GIC_DIST_PRI + pri_reg);
-+
-+	raw_spin_unlock(&irq_controller_lock);
-+}
-+
-+/*
-+ * Test which group an interrupt belongs to.
-+ *
-+ * Returns 0 if the controller does not support grouping.
-+ */
-+static int gic_get_group_irq(void __iomem *base, unsigned int hwirq)
-+{
-+	unsigned int grp_reg = hwirq / 32 * 4;
-+	u32 grp_val;
-+
-+	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
-+
-+	return (grp_val >> (hwirq % 32)) & 1;
-+}
-+
-+/*
-+ * Fully acknowledge (both ack and eoi) any outstanding FIQ-based IPI,
-+ * otherwise do nothing.
-+ */
-+void gic_handle_fiq_ipi(void)
-+{
-+	struct gic_chip_data *gic = &gic_data[0];
-+	void __iomem *cpu_base = gic_data_cpu_base(gic);
-+	unsigned long irqstat, irqnr;
-+
-+	if (WARN_ON(!in_nmi()))
-+		return;
-+
-+	while ((1u << readl_relaxed(cpu_base + GIC_CPU_HIGHPRI)) &
-+	       SMP_IPI_FIQ_MASK) {
-+		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
-+		writel_relaxed(irqstat, cpu_base + GIC_CPU_EOI);
-+
-+		irqnr = irqstat & GICC_IAR_INT_ID_MASK;
-+		WARN_RATELIMIT(irqnr > 16,
-+			       "Unexpected irqnr %lu (bad prioritization?)\n",
-+			       irqnr);
-+	}
-+}
-+#else /* CONFIG_FIQ */
-+static inline void gic_set_group_irq(void __iomem *base, unsigned int hwirq,
-+				     int group)
-+{
-+}
-+
-+static inline int gic_get_group_irq(void __iomem *base, unsigned int hwirq)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_FIQ */
-+
- void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
- {
- 	if (gic_nr >= MAX_GIC_NR)
-@@ -373,7 +481,18 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
- 
- 	gic_dist_config(base, gic_irqs, NULL);
- 
--	writel_relaxed(1, base + GIC_DIST_CTRL);
-+	/*
-+	 * Set all global interrupts to be group 1 (RAZ/WI when not
-+	 * available)
-+	 */
-+	for (i = 32; i < gic_irqs; i += 32)
-+		writel_relaxed(0xffffffff, base + GIC_DIST_IGROUP + i * 4 / 32);
-+
-+	/*
-+	 * Set EnableGrp1/EnableGrp0 (bit 1 and 0) or EnableGrp (bit 0 only,
-+	 * bit 1 ignored)
-+	 */
-+	writel_relaxed(3, base + GIC_DIST_CTRL);
- }
- 
- static void gic_cpu_init(struct gic_chip_data *gic)
-@@ -382,6 +501,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 	void __iomem *base = gic_data_cpu_base(gic);
- 	unsigned int cpu_mask, cpu = smp_processor_id();
- 	int i;
-+	unsigned long secure_irqs, secure_irq;
- 
- 	/*
- 	 * Get what the GIC says our CPU mask is.
-@@ -400,8 +520,21 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 
- 	gic_cpu_config(dist_base, NULL);
- 
-+	/*
-+	 * Set any PPI and SGI interrupts not set in SMP_IPI_FIQ_MASK
-+	 * to be group 1 (RAZ/WI when not available)
-+	 */
-+	writel_relaxed(~SMP_IPI_FIQ_MASK, dist_base + GIC_DIST_IGROUP + 0);
-+
-+	/*
-+	 * Update the priority of any resulting group0 interrupts.
-+	 */
-+	secure_irqs = ~readl_relaxed(dist_base + GIC_DIST_IGROUP + 0);
-+	for_each_set_bit(secure_irq, &secure_irqs, 16)
-+		gic_set_group_irq(dist_base, i, 0);
-+
- 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, base + GIC_CPU_CTRL);
-+	writel_relaxed(0x1f, base + GIC_CPU_CTRL);
- }
- 
- void gic_cpu_if_down(void)
-@@ -485,7 +618,7 @@ static void gic_dist_restore(unsigned int gic_nr)
- 		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
- 			dist_base + GIC_DIST_ENABLE_SET + i * 4);
- 
--	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
-+	writel_relaxed(3, dist_base + GIC_DIST_CTRL);
- }
- 
- static void gic_cpu_save(unsigned int gic_nr)
-@@ -542,7 +675,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
- 
- 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-+	writel_relaxed(0x1f, cpu_base + GIC_CPU_CTRL);
- }
- 
- static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
-@@ -604,8 +737,19 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- {
- 	int cpu;
- 	unsigned long flags, map = 0;
-+	unsigned long softint;
- 
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	/*
-+	 * The locking in this function ensures we don't use stale cpu mappings
-+	 * and thus we never route an IPI to the wrong physical core during a
-+	 * big.LITTLE switch. The switch code takes both of these locks meaning
-+	 * we can choose whichever lock is safe to use from our current calling
-+	 * context.
-+	 */
-+	if (in_nmi())
-+		raw_spin_lock(&fiq_safe_migration_lock);
-+	else
-+		raw_spin_lock_irqsave(&irq_controller_lock, flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -618,9 +762,16 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	dmb(ishst);
- 
- 	/* this always happens on GIC0 */
--	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
--
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+	softint = map << 16 | irq;
-+	if (gic_get_group_irq(gic_data_dist_base(&gic_data[0]), irq))
-+		softint |= 0x8000;
-+	writel_relaxed(softint,
-+		       gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
-+
-+	if (in_nmi())
-+		raw_spin_unlock(&fiq_safe_migration_lock);
-+	else
-+		raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
- }
- #endif
- 
-@@ -668,7 +819,7 @@ int gic_get_cpu_id(unsigned int cpu)
-  * Migrate all peripheral interrupts with a target matching the current CPU
-  * to the interface corresponding to @new_cpu_id.  The CPU interface mapping
-  * is also updated.  Targets to other CPU interfaces are unchanged.
-- * This must be called with IRQs locally disabled.
-+ * This must be called with IRQ and FIQ locally disabled.
-  */
- void gic_migrate_target(unsigned int new_cpu_id)
- {
-@@ -690,6 +841,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 	ror_val = (cur_cpu_id - new_cpu_id) & 31;
- 
- 	raw_spin_lock(&irq_controller_lock);
-+	raw_spin_lock(&fiq_safe_migration_lock);
- 
- 	/* Update the target interface for this logical CPU */
- 	gic_cpu_map[cpu] = 1 << new_cpu_id;
-@@ -709,6 +861,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 		}
- 	}
- 
-+	raw_spin_unlock(&fiq_safe_migration_lock);
- 	raw_spin_unlock(&irq_controller_lock);
- 
- 	/*
-diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
-index 45e2d8c..52a5676 100644
---- a/include/linux/irqchip/arm-gic.h
-+++ b/include/linux/irqchip/arm-gic.h
-@@ -101,5 +101,8 @@ static inline void __init register_routable_domain_ops
- {
- 	gic_routable_irq_domain_ops = ops;
- }
-+
-+void gic_handle_fiq_ipi(void);
-+
- #endif /* __ASSEMBLY */
- #endif
--- 
-1.9.3
+So my plan is now to take this patch out of this series and submit
+a new series on top of this one that will:
+1) merge the ctrl_status field and packet field into an int size, which
+   will guarantee atomicity to those fields on all arches when accessed
+   holding the ->ctrl_lock.
+2) make tty->hw_stopped an int. This way legacy drivers -- synclink,
+   cyclades, nozomi, isdn4linux, et. al. -- will not need changes.
+   UART drivers should use uport->hw_stopped (added in this series).
+   New, non-UART drivers should use their own hw_stopped mechanism.
+3) keep tty->stopped and tty->flow_stopped as bitfield members of the
+   same bitfield, but size that bitfield to unsigned long [note 1 below].
+   This should guarantee atomicity on all arches when accessed while
+   holding the ->flow_lock, without requiring further code changes and
+   without impacting other arches.
+
+Regards,
+Peter Hurley
+
+[Note 1] gcc pre-4.7.2 corrupts data adjacent to a smaller-than-8-byte
+bitfield on sparc64, ia64, ppc64 and alpha.
+
 
