@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612AbaIDHLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:11:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44680 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaIDHLo (ORCPT
+	id S1756674AbaIDHMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:12:09 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:62789 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581AbaIDHMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:11:44 -0400
-Date: Thu, 4 Sep 2014 09:11:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Kautuk Consul <consul.kautuk@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: task_numa_fault() && TASK_DEAD
-Message-ID: <20140904071139.GH3190@worktop.ger.corp.intel.com>
-References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
- <20140825155738.GA5944@redhat.com>
- <20140901153935.GQ27892@worktop.ger.corp.intel.com>
- <20140901175851.GA15210@redhat.com>
- <20140901190931.GD5806@worktop.ger.corp.intel.com>
- <20140902155208.GA28668@redhat.com>
- <20140902164714.GA17033@redhat.com>
- <20140903160819.GA7682@redhat.com>
+	Thu, 4 Sep 2014 03:12:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140903160819.GA7682@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1409564362-27571-2-git-send-email-frans.klaver@xsens.com>
+References: <1409564362-27571-1-git-send-email-frans.klaver@xsens.com>
+	<1409564362-27571-2-git-send-email-frans.klaver@xsens.com>
+Date: Thu, 4 Sep 2014 09:12:05 +0200
+Message-ID: <CAH6sp9Me6wVTnNGn9Z4pLDsFyTz27EgcEvedF8PrcH-fw+awBQ@mail.gmail.com>
+Subject: Re: [PATCH resend 2/2] usb: serial: xsens_mt: always bind to
+ interface number 1
+From: Frans Klaver <fransklaver@gmail.com>
+To: Frans Klaver <frans.klaver@xsens.com>
+Cc: Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 06:08:19PM +0200, Oleg Nesterov wrote:
-> On 09/02, Oleg Nesterov wrote:
-> >
-> > The usage of TASK_DEAD in task_numa_fault() is wrong in any case.
-> 
-> Rik, I can't understand why task_numa_fault() needs this check at all,
-> but "if (p->state == TASK_DEAD)" looks certainly wrong. You could replace
-> this check with BUG_ON(p->state == TASK_DEAD). Perhaps you meant PF_EXITING?
+Johan,
 
-Looking at 82727018b it appears the intent was to make sure we don't
-re-create ->numa_fault after we free it. But you're right, we should
-never get there with TASK_DEAD.
+I noticed I submitted an error here. Will resend later today.
 
-Also, given that task_numa_free() is called from __put_task_struct() I
-tihnk we can safely delete this clause.
+On Mon, Sep 1, 2014 at 11:39 AM, Frans Klaver <frans.klaver@xsens.com> wrote:
+> Probe is testing if the current interface provides two bulk endpoints.
+> While this achieves the goal of only binding to the correct interface,
+> we already know we can find the device on interface number 1. Stop
+> checking the endpoints and just return successfully when interface
+> number 1 is probed.
+>
+> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> ---
+>  drivers/usb/serial/xsens_mt.c | 23 ++++-------------------
+>  1 file changed, 4 insertions(+), 19 deletions(-)
+>
+> diff --git a/drivers/usb/serial/xsens_mt.c b/drivers/usb/serial/xsens_mt.c
+> index d500ccd..ea67ed9 100644
+> --- a/drivers/usb/serial/xsens_mt.c
+> +++ b/drivers/usb/serial/xsens_mt.c
+> @@ -41,28 +41,13 @@ static const struct usb_device_id id_table[] = {
+>  };
+>  MODULE_DEVICE_TABLE(usb, id_table);
+>
+> -static int has_required_endpoints(const struct usb_host_interface *interface)
+> -{
+> -       __u8 i;
+> -       int has_bulk_in = 0;
+> -       int has_bulk_out = 0;
+> -
+> -       for (i = 0; i < interface->desc.bNumEndpoints; ++i) {
+> -               if (usb_endpoint_is_bulk_in(&interface->endpoint[i].desc))
+> -                       has_bulk_in = 1;
+> -               else if (usb_endpoint_is_bulk_out(&interface->endpoint[i].desc))
+> -                       has_bulk_out = 1;
+> -       }
+> -
+> -       return has_bulk_in && has_bulk_out;
+> -}
+> -
+>  static int xsens_mt_probe(struct usb_serial *serial,
+>                                         const struct usb_device_id *id)
+>  {
+> -       if (!has_required_endpoints(serial->interface->cur_altsetting))
+> -               return -ENODEV;
+> -       return 0;
+> +       if (serial->interface->cur_altsetting.desc.bInterfaceNumber == 1)
 
-> And a stupid (really, I don't understand this code) question:
-> 
-> 	/* for example, ksmd faulting in a user's mm */
-> 	if (!p->mm)
-> 		return;
+This should be
 
-In general kernel threads have !->mm, and those cannot do the
-accounting. The only way to get here is through get_user_pages() with
-tsk != current and/or mm != current->mm.
-
-> OK, but perhaps it make sense to pass "mm" as another argument and do
-> 
-> 	/* ksmd faulting in a user's mm, or debugger, or kthread use_mm() caller */
-> 	if (p->mm != mm)
-> 		return;
-> 
-> ?
-
-I'm still somewhat fuzzy in the brain but that doesn't appear to
-actually work, use_mm() explicitly sets ->mm so in that case it would
-match just fine.
-
-That said; I don't think we really need to worry about this. The !->mm
-case is special in that that cannot ever work, the other cases are
-extremely rare and will not skew accounting much if anything.
+if (serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
 
 
-
+> +               return 0;
+> +
+> +       return -ENODEV;
+>  }
+>
+>  static struct usb_serial_driver xsens_mt_device = {
+> --
+> 2.1.0
+>
