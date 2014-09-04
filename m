@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaIDNpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 09:45:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17276 "EHLO mx1.redhat.com"
+	id S1751484AbaIDNv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 09:51:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35926 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254AbaIDNpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 09:45:05 -0400
-Date: Thu, 4 Sep 2014 15:42:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] x86, lib/Makefile: remove the unnecessary "+=
-	thunk_64.o"
-Message-ID: <20140904134223.GB3312@redhat.com>
-References: <20140904134135.GA3309@redhat.com>
+	id S1750820AbaIDNvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 09:51:24 -0400
+Message-ID: <54086E3D.4000200@ti.com>
+Date: Thu, 4 Sep 2014 19:20:53 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904134135.GA3309@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tony Lindgren <tony@atomide.com>
+CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 3/5] usb: phy: twl4030-usb: Move code from twl4030_phy_power
+ to the runtime PM calls
+References: <1409182091-31191-1-git-send-email-tony@atomide.com> <1409182091-31191-4-git-send-email-tony@atomide.com>
+In-Reply-To: <1409182091-31191-4-git-send-email-tony@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial. We have "lib-y += thunk_$(BITS).o" at the start, no need
-to add thunk_64.o if !CONFIG_X86_32.
+Hi Tony,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/lib/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Thursday 28 August 2014 04:58 AM, Tony Lindgren wrote:
+> We don't need twl4030_phy_power() any longer now that we have
+> the runtime PM calls. Let's get rid of it as it's confusing.
+> No functional changes, just move the code and use res instead
+> of ret as we are not returning that value.
 
-diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-index 4d4f96a..66127b9 100644
---- a/arch/x86/lib/Makefile
-+++ b/arch/x86/lib/Makefile
-@@ -39,7 +39,7 @@ endif
- else
-         obj-y += iomap_copy_64.o
-         lib-y += csum-partial_64.o csum-copy_64.o csum-wrappers_64.o
--        lib-y += thunk_64.o clear_page_64.o copy_page_64.o
-+        lib-y += clear_page_64.o copy_page_64.o
-         lib-y += memmove_64.o memset_64.o
-         lib-y += copy_user_64.o copy_user_nocache_64.o
- 	lib-y += cmpxchg16b_emu.o
--- 
-1.5.5.1
+Now that you are doing pm_runtime_get_sync in twl4030_phy_init, won't it power
+on the phy even before initializing it (since runtime_resume will be invoked
+even before doing phy_init)?
 
+Even if pm_runtime_get_sync in not done in twl4030_phy_init, phy-core itself
+does pm_runtime_get_sync in phy_init().
 
+Thanks
+Kishon
