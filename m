@@ -1,50 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732AbaIDAhU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 20:37:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2795 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710AbaIDAhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 20:37:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,462,1406617200"; 
-   d="scan'208";a="597612407"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: rostedt@goodmis.org, mingo@redhat.com
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH] trace: Resolve some missing-field-initializers warnings
-Date: Wed,  3 Sep 2014 17:36:42 -0700
-Message-Id: <1409791002-16229-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1756786AbaIDAi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 20:38:26 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:51173 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746AbaIDAiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Sep 2014 20:38:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409773238-32177-1-git-send-email-vpalatin@chromium.org>
+References: <CACHYQ-qST1gyyKCZp+tN9FbR3_=2q_+=PbVwfu3KgfTpkdDFCA@mail.gmail.com>
+ <1409773238-32177-1-git-send-email-vpalatin@chromium.org>
+From: Pawel Osciak <posciak@chromium.org>
+Date: Thu, 4 Sep 2014 09:37:42 +0900
+Message-ID: <CACHYQ-r-+czyEBySdjNWr-3XmY1C2ErDJV0dnL=GDJOYPi1asw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
+To: Vincent Palatin <vpalatin@chromium.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olofj@chromium.org>, Zach Kuznia <zork@chromium.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+On Thu, Sep 4, 2014 at 4:40 AM, Vincent Palatin <vpalatin@chromium.org> wrote:
+> Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
+> CT_PANTILT_RELATIVE_CONTROL terminal control request.
+>
+> Tested by plugging a Logitech ConferenceCam C3000e USB camera
+> and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
+> Verified that it can pan and tilt at the same time in both directions.
+>
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+>
+> Change-Id: I7b70b228e5c0126683f5f0be34ffd2807f5783dc
 
-Resolve some missing-field-initializers warnings by using a
-more elaborated form of designated initialization.
+Sorry, forgot to mention this previously, please remove gerrit ids
+from the patches.
+Thanks,
+P.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
- kernel/trace/trace_export.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index d4ddde2..190bc09 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -177,7 +177,7 @@ struct ftrace_event_call __used event_##call = {			\
- 	{								\
- 		.name			= #call,			\
- 	},								\
--	.event.type		= etype,				\
-+	.event = { .type	= etype, },				\
- 	.print_fmt		= print,				\
- 	.flags			= TRACE_EVENT_FL_IGNORE_ENABLE | TRACE_EVENT_FL_USE_CALL_FILTER, \
- };									\
--- 
-1.9.3
-
+> ---
+> Changes from v1/v2:
+> - rebased
+>
+>  drivers/media/usb/uvc/uvc_ctrl.c | 58 +++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 55 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
+> index 0eb82106..d703cb0 100644
+> --- a/drivers/media/usb/uvc/uvc_ctrl.c
+> +++ b/drivers/media/usb/uvc/uvc_ctrl.c
+> @@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
+>                 .selector       = UVC_CT_PANTILT_RELATIVE_CONTROL,
+>                 .index          = 12,
+>                 .size           = 4,
+> -               .flags          = UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
+> -                               | UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
+> -                               | UVC_CTRL_FLAG_GET_DEF
+> +               .flags          = UVC_CTRL_FLAG_SET_CUR
+> +                               | UVC_CTRL_FLAG_GET_RANGE
+>                                 | UVC_CTRL_FLAG_AUTO_UPDATE,
+>         },
+>         {
+> @@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct uvc_control_mapping *mapping,
+>         data[2] = min((int)abs(value), 0xff);
+>  }
+>
+> +static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
+> +       __u8 query, const __u8 *data)
+> +{
+> +       int first = mapping->offset / 8;
+> +       __s8 rel = (__s8)data[first];
+> +
+> +       switch (query) {
+> +       case UVC_GET_CUR:
+> +               return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
+> +                                                : -data[first+1]);
+> +       case UVC_GET_MIN:
+> +               return -data[first+1];
+> +       case UVC_GET_MAX:
+> +       case UVC_GET_RES:
+> +       case UVC_GET_DEF:
+> +       default:
+> +               return data[first+1];
+> +       }
+> +}
+> +
+> +static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
+> +       __s32 value, __u8 *data)
+> +{
+> +       int first = mapping->offset / 8;
+> +
+> +       data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
+> +       data[first+1] = min_t(int, abs(value), 0xff);
+> +}
+> +
+>  static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+>         {
+>                 .id             = V4L2_CID_BRIGHTNESS,
+> @@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+>                 .data_type      = UVC_CTRL_DATA_TYPE_SIGNED,
+>         },
+>         {
+> +               .id             = V4L2_CID_PAN_SPEED,
+> +               .name           = "Pan (Speed)",
+> +               .entity         = UVC_GUID_UVC_CAMERA,
+> +               .selector       = UVC_CT_PANTILT_RELATIVE_CONTROL,
+> +               .size           = 16,
+> +               .offset         = 0,
+> +               .v4l2_type      = V4L2_CTRL_TYPE_INTEGER,
+> +               .data_type      = UVC_CTRL_DATA_TYPE_SIGNED,
+> +               .get            = uvc_ctrl_get_rel_speed,
+> +               .set            = uvc_ctrl_set_rel_speed,
+> +       },
+> +       {
+> +               .id             = V4L2_CID_TILT_SPEED,
+> +               .name           = "Tilt (Speed)",
+> +               .entity         = UVC_GUID_UVC_CAMERA,
+> +               .selector       = UVC_CT_PANTILT_RELATIVE_CONTROL,
+> +               .size           = 16,
+> +               .offset         = 16,
+> +               .v4l2_type      = V4L2_CTRL_TYPE_INTEGER,
+> +               .data_type      = UVC_CTRL_DATA_TYPE_SIGNED,
+> +               .get            = uvc_ctrl_get_rel_speed,
+> +               .set            = uvc_ctrl_set_rel_speed,
+> +       },
+> +       {
+>                 .id             = V4L2_CID_PRIVACY,
+>                 .name           = "Privacy",
+>                 .entity         = UVC_GUID_UVC_CAMERA,
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
