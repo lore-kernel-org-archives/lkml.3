@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701AbaIDPLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:11:36 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:47210 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaIDPLf (ORCPT
+	id S1753861AbaIDPMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:12:47 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:44188 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379AbaIDPMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:11:35 -0400
-From: Chaitra Ramaiah <linux.delve@gmail.com>
-To: gregkh@linuxfoundation.org, burzalodowa@gmail.com, anarey@gmail.com,
-        rmfrfs@gmail.com, gdonald@gmail.com, joe@perches.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chaitra Ramaiah <linux.delve@gmail.com>
-Subject: [PATCH] Staging: rtl8192u: fix brace style coding issue in r819xU_firmware.c 
-Date: Thu,  4 Sep 2014 20:41:03 +0530
-Message-Id: <1409843463-3702-2-git-send-email-linux.delve@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409843463-3702-1-git-send-email-linux.delve@gmail.com>
-References: <1409843463-3702-1-git-send-email-linux.delve@gmail.com>
+	Thu, 4 Sep 2014 11:12:45 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.17-rc4
+Date: Thu,  4 Sep 2014 08:12:41 -0700
+Message-Id: <1409843561-9245-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chaitra Ramaiah <linux.delve@gmail.com>
----
- drivers/staging/rtl8192u/r819xU_firmware.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Hi Linus,
 
-diff --git a/drivers/staging/rtl8192u/r819xU_firmware.c b/drivers/staging/rtl8192u/r819xU_firmware.c
-index 671cbe6..40e1ef5 100644
---- a/drivers/staging/rtl8192u/r819xU_firmware.c
-+++ b/drivers/staging/rtl8192u/r819xU_firmware.c
-@@ -153,11 +153,10 @@ static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
- 			break;
- 	}while(check_bootOk_time--);
- 
--	if (!(CPU_status&CPU_GEN_BOOT_RDY)) {
-+	if (!(CPU_status&CPU_GEN_BOOT_RDY))
- 		goto CPUCheckMainCodeOKAndTurnOnCPU_Fail;
--	} else {
-+	else
- 		RT_TRACE(COMP_FIRMWARE, "Download Firmware: Boot ready!\n");
--	}
- 
- 	return rt_status;
- 
--- 
-1.7.9.5
+Please pull hwmon fixes for Linux 3.17-rc4 from signed tag:
 
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Thanks,
+Guenter
+------
+
+The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 39c627a084475e8a690a4a9e7601410ca173ddd2:
+
+  hwmon: (ds1621) Update zbits after conversion rate change (2014-08-28 11:18:47 -0700)
+
+----------------------------------------------------------------
+Fix a bug in the ds1621 driver
+
+----------------------------------------------------------------
+Robert Coulson (1):
+      hwmon: (ds1621) Update zbits after conversion rate change
+
+ drivers/hwmon/ds1621.c | 1 +
+ 1 file changed, 1 insertion(+)
