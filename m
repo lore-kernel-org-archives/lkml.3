@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037AbaIDMwg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:52:36 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:45817 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaIDMwe convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 4 Sep 2014 08:52:34 -0400
-Message-Id: <54087CAE0200007800030D79@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Thu, 04 Sep 2014 13:52:30 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Juergen Gross" <JGross@suse.com>
-Cc: <david.vrabel@citrix.com>, <xen-devel@lists.xensource.com>,
-        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] xen: sync some headers with xen tree
-References: <1409834326-29287-1-git-send-email-jgross@suse.com>
- <1409834326-29287-2-git-send-email-jgross@suse.com>
-In-Reply-To: <1409834326-29287-2-git-send-email-jgross@suse.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754134AbaIDMxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:53:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62913 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaIDMxG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 08:53:06 -0400
+Message-ID: <540860AC.3030905@linaro.org>
+Date: Thu, 04 Sep 2014 14:53:00 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Chuansheng Liu <chuansheng.liu@intel.com>, peterz@infradead.org,
+        luto@amacapital.net, rjw@rjwysocki.net, mingo@redhat.com
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        changcheng.liu@intel.com, xiaoming.wang@intel.com,
+        souvik.k.chakravarty@intel.com
+Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
+ idle cpu
+References: <1409815075-4180-1-git-send-email-chuansheng.liu@intel.com>
+In-Reply-To: <1409815075-4180-1-git-send-email-chuansheng.liu@intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 04.09.14 at 14:38, <"jgross@suse.com".non-mime.internet> wrote:
-> As the KEXEC and DUMPCORE related ELFNOTES are not relevant for the
-> kernel they are omitted from elfnote.h.
+On 09/04/2014 09:17 AM, Chuansheng Liu wrote:
+> Implementing one new API wake_up_if_idle(), which is used to
+> wake up the idle CPU.
+>
+> Suggested-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 
-But the defines are still in the patch:
+Hi Chuanseng,
 
-> @@ -153,6 +192,65 @@
->   */
->  #define XEN_ELFNOTE_SUPPORTED_FEATURES 17
->  
-> +/*
-> + * The number of the highest elfnote defined.
-> + */
-> +#define XEN_ELFNOTE_MAX XEN_ELFNOTE_SUPPORTED_FEATURES
-> +
-> +/*
-> + * System information exported through crash notes.
-> + *
-> + * The kexec / kdump code will create one XEN_ELFNOTE_CRASH_INFO
-> + * note in case of a system crash. This note will contain various
-> + * information about the system, see xen/include/xen/elfcore.h.
-> + */
-> +#define XEN_ELFNOTE_CRASH_INFO 0x1000001
-> +
-> +/*
-> + * System registers exported through crash notes.
-> + *
-> + * The kexec / kdump code will create one XEN_ELFNOTE_CRASH_REGS
-> + * note per cpu in case of a system crash. This note is architecture
-> + * specific and will contain registers not saved in the "CORE" note.
-> + * See xen/include/xen/elfcore.h for more information.
-> + */
-> +#define XEN_ELFNOTE_CRASH_REGS 0x1000002
-> +
-> +
-> +/*
-> + * xen dump-core none note.
-> + * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_NONE
-> + * in its dump file to indicate that the file is xen dump-core
-> + * file. This note doesn't have any other information.
-> + * See tools/libxc/xc_core.h for more information.
-> + */
-> +#define XEN_ELFNOTE_DUMPCORE_NONE               0x2000000
-> +
-> +/*
-> + * xen dump-core header note.
-> + * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_HEADER
-> + * in its dump file.
-> + * See tools/libxc/xc_core.h for more information.
-> + */
-> +#define XEN_ELFNOTE_DUMPCORE_HEADER             0x2000001
-> +
-> +/*
-> + * xen dump-core xen version note.
-> + * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_XEN_VERSION
-> + * in its dump file. It contains the xen version obtained via the
-> + * XENVER hypercall.
-> + * See tools/libxc/xc_core.h for more information.
-> + */
-> +#define XEN_ELFNOTE_DUMPCORE_XEN_VERSION        0x2000002
-> +
-> +/*
-> + * xen dump-core format version note.
-> + * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_FORMAT_VERSION
-> + * in its dump file. It contains a format version identifier.
-> + * See tools/libxc/xc_core.h for more information.
-> + */
-> +#define XEN_ELFNOTE_DUMPCORE_FORMAT_VERSION     0x2000003
-> +
->  #endif /* __XEN_PUBLIC_ELFNOTE_H__ */
->  
->  /*
+in the future, please prefix the patches with the version number and a 
+changelog.
 
-Jan
+Thanks
+
+   -- Daniel
+
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+> ---
+>   include/linux/sched.h |    1 +
+>   kernel/sched/core.c   |   19 +++++++++++++++++++
+>   2 files changed, 20 insertions(+)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 857ba40..3f89ac1 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
+>   extern struct sched_domain_topology_level *sched_domain_topology;
+>
+>   extern void set_sched_topology(struct sched_domain_topology_level *tl);
+> +extern void wake_up_if_idle(int cpu);
+>
+>   #ifdef CONFIG_SCHED_DEBUG
+>   # define SD_INIT_NAME(type)		.name = #type
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 1211575..b818548 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1620,6 +1620,25 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+>   	}
+>   }
+>
+> +void wake_up_if_idle(int cpu)
+> +{
+> +	struct rq *rq = cpu_rq(cpu);
+> +	unsigned long flags;
+> +
+> +	if (!is_idle_task(rq->curr))
+> +		return;
+> +
+> +	if (set_nr_if_polling(rq->idle)) {
+> +		trace_sched_wake_idle_without_ipi(cpu);
+> +	} else {
+> +		raw_spin_lock_irqsave(&rq->lock, flags);
+> +		if (is_idle_task(rq->curr))
+> +			smp_send_reschedule(cpu);
+> +		/* Else cpu is not in idle, do nothing here */
+> +		raw_spin_unlock_irqrestore(&rq->lock, flags);
+> +	}
+> +}
+> +
+>   bool cpus_share_cache(int this_cpu, int that_cpu)
+>   {
+>   	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
