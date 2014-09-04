@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870AbaIDHva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:51:30 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:47731 "EHLO
+	id S932583AbaIDHvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:51:33 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:47699 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756810AbaIDHvO (ORCPT
+	with ESMTP id S1756799AbaIDHvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Sep 2014 03:51:14 -0400
 X-Original-SENDERIP: 165.186.175.39
@@ -16,9 +16,9 @@ To: gioh.kim@lge.com, akpm@linux-foundation.org, jack@suse.cz, tytso@mit.edu,
         paulmck@linux.vnet.ibm.com, peterz@infradead.org,
         adilger.kernel@dilger.ca
 Cc: minchan@kernel.org, js1304@gmail.com, gunho.lee@lge.com
-Subject: [PATCHv4 3/3] jbd/jbd2: use non-movable memory for the jbd superblock
-Date: Thu,  4 Sep 2014 16:29:41 +0900
-Message-Id: <1409815781-28011-4-git-send-email-gioh.kim@lge.com>
+Subject: [PATCHv4 1/3] fs.c: support buffer cache allocations with gfp modifiers
+Date: Thu,  4 Sep 2014 16:29:39 +0900
+Message-Id: <1409815781-28011-2-git-send-email-gioh.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
 References: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
@@ -26,50 +26,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A long-lasting buffer-cache can distrub page migration so that
-it must be allocated from non-movable area.
+A buffer cache is allocated from movable area
+because it is referred for a while and released soon.
+But some filesystems are taking buffer cache for a long time
+and it can disturb page migration.
 
-The journal_init_inode is creating a buffer-cache for superblock journaling.
-The superblock exists until system shutdown so that the buffer-cache
-for the superblock would also exist for a long time
-and it can distrub page migration.
-
-This patch make the buffer-cache be allocated from non-movable area
-not to distrub page migration.
+New APIs are introduced to allocate buffer cache
+with user specific flag.
+*_gfp APIs are for user want to set page allocation flag for page cache
+allocation.
+And *_unmovable APIs are for the user wants to allocate page cache from
+non-movable area.
 
 Signed-off-by: Gioh Kim <gioh.kim@lge.com>
 Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- fs/jbd/journal.c  |    2 +-
- fs/jbd2/journal.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/buffer.c                 |   45 ++++++++++++++++++++++++-----------------
+ include/linux/buffer_head.h |   47 ++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 68 insertions(+), 24 deletions(-)
 
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 06fe11e..aab8549 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -886,7 +886,7 @@ journal_t * journal_init_inode (struct inode *inode)
- 		goto out_err;
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 8f05111..9a6029e 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+  */
+ static int
+ grow_dev_page(struct block_device *bdev, sector_t block,
+-		pgoff_t index, int size, int sizebits)
++	      pgoff_t index, int size, int sizebits, gfp_t gfp)
+ {
+ 	struct inode *inode = bdev->bd_inode;
+ 	struct page *page;
+@@ -1002,8 +1002,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+ 	int ret = 0;		/* Will call free_more_memory() */
+ 	gfp_t gfp_mask;
+ 
+-	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
+-	gfp_mask |= __GFP_MOVABLE;
++	gfp_mask = (mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS) | gfp;
++
+ 	/*
+ 	 * XXX: __getblk_slow() can not really deal with failure and
+ 	 * will endlessly loop on improvised global reclaim.  Prefer
+@@ -1058,7 +1058,7 @@ failed:
+  * that page was dirty, the buffers are set dirty also.
+  */
+ static int
+-grow_buffers(struct block_device *bdev, sector_t block, int size)
++grow_buffers(struct block_device *bdev, sector_t block, int size, gfp_t gfp)
+ {
+ 	pgoff_t index;
+ 	int sizebits;
+@@ -1085,11 +1085,12 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
  	}
  
--	bh = __getblk(journal->j_dev, blocknr, journal->j_blocksize);
-+	bh = getblk_unmovable(journal->j_dev, blocknr, journal->j_blocksize);
- 	if (!bh) {
- 		printk(KERN_ERR
- 		       "%s: Cannot get buffer for journal superblock\n",
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 67b8e30..65bd3b1 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1237,7 +1237,7 @@ journal_t * jbd2_journal_init_inode (struct inode *inode)
- 		goto out_err;
- 	}
+ 	/* Create a page with the proper size buffers.. */
+-	return grow_dev_page(bdev, block, index, size, sizebits);
++	return grow_dev_page(bdev, block, index, size, sizebits, gfp);
+ }
  
--	bh = __getblk(journal->j_dev, blocknr, journal->j_blocksize);
-+	bh = getblk_unmovable(journal->j_dev, blocknr, journal->j_blocksize);
- 	if (!bh) {
- 		printk(KERN_ERR
- 		       "%s: Cannot get buffer for journal superblock\n",
+-static struct buffer_head *
+-__getblk_slow(struct block_device *bdev, sector_t block, int size)
++struct buffer_head *
++__getblk_slow(struct block_device *bdev, sector_t block,
++	     unsigned size, gfp_t gfp)
+ {
+ 	/* Size must be multiple of hard sectorsize */
+ 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+@@ -1111,13 +1112,14 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ 		if (bh)
+ 			return bh;
+ 
+-		ret = grow_buffers(bdev, block, size);
++		ret = grow_buffers(bdev, block, size, gfp);
+ 		if (ret < 0)
+ 			return NULL;
+ 		if (ret == 0)
+ 			free_more_memory();
+ 	}
+ }
++EXPORT_SYMBOL(__getblk_slow);
+ 
+ /*
+  * The relationship between dirty buffers and dirty pages:
+@@ -1371,24 +1373,25 @@ __find_get_block(struct block_device *bdev, sector_t block, unsigned size)
+ EXPORT_SYMBOL(__find_get_block);
+ 
+ /*
+- * __getblk will locate (and, if necessary, create) the buffer_head
++ * __getblk_gfp() will locate (and, if necessary, create) the buffer_head
+  * which corresponds to the passed block_device, block and size. The
+  * returned buffer has its reference count incremented.
+  *
+- * __getblk() will lock up the machine if grow_dev_page's try_to_free_buffers()
+- * attempt is failing.  FIXME, perhaps?
++ * __getblk_gfp() will lock up the machine if grow_dev_page's
++ * try_to_free_buffers() attempt is failing.  FIXME, perhaps?
+  */
+ struct buffer_head *
+-__getblk(struct block_device *bdev, sector_t block, unsigned size)
++__getblk_gfp(struct block_device *bdev, sector_t block,
++	     unsigned size, gfp_t gfp)
+ {
+ 	struct buffer_head *bh = __find_get_block(bdev, block, size);
+ 
+ 	might_sleep();
+ 	if (bh == NULL)
+-		bh = __getblk_slow(bdev, block, size);
++		bh = __getblk_slow(bdev, block, size, gfp);
+ 	return bh;
+ }
+-EXPORT_SYMBOL(__getblk);
++EXPORT_SYMBOL(__getblk_gfp);
+ 
+ /*
+  * Do async read-ahead on a buffer..
+@@ -1404,24 +1407,28 @@ void __breadahead(struct block_device *bdev, sector_t block, unsigned size)
+ EXPORT_SYMBOL(__breadahead);
+ 
+ /**
+- *  __bread() - reads a specified block and returns the bh
++ *  __bread_gfp() - reads a specified block and returns the bh
+  *  @bdev: the block_device to read from
+  *  @block: number of block
+  *  @size: size (in bytes) to read
+- * 
++ *  @gfp: page allocation flag
++ *
+  *  Reads a specified block, and returns buffer head that contains it.
++ *  The page cache can be allocated from non-movable area
++ *  not to prevent page migration if you set gfp to zero.
+  *  It returns NULL if the block was unreadable.
+  */
+ struct buffer_head *
+-__bread(struct block_device *bdev, sector_t block, unsigned size)
++__bread_gfp(struct block_device *bdev, sector_t block,
++		   unsigned size, gfp_t gfp)
+ {
+-	struct buffer_head *bh = __getblk(bdev, block, size);
++	struct buffer_head *bh = __getblk_gfp(bdev, block, size, gfp);
+ 
+ 	if (likely(bh) && !buffer_uptodate(bh))
+ 		bh = __bread_slow(bh);
+ 	return bh;
+ }
+-EXPORT_SYMBOL(__bread);
++EXPORT_SYMBOL(__bread_gfp);
+ 
+ /*
+  * invalidate_bh_lrus() is called rarely - but not only at unmount.
+diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
+index 324329c..73b4522 100644
+--- a/include/linux/buffer_head.h
++++ b/include/linux/buffer_head.h
+@@ -175,12 +175,13 @@ void __wait_on_buffer(struct buffer_head *);
+ wait_queue_head_t *bh_waitq_head(struct buffer_head *bh);
+ struct buffer_head *__find_get_block(struct block_device *bdev, sector_t block,
+ 			unsigned size);
+-struct buffer_head *__getblk(struct block_device *bdev, sector_t block,
+-			unsigned size);
++struct buffer_head *__getblk_gfp(struct block_device *bdev, sector_t block,
++				  unsigned size, gfp_t gfp);
+ void __brelse(struct buffer_head *);
+ void __bforget(struct buffer_head *);
+ void __breadahead(struct block_device *, sector_t block, unsigned int size);
+-struct buffer_head *__bread(struct block_device *, sector_t block, unsigned size);
++struct buffer_head *__bread_gfp(struct block_device *,
++				sector_t block, unsigned size, gfp_t gfp);
+ void invalidate_bh_lrus(void);
+ struct buffer_head *alloc_buffer_head(gfp_t gfp_flags);
+ void free_buffer_head(struct buffer_head * bh);
+@@ -295,7 +296,13 @@ static inline void bforget(struct buffer_head *bh)
+ static inline struct buffer_head *
+ sb_bread(struct super_block *sb, sector_t block)
+ {
+-	return __bread(sb->s_bdev, block, sb->s_blocksize);
++	return __bread_gfp(sb->s_bdev, block, sb->s_blocksize, __GFP_MOVABLE);
++}
++
++static inline struct buffer_head *
++sb_bread_unmovable(struct super_block *sb, sector_t block)
++{
++	return __bread_gfp(sb->s_bdev, block, sb->s_blocksize, 0);
+ }
+ 
+ static inline void
+@@ -307,7 +314,7 @@ sb_breadahead(struct super_block *sb, sector_t block)
+ static inline struct buffer_head *
+ sb_getblk(struct super_block *sb, sector_t block)
+ {
+-	return __getblk(sb->s_bdev, block, sb->s_blocksize);
++	return __getblk_gfp(sb->s_bdev, block, sb->s_blocksize, __GFP_MOVABLE);
+ }
+ 
+ static inline struct buffer_head *
+@@ -344,6 +351,36 @@ static inline void lock_buffer(struct buffer_head *bh)
+ 		__lock_buffer(bh);
+ }
+ 
++static inline struct buffer_head *getblk_unmovable(struct block_device *bdev,
++						   sector_t block,
++						   unsigned size)
++{
++	return __getblk_gfp(bdev, block, size, 0);
++}
++
++static inline struct buffer_head *__getblk(struct block_device *bdev,
++					   sector_t block,
++					   unsigned size)
++{
++	return __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
++}
++
++/**
++ *  __bread() - reads a specified block and returns the bh
++ *  @bdev: the block_device to read from
++ *  @block: number of block
++ *  @size: size (in bytes) to read
++ *
++ *  Reads a specified block, and returns buffer head that contains it.
++ *  The page cache is allocated from movable area so that it can be migrated.
++ *  It returns NULL if the block was unreadable.
++ */
++static inline struct buffer_head *
++__bread(struct block_device *bdev, sector_t block, unsigned size)
++{
++	return __bread_gfp(bdev, block, size, __GFP_MOVABLE);
++}
++
+ extern int __set_page_dirty_buffers(struct page *page);
+ 
+ #else /* CONFIG_BLOCK */
 -- 
 1.7.9.5
 
