@@ -1,93 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927AbaIDKjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:39:36 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:47132 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaIDKjc (ORCPT
+	id S1753054AbaIDKka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:40:30 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:54482 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaIDKk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:39:32 -0400
-Message-ID: <54084171.6050305@linaro.org>
-Date: Thu, 04 Sep 2014 12:39:45 +0200
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: Mark Rutland <mark.rutland@arm.com>, linaro-acpi@lists.linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>, Charles.Garcia-Tobin@arm.com,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <2893693.4bZJXXENof@wuerfel> <54083A94.2040105@linaro.org> <3046890.jAXAYeBPWQ@wuerfel>
-In-Reply-To: <3046890.jAXAYeBPWQ@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Sep 2014 06:40:28 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] kcmp: Fix standard comparison bug
+Date: Thu,  4 Sep 2014 12:40:06 +0200
+Message-Id: <1409827206-4199-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.09.2014 12:14, Arnd Bergmann wrote:
-> On Thursday 04 September 2014 12:10:28 Tomasz Nowicki wrote:
->> On 03.09.2014 20:42, Arnd Bergmann wrote:
->>> On Monday 01 September 2014 22:57:51 Hanjun Guo wrote:
->>>> +       /* Collect CPU base addresses */
->>>> +       count = acpi_parse_entries(sizeof(struct acpi_table_madt),
->>>> +                                  gic_acpi_parse_madt_cpu, table,
->>>> +                                  ACPI_MADT_TYPE_GENERIC_INTERRUPT,
->>>> +                                  ACPI_MAX_GIC_CPU_INTERFACE_ENTRIES);
->>>> +       if (count < 0) {
->>>> +               pr_err("Error during GICC entries parsing\n");
->>>> +               return -EFAULT;
->>>> +       } else if (!count) {
->>>> +               /* No GICC entries provided, use address from MADT header */
->>>> +               struct acpi_table_madt *madt = (struct acpi_table_madt *)table;
->>>> +
->>>> +               if (!madt->address)
->>>> +                       return -EFAULT;
->>>> +
->>>> +               cpu_phy_base = (u64)madt->address;
->>>> +       }
->>>
->>> After I read through ACPI-5.1 section 5.2.12.14, I wonder if this is the
->>> best way to treat a missing ACPI_MADT_TYPE_GENERIC_INTERRUPT table.
->>>
->>> Do we expect to see those in practice? It seems like using the x86 local
->>> APIC address as a fallback for the GIC address is not something we
->>> should do unless we absolutely have to support a system that doesn't
->>> have the GIC table.
->>
->> No, we do not expect and hopefully there will be no such
->>
->> But, we are trying to be as much as possible inline with 5.1 spec,
->> 5.2.12.14 says:
->> [...]
->> If provided here (CPU physical base address), the "Local Interrupt
->> Controller Address" field in the MADT must be ignored by the OSPM.
->> [...]
->>
->
-> Yes, that's what I saw. So ignoring it all the time is fine, right?
-> Presumably the madt->address field is only referenced here because
-> some pre-5.1 implementations used to do that.
+The C operator <= defines a perfectly fine total ordering on the set
+of values representable in a long. However, unlike its namesake in the
+integers, it is not translation invariant, meaning that we do not have
+"b <= c" iff "a+b <= a+c" for all a,b,c.
 
-So this is very vague statement. On the one hand it would make sense to 
-take madt->address if we have no GICC entries. On the other hand we do 
-not support non-banked GIC cpu registers. So all of then need to have 
-the same cpu_base_address. What if one has null address? Should the rest 
-take madt->address? I think you are right, I will remove madt->address 
-fallback and simplify the code.
+This means that it is always wrong to try to boil down the
+relationship between two longs to a question about the sign of their
+difference, because the resulting relation [a LEQ b iff a-b <= 0] is
+neither anti-symmetric or transitive. The former is due to
+-LONG_MIN==LONG_MIN (take any two a,b with a-b = LONG_MIN; then a LEQ
+b and b LEQ a, but a != b). The latter can either be seen observing
+that x LEQ x+1 for all x, implying x LEQ x+1 LEQ x+2 ... LEQ x-1 LEQ
+x; or more directly with the simple example a=LONG_MIN, b=0, c=1, for
+which a-b < 0, b-c < 0, but a-c > 0.
 
-Thanks,
-Tomasz
+Note that it makes absolutely no difference that a transmogrying
+bijection has been applied before the comparison is done. In fact, had
+the obfuscation not been done, one could probably not observe the bug
+(assuming all values being compared always lie in one half of the
+address space, the mathematical value of a-b is always representable
+in a long). As it stands, one can easily obtain three file descriptors
+exhibiting the non-transitivity of kcmp().
+
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+
+Side note 1: I can't see that ensuring the MSB of the multiplier is
+set serves any purpose other than obfuscating the obfuscating code.
+
+Side note 2:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <assert.h>
+#include <sys/syscall.h>
+
+enum kcmp_type {
+        KCMP_FILE,
+        KCMP_VM,
+        KCMP_FILES,
+        KCMP_FS,
+        KCMP_SIGHAND,
+        KCMP_IO,
+        KCMP_SYSVSEM,
+
+        KCMP_TYPES,
+};
+
+pid_t pid;
+
+int kcmp(pid_t pid1, pid_t pid2, int type,
+	 unsigned long idx1, unsigned long idx2)
+{
+	return syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
+}
+
+int cmp_fd(int fd1, int fd2)
+{
+	int c = kcmp(pid, pid, KCMP_FILE, fd1, fd2);
+	if (c < 0) {
+		perror("kcmp");
+		exit(1);
+	}
+	assert(0 <= c && c < 3);
+	return c;
+}
+
+int cmp_fdp(const void *a, const void *b)
+{
+	static const int normalize[] = {0, -1, 1};
+	return normalize[cmp_fd(*(int*)a, *(int*)b)];
+}
+
+#define MAX 100 /* This is plenty; I've seen it trigger for MAX==3 */
+int main(int argc, char *argv[])
+{
+	int r, s, count = 0;
+	int REL[3] = {0,0,0};
+	int fd[MAX];
+	pid = getpid();
+
+	while (count < MAX) {
+		r = open("/dev/null", O_RDONLY);
+		if (r < 0)
+			break;
+		fd[count++] = r;
+	}
+	printf("opened %d file descriptors\n", count);
+
+	for (r = 0; r < count; ++r) {
+		for (s = r+1; s < count; ++s) {
+			REL[cmp_fd(fd[r], fd[s])]++;
+		}
+	}
+	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
+
+	qsort(fd, count, sizeof(fd[0]), cmp_fdp);
+	memset(REL, 0, sizeof(REL));
+
+	for (r = 0; r < count; ++r) {
+		for (s = r+1; s < count; ++s) {
+			REL[cmp_fd(fd[r], fd[s])]++;
+		}
+	}
+	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
+
+	return (REL[0] + REL[2] != 0);
+}
+
+
+
+
+ kernel/kcmp.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/kcmp.c b/kernel/kcmp.c
+index e30ac0f..0aa69ea 100644
+--- a/kernel/kcmp.c
++++ b/kernel/kcmp.c
+@@ -44,11 +44,12 @@ static long kptr_obfuscate(long v, int type)
+  */
+ static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
+ {
+-	long ret;
++	long t1, t2;
+ 
+-	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
++	t1 = kptr_obfuscate((long)v1, type);
++	t2 = kptr_obfuscate((long)v2, type);
+ 
+-	return (ret < 0) | ((ret > 0) << 1);
++	return (t1 < t2) | ((t1 > t2) << 1);
+ }
+ 
+ /* The caller must have pinned the task */
+-- 
+2.0.4
+
