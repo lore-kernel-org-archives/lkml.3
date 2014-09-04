@@ -1,110 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaIDJGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:06:15 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:49096 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240AbaIDJGK (ORCPT
+	id S1755354AbaIDJGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:06:08 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:57900 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252AbaIDJGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:06:10 -0400
-Date: Thu, 4 Sep 2014 10:06:05 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jaewon Kim <jaewon02.kim@samsung.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH 1/3] mfd: max77693: Initialize haptic register map
-Message-ID: <20140904090605.GB29612@lee--X1>
-References: <1409570071-26719-1-git-send-email-jaewon02.kim@samsung.com>
- <1409570071-26719-2-git-send-email-jaewon02.kim@samsung.com>
+	Thu, 4 Sep 2014 05:06:03 -0400
+X-ASG-Debug-ID: 1409821560-0759e778ba667350002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Thu, 4 Sep 2014 11:05:47 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Frans Klaver <fransklaver@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH resend 2/2] usb: serial: xsens_mt: always bind to
+ interface number 1
+Message-ID: <20140904090546.GA6213@ci00147.test>
+X-ASG-Orig-Subj: Re: [PATCH resend 2/2] usb: serial: xsens_mt: always bind to
+ interface number 1
+References: <1409564362-27571-1-git-send-email-frans.klaver@xsens.com>
+ <1409564362-27571-2-git-send-email-frans.klaver@xsens.com>
+ <CAH6sp9Me6wVTnNGn9Z4pLDsFyTz27EgcEvedF8PrcH-fw+awBQ@mail.gmail.com>
+ <20140904081522.GD4894@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409570071-26719-2-git-send-email-jaewon02.kim@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140904081522.GD4894@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1409821560
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9162
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014, Jaewon Kim wrote:
-
-> This patch add regmap_haptic initialization to use haptic register map
-> in haptic device driver.
+On Thu, Sep 04, 2014 at 10:15:22AM +0200, Johan Hovold wrote:
+> On Thu, Sep 04, 2014 at 09:12:05AM +0200, Frans Klaver wrote:
 > 
-> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
->  drivers/mfd/max77693.c |   21 ++++++++++++++++++---
->  1 file changed, 18 insertions(+), 3 deletions(-)
+> > >  static int xsens_mt_probe(struct usb_serial *serial,
+> > >                                         const struct usb_device_id *id)
+> > >  {
+> > > -       if (!has_required_endpoints(serial->interface->cur_altsetting))
+> > > -               return -ENODEV;
+> > > -       return 0;
+> > > +       if (serial->interface->cur_altsetting.desc.bInterfaceNumber == 1)
+> > 
+> > This should be
+> > 
+> > if (serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
+> 
+> So this wasn't even compile tested. Always test your patches before
+> submission, including trivial ones.
+> 
+> Is the new version tested on actual hardware?
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+The implementation was tested (also fixed) before the first submission.
+Not the patches. Looks like I've got a step to add.
 
-Can this patch go in without the Input one?
+The new version is applied, built and tested with some actual hardware
+on 3.17-rc3.
 
-> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-> index 249c139..fbfed56 100644
-> --- a/drivers/mfd/max77693.c
-> +++ b/drivers/mfd/max77693.c
-> @@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
->  	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
->  };
->  
-> +static const struct regmap_config max77693_regmap_haptic_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +	.max_register = MAX77693_HAPTIC_REG_END,
-> +};
-> +
->  static int max77693_i2c_probe(struct i2c_client *i2c,
->  			      const struct i2c_device_id *id)
->  {
-> @@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
->  	}
->  	i2c_set_clientdata(max77693->haptic, max77693);
->  
-> +	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
-> +					&max77693_regmap_haptic_config);
-> +	if (IS_ERR(max77693->regmap_haptic)) {
-> +		ret = PTR_ERR(max77693->regmap_haptic);
-> +		dev_err(max77693->dev,
-> +			"failed to initialize haptic register map: %d\n", ret);
-> +		goto err_regmap;
-> +	}
-> +
->  	/*
->  	 * Initialize register map for MUIC device because use regmap-muic
->  	 * instance of MUIC device when irq of max77693 is initialized
-> @@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
->  		ret = PTR_ERR(max77693->regmap_muic);
->  		dev_err(max77693->dev,
->  			"failed to allocate register map: %d\n", ret);
-> -		goto err_regmap_muic;
-> +		goto err_regmap;
->  	}
->  
->  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
-> @@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
->  				&max77693->irq_data_led);
->  	if (ret) {
->  		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
-> -		goto err_regmap_muic;
-> +		goto err_regmap;
->  	}
->  
->  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
-> @@ -265,7 +280,7 @@ err_irq_charger:
->  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
->  err_irq_topsys:
->  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
-> -err_regmap_muic:
-> +err_regmap:
->  	i2c_unregister_device(max77693->haptic);
->  err_i2c_haptic:
->  	i2c_unregister_device(max77693->muic);
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Frans
