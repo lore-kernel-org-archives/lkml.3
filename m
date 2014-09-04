@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaIDNoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 09:44:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901AbaIDNoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 09:44:23 -0400
-Date: Thu, 4 Sep 2014 15:41:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] x86: reimplement ___preempt_schedule*() using THUNK
-	helpers
-Message-ID: <20140904134135.GA3309@redhat.com>
+	id S1751444AbaIDNoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 09:44:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52159 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaIDNoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 09:44:17 -0400
+Message-ID: <54086CA7.8020507@linutronix.de>
+Date: Thu, 04 Sep 2014 15:44:07 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tony Lindgren <tony@atomide.com>
+CC: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
+References: <20140828082348.GA5413@linutronix.de> <20140828164645.GG16006@atomide.com> <53FF84DF.7080406@linutronix.de> <20140828225454.GM16006@atomide.com> <540048B4.7010807@linutronix.de> <20140829161221.GO16006@atomide.com> <5404B149.6010400@linutronix.de> <54060EDA.6060204@linutronix.de> <20140902201536.GC11766@atomide.com> <540745CC.2090901@linutronix.de> <20140903174845.GE11766@atomide.com>
+In-Reply-To: <20140903174845.GE11766@atomide.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter, please consider this (hopefully simple) change for inclusion.
+On 09/03/2014 07:48 PM, Tony Lindgren wrote:
 
-Denys, Andy, could you review?
+I will check this upper part of this email soon…
 
-I guess (I hope ;) Denys is going to resend his entry.S/etc rework, but
-this change should not conflict with his work, just preempt.S goes away.
+> OK. At least it's starting to now sound that the bugs are pretty much
+> the same with 8250 and serial-omap :)
 
-Oleg.
+Do you see a reason for not posting the entire series again since now I
+am bug compatible in the pm-runtime part? We have -rc3 and I would like
+to get this merge the series I have now and this seems to be the only
+problem I am aware of.
 
- arch/x86/kernel/Makefile  |    2 --
- arch/x86/kernel/preempt.S |   25 -------------------------
- arch/x86/lib/Makefile     |    2 +-
- arch/x86/lib/thunk_32.S   |   20 ++++++++++++++++----
- arch/x86/lib/thunk_64.S   |    7 +++++++
- 5 files changed, 24 insertions(+), 32 deletions(-)
+> 
+> Regards,
+> 
+> Tony
 
+Sebastian
