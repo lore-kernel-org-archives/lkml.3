@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308AbaIDThY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:37:24 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55648 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971AbaIDThW (ORCPT
+	id S1755333AbaIDThz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:37:55 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:65092 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754688AbaIDThx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:37:22 -0400
-Message-ID: <5408BF77.1020007@wwwdotorg.org>
-Date: Thu, 04 Sep 2014 13:37:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra: Move AHB Kconfig to drivers/amba
-References: <1406643934-16301-1-git-send-email-thierry.reding@gmail.com> <53D7C9EE.60503@wwwdotorg.org> <53FB7288.9050002@wwwdotorg.org>
-In-Reply-To: <53FB7288.9050002@wwwdotorg.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Thu, 4 Sep 2014 15:37:53 -0400
+Message-ID: <1409859471.5546.110.camel@x220>
+Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@infradead.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 04 Sep 2014 21:37:51 +0200
+In-Reply-To: <CAH6sp9P3NJBFS=ewJnY3jVJc_dDf7LQs2TwYKZu7=bFhdAZXxg@mail.gmail.com>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+	 <20140904004947.GA17138@vmdeb7> <20140904011420.GA31350@kroah.com>
+	 <CAH6sp9OaqkdW82HOKMf8gxLLsBzXPCq2HYj7ya+C3YXiFwhgOQ@mail.gmail.com>
+	 <20140904141041.GB23299@kroah.com>
+	 <CAH6sp9P3NJBFS=ewJnY3jVJc_dDf7LQs2TwYKZu7=bFhdAZXxg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Sep 2014 19:37:51.0520 (UTC) FILETIME=[B7136A00:01CFC877]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2014 11:29 AM, Stephen Warren wrote:
-> On 07/29/2014 10:21 AM, Stephen Warren wrote:
->> On 07/29/2014 08:25 AM, Thierry Reding wrote:
->>> From: Thierry Reding <treding@nvidia.com>
->>>
->>> This will allow the Kconfig option to be shared among 32-bit and 64-bit
->>> ARM.
->>
->> This seems fine to me. I'd expect to apply it for 3.18, provided I get
->> an ack from Russell as drivers/amba maintainer (hence CCing him without
->> trimming the quote).
->
-> Russell,
->
-> Are you OK with this patch? If so, if you could ack it so I can apply
-> it, that would be great.
+On Thu, 2014-09-04 at 16:40 +0200, Frans Klaver wrote:
+> I'll I fire up my eeepc and see what I can figure out. Should I take
+> Pauls patch and see how it fits into this?
 
-Russell?
+I haven't followed the conversation you're having with Greg, but I would
+be grateful if you'd test _just_ my patch. Unless someone jumps in and
+points to flaws in my patch, that is.
+
+I suppose testing would mean writing some values to the related files
+under /sys. I have no idea whatsoever what those files actually do, so
+I'm afraid I can't tell you what values to write and what effects to
+expect, sorry. Perhaps someone else can help you there.
+
+
+Paul Bolle
+
