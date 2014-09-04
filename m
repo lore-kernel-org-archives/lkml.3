@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124AbaIDShI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:37:08 -0400
-Received: from mga14.intel.com ([192.55.52.115]:30498 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754991AbaIDShH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:37:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="381538338"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Borislav Petkov <bp@alien8.de>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: early microcode: how to disable at runtime?
-Thread-Topic: early microcode: how to disable at runtime?
-Thread-Index: AQHPxVQ0XjqES+WILUWh6lQKeF7+w5vrk7uAgAAGcQCAAJdUgIAAvoqAgAATGACAABITgIAAE+yAgACxSgCAAHCVgIABI4aAgABlXQCAAcSMAP//udyw
-Date: Thu, 4 Sep 2014 18:37:05 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A666A7F@ORSMSX106.amr.corp.intel.com>
-References: <20140831201126.GB12628@khazad-dum.debian.net>
- <20140901051302.GA28402@nazgul.tnic> <5404A035.3070707@zytor.com>
- <20140901174322.GA15533@khazad-dum.debian.net>
- <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
- <20140901195921.GA18675@khazad-dum.debian.net>
- <20140902063354.GA32105@nazgul.tnic>
- <20140902131651.GA10691@khazad-dum.debian.net>
- <20140903064015.GA3941@nazgul.tnic>
- <20140903124302.GA18507@khazad-dum.debian.net>
- <20140904154246.GA10884@nazgul.tnic>
-In-Reply-To: <20140904154246.GA10884@nazgul.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1755026AbaIDSkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:40:06 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:53183 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaIDSkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 14:40:04 -0400
+Date: Thu, 4 Sep 2014 11:39:53 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Li Zefan <lizefan@huawei.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [kernel.org PATCH] Li Zefan is now the 3.4 stable maintainer
+Message-ID: <20140904183953.GA28599@roeck-us.net>
+References: <20140826230858.GA29970@kroah.com>
+ <20140827045938.GA28282@roeck-us.net>
+ <540813A5.7020704@huawei.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540813A5.7020704@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s84IbFMQ012118
 
-> From: Borislav Petkov [mailto:bp@alien8.de]
-> > What I did claim is that it is going to be a far more user-friendly
-> > stop gap than the "boot from rescue media" option.
+On Thu, Sep 04, 2014 at 03:24:21PM +0800, Li Zefan wrote:
+> Hi Guenter,
 > 
-> Ok, we have it now and we can use it if needed. All is good.
+> Sorry for my late reply.
+> 
+> On 2014/8/27 12:59, Guenter Roeck wrote:
+> > On Tue, Aug 26, 2014 at 04:08:58PM -0700, Greg KH wrote:
+> >> Li has agreed to continue to support the 3.4 stable kernel tree until
+> >> September 2016.  Update the releases.html page on kernel.org to reflect
+> >> this.
+> >>
+> > Li,
+> > 
+> > it would be great if you can send me information about your -stable queue,
+> > ie how you maintain it and where it is located. This will enable me to
+> > continue testing the stable queue for the 3.4 kernel.
+> > 
+> 
+> Thanks for testing LTS kernels!
+> 
+> This is my 3.4.y git tree:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/lizf/linux-3.4.y.git/
+> 
+> And this is the patch queue:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/lizf/linux-3.4.y-queue.git/
+> 
+> I use quilt. When I've added some patches to 3.4.y, I'll update this
+> queue. The patches and series file are under /patches. Currently there's
+> already a patch in the queue.
+> 
+> When I release a new version, I'll clean up the queue by removing all
+> the files under /patches.
+> 
+> Hope this is all the information you need. Please tell me if you need
+> me to slightly adjust my workflow so it's easier for you.
 
-Quoted comment from commit 65cef1311d5d212fd3d48a43678536dc878ca288:
-"...This is useful mostly in debugging situations where we want to turn off microcode
-    loading, both early from the initrd and late, ...."
+It almost works.
 
-In case this comment may cause confusion, I need to confirm that:
+Problem is that the pending patch got converted to use <cr><lf> instead of
+just <lf> as common in Linux. When I try to apply it with "git quiltimport",
+it bails out with "trailing whitespace" errors. "git am" with the individual
+patch works fine for some reason, though.
 
-The parameter "dis_ucode_ldr" only turns off early microcode loading from the initrd.
-It does not trun off loading microcode later during run time.
+I can try to find a workaround, but it would be better to have the file in
+linux file format to start with. Would that be possible ?
 
-Thanks.
+Alternatively, does anyone know how to apply files in DOS format (lines
+terminated with cr/lf) using quiltimport ?
 
--Fenghua
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Guenter
