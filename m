@@ -1,139 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786AbaIDAi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 20:38:26 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:51173 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746AbaIDAiZ (ORCPT
+	id S932471AbaIDAt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 20:49:59 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49812 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaIDAt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 20:38:25 -0400
+	Wed, 3 Sep 2014 20:49:57 -0400
+Date: Wed, 3 Sep 2014 17:49:47 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
+Message-ID: <20140904004947.GA17138@vmdeb7>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1409773238-32177-1-git-send-email-vpalatin@chromium.org>
-References: <CACHYQ-qST1gyyKCZp+tN9FbR3_=2q_+=PbVwfu3KgfTpkdDFCA@mail.gmail.com>
- <1409773238-32177-1-git-send-email-vpalatin@chromium.org>
-From: Pawel Osciak <posciak@chromium.org>
-Date: Thu, 4 Sep 2014 09:37:42 +0900
-Message-ID: <CACHYQ-r-+czyEBySdjNWr-3XmY1C2ErDJV0dnL=GDJOYPi1asw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
-To: Vincent Palatin <vpalatin@chromium.org>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olofj@chromium.org>, Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 4:40 AM, Vincent Palatin <vpalatin@chromium.org> wrote:
-> Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
-> CT_PANTILT_RELATIVE_CONTROL terminal control request.
->
-> Tested by plugging a Logitech ConferenceCam C3000e USB camera
-> and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
-> Verified that it can pan and tilt at the same time in both directions.
->
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
->
-> Change-Id: I7b70b228e5c0126683f5f0be34ffd2807f5783dc
-
-Sorry, forgot to mention this previously, please remove gerrit ids
-from the patches.
-Thanks,
-P.
-
+On Thu, Sep 04, 2014 at 12:53:25AM +0200, Frans Klaver wrote:
+> In store_sys_acpi, if count equals zero, or parse_arg()s sscanf call
+> fails, 'value' remains possibly uninitialized. In that case 'value'
+> shouldn't be used to produce the store_sys_acpi()s return value.
+> 
+> Only test the return value of set_acpi() if we can actually call it.
+> Return rv otherwise.
+> 
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
 > ---
-> Changes from v1/v2:
-> - rebased
->
->  drivers/media/usb/uvc/uvc_ctrl.c | 58 +++++++++++++++++++++++++++++++++++++---
->  1 file changed, 55 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
-> index 0eb82106..d703cb0 100644
-> --- a/drivers/media/usb/uvc/uvc_ctrl.c
-> +++ b/drivers/media/usb/uvc/uvc_ctrl.c
-> @@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
->                 .selector       = UVC_CT_PANTILT_RELATIVE_CONTROL,
->                 .index          = 12,
->                 .size           = 4,
-> -               .flags          = UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
-> -                               | UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
-> -                               | UVC_CTRL_FLAG_GET_DEF
-> +               .flags          = UVC_CTRL_FLAG_SET_CUR
-> +                               | UVC_CTRL_FLAG_GET_RANGE
->                                 | UVC_CTRL_FLAG_AUTO_UPDATE,
->         },
->         {
-> @@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct uvc_control_mapping *mapping,
->         data[2] = min((int)abs(value), 0xff);
->  }
->
-> +static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
-> +       __u8 query, const __u8 *data)
-> +{
-> +       int first = mapping->offset / 8;
-> +       __s8 rel = (__s8)data[first];
-> +
-> +       switch (query) {
-> +       case UVC_GET_CUR:
-> +               return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
-> +                                                : -data[first+1]);
-> +       case UVC_GET_MIN:
-> +               return -data[first+1];
-> +       case UVC_GET_MAX:
-> +       case UVC_GET_RES:
-> +       case UVC_GET_DEF:
-> +       default:
-> +               return data[first+1];
-> +       }
-> +}
-> +
-> +static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
-> +       __s32 value, __u8 *data)
-> +{
-> +       int first = mapping->offset / 8;
-> +
-> +       data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
-> +       data[first+1] = min_t(int, abs(value), 0xff);
-> +}
-> +
->  static struct uvc_control_mapping uvc_ctrl_mappings[] = {
->         {
->                 .id             = V4L2_CID_BRIGHTNESS,
-> @@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
->                 .data_type      = UVC_CTRL_DATA_TYPE_SIGNED,
->         },
->         {
-> +               .id             = V4L2_CID_PAN_SPEED,
-> +               .name           = "Pan (Speed)",
-> +               .entity         = UVC_GUID_UVC_CAMERA,
-> +               .selector       = UVC_CT_PANTILT_RELATIVE_CONTROL,
-> +               .size           = 16,
-> +               .offset         = 0,
-> +               .v4l2_type      = V4L2_CTRL_TYPE_INTEGER,
-> +               .data_type      = UVC_CTRL_DATA_TYPE_SIGNED,
-> +               .get            = uvc_ctrl_get_rel_speed,
-> +               .set            = uvc_ctrl_set_rel_speed,
-> +       },
-> +       {
-> +               .id             = V4L2_CID_TILT_SPEED,
-> +               .name           = "Tilt (Speed)",
-> +               .entity         = UVC_GUID_UVC_CAMERA,
-> +               .selector       = UVC_CT_PANTILT_RELATIVE_CONTROL,
-> +               .size           = 16,
-> +               .offset         = 16,
-> +               .v4l2_type      = V4L2_CTRL_TYPE_INTEGER,
-> +               .data_type      = UVC_CTRL_DATA_TYPE_SIGNED,
-> +               .get            = uvc_ctrl_get_rel_speed,
-> +               .set            = uvc_ctrl_set_rel_speed,
-> +       },
-> +       {
->                 .id             = V4L2_CID_PRIVACY,
->                 .name           = "Privacy",
->                 .entity         = UVC_GUID_UVC_CAMERA,
-> --
-> 2.1.0.rc2.206.gedb03e5
->
+>  drivers/platform/x86/eeepc-laptop.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index bd533c2..41f12ba 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -279,10 +279,10 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
+>  	int rv, value;
+>  
+>  	rv = parse_arg(buf, count, &value);
+> -	if (rv > 0)
+> -		value = set_acpi(eeepc, cm, value);
+
+That was rather horrible wasn't it? :-)
+
+> -	if (value < 0)
+> -		return -EIO;
+> +	if (rv > 0) {
+> +		if (set_acpi(eeepc, cm, value) < 0)
+> +			return -EIO;
+
+Is there a compelling reason not to propogate the return code of set_acpi?
+(ENODEV specifically). I see -EIO in Documentation/filesystems/sysfs.txt, but
+it's used by default if the show() pointer is NULL (for example), but otherwise
+propogates the error.
+
+Specifically it states:
+
+- show() or store() can always return errors. If a bad value comes
+  through, be sure to return an error.
+
+Greg, does this need to be -EIO? or is returning someting like ENODEV preferable
+if it more accurately reflects the error?
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
