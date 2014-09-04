@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaIDJjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:39:33 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54754 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750778AbaIDJja (ORCPT
+	id S1752594AbaIDJjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:39:54 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:33272 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235AbaIDJjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:39:30 -0400
-Message-ID: <1409823567.5546.80.camel@x220>
-Subject: Re: [PATCH 04/19] serial: samsung: Remove support for legacy clock
- code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Date: Thu, 04 Sep 2014 11:39:27 +0200
-In-Reply-To: <53C68FAB.9070102@samsung.com>
-References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-	 <1404496099-26708-5-git-send-email-t.figa@samsung.com>
-	 <1405502840.4408.2.camel@x220> <53C67386.5070401@samsung.com>
-	 <1405520767.4408.39.camel@x220> <1405521324.4408.44.camel@x220>
-	 <53C68FAB.9070102@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Sep 2014 09:39:28.0376 (UTC) FILETIME=[1F226780:01CFC824]
-X-RcptDomain: vger.kernel.org
+	Thu, 4 Sep 2014 05:39:51 -0400
+Date: Thu, 4 Sep 2014 10:39:44 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v6 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
+Message-ID: <20140904093944.GC1397@lee--X1>
+References: <1409029109-28769-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1409029109-28769-3-git-send-email-bjorn.andersson@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409029109-28769-3-git-send-email-bjorn.andersson@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-16 at 16:43 +0200, Tomasz Figa wrote:
-> On 16.07.2014 16:35, Paul Bolle wrote:
-> > On Wed, 2014-07-16 at 16:26 +0200, Paul Bolle wrote:
-> >> On Wed, 2014-07-16 at 14:43 +0200, Tomasz Figa wrote:
-> >>> That's right. Apparently I missed them. I guess that's not critical,
-> >>> though, and could be done in separate patch, right?
-> >>
-> >> This is not critical at all, so that's fine with me. 
-> > 
-> > Actually, that's only correct if the solution here is to just remove the
-> > (currently) dead code hidden behind CONFIG_SAMSUNG_CLOCK. But if the
-> > solution requires something less trivial, that might be quite wrong.
-> > 
-> > So please disregard my comment!
+On Mon, 25 Aug 2014, Bjorn Andersson wrote:
+
+> Driver for the Resource Power Manager (RPM) found in Qualcomm 8660, 8960
+> and 8064 based devices. The driver exposes resources that child drivers
+> can operate on; to implementing regulator, clock and bus frequency
+> drivers.
 > 
-> The code between those ifdefs is no longer used, because all Samsung
-> platforms use the Common Clock Framework after this series. So I believe
-> we can safely remove this dead code.
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> ---
+>  drivers/mfd/Kconfig          |   14 +
+>  drivers/mfd/Makefile         |    1 +
+>  drivers/mfd/qcom_rpm.c       |  580 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/qcom_rpm.h |   10 +
+>  4 files changed, 605 insertions(+)
+>  create mode 100644 drivers/mfd/qcom_rpm.c
+>  create mode 100644 include/linux/mfd/qcom_rpm.h
 
-The three checks for CONFIG_SAMSUNG_CLOCK can still be seen in v3.17-rc3
-and next-20140903. Should I perhaps submit the trivial patch to remove
-them (and the code they hide) or did things turn out to be more
-complicated?
+I'd like to take this in with the other MFD patch.
 
+Is the regulator one okay to go in on it's own?
 
-Paul Bolle
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
