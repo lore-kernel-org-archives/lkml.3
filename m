@@ -1,137 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaIDQBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:01:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37640 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaIDQA7 (ORCPT
+	id S1754201AbaIDQCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:02:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47836 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaIDQCW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:00:59 -0400
-Message-ID: <54088CB5.6050406@canonical.com>
-Date: Thu, 04 Sep 2014 11:00:53 -0500
-From: Chris J Arges <chris.j.arges@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 12:02:22 -0400
+Date: Thu, 4 Sep 2014 17:02:17 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jingoo Han <jg1.han@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] drivers: pci: convert generic host controller to DT host
+ bridge creation API
+Message-ID: <20140904160217.GC12351@e102568-lin.cambridge.arm.com>
+References: <1407861695-25549-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140819120553.GA23128@arm.com>
+ <20140904133956.GA12351@e102568-lin.cambridge.arm.com>
+ <6930538.Get2YiuMvJ@wuerfel>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
-References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1409835487-14371-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <6930538.Get2YiuMvJ@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 04 Sep 2014 16:02:18.0668 (UTC) FILETIME=[9A7ECEC0:01CFC859]
+X-MC-Unique: 114090417022001501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd,
 
+thanks for having a look.
 
-On 09/04/2014 07:58 AM, Paolo Bonzini wrote:
-> Commit cbcf2dd3b3d4 (x86: kvm: Make kvm_get_time_and_clockread() nanoseconds
-> based, 2014-07-16) forgot to add tk->xtime_sec, thus breaking kvmclock on
-> hosts that have a reliable TSC.  Add it back; and since the field boot_ns
-> is not anymore related to the host boot-based clock, rename boot_ns->nsec_base
-> and the existing nsec_base->snsec_base.
+On Thu, Sep 04, 2014 at 03:05:53PM +0100, Arnd Bergmann wrote:
+> On Thursday 04 September 2014 14:39:56 Lorenzo Pieralisi wrote:
+> > > > +   if (!res_valid) {
+> > > > +           dev_err(dev, "non-prefetchable memory resource required\n");
+> > > > +           return -EINVAL;
+> > > > +   }
+> > > > +
+> > > > +   if (iores) {
+> > > > +           if (!PAGE_ALIGNED(io_cpuaddr))
+> > > > +                   return -EINVAL;
+> > > 
+> > > Why is this alignment check not in the core code? Probably a question for
+> > > somebody like Arnd, but do we need to deal with multiple IO resources?
+> > > Currently we'll just silently take the last one that we found, which doesn't
+> > > sound ideal.
+> > 
+> > (1) Yes, the alignment check should be made in core code
 > 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Reported-by: Chris J Arges <chris.j.arges@canonical.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/kvm/x86.c | 11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
+> Makes sense. In theory we could support unaligned addresses (as long as
+> the offset in the page is the same for virtual and physical), but I don't
+> see why we should implement that unless some implementation absolutely
+> requires it.
 > 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 8f1e22d3b286..92493e10937c 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1020,8 +1020,8 @@ struct pvclock_gtod_data {
->  		u32	shift;
->  	} clock;
->  
-> -	u64		boot_ns;
->  	u64		nsec_base;
-> +	u64		snsec_base;
->  };
->  
->  static struct pvclock_gtod_data pvclock_gtod_data;
-> @@ -1042,8 +1042,9 @@ static void update_pvclock_gtod(struct timekeeper *tk)
->  	vdata->clock.mult		= tk->tkr.mult;
->  	vdata->clock.shift		= tk->tkr.shift;
->  
-> -	vdata->boot_ns			= boot_ns;
-> -	vdata->nsec_base		= tk->tkr.xtime_nsec;
-> +	vdata->nsec_base		= tk->xtime_sec * (u64)NSEC_PER_SEC
-> +					+ boot_ns;
-> +	vdata->snsec_base		= tk->tkr.xtime_nsec;
->  
->  	write_seqcount_end(&vdata->seq);
->  }
-> @@ -1413,10 +1414,10 @@ static int do_monotonic_boot(s64 *t, cycle_t *cycle_now)
->  	do {
->  		seq = read_seqcount_begin(&gtod->seq);
->  		mode = gtod->clock.vclock_mode;
-> -		ns = gtod->nsec_base;
-> +		ns = gtod->snsec_base;
->  		ns += vgettsc(cycle_now);
->  		ns >>= gtod->clock.shift;
-> -		ns += gtod->boot_ns;
-> +		ns += gtod->nsec_base;
->  	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
->  	*t = ns;
->  
+> > (2) I could take the first IO resource and warn on multiple IO resources if
+> >     they are detected. Thoughts ?
 > 
+> I think we should either warn, or be reasonably sure that it will work.
+> Again, in theory this should work, but no sane hardware implementation
+> would do it like that.
 
-Paulo,
-I've tested with the above patch and I still have issues with the
-kvmclock test offset; however the cycle tests pass now.
+Ok, I will refactor the IO resources mapping code on top of Livius's v10.
 
-Here is trace data:
-http://people.canonical.com/~arges/kvm/trace-4.dat.xz
+> > > > +           if (err)
+> > > > +                   return err;
+> > > > +   }
+> > > > +
+> > > > +   /* Parse and map our Configuration Space windows */
+> > > > +   err = gen_pci_parse_map_cfg_windows(host);
+> > > > +   if (err)
+> > > > +           return err;
+> > > > +
+> > > > +   pci_add_flags(PCI_ENABLE_PROC_DOMAINS);
+> > > > +   pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
+> > > 
+> > > Why does this belong in the host controller driver and how does it interact
+> > > with the probe-only property?
+> > 
+> > That's a very good question and it is one that confuses me too.
+> > 
+> > Current code in pci_common_init_dev() sets PCI_REASSIGN_ALL_RSRC behind
+> > our backs silently. That flag has a side effect only if the probing code
+> > detects PCI bridges in the list of devices, since PCI core probing code
+> > will try to reassign the bus numbers upon PCI bridge detection IIUC. I do
+> > not think that PCI_REASSIGN_ALL_BUS has any side effect on ARM (by grepping
+> > around I noticed that PCI_REASSIGN_ALL_RSRC is used in
+> > 
+> > pcibios_assign_all_busses()
+> > 
+> > which in turn is triggered only if PCI bridges are detected, still grokking
+> > the code though).
+> 
+> Interesting point: the generic implementation should probably not default
+> to reassigning all buses at all. We could have a (host controller specific,
+> but with standardized name) DT property for it, but it would be best if
+> firmware already probes it to not have to do it again.
 
-Uptime:
- 15:58:02 up  1:00,  1 user,  load average: 0.59, 0.60, 0.31
+I think that makes sense, let me point out though that this is
+*not* how the code works today, since the pcibios code sets:
 
-Here is the output:
+PCI_REASSIGN_ALL_RSRC (pci_common_init_dev() in arch/arm/kernel/bios32.c)
 
-./x86-run x86/kvmclock_test.flat -smp 2 --append "10000000 `date +%s`"
-qemu-system-x86_64 -enable-kvm -device pc-testdev -device
-isa-debug-exit,iobase=0xf4,iosize=0x4 -display none -serial stdio
--device pci-testdev -kernel x86/kvmclock_test.flat -smp 2 --append
-10000000 1409846210
-enabling apic
-enabling apic
-kvm-clock: cpu 0, msr 0x:44d4c0
-kvm-clock: cpu 0, msr 0x:44d4c0
-Wallclock test, threshold 5
-Seconds get from host:     1409846210
-Seconds get from kvmclock: 2819688866
-Offset:                    1409842656
-offset too large!
-Check the stability of raw cycle ...
-Total vcpus: 2
-Test  loops: 10000000
-Total warps:  0
-Total stalls: 0
-Worst warp:   0
-Raw cycle is stable
-Monotonic cycle test:
-Total vcpus: 2
-Test  loops: 10000000
-Total warps:  0
-Total stalls: 0
-Worst warp:   0
-Measure the performance of raw cycle ...
-Total vcpus: 2
-Test  loops: 10000000
-TSC cycles:  1139288710
-Measure the performance of adjusted cycle ...
-Total vcpus: 2
-Test  loops: 10000000
-TSC cycles:  1138643774
-Return value from qemu: 3
+by default. I won't set the PCI_REASSIGN_ALL_RSRC and PCI_REASSIGN_ALL_BUS
+flags.
 
-My observation is that the kvmclock value seems to be positively biased
-by the boot_ns value.
+> > Apart from the PCI_ENABLE_PROC_DOMAINS flag which I think it is safe to
+> > set by default (but let me check that too),
+> 
+> I think it should be enabled here, as no legacy machine will use this
+> driver.
 
---chris j arges
++1
+
+I will wait for Liviu's v10 and repost accordingly.
+
+Lorenzo
+
