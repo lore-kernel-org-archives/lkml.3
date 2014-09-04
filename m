@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaIDUIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:08:51 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40127 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217AbaIDUIt (ORCPT
+	id S1755370AbaIDULh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:11:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56330 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755210AbaIDULg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:08:49 -0400
-Date: Thu, 4 Sep 2014 13:08:44 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Zhong <zyw@rock-chips.com>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>
-Subject: Re: [PATCH v9 1/3] RTC: RK808: add RTC driver for RK808
-Message-ID: <20140904200843.GF10224@core.coreip.homeip.net>
-References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
- <1409793159-2573-2-git-send-email-zyw@rock-chips.com>
- <CAD=FV=U8XK945vJTnsY8FG3+WasOrMnoCYOF+b360HTyXVccfw@mail.gmail.com>
- <20140904173300.GC10224@core.coreip.homeip.net>
- <CAD=FV=VDG=PteMYCkju1GGpK1CNLZeY8precPJkgxYY4udD-eg@mail.gmail.com>
+	Thu, 4 Sep 2014 16:11:36 -0400
+X-Sasl-enc: xdeHoSPDlQxACp8TGUe5y6cP1WLHB30gdok5lINHsUVP 1409861495
+Date: Thu, 4 Sep 2014 17:11:23 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linuxfoundation.org, arnd@arndb.de, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net,
+        konrad.wilk@oracle.com
+Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
+Message-ID: <20140904201123.GA9116@khazad-dum.debian.net>
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
+ <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=VDG=PteMYCkju1GGpK1CNLZeY8precPJkgxYY4udD-eg@mail.gmail.com>
+In-Reply-To: <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 12:04:11PM -0700, Doug Anderson wrote:
-> Dmitry,
+On Thu, 04 Sep 2014, Toshi Kani wrote:
+> This patch sets WT to the PA4 slot in the PAT MSR when the processor
+> is not affected by the PAT errata.  The upper 4 slots of the PAT MSR
+> are continued to be unused on the following Intel processors.
 > 
-> On Thu, Sep 4, 2014 at 10:33 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Wed, Sep 03, 2014 at 09:18:42PM -0700, Doug Anderson wrote:
-> >> Chris,
-> >>
-> >> On Wed, Sep 3, 2014 at 6:12 PM, Chris Zhong <zyw@rock-chips.com> wrote:
-> >> > Adding RTC driver for supporting RTC device present inside RK808 PMIC.
-> >> >
-> >> > Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> >> > Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
-> >> >
-> >> > Tested-by: Heiko Stuebner <heiko@sntech.de>
-> >>
-> >> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> >> Tested-by: Doug Anderson <dianders@chromium.org>
-> >>
-> >>
-> >> > +       rk808_rtc->irq = platform_get_irq(pdev, 0);
-> >> > +       if (rk808_rtc->irq < 0) {
-> >> > +               dev_err(&pdev->dev, "Wake up is not possible as irq = %d\n",
-> >> > +                       rk808_rtc->irq);
-> >>
-> >> Technically you shouldn't print the error if it's -EPROBE_DEFER.
-> >> ...but I think that's really unlikely here (I can't imagine any real
-> >> cases where the interrupt parent for RK808 would actually be deferred)
-> >> so I won't push it.
-> >
-> > Doug, platform_get_irq() simply iterates through IRQ resources assigned to the
-> > device, which are populated at platform device creation time. The only error it
-> > returns ever is -ENXIO, so we are fine here.
+>   errata           cpuid
+>   --------------------------------------
+>   Pentium 2, A52   family 0x6, model 0x5
+>   Pentium 3, E27   family 0x6, model 0x7
+>   Pentium M, Y26   family 0x6, model 0x9
+>   Pentium 4, N46   family 0xf, model 0x0
 > 
-> I think maybe you're looking at older source code?  The source code I
-> have for mainline Linux specifically includes code handling
-> EPROBE_DEFER in platform_get_irq().
+> For these affected processors, _PAGE_CACHE_MODE_WT is redirected to UC-
+> per the default setup in __cachemode2pte_tbl[].
 
-Ah, indeed. That -EPROBE_DEFER monstrosity keeps spreading :(
+There are at least two PAT errata.  The blacklist is in
+arch/x86/kernel/cpu/intel.c:
+
+        if (c->x86 == 6 && c->x86_model < 15)
+                clear_cpu_cap(c, X86_FEATURE_PAT);
+
+It covers model 13, which is not in your blacklist.
+
+It *is* possible that PAT would work on model 13, as I don't think it has
+any PAT errata listed and it was blacklisted "just in case" (from memory. I
+did not re-check), but this is untested, and unwise to enable on an aging
+platform.
+
+I am worried of uncharted territory, here.  I'd actually advocate for not
+enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
+is using them as well.  Is this a real concern, or am I being overly
+cautious?
 
 -- 
-Dmitry
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
