@@ -1,111 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaIDJJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:09:26 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:62781 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586AbaIDJJV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:09:21 -0400
-Message-ID: <54082C40.2000107@linaro.org>
-Date: Thu, 04 Sep 2014 10:09:20 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755492AbaIDJKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:10:14 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39988 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754924AbaIDJKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 05:10:09 -0400
+Message-ID: <54082C68.8030400@linux.vnet.ibm.com>
+Date: Thu, 04 Sep 2014 14:40:00 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk> <5405AEBC.9020904@linaro.org> <20140902164204.GT30401@n2100.arm.linux.org.uk> <5406EBAA.9040206@linaro.org> <20140903193453.GA30401@n2100.arm.linux.org.uk>
-In-Reply-To: <20140903193453.GA30401@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patrick Marlier <patrick.marlier@gmail.com>
+Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
+References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com> <CAKohpomLW17B=Sk42tczzDF+VGwn7hT521osWPi5TcgqpCPZ_w@mail.gmail.com> <53296AD0.5090908@linux.vnet.ibm.com>	<19131121.D211TBerqb@vostro.rjw.lan> <CAKohpom0+bbyffZML2tJjXQDc+2q4PM8sVkL5pDA5WX=rmvtKA@mail.gmail.com>
+In-Reply-To: <CAKohpom0+bbyffZML2tJjXQDc+2q4PM8sVkL5pDA5WX=rmvtKA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090409-0320-0000-0000-00000064A410
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/14 20:34, Russell King - ARM Linux wrote:
-> On Wed, Sep 03, 2014 at 11:21:30AM +0100, Daniel Thompson wrote:
->> On 02/09/14 17:42, Russell King - ARM Linux wrote:
->>> Yes, it does, because unlike the x86 community, we have a wide range
->>> of platforms, and platform code does not go through the same path or
->>> get the same review as core ARM code.
->>>
->>> As I already pointed out, with a notifier, it's very easy to sneak
->>> something into the FIQ path by submitting a patch for platform code
->>> which calls the registration function.  That's going to be pretty
->>> difficult to spot amongst the 3000+ messages on the linux-arm-kernel
->>> list each month in order to give it the review that it would need.
->>> That's especially true as I now ignore almost all most platform
->>> code patches as we have Arnd and Olof to look at that.
->>>
->>> So, unless you can come up with a proposal which ensures that there
->>> is sufficient review triggered when someone decides to call the
->>> notifier registration function...
->>
->> Reflecting upon this and upon Thomas' comments about only using FIQ for
->> watchdog, backtrace and performance monitoring...
->>
->> The short version is, "I was wrong and should have done what you said in
->> the first place".
->>
->> The long version adds, "because the coupling concerns were spurious; the
->> only proposed users of the default FIQ handler outside of core ARM code,
->> are ARM-centric irqchip drivers."
+Hi,
+
+I went through the cpufreq code and the previous discussion in the
+context of this patch and I propose the below patch. Please let me know
+if it misses something that you all had discussed.
+
+On 09/04/2014 11:38 AM, Viresh Kumar wrote:
+> On 19 March 2014 19:49, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 > 
-> I would say that the ARM specific changes to entry-armv.S and setup.c
-> are correct.  All that you're doing there is to replace the existing
-> default no-op FIQ handler with some additional code which gets us into
-> SVC mode and back out, but itself is also a no-op.  In other words, no
-> real change.
+>> That said, for the intel_pstate case ->stop() as proposed by Dirk is demonstrably
+>> sufficient and there are no other ->setpolicy drivers in sight wanting or needing
+>> anything else.
+>>
+>> So to me, (1) the new ->stop() should *only* be called for ->setpolicy drivers,
+>> because the purpose of it should be to "allow ->setpolicy drivers to do what the
+>> GOV_STOP will do for regular drivers" as you put it above, and (2) some code in
+>> the original intel_pstate's ->exit() may/should stay in there (instead of being
+>> moved to the new ->stop()), which is the only possibly remaining issue here.
+>>
+>> The whole discussion about possibly re-using ->stop() for ->target drivers goes
+>> in a totally wrong direction, because *if* ->target drivers need a new callback
+>> to be executed around where ->stop() is called for ->setpolicy drivers, *then*
+>> that has to be a *different* callback.
+>>
+>> And by the way, ->get() in fact has a different meaning for ->setpolicy drivers,
+>> so it would be good to consider logical separation of ->setpolicy and ->target
+>> drivers so that each kind has its own separate set of callbacks with no overlaps.
+>> That would make it easier to avoid breakage resulting from changes made with
+>> ->setpolicy drivers that also affect ->target drivers in unpredictable ways and
+>> the other way around.
 > 
-> That's a good first patch, and one which I would actually like to have
-> in my tree sooner rather than later, so that I can split that out from
-> my prototype code.
+> Okay, I have picked up a very old thread but it looks more sensible to start
+> replying here..
+> 
+> Preeti (Cc'd) wants to do something similar, i.e. reduce freq of a
+> core before it
+> goes down. And the driver is probably: drivers/cpufreq/powernv-cpufreq.c, which
+> is ->target() type.
+> 
+> Now should we reuse the same callback ->stop_cpu() or implement a new one?
+> I don't know if adding a new callback would be a good idea here..
+> 
+> --
+> viresh
+> 
 
-So would I!
+cpufreq: Allow stop CPU callback to be used by all cpufreq drivers
+    
+Commit 367dc4aa introduced the stop CPU callback for intel_pstate
+drivers. During the CPU_DOWN_PREPARE stage, this callback is invoked
+so that drivers can take some action on the pstate of the cpu
+before it is taken offline. This callback was assumed to be useful
+only for those drivers which have implemented the set_policy CPU
+callback because they have no other way to take action about the
+cpufreq of a CPU which is being hotplugged out except in the exit
+callback which is called very late in the offline process.
+    
+The drivers which implement the target/target_index callbacks were
+expected to take care of requirements like the ones that commit
+367dc4aa addresses in the GOV_STOP notification event. But there
+are disadvantages to restricting the usage of stop CPU callback
+to cpufreq drivers that implement the set_policy callbacks and who
+want to take explicit action on the setting the cpufreq during a
+hotplug operation.
+   
+1.GOV_STOP gets called for every CPU offline and drivers would usually
+  want to take action when the last cpu in the policy->cpus mask
+  is taken offline. As long as there is more than one cpu in the
+  policy->cpus mask, cpufreq core itself makes sure that the freq
+  for the other cpus in this mask is set according to the maximum load.
+  This is sensible and drivers which implement the target_index callback
+  would mostly not want to modify that. However the cpufreq core leaves a
+  loose end when the cpu in the policy->cpus mask is the last one to go offline;
+  it does nothing explicit to the frequency of the core. Drivers may need
+  a way to take some action here and stop CPU callback mechanism is the
+  best way to do it today.
+    
+2.We cannot implement driver specific actions in the GOV_STOP mechanism.
+  So we will need another driver callback which is invoked from here which is
+  unnecessary.
+    
+  Therefore this patch extends the usage of stop CPU callback to be used
+  by all cpufreq drivers as long as they have this callback implemented
+  and irrespective of whether they are set_policy/target_index drivers.
+  The assumption is if the drivers find the GOV_STOP path to be a suitable
+  way of implementing what they want to do with the freq of the cpu
+  going offine,they will not implement the stop CPU callback at all.
+    
+  Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-I did some rebasing yesterday to put anything to do with kgdb right at
-the back of the queue. This "good first patch" is now actually the first
-patch; where the nofifier used to be it currently calls do_unexp_fiq()
-making it very close to "no real change".
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index d9fdedd..6463f35 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1380,7 +1380,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+                if (!cpufreq_suspended)
+                        pr_debug("%s: policy Kobject moved to cpu: %d from: %d\n",
+                                 __func__, new_cpu, cpu);
+-       } else if (cpufreq_driver->stop_cpu && cpufreq_driver->setpolicy) {
++       } else if (cpufreq_driver->stop_cpu) {
+                cpufreq_driver->stop_cpu(policy);
+        }
 
-BTW do_unexp_fiq() calls printk() but
-
-> I can also split out from it the ARM generic changes for implementing
-> the FIQ dumping too, which gives us a second patch.  With a bit of
-> additional work, much of that should actually be generic code, not
-> ARM or x86 specific code.  That's going to annoy x86 people a little
-> because some of that is being reworked...
-
-So far I have been testing the action after patch review using the big
-kgdb patches on top of it.
-
-Today I plan to remove the kgdb stuff, drop in your version of
-arch_trigger_all_cpu_backtrace() and test the results. I was going to
-use the code you shared on 13 August meaning all the cpu mask bit
-manipulation is in the arm-only code.
-
-If you want me to work with something more recent then feel free to
-point me at it...
-
-
-> That will leave the problem of how to deal with the IRQ controller
-> specifics, and how to properly wire it together with the IRQ controller
-> in the loop - that is where Thomas' concerns are focused.
-
-I'm working on those and its looking pretty good so far. This is mostly
-because SGIs don't need to allocate virqs so the controversial bits of
-my last patchset disappear completely.
 
