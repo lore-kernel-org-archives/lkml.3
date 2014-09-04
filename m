@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaIDRFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:05:10 -0400
-Received: from pegasus3.altlinux.org ([194.107.17.103]:56411 "EHLO
-	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376AbaIDRFI (ORCPT
+	id S1754895AbaIDRFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:05:43 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:46040 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262AbaIDRFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:05:08 -0400
-X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 13:05:07 EDT
-Date: Thu, 4 Sep 2014 20:55:00 +0400
-From: Michael Shigorin <mike@altlinux.org>
-To: linux-kernel@vger.kernel.org
-Cc: Christophe Ricard <christophe.ricard@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: PROBLEM: 3.17-rc3 module dependency loops
-Message-ID: <20140904165500.GK2515@imap.altlinux.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org,
-	Christophe Ricard <christophe.ricard@gmail.com>,
-	Samuel Ortiz <sameo@linux.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.4.2.3i
+	Thu, 4 Sep 2014 13:05:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409576021-24828-3-git-send-email-anders.berg@avagotech.com>
+References: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com>
+	<1409576021-24828-3-git-send-email-anders.berg@avagotech.com>
+Date: Thu, 4 Sep 2014 19:05:40 +0200
+Message-ID: <CACRpkdZZfSR18acUm8U7aM5uxdX8gefN-Lbw7of5qqEe=Pddqg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Documentation: DT bindings for AXM55xx SSP CS
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Anders Berg <anders.berg@avagotech.com>, Mark Brown <broonie@kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hello,
-I've spotted these depmod loops while building 3.17-rc3:
+I bet Mark and linux-spi are interested in this patch too.
 
-depmod: ERROR: Found 6 modules in dependency cycles!
-depmod: ERROR: Cycle detected: st21nfcb -> ndlc -> nci -> nfc -> st21nfcb
-depmod: ERROR: Cycle detected: nci -> nfc -> nci
+Yours,
+Linus Walleij
 
-Had to disable NFC_NCI, NFC_ST21NFCB.
-
-PS: not subscribed to LKML, CC please.
-
--- 
-š---- WBR, Michael Shigorin / http://altlinux.org
-šš------ http://opennet.ru / http://anna-news.info
+On Mon, Sep 1, 2014 at 2:53 PM, Anders Berg <anders.berg@avagotech.com> wrote:
+> Bindings and documentation for AXM55xx SSP chip select controller.
+>
+> Signed-off-by: Anders Berg <anders.berg@avagotech.com>
+> ---
+>  .../devicetree/bindings/gpio/gpio-axxia-sspcs.txt  | 36 ++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt
+>
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt b/Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt
+> new file mode 100644
+> index 0000000..a64c695
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-axxia-sspcs.txt
+> @@ -0,0 +1,36 @@
+> +* Axxia SSP GPIO chip-select driver
+> +
+> +The Axxia device has a ARM PL022 Prime Cell SSP controller with an extension of
+> +five chip select signals that may be controlled by software. This driver
+> +exports them as GPIOs.
+> +
+> +Required properties:
+> +
+> +  * compatible: should be "lsi,ssp-gpio"
+> +  * reg: address of the chip select control register.
+> +  * gpio-controller: mark the device as gpio controller
+> +  * #gpio-cells: should be 1 and this field specifies the chip select number
+> +
+> +Example:
+> +-------
+> +
+> +       spics: sspgpio@2010088030 {
+> +               compatible = "lsi,ssp-gpio";
+> +               #gpio-cells = <1>;
+> +               reg = <0x20 0x10088030 0x00 0x4>;
+> +               gpio-controller;
+> +       };
+> +
+> +       spi0: ssp@2010088000 {
+> +               compatible = "arm,pl022", "arm,primecell";
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               reg = <0x20 0x10088000 0x00 0x1000>;
+> +               num-cs = <5>;
+> +               cs-gpios = <&spics 0>,
+> +                          <&spics 1>,
+> +                          <&spics 2>,
+> +                          <&spics 3>,
+> +                          <&spics 4>;
+> +               ...
+> +      };
+> --
+> 1.9.1
+>
