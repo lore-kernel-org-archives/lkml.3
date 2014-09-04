@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaIDTgw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:36:52 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64971 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755166AbaIDTgv (ORCPT
+	id S1755308AbaIDThY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:37:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55648 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971AbaIDThW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:36:51 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>
-Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
-Date: Thu, 04 Sep 2014 21:56:12 +0200
-Message-ID: <2699050.43LHVsRP52@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpomH=ODnDT1FxrGVLOiOpA9NecQR134tUKQk-bRXLGPRYw@mail.gmail.com>
-References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com> <540838DB.1070202@linux.vnet.ibm.com> <CAKohpomH=ODnDT1FxrGVLOiOpA9NecQR134tUKQk-bRXLGPRYw@mail.gmail.com>
+	Thu, 4 Sep 2014 15:37:22 -0400
+Message-ID: <5408BF77.1020007@wwwdotorg.org>
+Date: Thu, 04 Sep 2014 13:37:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Russell King <linux@arm.linux.org.uk>
+CC: Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: Move AHB Kconfig to drivers/amba
+References: <1406643934-16301-1-git-send-email-thierry.reding@gmail.com> <53D7C9EE.60503@wwwdotorg.org> <53FB7288.9050002@wwwdotorg.org>
+In-Reply-To: <53FB7288.9050002@wwwdotorg.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 04, 2014 04:07:28 PM Viresh Kumar wrote:
-> On 4 September 2014 15:33, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> > I think Rafael's point was that since no driver that had implemented the
-> > target_index callback was using it at the time that this patch was
-> > proposed, it was be best to couple the check on existence of stop_cpu
-> > callback with the the check on the kind of cpufreq driver. However
-> > powerpc is also in need of this today and we implement the target_index
-> > callback and find it convenient to use the stop CPU callback.
-> 
-> No, this is what he said..
-> 
-> "
-> So to me, (1) the new ->stop() should *only* be called for ->setpolicy drivers,
-> because the purpose of it should be to "allow ->setpolicy drivers to do what the
-> GOV_STOP will do for regular drivers"
-> "
-> 
-> > Rafael, in which case would it not make sense to remove the check on
-> > driver->setpolicy above?
-> >
-> > Besides, I don't understand very well why we had this double check in
-> > the first place. Only if the drivers are in need of the functionality
-> > like stop_cpu, would they have implemented this callback right? If we
-> > are to assume that the drivers which have implemented the target_index
-> > callback should never be needing it, they would not have implemented the
-> > stop CPU callback either. So what was that, which was blatantly wrong
-> > with just having a check on stop_cpu? I did go through the discussion
-> > but did not find a convincing answer to this.
-> 
-> The idea was to get something similar to GOV_STOP for setpolicy drivers.
-> But in the end we didn't get to that. What we do in GOV_STOP is stop
-> changing CPUs frequency, but here in stop_cpu() we can stop changing
-> CPUs frequency OR take it to minimum, whatever we want..
-> 
-> As I said earlier, probably we should just do what you did in your patch +
-> some documentation changes.
+On 08/25/2014 11:29 AM, Stephen Warren wrote:
+> On 07/29/2014 10:21 AM, Stephen Warren wrote:
+>> On 07/29/2014 08:25 AM, Thierry Reding wrote:
+>>> From: Thierry Reding <treding@nvidia.com>
+>>>
+>>> This will allow the Kconfig option to be shared among 32-bit and 64-bit
+>>> ARM.
+>>
+>> This seems fine to me. I'd expect to apply it for 3.18, provided I get
+>> an ack from Russell as drivers/amba maintainer (hence CCing him without
+>> trimming the quote).
+>
+> Russell,
+>
+> Are you OK with this patch? If so, if you could ack it so I can apply
+> it, that would be great.
 
-OK, if that works for everybody.  For one, I wouldn't like to end up with a
-callback used for different things in every drvier implementing it.
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Russell?
