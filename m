@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251AbaIDO3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:29:52 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:49478 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaIDO3O convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 4 Sep 2014 10:29:14 -0400
-Message-Id: <540893570200007800030E4C@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Thu, 04 Sep 2014 15:29:11 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "David Vrabel" <david.vrabel@citrix.com>
-Cc: <xen-devel@lists.xensource.com>, <boris.ostrovsky@oracle.com>,
-        <konrad.wilk@oracle.com>, "Juergen Gross" <JGross@suse.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] xen: eliminate scalability issues from initrd
- handling
-References: <1409834326-29287-1-git-send-email-jgross@suse.com>
- <1409834326-29287-3-git-send-email-jgross@suse.com>
- <5408607F.6020108@citrix.com>
-In-Reply-To: <5408607F.6020108@citrix.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754164AbaIDO3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:29:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22599 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753226AbaIDO1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:27:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,466,1406617200"; 
+   d="scan'208";a="475190081"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        Benjamin Romer <benjamin.romer@unisys.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v4 07/12] crypto: qat - use seq_hex_dump() to dump buffers
+Date: Thu,  4 Sep 2014 17:26:54 +0300
+Message-Id: <1409840819-18976-8-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 04.09.14 at 14:52, <david.vrabel@citrix.com> wrote:
-> On 04/09/14 13:38, Juergen Gross wrote:
->> --- a/arch/x86/xen/xen-head.S
->> +++ b/arch/x86/xen/xen-head.S
->> @@ -124,6 +124,9 @@ NEXT_HYPERCALL(arch_6)
->>  	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
->>  		.quad _PAGE_PRESENT; .quad _PAGE_PRESENT)
->>  	ELFNOTE(Xen, XEN_ELFNOTE_SUSPEND_CANCEL, .long 1)
->> +#ifdef CONFIG_X86_64
->> +	ELFNOTE(Xen, XEN_ELFNOTE_MOD_START_PFN,  .long 1)
->> +#endif
-> 
-> Why X86_64 only?  If there's a good reason the commit message needs to
-> explain why.
+Instead of custom approach let's use recently introduced seq_hex_dump() helper.
 
-Does native 32-bit support huge initrd?
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Tadeusz Struk <tadeusz.struk@intel.com>
+---
+ drivers/crypto/qat/qat_common/adf_transport_debug.c | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
 
-Jan
+diff --git a/drivers/crypto/qat/qat_common/adf_transport_debug.c b/drivers/crypto/qat/qat_common/adf_transport_debug.c
+index 6b69745..5f438a1 100644
+--- a/drivers/crypto/qat/qat_common/adf_transport_debug.c
++++ b/drivers/crypto/qat/qat_common/adf_transport_debug.c
+@@ -86,9 +86,7 @@ static int adf_ring_show(struct seq_file *sfile, void *v)
+ {
+ 	struct adf_etr_ring_data *ring = sfile->private;
+ 	struct adf_etr_bank_data *bank = ring->bank;
+-	uint32_t *msg = v;
+ 	void __iomem *csr = ring->bank->csr_addr;
+-	int i, x;
+ 
+ 	if (v == SEQ_START_TOKEN) {
+ 		int head, tail, empty;
+@@ -111,18 +109,8 @@ static int adf_ring_show(struct seq_file *sfile, void *v)
+ 		seq_puts(sfile, "----------- Ring data ------------\n");
+ 		return 0;
+ 	}
+-	seq_printf(sfile, "%p:", msg);
+-	x = 0;
+-	i = 0;
+-	for (; i < (ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2); i++) {
+-		seq_printf(sfile, " %08X", *(msg + i));
+-		if ((ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2) != i + 1 &&
+-		    (++x == 8)) {
+-			seq_printf(sfile, "\n%p:", msg + i + 1);
+-			x = 0;
+-		}
+-	}
+-	seq_puts(sfile, "\n");
++	seq_hex_dump(sfile, "", DUMP_PREFIX_ADDRESS, 32, 4,
++		     v, ADF_MSG_SIZE_TO_BYTES(ring->msg_size), false);
+ 	return 0;
+ }
+ 
+-- 
+2.1.0
 
