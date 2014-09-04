@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933130AbaIDGqo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 02:46:44 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:45841 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaIDGqm (ORCPT
+	id S1755520AbaIDGsA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 02:48:00 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:38508 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaIDGr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 02:46:42 -0400
+	Thu, 4 Sep 2014 02:47:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140904011420.GA31350@kroah.com>
-References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
-	<20140904004947.GA17138@vmdeb7>
-	<20140904011420.GA31350@kroah.com>
-Date: Thu, 4 Sep 2014 08:46:40 +0200
-Message-ID: <CAH6sp9OaqkdW82HOKMf8gxLLsBzXPCq2HYj7ya+C3YXiFwhgOQ@mail.gmail.com>
-Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
-From: Frans Klaver <fransklaver@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Darren Hart <dvhart@infradead.org>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <54078C74.2060804@zytor.com>
+References: <5405E186.2080406@canonical.com>
+	<20140902192941.GB3001@console-pimps.org>
+	<CAKv+Gu_eSe+FeNkGm+w3sSsRn2_hr70xLVBieZgyhawAv6PQvw@mail.gmail.com>
+	<5406D0DB.90401@canonical.com>
+	<CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com>
+	<54073409.6030004@canonical.com>
+	<CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com>
+	<20140903175948.GH3001@console-pimps.org>
+	<54078C74.2060804@zytor.com>
+Date: Thu, 4 Sep 2014 08:47:57 +0200
+Message-ID: <CAKv+Gu8VkW+unei3vGZxor6ZGuLwsmKktcBJfy3+bKrkrKgPyw@mail.gmail.com>
+Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
+ preparation patches
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ulf Winkelvos <ulf@winkelvos.de>,
+        Matt Fleming <matt.fleming@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 3:14 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Sep 03, 2014 at 05:49:47PM -0700, Darren Hart wrote:
->> On Thu, Sep 04, 2014 at 12:53:25AM +0200, Frans Klaver wrote:
->> > In store_sys_acpi, if count equals zero, or parse_arg()s sscanf call
->> > fails, 'value' remains possibly uninitialized. In that case 'value'
->> > shouldn't be used to produce the store_sys_acpi()s return value.
-
-Here I should probably remove either 'the' or the 's' after store_sys_acpi().
-
-
->> > Only test the return value of set_acpi() if we can actually call it.
->> > Return rv otherwise.
->> >
->> > Signed-off-by: Frans Klaver <fransklaver@gmail.com>
->> > ---
->> >  drivers/platform/x86/eeepc-laptop.c | 8 ++++----
->> >  1 file changed, 4 insertions(+), 4 deletions(-)
->> >
->> > diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
->> > index bd533c2..41f12ba 100644
->> > --- a/drivers/platform/x86/eeepc-laptop.c
->> > +++ b/drivers/platform/x86/eeepc-laptop.c
->> > @@ -279,10 +279,10 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
->> >     int rv, value;
->> >
->> >     rv = parse_arg(buf, count, &value);
->> > -   if (rv > 0)
->> > -           value = set_acpi(eeepc, cm, value);
+On 3 September 2014 23:47, H. Peter Anvin <hpa@zytor.com> wrote:
 >>
->> That was rather horrible wasn't it? :-)
+>> Any reason we can't reuse the existing GOT fixup code in the early x86
+>> boot code? We're not executing it before the EFI boot stub atm, which is
+>> the reason Maarten is hitting these difficulties.
 >>
->> > -   if (value < 0)
->> > -           return -EIO;
->> > +   if (rv > 0) {
->> > +           if (set_acpi(eeepc, cm, value) < 0)
->> > +                   return -EIO;
+>> Maarten, does the following help?
 >>
->> Is there a compelling reason not to propogate the return code of set_acpi?
->> (ENODEV specifically). I see -EIO in Documentation/filesystems/sysfs.txt, but
->> it's used by default if the show() pointer is NULL (for example), but otherwise
->> propogates the error.
+>> If not, Ard please go ahead with option #2 above. Overkill yes, but I've
+>> done the single __attribute__() hacks in other projects and someone
+>> (usually me) always eventually forgets to tag some instance.
 >>
->> Specifically it states:
->>
->> - show() or store() can always return errors. If a bad value comes
->>   through, be sure to return an error.
->>
->> Greg, does this need to be -EIO? or is returning someting like ENODEV preferable
->> if it more accurately reflects the error?
 >
-> Just return the value of set_acpi() and you should be fine.
+> I think we really have two options: either fix up the GOT (which may be
+> a null operation, if the GOT is empty) or we add a compile-time check
+> that the GOT is empty, lest we will keep having these problems.
+>
+> Since the GOT fixup loop is only a few instructions, it doesn't seem to
+> be all that problematic to just do it -- but make sure we don't end up
+> running it twice on any code path!
+>
 
-According to 6dff29b63a5bf2eaf3313cb8a84f0b7520c43401 "eeepc-laptop:
-disp attribute should be write-only" it should be -EIO. -ENODEV would
-be misleading.
+So how about we:
+- add ASSERT(_got == _egot, "GOT entries not supported in
+boot/compressed") to the linker script
+- #define __nogotentry __attribute__((visibility(hidden))) somewhere
+in compiler.h or wherever else it belongs
+- add the __nogotentry qualifiers to each extern that requires it,
+which is currently:
+early_serial_base
+efi_early
+free_mem_end_ptr
+free_mem_ptr
+real_mode
+- get rid of the fixup code in assembly
 
-Thanks,
-Frans
+Any idea what the oldest GCC is we should support?
+
+-- 
+Ard.
