@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaIDKEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:04:38 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:52754 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaIDKEg (ORCPT
+	id S1752964AbaIDKFN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:05:13 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:35796 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaIDKFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:04:36 -0400
-Message-ID: <54083930.5060503@linaro.org>
-Date: Thu, 04 Sep 2014 11:04:32 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 4 Sep 2014 06:05:08 -0400
+Date: Thu, 4 Sep 2014 11:05:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: pcf50633: use sprintf directly
+Message-ID: <20140904100503.GF1397@lee--X1>
+References: <1409823132-12705-1-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-References: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk> <53F39377.1070308@linaro.org> <20140828150112.GD30401@n2100.arm.linux.org.uk> <5405AEBC.9020904@linaro.org> <20140902164204.GT30401@n2100.arm.linux.org.uk> <5406EBAA.9040206@linaro.org> <20140903193453.GA30401@n2100.arm.linux.org.uk> <54082C40.2000107@linaro.org> <20140904094521.GB30401@n2100.arm.linux.org.uk>
-In-Reply-To: <20140904094521.GB30401@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409823132-12705-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/14 10:45, Russell King - ARM Linux wrote:
-> On Thu, Sep 04, 2014 at 10:09:20AM +0100, Daniel Thompson wrote:
->> On 03/09/14 20:34, Russell King - ARM Linux wrote:
->>> I would say that the ARM specific changes to entry-armv.S and setup.c
->>> are correct.  All that you're doing there is to replace the existing
->>> default no-op FIQ handler with some additional code which gets us into
->>> SVC mode and back out, but itself is also a no-op.  In other words, no
->>> real change.
->>>
->>> That's a good first patch, and one which I would actually like to have
->>> in my tree sooner rather than later, so that I can split that out from
->>> my prototype code.
->>
->> So would I!
->>
->> I did some rebasing yesterday to put anything to do with kgdb right at
->> the back of the queue. This "good first patch" is now actually the first
->> patch; where the nofifier used to be it currently calls do_unexp_fiq()
->> making it very close to "no real change".
->>
->> BTW do_unexp_fiq() calls printk() but
+On Thu, 04 Sep 2014, Andy Shevchenko wrote:
+
+> When dump a content of the registers let's use snprintf() directly with %*ph
+> specifier.
 > 
-> You're making the assumption that something called do_unexp_fiq() before
-> your patches.  It seems that that function is dead code, and now that
-> you've pointed that out, I will kill this function.
->
-> The current situation is that if the CPU receives a FIQ, it enters the
-> FIQ vector, which contains an immediate return instruction.
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/mfd/pcf50633-core.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
 
-Actually it was the comment above the return instruction in the original
-code about getting a message out that made me try to reconnect
-do_unexp_fiq().
+Applied, thanks.
 
-printk() has reasonably strong defences against being called twice by
-the same CPU in that we ought to avoid deadlock if the current CPU owns
-the printk locks (although the message would be dropped). I therefore
-thought do_unexp_fiq() was a best-effort attempt to inform the user.
+> diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+> index c87f7a0..8401552 100644
+> --- a/drivers/mfd/pcf50633-core.c
+> +++ b/drivers/mfd/pcf50633-core.c
+> @@ -106,10 +106,7 @@ static ssize_t show_dump_regs(struct device *dev, struct device_attribute *attr,
+>  			} else
+>  				dump[n1] = pcf50633_reg_read(pcf, n + n1);
+>  
+> -		hex_dump_to_buffer(dump, sizeof(dump), 16, 1, buf1, 128, 0);
+> -		buf1 += strlen(buf1);
+> -		*buf1++ = '\n';
+> -		*buf1 = '\0';
+> +		buf1 += sprintf(buf1, "%*ph\n", (int)sizeof(dump), dump);
+>  	}
+>  
+>  	return buf1 - buf;
 
-That said, assuming the FIQ re-enters, then without a rate limiter the
-message will be rather insistent.
-
-For now I will remove calls to do_unexp_fiq().
-
-
->> If you want me to work with something more recent then feel free to
->> point me at it...
-> 
-> I'll post some of that stuff later today, probably this evening.
-
-Hopefully so shall I.
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
