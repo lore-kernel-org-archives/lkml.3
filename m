@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaIDRxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:53:36 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33898 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449AbaIDRxe (ORCPT
+	id S1754970AbaIDRy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:54:59 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:64911 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbaIDRy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:53:34 -0400
-Date: Thu, 4 Sep 2014 10:53:34 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Layton <jlayton@primarydata.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 17/17] locks: clean up comments over fl_owner_t
- definition
-Message-ID: <20140904175334.GH16935@infradead.org>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
- <1409834323-7171-18-git-send-email-jlayton@primarydata.com>
+	Thu, 4 Sep 2014 13:54:57 -0400
+Date: Thu, 4 Sep 2014 10:54:50 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki\"" <rjw@rjwysocki.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] PM / sleep: add configurable delay for pm_test
+Message-ID: <20140904175450.GB18411@ld-irv-0074>
+References: <1409788535-28264-1-git-send-email-computersforpeace@gmail.com>
+ <20140904071412.GA29832@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409834323-7171-18-git-send-email-jlayton@primarydata.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20140904071412.GA29832@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 08:38:43AM -0400, Jeff Layton wrote:
-> The contents of an fl_owner_t have morphed a bit over the years, fix up
-> the comments to account for the changes.
+On Thu, Sep 04, 2014 at 09:14:12AM +0200, Pavel Machek wrote:
+> > When CONFIG_PM_DEBUG=y, we provide a sysfs file (/sys/power/pm_test) for
+> > selecting one of a few suspend test modes, where rather than entering a
+> > full suspend state, the kernel will perform some subset of suspend
+> > steps, wait 5 seconds, and then resume back to normal operation.
+> > 
+> > This mode is useful for (among other things) observing the state of the
+> > system just before entering a sleep mode, for debugging or analysis
+> > purposes. However, a constant 5 second wait is not sufficient for some
+> > sorts of analysis; for example, on an SoC, one might want to use
+> > external tools to probe the power states of various on-chip controllers
+> > or clocks.
+> 
+> When you are doing this kind of analysis, perhaps directly modifying
+> kernel source is the way to go ...?
 
-Instead of listing all the owners I'd just put something in like:
+That's what I've been doing for now, but I have a few engineers who need
+to do this sort of testing and aren't kernel developers. I could
+continue to maintain my own patch for this, but I just thought I'd see
+what others thought.
 
-/* legacy typedef, will go away soon */
+Is there a good reason this can't be in mainline? These features are
+hidden behind a Kconfig symbol called PM_DEBUG anyway, and I think this
+classifies as a pretty simple extension to the limited existing PM
+debugging options.
+
+Regards,
+Brian
