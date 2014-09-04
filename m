@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650AbaIDIx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 04:53:59 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:25982
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756263AbaIDIx5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 04:53:57 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource read
- API.
-Thread-Topic: [PATCH 2/5] Clocksource: Flextimer: Use internal clocksource
- read API.
-Thread-Index: AQHPwPGfS8nkeT6FCkuUDVIJ9Bh425vvRJOAgAD90OCAAHITAIAAANvggAACDoCAAADZcA==
-Date: Thu, 4 Sep 2014 08:53:35 +0000
-Message-ID: <711bc48a692a420589ff4b5ad48d6b4c@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
- <1409031951-39021-3-git-send-email-Li.Xiubo@freescale.com>
- <alpine.DEB.2.10.1409031236450.3333@nanos>
- <c5f60fc57cdf4cd3a01b8d3a87a4f3de@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <alpine.DEB.2.10.1409041032200.3333@nanos>
- <69c4ca3ee1324a3894a6d5dc0bde38ed@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <alpine.DEB.2.10.1409041044350.3333@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409041044350.3333@nanos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0324C2C0E2
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(199003)(164054003)(189002)(86362001)(20776003)(99286002)(95666004)(2656002)(93886004)(101416001)(80022001)(87936001)(76482001)(92566001)(79102001)(66066001)(64706001)(21056001)(85852003)(81542001)(83072002)(76176999)(85306004)(76576001)(74316001)(108616004)(77982001)(74662001)(46102001)(83322001)(81342001)(54356999)(4396001)(31966008)(99396002)(107046002)(90102001)(106116001)(106356001)(105586002)(74502001)(77096002)(50986999)(33646002)(110136001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB179;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756737AbaIDIzB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 04:55:01 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16326 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756208AbaIDIy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 04:54:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="381275096"
+Date: Thu, 4 Sep 2014 16:56:41 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
+        linux-kernel@vger.kernel.org, Zhang Yang <yang.z.zhang@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v4] x86, hotplug: fix llc shared map unreleased during
+ cpu hotplug
+Message-ID: <20140904085641.GA6311@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1406625883-4972-1-git-send-email-wanpeng.li@linux.intel.com>
+ <20140904052034.GA29146@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904052034.GA29146@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Thu, Sep 04, 2014 at 07:20:34AM +0200, Ingo Molnar wrote:
+>
+>* Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
+>
+>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+>> IP: [..] find_busiest_group
+>> PGD 5a9d5067 PUD 13067 PMD 0
+>> Oops: 0000 [#3] SMP
+>> [...]
+>> Call Trace:
+>> load_balance
+>> ? _raw_spin_unlock_irqrestore
+>> idle_balance
+>> __schedule
+>> schedule
+>> schedule_timeout
+>> ? lock_timer_base
+>> schedule_timeout_uninterruptible
+>> msleep
+>> lock_device_hotplug_sysfs
+>> online_store
+>> dev_attr_store
+>> sysfs_write_file
+>> vfs_write
+>> SyS_write
+>> system_call_fastpath
+>> 
+>> Last level cache shared map is built during cpu up and build sched domain 
+>> routine takes advantage of it to setup sched domain cpu topology, however, 
+>> llc shared map is unreleased during cpu disable which lead to invalid sched 
+>> domain cpu topology. This patch fix it by release llc shared map correctly
+>> during cpu disable.
+>
+>Very little is said in this changelog about how the bug was 
+>found, how likely it is to occur for others, what systems are 
+>affected, etc.
 
-> > > > Since the FTM will be in BE mode on LS1 platform, but will be in LE mode
-> > > > On LS2 platform.
-> > > >
-> > > > And ftm_clocksource_read_up() will adapt to this different.
-> > >
-> > > You are missing the point. Why do you want a conditional in a hot
-> > > path? You know at init time whether the thing is BE or LE, so you can
-> > > have separate functions for BE/LE or whatever and register that with
-> > > clocksource_mmio_init(). i.e.
+This bug can be triggered by hot add and remove large number of xen 
+domain0's vcpus repeated.
 
-For our LS1 and LS2+ platforms, there will be only one Kernel Image and can work
-for both of them with different dtbs.
+Regards,
+Wanpeng Li 
 
-Thanks,
-
-BRs
-Xiubo
+>
+>Thanks,
+>
+>	Ingo
