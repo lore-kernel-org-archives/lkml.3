@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751102AbaIFApN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 20:45:13 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:52233 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbaIFApJ (ORCPT
+	id S1751048AbaIFAvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 20:51:09 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:60458 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750793AbaIFAvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 20:45:09 -0400
-Message-ID: <540A590F.1030407@converseincode.com>
-Date: Fri, 05 Sep 2014 17:45:03 -0700
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: zohar@linux.vnet.ibm.com, d.kasatkin@samsung.com,
-        james.l.morris@oracle.com, linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, serge@hallyn.com,
-        torvalds@linux-foundation.org, Mark Charlebois <charlebm@gmail.com>,
-        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>
-Subject: Re: [PATCH] security, crypto: LLVMLinux: Remove VLAIS from ima_crypto.c
-References: <1409958360-8061-1-git-send-email-behanw@converseincode.com> <alpine.DEB.2.10.1409060131260.5472@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409060131260.5472@nanos>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 5 Sep 2014 20:51:06 -0400
+Date: Thu, 4 Sep 2014 10:04:17 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
+ this_cpu ops
+In-Reply-To: <20140903181931.GB5001@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1409040944220.4565@gentwo.org>
+References: <20140902203743.GL5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021545370.32690@gentwo.org> <20140902211517.GO5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409021819500.5437@gentwo.org> <20140903021152.GA14069@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409030846310.9372@gentwo.org> <20140903144349.GT5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409031043540.24085@gentwo.org> <20140903171409.GZ5001@linux.vnet.ibm.com> <alpine.DEB.2.11.1409031226001.24691@gentwo.org>
+ <20140903181931.GB5001@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/14 17:18, Thomas Gleixner wrote:
-> On Fri, 5 Sep 2014, behanw@converseincode.com wrote:
+
+On Wed, 3 Sep 2014, Paul E. McKenney wrote:
+
+> As noted earlier, in theory, the atomic operations could be nonatomic,
+
+Well as demonstrated by the patch earlier: The atomic operations are only
+used on a the local cpu. There is no synchronization in that sense needed
+between processors because there is never a remote atomic operation.
+
+> > The code looks fragile and bound to have issues in the future given the
+> > barriers/atomics etc. Its going to be cleaner without that.
 >
->> From: Behan Webster <behanw@converseincode.com>
->>
->> Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
->> compliant equivalent. This patch allocates the appropriate amount of memory
->> using an char array.
->>
->> The new code can be compiled with both gcc and clang.
->>
->> struct shash_desc contains a flexible array member member ctx declared with
->> CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
->> of the array declared after struct shash_desc with long long.
->>
->> No trailing padding is required because it is not a struct type that can
->> be used in an array.
->>
->> The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
->> as would be the case for a struct containing a member with
->> CRYPTO_MINALIGN_ATTR.
->>
->> Signed-off-by: Behan Webster <behanw@converseincode.com>
->> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
->> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-> This SOB chain is completely ass backwards. See Documentation/...
-"The Signed-off-by: tag indicates that the signer was involved in the
-development of the patch, or that he/she was in the patch's delivery path."
+> What exactly looks fragile about it, and exactly what issues do you
+> anticipate?
 
-All three of us were involved. Does that not satisfy this rule?
+I am concerned about creation of unecessary synchronization issues. In
+this case we have already discovered that the atomic operations on per
+cpu variables are only used to modify the contents from the local cpu.
 
->> ---
->>   security/integrity/ima/ima_crypto.c | 53 +++++++++++++++++--------------------
->>   1 file changed, 25 insertions(+), 28 deletions(-)
->>
->> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
->> index 0bd7328..a6aa2b0 100644
->> --- a/security/integrity/ima/ima_crypto.c
->> +++ b/security/integrity/ima/ima_crypto.c
->> @@ -380,17 +380,16 @@ static int ima_calc_file_hash_tfm(struct file *file,
->>   	loff_t i_size, offset = 0;
->>   	char *rbuf;
->>   	int rc, read = 0;
->> -	struct {
->> -		struct shash_desc shash;
->> -		char ctx[crypto_shash_descsize(tfm)];
->> -	} desc;
->> +	char desc[sizeof(struct shash_desc) +
->> +		crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
->> +	struct shash_desc *shash = (struct shash_desc *)desc;
-> That anon struct should have never happened in the first place.
-Sadly this is a design pattern used in many places through out the 
-kernel, and appears to be fundamental to the crypto system. I was 
-advised *not* to change it, so we haven't.
+This means at minimum we can give up on the use of atomics and keep the
+barriers to enforce visibility.
 
-I agree that it's not a good practice.
-
->   Not
-> your problem, but you are not making it any better. You replace open
-> coded crap with even more unreadable crap.
+> > And we are right now focusing on the simplest case. The atomics scheme is
+> > used multiple times in the RCU subsystem. There is more weird looking code
+> > there like atomic_add using zero etc.
 >
-> Whats wrong with
+> The atomic_add_return(0,...) reads the value out, forcing full ordering.
+> Again, in theory, this could be a volatile read with explicit memory-barrier
+> instructions on either side, but it is not clear which wins.  (Keep in
+> mind that almost all of the atomic_add_return(0,...) calls for a given
+> dynticks counter are executed from a single kthread.)
 >
->        SHASH_DESC_ON_STACK(shash, tfm);
-Nothing is wrong with that. I would have actually preferred that. But it 
-would have fundamentally changed a lot more code.
+> If systems continue to add CPUs like they have over the past decade or
+> so, I expect that you will be seeing more code like RCU's, not less.
 
-I'm not sure making fundamental changes to the crypto code in order to 
-make "my favourite compiler happy" is really a better plan. I prefer 
-smaller more measured steps.
+We have other code like this in multiple subsystems but it does not have
+the barrier issues, per cpu variables are updated always without the use
+of atomics and the inspection of the per cpu state from remote cpus works
+just fine also without them.
 
-> or something along that line and hide all the stack allocation, type
-> conversion crap and make my favourite compiler happy in a single
-> place?
-At this point it is less about making a particular compiler happy, and 
-more about making the code at least C99 compliant which enables a 
-different compiler so that more people can use it to make more 
-fundamental changes like you are suggesting.
+I'd like to simplify this as much as possible and make it consistent
+throughout the kernel.
 
-I appreciate your feedback,
 
-Behan
-
--- 
-Behan Webster
-behanw@converseincode.com
 
