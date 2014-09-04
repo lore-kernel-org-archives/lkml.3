@@ -1,94 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaIDKPS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:15:18 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:65147 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaIDKPP (ORCPT
+	id S1753423AbaIDKPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:15:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15714 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527AbaIDKPl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:15:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, linaro-acpi@lists.linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>, Charles.Garcia-Tobin@arm.com,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
-Date: Thu, 04 Sep 2014 12:14:58 +0200
-Message-ID: <3046890.jAXAYeBPWQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54083A94.2040105@linaro.org>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <2893693.4bZJXXENof@wuerfel> <54083A94.2040105@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:EuWztPpMtT7DIH7XdKbBwmW4vDrkue2VuAPnA4gJjPX
- sB9PWfkN0+wRTaAdgHzOyEtQc/ivNbLySAioIpRtgMu59iYd20
- bJLNd2Ovg7OrMO8x5rZri2SxxiQwXBxIWhHkKqZrn4cIXGq4+w
- oOWloy6jWCVkwXz+SmondUZgllr4DNm8UANEVne5f5/qQADxku
- J8GReG5BFQEsaVc6Rl/LHINAZS3vdLaInYKQc1dX0gyT2OFIML
- /qsOU3uRAO/kE0Z7yrV5hddB7lI9mrDbaWYhBtlcTcAPzJmCke
- aF7IYJH83PR3mtqXm70B+zxdvEVR6aUgRgo4xSsXfj5GaMFbP1
- IKM+LwuBmIC6uJ50kO2U=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 4 Sep 2014 06:15:41 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-d8-54083bcc9b14
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 8BIT
+Message-id: <54083BCB.1000603@samsung.com>
+Date: Thu, 04 Sep 2014 19:15:39 +0900
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH 1/3] mfd: max77693: Initialize haptic register map
+References: <1409570071-26719-1-git-send-email-jaewon02.kim@samsung.com>
+ <1409570071-26719-2-git-send-email-jaewon02.kim@samsung.com>
+ <20140904090605.GB29612@lee--X1>
+In-reply-to: <20140904090605.GB29612@lee--X1>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsWyRsSkRPeMNUeIwcpzYhbXvzxntTi86AWj
+	xf2vRxktbn76xmpxedccNovT3awObB47Z91l97hzbQ+bx7yTgR59W1YxenzeJBfAGsVlk5Ka
+	k1mWWqRvl8CVsevAXuaCCeIVH2ZuY21gfCXUxcjBISFgInF0cWoXIyeQKSZx4d56ti5GLg4h
+	gaWMEt9OTWeESJhIfJn5ggkiMZ1RYuqUFUwgCV4BQYkfk++xgNjMAmYSX14eZoWwRSQW72ti
+	h7C1JZYtfM0M0fyaUWLOukvsEM1aEpMaO5hBbBYBVYlLZxrBmtmAGr6vXwxmiwqESTz7dZAJ
+	5FIRARWJc2/MQeYwC+xilHh14hsbSI2wgJvEi6Of2CEWrGKUmLHoIthFnAK6Eq9/vQFLSAic
+	Y5dY9GQuG8Q2AYlvkw+xQPwvK7HpADPEm5ISB1fcYJnAKD4LyXOzkDw3C8lzs5A8t4CRZRWj
+	aGpBckFxUnqRoV5xYm5xaV66XnJ+7iZGYGye/vesdwfj7QPWhxgFOBiVeHgLXrCHCLEmlhVX
+	5h5iNAW6aCKzlGhyPjAB5JXEGxqbGVmYmpgaG5lbmimJ8ypK/QwWEkhPLEnNTk0tSC2KLyrN
+	SS0+xMjEwSnVwGjvfFQ1nlehR+j3Uivv7+fuPPusN9tm6kITs873SQtO7HVvD898cc+sfVqU
+	W9jkmn+lvDaN+sbC4hdY5p6r2Oi9+Ti37Cy2l7F1uh59YbHvPbLLRTc801562/GNqrj6jCfP
+	03f9eqFt9mDl1XDhv2HKbe7HD6cqxYnHHL1xoUzhaxlLj1PFVCWW4oxEQy3mouJEAL+DnazI	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t9jQd0z1hwhBnO28Vtc//Kc1eLwoheM
+	Fve/HmW0uPnpG6vF5V1z2CxOd7M6sHnsnHWX3ePOtT1sHvNOBnr0bVnF6PF5k1wAa1QDo01G
+	amJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0AFKCmWJOaVA
+	oYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxoy1N6eyFZwQq+i62MPcwLhIqIuRk0NC
+	wETiy8wXTBC2mMSFe+vZuhi5OIQEpjNKTJ2yAizBKyAo8WPyPZYuRg4OZgF5iSOXskHCzAJm
+	El9eHmaFqH/NKDFn3SV2iHotiUmNHcwgNouAqsSlM42sIDabgLbE9/WLwWxRgTCJZ78OMoHM
+	FBFQkTj3xhxkDrPALkaJVye+sYHUCAu4Sbw4+okdYsEqRokZiy6ygCQ4BXQlXv96wz6BUWAW
+	kvtmIdw3C8l9CxiZVzGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEx/EzqR2MKxssDjEKcDAq
+	8fAWvGAPEWJNLCuuzD3EKMHBrCTCu9CSI0SINyWxsiq1KD++qDQntfgQoynQdxOZpUST84Ep
+	Jq8k3tDYxMzI0sjc0MLI2FxJnPdAq3WgkEB6YklqdmpqQWoRTB8TB6dUA+PK1zpy5f4PC2OK
+	v4ha5+9ril6wPHLrsmi7yycruGqff9Lqf7Wa7VF97noTpVNCrjxrlxw8Nyn6gMyzyEmHaz/E
+	mqgd5enVeK9V5SlvebN37rqV/9d1tda66Gzfr/LkY6XTt93OTOcnO01rr59zccPkD7vmvlo4
+	81lqyqwfXz1fs8uuMuSdH6erxFKckWioxVxUnAgASBLKo/kCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 September 2014 12:10:28 Tomasz Nowicki wrote:
-> On 03.09.2014 20:42, Arnd Bergmann wrote:
-> > On Monday 01 September 2014 22:57:51 Hanjun Guo wrote:
-> >> +       /* Collect CPU base addresses */
-> >> +       count = acpi_parse_entries(sizeof(struct acpi_table_madt),
-> >> +                                  gic_acpi_parse_madt_cpu, table,
-> >> +                                  ACPI_MADT_TYPE_GENERIC_INTERRUPT,
-> >> +                                  ACPI_MAX_GIC_CPU_INTERFACE_ENTRIES);
-> >> +       if (count < 0) {
-> >> +               pr_err("Error during GICC entries parsing\n");
-> >> +               return -EFAULT;
-> >> +       } else if (!count) {
-> >> +               /* No GICC entries provided, use address from MADT header */
-> >> +               struct acpi_table_madt *madt = (struct acpi_table_madt *)table;
-> >> +
-> >> +               if (!madt->address)
-> >> +                       return -EFAULT;
-> >> +
-> >> +               cpu_phy_base = (u64)madt->address;
-> >> +       }
-> >
-> > After I read through ACPI-5.1 section 5.2.12.14, I wonder if this is the
-> > best way to treat a missing ACPI_MADT_TYPE_GENERIC_INTERRUPT table.
-> >
-> > Do we expect to see those in practice? It seems like using the x86 local
-> > APIC address as a fallback for the GIC address is not something we
-> > should do unless we absolutely have to support a system that doesn't
-> > have the GIC table.
-> 
-> No, we do not expect and hopefully there will be no such 
-> 
-> But, we are trying to be as much as possible inline with 5.1 spec, 
-> 5.2.12.14 says:
-> [...]
-> If provided here (CPU physical base address), the "Local Interrupt 
-> Controller Address" field in the MADT must be ignored by the OSPM.
-> [...]
-> 
 
-Yes, that's what I saw. So ignoring it all the time is fine, right?
-Presumably the madt->address field is only referenced here because
-some pre-5.1 implementations used to do that.
+2014년 09월 04일 18:06에 Lee Jones 이(가) 쓴 글:
+> On Mon, 01 Sep 2014, Jaewon Kim wrote:
+>
+>> This patch add regmap_haptic initialization to use haptic register map
+>> in haptic device driver.
+>>
+>> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+>> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> ---
+>>   drivers/mfd/max77693.c |   21 ++++++++++++++++++---
+>>   1 file changed, 18 insertions(+), 3 deletions(-)
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+>
+> Can this patch go in without the Input one?
 
-	Arnd
+Yes. There is no problem without Input driver patch.
+>
+>> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+>> index 249c139..fbfed56 100644
+>> --- a/drivers/mfd/max77693.c
+>> +++ b/drivers/mfd/max77693.c
+>> @@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
+>>   	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
+>>   };
+>>   
+>> +static const struct regmap_config max77693_regmap_haptic_config = {
+>> +	.reg_bits = 8,
+>> +	.val_bits = 8,
+>> +	.max_register = MAX77693_HAPTIC_REG_END,
+>> +};
+>> +
+>>   static int max77693_i2c_probe(struct i2c_client *i2c,
+>>   			      const struct i2c_device_id *id)
+>>   {
+>> @@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>>   	}
+>>   	i2c_set_clientdata(max77693->haptic, max77693);
+>>   
+>> +	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
+>> +					&max77693_regmap_haptic_config);
+>> +	if (IS_ERR(max77693->regmap_haptic)) {
+>> +		ret = PTR_ERR(max77693->regmap_haptic);
+>> +		dev_err(max77693->dev,
+>> +			"failed to initialize haptic register map: %d\n", ret);
+>> +		goto err_regmap;
+>> +	}
+>> +
+>>   	/*
+>>   	 * Initialize register map for MUIC device because use regmap-muic
+>>   	 * instance of MUIC device when irq of max77693 is initialized
+>> @@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>>   		ret = PTR_ERR(max77693->regmap_muic);
+>>   		dev_err(max77693->dev,
+>>   			"failed to allocate register map: %d\n", ret);
+>> -		goto err_regmap_muic;
+>> +		goto err_regmap;
+>>   	}
+>>   
+>>   	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+>> @@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>>   				&max77693->irq_data_led);
+>>   	if (ret) {
+>>   		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
+>> -		goto err_regmap_muic;
+>> +		goto err_regmap;
+>>   	}
+>>   
+>>   	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+>> @@ -265,7 +280,7 @@ err_irq_charger:
+>>   	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
+>>   err_irq_topsys:
+>>   	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
+>> -err_regmap_muic:
+>> +err_regmap:
+>>   	i2c_unregister_device(max77693->haptic);
+>>   err_i2c_haptic:
+>>   	i2c_unregister_device(max77693->muic);
+
