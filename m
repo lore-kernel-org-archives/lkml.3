@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913AbaIDVZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:25:53 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:58013 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755623AbaIDVZu (ORCPT
+	id S1755613AbaIDV1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:27:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55002 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754910AbaIDV1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:25:50 -0400
+	Thu, 4 Sep 2014 17:27:52 -0400
+Date: Thu, 4 Sep 2014 23:27:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        chris.j.arges@canonical.com, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch
+ merge
+In-Reply-To: <1409864744-26417-1-git-send-email-pbonzini@redhat.com>
+Message-ID: <alpine.DEB.2.10.1409042317560.3333@nanos>
+References: <1409864744-26417-1-git-send-email-pbonzini@redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAKv+Gu8wALTqtNQK_855A7M5f2a+EB1JyLxo=j6G0T1cf8ZFog@mail.gmail.com>
-References: <5405E186.2080406@canonical.com>
-	<20140902192941.GB3001@console-pimps.org>
-	<CAKv+Gu_eSe+FeNkGm+w3sSsRn2_hr70xLVBieZgyhawAv6PQvw@mail.gmail.com>
-	<5406D0DB.90401@canonical.com>
-	<CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com>
-	<54073409.6030004@canonical.com>
-	<CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com>
-	<20140903175948.GH3001@console-pimps.org>
-	<CAKv+Gu9tejixb3Kb3YM_7sLcpKNuRHN+Dn+twFyCAXx99wYRCw@mail.gmail.com>
-	<54084376.8090002@canonical.com>
-	<540860F1.6060801@fensystems.co.uk>
-	<CAKv+Gu8wALTqtNQK_855A7M5f2a+EB1JyLxo=j6G0T1cf8ZFog@mail.gmail.com>
-Date: Thu, 4 Sep 2014 23:25:48 +0200
-Message-ID: <CAKv+Gu_sLmkBHF-9GyPUgfAbLYirQTD4vk63o6HzdZhm6s_e0g@mail.gmail.com>
-Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
- preparation patches
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Michael Brown <mbrown@fensystems.co.uk>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Ulf Winkelvos <ulf@winkelvos.de>,
-        Matt Fleming <matt.fleming@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 September 2014 21:12, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> On 4 September 2014 14:54, Michael Brown <mbrown@fensystems.co.uk> wrote:
->> On 04/09/14 11:48, Maarten Lankhorst wrote:
->>>>>
->>>>> If not, Ard please go ahead with option #2 above. Overkill yes, but I've
->>>>> done the single __attribute__() hacks in other projects and someone
->>>>> (usually me) always eventually forgets to tag some instance.
->>>>>
->>>> It appears we just got lucky on arm64, since we don't have any global
->>>> variables, but the issue does exist there as well.
->>>>
->>> FWIW, visibility pushing doesn't seem to work for functions declared with
->>> extern.
->>> Following seems to get rid of all GOTPCREL:
->>
->>
->> Are you sure?  The iPXE build process relies on this:
->>
->>   /* Force visibility of all symbols to "hidden", i.e. inform gcc that
->>    * all symbol references resolve strictly within our final binary.
->>    * This avoids unnecessary PLT/GOT entries on x86_64.
->>    *
->>    * This is a stronger claim than specifying "-fvisibility=hidden",
->>    * since it also affects symbols marked with "extern".
->>    */
->>   #ifndef ASSEMBLY
->>   #if __GNUC__ >= 4
->>   #pragma GCC visibility push(hidden)
->>   #endif
->>   #endif /* ASSEMBLY */
->>
->> and https://gcc.gnu.org/wiki/Visibility states that
->>
->>   "#pragma GCC visibility is stronger than -fvisibility; it affects extern
->> declarations as well. -fvisibility only affects definitions, so that
->> existing code can be recompiled with minimal changes. This is more true for
->> C than C++; C++ interfaces tend use classes, which are affected by
->> -fvisibility."
->>
->
-> This is exactly the reason I suggested using the #pragma in the first
-> place, only you need to take care to put it before #includes or it
-> won't apply to extern declarations contained in those.
->
-> But my later suggestion was to apply the attribute to extern
-> declarations explicitly, it is probably more portable, and if we can
-> assert that the GOT is empty, we can easily spot new ones popping up
-> before they make it into the tree.
-> Since Maarten's research seems to suggest that using the visibility
-> attribute is feasible as it dates back to the GCC 3.x days, I will go
-> ahead and implement the fix I suggested.
->
+On Thu, 4 Sep 2014, Paolo Bonzini wrote:
 
-As it turns out, this breaks 32-bit, and the linker script is shared.
+> Commit cbcf2dd3b3d4 (x86: kvm: Make kvm_get_time_and_clockread() nanoseconds
+> based, 2014-07-16) used the wrong formula for boot_ns, thus breaking kvmclock on
+> hosts that have a reliable TSC.
+> 
+> To find the right formula, let's first backport the switch to nanoseconds
+> to 3.16-era timekeeping logic.  The full patch (which works) is at
+> https://lkml.org/lkml/2014/9/4/462.  The key line here is
+> 
+>         boot_ns = timespec_to_ns(&tk->total_sleep_time)
+>                 + timespec_to_ns(&tk->wall_to_monotonic)
+>                 + tk->xtime_sec * (u64)NSEC_PER_SEC;
+> 
+> Because the above patch works, the conclusion is that the above formula
+> is not the same as commit cbcf2dd3b3d4's
+> 
+>         boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
+> 
+> As to what is the right one, commit 02cba1598a2a (timekeeping: Simplify getboottime(),
+> 2014-07-16) provides a hint:
+> 
+>    offs_real             = -wall-to_monotonic
+>    offs_boot             =  total_sleep_time
+> 
+>    offs_real - offs_boot = -wall_to_monotonic - total_sleep_time
+> 
+> that is
+> 
+>    offs_boot - offs_real =  wall_to_monotonic + total_sleep_time
+> 
+> which is what this patch uses, adding xtime_sec separately.  The "boot_ns"
+> moniker is not too clear, so rename boot_ns to nsec_base and the existing
+> nsec_base to snsec_base.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Reported-by: Chris J Arges <chris.j.arges@canonical.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	Thomas/John, the problem with the above explanation is that
+> 	tk_update_ktime_data has "base_mono = xtime_sec + wtm", and from
+> 	there "base_mono + offs_boot = xtime_sec + wtm + total_sleep_time".
+> 	Except that doesn't work, so something must be wrong in
+> 	tk_update_ktime_data's comment.
 
-So I suggest that we go with Matt's suggestion, i.e., move/clone the
-GOT fixup code so that it runs exactly once in each code path, but
-early enough so that the embedded EFI application gets the treatment
-too.
-And don't forget head_32.S ...
+Right. I'm staring into it and we need to fix the core code issue and
+not the usage site.
 
-Cheers,
-Ard.
+Thanks,
+
+	tglx
