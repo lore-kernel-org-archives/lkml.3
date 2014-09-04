@@ -1,70 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344AbaIDKha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:37:30 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:34473 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaIDKh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:37:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <540838DB.1070202@linux.vnet.ibm.com>
-References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com>
-	<CAKohpomLW17B=Sk42tczzDF+VGwn7hT521osWPi5TcgqpCPZ_w@mail.gmail.com>
-	<53296AD0.5090908@linux.vnet.ibm.com>
-	<19131121.D211TBerqb@vostro.rjw.lan>
-	<CAKohpom0+bbyffZML2tJjXQDc+2q4PM8sVkL5pDA5WX=rmvtKA@mail.gmail.com>
-	<54082C68.8030400@linux.vnet.ibm.com>
-	<CAKohpokvpWDbCbPYcV+fzzpaztZSi=yacdmyYfBLoSs4U2YO9A@mail.gmail.com>
-	<540838DB.1070202@linux.vnet.ibm.com>
-Date: Thu, 4 Sep 2014 16:07:28 +0530
-Message-ID: <CAKohpomH=ODnDT1FxrGVLOiOpA9NecQR134tUKQk-bRXLGPRYw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
+	id S1752861AbaIDKiw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:38:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36110 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606AbaIDKiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 06:38:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,465,1406617200"; 
+   d="scan'208";a="568228983"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+CC: Darren Hart <dvhart@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+Subject: RE: [PATCH 1/3] GPIO: gpio-dwapb: Enable platform driver binding to
+ MFD driver
+Thread-Topic: [PATCH 1/3] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Thread-Index: AQHPx7IeGXSX4urFPUSWYL9l2BIkHZvwKfyA///ktYCAALh6sA==
+Date: Thu, 4 Sep 2014 10:38:07 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E982558@SHSMSX101.ccr.corp.intel.com>
+References: <1409161588-19417-1-git-send-email-alvin.chen@intel.com>
+ <1409161588-19417-2-git-send-email-alvin.chen@intel.com>
+ <20140903200302.GA7673@breakpoint.cc>
+ <4656BEB6164FC34F8171C6538F1A595B2E982384@SHSMSX101.ccr.corp.intel.com>
+ <20140904073027.GA3336@breakpoint.cc>
+In-Reply-To: <20140904073027.GA3336@breakpoint.cc>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s84Ad0N4009168
 
-On 4 September 2014 15:33, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> I think Rafael's point was that since no driver that had implemented the
-> target_index callback was using it at the time that this patch was
-> proposed, it was be best to couple the check on existence of stop_cpu
-> callback with the the check on the kind of cpufreq driver. However
-> powerpc is also in need of this today and we implement the target_index
-> callback and find it convenient to use the stop CPU callback.
 
-No, this is what he said..
+> > Since we enable this module not only support OF devices, but also support
+> MFD devices, so we remove OF_GPIO dependenc
+> > For 'PCI', the original code is also not depended on PCI, and this patch also
+> not, do you think it is necessary?
+> 
+> if not PCI then you should add something likwe
+> 	"depends on OF_GPIO || MFD"
+> 
+> looking further, you need also HAS_IOMEM for things like
+> devm_ioremap_resource(). Linus, wouldn't it make sense to group this driver
+> and make the block depend on it?
+> 
+I can add "depends on OF_GPIO || INTEL_QUARK_I2C_GPIO_MFD", since now the MFD path only support Intel Quark.
 
-"
-So to me, (1) the new ->stop() should *only* be called for ->setpolicy drivers,
-because the purpose of it should be to "allow ->setpolicy drivers to do what the
-GOV_STOP will do for regular drivers"
-"
+Andriy, how do you think?
 
-> Rafael, in which case would it not make sense to remove the check on
-> driver->setpolicy above?
->
-> Besides, I don't understand very well why we had this double check in
-> the first place. Only if the drivers are in need of the functionality
-> like stop_cpu, would they have implemented this callback right? If we
-> are to assume that the drivers which have implemented the target_index
-> callback should never be needing it, they would not have implemented the
-> stop CPU callback either. So what was that, which was blatantly wrong
-> with just having a check on stop_cpu? I did go through the discussion
-> but did not find a convincing answer to this.
+> > > >  struct dwapb_gpio {
+> > > >  	struct	device		*dev;
+> > > >  	void __iomem		*regs;
+> > > >  	struct dwapb_gpio_port	*ports;
+> > > > -	unsigned int		nr_ports;
+> > > you could keep this the way it is
+> > It has been moved to 'pdata'.
+> 
+> I saw that. But there is no need keep a pointer to pdata across the whole driver
+> since only need nr_ports in the driver removal part of the whole driver.
+Got your idea. So can I just use a global static pdata pointer instead of adding it as a member of ' struct dwapb_gpio'?
+Since pdata is used in all 'probe' functions, and make pdata as global static make programming more easy.
 
-The idea was to get something similar to GOV_STOP for setpolicy drivers.
-But in the end we didn't get to that. What we do in GOV_STOP is stop
-changing CPUs frequency, but here in stop_cpu() we can stop changing
-CPUs frequency OR take it to minimum, whatever we want..
+> 
+> > > >  	struct irq_domain	*domain;
+> > > > +	const struct dwapb_gpio_platform_data	*pdata;
+> > >
+> > > and not making this a member of this struct. I've been going up and
+> > > down the source and I don't see the need to marry dwapb_gpio to
+> > > dwapb_gpio_platform_data.
+> > > That dwapb_gpio_port_property thing has a long name. Could you just
+> > > set it up, pass it for registration and the free it? You can't free
+> > > the pdata for the non-OF tree but for the OF case you keep that struct
+> around for no reason.
+> > > You could safe some memory and use pdata directly for setup.
+> > Here, 'pdata' is used for both OF and MFD. For MFD, 'pdata' is passed from
+> MFD.
+> > For OF, 'pdata' is getting from device nodes properties. Why do we
+> > have such design? Because it can make the handling more easy for
+> > flowing routine. All necessary properties get from 'pdata', never care it is
+> from OF or MFD. And someone are working on replacing OF interface with a
+> firmware agnostic device_property* interface which will work with both OF and
+> ACPI.
+> > More information for this design, please contact Darren Hart
+> <dvhart@linux.intel.com>. Darren Hart wrote to me:
+> > "Generally speaking, rather than if/else blocks throughout the code
+> > checking if it is enumerated via open firmware or as a platform device, a
+> cleaner approach is to check if the pdata is null, and if so, populate the pdata
+> from the open firmware description if present.
+> > Then use the pdata throughout the driver.
+> 
+> But isn't it enough to hold on to this pdata thing through the probe function
+> only? After probe is done you could drop that memory in the OF-case, right?
+OK. If it is OF-case, pdata can be freed in the end of probe.
 
-As I said earlier, probably we should just do what you did in your patch +
-some documentation changes.
+
+> > > > +	irq_set_handler_data(port->pp->irq, gpio);
+> > >
+> > > This does not look like it belongs here. It should only be used
+> > > together with
+> > > irq_set_chained_handler() or am I missing here something?
+> > This patch reused ' dwapb_irq_handler', it needs the irq handler data. For '
+> irq_set_handler_data', it just sets the irq data.
+> > Why do you think it must be used together with ' irq_set_chained_handler'?
+> 
+> because you do request_irq(â€¦, driver_data). If you you look close to
+> irq_set_chained_handler() it does not have such a member. Thus it uses
+> irq_set_handler_data() for that same purpose.
+> 
+OK. I can improve it.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
