@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaIDSKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:10:05 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:38665 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951AbaIDSKE (ORCPT
+	id S1754501AbaIDSLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:11:42 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:56089 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661AbaIDSLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:10:04 -0400
+	Thu, 4 Sep 2014 14:11:41 -0400
+Message-ID: <5408AB3F.4010803@ahsoftware.de>
+Date: Thu, 04 Sep 2014 20:11:11 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <20140904134223.GB3312@redhat.com>
-References: <20140904134135.GA3309@redhat.com> <20140904134223.GB3312@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 4 Sep 2014 11:09:42 -0700
-Message-ID: <CALCETrXG6_EcJCnh1-=DOjDt8fKXDWj2YAWLYwF9LG-2FaJktg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86, lib/Makefile: remove the unnecessary "+= thunk_64.o"
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Borislav Petkov <bp@alien8.de>,
+        =?ISO-8859-15?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Christopher Barry <christopher.r.barry@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: OT: Open letter to the Linux World
+References: <20140812153812.2923046a@monolith.infinux.org> <20140812202129.GA20344@home.goodmis.org> <yw1xr40l2whi.fsf@unicorn.mansr.com> <20140813082756.GB2923@twins.programming.kicks-ass.net> <20140813090013.GA20581@pd.tnic> <53F242D1.4050506@ahsoftware.de> <20140904075453.GK3190@worktop.ger.corp.intel.com> <54083C0F.1040807@ahsoftware.de> <540878D4.7080501@gmail.com> <5408A175.3090400@ahsoftware.de> <5408A84C.1090806@gmail.com>
+In-Reply-To: <5408A84C.1090806@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 6:42 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Trivial. We have "lib-y += thunk_$(BITS).o" at the start, no need
-> to add thunk_64.o if !CONFIG_X86_32.
->
+Am 04.09.2014 19:58, schrieb Austin S Hemmelgarn:
+> On 2014-09-04 13:29, Alexander Holler wrote:
+>> Am 04.09.2014 16:36, schrieb Austin S Hemmelgarn:
+>>> On 2014-09-04 06:16, Alexander Holler wrote:
+>>>>
+>>>> It's a myth that C++ ends up in bigger code than C. At least in my
+>>>> experience. Especially when the latest additions to C++ are in effect
+>>>> (like the move-semantics in C++11 I like quiet a lot and which you get
+>>>> almost for free (by changing nothing) when you use the STL). Thread
+>>>> support is now also standardized (in C++11), quiet nice to use.
+>>
+>>> Assuming you are writing in a standalone environment (no standard
+>>> libraries), then yes, your code will usually be about the same size
+>>> (unless you go way overboard with the object-oriented stuff); but the
+>>> runtime is larger in almost all non-standalone environments, and there
+>>> are some cases that code does end up larger in C++.  A lot of 'Clean C'
+>>> (stuff written so that it compiles correctly as C, C++ and Objective C)
+>>> that I have seen seems to end up larger (by about 4-6%) when built as
+>>> C++ (although it usually does much worse as Objective C).
+>>
+>> There are always corner cases and I never would use some "Clean C" code
+>> to compare sizes of C and C++. There is a whole lot of stuff you just
+>> can't, shouldn't or wouldn't do when using C instead of C++.
+>>
+>> And just throwing in some numbers without any explanation about features
+>> (like exceptions), optimizations and so on you've enabled for the tests
+>> you used to get those numbers, doesn't work. ;)
+>>
+>> I can't really comment on what you mean with "standalone environment" or
+>> "non-standalone environment", as I don't know what you mean with that.
+>> But if several programms share e.g. the stuff which is in libstdc++.
+>> you'll get a lot of size back when compared with C-only programms where
+>> everyone invents the wheel again and again.
+> By standalone environment, I mean no libraries, no libc[++], no external
+> dependencies, and in the case of a lot of kernel programming, no
+> built-ins.  A OS kernel HAS to be written like that, and it's easier to
+> do that in C than C++.  I doubt that you have ever looked at any source
+> code for Windows drivers, but Windows is written in C++, and they still
+> are just as mind-numbingly insane as some of the poorly maintained,
+> vendor originated Linux drivers.
 
-Acked-by: Andy Lutomirski <luto@amacapital.net>
+I've seen drivers for Windows and for OS2/2 and DOS and FreeBSD and ...
 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/lib/Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-> index 4d4f96a..66127b9 100644
-> --- a/arch/x86/lib/Makefile
-> +++ b/arch/x86/lib/Makefile
-> @@ -39,7 +39,7 @@ endif
->  else
->          obj-y += iomap_copy_64.o
->          lib-y += csum-partial_64.o csum-copy_64.o csum-wrappers_64.o
-> -        lib-y += thunk_64.o clear_page_64.o copy_page_64.o
-> +        lib-y += clear_page_64.o copy_page_64.o
->          lib-y += memmove_64.o memset_64.o
->          lib-y += copy_user_64.o copy_user_nocache_64.o
->         lib-y += cmpxchg16b_emu.o
-> --
-> 1.5.5.1
->
->
+But throwing the ball back, did you know that all Arduino SW is in C++? ;)
 
+> Not all C is like the Linux kernel, and in fact, if you use Linux,
+> probably more than half of your user-space programs were written in C.
+> They use dynamic linking just like C++ programs (but often with less
+> complex symbol mangling).
 
+This thread isn't about the kernel, but some userspace program which 
+does quiet a lot and which wants to do even more. I've just used one 
+example I did in the kernel space to explain what I miss when I'm using 
+or having to use C instead of C++.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I do understand why the Linux kernel is (still) in C and don't want to 
+start a discussion about that.
+
+Regards,
+
+Alexander Holler
