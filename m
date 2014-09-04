@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaIDUMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:12:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51908 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210AbaIDUMA (ORCPT
+	id S1755447AbaIDUOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:14:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55269 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755314AbaIDUOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:12:00 -0400
-Date: Thu, 4 Sep 2014 13:12:00 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>,
-        Devel FS Linux <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        cluster-devel <cluster-devel@redhat.com>
-Subject: Re: [PATCH v2 01/17] locks: consolidate "nolease" routines
-Message-ID: <20140904201200.GA26054@infradead.org>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
- <1409834323-7171-2-git-send-email-jlayton@primarydata.com>
- <CAHQdGtTqG8aW-cte2PW6pVw+OeCXATgr1BZwdhponuWMjzNg8g@mail.gmail.com>
- <20140904084938.2664bf0a@tlielax.poochiereds.net>
- <CAABAsM6v3-f_7cco8f_F5Wpy7PWJOUywQHH7A=mZ-LyHRASZ7Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAABAsM6v3-f_7cco8f_F5Wpy7PWJOUywQHH7A=mZ-LyHRASZ7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 4 Sep 2014 16:14:09 -0400
+Date: Thu, 4 Sep 2014 13:14:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Scotty Bauer <sbauer@eng.utah.edu>
+Cc: linux-kernel@vger.kernel.org, clemens@ladisch.de
+Subject: Re: [PATCH] kern/sys: Compat sysinfo syscall fix undefined behavior
+Message-Id: <20140904131408.5b50c44315263c497ac7d818@linux-foundation.org>
+In-Reply-To: <5408B39D.4030400@eng.utah.edu>
+References: <5408B39D.4030400@eng.utah.edu>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 02:25:35PM -0400, Trond Myklebust wrote:
-> Actually, it looks as if when you compile with !CONFIG_FILE_LOCKING,
-> then fcntl_setlease() returns the value '0' (which would be
-> "success!"). The word "confusing" only begins to describe it all.
+On Thu, 04 Sep 2014 12:46:53 -0600 Scotty Bauer <sbauer@eng.utah.edu> wrote:
 
-That's incorrect for sure, we should agree on a single sensible code
-for:
+> Fix undefined behavior and compiler warning by replacing right
+> shift 32 with upper_32_bits macro
+> 
+> Signed-off-by: Scotty Bauer <sbauer@eng.utah.edu>
+> ---
+>  kernel/sys.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index ce81291..c78530b 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -2135,7 +2135,7 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
+>  	/* Check to see if any memory value is too large for 32-bit and scale
+>  	 *  down if needed
+>  	 */
+> -	if ((s.totalram >> 32) || (s.totalswap >> 32)) {
+> +	if (upper_32_bits(s.totalram) || upper_32_bits(s.totalswap)) {
+>  		int bitcount = 0;
+>  
+>  		while (s.mem_unit < PAGE_SIZE) {
 
- 1) !CONFIG_FILE_LOCKING
- 2) !lease_enable
- 3) filesystem doesn't support leases.
+Fair enough.
 
+If I'm reading it correctly, this is all dead code because si_meminfo()
+unconditionally sets sysinfo.mem_unit to PAGE_SIZE.
+
+It could all do with a bit of a cleanup, I suspect.
