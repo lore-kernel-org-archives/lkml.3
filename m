@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaIDXTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 19:19:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49464 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751272AbaIDXTg (ORCPT
+	id S1755390AbaIDXV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 19:21:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57077 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856AbaIDXVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 19:19:36 -0400
-X-Sasl-enc: NNSnaCmmZzwMuM1Ij/oUwLsOYVTEy4ZXcT/k0pwY/ZKj 1409872775
-Date: Thu, 4 Sep 2014 20:19:23 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, tglx@linutronix.de, mingo@redhat.com,
-        akpm@linuxfoundation.org, arnd@arndb.de, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-Message-ID: <20140904231923.GA15320@khazad-dum.debian.net>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
- <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
- <20140904201123.GA9116@khazad-dum.debian.net>
- <5408C9C4.1010705@zytor.com>
+	Thu, 4 Sep 2014 19:21:55 -0400
+Date: Thu, 4 Sep 2014 16:21:08 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Insop Song <Insop.Song@gainspeed.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'insop.song@gmail.com'" <insop.song@gmail.com>
+Subject: Re: [GIT PULL] Staging driver patches for 3.15-rc1
+Message-ID: <20140904232108.GD4030@kroah.com>
+References: <20140401184817.GA21855@kroah.com>
+ <1396427043.18431.20.camel@x220>
+ <20140402200428.GE26966@kroah.com>
+ <7731bd53be4b49e2924a7002f74dc090@BY2PR07MB011.namprd07.prod.outlook.com>
+ <20140402230837.GA24324@kroah.com>
+ <1409872435.5546.135.camel@x220>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5408C9C4.1010705@zytor.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409872435.5546.135.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Sep 2014, H. Peter Anvin wrote:
-> On 09/04/2014 01:11 PM, Henrique de Moraes Holschuh wrote:
-> > I am worried of uncharted territory, here.  I'd actually advocate for not
-> > enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
-> > is using them as well.  Is this a real concern, or am I being overly
-> > cautious?
+On Fri, Sep 05, 2014 at 01:13:55AM +0200, Paul Bolle wrote:
+> On Wed, 2014-04-02 at 16:08 -0700, Greg KH wrote:
+> > On Wed, Apr 02, 2014 at 08:52:18PM +0000, Insop Song wrote:
+> > > On Wed, April 02, 2014 1:04 PM, Greg KH wrote:
+> > > > On Wed, Apr 02, 2014 at 10:24:03AM +0200, Paul Bolle wrote:
+> > > > > On Tue, 2014-04-01 at 11:48 -0700, Greg KH wrote:
+> > > > > > Staging driver pull request for 3.15-rc1
+> > > > > >
+> > > > > > Here's the huge drivers/staging/ update for 3.15-rc1.
+> > > > > >
+> > > > > > Loads of cleanup fixes, a few drivers removed, and some new ones
+> > > > added.
+> > > > > >
+> > > > > > All have been in linux-next for a while.
+> > > > > >
+> > > > > >[...]
+> > > > > >
+> > > > > > Insop Song (1):
+> > > > > >       staging: fpgaboot: Xilinx FPGA firmware download driver
+> > > > >
+> > > > > This commit adds checks for CONFIG_B4860G100. Is a patch to add a
+> > > > > Kconfig symbol B4860G100 perhaps queued somewhere?
+> > > > 
+> > > > Insop, I thought this config option was coming from some other place, right?
+> > > > 
+> > > 
+> > > Paul,
+> > > I didn't include CONFIG_B4860G100 in Kconfig in original patch set,
+> > > since programming FPGA method can vary in different system, and this
+> > > was discussed during the review with Greg as well.
+> > > 
+> > > However, actual fpga programming method is well contained in io.c with
+> > > ifdef-ed CONFIG_B4860G100, now I think I might better to update
+> > > Kconfig to include CONFIG_B4860G100.
+> > > 
+> > > Greg, what do you think? Any harm to add custom board CONFIG* to
+> > > staging Kconfig? Let me know.
+> > 
+> > Let's see what it would look like and we can go from there.
 > 
-> It is extremely unlikely that we'd have PAT issues in 32-bit mode and
-> not in 64-bit mode on the same CPU.
+> Nothing appears to have changed: there are still checks for
+> CONFIG_B4860G100 in next-20140904. Should I submit the trivial patch to
+> remove those checks and the code they hide?
 
-Sure, but is it really a good idea to enable this on the *old* non-64-bit
-capable processors (note: I don't mean x86-64 processors operating in 32-bit
-mode) ?
+Yes, please do.
 
-> As far as I know, the current blacklist rule is very conservative due to
-> lack of testing more than anything else.
+thanks,
 
-I was told that much in 2009 when I asked why cpuid 0x6d8 was blacklisted
-from using PAT :-)
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+greg k-h
