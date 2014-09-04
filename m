@@ -1,50 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaIDNoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 09:44:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52159 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaIDNoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 09:44:17 -0400
-Message-ID: <54086CA7.8020507@linutronix.de>
-Date: Thu, 04 Sep 2014 15:44:07 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1752553AbaIDNow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 09:44:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42101 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744AbaIDNou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 09:44:50 -0400
+Date: Thu, 4 Sep 2014 15:42:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] x86: reimplement ___preempt_schedule*() using THUNK
+	helpers
+Message-ID: <20140904134201.GA3312@redhat.com>
+References: <20140904134135.GA3309@redhat.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
-References: <20140828082348.GA5413@linutronix.de> <20140828164645.GG16006@atomide.com> <53FF84DF.7080406@linutronix.de> <20140828225454.GM16006@atomide.com> <540048B4.7010807@linutronix.de> <20140829161221.GO16006@atomide.com> <5404B149.6010400@linutronix.de> <54060EDA.6060204@linutronix.de> <20140902201536.GC11766@atomide.com> <540745CC.2090901@linutronix.de> <20140903174845.GE11766@atomide.com>
-In-Reply-To: <20140903174845.GE11766@atomide.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904134135.GA3309@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 07:48 PM, Tony Lindgren wrote:
+___preempt_schedule() does SAVE_ALL/RESTORE_ALL but this is suboptimal,
+we do not need to save/restore the callee-saved register. And we already
+have arch/x86/lib/thunk_*.S which implements the similar asm wrappers,
+so it makes sense to redefine ___preempt_schedule() as "THUNK ..." and
+remove preempt.S altogether.
 
-I will check this upper part of this email soon…
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/Makefile  |    2 --
+ arch/x86/kernel/preempt.S |   25 -------------------------
+ arch/x86/lib/thunk_32.S   |   20 ++++++++++++++++----
+ arch/x86/lib/thunk_64.S   |    7 +++++++
+ 4 files changed, 23 insertions(+), 31 deletions(-)
+ delete mode 100644 arch/x86/kernel/preempt.S
 
-> OK. At least it's starting to now sound that the bugs are pretty much
-> the same with 8250 and serial-omap :)
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index b5ea75c..58cf60b 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -39,8 +39,6 @@ obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
+ 
+-obj-$(CONFIG_PREEMPT)	+= preempt.o
+-
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
+ obj-y				+= ptrace.o
+diff --git a/arch/x86/kernel/preempt.S b/arch/x86/kernel/preempt.S
+deleted file mode 100644
+index ca7f0d5..0000000
+--- a/arch/x86/kernel/preempt.S
++++ /dev/null
+@@ -1,25 +0,0 @@
+-
+-#include <linux/linkage.h>
+-#include <asm/dwarf2.h>
+-#include <asm/asm.h>
+-#include <asm/calling.h>
+-
+-ENTRY(___preempt_schedule)
+-	CFI_STARTPROC
+-	SAVE_ALL
+-	call preempt_schedule
+-	RESTORE_ALL
+-	ret
+-	CFI_ENDPROC
+-
+-#ifdef CONFIG_CONTEXT_TRACKING
+-
+-ENTRY(___preempt_schedule_context)
+-	CFI_STARTPROC
+-	SAVE_ALL
+-	call preempt_schedule_context
+-	RESTORE_ALL
+-	ret
+-	CFI_ENDPROC
+-
+-#endif
+diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
+index 28f85c9..7f1641a 100644
+--- a/arch/x86/lib/thunk_32.S
++++ b/arch/x86/lib/thunk_32.S
+@@ -7,16 +7,19 @@
+ 	#include <linux/linkage.h>
+ 	#include <asm/asm.h>
+ 
+-#ifdef CONFIG_TRACE_IRQFLAGS
+ 	/* put return address in eax (arg1) */
+-	.macro thunk_ra name,func
++	.macro thunk_ra name, func, put_ret_addr_in_eax=0
+ 	.globl \name
+ \name:
+ 	pushl %eax
+ 	pushl %ecx
+ 	pushl %edx
++
++	.if \put_ret_addr_in_eax
+ 	/* Place EIP in the arg1 */
+ 	movl 3*4(%esp), %eax
++	.endif
++
+ 	call \func
+ 	popl %edx
+ 	popl %ecx
+@@ -25,6 +28,15 @@
+ 	_ASM_NOKPROBE(\name)
+ 	.endm
+ 
+-	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
+-	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
++#ifdef CONFIG_TRACE_IRQFLAGS
++	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller,1
++	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller,1
++#endif
++
++#ifdef CONFIG_PREEMPT
++	THUNK ___preempt_schedule, preempt_schedule
++#ifdef CONFIG_CONTEXT_TRACKING
++	THUNK ___preempt_schedule_context, preempt_schedule_context
+ #endif
++#endif
++
+diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
+index 92d9fea..b30b5eb 100644
+--- a/arch/x86/lib/thunk_64.S
++++ b/arch/x86/lib/thunk_64.S
+@@ -38,6 +38,13 @@
+ 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
+ #endif
+ 
++#ifdef CONFIG_PREEMPT
++	THUNK ___preempt_schedule, preempt_schedule
++#ifdef CONFIG_CONTEXT_TRACKING
++	THUNK ___preempt_schedule_context, preempt_schedule_context
++#endif
++#endif
++
+ 	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
+ 	CFI_STARTPROC
+ 	SAVE_ARGS
+-- 
+1.5.5.1
 
-Do you see a reason for not posting the entire series again since now I
-am bug compatible in the pm-runtime part? We have -rc3 and I would like
-to get this merge the series I have now and this seems to be the only
-problem I am aware of.
 
-> 
-> Regards,
-> 
-> Tony
-
-Sebastian
