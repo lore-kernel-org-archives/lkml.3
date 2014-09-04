@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaIDV6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:58:30 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:40041 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848AbaIDV61 (ORCPT
+	id S1755717AbaIDV5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:57:34 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:57069 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601AbaIDV5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:58:27 -0400
-Date: Thu, 4 Sep 2014 15:58:21 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI/AER: Make linux/aer.h standalone includable
-Message-ID: <20140904215821.GF17125@google.com>
-References: <1407240535-19564-1-git-send-email-thierry.reding@gmail.com>
+	Thu, 4 Sep 2014 17:57:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407240535-19564-1-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: zoobab@gmail.com
+In-Reply-To: <20140904173521.GA20343@localhost.localdomain>
+References: <20140831152456.GA25207@udknight>
+	<20140904173521.GA20343@localhost.localdomain>
+Date: Thu, 4 Sep 2014 23:57:31 +0200
+Message-ID: <CANjd3nc5==yDpRVMxP+bzhqhEqyK4SUam=Ood4RMpsN5esuG4A@mail.gmail.com>
+Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
+From: Benjamin Henrion <zoobab@gmail.com>
+To: Wang YanQing <udknight@gmail.com>, gregkh@linuxfoundation.org,
+        linus.walleij@linaro.org, Johan Hovold <jhovold@gmail.com>,
+        andi@lisas.de, dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Henrion <zoobab@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 02:08:55PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
-> 
-> The header file references u16, u32 and struct pci_dev types, but they
-> are not defined in the header nor does the header pull in the necessary
-> includes for them. This causes build breakage when the file is included
-> without any of the dependencies being satisfied from somewhere else.
-> 
-> Fix this by including linux/types.h (for u16 and u32) and by adding a
-> forward-declaration of struct pci_dev.
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+On Thu, Sep 4, 2014 at 7:35 PM, Wang YanQing <udknight@gmail.com> wrote:
+> On Sun, Aug 31, 2014 at 11:24:56PM +0800, Wang YanQing wrote:
+>> PL2303 USB Serial devices may has GPIOs, this patch add
+>> basic PL2303 gpio support.
+>>
+>> Known issue:
+>> If gpios are in use(export to userspace through sysfs interface, etc),
+>> then call pl2303_release(unplug usb-serial convertor, modprobe -r, etc),
+>> will cause trouble, so we need to make sure there is no gpio user before
+>> call pl2303_release.
+>>
+>> Signed-off-by: Wang YanQing <udknight@gmail.com>
+>> ---
+>>  Note: I sniffed office HXD gpio test program to get
+>>        gpios control protocol with PL2303 RA, so I only
+>>        test it with PL2303 RA and HXA, I don't have HXD,
+>>        but because it is *office* HXD gpio test program,
+>>        so if it doesn't work with HXD, I will feel surprise.
 
-Applied to pci/misc for v3.18, thanks!  I dropped the struct pci_dev
-declaration because it was already added by 5ccb8225abf2 ("x86/ras: Fix
-build warnings in <linux/aer.h>")
+I can confirm your patch is working fine on the HXD:
 
-> ---
->  include/linux/aer.h | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/aer.h b/include/linux/aer.h
-> index 4dbaa7081530..04bcf33a3e3a 100644
-> --- a/include/linux/aer.h
-> +++ b/include/linux/aer.h
-> @@ -7,6 +7,10 @@
->  #ifndef _AER_H_
->  #define _AER_H_
->  
-> +#include <linux/types.h>
-> +
-> +struct pci_dev;
-> +
->  #define AER_NONFATAL			0
->  #define AER_FATAL			1
->  #define AER_CORRECTABLE			2
-> -- 
-> 2.0.4
-> 
+http://www.zoobab.com/pl2303hxd-gpio
+
+I am still hunting for a simple C program to test the speed of the
+GPIOs and sysfs, if you have a good reference.
+
+Best,
+
+-- 
+Benjamin Henrion <bhenrion at ffii.org>
+FFII Brussels - +32-484-566109 - +32-2-4148403
+"In July 2005, after several failed attempts to legalise software
+patents in Europe, the patent establishment changed its strategy.
+Instead of explicitly seeking to sanction the patentability of
+software, they are now seeking to create a central European patent
+court, which would establish and enforce patentability rules in their
+favor, without any possibility of correction by competing courts or
+democratically elected legislators."
