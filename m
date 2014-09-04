@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431AbaIDUwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:52:41 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45666 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaIDUwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:52:40 -0400
-Date: Sun, 24 Aug 2014 00:26:40 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: John Stultz <john.stultz@linaro.org>
-Cc: ksummit-discuss@lists.linuxfoundation.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: (Resend) 2038 Kernel Summit Discussion Fodder
-Message-ID: <20140823222640.GA1382@xo-6d-61-c0.localdomain>
-References: <53EAAC95.7080301@linaro.org>
- <CALAqxLWvSn2_6dakGiQ4VEtYHH2Dt7BL0pn5XHgLWOV4ePqhBw@mail.gmail.com>
+	id S1755419AbaIDU13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:27:29 -0400
+Received: from www.sr71.net ([198.145.64.142]:47993 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752920AbaIDU12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 16:27:28 -0400
+Message-ID: <5408CB2E.3080101@sr71.net>
+Date: Thu, 04 Sep 2014 13:27:26 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLWvSn2_6dakGiQ4VEtYHH2Dt7BL0pn5XHgLWOV4ePqhBw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>, Tejun Heo <tj@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: regression caused by cgroups optimization in 3.17-rc2
+References: <54061505.8020500@sr71.net> <5406262F.4050705@intel.com> <54062F32.5070504@sr71.net> <20140904142721.GB14548@dhcp22.suse.cz>
+In-Reply-To: <20140904142721.GB14548@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> There was also some pre-discussion before the sessions started around
-> why we don't just change time_t to be unsigned. From the kernel's
-> point of view this would be mostly fine, since dates before 1970 are
-> not considered valid for any internal uses (with the exception of some
-> filesystem timestamps). However, the problem with this approach is
-> that userspace may want to handle dates prior to 1970, so this would
-> eliminate that possibility. And removing the sign could cause problems
-> with existing comparison logic. There is also the fact that having the
-> same time unit range on 32bit and 64bit systems avoids complicating
-> how timestamps are interpreted between architectures, where as having
-> it be unsigned on 32bit but signed on 64bit would likely cause
-> confusion. It is quite likely that using unsigned timestamps will be a
-> useful solution for cases where timestamps cannot be converted to
-> 64bits, but from the kernel perspective if we are going to change the
-> abi, we should probably go all the way to 64bits. There seemed to be
-> no disagreement here.
+On 09/04/2014 07:27 AM, Michal Hocko wrote:
+> Ouch. free_pages_and_swap_cache completely kills the uncharge batching
+> because it reduces it to PAGEVEC_SIZE batches.
 > 
-> For the rest of the session, I opened it up for further thoughts or
-> ideas. While there wasn't any new proposals, there was a question as
-> to if anyone will really be running 32bit hardware in 2038, which made
-> some folks point out that as systems get smaller there are likely to
-> be tiny embedded platforms using Linux. The point that these systems
+> I think we really do not need PAGEVEC_SIZE batching anymore. We are
+> already batching on tlb_gather layer. That one is limited so I think
+> the below should be safe but I have to think about this some more. There
+> is a risk of prolonged lru_lock wait times but the number of pages is
+> limited to 10k and the heavy work is done outside of the lock. If this
+> is really a problem then we can tear LRU part and the actual
+> freeing/uncharging into a separate functions in this path.
+> 
+> Could you test with this half baked patch, please? I didn't get to test
+> it myself unfortunately.
 
-I'm pretty sure people will run 32bit hardware in 2038... that is not even
-a question.
+3.16 settled out at about 11.5M faults/sec before the regression.  This
+patch gets it back up to about 10.5M, which is good.  The top spinlock
+contention in the kernel is still from the resource counter code via
+mem_cgroup_commit_charge(), though.
 
-Today, there's good chance there's linux somewhere in your car. (Dashboard,
-entertainment system). People like to keep cars from 1910 working, and I suspect
-that is not going to change.
-
-So yes, in 2038 people will be running 32bit linux.
-
-Whether there will be people putting 32bit linux into new devices is a question,
-but I suspect answer is still yes.
-										Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I'm running Johannes' patch now.
