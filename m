@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaIDTPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:15:17 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:56102 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104AbaIDTPP (ORCPT
+	id S1755303AbaIDTQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:16:07 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:64673 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067AbaIDTQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:15:15 -0400
+	Thu, 4 Sep 2014 15:16:04 -0400
+Message-ID: <5408BA6D.1070602@redhat.com>
+Date: Thu, 04 Sep 2014 21:15:57 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1409857025.28990.125.camel@misato.fc.hp.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
- <1409855739-8985-5-git-send-email-toshi.kani@hp.com> <CALCETrXjpoVmCi07zo0dKH9LrF+nz9F3GshNiQvmiueFFH=TUQ@mail.gmail.com>
- <1409857025.28990.125.camel@misato.fc.hp.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 4 Sep 2014 12:14:54 -0700
-Message-ID: <CALCETrUrbQm72_U4uGCCdNr1uww0+avmwu2N_tHRcdevRJCyvQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] x86, mm: Add set_memory_wt() for WT
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, akpm@linuxfoundation.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+To: Chris J Arges <chris.j.arges@canonical.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
+References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <54088CB5.6050406@canonical.com> <54089DDE.6010004@redhat.com> <5408AC76.6030404@canonical.com>
+In-Reply-To: <5408AC76.6030404@canonical.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 11:57 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Thu, 2014-09-04 at 11:57 -0700, Andy Lutomirski wrote:
->> On Thu, Sep 4, 2014 at 11:35 AM, Toshi Kani <toshi.kani@hp.com> wrote:
->> > This patch adds set_memory_wt(), set_memory_array_wt(), and
->> > set_pages_array_wt() for setting range(s) of memory to WT.
->> >
->>
->> Possibly dumb question: I thought that set_memory_xyz was only for
->> RAM.  Is that incorrect?
->
-> It works for non-RAM ranges as well.  For instance, you can use
-> set_memory_xyz() to change cache attribute for a non-RAM range mapped by
-> ioremap_cache().
+Il 04/09/2014 20:16, Chris J Arges ha scritto:
+>> +	boot_ns = timespec_to_ns(&tk->total_sleep_time)
+>> +		+ tk->wall_to_monotonic.tv_sec * (u64)NSEC_PER_SEC
+>> +		+ tk->wall_to_monotonic.tv_nsec
+>> +		+ tk->xtime_sec * (u64)NSEC_PER_SEC;
 
-OK -- I didn't realize that was legal.
+So this means that the above 3.16-based code is not the same as
 
-Do you, by any chance, have a test driver for this?  For example,
-something that lets your reserve some WT memory at boot and mmap it?
-I wouldn't mind getting some benchmarks, and I can even throw it at
-the NV-DIMM box that's sitting under my desk :)
+        boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
 
---Andy
+in 3.17.  Everything else in the patch you tested is the same as the
+code that is in 3.17, so that's a start.
+
+Paolo
