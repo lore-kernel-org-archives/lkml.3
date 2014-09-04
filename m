@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589AbaIDVOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:14:08 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:36657 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaIDVOF (ORCPT
+	id S1755641AbaIDVO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:14:27 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:52212 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755603AbaIDVOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:14:05 -0400
-From: Vadim Bendebury <vbendeb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Vadim Bendebury <vbendeb@chromium.org>,
-        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Subject: [PATCH v4] checkpatch: allow optional shorter config descriptions
-Date: Thu,  4 Sep 2014 14:13:54 -0700
-Message-Id: <1409865234-19708-1-git-send-email-vbendeb@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
-References: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
+	Thu, 4 Sep 2014 17:14:23 -0400
+Date: Thu, 4 Sep 2014 14:14:19 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [stable -3.14] PM backports for pm_test / CONFIG_PM_DEBUG
+Message-ID: <20140904211419.GC18411@ld-irv-0074>
+References: <20140904010219.GA18411@ld-irv-0074>
+ <1849024.CHOUso6H2K@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1849024.CHOUso6H2K@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script is used by many other projects, and in some of them the
-requirement of at least 4 line long description for all Kconfig items
-is excessive. This patch adds a command line option to control the
-required minimum length.
+On Thu, Sep 04, 2014 at 09:40:41PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, September 03, 2014 06:02:19 PM Brian Norris wrote:
+> > I think I've narrowed it down to this commit that should be backported
+> > to -stable (for 3.9+?):
+> > 
+> >     43e8317b0bba PM / sleep: Use valid_state() for platform-dependent sleep states only
+> > 
+> > But it needs to drag along this dependency too:
+> > 
+> >     27ddcc6596e5 PM / sleep: Add state field to pm_states[] entries
+> 
+> That sounds OK.
+> 
+> Can you please send a formal request to include the two commits above to Greg/stable?
 
-Tested running this script over a patch including a two line config
-description. The script generated a warning when invoked as is, and
-did not generate it when invoked with --min-conf-desc-length=2.
+Sure. I've never done a post-merge -stable request; the format isn't
+100% clear, but I'll give it a go.
 
-Signed-off-by: Vadim Bendebury <vbendeb@chromium.org>
----
+> > While at this, it looks like this commit might be deserving of -stable
+> > (3.9+). I haven't tested this one, as I don't have a good freeze+cpuidle
+> > setup; it just shows up in the commit log with an interesting
+> > description and a 'Fixes' tag:
+> > 
+> >     f3f125324fc1 PM / suspend: Make cpuidle work in the "freeze" state
+> 
+> Well, it basically makes the freeze state save energy, but it's not essential.
+> 
+> I'm not seeing the "Fixes:" tag on it, though.
 
-Changes in v4:
-  - added the missing trailing semicolon. Re-tested to verify that it
-    still works as expected.
+Oops, I must have been looking at a different commit. Sorry!
 
-Changes in v3:
- - fixed the indentation problem
-
-Changes in v2:
- - modified the condition check as requested
-
- scripts/checkpatch.pl | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b385bcb..17003d6 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -43,6 +43,7 @@ my $configuration_file = ".checkpatch.conf";
- my $max_line_length = 80;
- my $ignore_perl_version = 0;
- my $minimum_perl_version = 5.10.0;
-+my $min_conf_desc_length = 4;
- 
- sub help {
- 	my ($exitcode) = @_;
-@@ -63,6 +64,7 @@ Options:
-   --types TYPE(,TYPE2...)    show only these comma separated message types
-   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
-   --max-line-length=n        set the maximum line length, if exceeded, warn
-+  --min-conf-desc-length=n   set the min description length, if shorter, warn
-   --show-types               show the message "types" in the output
-   --root=PATH                PATH to the kernel tree root
-   --no-summary               suppress the per-file summary
-@@ -131,6 +133,7 @@ GetOptions(
- 	'types=s'	=> \@use,
- 	'show-types!'	=> \$show_types,
- 	'max-line-length=i' => \$max_line_length,
-+	'min-conf-desc-length=i' => \$min_conf_desc_length,
- 	'root=s'	=> \$root,
- 	'summary!'	=> \$summary,
- 	'mailback!'	=> \$mailback,
-@@ -2280,8 +2283,10 @@ sub process {
- 				}
- 				$length++;
- 			}
--			WARN("CONFIG_DESCRIPTION",
--			     "please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($is_start && $is_end && $length < 4);
-+			if ($is_start && $is_end && $length < $min_conf_desc_length) {
-+				WARN("CONFIG_DESCRIPTION",
-+				     "please write a paragraph that describes the config symbol fully\n" . $herecurr);
-+			}
- 			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
- 		}
- 
--- 
-2.1.0.rc2.206.gedb03e5
-
+Brian
