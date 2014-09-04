@@ -1,113 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaIDJmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:42:05 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59790 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750966AbaIDJmD (ORCPT
+	id S1752785AbaIDJmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:42:25 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:56385 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752669AbaIDJmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:42:03 -0400
-Date: Thu, 4 Sep 2014 10:41:52 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "zhichang.yuan" <zhichang.yuan@linaro.org>
-Cc: Will Deacon <Will.Deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steve Capper <Steve.Capper@arm.com>
-Subject: Re: Some questions about DEBUG_PAGEALLOC on ARMv8
-Message-ID: <20140904094152.GB16169@arm.com>
-References: <53F739C2.8070809@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F739C2.8070809@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Sep 2014 05:42:24 -0400
+Message-ID: <1409823741.5546.82.camel@x220>
+Subject: Re: [PATCH 04/19] serial: samsung: Remove support for legacy clock
+ code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Date: Thu, 04 Sep 2014 11:42:21 +0200
+In-Reply-To: <1409823567.5546.80.camel@x220>
+References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+	 <1404496099-26708-5-git-send-email-t.figa@samsung.com>
+	 <1405502840.4408.2.camel@x220> <53C67386.5070401@samsung.com>
+	 <1405520767.4408.39.camel@x220> <1405521324.4408.44.camel@x220>
+	 <53C68FAB.9070102@samsung.com> <1409823567.5546.80.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Sep 2014 09:42:21.0599 (UTC) FILETIME=[866222F0:01CFC824]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zhichang,
+[Use Tomasz's new address and add Sylwester.]
 
-(cc'ing Steve Capper for the huge page stuff)
-
-On Fri, Aug 22, 2014 at 01:38:26PM +0100, zhichang.yuan wrote:
-> I am working to implement the DEBUG_PAGEALLOC on ARMv8.
-
-I assume that's the arm64 kernel.
-
-> After i investigated the DEBUG_PAGEALLOC implementation on x86 arch,
-> some questions are standing in the way to start coding.
+On Thu, 2014-09-04 at 11:39 +0200, Paul Bolle wrote:
+> On Wed, 2014-07-16 at 16:43 +0200, Tomasz Figa wrote:
+> > On 16.07.2014 16:35, Paul Bolle wrote:
+> > > On Wed, 2014-07-16 at 16:26 +0200, Paul Bolle wrote:
+> > >> On Wed, 2014-07-16 at 14:43 +0200, Tomasz Figa wrote:
+> > >>> That's right. Apparently I missed them. I guess that's not critical,
+> > >>> though, and could be done in separate patch, right?
+> > >>
+> > >> This is not critical at all, so that's fine with me. 
+> > > 
+> > > Actually, that's only correct if the solution here is to just remove the
+> > > (currently) dead code hidden behind CONFIG_SAMSUNG_CLOCK. But if the
+> > > solution requires something less trivial, that might be quite wrong.
+> > > 
+> > > So please disregard my comment!
+> > 
+> > The code between those ifdefs is no longer used, because all Samsung
+> > platforms use the Common Clock Framework after this series. So I believe
+> > we can safely remove this dead code.
 > 
-> 1. How to handle the large page when DEBUG_PAGEALLOC is enabled In
-> ARMv8, the kernel direct memory page table entries will set the block
-> flag for better performance. When DEBUG_PAGEALLOC is configured, if
-> the size of freed page is not multiply of page block size, there is no
-> corresponding page table entry. In the old x86 kernel version, the
-> large page to be freed will be split into normal page size and build
-> the corresponding PTEs. And afterwards, someone done a patch to remove
-> the splitting process. It will make the code simpler and easily
-> stable.
-
-Initially, you could either map everything as pages or implement
-splitting of huge pages (if for example the huge page is at the pmd
-level, you allocate and populate a pte).
-
-> I prefer the current design in x86, what are your thoughts here?
-
-I haven't looked at it yet.
-
-> 2. Does ARMv8 support HIBERNATION?
-
-Not yet.
-
-> The HIBERNATION has some dependency on DEBUG_PAGEALLOC.
-
-Like in DEBUG_PAGEALLOC "depends on !HIBERNATION"?
-
-> 3. Is the hypothesis of DEBUG_PAGEALLOC always true?
-
-Which hypothesis?
-
-> From the x86 code, DEBUG_PAGEALLOC use the invalid page table entries
-> to catch the accesses to free pages. This mechanism is based on the
-> hypothesis that all the corresponding page table entries that are
-> corresponding to the free pages are cleared correctly. Supposed this
-> condition is always true, what we need to do is just to clear the
-> kernel linear mapping page entries, since those page tables are
-> fixable after initialization. DEBUG_PAGEALLOC on x86 seems to do like
-> that.
-
-I guess that's the ARCH_SUPPORTS_DEBUG_PAGEALLOC rather than just the
-simple DEBUG_PAGEALLOC which can be enabled on arm64 as well, you just
-get page poisoning rather than invalid mappings.
-
-It could be done on arm64 as well but you need to sort out huge page
-splitting or just map everything as pages when the option is enabled.
-
-> Is it possible the hypothesis will be broken?
-> If the answer is yes, DEBUG_PAGEALLOC can catch the accesses to free
-> page with kernel linear mapping address. But if the virtual address is
-> from other mapped areas and target to the free pages, DEBUG_PAGEALLOC
-> will do nothing.
+> The three checks for CONFIG_SAMSUNG_CLOCK can still be seen in v3.17-rc3
+> and next-20140903. Should I perhaps submit the trivial patch to remove
+> them (and the code they hide) or did things turn out to be more
+> complicated?
 > 
-> Is this result the original objective of DEBUG_PAGEALLOC?
-> I can not find the initial commit log in kernel Git, i am not sure
-> about it.
+> 
+> Paul Bolle
 
-The objective is written in the Kconfig:
-
-config DEBUG_PAGEALLOC
-	bool "Debug page memory allocations"
-	...
-	  Unmap pages from the kernel linear mapping after free_pages().
-	  This results in a large slowdown, but helps to find certain types
-	  of memory corruption.
-
-	  For architectures which don't enable ARCH_SUPPORTS_DEBUG_PAGEALLOC,
-	  fill the pages with poison patterns after free_pages() and verify
-	  the patterns before alloc_pages().  Additionally,
-	  this option cannot be enabled in combination with hibernation as
-	  that would result in incorrect warnings of memory corruption after
-	  a resume because free pages are not saved to the suspend image.
-
--- 
-Catalin
