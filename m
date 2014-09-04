@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092AbaIDSrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:47:40 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:10290 "EHLO
+	id S1755182AbaIDSrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:47:53 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:10301 "EHLO
 	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaIDSrj (ORCPT
+	with ESMTP id S1755131AbaIDSrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:47:39 -0400
+	Thu, 4 Sep 2014 14:47:52 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
         akpm@linuxfoundation.org, arnd@arndb.de
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
         stefan.bader@canonical.com, luto@amacapital.net,
         konrad.wilk@oracle.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-Date: Thu,  4 Sep 2014 12:35:35 -0600
-Message-Id: <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH 3/5] x86, mm, asm-gen: Add ioremap_wt() for WT
+Date: Thu,  4 Sep 2014 12:35:37 -0600
+Message-Id: <1409855739-8985-4-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
 References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
@@ -23,87 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets WT to the PA4 slot in the PAT MSR when the processor
-is not affected by the PAT errata.  The upper 4 slots of the PAT MSR
-are continued to be unused on the following Intel processors.
-
-  errata           cpuid
-  --------------------------------------
-  Pentium 2, A52   family 0x6, model 0x5
-  Pentium 3, E27   family 0x6, model 0x7
-  Pentium M, Y26   family 0x6, model 0x9
-  Pentium 4, N46   family 0xf, model 0x0
-
-For these affected processors, _PAGE_CACHE_MODE_WT is redirected to UC-
-per the default setup in __cachemode2pte_tbl[].
+This patch adds ioremap_wt() for creating WT mapping on x86.
+It follows the same model as ioremap_wc() for multi-architecture
+support.  ARCH_HAS_IOREMAP_WT is defined in the x86 version of
+io.h to indicate that ioremap_wt() is implemented on x86.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- arch/x86/mm/pat.c |   47 ++++++++++++++++++++++++++++++++---------------
- 1 file changed, 32 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/io.h   |    2 ++
+ arch/x86/mm/ioremap.c       |   24 ++++++++++++++++++++++++
+ include/asm-generic/io.h    |    4 ++++
+ include/asm-generic/iomap.h |    4 ++++
+ 4 files changed, 34 insertions(+)
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index feb4d30..b1891dc 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -132,6 +132,7 @@ void pat_init(void)
- {
- 	u64 pat;
- 	bool boot_cpu = !boot_pat_state;
-+	struct cpuinfo_x86 *c = &boot_cpu_data;
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 71b9e65..c813c86 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -35,6 +35,7 @@
+   */
  
- 	if (!pat_enabled)
- 		return;
-@@ -152,21 +153,37 @@ void pat_init(void)
- 		}
+ #define ARCH_HAS_IOREMAP_WC
++#define ARCH_HAS_IOREMAP_WT
+ 
+ #include <linux/string.h>
+ #include <linux/compiler.h>
+@@ -316,6 +317,7 @@ extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
+ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 				enum page_cache_mode pcm);
+ extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
++extern void __iomem *ioremap_wt(resource_size_t offset, unsigned long size);
+ 
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 885fe44..952f4b4 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -155,6 +155,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 		prot = __pgprot(pgprot_val(prot) |
+ 				cachemode2protval(_PAGE_CACHE_MODE_WC));
+ 		break;
++	case _PAGE_CACHE_MODE_WT:
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_WT));
++		break;
+ 	case _PAGE_CACHE_MODE_WB:
+ 		break;
  	}
+@@ -249,6 +253,26 @@ void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
+ }
+ EXPORT_SYMBOL(ioremap_wc);
  
--	/* Set PWT to Write-Combining. All other bits stay the same */
--	/*
--	 * PTE encoding used in Linux:
--	 *      PAT
--	 *      |PCD
--	 *      ||PWT
--	 *      |||
--	 *      000 WB		_PAGE_CACHE_WB
--	 *      001 WC		_PAGE_CACHE_WC
--	 *      010 UC-		_PAGE_CACHE_UC_MINUS
--	 *      011 UC		_PAGE_CACHE_UC
--	 * PAT bit unused
--	 */
--	pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
--	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
-+	if ((c->x86_vendor == X86_VENDOR_INTEL) &&
-+	    (((c->x86 == 0x6) &&
-+	      ((c->x86_model == 0x5) ||
-+	       (c->x86_model == 0x7) ||
-+	       (c->x86_model == 0x9))) ||
-+	     ((c->x86 == 0xf) && (c->x86_model == 0x0)))) {
-+		/*
-+		 * Upper four PAT entries are not usable on the following
-+		 * Intel processors.
-+		 *
-+		 *   errata           cpuid
-+		 *   --------------------------------------
-+		 *   Pentium 2, A52   family 0x6, model 0x5
-+		 *   Pentium 3, E27   family 0x6, model 0x7
-+		 *   Pentium M, Y26   family 0x6, model 0x9
-+		 *   Pentium 4, N46   family 0xf, model 0x0
-+		 *
-+		 * PAT 0:WB, 1:WC, 2:UC-, 3:UC, 4-7:unusable
-+		 *
-+		 * NOTE: When WT or WP is used, it is redirected * to UC-
-+		 * per the default setup in  __cachemode2pte_tbl[].
-+		 */
-+		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-+		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
-+	} else {
-+		/*
-+		 * PAT 0:WB, 1:WC, 2:UC-, 3:UC, 4:WT, 5-7:reserved
-+		 */
-+		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-+		      PAT(4, WT) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
-+	}
++/**
++ * ioremap_wt	-	map memory into CPU space write through
++ * @phys_addr:	bus address of the memory
++ * @size:	size of the resource to map
++ *
++ * This version of ioremap ensures that the memory is marked write through.
++ * Write through writes data into memory while keeping the cache up-to-date.
++ *
++ * Must be freed with iounmap.
++ */
++void __iomem *ioremap_wt(resource_size_t phys_addr, unsigned long size)
++{
++	if (pat_enabled)
++		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
++					__builtin_return_address(0));
++	else
++		return ioremap_nocache(phys_addr, size);
++}
++EXPORT_SYMBOL(ioremap_wt);
++
+ void __iomem *ioremap_cache(resource_size_t phys_addr, unsigned long size)
+ {
+ 	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WB,
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 975e1cc..405d418 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -322,6 +322,10 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+ #define ioremap_wc ioremap_nocache
+ #endif
  
- 	/* Boot CPU check */
- 	if (!boot_pat_state)
++#ifndef ioremap_wt
++#define ioremap_wt ioremap_nocache
++#endif
++
+ static inline void iounmap(void __iomem *addr)
+ {
+ }
+diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
+index 1b41011..d8f8622 100644
+--- a/include/asm-generic/iomap.h
++++ b/include/asm-generic/iomap.h
+@@ -66,6 +66,10 @@ extern void ioport_unmap(void __iomem *);
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ARCH_HAS_IOREMAP_WT
++#define ioremap_wt ioremap_nocache
++#endif
++
+ #ifdef CONFIG_PCI
+ /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
+ struct pci_dev;
