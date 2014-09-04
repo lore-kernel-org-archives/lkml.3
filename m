@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538AbaIDVTh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:19:37 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:61039 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaIDVTf (ORCPT
+	id S1755726AbaIDVWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:22:37 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:63175 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404AbaIDVWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:19:35 -0400
+	Thu, 4 Sep 2014 17:22:35 -0400
+Message-ID: <5408D815.9090105@redhat.com>
+Date: Thu, 04 Sep 2014 23:22:29 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140904141215.9e6125150824d0768aedbfcb@linux-foundation.org>
-References: <1409845039-5751-1-git-send-email-sasha.levin@oracle.com>
-	<20140904141215.9e6125150824d0768aedbfcb@linux-foundation.org>
-Date: Thu, 4 Sep 2014 23:19:34 +0200
-Message-ID: <CAFLxGvx0Os=qJP8XSpCvj17SNNk6YA1bNZoQsVO3CksgfFbxfQ@mail.gmail.com>
-Subject: Re: [PATCH] kernel: add support for gcc 5
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Greg KH <greg@kroah.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, chris.j.arges@canonical.com,
+        kvm@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
+References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <alpine.DEB.2.10.1409042230020.3333@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409042230020.3333@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 11:12 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu,  4 Sep 2014 11:37:19 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
->
->> We're missing include/linux/compiler-gcc5.h which is required now
->> because gcc branched off to v5 in trunk.
->>
->> Just copy the relevant bits out of include/linux/compiler-gcc4.h,
->> no new code is added as of now.
->>
->> This fixes a build error when using gcc 5.
->
-> I think I'll stick a cc:stable on this one, as people will presumably
-> wish to compile older kernels with newer gcc's at some time in the
-> future.
+Il 04/09/2014 22:58, Thomas Gleixner ha scritto:
+> This is simply wrong.
 
-CC'ing Hannes, he sent a much simpler gcc5 patch a few days ago.
-https://lkml.org/lkml/2014/8/26/710
+It is.
 
--- 
-Thanks,
-//richard
+> Now I have no idea why you think it needs to add xtime_sec. If the
+> result is wrong, then we need to figure out which one of the supplied
+> values is wrong and not blindly add xtime_sec just because that makes
+> it magically correct.
+> 
+> Can you please provide a proper background why you think that adding
+> xtime_sec is a good idea?
+
+It's not a good idea indeed.  I didn't fully digest the 3.16->3.17
+timekeeping changes and messed up this patch.
+
+However, there is a bug in the "base_mono + offs_boot" formula, given
+that:
+
+- bisection leads to the merge commit of John's timers branch
+
+- bisecting within John's timers branch, with a KVM commit on top to
+  make the code much easier to trigger, leads to commit cbcf2dd3b3d4
+  (x86: kvm: Make kvm_get_time_and_clockread() nanoseconds based,
+  2014-07-16).
+
+- I backported your patch to 3.16, using wall_to_monotonic +
+  total_sleep_time + xtime_sec (wtm+xtime_sec as in pre-cbcf2dd3b3d4
+  code, total_sleep_time from 3.16 monotonic_to_bootbased) and it works
+
+- In v2 of the patch I fixed the bug by changing the formula
+  "base_mono + offs_boot" to "offs_boot - offs_real" (and then adding
+  xtime_sec separately as in the 3.16 backport), but the two formulas
+  "base_mono + offs_boot" and "offs_boot - offs_real + xtime_sec" ought
+  to be identical.
+
+I find "offs_boot - offs_real + xtime" more readable than the
+alternative "base_mono + offs_boot + xtime_nsec", so the fix doubles as
+a cleanup for me and I'm fine with it.  But something must be wrong in
+the timekeeping code.
+
+Paolo
