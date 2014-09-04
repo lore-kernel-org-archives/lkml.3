@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaIDPGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:06:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50436 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaIDPGn (ORCPT
+	id S1753705AbaIDPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:07:28 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:48095
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298AbaIDPH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:06:43 -0400
-Message-ID: <54088008.9080200@wwwdotorg.org>
-Date: Thu, 04 Sep 2014 09:06:48 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 11:07:26 -0400
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: dh.herrmann@gmail.com, akpm@linux-foundation.org, bobby.prani@gmail.com,
+        hughd@google.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] selftests/memfd: fix mfd_fail_open() to pass in buf to printf
+Date: Thu,  4 Sep 2014 09:07:22 -0600
+Message-Id: <1409843242-6596-1-git-send-email-shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-To: Bart Tanghe <bart.tanghe@thomasmore.be>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: tim.kryger@linaro.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
-Subject: Re: [resend rfc v3] pwm: add BCM2835 PWM driver
-References: <1398689686-30317-1-git-send-email-bart.tanghe@thomasmore.be> <20140825131908.GG4163@ulmo.nvidia.com> <5408395E.2030305@thomasmore.be>
-In-Reply-To: <5408395E.2030305@thomasmore.be>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 04:05 AM, Bart Tanghe wrote:
-> No problem. Thanks for the feedback.
-> I've got some question below.
->
-> On 2014-08-25 15:19, Thierry Reding wrote:
->> Sorry for taking so long to reply to this, I had completely forgotten.
->>
->> On Mon, Apr 28, 2014 at 02:54:46PM +0200, Bart Tanghe wrote:
->>> 	Add some better error handling and Device table support
->>> 	Added Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
->>> 	
->>> Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
+mfd_fail_open() doesn't pass in the buffer to printf resulting
+in the following warning:
 
->>> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
->>> index 22f2f28..20341a3 100644
->>> --- a/drivers/pwm/Kconfig
->>> +++ b/drivers/pwm/Kconfig
->>> @@ -62,6 +62,18 @@ config PWM_ATMEL_TCB
->>>   	  To compile this driver as a module, choose M here: the module
->>>   	  will be called pwm-atmel-tcb.
->>>
->>> +config PWM_BCM2835
->>> +	tristate "BCM2835 PWM support"
->>> +	depends on MACH_BCM2835 || MACH_BCM2708
->>> +	help
->>> +	  PWM framework driver for BCM2835 controller (raspberry pi)
->>
->> I think the correct capitalization would be "Raspberry Pi".
->>
->>> +	  Only 1 channel is implemented.
->>
->> How many can it take? Why haven't all been implemented?
->
-> BCM2835 can take 2 pwm channels.
-> I can implement 2 channels but can't physically test the second channel. Is that a problem?
+memfd_test.c: In function ‘mfd_fail_open’:
+memfd_test.c:208:3: warning: format ‘%s’ expects a matching ‘char *’ argument [-Wformat=]
+   printf("open(%s) didn't fail as expected\n");
+   ^
 
-I don't think that's a problem; I would expect the channels to be 
-identical, so testing 1 should be fine.
+This change fixes the problem.
 
->> I notice that you never prepare or enable the clock here. Perhaps this
->> isn't required because it's always on, but I think you should still call
->> clk_prepare_enable() here (and clk_disable_unprepare() in .remove()) to
->> make sure the driver is more portable.
-> The frequency can be minimized by a clock_divider ( the pwm clock is default disabled). this has to be done by
-> a clock driver, as mentioned in a previous comment by Stephen Warren.
->
-> Any clock programming should be performed by a clock driver. We don't
-> have one of those upstream yet, mainly because it would rely on talking
-> to the firmware (running on the VideoCore) to manipulate the clocks, and
-> we don't have a firmware protocol driver either.
->
-> Nowadays, I'm using a userspace program to change the clock_divider, but would like to implement this in a clock driver.
-> The clock hardware description isn't implemented in the datasheet. I can convert the userspace prog to a clock driver but this is very experimental.
-> If anyone has some suggestions?
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+---
+ tools/testing/selftests/memfd/memfd_test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Oh dear. It sounds like we need at least some form of clock driver for 
-the platform then. I still don't think there's complete documentation 
-for the HW, even though a lot of register docs were published which 
-presumably cover the clock HW? Equally, given that the VC firmware 
-assumes it owns most of the HW, it seems best to manipulate the clocks 
-through the firmware interface rather than directly touching the HW. 
-Unfortunately, I don't believe there's any ABI guarantee on the firmware 
-interface. Perhaps we can get one?
+diff --git a/tools/testing/selftests/memfd/memfd_test.c b/tools/testing/selftests/memfd/memfd_test.c
+index cb5001b..0b9eafb 100644
+--- a/tools/testing/selftests/memfd/memfd_test.c
++++ b/tools/testing/selftests/memfd/memfd_test.c
+@@ -203,7 +203,7 @@ static void mfd_fail_open(int fd, int flags, mode_t mode)
+ 	sprintf(buf, "/proc/self/fd/%d", fd);
+ 	r = open(buf, flags, mode);
+ 	if (r >= 0) {
+-		printf("open(%s) didn't fail as expected\n");
++		printf("open(%s) didn't fail as expected\n", buf);
+ 		abort();
+ 	}
+ }
+-- 
+1.9.1
 
->>> +static const struct of_device_id bcm2835_pwm_of_match[] = {
->>> +	{ .compatible = "bcrm,pwm-bcm2835", },
->>
->> s/bcrm/brcm/
-
-Probably swap the order, so "brcm,bcm2835-pwm". That would be consistent 
-with all the other HW on this SoC.
