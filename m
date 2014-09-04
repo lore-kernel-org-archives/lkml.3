@@ -1,165 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064AbaIDCsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 22:48:03 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44699 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390AbaIDCsA (ORCPT
+	id S1756342AbaIDCz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 22:55:59 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47899 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaIDCz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 22:48:00 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5407D27D.4020006@jp.fujitsu.com>
-Date: Thu, 4 Sep 2014 11:46:21 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 3 Sep 2014 22:55:57 -0400
+Date: Wed, 3 Sep 2014 19:55:51 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [GIT PULL] platform-drivers-x86 MAINTAINERS and fixes for v3.17
+Message-ID: <20140904025551.GA24229@vmdeb7>
 MIME-Version: 1.0
-To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>, <bp@alien8.de>,
-        <gong.chen@linux.intel.com>, <tony.luck@intel.com>,
-        <toshi.kani@hp.com>
-CC: <x86@kernel.org>, <imammedo@redhat.com>, <huawei.libin@huawei.com>,
-        <paul.gortmaker@windriver.com>, <linux-kernel@vger.kernel.org>,
-        <srivatsa.bhat@linux.vnet.ibm.com>, <umgwanakikbuti@gmail.com>,
-        <peterz@infradead.org>
-Subject: [PATCH v5] x86,cpu-hotplug: assign same CPU number to readded CPU
-References: <53CF2A81.7080505@jp.fujitsu.com> <53D5CF2A.2030007@jp.fujitsu.com>
-In-Reply-To: <53D5CF2A.2030007@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-llc_shared_map is not cleared even if CPU is offline or hot removed.
-So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
-the mask has wrong value. The mask is used by CSF schduler to create
-sched_domain. So it breaks CFS scheduler.
+Hi Linus,
 
-Here is a example on my system.
-My system has 4 sockets and each socket has 15 cores and HT is enabled.
-In this case, each core of sockes is numbered as follows:
+This is my first pull request since taking on maintenance for the
+platform-drivers-x86 tree from Matthew Garrett. These have passed my build
+testing and been run through Fengguang's LKP tests. Due to timing this round,
+these have not spent any time in linux-next. I have asked Stephen to include my
+for-next branch in linux-next going forward, once he's back from vacation.
 
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-44, 90-104
-Socket#3 | 45-59, 105-119
+Thanks,
 
-Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-It means that last level cache of Socket#2 is shared with
-CPU#30-44 and 90-104.
+Darren Hart
+Intel Open Source Technology Center
 
-When hot-removing socket#2 and #3, each core of sockets is numbered
-as follows:
+The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
 
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
 
-But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-having 0x3fff80000001fffc0000000.
+are available in the git repository at:
 
-After that, when hot-adding socket#2 and #3, each core of sockets is
-numbered as follows:
+  git://git.infradead.org/users/dvhart/linux-platform-drivers-x86.git tags/platform-drivers-x86-v3.17-1
 
-          | CPU#
-Socket#0 | 0-14 , 60-74
-Socket#1 | 15-29, 75-89
-Socket#2 | 30-59
-Socket#3 | 90-119
+for you to fetch changes up to aeaac098bd58349d7415acd998089309fd798190:
 
-Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
-It means that last level cache of Socket#2 is shared with CPU#30-59
-and 90-104. So the mask has wrong value.
+  toshiba_acpi: fix and cleanup toshiba_kbd_bl_mode_store() (2014-09-03 10:45:12 -0700)
 
-At first, I cleared hot-removed CPU number's bit from llc_shared_map
-when hot removing CPU. But Borislav suggested that the problem will
-disappear if readded CPU is assigned same CPU number. And llc_shared_map
-must not be changed.
+----------------------------------------------------------------
+platform-drivers-x86 MAINTAINERS and fixes for v3.17
 
-So the patch assigns same CPU number to readded CPU by linking CPU
-number to APIC ID. And by the patch, the problem disappers.
+toshiba_acpi: Re-enable hotkeys and cleanups
+ideapad-laptop: Revert touchpad disable, and cleanup static/const usage
+MAINTAINERS: Update platform-drivers-x86 maintainer and tree
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Suggested-by: Borislav Petkov <bp@alien8.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
----
-v2: change cpuid to cpunum
-v3: fix Borislav's email address of Suggested-by
-     fix typo (ACPI ID to APIC ID)
-v4: change cpu_used_xxx to cpu_number_xxx
-v5: rebase to 3.17-rc3
----
-  arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
-  1 file changed, 32 insertions(+), 1 deletion(-)
+----------------------------------------------------------------
+Benjamin Tissoires (1):
+      platform/x86: toshiba: re-enable acpi hotkeys after suspend to disk
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 6776027..c476827 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -220,6 +220,23 @@ static void apic_pm_activate(void);
-  static unsigned long apic_phys;
+Dan Carpenter (1):
+      toshiba_acpi: fix and cleanup toshiba_kbd_bl_mode_store()
 
-  /*
-+ * Bind APIC ID to Logical CPU number
-+ * Logical CPU number to APIC ID does not change by this array
-+ * even if CPU is hotplugged. So don't clear the array even if
-+ * CPU is hot-removed
-+ */
-+static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
-+	[0 ... MAX_LOCAL_APIC-1] = -1,
-+};
-+
-+/*
-+ * Represent Logical CPU number bound to APIC ID
-+ * Don't clear a bit even if CPU is hot-removed
-+ */
-+static DECLARE_BITMAP(cpu_number_bits, CONFIG_NR_CPUS);
-+static struct cpumask *const cpu_number_mask = to_cpumask(cpu_number_bits);
-+
-+/*
-   * Get the LAPIC version
-   */
-  static inline int lapic_get_version(void)
-@@ -2109,6 +2126,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
-  	apic_write(APIC_LVT1, value);
-  }
+Darren Hart (1):
+      MAINTAINERS: Update platform-drivers-x86 maintainer and tree
 
-+static int get_cpunum(int apicid)
-+{
-+	int cpu;
-+
-+	cpu = apicid_to_cpunum[apicid];
-+	if (cpu < 0)
-+		cpu = cpumask_next_zero(-1, cpu_number_mask);
-+
-+	return cpu;
-+}
-+
-  int generic_processor_info(int apicid, int version)
-  {
-  	int cpu, max = nr_cpu_ids;
-@@ -2186,7 +2214,9 @@ int generic_processor_info(int apicid, int version)
-  		 */
-  		cpu = 0;
-  	} else
--		cpu = cpumask_next_zero(-1, cpu_present_mask);
-+		cpu = get_cpunum(apicid);
-+
-+	apicid_to_cpunum[apicid] = cpu;
+Hans de Goede (1):
+      Revert "ideapad-laptop: Disable touchpad interface on Yoga models"
 
-  	/*
-  	 * Validate version
-@@ -2215,6 +2245,7 @@ int generic_processor_info(int apicid, int version)
-  	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
-  		apic->x86_32_early_logical_apicid(cpu);
-  #endif
-+	cpumask_set_cpu(cpu, cpu_number_mask);
-  	set_cpu_possible(cpu, true);
-  	set_cpu_present(cpu, true);
+Mathias Krause (1):
+      ideapad-laptop: Constify DMI table for real!
 
--- 
-1.8.3.1
-
-
+ MAINTAINERS                           |  4 ++--
+ drivers/platform/x86/ideapad-laptop.c | 31 ++-----------------------------
+ drivers/platform/x86/toshiba_acpi.c   | 27 ++++++++++++++++++++-------
+ 3 files changed, 24 insertions(+), 38 deletions(-)
