@@ -1,66 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717AbaIDV5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:57:34 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:57069 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaIDV5c (ORCPT
+	id S1755614AbaIDWBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 18:01:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59156 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601AbaIDWB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:57:32 -0400
+	Thu, 4 Sep 2014 18:01:29 -0400
+Date: Thu, 4 Sep 2014 15:01:26 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        Georgi Djakov <gdjakov@mm-sol.com>,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>
+Subject: Re: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
+Message-ID: <20140904220126.GC28256@codeaurora.org>
+References: <1409752622-7564-1-git-send-email-sboyd@codeaurora.org>
+ <5407F364.9030303@samsung.com>
+ <CAPDyKFp0LwK=DABHaP-Ke=QZFP8bY5MO9RnYmUBqeEdDKp63BA@mail.gmail.com>
+ <5408D81C.7070602@codeaurora.org>
+ <5408E074.7090008@samsung.com>
 MIME-Version: 1.0
-Reply-To: zoobab@gmail.com
-In-Reply-To: <20140904173521.GA20343@localhost.localdomain>
-References: <20140831152456.GA25207@udknight>
-	<20140904173521.GA20343@localhost.localdomain>
-Date: Thu, 4 Sep 2014 23:57:31 +0200
-Message-ID: <CANjd3nc5==yDpRVMxP+bzhqhEqyK4SUam=Ood4RMpsN5esuG4A@mail.gmail.com>
-Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
-From: Benjamin Henrion <zoobab@gmail.com>
-To: Wang YanQing <udknight@gmail.com>, gregkh@linuxfoundation.org,
-        linus.walleij@linaro.org, Johan Hovold <jhovold@gmail.com>,
-        andi@lisas.de, dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Henrion <zoobab@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5408E074.7090008@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 7:35 PM, Wang YanQing <udknight@gmail.com> wrote:
-> On Sun, Aug 31, 2014 at 11:24:56PM +0800, Wang YanQing wrote:
->> PL2303 USB Serial devices may has GPIOs, this patch add
->> basic PL2303 gpio support.
->>
->> Known issue:
->> If gpios are in use(export to userspace through sysfs interface, etc),
->> then call pl2303_release(unplug usb-serial convertor, modprobe -r, etc),
->> will cause trouble, so we need to make sure there is no gpio user before
->> call pl2303_release.
->>
->> Signed-off-by: Wang YanQing <udknight@gmail.com>
->> ---
->>  Note: I sniffed office HXD gpio test program to get
->>        gpios control protocol with PL2303 RA, so I only
->>        test it with PL2303 RA and HXA, I don't have HXD,
->>        but because it is *office* HXD gpio test program,
->>        so if it doesn't work with HXD, I will feel surprise.
+On 09/05, Jaehoon Chung wrote:
+> On 09/05/2014 06:22 AM, Stephen Boyd wrote:
+> > On 09/04/14 03:53, Ulf Hansson wrote:
+> >> On 4 September 2014 07:06, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> >>>
+> >>> In dw-mmc.c, tuning_block values are same.
+> >>> So I think we can move these value into generic header. how about?
+> >> Actually, I believe these values comes from the eMMC specification?
+> >> Shouldn't they be moved to the mmc core instead?
+> > 
+> > That sounds like good consolidation, but can we do that in a follow-up
+> > patch? This fixes the driver for me and I was hoping to make something
+> > minimal to go back to stable trees.
+> 
+> Sure, if my opinion is ok, i will do it after apply your patches.
+> 
 
-I can confirm your patch is working fine on the HXD:
+Here's the patch
 
-http://www.zoobab.com/pl2303hxd-gpio
+----8<----
+From: Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH] mmc: Consolidate emmc tuning blocks
 
-I am still hunting for a simple C program to test the speed of the
-GPIOs and sysfs, if you have a good reference.
+The same tuning block array exists in the dw_mmc h.c and sdhci-msm.c
+files. Move these into mmc.c so that they can be shared across
+drivers.
 
-Best,
+Reported-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/mmc/core/mmc.c       | 32 ++++++++++++++++++++++++++++++++
+ drivers/mmc/host/dw_mmc.c    | 30 ------------------------------
+ drivers/mmc/host/sdhci-msm.c | 38 ++++----------------------------------
+ include/linux/mmc/mmc.h      |  5 +++++
+ 4 files changed, 41 insertions(+), 64 deletions(-)
 
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 793c6f7ddb04..9608cc8a1f65 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -1135,6 +1135,38 @@ bus_speed:
+ 	return err;
+ }
+ 
++const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE] = {
++	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
++	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
++	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
++	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
++	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
++	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
++	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
++	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
++};
++EXPORT_SYMBOL(tuning_blk_pattern_4bit);
++
++const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE] = {
++	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
++	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
++	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
++	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
++	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
++	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
++	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
++	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
++	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
++	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
++	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
++	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
++	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
++	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
++	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
++	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
++};
++EXPORT_SYMBOL(tuning_blk_pattern_8bit);
++
+ /*
+  * Execute tuning sequence to seek the proper bus operating
+  * conditions for HS200 and HS400, which sends CMD21 to the device.
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 1ac227c603b7..f1cefdf5e2d0 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -81,36 +81,6 @@ struct idmac_desc {
+ };
+ #endif /* CONFIG_MMC_DW_IDMAC */
+ 
+-static const u8 tuning_blk_pattern_4bit[] = {
+-	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+-	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+-	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+-	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+-	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+-	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+-	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+-	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+-};
+-
+-static const u8 tuning_blk_pattern_8bit[] = {
+-	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+-	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+-	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+-	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+-	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+-	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+-	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+-	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+-	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+-	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+-	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+-	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+-	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+-	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+-	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+-	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+-};
+-
+ static inline bool dw_mci_fifo_reset(struct dw_mci *host);
+ static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host);
+ 
+diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+index 5aabffc15ae8..da74c77f34cc 100644
+--- a/drivers/mmc/host/sdhci-msm.c
++++ b/drivers/mmc/host/sdhci-msm.c
+@@ -47,36 +47,6 @@
+ #define CMUX_SHIFT_PHASE_SHIFT	24
+ #define CMUX_SHIFT_PHASE_MASK	(7 << CMUX_SHIFT_PHASE_SHIFT)
+ 
+-static const u8 tuning_block_64[] = {
+-	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+-	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
+-	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
+-	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
+-	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
+-	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
+-	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
+-	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
+-};
+-
+-static const u8 tuning_block_128[] = {
+-	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+-	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
+-	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
+-	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
+-	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
+-	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
+-	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
+-	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
+-	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
+-	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
+-	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
+-	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
+-	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
+-	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
+-	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
+-	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
+-};
+-
+ struct sdhci_msm_host {
+ 	struct platform_device *pdev;
+ 	void __iomem *core_mem;	/* MSM SDCC mapped address */
+@@ -371,8 +341,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+ {
+ 	int tuning_seq_cnt = 3;
+ 	u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
+-	const u8 *tuning_block_pattern = tuning_block_64;
+-	int size = sizeof(tuning_block_64);	/* Pattern size in bytes */
++	const u8 *tuning_block_pattern = tuning_blk_pattern_4bit;
++	int size = sizeof(tuning_blk_pattern_4bit);
+ 	int rc;
+ 	struct mmc_host *mmc = host->mmc;
+ 	struct mmc_ios ios = host->mmc->ios;
+@@ -388,8 +358,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+ 
+ 	if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) &&
+ 	    (mmc->ios.bus_width == MMC_BUS_WIDTH_8)) {
+-		tuning_block_pattern = tuning_block_128;
+-		size = sizeof(tuning_block_128);
++		tuning_block_pattern = tuning_blk_pattern_8bit;
++		size = sizeof(tuning_blk_pattern_8bit);
+ 	}
+ 
+ 	data_buf = kmalloc(size, GFP_KERNEL);
+diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+index 64ec963ed347..cff1f2622061 100644
+--- a/include/linux/mmc/mmc.h
++++ b/include/linux/mmc/mmc.h
+@@ -53,6 +53,11 @@
+ #define MMC_SEND_TUNING_BLOCK    19   /* adtc                    R1  */
+ #define MMC_SEND_TUNING_BLOCK_HS200	21	/* adtc R1  */
+ 
++#define MMC_TUNING_BLK_PATTERN_4BIT_SIZE	 64
++#define MMC_TUNING_BLK_PATTERN_8BIT_SIZE	128
++extern const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE];
++extern const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE];
++
+   /* class 3 */
+ #define MMC_WRITE_DAT_UNTIL_STOP 20   /* adtc [31:0] data addr   R1  */
+ 
 -- 
-Benjamin Henrion <bhenrion at ffii.org>
-FFII Brussels - +32-484-566109 - +32-2-4148403
-"In July 2005, after several failed attempts to legalise software
-patents in Europe, the patent establishment changed its strategy.
-Instead of explicitly seeking to sanction the patentability of
-software, they are now seeking to create a central European patent
-court, which would establish and enforce patentability rules in their
-favor, without any possibility of correction by competing courts or
-democratically elected legislators."
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
