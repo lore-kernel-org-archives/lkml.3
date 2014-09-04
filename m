@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896AbaIDV3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:29:34 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:44120 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342AbaIDV3b (ORCPT
+	id S1755930AbaIDVbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:31:00 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:65457 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311AbaIDVa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:29:31 -0400
-Date: Thu, 4 Sep 2014 23:29:27 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Catalin Iacob <iacobcatalin@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: nohz fail (was: perf related boot hang.)
-Message-ID: <20140904212925.GB3116@lerouge>
-References: <20140811200931.GA18865@redhat.com>
- <1408566691-3023-1-git-send-email-iacobcatalin@gmail.com>
- <CAFTL4hxJ2roTB3tZBmXU3HRetgFSUT0LNVWfX-Y2hbpyXSo2pg@mail.gmail.com>
- <CAHg_5gq1XiZ1A08PtQ7Rof3rUXJ-pVYkXtmHqgFh6hB+++qPNg@mail.gmail.com>
- <20140822140009.GA8567@redhat.com>
- <20140901201429.GA1586@lerouge>
- <CAHg_5go_TT7CQ6U3AhjG4TxRM0zG562mxa+uV4UbOYd_-A0T-w@mail.gmail.com>
- <CAHg_5gr_tHeBsQfv1ydZRq9XgKipcrbijripqubE6c6j1S=jfg@mail.gmail.com>
- <20140904201752.GA3116@lerouge>
- <CAHg_5goeUsCP8zrZhkGyAvO3sPpt2VZFc5oNaQst9u0gSAmpdA@mail.gmail.com>
+	Thu, 4 Sep 2014 17:30:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHg_5goeUsCP8zrZhkGyAvO3sPpt2VZFc5oNaQst9u0gSAmpdA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CADroS=5BcPqCdgYAMfdyod1PNeYFU_qQXNYYQnoPAtB6RdCLWQ@mail.gmail.com>
+References: <1407456558-18509-1-git-send-email-ahh@google.com>
+	<CALAqxLUHt=+L4XHFqsfNnB8LExtptXkqW58vKZ4JzwN49D+hOw@mail.gmail.com>
+	<CADroS=5BcPqCdgYAMfdyod1PNeYFU_qQXNYYQnoPAtB6RdCLWQ@mail.gmail.com>
+Date: Thu, 4 Sep 2014 14:30:56 -0700
+Message-ID: <CALAqxLWp3-BfgN_CUrvCForKNgxvsSW74WisuqT+8n6x6A=OhQ@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix timeval conversion to jiffies
+From: John Stultz <john.stultz@linaro.org>
+To: Andrew Hunter <ahh@google.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Phil Miller <unmobile@gmail.com>, Paul Turner <pjt@google.com>,
+        Aaron Jacobs <jacobsa@google.com>, Ingo Molnar <mingo@elte.hu>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 11:05:02PM +0200, Catalin Iacob wrote:
-> On Thu, Sep 4, 2014 at 10:17 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > Yeah, that's expected. You need to apply the nine patches on top of -rc1:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> >         nohz/fixes
-> >
-> > "nohz: Restore NMI safe local irq work for local nohz kick" only fixes
-> > part of the issue.
-> 
-> Ok, but if the whole series is needed, isn't it better if it all goes
-> into 3.17? Otherwise 3.17 is a clear regression for some users; it's
-> definitely for me since before 3.17-rc1 I never saw this bug and now I
-> see it every time I do something CPU intensive. Maybe the regression
-> is acceptable because the it's confined to some CONFIG_NO_HZ_*
-> combination (I think) which is still rather experimental, that's your
-> call to make, but it's still a regression.
+On Thu, Sep 4, 2014 at 2:17 PM, Andrew Hunter <ahh@google.com> wrote:
+> On Wed, Sep 3, 2014 at 5:06 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> Maybe with the next version of the patch, before you get into the
+>> unwinding the math, you might practically describe what is broken,
+>> then explain how its broken.
+>>
+>> My quick read here is that we're converting a timespec -> jiffies, and
+>> in doing so we round up by one jiffy.
+>>
+>> This seems actually perfectly normal, as we usually end up rounding up
+>> by a jiffy in many cases since we don't want to undershoot any
+>> timeout, and we're always allowed return later then specified.
+>
+> Well, yes, timeouts can be longer than specified, but what you said
+> technically applies just as much to code that arbitrarily multiplies
+> jiffies by 10 before returning, no? :)
+>
+> The problem isn't the rounding, it's that the rounding is _wrong_: I'm
+> fine rounding 10100usec / (1000 usec/jiffie) = 11 jiffies. The current
+> code rounds 10000usec / (1000 usec/jiffies) to 11.  I've rewritten the
+> description to make this clearer.
 
-Yeah the bug is there for a while but likely something got merged in the
-last -rc1 that made the bug more likely to happen.
+Ok. Very much appreciated!
 
-This is probably due to the fact that we converted remote nohz kick to use
-irq work instead of the scheduler IPI. So it fires more likely and if we
-are unlucky enough, some tick sees the irq work before the irq work IPI
-can fire.
+>>> In particular, with HZ=1000, we consistently computed that 10000 usec
+>>> was 11 jiffies; the same was true for any exact multiple of
+>>> TICK_NSEC. This is obviously bad as a general rule, and caused
+>>> observable user problems with setitimer() at the very least:
+>>>
+>>> setitimer(ITIMER_PROF, &val, NULL);
+>>> setitimer(ITIMER_PROF, NULL, &val);
+>>>
+>>> would actually add a tick to val!
+>>
+>> So this looks like an issue. Since we convert and store the internal
+>> representation in jiffies, when we pull it back out, we get the
+>> rounded up value, which is larger then the timespec value originally
+>> submitted.  This is really the core issue, correct?
+>
+> For the particular user bug reported to me, yes, this was the core
+> issue: some code that stopped and restarted an itimer found the
+> interval growing by 1ms each time.  But again, it wasn't that it was
+> rounded:  if we initially passed e.g. 10500 usec and got back 11000,
+> that'd be annoying but workable, because if we then went through
+> another cycle of enabling/disabling itimer, we'd set it to 11000 usec
+> and get back 11000 again.  What we have now instead adds a full jiffie
+> _every time_.
 
-Or some code enqueues that irq work from the tick itself.
+Ah, ok. This part is key to understanding the problem. Thanks for
+clarifying this.
 
-Awyway you're right that it belongs to the category of regressions. Unfortunately
-the fix is invasive.
+This seems to be a quite old bug.. Do you think this is needed for -stable?
 
-Also I don't know much users of nohz full so probably this won't
-have much impact. Or this could be a good way to know who uses this feature after all :o)
-
-I'm not sure what I should do. Lets see how the final fix will look like, Peter
-is proposing some simplifications. Then we'll know better.
-
-BTW, do you run some specific workloads to trigger this?
-
-Thanks.
+thanks
+-john
