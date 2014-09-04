@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508AbaIDXkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 19:40:09 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:34108 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaIDXkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 19:40:08 -0400
-From: Nix <nix@esperi.org.uk>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <878um4tg09.fsf@spindle.srvr.nix>
-	<1409569752.24385.12.camel@linux-fkkt.site>
-Emacs: the road to Hell is paved with extensibility.
-Date: Fri, 05 Sep 2014 00:40:02 +0100
-In-Reply-To: <1409569752.24385.12.camel@linux-fkkt.site> (Oliver Neukum's
-	message of "Mon, 01 Sep 2014 13:09:12 +0200")
-Message-ID: <874mwnosz1.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	id S1754068AbaIDXrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 19:47:06 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58429 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106AbaIDXrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 19:47:04 -0400
+Date: Fri, 5 Sep 2014 00:46:58 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linuxfoundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [git pull] drm fixes (resend + one patch)
+Message-ID: <alpine.DEB.2.00.1409050045190.9851@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-dcc1-Metrics: spindle 1182; Body=2 Fuz1=2 Fuz2=2
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-2017059747-1409874418=:9851"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 Sep 2014, Oliver Neukum stated:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->
->> I'll do a bisection of the cdc-acm changes since 3.15 tomorrow night and
->> see if I can find the commit at fault.
->
-> Thank you for the report. Please let me know the results of your
-> bisection.
+--29444707-2017059747-1409874418=:9851
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Bisection underway (fifth attempt -- I *may* have characterized it well
-enough after a few hours of thrashing at it to bisect accurately this
-time).
 
-Some more random info.
+Hi Linus,
 
-btw, when the Entropy Key has ended up in a messed up state due to this
-bug, we sometimes see
+send one yesterday, it bounced due to LF mail fail (linux-foundation.org),
+hopefully this one makes it.
 
-[    2.330158] usb 2-1: new full-speed USB device number 2 using ohci-pci
-[    2.552465] usb 2-1: device descriptor read/64, error -62
-[    2.870142] usb 2-1: device descriptor read/64, error -62
-[    3.190150] usb 2-1: new full-speed USB device number 3 using ohci-pci
-[    3.410137] usb 2-1: device descriptor read/64, error -62
-[    3.740142] usb 2-1: device descriptor read/64, error -62
-[    4.060146] usb 2-1: new full-speed USB device number 4 using ohci-pci
-[    4.520133] usb 2-1: device not accepting address 4, error -62
-[    4.730139] usb 2-1: new full-speed USB device number 5 using ohci-pci
-[    5.180117] usb 2-1: device not accepting address 5, error -62
-[    5.215194] hub 2-0:1.0: unable to enumerate USB device on port 1
+i915 fixes, a few display regressions
+vmwgfx, possible loop forever fix
+nouveau, one userspace interface fix.
 
-when starting up a working kernel (the key then doesn't work until
-physically disconnected and reconnected again).
+Dave.
 
-More generally, the problem may be at *shutdown* -- something goes wrong
-during link suspension or something, such that the link never comes up
-again until physically reconnected. So a straight bisect is misleading
--- the error may have been in the *last* kernel tested -- and even then,
-some kernels (e.g. the 3.15.0 merge base) appear capable of making it
-work fine. But even this is not consistent: sometimes a kernel that
-works fine if you repeatedly reboot it (such as 3.15) malfunctions when
-you reboot into 3.16 -- but sometimes a newly plugged USB key on a 3.16
-kernel malfunctions upon reboot, even if you reboot into a working
-kernel such as 3.15 (and it then proceeds to work indefinitely if you
-unplug and replug it and stick with 3.15.x, but upon rebooting into
-3.16.x it goes wrong again).
+The following changes since commit 59753a805499f1ffbca4ac0a24b3dff67bf00001:
 
-So sometimes a faulty kernel makes the key go wrong when you restart
-into another kernel (faulty or not), and sometimes it makes a key go
-wrong when it is restarted into. There doesn't seem to be any
-consistency to this that I've spotted, at least not yet.
+  Merge tag 'backlight-fixes-3.17' of git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight (2014-08-28 10:47:10 -0700)
 
-Upon physical reconnection, the USB key works again, even on afflicted
-kernels.
+are available in the git repository at:
 
-I'm working around this confusing morass by rebooting into each test
-kernel, unplugging and replugging the entropy key if it was fubared,
-then rebooting into the same kernel again and seeing if it was still
-fubared. But this is not terribly fast, particularly not on a headless
-compact-flash-based Geode box which doesn't even complete booting
-without the entropy source which this bug cuts off :) so it'll be
-sometime tomorrow before I can get this bisection done, I'm afraid.
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 68c78bd67bd6f868474ac75d98ea7d6ebf28d2e7:
+
+  Merge branch 'linux-3.17' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes (2014-09-05 09:27:33 +1000)
+
+----------------------------------------------------------------
+
+Ben Skeggs (1):
+      drm/nouveau/core: don't leak oclass type bits to user
+
+Dave Airlie (5):
+      Merge tag 'drm-intel-fixes-2014-08-28' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      drm/i915: handle G45/GM45 pulse detection connected state.
+      Merge branch 'vmwgfx-fixes-3.17' of git://people.freedesktop.org/~thomash/linux into drm-fixes
+      Merge tag 'drm-intel-fixes-2014-09-03' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge branch 'linux-3.17' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
+
+Mathias Krause (1):
+      drm/i915: Remove bogus __init annotation from DMI callbacks
+
+Paulo Zanoni (1):
+      drm/i915: fix plane/cursor handling when runtime suspended
+
+Scot Doyle (2):
+      drm/i915: Ignore VBT backlight presence check on Acer C720 (4005U)
+      drm/i915: don't warn if backlight unexpectedly enabled
+
+Thomas Hellstrom (2):
+      drm/vmwgfx: Fix an incorrect OOM return value
+      drm/vmwgfx: Fix a potential infinite spin waiting for fifo idle
+
+Ville Syrjälä (2):
+      drm/i915: Move intel_ddi_set_vc_payload_alloc(false) to haswell_crtc_disable()
+      drm/i915: Fix lock dropping in intel_tv_detect()
+
+ drivers/gpu/drm/i915/intel_bios.c          |  2 +-
+ drivers/gpu/drm/i915/intel_crt.c           |  2 +-
+ drivers/gpu/drm/i915/intel_display.c       | 34 +++++++++++++++---
+ drivers/gpu/drm/i915/intel_dp.c            | 55 ++++++++++++++++++++----------
+ drivers/gpu/drm/i915/intel_lvds.c          |  2 +-
+ drivers/gpu/drm/i915/intel_panel.c         |  8 ++---
+ drivers/gpu/drm/i915/intel_tv.c            | 10 ++++--
+ drivers/gpu/drm/nouveau/core/core/parent.c |  4 +--
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c    | 11 +++---
+ drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c       |  3 +-
+ 10 files changed, 90 insertions(+), 41 deletions(-)
+--29444707-2017059747-1409874418=:9851--
