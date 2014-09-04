@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422AbaIDEj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 00:39:59 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:38844 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaIDEj6 (ORCPT
+	id S1751267AbaIDEnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 00:43:22 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:55344 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaIDEnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 00:39:58 -0400
-Message-ID: <5407ED17.5060000@hitachi.com>
-Date: Thu, 04 Sep 2014 13:39:51 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [RFC PATCH v3 4/4] ftracetest: Add XFAIL/XPASS and POSIX.3
- std. result codes
-References: <20140902110632.3207.20043.stgit@kbuild-f20.novalocal> <20140902110659.3207.67086.stgit@kbuild-f20.novalocal> <87mwag9kyp.fsf@sejong.aot.lge.com>
-In-Reply-To: <87mwag9kyp.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Sep 2014 00:43:19 -0400
+X-AuditID: cbfee691-f79546d0000011a1-32-5407ede5232c
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Boris BREZILLON'" <boris.brezillon@free-electrons.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk,
+        "'Alexander Shiyan'" <shc_work@mail.ru>, naushad@samsung.com,
+        "'Tomasz Figa'" <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        joshi@samsung.com, linux-samsung-soc@vger.kernel.org,
+        thomas.ab@samsung.com, tomasz.figa@gmail.com, vikas.sajjan@samsung.com,
+        chow.kim@samsung.com, lee.jones@linaro.org,
+        "'Michal Simek'" <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Mark Brown'" <broonie@kernel.org>
+References: <1409668935-10667-1-git-send-email-pankaj.dubey@samsung.com>
+ <6034841.GFrG3XCMdb@wuerfel> <20140903151611.260a7218@bbrezillon>
+ <4224773.hl3QDeILqz@wuerfel> <20140903161528.05f566e1@bbrezillon>
+In-reply-to: <20140903161528.05f566e1@bbrezillon>
+Subject: RE: [PATCH v2] mfd: syscon: Decouple syscon interface from platform
+ devices
+Date: Thu, 04 Sep 2014 10:15:27 +0530
+Message-id: <002701cfc7fb$110a7350$331f59f0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIt001XuICEdFXqks+cH6c/XVPcogHeMPhCAWAIwTABxct1JQJXrpQNmvlwwDA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsWyRsSkTvfpW/YQg8dnxC3+TjrGbnHgxUIW
+	i6kPn7BZLJt0l83i+64v7Ba9C66yWdz/epTRYtPja6wWl3fNYbOYcX4fk8Xty7wW715GWHw6
+	+p/VYtIOKYuOZYwWq3b9YbS4+Ww7k4OgR0tzD5vH71+TGD2ebLrI6LFz1l12j02rOtk87lzb
+	w+axeUm9x5S5R1g9+rasYvT4vEnOY+/n3ywB3FFcNimpOZllqUX6dglcGZ/vGBTsFax4/fc4
+	UwPjQt4uRk4OCQETiamn17FB2GISF+6tB7K5OIQEljJK9K5dzQpTtK/9EDtEYjqjxOQ1ncwg
+	CSGBv4wSP9skQGw2AV2JJ+/ngsVFBGIlZvTtZwSxmQVuMEucOxEHUX+BUWLzRk8Qm1PAUGL9
+	1w1gC4QFwiRmPW5iAbFZBFQl2nd0A83h4OAVsJT41+kKEuYVEJT4MfkeC8RILYn1O48zQdjy
+	EpvXvGWGuFNBYsfZ14wQJ/hJ9E5fDVUvLjHpwUOw+yUEbnBITLoLs0tA4tvkQywguyQEZCU2
+	HYCaIylxcMUNlgmMErOQrJ6FZPUsJKtnIVmxgJFlFaNoakFyQXFSepGpXnFibnFpXrpecn7u
+	JkZgQjn979nEHYz3D1gfYhTgYFTi4S14wR4ixJpYVlyZe4jRFOiiicxSosn5wLSVVxJvaGxm
+	ZGFqYmpsZG5ppiTOqyP9M1hIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo3/450vn3h5Ky428
+	q7R7DseVOENWx7K24Hk7K5o1mViNAlRn3txlEDfPTuhfj+1yZ7kHixbd0O+Jz/RwfpYwr68n
+	2nXy5MeaQvprXV/pv71tLhN2vJkl2iBT7b7FnmepF5yyG2MqVtvcFONstWt22fvky+XOeZ+K
+	Hj3my73ZfXrHz8YFQauilViKMxINtZiLihMBYPDdZyMDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFKsWRmVeSWpSXmKPExsVy+t9jQd2nb9lDDP6u57X4O+kYu8WBFwtZ
+	LKY+fMJmsWzSXTaL77u+sFv0LrjKZnH/61FGi02Pr7FaXN41h81ixvl9TBa3L/NavHsZYfHp
+	6H9Wi0k7pCw6ljFarNr1h9Hi5rPtTA6CHi3NPWwev39NYvR4sukio8fOWXfZPTat6mTzuHNt
+	D5vH5iX1HlPmHmH16NuyitHj8yY5j72ff7MEcEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAL2kpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsYcz4fMegYK9gxeu/x5kaGBfydjFyckgImEjsaz/EDmGLSVy4t56ti5GLQ0hg
+	OqPE5DWdzCAJIYG/jBI/2yRAbDYBXYkn7+eCxUUEYiVm9O1nBLGZBW4wS5w7EQdRf4FRYvNG
+	TxCbU8BQYv3XDawgtrBAmMSsx00sIDaLgKpE+45uoDkcHLwClhL/Ol1BwrwCghI/Jt9jgRip
+	JbF+53EmCFteYvOat8wQdypI7Dj7mhHiBD+J3umroerFJSY9eMg+gVFoFpJRs5CMmoVk1Cwk
+	LQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKerZ1I7GFc2WBxiFOBgVOLhLXjBHiLE
+	mlhWXJl7iFGCg1lJhHf2WaAQb0piZVVqUX58UWlOavEhRlOgRycyS4km5wNTaV5JvKGxibmp
+	samliYWJmaWSOO+BVutAIYH0xJLU7NTUgtQimD4mDk6pBsaVS4pVl8SK9xoEnRA/UirnNenj
+	trrAY0q5yyZ6Hbva23VsUzb/ul8r7zToTsk5Z3L9jP2s0ny1SQlXO5RTqj/cna0zjdXnmvNF
+	UflpDleXv9c8sZPvcwf7Oo53fwVOLNSIfHw8eIWJx/ua1+FFNdNDdysk71LP/d305M6z3Kgr
+	Pw21pzOuO82uxFKckWioxVxUnAgAUnpwIG0DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/04 11:29), Namhyung Kim wrote:
->> diff --git a/tools/testing/ftrace/test.d/basic3.tc b/tools/testing/ftrace/test.d/basic3.tc
->> index 0c1a3a2..7bc5a53 100644
->> --- a/tools/testing/ftrace/test.d/basic3.tc
->> +++ b/tools/testing/ftrace/test.d/basic3.tc
->> @@ -1,8 +1,9 @@
->>  #!/bin/sh
->>  # description: Basic trace clock test
->> -[ -f trace_clock ] || exit 1
->> +[ -f trace_clock ] || exit $FAIL # this is basic feature, must be there
->>  for c in `cat trace_clock | tr  -d \[\]`; do
->> -  echo $c > trace_clock || exit 1
->> -  grep '\['$c'\]' trace_clock || exit 1
->> +  echo $c > trace_clock || exit $FAIL
->> +  grep '\['$c'\]' trace_clock || exit $FAIL
->>  done
->> -echo local > trace_clock
->> +echo local > trace_clock || exit $FAIL
->> +exit $PASS
+Hi Boris,
+
+On Wednesday, September 03, 2014 Boris BREZILLON wrote,
+> To: Arnd Bergmann
+> Cc: Pankaj Dubey; kgene.kim@samsung.com; linux@arm.linux.org.uk; Alexander
+> Shiyan; naushad@samsung.com; Tomasz Figa; linux-kernel@vger.kernel.org;
+> joshi@samsung.com; linux-samsung-soc@vger.kernel.org;
+thomas.ab@samsung.com;
+> tomasz.figa@gmail.com; vikas.sajjan@samsung.com; chow.kim@samsung.com;
+> lee.jones@linaro.org; Michal Simek; linux-arm-kernel@lists.infradead.org;
+Mark
+> Brown
+> Subject: Re: [PATCH v2] mfd: syscon: Decouple syscon interface from
+platform
+> devices
 > 
-> IMHO it's a bit sad that we need to write every test in this way -
-> adding '|| exit $FAIL' for every command.  It'd be better if only
-> exceptional cases require that explicitly and normal cases live in
-> simple.
+> On Wed, 03 Sep 2014 15:49:04 +0200
+> Arnd Bergmann <arnd@arndb.de> wrote:
 > 
-> Can we do better - like using trap or something?
+> > On Wednesday 03 September 2014 15:16:11 Boris BREZILLON wrote:
+> > > I checked that part, and it appears most of the code is already
+> > > there (see usage of regmap_attach_dev function here [1]).
+> > >
+> > > The only problem I see is that errors are still printed with
+> > > dev_err, which, AFAIK, will trigger a kernel panic if dev is NULL.
+> >
+> > Actually not:
+> >
+> > static int __dev_printk(const char *level, const struct device *dev,
+> >                         struct va_format *vaf) {
+> >         if (!dev)
+> >                 return printk("%s(NULL device *): %pV", level, vaf);
+> >
+> >         return dev_printk_emit(level[1] - '0', dev,
+> >                                "%s %s: %pV",
+> >                                dev_driver_string(dev), dev_name(dev),
+> > vaf); }
+> >
+> 
+> My bad then (I don't know where I looked at to think NULL dev was not
+gracefully
+> handled :-)). Thanks for pointing this out.
+> Given that, I think it should work fine even with a NULL dev.
+> I'll give it a try on at91 ;-).
+> 
 
-Hmm, no, trap is only for the signal trapping, and using signal
-means run "kill" command for special errors. That may not be what
-you want... :(
+We have tested this patch, on Exynos board and found working well.
+In our use case DT based drivers such as USB Phy, SATA Phy, Watchdog are
+calling 
+syscon_regmap_lookup_by APIs to get regmap handle to Exynos PMU and it
+worked 
+well for these drivers. 
 
-Perhaps, "set -e" may help you to simplify the script. But
-since it also returns various exit code, you can not control it.
-(I hope to have the "atexit" for dash...)
+It would be great if after testing you share result here or give a
+Tested-By.
 
-Anyway, IMHO, the test cases should express what happened clearly
-since the test is a kind of verification process.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Thanks,
+Pankaj Dubey 
+> Best Regards,
+> 
+> Boris
+> 
+> --
+> Boris Brezillon, Free Electrons
+> Embedded Linux and Kernel engineering
+> http://free-electrons.com
 
