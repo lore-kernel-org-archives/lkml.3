@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785AbaIDSBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:01:14 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:41734 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620AbaIDSBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:01:12 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Chris Zhong <zyw@rock-chips.com>, dianders@chromium.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        a.zummo@towertech.it, mturquette@linaro.org, akpm@linux-foundation.org,
-        broonie@kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        grant.likely@linaro.org, hl@rock-chips.com, huangtao@rock-chips.com,
-        cf@rock-chips.com, zhangqing@rock-chips.com, xxx@rock-chips.com,
-        olof@lixom.net, sonnyrao@chromium.org, javier.martinez@collabora.co.uk,
-        kever.yang@rock-chips.com
-Subject: Re: [PATCH v9 2/3] clk: RK808: Add clkout driver for RK808
-Date: Thu, 04 Sep 2014 20:02:56 +0200
-Message-ID: <3708545.id8zLgF0vo@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20140904174024.GD10224@core.coreip.homeip.net>
-References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com> <1409793159-2573-3-git-send-email-zyw@rock-chips.com> <20140904174024.GD10224@core.coreip.homeip.net>
+	id S1754890AbaIDSDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:03:08 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:65220 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449AbaIDSDG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 14:03:06 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Thu, 4 Sep 2014 14:03:03 -0400
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 13/17] locks: remove i_have_this_lease check from
+ __break_lease
+Message-ID: <20140904140303.0b108188@tlielax.poochiereds.net>
+In-Reply-To: <20140904175132.GG16935@infradead.org>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+	<1409834323-7171-14-git-send-email-jlayton@primarydata.com>
+	<20140904175132.GG16935@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 4. September 2014, 10:40:24 schrieb Dmitry Torokhov:
-> Hi Chris,
-> 
-> On Thu, Sep 04, 2014 at 09:12:38AM +0800, Chris Zhong wrote:
-> > +	rk808_clkout->clk_data.clks = clk_table;
-> > +	rk808_clkout->clk_data.clk_num = RK808_NR_OUTPUT;
-> > +
-> > +	return of_clk_add_provider(node, of_clk_src_onecell_get,
-> > +				   &rk808_clkout->clk_data);
-> > +}
-> > +
-> > +static struct platform_driver rk808_clkout_driver = {
-> > +	.probe = rk808_clkout_probe,
-> > +	.driver		= {
-> > +		.name	= "rk808-clkout",
-> > +	},
-> > +};
-> 
-> Shouldn't there also be:
-> 
-> static int rk808_clkout_probe(struct platform_device *pdev)
-					^^ remove
+On Thu, 4 Sep 2014 10:51:32 -0700
+Christoph Hellwig <hch@infradead.org> wrote:
 
-Just to prevent confusion. And you're right there of course.
-
-
-Heiko
-
-> {
-> 	of_clk_del_provider(pdev->dev.of_node);
+> On Thu, Sep 04, 2014 at 08:38:39AM -0400, Jeff Layton wrote:
+> > I think that the intent of this code was to ensure that a process won't
+> > deadlock if it has one fd open with a lease on it and then breaks that
+> > lease by opening another fd. In that case it'll treat the __break_lease
+> > call as if it were non-blocking.
+> > 
+> > This seems wrong -- the process could (for instance) be multithreaded
+> > and managing different fds via different threads. I also don't see any
+> > mention of this limitation in the (somewhat sketchy) documentation.
+> > 
+> > Remove the check and the non-blocking behavior when i_have_this_lease
+> > is true.
 > 
-> 	/* The rest of resources are managed ones */
+> This looks reasonable to me, but I'm always very worried about changing
+> userspace exposed behavior..
 > 
-> 	return 0;
-> }
-> 
-> Thanks.
 
+Yeah, me too, but I think the behavior in this case is just plain
+wrong. It's really hard to understand how anyone would rely on this to
+avoid deadlocking, but you never know...
+
+I want to phase this out, but I'm certainly open to doing this in a
+smoother fashion if anyone has suggestions on how to do so.
+
+Thanks,
+-- 
+Jeff Layton <jlayton@primarydata.com>
