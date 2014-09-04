@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432AbaIDHdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:33:52 -0400
-Received: from mga14.intel.com ([192.55.52.115]:54051 "EHLO mga14.intel.com"
+	id S932510AbaIDHeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:34:07 -0400
+Received: from mga14.intel.com ([192.55.52.115]:34371 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252AbaIDHdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:33:51 -0400
+	id S932252AbaIDHeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 03:34:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="381246287"
+   d="scan'208";a="381246371"
 From: Chuansheng Liu <chuansheng.liu@intel.com>
 To: peterz@infradead.org, luto@amacapital.net, daniel.lezcano@linaro.org,
         rjw@rjwysocki.net, mingo@redhat.com
 Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         changcheng.liu@intel.com, xiaoming.wang@intel.com,
         souvik.k.chakravarty@intel.com, chuansheng.liu@intel.com
-Subject: [PATCH 2/3] smp: Adding new function wake_up_all_idle_cpus()
-Date: Thu,  4 Sep 2014 15:17:54 +0800
-Message-Id: <1409815075-4180-2-git-send-email-chuansheng.liu@intel.com>
+Subject: [PATCH 3/3] cpuidle: Using the wake_up_all_idle_cpus() to wake up all idle cpus
+Date: Thu,  4 Sep 2014 15:17:55 +0800
+Message-Id: <1409815075-4180-3-git-send-email-chuansheng.liu@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409815075-4180-1-git-send-email-chuansheng.liu@intel.com>
 References: <1409815075-4180-1-git-send-email-chuansheng.liu@intel.com>
@@ -25,79 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kick_all_cpus_sync() can break non-polling idle cpus
-thru IPI interrupts.
+Currently kick_all_cpus_sync() or smp_call_function() can not
+break the polling idle cpu immediately.
 
-But sometimes we need to break the polling idle cpus immediately
-to reselect the suitable c-state, also for non-idle cpus, we need
-to do nothing if we try to wake up them.
-
-Here adding one new function wake_up_all_idle_cpus() to let all cpus
-out of idle based on function wake_up_if_idle().
+Here using wake_up_all_idle_cpus() which can wake up the polling idle
+cpu quickly is much helpful for power.
 
 Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 ---
- include/linux/smp.h |    2 ++
- kernel/smp.c        |   22 ++++++++++++++++++++++
- 2 files changed, 24 insertions(+)
+ drivers/cpuidle/cpuidle.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 34347f2..93dff5f 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -100,6 +100,7 @@ int smp_call_function_any(const struct cpumask *mask,
- 			  smp_call_func_t func, void *info, int wait);
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index ee9df5e..d31e04c 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -223,7 +223,7 @@ void cpuidle_uninstall_idle_handler(void)
+ {
+ 	if (enabled_devices) {
+ 		initialized = 0;
+-		kick_all_cpus_sync();
++		wake_up_all_idle_cpus();
+ 	}
+ }
  
- void kick_all_cpus_sync(void);
-+void wake_up_all_idle_cpus(void);
+@@ -530,11 +530,6 @@ EXPORT_SYMBOL_GPL(cpuidle_register);
  
+ #ifdef CONFIG_SMP
+ 
+-static void smp_callback(void *v)
+-{
+-	/* we already woke the CPU up, nothing more to do */
+-}
+-
  /*
-  * Generic and arch helpers
-@@ -148,6 +149,7 @@ smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
+  * This function gets called when a part of the kernel has a new latency
+  * requirement.  This means we need to get all processors out of their C-state,
+@@ -544,7 +539,7 @@ static void smp_callback(void *v)
+ static int cpuidle_latency_notify(struct notifier_block *b,
+ 		unsigned long l, void *v)
+ {
+-	smp_call_function(smp_callback, NULL, 1);
++	wake_up_all_idle_cpus();
+ 	return NOTIFY_OK;
  }
  
- static inline void kick_all_cpus_sync(void) {  }
-+static inline void wake_up_all_idle_cpus(void) {  }
- 
- #endif /* !SMP */
- 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index aff8aa1..9e0d0b2 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -13,6 +13,7 @@
- #include <linux/gfp.h>
- #include <linux/smp.h>
- #include <linux/cpu.h>
-+#include <linux/sched.h>
- 
- #include "smpboot.h"
- 
-@@ -699,3 +700,24 @@ void kick_all_cpus_sync(void)
- 	smp_call_function(do_nothing, NULL, 1);
- }
- EXPORT_SYMBOL_GPL(kick_all_cpus_sync);
-+
-+/**
-+ * wake_up_all_idle_cpus - break all cpus out of idle
-+ * wake_up_all_idle_cpus try to break all cpus which is in idle state even
-+ * including idle polling cpus, for non-idle cpus, we will do nothing
-+ * for them.
-+ */
-+void wake_up_all_idle_cpus(void)
-+{
-+	int cpu;
-+
-+	preempt_disable();
-+	for_each_online_cpu(cpu) {
-+		if (cpu == smp_processor_id())
-+			continue;
-+
-+		wake_up_if_idle(cpu);
-+	}
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL_GPL(wake_up_all_idle_cpus);
 -- 
 1.7.9.5
 
