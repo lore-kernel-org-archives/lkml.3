@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaIDOn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:43:59 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:9430 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbaIDOn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:43:57 -0400
-X-IronPort-AV: E=Sophos;i="5.04,466,1406592000"; 
-   d="scan'208";a="168364048"
-Message-ID: <54087AA1.8010208@citrix.com>
-Date: Thu, 4 Sep 2014 15:43:45 +0100
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	id S1754145AbaIDOof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:44:35 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:59415
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284AbaIDOod (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:44:33 -0400
+Date: Thu, 4 Sep 2014 16:44:29 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 0/3] ns, procfs: pid conversion between ns and
+ showing pidns hierarchy
+Message-ID: <20140904144429.GA13407@mail.hallyn.com>
+References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: David Vrabel <david.vrabel@citrix.com>, <xen-devel@lists.xensource.com>,
-        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
-        Juergen Gross <JGross@suse.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen: eliminate scalability issues from
- initial mapping setup
-References: <1409834326-29287-1-git-send-email-jgross@suse.com> <1409834326-29287-4-git-send-email-jgross@suse.com> <54086244.7020601@citrix.com> <540862FE.7070108@citrix.com> <540893F00200007800030E4F@mail.emea.novell.com>
-In-Reply-To: <540893F00200007800030E4F@mail.emea.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/14 15:31, Jan Beulich wrote:
->>>> On 04.09.14 at 15:02, <andrew.cooper3@citrix.com> wrote:
->> On 04/09/14 13:59, David Vrabel wrote:
->>> On 04/09/14 13:38, Juergen Gross wrote:
->>>> Direct Xen to place the initial P->M table outside of the initial
->>>> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
->>>> restriction on the size of the initial mapping limits the amount
->>>> of memory a domain can be handed initially.
->>> The three level p2m limits memory to 512 GiB on x86-64 but this patch
->>> doesn't seem to address this limit and thus seems a bit useless to me.
->> Any increase of the p2m beyond 3 levels will need to come with
->> substantial libxc changes first.  3 level p2ms are hard coded throughout
->> all the PV build and migrate code.
-> No, there no such dependency - the kernel could use 4 levels at
-> any time (sacrificing being able to get migrated), making sure it
-> only exposes the 3 levels hanging off the fourth level (or not
-> exposing this information at all) to external entities making this
-> wrong assumption.
->
-> Jan
->
+Quoting Chen Hanxiao (chenhanxiao@cn.fujitsu.com):
+> This series will expose pid inside containers
+> via procfs.
+> Also show the hierarchy of pid namespcae.
+> Then we could know how pid looks inside a container
+> and their ns relationships.
+> 
+> Chen Hanxiao (3):
+>   procfs: check uniq proc_dir_entry subdir name
+>   procfs: show hierarchy of pid namespace
+>   /proc/pid/status: show all sets of pid according to ns
+> 
+>  fs/proc/Kconfig           |   6 ++
+>  fs/proc/Makefile          |   1 +
+>  fs/proc/array.c           |  17 +++++
+>  fs/proc/generic.c         |  15 +++++
+>  fs/proc/pidns_hierarchy.c | 161 ++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/proc_fs.h   |   3 +
+>  6 files changed, 203 insertions(+)
+>  create mode 100644 fs/proc/pidns_hierarchy.c
 
-That would require that the PV kernel must start with a 3 level p2m and
-fudge things afterwards.
-
-At a minimum, I would expect a patch to libxc to detect a 4 level PV
-guest and fail with a meaningful error, rather than an obscure "m2p
-doesn't match p2m for mfn/pfn X".
-
-~Andrew
+Thanks, Chen.  I'm sorry I won't have a chance to review this week, but
+hope to do next week.
