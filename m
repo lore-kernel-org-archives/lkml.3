@@ -1,212 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaIDP2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:28:44 -0400
-Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:46611 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750882AbaIDP2m (ORCPT
+	id S1753391AbaIDP3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:29:32 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:49772 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaIDP3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:28:42 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:2:41:69:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3355:3622:3653:3865:3866:3867:3868:3870:3871:3872:4050:4119:4250:4321:5007:6119:7514:7652:7875:7903:8603:8829:8957:9040:10004:10848:11026:11232:11473:11658:11914:12043:12291:12294:12295:12296:12438:12517:12519:12555:12683:12740:13255:13868:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: copy21_4b523f240cb63
-X-Filterd-Recvd-Size: 8580
-Message-ID: <1409844514.2770.6.camel@joe-AO725>
-Subject: Re: [PATCH] Staging: rtl8192u: fix brace style coding issue in
- r819xU_firmware.c
-From: Joe Perches <joe@perches.com>
-To: Chaitra Ramaiah <linux.delve@gmail.com>
-Cc: gregkh@linuxfoundation.org, burzalodowa@gmail.com, anarey@gmail.com,
-        rmfrfs@gmail.com, gdonald@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 04 Sep 2014 08:28:34 -0700
-In-Reply-To: <1409843463-3702-2-git-send-email-linux.delve@gmail.com>
-References: <1409843463-3702-1-git-send-email-linux.delve@gmail.com>
-	 <1409843463-3702-2-git-send-email-linux.delve@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Sep 2014 11:29:30 -0400
+Message-ID: <5408854B.9010703@linaro.org>
+Date: Thu, 04 Sep 2014 23:29:15 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v3 09/17] ARM64 / ACPI: Parse MADT for SMP initialization
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org> <20140903172138.GG1824@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20140903172138.GG1824@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 20:41 +0530, Chaitra Ramaiah wrote:
-> Signed-off-by: Chaitra Ramaiah <linux.delve@gmail.com>
+Hi Lorenzo,
 
-Please put the commit log description from your
-cover letter into this patch submission and only
-send 1 email instead of than 2.
+On 2014年09月04日 01:21, Lorenzo Pieralisi wrote:
+> On Mon, Sep 01, 2014 at 03:57:47PM +0100, Hanjun Guo wrote:
+>> MADT contains the information for MPIDR which is essential for
+>> SMP initialization, parse the GIC cpu interface structures to
+>> get the MPIDR value and map it to cpu_logical_map(), and add
+>> enabled cpu with valid MPIDR into cpu_possible_map.
+>>
+>> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
+>> Parking protocol, but the Parking protocol is only specified for
+>> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
+>> before some updates for the ACPI spec or the Parking protocol spec.
+[...]
+>>  int acpi_noirq;			/* skip ACPI IRQ initialization */
+>>  int acpi_disabled;
+>>  EXPORT_SYMBOL(acpi_disabled);
+>> @@ -31,6 +35,8 @@ EXPORT_SYMBOL(acpi_disabled);
+>>  int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
+>>  EXPORT_SYMBOL(acpi_pci_disabled);
+>>  
+>> +static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
+> Will this be ever different from (num_possible_cpus() - 1) ?
 
-Rather than add these one-line-at-a-time type changes,
-I'd just as soon see these all corrected at the same
-time using something like this below.
+Yes, num_possible_cpus() will much more than enabled cpus
+in MADT, when ACPI based CPU hot plug is introduced, you can refer
+to the code in x86.
 
-It also allows git diff -w to be shown as empty in a
-commit log and this should be verified before and after
-as compilable with no changes using scripts/objdiff.
+>
+>> +
+>>  /*
+>>   * __acpi_map_table() will be called before page_init(), so early_ioremap()
+>>   * or early_memremap() should be called here to for ACPI table mapping.
+>> @@ -51,6 +57,144 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>>  	early_memunmap(map, size);
+>>  }
+>>  
+>> +/**
+>> + * acpi_map_gic_cpu_interface - generates a logical cpu number
+>> + * and map to MPIDR represented by GICC structure
+>> + * @mpidr: CPU's hardware id to register, MPIDR represented in MADT
+>> + * @enabled: this cpu is enabled or not
+>> + *
+>> + * Returns the logical cpu number which maps to MPIDR
+>> + */
+>> +static int acpi_map_gic_cpu_interface(u64 mpidr, u8 enabled)
+>> +{
+>> +	int cpu;
+>> +
+>> +	if (mpidr == INVALID_HWID) {
+>> +		pr_info("Skip invalid cpu hardware ID\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	total_cpus++;
+> What's this used for ?
 
-$ ./scripts/checkpatch.pl --fix-inplace --types=spacing --strict -f drivers/staging/rtl8192u/r819xU_firmware.c
-$ git diff --stat -p drivers/staging/rtl8192u/r819xU_firmware.c
- drivers/staging/rtl8192u/r819xU_firmware.c | 52 +++++++++++++++---------------
- 1 file changed, 26 insertions(+), 26 deletions(-)
+It is for all the CPU entries in MADT table, it is used to let
+people know how many CPUs in MADT (enabled and disabled).
 
-diff --git a/drivers/staging/rtl8192u/r819xU_firmware.c b/drivers/staging/rtl8192u/r819xU_firmware.c
-index 671cbe6..8e116f8 100644
---- a/drivers/staging/rtl8192u/r819xU_firmware.c
-+++ b/drivers/staging/rtl8192u/r819xU_firmware.c
-@@ -51,7 +51,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 	frag_threshold = pfirmware->cmdpacket_frag_thresold;
- 	do {
- 		if ((buffer_len - frag_offset) > frag_threshold) {
--			frag_length = frag_threshold ;
-+			frag_length = frag_threshold;
- 			bLastIniPkt = 0;
- 
- 		} else {
-@@ -66,7 +66,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 		skb  = dev_alloc_skb(USB_HWDESC_HEADER_LEN + frag_length + 4);
- 		if (!skb)
- 			return false;
--		memcpy((unsigned char *)(skb->cb),&dev,sizeof(dev));
-+		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
- 		tcb_desc = (cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
- 		tcb_desc->queue_index = TXCMD_QUEUE;
- 		tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
-@@ -78,19 +78,19 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 		 * Transform from little endian to big endian
- 		 * and pending  zero
- 		 */
--		for(i=0 ; i < frag_length; i+=4) {
--			*seg_ptr++ = ((i+0)<frag_length)?code_virtual_address[i+3]:0;
--			*seg_ptr++ = ((i+1)<frag_length)?code_virtual_address[i+2]:0;
--			*seg_ptr++ = ((i+2)<frag_length)?code_virtual_address[i+1]:0;
--			*seg_ptr++ = ((i+3)<frag_length)?code_virtual_address[i+0]:0;
-+		for (i = 0 ; i < frag_length; i += 4) {
-+			*seg_ptr++ = ((i+0) < frag_length) ? code_virtual_address[i+3] : 0;
-+			*seg_ptr++ = ((i+1) < frag_length) ? code_virtual_address[i+2] : 0;
-+			*seg_ptr++ = ((i+2) < frag_length) ? code_virtual_address[i+1] : 0;
-+			*seg_ptr++ = ((i+3) < frag_length) ? code_virtual_address[i+0] : 0;
- 		}
--		tcb_desc->txbuf_size= (u16)i;
-+		tcb_desc->txbuf_size = (u16)i;
- 		skb_put(skb, i);
- 
--		if (!priv->ieee80211->check_nic_enough_desc(dev,tcb_desc->queue_index)||
--			(!skb_queue_empty(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index]))||\
--			(priv->ieee80211->queue_stop) ) {
--			RT_TRACE(COMP_FIRMWARE,"=====================================================> tx full!\n");
-+		if (!priv->ieee80211->check_nic_enough_desc(dev, tcb_desc->queue_index) || 
-+			(!skb_queue_empty(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index])) || \
-+			(priv->ieee80211->queue_stop)) {
-+			RT_TRACE(COMP_FIRMWARE, "=====================================================> tx full!\n");
- 			skb_queue_tail(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index], skb);
- 		} else {
- 			priv->ieee80211->softmac_hard_start_xmit(skb, dev);
-@@ -99,7 +99,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 		code_virtual_address += frag_length;
- 		frag_offset += frag_length;
- 
--	}while(frag_offset < buffer_len);
-+	} while (frag_offset < buffer_len);
- 
- 	return rt_status;
- 
-@@ -131,7 +131,7 @@ static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
- 		if (CPU_status&CPU_GEN_PUT_CODE_OK)
- 			break;
- 
--	}while(check_putcodeOK_time--);
-+	} while (check_putcodeOK_time--);
- 
- 	if (!(CPU_status&CPU_GEN_PUT_CODE_OK)) {
- 		RT_TRACE(COMP_ERR, "Download Firmware: Put code fail!\n");
-@@ -151,7 +151,7 @@ static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
- 
- 		if (CPU_status&CPU_GEN_BOOT_RDY)
- 			break;
--	}while(check_bootOk_time--);
-+	} while (check_bootOk_time--);
- 
- 	if (!(CPU_status&CPU_GEN_BOOT_RDY)) {
- 		goto CPUCheckMainCodeOKAndTurnOnCPU_Fail;
-@@ -181,7 +181,7 @@ static bool CPUcheck_firmware_ready(struct net_device *dev)
- 		if (CPU_status&CPU_GEN_FIRM_RDY)
- 			break;
- 
--	}while(check_time--);
-+	} while (check_time--);
- 
- 	if (!(CPU_status&CPU_GEN_FIRM_RDY))
- 		goto CPUCheckFirmwareReady_Fail;
-@@ -217,17 +217,17 @@ bool init_firmware(struct net_device *dev)
- 
- 	RT_TRACE(COMP_FIRMWARE, " PlatformInitFirmware()==>\n");
- 
--	if (pfirmware->firmware_status == FW_STATUS_0_INIT ) {
-+	if (pfirmware->firmware_status == FW_STATUS_0_INIT) {
- 		/* it is called by reset */
- 		rst_opt = OPT_SYSTEM_RESET;
- 		starting_state = FW_INIT_STEP0_BOOT;
- 		// TODO: system reset
- 
--	}else if (pfirmware->firmware_status == FW_STATUS_5_READY) {
-+	} else if (pfirmware->firmware_status == FW_STATUS_5_READY) {
- 		/* it is called by Initialize */
- 		rst_opt = OPT_FIRMWARE_RESET;
- 		starting_state = FW_INIT_STEP2_DATA;
--	}else {
-+	} else {
- 		 RT_TRACE(COMP_FIRMWARE, "PlatformInitFirmware: undefined firmware state\n");
- 	}
- 
-@@ -235,14 +235,14 @@ bool init_firmware(struct net_device *dev)
- 	 * Download boot, main, and data image for System reset.
- 	 * Download data image for firmware reset
- 	 */
--	for(init_step = starting_state; init_step <= FW_INIT_STEP2_DATA; init_step++) {
-+	for (init_step = starting_state; init_step <= FW_INIT_STEP2_DATA; init_step++) {
- 		/*
- 		 * Open image file, and map file to continuous memory if open file success.
- 		 * or read image file from array. Default load from IMG file
- 		 */
- 		if (rst_opt == OPT_SYSTEM_RESET) {
--			rc = request_firmware(&fw_entry, fw_name[init_step],&priv->udev->dev);
--			if (rc < 0 ) {
-+			rc = request_firmware(&fw_entry, fw_name[init_step], &priv->udev->dev);
-+			if (rc < 0) {
- 				RT_TRACE(COMP_ERR, "request firmware fail!\n");
- 				goto download_firmware_fail;
- 			}
-@@ -253,17 +253,17 @@ bool init_firmware(struct net_device *dev)
- 			}
- 
- 			if (init_step != FW_INIT_STEP1_MAIN) {
--				memcpy(pfirmware->firmware_buf,fw_entry->data,fw_entry->size);
-+				memcpy(pfirmware->firmware_buf, fw_entry->data, fw_entry->size);
- 				mapped_file = pfirmware->firmware_buf;
- 				file_length = fw_entry->size;
- 			} else {
- 				memset(pfirmware->firmware_buf, 0, 128);
--				memcpy(&pfirmware->firmware_buf[128],fw_entry->data,fw_entry->size);
-+				memcpy(&pfirmware->firmware_buf[128], fw_entry->data, fw_entry->size);
- 				mapped_file = pfirmware->firmware_buf;
- 				file_length = fw_entry->size + 128;
- 			}
- 			pfirmware->firmware_buf_size = file_length;
--		}else if (rst_opt == OPT_FIRMWARE_RESET ) {
-+		} else if (rst_opt == OPT_FIRMWARE_RESET) {
- 			/* we only need to download data.img here */
- 			mapped_file = pfirmware->firmware_buf;
- 			file_length = pfirmware->firmware_buf_size;
-@@ -318,7 +318,7 @@ bool init_firmware(struct net_device *dev)
- 
- 			rt_status = CPUcheck_firmware_ready(dev);
- 			if (rt_status != TRUE) {
--				RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n",rt_status);
-+				RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n", rt_status);
- 				goto download_firmware_fail;
- 			}
- 
+>
+>> +	if (!enabled)
+>> +		return -EINVAL;
+>> +
+>> +	if (enabled_cpus >=  NR_CPUS) {
+>> +		pr_warn("NR_CPUS limit of %d reached, Processor %d/0x%llx ignored.\n",
+>> +			NR_CPUS, total_cpus, mpidr);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	/* No need to check duplicate MPIDRs for the first CPU */
+>> +	if (enabled_cpus) {
+>> +		/*
+>> +		 * Duplicate MPIDRs are a recipe for disaster. Scan
+>> +		 * all initialized entries and check for
+>> +		 * duplicates. If any is found just ignore the CPU.
+>> +		 */
+>> +		for_each_possible_cpu(cpu) {
+>> +			if (cpu_logical_map(cpu) == mpidr) {
+>> +				pr_err("Firmware bug, duplicate CPU MPIDR: 0x%llx in MADT\n",
+>> +				mpidr);
+>> +				return -EINVAL;
+>> +			}
+>> +		}
+>> +	} else {
+>> +		/* Fist GICC entry must be BSP as ACPI spec said */
+> s/Fist/First/
+>
+>> +		if  (cpu_logical_map(0) != mpidr) {
+>> +			pr_err("First GICC entry is not BSP for MPIDR 0x%llx\n",
+>> +			       mpidr);
+>> +			return -EINVAL;
+>> +		}
+> Interesting, this means that if I want to change the boot CPU I have to
+> recompile the ACPI tables. Is that really true ?
 
+No, you needn't. there is a logic problem here, we just need to print
+some message here and continue, OS will still ok with that.
 
+>
+>> +	}
+>> +
+>> +	/* allocate a logical cpu id for the new comer */
+>> +	if (cpu_logical_map(0) == mpidr) {
+>> +		/*
+>> +		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
+>> +		 * for BSP, no need to allocate again.
+>> +		 */
+>> +		cpu = 0;
+>> +	} else {
+>> +		cpu = cpumask_next_zero(-1, cpu_possible_mask);
+>> +	}
+> You may use a ternary operator, more compact and clearer.
+>
+> BTW you seem to be contradicting yourself. On one hand you keep a
+> counter for enabled_cpus, and then use cpu_possible_mask to allocate
+> a logical cpu id. Make a decision, either you use a counter or you
+> use cpu_possible_mask and its bitweight.
+
+ok.
+
+>
+>> +	/*
+>> +	 * ACPI 5.1 only has two explicit methods to boot up SMP,
+>> +	 * PSCI and Parking protocol, but the Parking protocol is
+>> +	 * only specified for ARMv7 now, so make PSCI as the only
+>> +	 * way for the SMP boot protocol before some updates for
+>> +	 * the ACPI spec or the Parking protocol spec.
+>> +	 */
+>> +	if (!acpi_psci_present()) {
+>> +		pr_warn("CPU %d has no PSCI support, will not boot\n", cpu);
+>> +		return -EOPNOTSUPP;
+>> +	}
+> This check really does not belong here. You do not even start parsing the gic
+> cpu interfaces if psci is missing or I am missing something myself. Anyway,
+> this check must not be in this function.
+
+I agree with you, i will update the patch.
+
+>
+>> +
+>> +	/* Get cpu_ops include the boot CPU */
+>> +	cpu_ops[cpu] = cpu_get_ops("psci");
+>> +	if (!cpu_ops[cpu])
+>> +		return -EINVAL;
+>> +
+>> +	/* CPU 0 was already initialized */
+>> +	if (cpu) {
+>> +		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
+>> +			return -EOPNOTSUPP;
+>> +
+>> +		/* map the logical cpu id to cpu MPIDR */
+>> +		cpu_logical_map(cpu) = mpidr;
+>> +
+>> +		set_cpu_possible(cpu, true);
+>> +	}
+>> +
+>> +	enabled_cpus++;
+> See above to me enabled_cpus and (num_possible_cpus() - 1)  are identical.
+
+I think I need to remove all the CPU hotplug related code and make this function
+as simple as possible and introduce them when needed.
+
+>
+>> +	return cpu;
+>> +}
+>> +
+>> +static int __init
+>> +acpi_parse_gic_cpu_interface(struct acpi_subtable_header *header,
+>> +				const unsigned long end)
+>> +{
+>> +	struct acpi_madt_generic_interrupt *processor;
+>> +
+>> +	processor = (struct acpi_madt_generic_interrupt *)header;
+>> +
+>> +	if (BAD_MADT_ENTRY(processor, end))
+>> +		return -EINVAL;
+>> +
+>> +	acpi_table_print_madt_entry(header);
+>> +
+>> +	acpi_map_gic_cpu_interface(processor->arm_mpidr,
+>> +		processor->flags & ACPI_MADT_ENABLED);
+> Ehm. You must check the return value here right (and return an error if
+> that's an error, otherwise the count value below can be botched ?!).
+>
+> Or you do not consider a parsing error as an error and want to keep
+> parsing remaining GIC CPU IF entries ?
+
+yes, this is my intension. we can skip the error ones and boot
+other CPUs which have no errors.
+
+>
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/* Parse GIC cpu interface entries in MADT for SMP init */
+>> +void __init acpi_smp_init_cpus(void)
+>> +{
+>> +	int count;
+>> +
+>> +	/*
+>> +	 * do a partial walk of MADT to determine how many CPUs
+>> +	 * we have including disabled CPUs, and get information
+>> +	 * we need for SMP init
+>> +	 */
+>> +	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_INTERRUPT,
+>> +			acpi_parse_gic_cpu_interface,
+>> +			ACPI_MAX_GIC_CPU_INTERFACE_ENTRIES);
+>> +
+>> +	if (!count) {
+>> +		pr_err("No GIC CPU interface entries present\n");
+>> +		return;
+>> +	} else if (count < 0) {
+>> +		pr_err("Error parsing GIC CPU interface entry\n");
+>> +		return;
+>> +	}
+> What would you consider an error ? A single GIC CPU IF entry error ?
+
+could you please explain it in detail? I can't catch up with you, my apologizes.
+
+Thanks
+Hanjun
