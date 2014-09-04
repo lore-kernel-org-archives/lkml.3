@@ -1,92 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaIDLId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 07:08:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54874 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752864AbaIDLIc (ORCPT
+	id S1753265AbaIDLUH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 07:20:07 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:53986 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaIDLUF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 07:08:32 -0400
-Date: Thu, 4 Sep 2014 12:07:40 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yan Zheng <zheng.z.yan@intel.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
-Message-ID: <20140904110740.GB32228@leverpostej>
-References: <20140901181808.GA6427@leverpostej>
- <20140901190534.GC5806@worktop.ger.corp.intel.com>
- <20140902185807.GA7434@leverpostej>
- <20140903115013.GA3127@leverpostej>
- <20140904104402.GS4783@worktop.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904104402.GS4783@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Sep 2014 07:20:05 -0400
+References: <5405E186.2080406@canonical.com> <20140902192941.GB3001@console-pimps.org> <CAKv+Gu_eSe+FeNkGm+w3sSsRn2_hr70xLVBieZgyhawAv6PQvw@mail.gmail.com> <5406D0DB.90401@canonical.com> <CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com> <54073409.6030004@canonical.com> <CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com> <20140903175948.GH3001@console-pimps.org> <CAKv+Gu9tejixb3Kb3YM_7sLcpKNuRHN+Dn+twFyCAXx99wYRCw@mail.gmail.com> <54084376.8090002@canonical.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <54084376.8090002@canonical.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BA3DE6F4-93D9-4CDE-90D7-280360929ABD@linaro.org>
+Cc: Matt Fleming <matt@console-pimps.org>, Ulf Winkelvos <ulf@winkelvos.de>,
+        Matt Fleming <matt.fleming@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+X-Mailer: iPhone Mail (11D257)
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and preparation patches
+Date: Thu, 4 Sep 2014 13:19:57 +0200
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 11:44:02AM +0100, Peter Zijlstra wrote:
-> On Wed, Sep 03, 2014 at 12:50:14PM +0100, Mark Rutland wrote:
-> > From 6465beace3ad9b12039127468f4596b8e87a53e8 Mon Sep 17 00:00:00 2001
-> > From: Mark Rutland <mark.rutland@arm.com>
-> > Date: Wed, 3 Sep 2014 11:06:22 +0100
-> > Subject: [PATCH] perf: prevent hotplug race on event->ctx
-> > 
-> > The perf_pmu_migrate_context code introduced in 0cda4c023132 (perf:
-> > Introduce perf_pmu_migrate_context()) didn't take the tear-down of
-> > events into account, and left open a race with put_event on event->ctx.
-> > A resulting duplicate put_ctx of an event's original context can lead to
-> > the context being erroneously kfreed via RCU, resulting in the below
-> > splat with the intel uncore_imc PMU driver:
+
+
+> On 4 sep. 2014, at 12:48, Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
 > 
-> <snip>
+> Op 03-09-14 om 21:57 schreef Ard Biesheuvel:
+>> On 3 September 2014 19:59, Matt Fleming <matt@console-pimps.org> wrote:
+>>> On Wed, 03 Sep, at 05:37:26PM, Ard Biesheuvel wrote:
+>>>> Will do, thanks.
+>>>> 
+>>>> @Matt: so there is two ways to fix this, the patch above addressing
+>>>> this single instance, and alternatively, adding a #pragma GCC
+>>>> visiblilty push(hidden) to all .c files under libstub/, *before* the
+>>>> #includes. The latter would catch future problems regarding newly
+>>>> introduced global variables, but it may be a bit overkill in this
+>>>> case, as libstub is not expected to be in flux in the foreseeable
+>>>> future.
+>>>> 
+>>>> Any preferences?
+>>> Any reason we can't reuse the existing GOT fixup code in the early x86
+>>> boot code? We're not executing it before the EFI boot stub atm, which is
+>>> the reason Maarten is hitting these difficulties.
+>> I guess that is likely to work, I just wasn't aware it existed :-)
+>> I think adding another visibility(hidden) attribute or 2 would
+>> complete eliminate the need for GOT fixups, but I guess that is more
+>> sensitive to compiler versions being recent enough etc.
+>> The attached (build tested only) patch eliminates all GOT relocations
+>> under boot/compressed for a 64-bit EFI stub build.
+>> 
+>>> Maarten, does the following help?
+>>> 
+>>> If not, Ard please go ahead with option #2 above. Overkill yes, but I've
+>>> done the single __attribute__() hacks in other projects and someone
+>>> (usually me) always eventually forgets to tag some instance.
+>> It appears we just got lucky on arm64, since we don't have any global
+>> variables, but the issue does exist there as well.
+> FWIW, visibility pushing doesn't seem to work for functions declared with extern.
+
+Are you sure you are seeing GOT entries being generated for functions? Normally, these are resolved via PLT entries, and those usually don't result in GOT entries to be allocated unless the branch target is unknown at link time.
+
+
+> Following seems to get rid of all GOTPCREL:
+> ---
+> diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+> index bd49ec61255c..221da1e53d87 100644
+> --- a/arch/x86/boot/boot.h
+> +++ b/arch/x86/boot/boot.h
+> @@ -298,8 +298,8 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr);
+> int validate_cpu(void);
 > 
-> > In response to a CPU notifier an uncore PMU driver calls
-> > perf_pmu_migrate context, which will remove all events from the old CPU
-> > context before placing them all into the new CPU context. For a short
-> > period the events are in limbo and are part of neither context, though
-> > their event->ctx pointers still point at the old context.
-> > 
-> > During this period another CPU may enter put_event, which will try to
-> > remove the event from event->ctx. As this may still point at the old
-> > context, put_ctx can be called twice for a given event on the original
-> > context. The context's refcount may drop to zero unexpectedly, whereupon
-> > put_ctx will queue up a kfree with RCU. This blows up at the end of the
-> > next grace period as the uncore PMU contexts are housed within
-> > perf_cpu_context and weren't directly allocated with k*alloc.
-> > 
-> > This patch prevents the issue by inhibiting hotplug for the portion of
-> > put_event which must access event->ctx, preventing the notifiers which
-> > call perf_pmu_migrate_context from running concurrently. Once the event
-> > has been removed from its context perf_pmu_migrate_context will no
-> > longer be able to access it, so it is not necessary to inhibit hotplug
-> > for the duration of event tear-down.
+> /* early_serial_console.c */
+> -extern int early_serial_base;
+> -void console_init(void);
+> +extern __attribute__((__visibility__("hidden"))) int early_serial_base;
+> +__attribute__((__visibility__("hidden"))) void console_init(void);
 > 
-> Right, so that works I suppose. The thing is, get_online_cpus() is a
-> global lock and we can potentially do a lot of put_event()s. I had a
-> patch a while back that rewrote the cpuhotplug locking, but Linus didn't
-> particularly like that at the time.
-
-Yeah, calling {get,put}_online_cpus() is far from ideal.
-
-When testing open/close and hotplug had a rather noticeable effect on
-each others' progress (per visible rate of output over serial, I didn't
-make any actual measurements). Killing a few tasks with ~1024 events
-open each would crawl to completion over a few seconds.
-
-> I'll try and see if I can come up with anything else, but so far I've
-> only discovered a lot of ways that don't work (like I'm sure you did
-> too).
-
-Yup; ABBA deadlock or too many/few put_ctx(old_ctx) calls.
-
-Thanks for taking a look. If you have any ideas I'm happy to try another
-approach.
-
-Mark.
+> /* edd.c */
+> void query_edd(void);
+> diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+> index 24e3e569a13c..23ac047fd23e 100644
+> --- a/arch/x86/boot/compressed/misc.h
+> +++ b/arch/x86/boot/compressed/misc.h
+> @@ -30,9 +30,10 @@
+> #endif
+> 
+> /* misc.c */
+> -extern memptr free_mem_ptr;
+> -extern memptr free_mem_end_ptr;
+> -extern struct boot_params *real_mode;        /* Pointer to real-mode data */
+> +extern __attribute__((__visibility__("hidden"))) memptr free_mem_ptr;
+> +extern __attribute__((__visibility__("hidden"))) memptr free_mem_end_ptr;
+> +extern __attribute__((__visibility__("hidden"))) struct boot_params *real_mode;        /* Pointer to real-mode data */
+> +
+> void __putstr(const char *s);
+> #define error_putstr(__x)  __putstr(__x)
+> 
+> @@ -75,7 +76,7 @@ unsigned char *choose_kernel_location(unsigned char *input,
+> 
+> #ifdef CONFIG_EARLY_PRINTK
+> /* early_serial_console.c */
+> -extern int early_serial_base;
+> +__attribute__((__visibility__("hidden"))) int early_serial_base;
+> void console_init(void);
+> #else
+> static const int early_serial_base;
+> diff --git a/arch/x86/boot/cpuflags.h b/arch/x86/boot/cpuflags.h
+> index ea97697e51e4..d01fcf94ece6 100644
+> --- a/arch/x86/boot/cpuflags.h
+> +++ b/arch/x86/boot/cpuflags.h
+> @@ -10,8 +10,8 @@ struct cpu_features {
+>    u32 flags[NCAPINTS];
+> };
+> 
+> -extern struct cpu_features cpu;
+> -extern u32 cpu_vendor[3];
+> +__attribute__((visibility("hidden"))) extern struct cpu_features cpu;
+> +__attribute__((visibility("hidden"))) extern u32 cpu_vendor[3];
+> 
+> int has_eflag(unsigned long mask);
+> void get_cpuflags(void);
+> diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+> index 044a2fd3c5fe..8725d85f1903 100644
+> --- a/arch/x86/include/asm/efi.h
+> +++ b/arch/x86/include/asm/efi.h
+> @@ -178,7 +178,7 @@ struct efi_config {
+>    bool is64;
+> } __packed;
+> 
+> -extern struct efi_config *efi_early;
+> +extern __attribute__((visibility("hidden"))) struct efi_config *efi_early;
+> 
+> #define efi_call_early(f, ...)                        \
+>    efi_early->call(efi_early->f, __VA_ARGS__);
+> 
