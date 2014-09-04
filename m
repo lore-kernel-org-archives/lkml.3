@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276AbaIDIFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 04:05:40 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:37548 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833AbaIDIFd convert rfc822-to-8bit (ORCPT
+	id S1754834AbaIDIP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 04:15:56 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:36987 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaIDIPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 04:05:33 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <20140903193058.2bc891a7.akpm@linux-foundation.org>
-Date: Thu, 4 Sep 2014 09:05:23 +0100
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, david@fromorbit.com,
-        xuejiufei@huawei.com, ming.lei@canonical.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <540555BE-7985-4468-BC03-45CDA7E2EB83@cam.ac.uk>
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com> <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org> <5407C989.50605@oracle.com> <20140903193058.2bc891a7.akpm@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-X-Mailer: Apple Mail (2.1878.6)
+	Thu, 4 Sep 2014 04:15:51 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s848Fm9e014664, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH net-next v3 1/2] r8152: change the location of rtl8152_set_mac_address
+Date: Thu, 4 Sep 2014 16:15:41 +0800
+Message-ID: <1394712342-15778-33-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-32-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-26-Taiwan-albertk@realtek.com>
+ <1394712342-15778-32-Taiwan-albertk@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 Sep 2014, at 03:30, Andrew Morton <akpm@linux-foundation.org> wrote:
-> __GFP_FS and __GFP_IO are (or were) for communicating to vmscan: don't
-> enter the fs for writepage, don't write back swapcache.
-> 
-> I guess those concepts have grown over time without a ton of thought
-> going into it.  Yes, I suppose that if a filesystem's writepage is
-> called (for example) it expects that it will be able to perform
-> writeback and it won't check (or even be passed) the __GFP_IO setting.
-> 
-> So I guess we could say that !__GFP_FS && GFP_IO is not implemented and
-> shouldn't occur.
-> 
-> That being said, it still seems quite bad to disable VFS cache
-> shrinking for PF_MEMALLOC_NOIO allocation attempts.
+Exchange the location of rtl8152_set_mac_address() and
+set_ethernet_addr(). Then, the set_ethernet_addr() could
+set the MAC address by calling rtl8152_set_mac_address()
+later.
 
-I think what it really boils down to is that file systems cannot allow recursion into _that_ file system so if VFS/VM shrinking could skip over all inodes/dentries/pages that are associated with the superblock of the volume for which the allocation is being done then that would be just fine.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-An alternative would be that the file systems would need to be passed in a flag that will tell them that it is not safe to take locks and then file systems that need to take a lock could return with -EDEADLOCK and the VM can then skip over those entries and reclaim others.  Though I think it would be more efficient for the VFS/VM to simply not call into the file system that is doing the allocation as above...
-
-Best regards,
-
-	Anton
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 80b0179..b5ff933 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -975,6 +975,23 @@ void write_mii_word(struct net_device *netdev, int phy_id, int reg, int val)
+ static int
+ r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags);
+ 
++static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
++{
++	struct r8152 *tp = netdev_priv(netdev);
++	struct sockaddr *addr = p;
++
++	if (!is_valid_ether_addr(addr->sa_data))
++		return -EADDRNOTAVAIL;
++
++	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
++
++	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_CONFIG);
++	pla_ocp_write(tp, PLA_IDR, BYTE_EN_SIX_BYTES, 8, addr->sa_data);
++	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_NORAML);
++
++	return 0;
++}
++
+ static inline void set_ethernet_addr(struct r8152 *tp)
+ {
+ 	struct net_device *dev = tp->netdev;
+@@ -1003,23 +1020,6 @@ static inline void set_ethernet_addr(struct r8152 *tp)
+ 	}
+ }
+ 
+-static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
+-{
+-	struct r8152 *tp = netdev_priv(netdev);
+-	struct sockaddr *addr = p;
+-
+-	if (!is_valid_ether_addr(addr->sa_data))
+-		return -EADDRNOTAVAIL;
+-
+-	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
+-
+-	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_CONFIG);
+-	pla_ocp_write(tp, PLA_IDR, BYTE_EN_SIX_BYTES, 8, addr->sa_data);
+-	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_NORAML);
+-
+-	return 0;
+-}
+-
+ static void read_bulk_callback(struct urb *urb)
+ {
+ 	struct net_device *netdev;
 -- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-University of Cambridge Information Services, Roger Needham Building
-7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+1.9.3
 
