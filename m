@@ -1,121 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208AbaIDCoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 22:44:22 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55779 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755079AbaIDCoU (ORCPT
+	id S1756064AbaIDCsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 22:48:03 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44699 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390AbaIDCsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 22:44:20 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
-References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
-Date: Thu, 04 Sep 2014 11:44:18 +0900
-In-Reply-To: <1409035119-24357-1-git-send-email-namhyung@kernel.org> (Namhyung
-	Kim's message of "Tue, 26 Aug 2014 15:38:39 +0900")
-Message-ID: <87egvs9kal.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 3 Sep 2014 22:48:00 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5407D27D.4020006@jp.fujitsu.com>
+Date: Thu, 4 Sep 2014 11:46:21 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>, <bp@alien8.de>,
+        <gong.chen@linux.intel.com>, <tony.luck@intel.com>,
+        <toshi.kani@hp.com>
+CC: <x86@kernel.org>, <imammedo@redhat.com>, <huawei.libin@huawei.com>,
+        <paul.gortmaker@windriver.com>, <linux-kernel@vger.kernel.org>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <umgwanakikbuti@gmail.com>,
+        <peterz@infradead.org>
+Subject: [PATCH v5] x86,cpu-hotplug: assign same CPU number to readded CPU
+References: <53CF2A81.7080505@jp.fujitsu.com> <53D5CF2A.2030007@jp.fujitsu.com>
+In-Reply-To: <53D5CF2A.2030007@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
+llc_shared_map is not cleared even if CPU is offline or hot removed.
+So when hot-plugging CPU and assigning new CPU number to hot-added CPU,
+the mask has wrong value. The mask is used by CSF schduler to create
+sched_domain. So it breaks CFS scheduler.
+
+Here is a example on my system.
+My system has 4 sockets and each socket has 15 cores and HT is enabled.
+In this case, each core of sockes is numbered as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-44, 90-104
+Socket#3 | 45-59, 105-119
+
+Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+It means that last level cache of Socket#2 is shared with
+CPU#30-44 and 90-104.
+
+When hot-removing socket#2 and #3, each core of sockets is numbered
+as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+
+But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+having 0x3fff80000001fffc0000000.
+
+After that, when hot-adding socket#2 and #3, each core of sockets is
+numbered as follows:
+
+          | CPU#
+Socket#0 | 0-14 , 60-74
+Socket#1 | 15-29, 75-89
+Socket#2 | 30-59
+Socket#3 | 90-119
+
+Then llc_shared_mask of CPU#30 becomes 0x3fff8000fffffffc0000000.
+It means that last level cache of Socket#2 is shared with CPU#30-59
+and 90-104. So the mask has wrong value.
+
+At first, I cleared hot-removed CPU number's bit from llc_shared_map
+when hot removing CPU. But Borislav suggested that the problem will
+disappear if readded CPU is assigned same CPU number. And llc_shared_map
+must not be changed.
+
+So the patch assigns same CPU number to readded CPU by linking CPU
+number to APIC ID. And by the patch, the problem disappers.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Suggested-by: Borislav Petkov <bp@alien8.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+---
+v2: change cpuid to cpunum
+v3: fix Borislav's email address of Suggested-by
+     fix typo (ACPI ID to APIC ID)
+v4: change cpu_used_xxx to cpu_number_xxx
+v5: rebase to 3.17-rc3
+---
+  arch/x86/kernel/apic/apic.c | 33 ++++++++++++++++++++++++++++++++-
+  1 file changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 6776027..c476827 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -220,6 +220,23 @@ static void apic_pm_activate(void);
+  static unsigned long apic_phys;
+
+  /*
++ * Bind APIC ID to Logical CPU number
++ * Logical CPU number to APIC ID does not change by this array
++ * even if CPU is hotplugged. So don't clear the array even if
++ * CPU is hot-removed
++ */
++static int apicid_to_cpunum[MAX_LOCAL_APIC] = {
++	[0 ... MAX_LOCAL_APIC-1] = -1,
++};
++
++/*
++ * Represent Logical CPU number bound to APIC ID
++ * Don't clear a bit even if CPU is hot-removed
++ */
++static DECLARE_BITMAP(cpu_number_bits, CONFIG_NR_CPUS);
++static struct cpumask *const cpu_number_mask = to_cpumask(cpu_number_bits);
++
++/*
+   * Get the LAPIC version
+   */
+  static inline int lapic_get_version(void)
+@@ -2109,6 +2126,17 @@ void disconnect_bsp_APIC(int virt_wire_setup)
+  	apic_write(APIC_LVT1, value);
+  }
+
++static int get_cpunum(int apicid)
++{
++	int cpu;
++
++	cpu = apicid_to_cpunum[apicid];
++	if (cpu < 0)
++		cpu = cpumask_next_zero(-1, cpu_number_mask);
++
++	return cpu;
++}
++
+  int generic_processor_info(int apicid, int version)
+  {
+  	int cpu, max = nr_cpu_ids;
+@@ -2186,7 +2214,9 @@ int generic_processor_info(int apicid, int version)
+  		 */
+  		cpu = 0;
+  	} else
+-		cpu = cpumask_next_zero(-1, cpu_present_mask);
++		cpu = get_cpunum(apicid);
++
++	apicid_to_cpunum[apicid] = cpu;
+
+  	/*
+  	 * Validate version
+@@ -2215,6 +2245,7 @@ int generic_processor_info(int apicid, int version)
+  	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+  		apic->x86_32_early_logical_apicid(cpu);
+  #endif
++	cpumask_set_cpu(cpu, cpu_number_mask);
+  	set_cpu_possible(cpu, true);
+  	set_cpu_present(cpu, true);
+
+-- 
+1.8.3.1
 
 
-On Tue, 26 Aug 2014 15:38:39 +0900, Namhyung Kim wrote:
-> There's a problem on finding correct kernel symbols when perf report
-> runs on a different kernel.  Although a part of the problem was solved
-> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
-> version when finding vmlinux"), there's a remaining problem still.
->
-> When perf records samples, it synthesizes the kernel map using
-> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
-> You can easily see it using 'perf report -D' command.
->
-> After finishing record, it goes through the recorded events to find
-> maps/dsos actually used.  And then record build-id info of them.
->
-> During this process, it needs to load symbols in a dso and it'd call
-> dso__load_vmlinux() since the default value of the symbol_conf.try_
-> vmlinux_path is true.  However it changes dso->long_name to a real
-> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
-> if one is running on a custom kernel.
->
-> It resulted in that perf report reads the build-id of the vmlinux, but
-> cannot use it since it only knows about the [kernel.kallsyms] map.  It
-> then falls back to possible vmlinux paths by using the recorded kernel
-> version (in case of a recent version) or a running kernel silently
-> (which might break the result).  I think it's worth going to the
-> stable tree.
->
-> I can think of a couple of ways to fix it.  In this patch, I changed
-> to use the name of "[kernel.kallsyms]" for the kernel build-id event
-> instead of not trying vmlinux paths.  This way we can provide maximum
-> info (like annotation) with minimum change IMHO.
->
-> Before:
->
->   $ perf record -a usleep 1
->
->   $ perf buildid-list
->   00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->
->   $ perf buildid-list -H
->   0000000000000000000000000000000000000000 [kernel.kallsyms]
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->   0000000000000000000000000000000000000000 /tmp/perf-2523.map
->
-> After:
->
->   $ perf record -a usleep 1
->
->   $ perf buildid-list
->   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->
->   $ perf buildid-list -H
->   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->   0000000000000000000000000000000000000000 /tmp/perf-2523.map
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/header.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 158c787ce0c4..5c4093dee467 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -263,6 +263,9 @@ static int __dsos__write_buildid_table(struct list_head *head,
->  			machine__mmap_name(machine, nm, sizeof(nm));
->  			name = nm;
->  			name_len = strlen(nm) + 1;
-> +		} else if (dso__is_vmlinux(pos)) {
-> +			name = pos->name;
-> +			name_len = strlen(pos->name) + 1;
->  		} else {
->  			name = pos->long_name;
->  			name_len = pos->long_name_len + 1;
