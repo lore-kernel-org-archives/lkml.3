@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaIDMof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:44:35 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:52414 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaIDMjG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 08:39:06 -0400
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 06/17] locks: clean up vfs_setlease kerneldoc comments
-Date: Thu,  4 Sep 2014 08:38:32 -0400
-Message-Id: <1409834323-7171-7-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+	id S1751219AbaIDMjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:39:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30412 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751250AbaIDMjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 08:39:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,465,1406617200"; 
+   d="scan'208";a="586195918"
+Date: Thu, 4 Sep 2014 20:38:45 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
+Subject: Re: [percpu] BUG: unable to handle kernel NULL pointer dereference
+ at (null)
+Message-ID: <20140904123845.GA19925@localhost>
+References: <20140902045830.GA11321@localhost>
+ <20140902153403.GY5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021052400.10607@gentwo.org>
+ <20140902162110.GB5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021155410.10607@gentwo.org>
+ <20140902171657.GG5001@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140902171657.GG5001@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the latter paragraphs seem ambiguous and just plain wrong.
-In particular the break_lease comment makes no sense. We call
-break_lease (and break_deleg) from all sorts of vfs-layer functions,
-so there is clearly such a method.
+On Tue, Sep 02, 2014 at 10:16:57AM -0700, Paul E. McKenney wrote:
+> On Tue, Sep 02, 2014 at 11:55:58AM -0500, Christoph Lameter wrote:
+> > On Tue, 2 Sep 2014, Paul E. McKenney wrote:
+> > 
+> > > Added by ac1bea85781e (sched,rcu: Make cond_resched() report RCU quiescent
+> > > states), removed by 4a81e8328d379 (rcu: Reduce overhead of cond_resched()
+> > > checks for RCU).  So, as you say, no effect on contemporary kernels.
+> > 
+> > Well not sure what to make out of all of this....
+> 
+> Yep, still confused as to how the patch adding the definition could have
+> caused a failure.  Fengguang, any thoughts?
 
-Also get rid of some of the other comments about what's needed for
-a full implementation.
+Yeah this is confusing.. I checked carefully and find that commit
+0e98023 and afea227 are built on 2 quite different servers -- which
+might generate slightly different code. I'll fix this issue and make
+the build server selection more consistent.
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
----
- fs/locks.c | 34 ++++++++++------------------------
- 1 file changed, 10 insertions(+), 24 deletions(-)
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 1289b74fffbf..81a4628f5594 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1708,30 +1708,16 @@ static int __vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
- }
- 
- /**
-- *	vfs_setlease        -       sets a lease on an open file
-- *	@filp: file pointer
-- *	@arg: type of lease to obtain
-- *	@lease: file_lock to use
-- *
-- *	Call this to establish a lease on the file.
-- *	The (*lease)->fl_lmops->lm_break operation must be set; if not,
-- *	break_lease will oops!
-- *
-- *	This will call the filesystem's setlease file method, if
-- *	defined.  Note that there is no getlease method; instead, the
-- *	filesystem setlease method should call back to setlease() to
-- *	add a lease to the inode's lease list, where fcntl_getlease() can
-- *	find it.  Since fcntl_getlease() only reports whether the current
-- *	task holds a lease, a cluster filesystem need only do this for
-- *	leases held by processes on this node.
-- *
-- *	There is also no break_lease method; filesystems that
-- *	handle their own leases should break leases themselves from the
-- *	filesystem's open, create, and (on truncate) setattr methods.
-- *
-- *	Warning: the only current setlease methods exist only to disable
-- *	leases in certain cases.  More vfs changes may be required to
-- *	allow a full filesystem lease implementation.
-+ * vfs_setlease        -       sets a lease on an open file
-+ * @filp: file pointer
-+ * @arg: type of lease to obtain
-+ * @lease: file_lock to use when adding a lease
-+ *
-+ * Call this to establish a lease on the file. The "lease" argument is not
-+ * used for F_UNLCK requests and may be NULL. For commands that set or alter
-+ * an existing lease, the (*lease)->fl_lmops->lm_break operation must be set;
-+ * if not, this function will return -ENOLCK (and generate a scary-looking
-+ * stack trace).
-  */
- 
- int vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
--- 
-1.9.3
-
+Thanks,
+Fengguang
