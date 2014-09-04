@@ -1,186 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720AbaIDBjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:39:08 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42013 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302AbaIDBi0 (ORCPT
+	id S1756751AbaIDBl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:41:56 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60228 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaIDBlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:38:26 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [RFC 1/3] zram: generalize swap_slot_free_notify
-Date: Thu,  4 Sep 2014 10:39:44 +0900
-Message-Id: <1409794786-10951-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1409794786-10951-1-git-send-email-minchan@kernel.org>
-References: <1409794786-10951-1-git-send-email-minchan@kernel.org>
+	Wed, 3 Sep 2014 21:41:55 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v3 1/4] ftracetest: Initial commit for ftracetest
+References: <20140902110632.3207.20043.stgit@kbuild-f20.novalocal>
+	<20140902110639.3207.38388.stgit@kbuild-f20.novalocal>
+Date: Thu, 04 Sep 2014 10:41:53 +0900
+In-Reply-To: <20140902110639.3207.38388.stgit@kbuild-f20.novalocal> (Masami
+	Hiramatsu's message of "Tue, 02 Sep 2014 11:06:39 +0000")
+Message-ID: <87r3zs9n6m.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, swap_slot_free_notify is used for zram to free
-duplicated copy page for memory efficiency when it knows
-there is no reference to the swap slot.
+Hi Masami,
 
-Let's extend it to be able to use it for other purpose
-so this patch generalizes it so that zram can get more hints
-from VM.
+Just a nit..
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/filesystems/Locking |  7 ++-----
- drivers/block/zram/zram_drv.c     | 18 ++++++++++++++++--
- include/linux/blkdev.h            |  7 +++++--
- mm/page_io.c                      |  7 ++++---
- mm/swapfile.c                     |  7 ++++---
- 5 files changed, 31 insertions(+), 15 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index f1997e9da61f..e7133874fd75 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -405,7 +405,7 @@ prototypes:
- 	void (*unlock_native_capacity) (struct gendisk *);
- 	int (*revalidate_disk) (struct gendisk *);
- 	int (*getgeo)(struct block_device *, struct hd_geometry *);
--	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
-+	int (*swap_hint) (struct block_device *, unsigned int, void *);
- 
- locking rules:
- 			bd_mutex
-@@ -418,14 +418,11 @@ media_changed:		no
- unlock_native_capacity:	no
- revalidate_disk:	no
- getgeo:			no
--swap_slot_free_notify:	no	(see below)
-+swap_hint:		no
- 
- media_changed, unlock_native_capacity and revalidate_disk are called only from
- check_disk_change().
- 
--swap_slot_free_notify is called with swap_lock and sometimes the page lock
--held.
--
- 
- --------------------------- file_operations -------------------------------
- prototypes:
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index be88d750b112..88661d62e46a 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -933,7 +933,8 @@ error:
- 	bio_io_error(bio);
- }
- 
--static void zram_slot_free_notify(struct block_device *bdev,
-+/* this callback is with swap_lock and sometimes page table lock held */
-+static int zram_slot_free_notify(struct block_device *bdev,
- 				unsigned long index)
- {
- 	struct zram *zram;
-@@ -946,10 +947,23 @@ static void zram_slot_free_notify(struct block_device *bdev,
- 	zram_free_page(zram, index);
- 	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
- 	atomic64_inc(&zram->stats.notify_free);
-+
-+	return 0;
-+}
-+
-+static int zram_swap_hint(struct block_device *bdev,
-+				unsigned int hint, void *arg)
-+{
-+	int ret = -EINVAL;
-+
-+	if (hint == SWAP_SLOT_FREE)
-+		ret = zram_slot_free_notify(bdev, (unsigned long)arg);
-+
-+	return ret;
- }
- 
- static const struct block_device_operations zram_devops = {
--	.swap_slot_free_notify = zram_slot_free_notify,
-+	.swap_hint = zram_swap_hint,
- 	.owner = THIS_MODULE
- };
- 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 518b46555b80..17437b2c18e4 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1609,6 +1609,10 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
- 
- #endif /* CONFIG_BLK_DEV_INTEGRITY */
- 
-+enum swap_blk_hint {
-+	SWAP_SLOT_FREE,
-+};
-+
- struct block_device_operations {
- 	int (*open) (struct block_device *, fmode_t);
- 	void (*release) (struct gendisk *, fmode_t);
-@@ -1624,8 +1628,7 @@ struct block_device_operations {
- 	void (*unlock_native_capacity) (struct gendisk *);
- 	int (*revalidate_disk) (struct gendisk *);
- 	int (*getgeo)(struct block_device *, struct hd_geometry *);
--	/* this callback is with swap_lock and sometimes page table lock held */
--	void (*swap_slot_free_notify) (struct block_device *, unsigned long);
-+	int (*swap_hint)(struct block_device *, unsigned int, void *);
- 	struct module *owner;
- };
- 
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 955db8b0d497..88a13d74c621 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -114,7 +114,7 @@ void end_swap_bio_read(struct bio *bio, int err)
- 			 * we again wish to reclaim it.
- 			 */
- 			struct gendisk *disk = sis->bdev->bd_disk;
--			if (disk->fops->swap_slot_free_notify) {
-+			if (disk->fops->swap_hint) {
- 				swp_entry_t entry;
- 				unsigned long offset;
- 
-@@ -122,8 +122,9 @@ void end_swap_bio_read(struct bio *bio, int err)
- 				offset = swp_offset(entry);
- 
- 				SetPageDirty(page);
--				disk->fops->swap_slot_free_notify(sis->bdev,
--						offset);
-+				disk->fops->swap_hint(sis->bdev,
-+						SWAP_SLOT_FREE,
-+						(void *)offset);
- 			}
- 		}
- 	}
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 8798b2e0ac59..4bff521e649a 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -816,9 +816,10 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
- 		frontswap_invalidate_page(p->type, offset);
- 		if (p->flags & SWP_BLKDEV) {
- 			struct gendisk *disk = p->bdev->bd_disk;
--			if (disk->fops->swap_slot_free_notify)
--				disk->fops->swap_slot_free_notify(p->bdev,
--								  offset);
-+			if (disk->fops->swap_hint)
-+				disk->fops->swap_hint(p->bdev,
-+						SWAP_SLOT_FREE,
-+						(void *)offset);
- 		}
- 	}
- 
--- 
-2.0.0
+On Tue, 02 Sep 2014 11:06:39 +0000, Masami Hiramatsu wrote:
+> ftracetest is a collection of testcase shell-scripts for ftrace.
+> To avoid regressions of ftrace, these testcases check correct
+> ftrace behaviors. If someone would like to add any features on
+> ftrace, the patch series should have at least one testcase for
+> checking the new behavior.
 
+
+[SNIP]
+> +# Run one test case
+> +run_test() { # testfile
+> +  local testname=`basename $1`
+> +  local testlog=`mktemp --tmpdir=$LOG_DIR ${testname}-XXXXXX.log`
+> +  testcase $1
+> +  echo "execute: "$1 > $testlog
+> +  (cd $TRACING_DIR; set -x ; . $t) >> $testlog 2>&1
+
+s/$t/$1/ ?
+
+Thanks,
+Namhyung
+
+
+> +  ret=$?
+> +  if [ $ret -ne 0 ]; then
+> +    failed
+> +    catlog $testlog
+> +  else
+> +    passed
+> +    [ $KEEP_LOG -eq 0 ] && rm $testlog
+> +  fi
+> +}
+> +
+> +# Main loop
+> +for t in $TEST_CASES; do
+> +  run_test $t
+> +done
+> +prlog ""
+> +prlog "# of passed: " `echo $PASSED_CASES | wc -w`
+> +prlog "# of failed: " `echo $FAILED_CASES | wc -w`
+> +
+> +test -z "$FAILED_CASES" # if no error, return 0
+> diff --git a/tools/testing/ftrace/test.d/template b/tools/testing/ftrace/test.d/template
+> new file mode 100644
+> index 0000000..ce5f735
+> --- /dev/null
+> +++ b/tools/testing/ftrace/test.d/template
+> @@ -0,0 +1,4 @@
+> +#!/bin/sh
+> +# description: %HERE DESCRIBE WHAT THIS DOES%
+> +# you have to add ".tc" extention for your testcase file
+> +exit 0 # Return 0 if the test is passed, otherwise return !0
