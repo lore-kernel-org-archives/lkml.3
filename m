@@ -1,67 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602AbaIDJKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:10:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39702 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754040AbaIDJK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:10:28 -0400
-Date: Thu, 4 Sep 2014 11:09:52 +0200
-From: Jakub Jelinek <jakub@redhat.com>
-To: Mikael Pettersson <mikpelinux@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140904090952.GW17454@tucnak.redhat.com>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <20140712181328.GA8738@redhat.com>
- <54079B70.4050200@hurleysoftware.com>
- <1409785893.30640.118.camel@pasglop>
- <21512.10628.412205.873477@gargle.gargle.HOWL>
+	id S1754126AbaIDJLE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:11:04 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63357 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629AbaIDJLA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 05:11:00 -0400
+Date: Thu, 4 Sep 2014 10:10:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH 3/3] mfd: max77693: add haptic of_compatible in mfd_cell
+Message-ID: <20140904091054.GC29612@lee--X1>
+References: <1409570071-26719-1-git-send-email-jaewon02.kim@samsung.com>
+ <1409570071-26719-4-git-send-email-jaewon02.kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <21512.10628.412205.873477@gargle.gargle.HOWL>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409570071-26719-4-git-send-email-jaewon02.kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 10:57:40AM +0200, Mikael Pettersson wrote:
-> Benjamin Herrenschmidt writes:
->  > On Wed, 2014-09-03 at 18:51 -0400, Peter Hurley wrote:
->  > 
->  > > Apologies for hijacking this thread but I need to extend this discussion
->  > > somewhat regarding what a compiler might do with adjacent fields in a structure.
->  > > 
->  > > The tty subsystem defines a large aggregate structure, struct tty_struct.
->  > > Importantly, several different locks apply to different fields within that
->  > > structure; ie., a specific spinlock will be claimed before updating or accessing
->  > > certain fields while a different spinlock will be claimed before updating or
->  > > accessing certain _adjacent_ fields.
->  > > 
->  > > What is necessary and sufficient to prevent accidental false-sharing?
->  > > The patch below was flagged as insufficient on ia64, and possibly ARM.
->  > 
->  > We expect native aligned scalar types to be accessed atomically (the
->  > read/modify/write of a larger quantity that gcc does on some bitfield
->  > cases has been flagged as a gcc bug, but shouldn't happen on normal
->  > scalar types).
->  > 
->  > I am not 100% certain of "bool" here, I assume it's treated as a normal
->  > scalar and thus atomic but if unsure, you can always use int.
+On Mon, 01 Sep 2014, Jaewon Kim wrote:
+
+> This patch add haptic of_compatible in order to use the Haptic device driver
+> using devicetree. and added the related documentation and example.
 > 
-> Please use an aligned int or long.  Some machines cannot do atomic
-> accesses on sub-int/long quantities, so 'bool' may cause unexpected
-> rmw cycles on adjacent fields.
+> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/max77693.txt |   19 +++++++++++++++++++
+>  drivers/mfd/max77693.c                             |    2 +-
 
-Yeah, at least pre-EV56 Alpha performs rmw cycles on char/short accesses
-and thus those are not atomic.
+These should be in different patches - please split them.
 
-	Jakub
+>  2 files changed, 20 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
+> index 11921cc..6e30ad8 100644
+> --- a/Documentation/devicetree/bindings/mfd/max77693.txt
+> +++ b/Documentation/devicetree/bindings/mfd/max77693.txt
+> @@ -27,6 +27,18 @@ Optional properties:
+>  
+>  	[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
+>  
+> +- haptic :
+> + Required properties:
+> +	- compatible : Must be "maxim,max77693-hpatic"
+> +	- pwms : phandle to the physical PWM device,
+> +		A feel can be changed by changing a peroid cycle.
+
+What is "a feel"?
+
+Why is this this comment relevant to documenting the 'pwms' property?
+
+> + Optional properties:
+> +	 - haptic-supply : power supply for haptic motor
+> +	 - pwm-names : Name to be used by the PWM subsystem for the PWM device
+
+Are you sure this is optional?  If it is and given that there is only
+one pwm, perhaps you need to remove it altogether?  *-names properties
+are usually only required if there are more than one.
+
+> + The haptic require of max77693 have to be instantiated under subnod
+> +  named "haptic" using the following haptic format in example.
+> +
+>  Example:
+>  	max77693@66 {
+>  		compatible = "maxim,max77693";
+> @@ -52,4 +64,11 @@ Example:
+>  					regulator-boot-on;
+>  			};
+>  		};
+> +
+> +		haptic {
+> +			compatible = "maxim,max77693-haptic";
+> +			haptic-supply = <&haptic_supply>;
+> +			pwms = <&pwm 0 38022 0>;
+> +			pwm-names = "haptic";
+> +		};
+>  	};
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index fbfed56..ceb7ebf 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -46,7 +46,7 @@ static const struct mfd_cell max77693_devs[] = {
+>  	{ .name = "max77693-charger", },
+>  	{ .name = "max77693-flash", },
+>  	{ .name = "max77693-muic", },
+> -	{ .name = "max77693-haptic", },
+> +	{ .name = "max77693-haptic", .of_compatible = "maxim,max77693-haptic" },
+
+Can you break this last entry out, so:
+
+{
+  .name = "max77693-haptic",
+  .of_compatible = "maxim,max77693-haptic"
+},
+
+>  };
+>  
+>  static const struct regmap_config max77693_regmap_config = {
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
