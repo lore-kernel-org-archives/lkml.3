@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808AbaIDCIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 22:08:44 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:49980 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755840AbaIDCIm (ORCPT
+	id S1756601AbaIDCSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 22:18:33 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:18494
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751683AbaIDCSc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 22:08:42 -0400
-Message-ID: <5407C989.50605@oracle.com>
-Date: Thu, 04 Sep 2014 10:08:09 +0800
-From: Junxiao Bi <junxiao.bi@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 3 Sep 2014 22:18:32 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 4/5] Clocksource: Flextimer: Fix counter clock prescaler
+ calculation.
+Thread-Topic: [PATCH 4/5] Clocksource: Flextimer: Fix counter clock prescaler
+ calculation.
+Thread-Index: AQHPwPGhd5+7l5+n2ECz3VCyJKPGDJvvSdwAgAEBCcA=
+Date: Thu, 4 Sep 2014 02:18:28 +0000
+Message-ID: <de8ef937785c45f582b444f2e3c1845e@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409031951-39021-1-git-send-email-Li.Xiubo@freescale.com>
+ <1409031951-39021-5-git-send-email-Li.Xiubo@freescale.com>
+ <alpine.DEB.2.10.1409031241310.3333@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409031241310.3333@nanos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+x-forefront-prvs: 0324C2C0E2
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(199003)(24454002)(164054003)(189002)(90102001)(101416001)(21056001)(76482001)(76576001)(74502001)(77982001)(54356999)(99396002)(50986999)(46102001)(76176999)(31966008)(2656002)(4396001)(92566001)(19580395003)(19580405001)(86362001)(83322001)(74662001)(105586002)(74316001)(87936001)(83072002)(85852003)(64706001)(95666004)(99286002)(20776003)(85306004)(81342001)(106356001)(80022001)(66066001)(33646002)(77096002)(79102001)(110136001)(106116001)(108616004)(81542001)(107046002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB178;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: david@fromorbit.com, xuejiufei@huawei.com, ming.lei@canonical.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com> <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
-In-Reply-To: <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 07:10 AM, Andrew Morton wrote:
-> On Wed,  3 Sep 2014 13:54:54 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
+> Subject: Re: [PATCH 4/5] Clocksource: Flextimer: Fix counter clock prescaler
+> calculation.
 > 
->> commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
->> introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
->> when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
->> run into I/O, like in superblock shrinker.
+> On Tue, 26 Aug 2014, Xiubo Li wrote:
 > 
-> Is there an actual bug which inspired this fix?  If so, please describe
-> it.
+> > We should minus one after calculating the counter input clock's
+> > prescaler.
+> >
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+> > ---
+> >  drivers/clocksource/fsl_ftm_timer.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/clocksource/fsl_ftm_timer.c
+> b/drivers/clocksource/fsl_ftm_timer.c
+> > index f70fcf2..974890e 100644
+> > --- a/drivers/clocksource/fsl_ftm_timer.c
+> > +++ b/drivers/clocksource/fsl_ftm_timer.c
+> > @@ -311,7 +311,7 @@ static int __init ftm_calc_closest_round_cyc(unsigned
+> long freq)
+> >  						HZ * (1 << priv->ps++));
+> >  	} while (priv->periodic_cyc > 0xFFFF);
+> >
+> > -	if (priv->ps > FTM_PS_MAX) {
+> > +	if (--priv->ps > FTM_PS_MAX) {
 > 
-Yes, an ocfs2 deadlock bug is related to this, there is a workqueue in
-ocfs2 who is for building tcp connections and processing ocfs2 message.
-Like when an new node is up in ocfs2 cluster, the workqueue will try to
-build the connections to it, since there are some common code in
-networking like sock_alloc() using GFP_KERNEL to allocate memory, direct
-reclaim will be triggered and call into superblock shrinker if available
-memory is not enough even set PF_MEMALLOC_NOIO for the workqueue. To
-shrink the inode cache, ocfs2 needs release cluster lock and this
-depends on workqueue to do it, so cause the deadlock. Not sure whether
-there are similar issue for other cluster fs, like nfs, it is possible
-rpciod hung like the ocfs2 workqueue?
+> Looking at this makes me run away screaming. Just because you
+> increment priv->ps unconditionally in the loop above, you decrement it
+> again here. Why not fix the calculation proper in the first place?
+> 
+>       for (cyc = ~0UL, ps = 0, div = HZ; cyc > 0xffff; ps++, div *= 2)
+>       	       cyc = DIV_ROUND_CLOSEST(freq, div);
+> 
 
-
-> I don't think it's accurate to say that __GFP_FS implies __GFP_IO. 
-> Where did that info come from?
-__GFP_FS allowed callback into fs during memory allocation, and fs may
-do io whatever __GFP_IO is set?
-> 
-> And the superblock shrinker is a good example of why this shouldn't be
-> the case.  The main thing that code does is to reclaim clean fs objects
-> without performing IO.  AFAICT the proposed patch will significantly
-> weaken PF_MEMALLOC_NOIO allocation attempts by needlessly preventing
-> the kernel from reclaiming such objects?
-Even fs didn't do io in superblock shrinker, it is possible for a fs
-process who is not convenient to set GFP_NOFS holding some fs lock and
-call back fs again?
-
-PF_MEMALLOC_NOIO is only set for some special processes. I think it
-won't affect much.
+Yes, this looks nice.
 
 Thanks,
-Junxiao.
-> 
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -1936,11 +1936,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
->>  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
->>  #define used_math() tsk_used_math(current)
->>  
->> -/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
->> +/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
->> + * __GFP_FS is also cleared as it implies __GFP_IO.
->> + */
->>  static inline gfp_t memalloc_noio_flags(gfp_t flags)
->>  {
->>  	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
->> -		flags &= ~__GFP_IO;
->> +		flags &= ~(__GFP_IO | __GFP_FS);
->>  	return flags;
->>  }
-> 
+
+BRs
+Xiubo
+
 
