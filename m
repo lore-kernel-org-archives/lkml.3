@@ -1,98 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698AbaIDVV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:21:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38092 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755594AbaIDVVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:21:23 -0400
-Date: Thu, 4 Sep 2014 23:21:18 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, falcon@meizu.com,
-        tiwai@suse.de, tj@kernel.org, linux-kernel@vger.kernel.org,
-        oleg@redhat.com, akpm@linux-foundation.org,
-        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
-        bpoirier@suse.de, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC v1 0/3] driver-core: add asynch module loading support
-Message-ID: <20140904212118.GB3347@wotan.suse.de>
-References: <1409475800-17573-1-git-send-email-mcgrof@do-not-panic.com> <540334B2.7000009@linux.intel.com> <20140831175040.GA17827@core.coreip.homeip.net> <5403767E.1020107@linux.intel.com> <20140831193140.GA12678@kroah.com> <20140831201407.GB19881@core.coreip.homeip.net> <20140831204035.GA4793@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140831204035.GA4793@kroah.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755620AbaIDVVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:21:19 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:38763 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688AbaIDVVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 17:21:17 -0400
+From: Brian Norris <computersforpeace@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: <stable@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10.y+] PM / sleep: Use valid_state() for platform-dependent sleep states only
+Date: Thu,  4 Sep 2014 14:21:05 -0700
+Message-Id: <1409865665-5375-1-git-send-email-computersforpeace@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1849024.CHOUso6H2K@vostro.rjw.lan>
+References: <1849024.CHOUso6H2K@vostro.rjw.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 01:40:35PM -0700, Greg KH wrote:
-> On Sun, Aug 31, 2014 at 01:14:07PM -0700, Dmitry Torokhov wrote:
-> > On Sun, Aug 31, 2014 at 12:31:40PM -0700, Greg KH wrote:
-> > > On Sun, Aug 31, 2014 at 12:24:46PM -0700, Arjan van de Ven wrote:
-> > > > >>before we added the current async approach the approach of async init calls was tried
-> > > > >>At the time, Linus hated it and he was right, it was not the right thing.
-> > > > >>
-> > > > >>What is different this time to make this the right thing to do ?
-> > > > >
-> > > > >Because otherwise drivers still have to do this, but open code it. Let's say I
-> > > > >have a long operations (i.e. for some touchpads it takes about 2 secs to reset
-> > > > >and configure it). I can offload that part into async_schedule() so it does not
-> > > > >stop initialization of the rest of the system (why would I want to delay
-> > > > >initializing of USB or storage system until touchpad is ready?) but if that
-> > > > >initialization fails we end up with partially bound driver and device that is
-> > > > >not really operable. I would very much prefer async and sync cases be the same
-> > > > >- if probe() fails the driver is not bound to the device.
-> > > > >
-> > > > >I think it is wrong to make async probing system-wide, but driver opt-in shoudl
-> > > > >be fine and right thing to do.
-> > > > >
-> > > > 
-> > > > I am completely fine if we make basically an async wrapper for
-> > > > pci_register_driver() and friends.. that would be convenient I suppose.
-> > > > 
-> > > > (but then again, in reality very few drivers take real time to init... most already
-> > > > do the heavy work in open(). Not all can, sure, but if you look at a bootgraph.pl
-> > > > graph of a typical boot it's only a few that matter).
-> > 
-> > Input devices normally can't as we need to publish their capabilities before
-> > users start opening them.
-> > 
-> > > > And many drivers need to register with a subsystem, and there's some ordering around that,
-> > > > and that's why we ended up with the async cookie stuff, so that you can do the
-> > > > heavy work in parallel, but order near the end at registeration-with-the-subsystem time.
-> > > > 
-> > > > But doing this on an initcall level was wrong back then, and I have yet to hear
-> > > > a reason why it would be right this time.
-> > > 
-> > > It's still wrong, it's not what I was thinking about when talking this
-> > > over with Luis and Dmitry, I think something got lost in the
-> > > translation...
-> > 
-> > Right, all (well almost all) I wanted is for individual drivers to declare
-> > their probe() functions asynchronous and driver core scheduling async attach
-> > and properly handle failures from it.
-> 
-> Yes, that's what I want as well.
-> 
-> Luis, care to redo the patches in this way?  It should be a lot simpler
-> (no messing around with init levels and linker fun...)
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-Sure, when we spoke the requirement was indeed clear but as I noted on
-the description on this cover letter as I reviewed Wu Zhangjin's RFC
-which used async_schedule() he ran into the issue of eventually grouping
-things. I went with this approach as a first shot given that we have a long
-tested set of groupings already done by the kernel so this tried to take
-advantage of that should we try to scale on asynchronous probing.
+[Upstream commit 43e8317b0bba1d6eb85f38a4a233d82d7c20d732]
 
-I still believe its a good approach if we wanted to scale it but that
-would require the desire to do so, I obviously considered it worthwhile
-as I shaved off at least ~1 second off kernel boot time when doing an
-original proof of concept and only doing drivers, and taking into
-consideration my kenrel takes ~5 seconds before userspace is reached.
-I'll toss this in the bin for now though and send something based on
-Tejun's approach shortly!
+Use the observation that, for platform-dependent sleep states
+(PM_SUSPEND_STANDBY, PM_SUSPEND_MEM), a given state is either
+always supported or always unsupported and store that information
+in pm_states[] instead of calling valid_state() every time we
+need to check it.
 
-  Luis
+Also do not use valid_state() for PM_SUSPEND_FREEZE, which is always
+valid, and move the pm_test_level validity check for PM_SUSPEND_FREEZE
+directly into enter_state().
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: <stable@vger.kernel.org> # 3.10+: 27ddcc6596e5: PM / sleep: Add state field to pm_states[] entries
+Cc: <stable@vger.kernel.org> # 3.10+
+---
+This is a backport request for these two commits upstream:
+
+    27ddcc6596e5 PM / sleep: Add state field to pm_states[] entries
+    43e8317b0bba PM / sleep: Use valid_state() for platform-dependent sleep states only
+
+Rafael ack'd this:
+
+  https://lkml.org/lkml/2014/9/4/543
+
+I've tested these on 3.14, and it looks like they could go back as far as 3.10.
+
+ kernel/power/main.c         |  9 ++++---
+ kernel/power/power.h        |  2 --
+ kernel/power/suspend.c      | 60 ++++++++++++++++++++++-----------------------
+ kernel/power/suspend_test.c |  2 +-
+ 4 files changed, 36 insertions(+), 37 deletions(-)
+
+diff --git a/kernel/power/main.c b/kernel/power/main.c
+index 8e818432253c..9f51f0ab3d86 100644
+--- a/kernel/power/main.c
++++ b/kernel/power/main.c
+@@ -296,7 +296,7 @@ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 	suspend_state_t i;
+ 
+ 	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
+-		if (valid_state(i))
++		if (pm_states[i].state)
+ 			s += sprintf(s,"%s ", pm_states[i].label);
+ 
+ #endif
+@@ -328,8 +328,9 @@ static suspend_state_t decode_state(const char *buf, size_t n)
+ 
+ #ifdef CONFIG_SUSPEND
+ 	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++)
+-		if (len == strlen(s->label) && !strncmp(buf, s->label, len))
+-			return state;
++		if (s->state && len == strlen(s->label)
++		    && !strncmp(buf, s->label, len))
++			return s->state;
+ #endif
+ 
+ 	return PM_SUSPEND_ON;
+@@ -447,7 +448,7 @@ static ssize_t autosleep_show(struct kobject *kobj,
+ 
+ #ifdef CONFIG_SUSPEND
+ 	if (state < PM_SUSPEND_MAX)
+-		return sprintf(buf, "%s\n", valid_state(state) ?
++		return sprintf(buf, "%s\n", pm_states[state].state ?
+ 					pm_states[state].label : "error");
+ #endif
+ #ifdef CONFIG_HIBERNATION
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 99539c5da844..c60f13b5270a 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -186,14 +186,12 @@ struct pm_sleep_state {
+ /* kernel/power/suspend.c */
+ extern struct pm_sleep_state pm_states[];
+ 
+-extern bool valid_state(suspend_state_t state);
+ extern int suspend_devices_and_enter(suspend_state_t state);
+ #else /* !CONFIG_SUSPEND */
+ static inline int suspend_devices_and_enter(suspend_state_t state)
+ {
+ 	return -ENOSYS;
+ }
+-static inline bool valid_state(suspend_state_t state) { return false; }
+ #endif /* !CONFIG_SUSPEND */
+ 
+ #ifdef CONFIG_PM_TEST_SUSPEND
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 5d93b138a2d4..00aca60904b0 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -32,9 +32,9 @@
+ #include "power.h"
+ 
+ struct pm_sleep_state pm_states[PM_SUSPEND_MAX] = {
+-	[PM_SUSPEND_FREEZE] = { "freeze", PM_SUSPEND_FREEZE },
+-	[PM_SUSPEND_STANDBY] = { "standby", PM_SUSPEND_STANDBY },
+-	[PM_SUSPEND_MEM] = { "mem", PM_SUSPEND_MEM },
++	[PM_SUSPEND_FREEZE] = { .label = "freeze", .state = PM_SUSPEND_FREEZE },
++	[PM_SUSPEND_STANDBY] = { .label = "standby", },
++	[PM_SUSPEND_MEM] = { .label = "mem", },
+ };
+ 
+ static const struct platform_suspend_ops *suspend_ops;
+@@ -68,42 +68,34 @@ void freeze_wake(void)
+ }
+ EXPORT_SYMBOL_GPL(freeze_wake);
+ 
++static bool valid_state(suspend_state_t state)
++{
++	/*
++	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEM states need low level
++	 * support and need to be valid to the low level
++	 * implementation, no valid callback implies that none are valid.
++	 */
++	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
++}
++
+ /**
+  * suspend_set_ops - Set the global suspend method table.
+  * @ops: Suspend operations to use.
+  */
+ void suspend_set_ops(const struct platform_suspend_ops *ops)
+ {
++	suspend_state_t i;
++
+ 	lock_system_sleep();
++
+ 	suspend_ops = ops;
++	for (i = PM_SUSPEND_STANDBY; i <= PM_SUSPEND_MEM; i++)
++		pm_states[i].state = valid_state(i) ? i : 0;
++
+ 	unlock_system_sleep();
+ }
+ EXPORT_SYMBOL_GPL(suspend_set_ops);
+ 
+-bool valid_state(suspend_state_t state)
+-{
+-	if (state == PM_SUSPEND_FREEZE) {
+-#ifdef CONFIG_PM_DEBUG
+-		if (pm_test_level != TEST_NONE &&
+-		    pm_test_level != TEST_FREEZER &&
+-		    pm_test_level != TEST_DEVICES &&
+-		    pm_test_level != TEST_PLATFORM) {
+-			printk(KERN_WARNING "Unsupported pm_test mode for "
+-					"freeze state, please choose "
+-					"none/freezer/devices/platform.\n");
+-			return false;
+-		}
+-#endif
+-			return true;
+-	}
+-	/*
+-	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEMORY states need lowlevel
+-	 * support and need to be valid to the lowlevel
+-	 * implementation, no valid callback implies that none are valid.
+-	 */
+-	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
+-}
+-
+ /**
+  * suspend_valid_only_mem - Generic memory-only valid callback.
+  *
+@@ -330,9 +322,17 @@ static int enter_state(suspend_state_t state)
+ {
+ 	int error;
+ 
+-	if (!valid_state(state))
+-		return -ENODEV;
+-
++	if (state == PM_SUSPEND_FREEZE) {
++#ifdef CONFIG_PM_DEBUG
++		if (pm_test_level != TEST_NONE && pm_test_level <= TEST_CPUS) {
++			pr_warning("PM: Unsupported test mode for freeze state,"
++				   "please choose none/freezer/devices/platform.\n");
++			return -EAGAIN;
++		}
++#endif
++	} else if (!valid_state(state)) {
++		return -EINVAL;
++	}
+ 	if (!mutex_trylock(&pm_mutex))
+ 		return -EBUSY;
+ 
+diff --git a/kernel/power/suspend_test.c b/kernel/power/suspend_test.c
+index d4e3ab167a73..269b097e78ea 100644
+--- a/kernel/power/suspend_test.c
++++ b/kernel/power/suspend_test.c
+@@ -162,7 +162,7 @@ static int __init test_suspend(void)
+ 	/* PM is initialized by now; is that state testable? */
+ 	if (test_state == PM_SUSPEND_ON)
+ 		goto done;
+-	if (!valid_state(test_state)) {
++	if (!pm_states[test_state].state) {
+ 		printk(warn_bad_state, pm_states[test_state].label);
+ 		goto done;
+ 	}
+-- 
+1.9.1
+
