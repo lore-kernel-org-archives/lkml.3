@@ -1,93 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933565AbaIDBIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:08:24 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54869 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933311AbaIDBIX (ORCPT
+	id S933652AbaIDBNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:13:07 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:39717 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933430AbaIDBNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:08:23 -0400
-Date: Wed, 3 Sep 2014 18:06:34 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v3 4/6] mm/hugetlb: add migration entry check in
- hugetlb_change_protection
-In-Reply-To: <1409276340-7054-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.LSU.2.11.1409031752510.11238@eggly.anvils>
-References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1409276340-7054-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 3 Sep 2014 21:13:04 -0400
+From: Chris Zhong <zyw@rock-chips.com>
+To: dianders@chromium.org, heiko@sntech.de
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        a.zummo@towertech.it, mturquette@linaro.org, akpm@linux-foundation.org,
+        broonie@kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        grant.likely@linaro.org, hl@rock-chips.com, huangtao@rock-chips.com,
+        cf@rock-chips.com, zhangqing@rock-chips.com, xxx@rock-chips.com,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
+        Chris Zhong <zyw@rock-chips.com>
+Subject: [PATCH v9 0/3] Add rockchip RK808 pmic driver
+Date: Thu,  4 Sep 2014 09:12:36 +0800
+Message-Id: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
+This is the initial version of the RK808 PMIC. This is a power management IC
+for multimedia products.
 
-> There is a race condition between hugepage migration and change_protection(),
-> where hugetlb_change_protection() doesn't care about migration entries and
-> wrongly overwrites them. That causes unexpected results like kernel crash.
-> 
-> This patch adds is_hugetlb_entry_(migration|hwpoisoned) check in this
-> function to do proper actions.
-> 
-> ChangeLog v3:
-> - handle migration entry correctly (instead of just skipping)
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: <stable@vger.kernel.org> # [2.6.36+]
+It provides regulators that are able to supply power to processor cores
+and other components. The chip provides other modules including RTC, Clockout
 
-2.6.36+?  For the hwpoisoned part of it, I suppose.
-Then you'd better mentioned the hwpoisoned case in the comment above.
+Changes in v9:
+Adviced by Dmitry
+- if(rk808_rtc->irq < 0), return rk808_rtc->irq
+Adviced by Doug
+- add reg_np
 
-> ---
->  mm/hugetlb.c | 21 ++++++++++++++++++++-
->  1 file changed, 20 insertions(+), 1 deletion(-)
-> 
-> diff --git mmotm-2014-08-25-16-52.orig/mm/hugetlb.c mmotm-2014-08-25-16-52/mm/hugetlb.c
-> index 2aafe073cb06..1ed9df6def54 100644
-> --- mmotm-2014-08-25-16-52.orig/mm/hugetlb.c
-> +++ mmotm-2014-08-25-16-52/mm/hugetlb.c
-> @@ -3362,7 +3362,26 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
->  			spin_unlock(ptl);
->  			continue;
->  		}
-> -		if (!huge_pte_none(huge_ptep_get(ptep))) {
-> +		pte = huge_ptep_get(ptep);
-> +		if (unlikely(is_hugetlb_entry_hwpoisoned(pte))) {
-> +			spin_unlock(ptl);
-> +			continue;
-> +		}
-> +		if (unlikely(is_hugetlb_entry_migration(pte))) {
-> +			swp_entry_t entry = pte_to_swp_entry(pte);
-> +
-> +			if (is_write_migration_entry(entry)) {
-> +				pte_t newpte;
-> +
-> +				make_migration_entry_read(&entry);
-> +				newpte = swp_entry_to_pte(entry);
-> +				set_pte_at(mm, address, ptep, newpte);
+Changes in v8:
+Adviced by Doug
+- coding style
+- fix regmap_update_bits()
+- if(rk808_rtc->irq < 0) return err num
+Adviced by Mike
+-rename "control" to "enable"
+-define RK808_NR_OUTPUT 2
+Adviced by Doug
+- remove rk808_regulator_dts() function
+- remove the check about "client->dev.of_node"
 
-set_huge_pte_at.
+Changes in v7:
+Adviced by doug
+- read rtc time from shadowed registers
+Adviced by Dmitry
+- use CONFIG_PM_SLEEP replace CONFIG_PM
+- use SIMPLE_DEV_PM_OPS replace dev_pm_ops
+- fix dev_warn
+- coding style
+Adviced by Heiko
+- remove rtc_ctl
+Adviced by doug
+-fix coding style problems
+- remove pdata struct from header file, add rk808_regulator struct
 
-(As usual, I can't bear to see these is_hugetlb_entry_hwpoisoned and
-is_hugetlb_entry_migration examples go past without bleating about
-wanting to streamline them a little; but agreed last time to leave
-that to some later cleanup once all the stable backports are stable.)
+Changes in v6:
+Adviced by doug
+- move RTC_READSEL setting into probe
+Adviced by doug
+- use correct argument call of_clk_add_provider in probe
+- remove the redundant code
 
-> +				pages++;
-> +			}
-> +			spin_unlock(ptl);
-> +			continue;
-> +		}
-> +		if (!huge_pte_none(pte)) {
->  			pte = huge_ptep_get_and_clear(mm, address, ptep);
->  			pte = pte_mkhuge(huge_pte_modify(pte, newprot));
->  			pte = arch_make_huge_pte(pte, vma, NULL, 0);
-> -- 
-> 1.9.3
+Changes in v5:
+- fixed a bug about set_time failed
+Adviced by doug
+- add some error checking in probe
+- move "rockchip,rk808.h" into the patch about dt-bindings
+- re-edit base on Mark's branch
+
+Changes in v4:
+- use &client->dev replace rk808->dev
+Adviced by doug
+- add "clock-output-names" propertiey
+- add a header file "rockchip,rk808.h"
+- use &client->dev replace rk808->dev
+
+Changes in v3:
+- fix compile err
+
+Changes in v2:
+Adviced by javier.martinez
+- Add a separate clock driver, rather than in RTC driver
+Adviced by javier.martinez
+- separated from rtc-rk808.c
+Adviced by Mark Browm:
+- change of_find_node_by_name to find_child_by_name
+- use RK808_NUM_REGULATORS as the name of the constant
+- create a pdata when missing platform data
+- use the rk808_reg name to supply_regulator name
+- replace regulator_register with devm_regulator_register
+- some other problem with coding style
+
+Chris Zhong (3):
+  RTC: RK808: add RTC driver for RK808
+  clk: RK808: Add clkout driver for RK808
+  regulator: RK808: Remove pdata from the regulator
+
+ drivers/clk/Kconfig                 |    9 +
+ drivers/clk/Makefile                |    1 +
+ drivers/clk/clk-rk808.c             |  164 ++++++++++++++
+ drivers/regulator/rk808-regulator.c |   91 ++------
+ drivers/rtc/Kconfig                 |   10 +
+ drivers/rtc/Makefile                |    1 +
+ drivers/rtc/rtc-rk808.c             |  426 +++++++++++++++++++++++++++++++++++
+ 7 files changed, 629 insertions(+), 73 deletions(-)
+ create mode 100644 drivers/clk/clk-rk808.c
+ create mode 100644 drivers/rtc/rtc-rk808.c
+
+-- 
+1.7.9.5
+
