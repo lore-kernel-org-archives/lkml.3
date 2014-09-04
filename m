@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281AbaIDTHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:07:37 -0400
-Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:42347 "EHLO
-	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755058AbaIDTHf (ORCPT
+	id S1755064AbaIDTM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:12:29 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:38006 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524AbaIDTM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:07:35 -0400
-X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 15:07:35 EDT
-Message-ID: <1409857025.28990.125.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 4/5] x86, mm: Add set_memory_wt() for WT
-From: Toshi Kani <toshi.kani@hp.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, akpm@linuxfoundation.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 04 Sep 2014 12:57:05 -0600
-In-Reply-To: <CALCETrXjpoVmCi07zo0dKH9LrF+nz9F3GshNiQvmiueFFH=TUQ@mail.gmail.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
-	 <1409855739-8985-5-git-send-email-toshi.kani@hp.com>
-	 <CALCETrXjpoVmCi07zo0dKH9LrF+nz9F3GshNiQvmiueFFH=TUQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Sep 2014 15:12:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <540860F1.6060801@fensystems.co.uk>
+References: <5405E186.2080406@canonical.com>
+	<20140902192941.GB3001@console-pimps.org>
+	<CAKv+Gu_eSe+FeNkGm+w3sSsRn2_hr70xLVBieZgyhawAv6PQvw@mail.gmail.com>
+	<5406D0DB.90401@canonical.com>
+	<CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com>
+	<54073409.6030004@canonical.com>
+	<CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com>
+	<20140903175948.GH3001@console-pimps.org>
+	<CAKv+Gu9tejixb3Kb3YM_7sLcpKNuRHN+Dn+twFyCAXx99wYRCw@mail.gmail.com>
+	<54084376.8090002@canonical.com>
+	<540860F1.6060801@fensystems.co.uk>
+Date: Thu, 4 Sep 2014 21:12:25 +0200
+Message-ID: <CAKv+Gu8wALTqtNQK_855A7M5f2a+EB1JyLxo=j6G0T1cf8ZFog@mail.gmail.com>
+Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
+ preparation patches
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Michael Brown <mbrown@fensystems.co.uk>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Ulf Winkelvos <ulf@winkelvos.de>,
+        Matt Fleming <matt.fleming@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 11:57 -0700, Andy Lutomirski wrote:
-> On Thu, Sep 4, 2014 at 11:35 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > This patch adds set_memory_wt(), set_memory_array_wt(), and
-> > set_pages_array_wt() for setting range(s) of memory to WT.
-> >
-> 
-> Possibly dumb question: I thought that set_memory_xyz was only for
-> RAM.  Is that incorrect?
+On 4 September 2014 14:54, Michael Brown <mbrown@fensystems.co.uk> wrote:
+> On 04/09/14 11:48, Maarten Lankhorst wrote:
+>>>>
+>>>> If not, Ard please go ahead with option #2 above. Overkill yes, but I've
+>>>> done the single __attribute__() hacks in other projects and someone
+>>>> (usually me) always eventually forgets to tag some instance.
+>>>>
+>>> It appears we just got lucky on arm64, since we don't have any global
+>>> variables, but the issue does exist there as well.
+>>>
+>> FWIW, visibility pushing doesn't seem to work for functions declared with
+>> extern.
+>> Following seems to get rid of all GOTPCREL:
+>
+>
+> Are you sure?  The iPXE build process relies on this:
+>
+>   /* Force visibility of all symbols to "hidden", i.e. inform gcc that
+>    * all symbol references resolve strictly within our final binary.
+>    * This avoids unnecessary PLT/GOT entries on x86_64.
+>    *
+>    * This is a stronger claim than specifying "-fvisibility=hidden",
+>    * since it also affects symbols marked with "extern".
+>    */
+>   #ifndef ASSEMBLY
+>   #if __GNUC__ >= 4
+>   #pragma GCC visibility push(hidden)
+>   #endif
+>   #endif /* ASSEMBLY */
+>
+> and https://gcc.gnu.org/wiki/Visibility states that
+>
+>   "#pragma GCC visibility is stronger than -fvisibility; it affects extern
+> declarations as well. -fvisibility only affects definitions, so that
+> existing code can be recompiled with minimal changes. This is more true for
+> C than C++; C++ interfaces tend use classes, which are affected by
+> -fvisibility."
+>
 
-It works for non-RAM ranges as well.  For instance, you can use
-set_memory_xyz() to change cache attribute for a non-RAM range mapped by
-ioremap_cache().
+This is exactly the reason I suggested using the #pragma in the first
+place, only you need to take care to put it before #includes or it
+won't apply to extern declarations contained in those.
 
-Thanks,
--Toshi
+But my later suggestion was to apply the attribute to extern
+declarations explicitly, it is probably more portable, and if we can
+assert that the GOT is empty, we can easily spot new ones popping up
+before they make it into the tree.
+Since Maarten's research seems to suggest that using the visibility
+attribute is feasible as it dates back to the GCC 3.x days, I will go
+ahead and implement the fix I suggested.
 
-
-
+-- 
+Ard.
