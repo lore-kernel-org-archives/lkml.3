@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796AbaIDRDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:03:19 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:38733 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaIDRDR (ORCPT
+	id S1754853AbaIDRDd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:03:33 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61064 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754806AbaIDRDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:03:17 -0400
-Date: Thu, 4 Sep 2014 10:03:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Kautuk Consul <consul.kautuk@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
- with try_to_wake_up()
-Message-ID: <20140904170308.GH5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140901153935.GQ27892@worktop.ger.corp.intel.com>
- <20140901175851.GA15210@redhat.com>
- <20140901190931.GD5806@worktop.ger.corp.intel.com>
- <20140902155208.GA28668@redhat.com>
- <20140902164714.GA17033@redhat.com>
- <20140902173910.GF27892@worktop.ger.corp.intel.com>
- <20140903133640.GA25439@redhat.com>
- <20140903144450.GB7083@twins.programming.kicks-ass.net>
- <20140903151848.GA6312@redhat.com>
- <20140904071526.GI3190@worktop.ger.corp.intel.com>
+	Thu, 4 Sep 2014 13:03:31 -0400
+Date: Thu, 4 Sep 2014 18:03:49 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
+        Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+Message-ID: <20140904170349.GL7156@arm.com>
+References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+ <1409781429-27593-4-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140904071526.GI3190@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090417-6688-0000-0000-00000483EAF7
+In-Reply-To: <1409781429-27593-4-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 09:15:26AM +0200, Peter Zijlstra wrote:
-> On Wed, Sep 03, 2014 at 05:18:48PM +0200, Oleg Nesterov wrote:
-> > On 09/03, Peter Zijlstra wrote:
-> > >
-> > > On Wed, Sep 03, 2014 at 03:36:40PM +0200, Oleg Nesterov wrote:
-> > > >
-> > > > 	// Ensure that the previous __set_current_state(RUNNING) can't
-> > > > 	// leak after spin_unlock_wait()
-> > > > 	smp_mb();
-> > > > 	spin_unlock_wait();
-> > > > 	// Another mb to ensure this too can't be reordered with unlock_wait
-> > > > 	set_current_state(TASK_DEAD);
-> > > >
-> > > > What do you think looks better?
-> > >
-> > > spin_unlock_wait() would be a control dependency right? Therefore that
-> > > store could not creep up anyhow.
-> > 
-> > Hmm. indeed, thanks! This probably means that task_work_run() can use
-> > rmb() instead of mb().
-> > 
-> > What I can't understand is do we still need a compiler barrier or not.
-> > Probably "in theory yes" ?
+Hi Kees,
+
+On Wed, Sep 03, 2014 at 10:57:04PM +0100, Kees Cook wrote:
+> This is used from set_fixmap() and clear_fixmap() via asm-generic/fixmap.h.
+> Also makes sure that the fixmap allocation fits into the expected range.
 > 
-> Yes, this is where I'm forever in doubt as well. The worry is the
-> compiler reordering things, but I'm not sure how it would do that in
-> this case, then again, I've been shown to not be creative enough in
-> these cases many times before.
-> 
-> Paul might know, he's had much more exposure to compiler people.
+> Based on patch by Rabin Vincent.
 
-Well, if we are talking about the code sequence above, spin_unlock_wait()
-does reads followed by a conditional.  And set_current_state() does
-a write.  The one thing that might be missing is that for this to work is
-that Alpha might need an ACCESS_ONCE() to avoid read reordering.
+[...]
 
-(Yes, ACCESS_ONCE() is required for the other architectures to meet
-the letter of the law in memory-barriers.txt, but if you know that
-your particular architecture and compiler won't mess you up, you
-have more freedom in your arch-specific code.)
+> +void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot)
+> +{
+> +	unsigned long vaddr = __fix_to_virt(idx);
+> +	pte_t *pte = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
+> +
+> +	/* Make sure fixmap region does not exceed available allocation. */
+> +	BUILD_BUG_ON(FIXADDR_START + (__end_of_fixed_addresses * PAGE_SIZE) >
+> +		     FIXADDR_END);
+> +	BUG_ON(idx >= __end_of_fixed_addresses);
+> +
+> +	if (pgprot_val(prot))
+> +		set_pte_at(NULL, vaddr, pte,
+> +			pfn_pte(phys >> PAGE_SHIFT, prot));
+> +	else
+> +		pte_clear(NULL, vaddr, pte);
+> +
+> +	/*
+> +	 * Given the potential a15 tlbi errata, we can only do tlb flushes
+> +	 * with interrupts disabled. Callers must have taken care of this.
+> +	 */
+> +	WARN_ON_ONCE(!irqs_disabled());
+> +	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
 
-							Thanx, Paul
+Aha, this explains why we were confusing each other! The issue is that
+interrupts must be *enabled*, so this code does the exact opposite of
+what we need.
 
+I think this got lost in a sea of double negatives during the last round
+of review.
+
+Will
