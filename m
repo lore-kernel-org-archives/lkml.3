@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559AbaIDUke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:40:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755311AbaIDUkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:40:32 -0400
-Message-ID: <5408CE32.8010204@redhat.com>
-Date: Thu, 04 Sep 2014 22:40:18 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Chris J Arges <chris.j.arges@canonical.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
-References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <54088CB5.6050406@canonical.com> <54089DDE.6010004@redhat.com> <5408AC76.6030404@canonical.com> <5408BA6D.1070602@redhat.com> <5408C0B4.5040207@redhat.com> <5408CD83.50904@canonical.com>
-In-Reply-To: <5408CD83.50904@canonical.com>
-Content-Type: text/plain; charset=windows-1252
+	id S1755496AbaIDUmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:42:18 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:28789 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960AbaIDUmR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 16:42:17 -0400
+Message-ID: <1409862708.28990.141.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
+From: Toshi Kani <toshi.kani@hp.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linuxfoundation.org, arnd@arndb.de, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net,
+        konrad.wilk@oracle.com
+Date: Thu, 04 Sep 2014 14:31:48 -0600
+In-Reply-To: <20140904201123.GA9116@khazad-dum.debian.net>
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
+	 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
+	 <20140904201123.GA9116@khazad-dum.debian.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2014 22:37, Chris J Arges ha scritto:
->> > -	boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
->> > +	boot_ns = ktime_to_ns(ktime_sub(tk->offs_real, tk->offs_boot));
->> >  
->> >  	write_seqcount_begin(&vdata->seq);
->> > 
->> > If it doesn't work, then commit 02cba1598a2a3b689e79ad6dad2532521f638271
->> > is also broken.
->> > 
->> > Paolo
->> > 
-> Paolo,
-> That modification do your additional patch didn't work. However I was
-> able to modify the code as follows to get this test case working. The
-> only additional modification was:
-> +	vdata->nsec_base		= tk->xtime_sec * (u64)NSEC_PER_SEC
-> +					- boot_ns;
+On Thu, 2014-09-04 at 17:11 -0300, Henrique de Moraes Holschuh wrote:
+> On Thu, 04 Sep 2014, Toshi Kani wrote:
+> > This patch sets WT to the PA4 slot in the PAT MSR when the processor
+> > is not affected by the PAT errata.  The upper 4 slots of the PAT MSR
+> > are continued to be unused on the following Intel processors.
+> > 
+> >   errata           cpuid
+> >   --------------------------------------
+> >   Pentium 2, A52   family 0x6, model 0x5
+> >   Pentium 3, E27   family 0x6, model 0x7
+> >   Pentium M, Y26   family 0x6, model 0x9
+> >   Pentium 4, N46   family 0xf, model 0x0
+> > 
+> > For these affected processors, _PAGE_CACHE_MODE_WT is redirected to UC-
+> > per the default setup in __cachemode2pte_tbl[].
+> 
+> There are at least two PAT errata.  The blacklist is in
+> arch/x86/kernel/cpu/intel.c:
+> 
+>         if (c->x86 == 6 && c->x86_model < 15)
+>                 clear_cpu_cap(c, X86_FEATURE_PAT);
+> 
+> It covers model 13, which is not in your blacklist.
+> 
+> It *is* possible that PAT would work on model 13, as I don't think it has
+> any PAT errata listed and it was blacklisted "just in case" (from memory. I
+> did not re-check), but this is untested, and unwise to enable on an aging
+> platform.
+> 
+> I am worried of uncharted territory, here.  I'd actually advocate for not
+> enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
+> is using them as well.  Is this a real concern, or am I being overly
+> cautious?
 
-Right, it should have been
+The blacklist you pointed out covers a different PAT errata, and is
+still effective after this change.  pat_init() will call pat_disable()
+and the PAT will continue to be disabled on these processors.  There is
+no change for them.
 
-	boot_ns = ktime_to_ns(ktime_sub(tk->offs_boot, tk->offs_real));
+My blacklist covers the PAT errata that makes the upper four bit
+unusable when the PAT is enabled.
 
-I'll post the patch shortly.
+Thanks,
+-Toshi
 
-Thanks!
 
-Paolo
+
