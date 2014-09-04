@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaIDKon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:44:43 -0400
-Received: from plane.gmane.org ([80.91.229.3]:59815 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770AbaIDKok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:44:40 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Subject: Re: [PATCH 3.14 00/88] 3.14.18-stable review
-Date: Thu, 4 Sep 2014 10:44:27 +0000 (UTC)
-Message-ID: <pan.2014.09.04.10.44.27@googlemail.com>
-References: <20140903220515.958924632@linuxfoundation.org>
-	<20140903234429.GB27174@kroah.com>
+	id S1753570AbaIDKo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:44:56 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:65235 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752757AbaIDKoz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 06:44:55 -0400
+Message-ID: <1409827493.5546.103.camel@x220>
+Subject: [PATCH] [next-20140903] staging: emxx_udc: remove check for
+ CONFIG_MACH_EMGR
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 04 Sep 2014 12:44:53 +0200
+In-Reply-To: <1403252540.22857.20.camel@x220>
+References: <20140606104408.4423.36098.sendpatchset@w520>
+	 <20140606104417.4423.38999.sendpatchset@w520>
+	 <1403252540.22857.20.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: pd953e3b4.dip0.t-ipconnect.de
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: stable@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Sep 2014 10:44:53.0511 (UTC) FILETIME=[42B27970:01CFC82D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Sep 2014 16:44:29 -0700, Greg Kroah-Hartman wrote:
+There's a check for CONFIG_MACH_EMGR. But the Kconfig symbol MACH_EMGR
+doesn't exist. Remove that check and the single #define it hides. Note
+that this macro isn't used by this driver anyway.
 
-> On Wed, Sep 03, 2014 at 03:04:34PM -0700, Greg Kroah-Hartman wrote:
->> This is the start of the stable review cycle for the 3.14.18 release.
->> There are 88 patches in this series, all will be posted as a response
->> to this one.  If anyone has any issues with these being applied, please
->> let me know.
->> 
->> Responses should be made by Fri Sep  5 22:04:52 UTC 2014.
->> Anything received after that time might be too late.
->> 
->> The whole patch series can be found in one patch at:
->> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.18-rc1.gz
->> and the diffstat can be found below.
-> 
-> -rc2 is out to fix some issues:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.18-rc2.gz
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Compile tested only (on x86_64).
 
-Built & running fine on 3 different machines (x86_64), clients & server
-with mix of old and new  HW, all with Gentoo ~amd64 userland;
-no regressions.
+ drivers/staging/emxx_udc/emxx_udc.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
-thanks!
-Holger
+diff --git a/drivers/staging/emxx_udc/emxx_udc.h b/drivers/staging/emxx_udc/emxx_udc.h
+index 578fdcfed5e9..ee1b80d705fa 100644
+--- a/drivers/staging/emxx_udc/emxx_udc.h
++++ b/drivers/staging/emxx_udc/emxx_udc.h
+@@ -437,10 +437,6 @@
+ #define PLL_RESUME			BIT05		/* RW */
+ #define PLL_LOCK			BIT04		/* R */
+ 
+-#ifdef CONFIG_MACH_EMGR
+-#define PLL_RST				BIT02		/* RW */
+-#endif
+-
+ #define EPC_RST				BIT00		/* RW */
+ 
+ /*------- (0x1014) USBF_EPTEST Register */
+-- 
+1.9.3
+
 
