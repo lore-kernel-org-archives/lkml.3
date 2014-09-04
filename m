@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072AbaIDSec (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:34:32 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:58606 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaIDSea (ORCPT
+	id S1754984AbaIDSgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:36:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49138 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaIDSgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:34:30 -0400
-Date: Thu, 4 Sep 2014 11:34:21 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Chris Zhong <zyw@rock-chips.com>, dianders@chromium.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        a.zummo@towertech.it, mturquette@linaro.org, akpm@linux-foundation.org,
-        broonie@kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        grant.likely@linaro.org, hl@rock-chips.com, huangtao@rock-chips.com,
-        cf@rock-chips.com, zhangqing@rock-chips.com, xxx@rock-chips.com,
-        olof@lixom.net, sonnyrao@chromium.org, javier.martinez@collabora.co.uk,
-        kever.yang@rock-chips.com
-Subject: Re: [PATCH v9 2/3] clk: RK808: Add clkout driver for RK808
-Message-ID: <20140904183421.GE10224@core.coreip.homeip.net>
-References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
- <1409793159-2573-3-git-send-email-zyw@rock-chips.com>
- <20140904174024.GD10224@core.coreip.homeip.net>
- <3708545.id8zLgF0vo@diego>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3708545.id8zLgF0vo@diego>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Sep 2014 14:36:44 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: akpm@linuxfoundation.org
+Cc: oleg@redhat.com, riel@redhat.com, kirill.shutemov@linux.intel.com,
+        luto@amacapital.net, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] mm: mmap: use pr_emerg when printing BUG related information
+Date: Thu,  4 Sep 2014 14:36:22 -0400
+Message-Id: <1409855782-15089-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 08:02:56PM +0200, Heiko Stübner wrote:
-> Am Donnerstag, 4. September 2014, 10:40:24 schrieb Dmitry Torokhov:
-> > Hi Chris,
-> > 
-> > On Thu, Sep 04, 2014 at 09:12:38AM +0800, Chris Zhong wrote:
-> > > +	rk808_clkout->clk_data.clks = clk_table;
-> > > +	rk808_clkout->clk_data.clk_num = RK808_NR_OUTPUT;
-> > > +
-> > > +	return of_clk_add_provider(node, of_clk_src_onecell_get,
-> > > +				   &rk808_clkout->clk_data);
-> > > +}
-> > > +
-> > > +static struct platform_driver rk808_clkout_driver = {
-> > > +	.probe = rk808_clkout_probe,
-> > > +	.driver		= {
-> > > +		.name	= "rk808-clkout",
-> > > +	},
-> > > +};
-> > 
-> > Shouldn't there also be:
-> > 
-> > static int rk808_clkout_probe(struct platform_device *pdev)
-> 					^^ remove
-> 
-> Just to prevent confusion. And you're right there of course.
+Make sure we actually see the output of validate_mm() and browse_rb()
+before triggering a BUG(). pr_info isn't shown by default so the reason
+for the BUG() isn't obvious.
 
-Ah, yes, stupid cut-and-paste...
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ mm/mmap.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 9351482..4f49894 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -368,20 +368,20 @@ static int browse_rb(struct rb_root *root)
+ 		struct vm_area_struct *vma;
+ 		vma = rb_entry(nd, struct vm_area_struct, vm_rb);
+ 		if (vma->vm_start < prev) {
+-			pr_info("vm_start %lx prev %lx\n", vma->vm_start, prev);
++			pr_emerg("vm_start %lx prev %lx\n", vma->vm_start, prev);
+ 			bug = 1;
+ 		}
+ 		if (vma->vm_start < pend) {
+-			pr_info("vm_start %lx pend %lx\n", vma->vm_start, pend);
++			pr_emerg("vm_start %lx pend %lx\n", vma->vm_start, pend);
+ 			bug = 1;
+ 		}
+ 		if (vma->vm_start > vma->vm_end) {
+-			pr_info("vm_end %lx < vm_start %lx\n",
++			pr_emerg("vm_end %lx < vm_start %lx\n",
+ 				vma->vm_end, vma->vm_start);
+ 			bug = 1;
+ 		}
+ 		if (vma->rb_subtree_gap != vma_compute_subtree_gap(vma)) {
+-			pr_info("free gap %lx, correct %lx\n",
++			pr_emerg("free gap %lx, correct %lx\n",
+ 			       vma->rb_subtree_gap,
+ 			       vma_compute_subtree_gap(vma));
+ 			bug = 1;
+@@ -395,7 +395,7 @@ static int browse_rb(struct rb_root *root)
+ 	for (nd = pn; nd; nd = rb_prev(nd))
+ 		j++;
+ 	if (i != j) {
+-		pr_info("backwards %d, forwards %d\n", j, i);
++		pr_emerg("backwards %d, forwards %d\n", j, i);
+ 		bug = 1;
+ 	}
+ 	return bug ? -1 : i;
+@@ -430,17 +430,17 @@ static void validate_mm(struct mm_struct *mm)
+ 		i++;
+ 	}
+ 	if (i != mm->map_count) {
+-		pr_info("map_count %d vm_next %d\n", mm->map_count, i);
++		pr_emerg("map_count %d vm_next %d\n", mm->map_count, i);
+ 		bug = 1;
+ 	}
+ 	if (highest_address != mm->highest_vm_end) {
+-		pr_info("mm->highest_vm_end %lx, found %lx\n",
++		pr_emerg("mm->highest_vm_end %lx, found %lx\n",
+ 		       mm->highest_vm_end, highest_address);
+ 		bug = 1;
+ 	}
+ 	i = browse_rb(&mm->mm_rb);
+ 	if (i != mm->map_count) {
+-		pr_info("map_count %d rb %d\n", mm->map_count, i);
++		pr_emerg("map_count %d rb %d\n", mm->map_count, i);
+ 		bug = 1;
+ 	}
+ 	BUG_ON(bug);
 -- 
-Dmitry
+1.7.10.4
+
