@@ -1,226 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495AbaIDO1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:27:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21849 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776AbaIDO1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:27:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,466,1406617200"; 
-   d="scan'208";a="594560744"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        Benjamin Romer <benjamin.romer@unisys.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v4 01/12] hexdump: introduce test suite
-Date: Thu,  4 Sep 2014 17:26:48 +0300
-Message-Id: <1409840819-18976-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1754516AbaIDObu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:31:50 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:49577 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaIDObt convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 4 Sep 2014 10:31:49 -0400
+Message-Id: <540893F00200007800030E4F@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Thu, 04 Sep 2014 15:31:44 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andrew Cooper" <andrew.cooper3@citrix.com>
+Cc: "David Vrabel" <david.vrabel@citrix.com>, <xen-devel@lists.xensource.com>,
+        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
+        "Juergen Gross" <JGross@suse.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen: eliminate scalability issues
+ from initial mapping setup
+References: <1409834326-29287-1-git-send-email-jgross@suse.com>
+ <1409834326-29287-4-git-send-email-jgross@suse.com>
+ <54086244.7020601@citrix.com> <540862FE.7070108@citrix.com>
+In-Reply-To: <540862FE.7070108@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Test different scenarios of function calls located in lib/hexdump.c.
+>>> On 04.09.14 at 15:02, <andrew.cooper3@citrix.com> wrote:
+> On 04/09/14 13:59, David Vrabel wrote:
+>> On 04/09/14 13:38, Juergen Gross wrote:
+>>> Direct Xen to place the initial P->M table outside of the initial
+>>> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
+>>> restriction on the size of the initial mapping limits the amount
+>>> of memory a domain can be handed initially.
+>> The three level p2m limits memory to 512 GiB on x86-64 but this patch
+>> doesn't seem to address this limit and thus seems a bit useless to me.
+> 
+> Any increase of the p2m beyond 3 levels will need to come with
+> substantial libxc changes first.  3 level p2ms are hard coded throughout
+> all the PV build and migrate code.
 
-Currently hex_dump_to_buffer() is only tested and test data is provided for
-little endian CPUs.
+No, there no such dependency - the kernel could use 4 levels at
+any time (sacrificing being able to get migrated), making sure it
+only exposes the 3 levels hanging off the fourth level (or not
+exposing this information at all) to external entities making this
+wrong assumption.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- lib/Kconfig.debug  |   3 ++
- lib/Makefile       |   4 +-
- lib/test-hexdump.c | 135 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 141 insertions(+), 1 deletion(-)
- create mode 100644 lib/test-hexdump.c
-
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 2870e2e..abcbf88 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1563,6 +1563,9 @@ config ASYNC_RAID6_TEST
- 
- 	  If unsure, say N.
- 
-+config TEST_HEXDUMP
-+	tristate "Test functions located in the hexdump module at runtime"
-+
- config TEST_STRING_HELPERS
- 	tristate "Test functions located in the string_helpers module at runtime"
- 
-diff --git a/lib/Makefile b/lib/Makefile
-index b73c3c3..06bd377 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -23,12 +23,14 @@ lib-y	+= kobject.o klist.o
- obj-y	+= lockref.o
- 
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
--	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
-+	 bust_spinlocks.o kasprintf.o bitmap.o scatterlist.o \
- 	 gcd.o lcm.o list_sort.o uuid.o flex_array.o iovec.o clz_ctz.o \
- 	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o \
- 	 percpu-refcount.o percpu_ida.o hash.o rhashtable.o
- obj-y += string_helpers.o
- obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
-+obj-y += hexdump.o
-+obj-$(CONFIG_TEST_HEXDUMP) += test-hexdump.o
- obj-y += kstrtox.o
- obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
- obj-$(CONFIG_TEST_MODULE) += test_module.o
-diff --git a/lib/test-hexdump.c b/lib/test-hexdump.c
-new file mode 100644
-index 0000000..9d3bd1e
---- /dev/null
-+++ b/lib/test-hexdump.c
-@@ -0,0 +1,135 @@
-+/*
-+ * Test cases for lib/hexdump.c module.
-+ */
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/random.h>
-+#include <linux/string.h>
-+
-+static const unsigned char data_b[] = {
-+	'\xbe', '\x32', '\xdb', '\x7b', '\x0a', '\x18', '\x93', '\xb2',	/* 00 - 07 */
-+	'\x70', '\xba', '\xc4', '\x24', '\x7d', '\x83', '\x34', '\x9b',	/* 08 - 0f */
-+	'\xa6', '\x9c', '\x31', '\xad', '\x9c', '\x0f', '\xac', '\xe9',	/* 10 - 17 */
-+	'\x4c', '\xd1', '\x19', '\x99', '\x43', '\xb1', '\xaf', '\x0c',	/* 18 - 1f */
-+};
-+
-+static const unsigned char data_a[] = ".2.{....p..$}.4...1.....L...C...";
-+
-+static const char *test_data_1_le[] __initconst = {
-+	"be", "32", "db", "7b", "0a", "18", "93", "b2",
-+	"70", "ba", "c4", "24", "7d", "83", "34", "9b",
-+	"a6", "9c", "31", "ad", "9c", "0f", "ac", "e9",
-+	"4c", "d1", "19", "99", "43", "b1", "af", "0c",
-+};
-+
-+static const char *test_data_2_le[] __initconst = {
-+	"32be", "7bdb", "180a", "b293",
-+	"ba70", "24c4", "837d", "9b34",
-+	"9ca6", "ad31", "0f9c", "e9ac",
-+	"d14c", "9919", "b143", "0caf",
-+};
-+
-+static const char *test_data_4_le[] __initconst = {
-+	"7bdb32be", "b293180a", "24c4ba70", "9b34837d",
-+	"ad319ca6", "e9ac0f9c", "9919d14c", "0cafb143",
-+};
-+
-+static const char *test_data_8_le[] __initconst = {
-+	"b293180a7bdb32be", "9b34837d24c4ba70",
-+	"e9ac0f9cad319ca6", "0cafb1439919d14c",
-+};
-+
-+static void __init test_hexdump(size_t len, int rowsize, int groupsize,
-+				bool ascii)
-+{
-+	char test[32 * 3 + 2 + 32 + 1];
-+	char real[32 * 3 + 2 + 32 + 1];
-+	char *p;
-+	const char **result;
-+	size_t l = len;
-+	int gs = groupsize, rs = rowsize;
-+	unsigned int i;
-+
-+	hex_dump_to_buffer(data_b, l, rs, gs, real, sizeof(real), ascii);
-+
-+	if (rs != 16 && rs != 32)
-+		rs = 16;
-+
-+	if (l > rs)
-+		l = rs;
-+
-+	if (!is_power_of_2(gs) || gs > 8 || (len % gs != 0))
-+		gs = 1;
-+
-+	if (gs == 8)
-+		result = test_data_8_le;
-+	else if (gs == 4)
-+		result = test_data_4_le;
-+	else if (gs == 2)
-+		result = test_data_2_le;
-+	else
-+		result = test_data_1_le;
-+
-+	memset(test, ' ', sizeof(test));
-+
-+	/* hex dump */
-+	p = test;
-+	for (i = 0; i < l / gs; i++) {
-+		const char *q = *result++;
-+		size_t amount = strlen(q);
-+
-+		strncpy(p, q, amount);
-+		p += amount + 1;
-+	}
-+	if (i)
-+		p--;
-+
-+	/* ASCII part */
-+	if (ascii) {
-+		p = test + rs * 2 + rs / gs + 1;
-+		strncpy(p, data_a, l);
-+		p += l;
-+	}
-+
-+	*p = '\0';
-+
-+	if (strcmp(test, real)) {
-+		pr_err("Len: %zu row: %d group: %d\n", len, rowsize, groupsize);
-+		pr_err("Result: '%s'\n", real);
-+		pr_err("Expect: '%s'\n", test);
-+	}
-+}
-+
-+static void __init test_hexdump_set(int rowsize, bool ascii)
-+{
-+	size_t d = min_t(size_t, sizeof(data_b), rowsize);
-+	size_t len = get_random_int() % d + 1;
-+
-+	test_hexdump(len, rowsize, 4, ascii);
-+	test_hexdump(len, rowsize, 2, ascii);
-+	test_hexdump(len, rowsize, 8, ascii);
-+	test_hexdump(len, rowsize, 1, ascii);
-+}
-+
-+static int __init test_hexdump_init(void)
-+{
-+	unsigned int i;
-+	int rowsize;
-+
-+	pr_info("Running tests...\n");
-+
-+	rowsize = (get_random_int() % 2 + 1) * 16;
-+	for (i = 0; i < 16; i++)
-+		test_hexdump_set(rowsize, false);
-+
-+	rowsize = (get_random_int() % 2 + 1) * 16;
-+	for (i = 0; i < 16; i++)
-+		test_hexdump_set(rowsize, true);
-+
-+	return -EINVAL;
-+}
-+module_init(test_hexdump_init);
-+MODULE_LICENSE("Dual BSD/GPL");
--- 
-2.1.0
+Jan
 
