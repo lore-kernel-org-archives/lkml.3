@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbaIDO3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:29:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22599 "EHLO mga09.intel.com"
+	id S1754420AbaIDOan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:30:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27601 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753226AbaIDO1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:27:39 -0400
+	id S1753251AbaIDO1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:27:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,466,1406617200"; 
-   d="scan'208";a="475190081"
+   d="scan'208";a="568330643"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Herbert Xu <herbert@gondor.apana.org.au>,
@@ -23,9 +23,9 @@ To: Tadeusz Struk <tadeusz.struk@intel.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Randy Dunlap <rdunlap@infradead.org>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v4 07/12] crypto: qat - use seq_hex_dump() to dump buffers
-Date: Thu,  4 Sep 2014 17:26:54 +0300
-Message-Id: <1409840819-18976-8-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v4 09/12] [S390] zcrypt: use seq_hex_dump() to dump buffers
+Date: Thu,  4 Sep 2014 17:26:56 +0300
+Message-Id: <1409840819-18976-10-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -36,44 +36,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Instead of custom approach let's use recently introduced seq_hex_dump() helper.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Tadeusz Struk <tadeusz.struk@intel.com>
+Acked-by: Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
 ---
- drivers/crypto/qat/qat_common/adf_transport_debug.c | 16 ++--------------
- 1 file changed, 2 insertions(+), 14 deletions(-)
+ drivers/s390/crypto/zcrypt_api.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/drivers/crypto/qat/qat_common/adf_transport_debug.c b/drivers/crypto/qat/qat_common/adf_transport_debug.c
-index 6b69745..5f438a1 100644
---- a/drivers/crypto/qat/qat_common/adf_transport_debug.c
-+++ b/drivers/crypto/qat/qat_common/adf_transport_debug.c
-@@ -86,9 +86,7 @@ static int adf_ring_show(struct seq_file *sfile, void *v)
+diff --git a/drivers/s390/crypto/zcrypt_api.c b/drivers/s390/crypto/zcrypt_api.c
+index 0e18c5d..d1f9983 100644
+--- a/drivers/s390/crypto/zcrypt_api.c
++++ b/drivers/s390/crypto/zcrypt_api.c
+@@ -1203,16 +1203,8 @@ static void sprinthx(unsigned char *title, struct seq_file *m,
+ static void sprinthx4(unsigned char *title, struct seq_file *m,
+ 		      unsigned int *array, unsigned int len)
  {
- 	struct adf_etr_ring_data *ring = sfile->private;
- 	struct adf_etr_bank_data *bank = ring->bank;
--	uint32_t *msg = v;
- 	void __iomem *csr = ring->bank->csr_addr;
--	int i, x;
- 
- 	if (v == SEQ_START_TOKEN) {
- 		int head, tail, empty;
-@@ -111,18 +109,8 @@ static int adf_ring_show(struct seq_file *sfile, void *v)
- 		seq_puts(sfile, "----------- Ring data ------------\n");
- 		return 0;
- 	}
--	seq_printf(sfile, "%p:", msg);
--	x = 0;
--	i = 0;
--	for (; i < (ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2); i++) {
--		seq_printf(sfile, " %08X", *(msg + i));
--		if ((ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2) != i + 1 &&
--		    (++x == 8)) {
--			seq_printf(sfile, "\n%p:", msg + i + 1);
--			x = 0;
--		}
+-	int r;
+-
+ 	seq_printf(m, "\n%s\n", title);
+-	for (r = 0; r < len; r++) {
+-		if ((r % 8) == 0)
+-			seq_printf(m, "    ");
+-		seq_printf(m, "%08X ", array[r]);
+-		if ((r % 8) == 7)
+-			seq_putc(m, '\n');
 -	}
--	seq_puts(sfile, "\n");
-+	seq_hex_dump(sfile, "", DUMP_PREFIX_ADDRESS, 32, 4,
-+		     v, ADF_MSG_SIZE_TO_BYTES(ring->msg_size), false);
- 	return 0;
++	seq_hex_dump(m, "    ", DUMP_PREFIX_NONE, 32, 4, array, len, false);
+ 	seq_putc(m, '\n');
  }
  
 -- 
