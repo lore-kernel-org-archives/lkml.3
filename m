@@ -1,240 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614AbaIDWBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 18:01:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59156 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaIDWB3 (ORCPT
+	id S1755705AbaIDWCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 18:02:14 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:45992 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203AbaIDWCN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 18:01:29 -0400
-Date: Thu, 4 Sep 2014 15:01:26 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        Georgi Djakov <gdjakov@mm-sol.com>,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>
-Subject: Re: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
-Message-ID: <20140904220126.GC28256@codeaurora.org>
-References: <1409752622-7564-1-git-send-email-sboyd@codeaurora.org>
- <5407F364.9030303@samsung.com>
- <CAPDyKFp0LwK=DABHaP-Ke=QZFP8bY5MO9RnYmUBqeEdDKp63BA@mail.gmail.com>
- <5408D81C.7070602@codeaurora.org>
- <5408E074.7090008@samsung.com>
-MIME-Version: 1.0
+	Thu, 4 Sep 2014 18:02:13 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH] Now that sync_filesystem() must be called from ->remount_fs() it needs to be EXPORT_SYMBOL() for kernel modules.
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5408E074.7090008@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <Pine.LNX.4.64.1408211047230.11319@hermes-1.csi.cam.ac.uk>
+Date: Thu, 4 Sep 2014 23:01:43 +0100
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C5C2C5C4-25F9-4D1A-967E-7396270A3B24@cam.ac.uk>
+References: <Pine.LNX.4.64.1408211047230.11319@hermes-1.csi.cam.ac.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05, Jaehoon Chung wrote:
-> On 09/05/2014 06:22 AM, Stephen Boyd wrote:
-> > On 09/04/14 03:53, Ulf Hansson wrote:
-> >> On 4 September 2014 07:06, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> >>>
-> >>> In dw-mmc.c, tuning_block values are same.
-> >>> So I think we can move these value into generic header. how about?
-> >> Actually, I believe these values comes from the eMMC specification?
-> >> Shouldn't they be moved to the mmc core instead?
-> > 
-> > That sounds like good consolidation, but can we do that in a follow-up
-> > patch? This fixes the driver for me and I was hoping to make something
-> > minimal to go back to stable trees.
+Hi Linus,
+
+No-one has objected to the below patch I sent you over two weeks ago.
+
+Would you please apply it?
+
+If you would like it to go through for example Al or Andrew please let me know...
+
+Thanks a lot in advance!
+
+Best regards,
+
+	Anton
+
+On 21 Aug 2014, at 11:09, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+
+> This patch changes sync_filesystem() to be EXPORT_SYMBOL().
 > 
-> Sure, if my opinion is ok, i will do it after apply your patches.
+> The reason this is needed is that starting with 3.15 kernel, due to 
+> Theodore Ts'o's commit 02b9984d640873b7b3809e63f81a0d7e13496886, "fs: push 
+> sync_filesystem() down to the file system's remount_fs()", all file 
+> systems that have dirty data to be written out need to call 
+> sync_filesystem() from their ->remount_fs() method when remounting 
+> read-only.
 > 
+> As this is now a generically required function rather than an internal 
+> only function it should be EXPORT_SYMBOL() so that all file systems can
+> call it.
+> 
+> Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
+> ---
+> 
+> Hi Linus,
+> 
+> Can you please apply this patch for inclusion into 3.17?  Explanation is 
+> above.
+> 
+> Thanks a lot in advance!
+> 
+> PS. I hope Pine does not mess up the whitespace of the patch!
+> 
+> Best regards,
+> 
+> 	Anton
+> -- 
+> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+> University of Cambridge Information Services, Roger Needham Building
+> 7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+> 
+> --- linux/fs/sync.c	2014-08-21 10:30:26.000000000 +0100
+> +++ linux/fs/sync.c	2014-08-21 10:30:47.000000000 +0100
+> @@ -65,7 +65,7 @@ int sync_filesystem(struct super_block *
+> 		return ret;
+> 	return __sync_filesystem(sb, 1);
+> }
+> -EXPORT_SYMBOL_GPL(sync_filesystem);
+> +EXPORT_SYMBOL(sync_filesystem);
+> 
+> static void sync_inodes_one_sb(struct super_block *sb, void *arg)
+> {
 
-Here's the patch
-
-----8<----
-From: Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH] mmc: Consolidate emmc tuning blocks
-
-The same tuning block array exists in the dw_mmc h.c and sdhci-msm.c
-files. Move these into mmc.c so that they can be shared across
-drivers.
-
-Reported-by: Jaehoon Chung <jh80.chung@samsung.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/mmc/core/mmc.c       | 32 ++++++++++++++++++++++++++++++++
- drivers/mmc/host/dw_mmc.c    | 30 ------------------------------
- drivers/mmc/host/sdhci-msm.c | 38 ++++----------------------------------
- include/linux/mmc/mmc.h      |  5 +++++
- 4 files changed, 41 insertions(+), 64 deletions(-)
-
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 793c6f7ddb04..9608cc8a1f65 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -1135,6 +1135,38 @@ bus_speed:
- 	return err;
- }
- 
-+const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE] = {
-+	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
-+	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
-+	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
-+	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
-+	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
-+	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
-+	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
-+	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
-+};
-+EXPORT_SYMBOL(tuning_blk_pattern_4bit);
-+
-+const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE] = {
-+	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-+	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
-+	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
-+	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
-+	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
-+	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
-+	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
-+	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
-+	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
-+	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
-+	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
-+	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
-+	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
-+	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
-+	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
-+	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
-+};
-+EXPORT_SYMBOL(tuning_blk_pattern_8bit);
-+
- /*
-  * Execute tuning sequence to seek the proper bus operating
-  * conditions for HS200 and HS400, which sends CMD21 to the device.
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 1ac227c603b7..f1cefdf5e2d0 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -81,36 +81,6 @@ struct idmac_desc {
- };
- #endif /* CONFIG_MMC_DW_IDMAC */
- 
--static const u8 tuning_blk_pattern_4bit[] = {
--	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
--	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
--	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
--	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
--	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
--	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
--	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
--	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
--};
--
--static const u8 tuning_blk_pattern_8bit[] = {
--	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
--	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
--	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
--	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
--	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
--	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
--	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
--	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
--	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
--	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
--	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
--	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
--	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
--	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
--	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
--	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
--};
--
- static inline bool dw_mci_fifo_reset(struct dw_mci *host);
- static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host);
- 
-diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-index 5aabffc15ae8..da74c77f34cc 100644
---- a/drivers/mmc/host/sdhci-msm.c
-+++ b/drivers/mmc/host/sdhci-msm.c
-@@ -47,36 +47,6 @@
- #define CMUX_SHIFT_PHASE_SHIFT	24
- #define CMUX_SHIFT_PHASE_MASK	(7 << CMUX_SHIFT_PHASE_SHIFT)
- 
--static const u8 tuning_block_64[] = {
--	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
--	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
--	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
--	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
--	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
--	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
--	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
--	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
--};
--
--static const u8 tuning_block_128[] = {
--	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
--	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
--	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
--	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
--	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
--	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
--	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
--	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
--	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
--	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
--	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
--	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
--	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
--	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
--	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
--	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
--};
--
- struct sdhci_msm_host {
- 	struct platform_device *pdev;
- 	void __iomem *core_mem;	/* MSM SDCC mapped address */
-@@ -371,8 +341,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
- {
- 	int tuning_seq_cnt = 3;
- 	u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
--	const u8 *tuning_block_pattern = tuning_block_64;
--	int size = sizeof(tuning_block_64);	/* Pattern size in bytes */
-+	const u8 *tuning_block_pattern = tuning_blk_pattern_4bit;
-+	int size = sizeof(tuning_blk_pattern_4bit);
- 	int rc;
- 	struct mmc_host *mmc = host->mmc;
- 	struct mmc_ios ios = host->mmc->ios;
-@@ -388,8 +358,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
- 
- 	if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) &&
- 	    (mmc->ios.bus_width == MMC_BUS_WIDTH_8)) {
--		tuning_block_pattern = tuning_block_128;
--		size = sizeof(tuning_block_128);
-+		tuning_block_pattern = tuning_blk_pattern_8bit;
-+		size = sizeof(tuning_blk_pattern_8bit);
- 	}
- 
- 	data_buf = kmalloc(size, GFP_KERNEL);
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 64ec963ed347..cff1f2622061 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -53,6 +53,11 @@
- #define MMC_SEND_TUNING_BLOCK    19   /* adtc                    R1  */
- #define MMC_SEND_TUNING_BLOCK_HS200	21	/* adtc R1  */
- 
-+#define MMC_TUNING_BLK_PATTERN_4BIT_SIZE	 64
-+#define MMC_TUNING_BLK_PATTERN_8BIT_SIZE	128
-+extern const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE];
-+extern const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE];
-+
-   /* class 3 */
- #define MMC_WRITE_DAT_UNTIL_STOP 20   /* adtc [31:0] data addr   R1  */
- 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
 
