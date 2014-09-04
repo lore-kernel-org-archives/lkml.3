@@ -1,103 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433AbaIDAGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 20:06:37 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:37389 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaIDAGe (ORCPT
+	id S1756710AbaIDAG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 20:06:57 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35877 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756597AbaIDAGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 20:06:34 -0400
-Message-ID: <5407AD06.6070402@gmail.com>
-Date: Wed, 03 Sep 2014 17:06:30 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 3 Sep 2014 20:06:54 -0400
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>
-CC: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/12] of: Add binding document for MIPS GIC
-References: <1409350479-19108-1-git-send-email-abrestic@chromium.org> <1409350479-19108-4-git-send-email-abrestic@chromium.org> <5405FE07.4030400@gmail.com> <CAL1qeaHcV_4Z9n_THEN_aST3smgaW1vwn81SkmbU0AUJ_rdB1Q@mail.gmail.com> <540665BA.3080702@gmail.com> <CAL1qeaG_vSiBToi9ZU2=+Guj98gWE_AgmrR7=Z6-PxSNfdH9sA@mail.gmail.com>
-In-Reply-To: <CAL1qeaG_vSiBToi9ZU2=+Guj98gWE_AgmrR7=Z6-PxSNfdH9sA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1407456558-18509-1-git-send-email-ahh@google.com>
+References: <1407456558-18509-1-git-send-email-ahh@google.com>
+Date: Wed, 3 Sep 2014 17:06:53 -0700
+Message-ID: <CALAqxLUHt=+L4XHFqsfNnB8LExtptXkqW58vKZ4JzwN49D+hOw@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix timeval conversion to jiffies
+From: John Stultz <john.stultz@linaro.org>
+To: Andrew Hunter <ahh@google.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        unmobile@gmail.com, Paul Turner <pjt@google.com>, jacobsa@google.com,
+        Ingo Molnar <mingo@elte.hu>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 04:53 PM, Andrew Bresticker wrote:
-> On Tue, Sep 2, 2014 at 5:50 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-[...]
->>
->> Your comments don't really make sense to me in the context of my knowledge
->> of the GIC.
->>
->> Of course all the CP0 timer and performance counter interrupts are per-CPU
->> and routed directly to the corresponding CP0_Cause[IP7..IP2] bits.  We are
->> don't need to give them further consideration.
->>
->>
->> Here is the scenario you should consider:
->>
->>    o 16 CPU cores.
->>    o 1 GIC routing interrupts from external sources to the 16 CPUs.
->>    o 2 network controllers each with an interrupt line routed to the GIC.
->>
->> Q: What would the GIC "interrupts" property look like?
->>
->> Note that the GIC doesn't have a single "interrupt-parent", as it can route
->> interrupts to *all* 16 CPUs.
->>
->> I propose that the GIC have neither an "interrupt-parent", nor "interrupts".
->> The fact that it is an "mti,global-interrupt-controller", means that the
->> software drivers for the GIC already know how to route interrupts, and any
->> information the device tree could contain is redundant.
+On Thu, Aug 7, 2014 at 5:09 PM, Andrew Hunter <ahh@google.com> wrote:
+> timeval_to_jiffies rounding was broken.  It essentially computed
+> (eliding seconds)
 >
-> Ok, I misunderstood your opposition to the binding.
+> jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
 >
-> My intention for the "interrupt-parent" and "interrupts" property of
-> the GIC was to express that GIC interrupts are routed to the CPU
-> interrupt vectors and that a certain set of these vectors are
-> available for use by the GIC.  I would agree that these are mostly
-> redundant (obviously the GIC routes interrupts to CPU interrupt
-> vecotrs) and that it is not the most accurate description of the
-> GIC-CPU relationship (the CPU interrupt controller are per-CPU, not
-> global, and the GIC can route interrupts to any of them), though I'm
-> not sure that there's a better way of describing it in DT.
+> by using scaling arithmetic, which took the best approximation of
+> NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
+> x/(2^USEC_JIFFIE_SC), and computed:
 >
-> So that leaves us with something like this:
+> jiffies = (usec * x) >> USEC_JIFFIE_SC
 >
-> interrupt-controller@1bdc0000 {
->          compatible = "mti,global-interrupt-controller";
+> and it rounded this calculation up in the intermediate form (since we
+> can't necessarily exactly represent TICK_NSEC in usec.) But the
+> scaling arithmetic is a (very slight) *over*approximation of the true
+> value: rounding the division up by adding 2^USEC_JIFFIE_SC - 1, when
+> the error in scaling was added in, was sufficient to add one jiffie to
+> the final result.
+
+Apologies for the slow response here. I've never really touched any of
+the code here, and parsing the above made me want to go do other
+things. :)
+
+Maybe with the next version of the patch, before you get into the
+unwinding the math, you might practically describe what is broken,
+then explain how its broken.
+
+My quick read here is that we're converting a timespec -> jiffies, and
+in doing so we round up by one jiffy.
+
+This seems actually perfectly normal, as we usually end up rounding up
+by a jiffy in many cases since we don't want to undershoot any
+timeout, and we're always allowed return later then specified. That
+said...
+
+> In particular, with HZ=1000, we consistently computed that 10000 usec
+> was 11 jiffies; the same was true for any exact multiple of
+> TICK_NSEC. This is obviously bad as a general rule, and caused
+> observable user problems with setitimer() at the very least:
 >
->          interrupt-controller;
->          #interrupt-cells = <2>;
+> setitimer(ITIMER_PROF, &val, NULL);
+> setitimer(ITIMER_PROF, NULL, &val);
 >
->          available-cpu-vectors = <2>, <3>, ...
+> would actually add a tick to val!
+
+So this looks like an issue. Since we convert and store the internal
+representation in jiffies, when we pull it back out, we get the
+rounded up value, which is larger then the timespec value originally
+submitted.  This is really the core issue, correct? Or does this
+manifest in other ways that are problematic (the patch seems to hint
+that it does)?
 
 
-Exactly what I had in mind, except for the missing "reg" property.
-
-This gives software the information it needs, but doesn't impose any policy.
-
-I will defer to others on the exact name the "available-cpu-vectors" 
-should have.
-
-
-
-
-> };
+> We could possibly still round in the intermediate form, adding
+> something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
+> convert usec->nsec, round in nanoseconds, and then convert using
+> time*spec*_to_jiffies.  This adds one constant multiplication, and is
+> not observably slower in microbenchmarks on recent x86 hardware.
 >
-> DT folks, thoughts?
+> Tested: the following program:
 >
+> int main() {
+>   struct itimerval zero = {{0, 0}, {0, 0}};
+>   /* Initially set to 10 ms. */
+>   struct itimerval initial = zero;
+>   initial.it_interval.tv_usec = 10000;
+>   setitimer(ITIMER_PROF, &initial, NULL);
+>   /* Save and restore several times. */
+>   for (size_t i = 0; i < 10; ++i) {
+>     struct itimerval prev;
+>     setitimer(ITIMER_PROF, &zero, &prev);
+>     /* on old kernels, this goes up by TICK_USEC every iteration */
+>     printf("previous value: %ld %ld %ld %ld\n",
+>            prev.it_interval.tv_sec, prev.it_interval.tv_usec,
+>            prev.it_value.tv_sec, prev.it_value.tv_usec);
+>     setitimer(ITIMER_PROF, &prev, NULL);
+>   }
+>     return 0;
+> }
 >
+> Signed-off-by: Andrew Hunter <ahh@google.com>
+> Reviewed-by: Paul Turner <pjt@google.com>
+> Reported-by: Aaron Jacobs <jacobsa@google.com>
+> Change-Id: I7cd0f0764847fd055d39531f54e6ea3dd3ce5453
+> ---
+>  include/linux/jiffies.h | 12 -----------
+>  kernel/time.c           | 54 +++++++++++++++++++++++++++----------------------
+>  2 files changed, 30 insertions(+), 36 deletions(-)
+>
+> diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+> index 1f44466..c367cbd 100644
+> --- a/include/linux/jiffies.h
+> +++ b/include/linux/jiffies.h
+> @@ -258,23 +258,11 @@ extern unsigned long preset_lpj;
+>  #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
+>  #endif
+>  #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
+> -#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
+>  #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
+>                                  TICK_NSEC -1) / (u64)TICK_NSEC))
+>
+>  #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
+>                                          TICK_NSEC -1) / (u64)TICK_NSEC))
+> -#define USEC_CONVERSION  \
+> -                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
+> -                                        TICK_NSEC -1) / (u64)TICK_NSEC))
+> -/*
+> - * USEC_ROUND is used in the timeval to jiffie conversion.  See there
+> - * for more details.  It is the scaled resolution rounding value.  Note
+> - * that it is a 64-bit value.  Since, when it is applied, we are already
+> - * in jiffies (albit scaled), it is nothing but the bits we will shift
+> - * off.
+> - */
+> -#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
+>  /*
+>   * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
+>   * into seconds.  The 64-bit case will overflow if we are not careful,
+> diff --git a/kernel/time.c b/kernel/time.c
+> index 7c7964c..3c49ab4 100644
+> --- a/kernel/time.c
+> +++ b/kernel/time.c
+> @@ -496,17 +496,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
+>   * that a remainder subtract here would not do the right thing as the
+>   * resolution values don't fall on second boundries.  I.e. the line:
+>   * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
+> + * Note that due to the small error in the multiplier here, this
+> + * rounding is incorrect for sufficiently large values of tv_nsec, but
+> + * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
+> + * OK.
+>   *
+>   * Rather, we just shift the bits off the right.
+>   *
+>   * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
+>   * value to a scaled second value.
+>   */
+> -unsigned long
+> -timespec_to_jiffies(const struct timespec *value)
+> +static unsigned long
+> +__timespec_to_jiffies(unsigned long sec, long nsec)
+>  {
+> -       unsigned long sec = value->tv_sec;
+> -       long nsec = value->tv_nsec + TICK_NSEC - 1;
+> +       nsec = nsec + TICK_NSEC - 1;
 
+
+If we're still rounding up one tick here, does the same issue not persist?
+
+
+>
+>         if (sec >= MAX_SEC_IN_JIFFIES){
+>                 sec = MAX_SEC_IN_JIFFIES;
+> @@ -517,6 +520,13 @@ timespec_to_jiffies(const struct timespec *value)
+>                  (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
+>
+>  }
+> +
+> +unsigned long
+> +timespec_to_jiffies(const struct timespec *value)
+> +{
+> +       return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
+> +}
+> +
+>  EXPORT_SYMBOL(timespec_to_jiffies);
+>
+>  void
+> @@ -533,31 +543,27 @@ jiffies_to_timespec(const unsigned long jiffies, struct timespec *value)
+>  }
+>  EXPORT_SYMBOL(jiffies_to_timespec);
+>
+> -/* Same for "timeval"
+> +/*
+> + * We could use a similar algorithm to timespec_to_jiffies (with a
+> + * different multiplier for usec instead of nsec). But this has a
+> + * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
+> + * usec value, since it's not necessarily integral.
+>   *
+> - * Well, almost.  The problem here is that the real system resolution is
+> - * in nanoseconds and the value being converted is in micro seconds.
+> - * Also for some machines (those that use HZ = 1024, in-particular),
+> - * there is a LARGE error in the tick size in microseconds.
+> -
+> - * The solution we use is to do the rounding AFTER we convert the
+> - * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
+> - * Instruction wise, this should cost only an additional add with carry
+> - * instruction above the way it was done above.
+> + * We could instead round in the intermediate scaled representation
+> + * (i.e. in units of 1/2^(large scale) jiffies) but that's also
+> + * perilous: the scaling introduces a small positive error, which
+> + * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
+> + * units to the intermediate before shifting) leads to accidental
+> + * overflow and overestimates.
+> + *
+> + * At the cost of one additional multiplication by a constant, just
+> + * use the timespec implementation.
+>   */
+>  unsigned long
+>  timeval_to_jiffies(const struct timeval *value)
+>  {
+> -       unsigned long sec = value->tv_sec;
+> -       long usec = value->tv_usec;
+> -
+> -       if (sec >= MAX_SEC_IN_JIFFIES){
+> -               sec = MAX_SEC_IN_JIFFIES;
+> -               usec = 0;
+> -       }
+> -       return (((u64)sec * SEC_CONVERSION) +
+> -               (((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
+> -                (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
+> +       return __timespec_to_jiffies(value->tv_sec,
+> +                                    value->tv_usec * NSEC_PER_USEC);
+>  }
+>  EXPORT_SYMBOL(timeval_to_jiffies);
+
+Overall the patch doesn't look too bad and does reduce the amount of
+ugly math with simpler code reuse.  But I'd like the patch description
+to be more clear about why this is needed and the impact.
+
+thanks
+-john
