@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015AbaIDS2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:28:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54284 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbaIDS2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:28:44 -0400
-Message-ID: <1409855330.8301.3.camel@localhost>
-Subject: [PATCH v2] staging/lustre: Different prototypes between the
- declaration and the definition
-From: =?ISO-8859-1?Q?Lo=EFc?= Pellegrino <oort10@gmail.com>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, oort10@gmail.com
-Date: Thu, 04 Sep 2014 19:28:50 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755013AbaIDScC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:32:02 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:52912 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753631AbaIDScA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 14:32:00 -0400
+Message-ID: <5408B01D.50804@osg.samsung.com>
+Date: Thu, 04 Sep 2014 12:31:57 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Pranith Kumar <bobby.prani@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        "open list:KERNEL SELFTEST F..." <linux-api@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH Resend] memfd_test: Add missing argument to printf()
+References: <1409846302-3513-1-git-send-email-bobby.prani@gmail.com>
+In-Reply-To: <1409846302-3513-1-git-send-email-bobby.prani@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Align the prototype of lprocfs_wr_uint() in the declaration with the one used 
-in the definition.
+On 09/04/2014 09:58 AM, Pranith Kumar wrote:
+> Add a missing path argument buf to printf() 
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+> ---
+>  tools/testing/selftests/memfd/memfd_test.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/testing/selftests/memfd/memfd_test.c b/tools/testing/selftests/memfd/memfd_test.c
+> index 3634c90..c343df8 100644
+> --- a/tools/testing/selftests/memfd/memfd_test.c
+> +++ b/tools/testing/selftests/memfd/memfd_test.c
+> @@ -205,7 +205,7 @@ static void mfd_fail_open(int fd, int flags, mode_t mode)
+>  	sprintf(buf, "/proc/self/fd/%d", fd);
+>  	r = open(buf, flags, mode);
+>  	if (r >= 0) {
+> -		printf("open(%s) didn't fail as expected\n");
+> +		printf("open(%s) didn't fail as expected\n", buf);
+>  		abort();
+>  	}
+>  }
+> 
 
-The prototype is:
-int lprocfs_wr_uint(struct file *file, const char __user *buffer,
-                    unsigned long count, void *data)
-In obdclass/lprocfs_status.c
+Thanks. I queued it for 3.17 fixes.
 
-But in lustre/include/lprocfs_status.h, the __user annotation is missing for 
-the attribute buffer.
+-- Shuah
 
-The correct prototype is the first one (the definition) since:
-- This function is eventually called by the write() function pointer of an 
-instance of struct file_operations
-- In this function, buffer is a parameter of copy_from_user()
-- Before the commit 73bb1da692d0dc3e93b9c9e29084d6a5dcbc37a6, the declaration 
-and the definition had the same prototype, but only the .c has been updated.
-
-Correcting this will remove a sparse error and add sparse warnings.
-This is a task of the Eudyptula challenge.
-
-Signed-off-by: Loïc Pellegrino <oort10@gmail.com>
----
-My previous email was not formatted correctly sorry.
-
- drivers/staging/lustre/lustre/include/lprocfs_status.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/lustre/lustre/include/lprocfs_status.h b/drivers/staging/lustre/lustre/include/lprocfs_status.h
-index 05b5285..ccb6cd4 100644
---- a/drivers/staging/lustre/lustre/include/lprocfs_status.h
-+++ b/drivers/staging/lustre/lustre/include/lprocfs_status.h
-@@ -611,7 +611,7 @@ extern int lprocfs_rd_atomic(struct seq_file *m, void *data);
- extern int lprocfs_wr_atomic(struct file *file, const char __user *buffer,
- 			     unsigned long count, void *data);
- extern int lprocfs_rd_uint(struct seq_file *m, void *data);
--extern int lprocfs_wr_uint(struct file *file, const char *buffer,
-+extern int lprocfs_wr_uint(struct file *file, const char __user *buffer,
- 			   unsigned long count, void *data);
- extern int lprocfs_rd_uuid(struct seq_file *m, void *data);
- extern int lprocfs_rd_name(struct seq_file *m, void *data);
 -- 
-1.9.3
-
-
-
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
