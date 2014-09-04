@@ -1,113 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaIDOgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:36:15 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:47786 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaIDOgO (ORCPT
+	id S1753320AbaIDOhx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:37:53 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:51676 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004AbaIDOhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:36:14 -0400
-Message-ID: <540878D4.7080501@gmail.com>
-Date: Thu, 04 Sep 2014 10:36:04 -0400
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 4 Sep 2014 10:37:52 -0400
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Borislav Petkov <bp@alien8.de>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: OT: Open letter to the Linux World
-References: <20140812153812.2923046a@monolith.infinux.org> <20140812202129.GA20344@home.goodmis.org> <yw1xr40l2whi.fsf@unicorn.mansr.com> <20140813082756.GB2923@twins.programming.kicks-ass.net> <20140813090013.GA20581@pd.tnic> <53F242D1.4050506@ahsoftware.de> <20140904075453.GK3190@worktop.ger.corp.intel.com> <54083C0F.1040807@ahsoftware.de>
-In-Reply-To: <54083C0F.1040807@ahsoftware.de>
-x-hashcash: 1:21:140904:holler@ahsoftware.de::31b61075d8b677992ab4220cc08b49c1:8e7ced6a5f9e65b5
-x-hashcash: 1:21:140904:peterz@infradead.org::845232d4404a1c2f89c7cc8ad7055f69:2d5d0139224d632e
-x-hashcash: 1:21:140904:bp@alien8.de::825026a266142f0b708d5dca5c041311:f7401bbe4a299540
-x-hashcash: 1:21:140904:mans@mansr.com::d71ed62f9836f9b24540190913bcfcd4:12007fc95588c278
-x-hashcash: 1:21:140904:rostedt@goodmis.org::fc60fbe91d9274866d393ec2f0a5f74d:c97031e673d277ed
-x-hashcash: 1:21:140904:christopher.r.barry@gmail.com::66d9ae3fe1ecea5386689a27de7e997d:be388b8f8df1e05e
-x-hashcash: 1:21:140904:linux-kernel@vger.kernel.org::ff8a8ef70c6f17aec29818bf6912948c:a8986bb75a0509d4
-x-stampprotocols: hashcash:1:17;mbound:0:10:3000:5000
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms070809050100020606060909"
+In-Reply-To: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
+References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
+Date: Thu, 4 Sep 2014 16:37:51 +0200
+Message-ID: <CABPqkBRdbp6nDBFsz0gdp+qpNu+H6C4pyPTAC-EKYFoca2z+sQ@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Tue, Aug 26, 2014 at 8:38 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+>
+> There's a problem on finding correct kernel symbols when perf report
+> runs on a different kernel.  Although a part of the problem was solved
+> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+> version when finding vmlinux"), there's a remaining problem still.
+>
+> When perf records samples, it synthesizes the kernel map using
+> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+> You can easily see it using 'perf report -D' command.
+>
+> After finishing record, it goes through the recorded events to find
+> maps/dsos actually used.  And then record build-id info of them.
+>
+> During this process, it needs to load symbols in a dso and it'd call
+> dso__load_vmlinux() since the default value of the symbol_conf.try_
+> vmlinux_path is true.  However it changes dso->long_name to a real
+> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
+> if one is running on a custom kernel.
+>
+> It resulted in that perf report reads the build-id of the vmlinux, but
+> cannot use it since it only knows about the [kernel.kallsyms] map.  It
+> then falls back to possible vmlinux paths by using the recorded kernel
+> version (in case of a recent version) or a running kernel silently
+> (which might break the result).  I think it's worth going to the
+> stable tree.
+>
+> I can think of a couple of ways to fix it.  In this patch, I changed
+> to use the name of "[kernel.kallsyms]" for the kernel build-id event
+> instead of not trying vmlinux paths.  This way we can provide maximum
+> info (like annotation) with minimum change IMHO.
+>
+> Before:
+>
+>   $ perf record -a usleep 1
+>
+>   $ perf buildid-list
+>   00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
+>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>
+>   $ perf buildid-list -H
+>   0000000000000000000000000000000000000000 [kernel.kallsyms]
+>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
+>
+There is something I don't understand in your example above.
+The -H option shows only DSO with samples. So why do you get the
+buildid without -H
+and you get no buildid with -H? In other words, I don't connect the
+dots between what
+-H does on the buildid change for the kernel. Looks like you have the
+buildid in the
+perf.data file.
 
---------------ms070809050100020606060909
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 2014-09-04 06:16, Alexander Holler wrote:
->=20
-> It's a myth that C++ ends up in bigger code than C. At least in my
-> experience. Especially when the latest additions to C++ are in effect
-> (like the move-semantics in C++11 I like quiet a lot and which you get
-> almost for free (by changing nothing) when you use the STL). Thread
-> support is now also standardized (in C++11), quiet nice to use.
-Assuming you are writing in a standalone environment (no standard
-libraries), then yes, your code will usually be about the same size
-(unless you go way overboard with the object-oriented stuff); but the
-runtime is larger in almost all non-standalone environments, and there
-are some cases that code does end up larger in C++.  A lot of 'Clean C'
-(stuff written so that it compiles correctly as C, C++ and Objective C)
-that I have seen seems to end up larger (by about 4-6%) when built as
-C++ (although it usually does much worse as Objective C).
 
 
---------------ms070809050100020606060909
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIFuDCC
-BbQwggOcoAMCAQICAw9gVDANBgkqhkiG9w0BAQ0FADB5MRAwDgYDVQQKEwdSb290IENBMR4w
-HAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmlu
-ZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZzAeFw0xNDA4
-MDgxMTMwNDRaFw0xNTAyMDQxMTMwNDRaMGMxGDAWBgNVBAMTD0NBY2VydCBXb1QgVXNlcjEj
-MCEGCSqGSIb3DQEJARYUYWhmZXJyb2luN0BnbWFpbC5jb20xIjAgBgkqhkiG9w0BCQEWE2Fo
-ZW1tZWxnQG9oaW9ndC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDdmm8R
-BM5D6fGiB6rpogPZbLYu6CkU6834rcJepfmxKnLarYUYM593/VGygfaaHAyuc8qLaRA3u1M0
-Qp29flqmhv1VDTBZ+zFu6JgHjTDniBii1KOZRo0qV3jC5NvaS8KUM67+eQBjm29LhBWVi3+e
-a8jLxmogFXV0NGej+GHIr5zA9qKz2WJOEoGh0EfqZ2MQTmozcGI43/oqIYhRj8fRMkWXLUAF
-WsLzPQMpK19hD8fqwlxQWhBV8gsGRG54K5pyaQsjne7m89SF5M8JkNJPH39tHEvfv2Vhf7EM
-Y4WGyhLAULSlym1AI1uUHR1FfJaj3AChaEJZli/AdajYsqc7AgMBAAGjggFZMIIBVTAMBgNV
-HRMBAf8EAjAAMFYGCWCGSAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlmaWNhdGUg
-Zm9yIEZSRUUgaGVhZCBvdmVyIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzAOBgNVHQ8BAf8E
-BAMCA6gwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEE
-AYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8v
-b2NzcC5jYWNlcnQub3JnMDEGA1UdHwQqMCgwJqAkoCKGIGh0dHA6Ly9jcmwuY2FjZXJ0Lm9y
-Zy9yZXZva2UuY3JsMDQGA1UdEQQtMCuBFGFoZmVycm9pbjdAZ21haWwuY29tgRNhaGVtbWVs
-Z0BvaGlvZ3QuY29tMA0GCSqGSIb3DQEBDQUAA4ICAQCr4klxcZU/PDRBpUtlb+d6JXl2dfto
-OUP/6g19dpx6Ekt2pV1eujpIj5whh5KlCSPUgtHZI7BcksLSczQbxNDvRu6LNKqGJGvcp99k
-cWL1Z6BsgtvxWKkOmy1vB+2aPfDiQQiMCCLAqXwHiNDZhSkwmGsJ7KHMWgF/dRVDnsl6aOQZ
-jAcBMpUZxzA/bv4nY2PylVdqJWp9N7x86TF9sda1zRZiyUwy83eFTDNzefYPtc4MLppcaD4g
-Wt8U6T2ffQfCWVzDirhg4WmDH3MybDItjkSB2/+pgGOS4lgtEBMHzAGQqQ+5PojTHRyqu9Jc
-O59oIGrTaOtKV9nDeDtzNaQZgygJItJi9GoAl68AmIHxpS1rZUNV6X8ydFrEweFdRTVWhUEL
-70Cnx84YBojXv01LYBSZaq18K8cERPLaIrUD2go+2ffjdE9ejvYDhNBllY+ufvRizIjQA1uC
-OdktVAN6auQob94kOOsWpoMSrzHHvOvVW/kbokmKzaLtcs9+nJoL+vPi2AyzbaoQASVZYOGW
-pE3daA0F5FJfcPZKCwd5wdnmT3dU1IRUxa5vMmgjP20lkfP8tCPtvZv2mmI2Nw5SaXNY4gVu
-WQrvkV2in+TnGqgEIwUrLVbx9G6PSYZZs07czhO+Q1iVuKdAwjL/AYK0Us9v50acIzbl5CWw
-ZGj3wjGCA6EwggOdAgEBMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6
-Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEh
-MB8GCSqGSIb3DQEJARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwCQYFKw4DAhoFAKCCAfUw
-GAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQwOTA0MTQzNjA0
-WjAjBgkqhkiG9w0BCQQxFgQUvui6Bgx903RXKax7kCXBYLGOdJcwbAYJKoZIhvcNAQkPMV8w
-XTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
-gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBkQYJKwYBBAGCNxAE
-MYGDMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0
-Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJ
-ARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwgZMGCyqGSIb3DQEJEAILMYGDoIGAMHkxEDAO
-BgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UE
-AxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJARYSc3VwcG9ydEBj
-YWNlcnQub3JnAgMPYFQwDQYJKoZIhvcNAQEBBQAEggEAH/CWoI73FMdRmpBzRNG/yLVV8YRK
-BeUdxMYcxaEz+mK4sR+DAGdZP+1N9RxoW6oehfsVdET1RZS8Bt5tLYPd82OlzVaiynHSHZQk
-u6mPybKIBtwdEKTjYV45DkiB5LXFXJdTfaN1RFqSSfRjFNVIntQSwq7SIFa/+IL5vRF7Y3+m
-LDKi92E1tFUqbNsSl0qN0NOYzW1flA91CkNclPVoN1wPBxsAyKs9xWVAWPOfbG9dWloVQfDL
-+NLgrHxRaEEamw8ZRyPbSwHT3uoTfOq2zJD+W5TSzR345IEN820t/DXeBfCcmbetIu9HZ4s6
-OL7g5PUPftWPS7GFz+q2za8FaQAAAAAAAA==
---------------ms070809050100020606060909--
+>
+> After:
+>
+>   $ perf record -a usleep 1
+>
+>   $ perf buildid-list
+>   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
+>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>
+>   $ perf buildid-list -H
+>   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
+>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/header.c | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 158c787ce0c4..5c4093dee467 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -263,6 +263,9 @@ static int __dsos__write_buildid_table(struct list_head *head,
+>                         machine__mmap_name(machine, nm, sizeof(nm));
+>                         name = nm;
+>                         name_len = strlen(nm) + 1;
+> +               } else if (dso__is_vmlinux(pos)) {
+> +                       name = pos->name;
+> +                       name_len = strlen(pos->name) + 1;
+>                 } else {
+>                         name = pos->long_name;
+>                         name_len = pos->long_name_len + 1;
+> --
+> 2.0.0
+>
