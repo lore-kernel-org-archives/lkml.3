@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbaIDHvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:51:32 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:47717 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756807AbaIDHvO (ORCPT
+	id S932740AbaIDHzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:55:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54202 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210AbaIDHzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:51:14 -0400
-X-Original-SENDERIP: 165.186.175.39
-X-Original-MAILFROM: gioh.kim@lge.com
-From: Gioh Kim <gioh.kim@lge.com>
-To: gioh.kim@lge.com, akpm@linux-foundation.org, jack@suse.cz, tytso@mit.edu,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        paulmck@linux.vnet.ibm.com, peterz@infradead.org,
-        adilger.kernel@dilger.ca
-Cc: minchan@kernel.org, js1304@gmail.com, gunho.lee@lge.com
-Subject: [PATCHv4 2/3] ext4: use non-movable memory for the ext4 superblock
-Date: Thu,  4 Sep 2014 16:29:40 +0900
-Message-Id: <1409815781-28011-3-git-send-email-gioh.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
-References: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
+	Thu, 4 Sep 2014 03:55:11 -0400
+Date: Thu, 4 Sep 2014 09:54:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Borislav Petkov <bp@alien8.de>,
+        =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Christopher Barry <christopher.r.barry@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: OT: Open letter to the Linux World
+Message-ID: <20140904075453.GK3190@worktop.ger.corp.intel.com>
+References: <20140812153812.2923046a@monolith.infinux.org>
+ <20140812202129.GA20344@home.goodmis.org>
+ <yw1xr40l2whi.fsf@unicorn.mansr.com>
+ <20140813082756.GB2923@twins.programming.kicks-ass.net>
+ <20140813090013.GA20581@pd.tnic>
+ <53F242D1.4050506@ahsoftware.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F242D1.4050506@ahsoftware.de>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A buffer-cache for superblock is disturbing page migration,
-because the buffer-cache is not released until unmount.
-The buffer-cache must be allocated from non-movable area.
+On Mon, Aug 18, 2014 at 08:15:45PM +0200, Alexander Holler wrote:
+> 
+> Hmm, a sane and maintainable solution would use C++ with which people don't
+> have to manually build lists or hashes for every structure like in the
+> kernel (generic programming done right). So you won't find much kernel
+> developers there. ;)
+> 
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/ext4/super.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Troll a lot do you? ;-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 32b43ad..e4b62b3 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3435,7 +3435,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		logical_sb_block = sb_block;
- 	}
- 
--	if (!(bh = sb_bread(sb, logical_sb_block))) {
-+	if (!(bh = sb_bread_unmovable(sb, logical_sb_block))) {
- 		ext4_msg(sb, KERN_ERR, "unable to read superblock");
- 		goto out_fail;
- 	}
-@@ -3645,7 +3645,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		brelse(bh);
- 		logical_sb_block = sb_block * EXT4_MIN_BLOCK_SIZE;
- 		offset = do_div(logical_sb_block, blocksize);
--		bh = sb_bread(sb, logical_sb_block);
-+		bh = sb_bread_unmovable(sb, logical_sb_block);
- 		if (!bh) {
- 			ext4_msg(sb, KERN_ERR,
- 			       "Can't read superblock on 2nd try");
-@@ -3867,7 +3867,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	for (i = 0; i < db_count; i++) {
- 		block = descriptor_loc(sb, logical_sb_block, i);
--		sbi->s_group_desc[i] = sb_bread(sb, block);
-+		sbi->s_group_desc[i] = sb_bread_unmovable(sb, block);
- 		if (!sbi->s_group_desc[i]) {
- 			ext4_msg(sb, KERN_ERR,
- 			       "can't read group descriptor %d", i);
--- 
-1.7.9.5
+While I like C++ (and quite a number of kernel people can in fact write
+C++ no problem) we can have a long debate about whether the STL is in
+fact 'done right' :-)
 
+Also, I don't think init (as in PID-1) should be a large program, and
+therefore writing it in C would be entirely reasonable.
