@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329AbaIDUR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:17:59 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:43583 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920AbaIDUR6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:17:58 -0400
-Date: Thu, 4 Sep 2014 22:17:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Catalin Iacob <iacobcatalin@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: nohz fail (was: perf related boot hang.)
-Message-ID: <20140904201752.GA3116@lerouge>
-References: <20140811200931.GA18865@redhat.com>
- <1408566691-3023-1-git-send-email-iacobcatalin@gmail.com>
- <CAFTL4hxJ2roTB3tZBmXU3HRetgFSUT0LNVWfX-Y2hbpyXSo2pg@mail.gmail.com>
- <CAHg_5gq1XiZ1A08PtQ7Rof3rUXJ-pVYkXtmHqgFh6hB+++qPNg@mail.gmail.com>
- <20140822140009.GA8567@redhat.com>
- <20140901201429.GA1586@lerouge>
- <CAHg_5go_TT7CQ6U3AhjG4TxRM0zG562mxa+uV4UbOYd_-A0T-w@mail.gmail.com>
- <CAHg_5gr_tHeBsQfv1ydZRq9XgKipcrbijripqubE6c6j1S=jfg@mail.gmail.com>
+	id S1755369AbaIDUWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:22:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37905 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755202AbaIDUWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 16:22:19 -0400
+Message-ID: <5408C9C4.1010705@zytor.com>
+Date: Thu, 04 Sep 2014 13:21:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHg_5gr_tHeBsQfv1ydZRq9XgKipcrbijripqubE6c6j1S=jfg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Toshi Kani <toshi.kani@hp.com>
+CC: tglx@linutronix.de, mingo@redhat.com, akpm@linuxfoundation.org,
+        arnd@arndb.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        jgross@suse.com, stefan.bader@canonical.com, luto@amacapital.net,
+        konrad.wilk@oracle.com
+Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com> <1409855739-8985-2-git-send-email-toshi.kani@hp.com> <20140904201123.GA9116@khazad-dum.debian.net>
+In-Reply-To: <20140904201123.GA9116@khazad-dum.debian.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 10:07:37PM +0200, Catalin Iacob wrote:
-> On Tue, Sep 2, 2014 at 8:23 PM, Catalin Iacob <iacobcatalin@gmail.com> wrote:
-> > On Mon, Sep 1, 2014 at 10:14 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> I'll send "nohz: Restore NMI safe local irq work for local nohz kick"
-> >> as a fix for 3.17 and the rest will have to wait for 3.18 as it's a complicated
-> >> fix for a long standing bug.
-> >
-> > I've been running with the full series since you sent it and haven't
-> > experienced the bug since. I'll try to test with just the 3.17 patch
-> > to also check that it's enough on its own.
+On 09/04/2014 01:11 PM, Henrique de Moraes Holschuh wrote:
 > 
-> I tested with just "nohz: Restore NMI safe local irq work for local
-> nohz kick" on top of 7505ceaf8635 (which is 3.17-rc3 plus the merge of
-> 1 commit) and unfortunately it doesn't fix the issue. I got the same
-> panic after some minutes of building Firefox.
+> I am worried of uncharted territory, here.  I'd actually advocate for not
+> enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
+> is using them as well.  Is this a real concern, or am I being overly
+> cautious?
+> 
 
-Yeah, that's expected. You need to apply the nine patches on top of -rc1:
+It is extremely unlikely that we'd have PAT issues in 32-bit mode and
+not in 64-bit mode on the same CPU.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-        nohz/fixes
+As far as I know, the current blacklist rule is very conservative due to
+lack of testing more than anything else.
 
-"nohz: Restore NMI safe local irq work for local nohz kick" only fixes
-part of the issue.
+	-hpa
 
-Thanks.
