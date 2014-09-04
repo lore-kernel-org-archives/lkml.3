@@ -1,84 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695AbaIDGVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 02:21:55 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:40199 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941AbaIDGVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 02:21:54 -0400
-Date: Thu, 4 Sep 2014 08:18:53 +0200
-From: Piotr Witoslawski <pwitos@gmail.com>
-To: lidza.louina@gmail.com
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] drivers: staging: dgap: fix the checkpatch.pl issue
- "Warning: line over 80 characters"
-Message-ID: <20140904061853.GA2940@pwitoslawski.warsaw.osa>
+	id S932626AbaIDGYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 02:24:40 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:38579
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756697AbaIDGYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 02:24:39 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
+        <alex.williamson@redhat.com>, <Emilian.Medve@freescale.com>,
+        <linuxppc-dev@ozlabs.org>, <linux-kernel@vger.kernel.org>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH] iommu/fsl: Fix warning resulting from adding PCI device twice
+Date: Thu, 4 Sep 2014 11:33:42 +0530
+Message-ID: <1409810622-742-1-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(21056001)(99396002)(31966008)(50986999)(4396001)(69596002)(81156004)(48376002)(87936001)(88136002)(64706001)(19580405001)(47776003)(102836001)(20776003)(81542001)(90102001)(575784001)(19580395003)(80022001)(36756003)(50226001)(85306004)(87286001)(26826002)(68736004)(44976005)(83322001)(95666004)(81342001)(104166001)(6806004)(62966002)(2201001)(46102001)(50466002)(77982001)(85852003)(83072002)(86362001)(79102001)(106466001)(89996001)(104016003)(74662001)(97736001)(107046002)(74502001)(77156001)(84676001)(92566001)(92726001)(76482001)(229853001)(93916002)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0301MB0745;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0324C2C0E2
+Authentication-Results: spf=temperror (sender IP is 192.88.158.2)
+ smtp.mailfrom=Varun.Sethi@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Break lines exceeding 80 characters
+iommu_group_get_for_dev determines the iommu group for the PCI device and adds
+the device to the group.
 
-Signed-off-by: Piotr Witoslawski <pwitos@gmail.com>
+In the PAMU driver we were again adding the device to the same group without checking
+if the device already had an iommu group. This resulted in the following warning.
+
+sysfs: cannot create duplicate filename '/devices/ffe200000.pcie/pci0000:00/0000:00:00.0/iommu_group'
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:31
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc3-00002-g7505cea-dirty #126
+task: c0000001fe0a0000 ti: c0000001fe044000 task.ti: c0000001fe044000
+NIP: c00000000018879c LR: c000000000188798 CTR: c00000000001ea50
+REGS: c0000001fe047040 TRAP: 0700   Not tainted  (3.17.0-rc3-00002-g7505cea-dirty)
+MSR: 0000000080029000 <CE,EE,ME>  CR: 24ad8e22  XER: 20000000
+SOFTE: 1 
+GPR00: c000000000188798 c0000001fe0472c0 c0000000009a52e0 0000000000000065 
+GPR04: 0000000000000001 0000000000000000 3a30303a00000000 0000000027000000 
+GPR08: 2f696f6d00000000 c0000000008d3830 c0000000009b3938 c0000000009bb3d0 
+GPR12: 0000000028ad8e24 c00000000fff4000 c00000000000205c 0000000000000000 
+GPR16: 0000000000000000 0000000000000000 0000000000000000 0000000000000000 
+GPR20: 0000000000000000 0000000000000000 0000000000000000 c0000000008a4c70 
+GPR24: c0000000007e9010 c0000001fe0140a8 ffffffffffffffef 0000000000000001 
+GPR28: c0000001fe22ebb8 c0000000007e9010 c00000000090bf10 c0000001fe220000 
+NIP [c00000000018879c] .sysfs_warn_dup+0x74/0xa4
+LR [c000000000188798] .sysfs_warn_dup+0x70/0xa4
+Call Trace:
+[c0000001fe0472c0] [c000000000188798] .sysfs_warn_dup+0x70/0xa4 (unreliable)
+[c0000001fe047350] [c000000000188d34] .sysfs_do_create_link_sd.clone.2+0x168/0x174
+[c0000001fe047400] [c0000000004b3cf8] .iommu_group_add_device+0x78/0x244
+[c0000001fe0474b0] [c0000000004b6964] .fsl_pamu_add_device+0x88/0x1a8
+[c0000001fe047570] [c0000000004b3960] .iommu_bus_notifier+0xdc/0x15c
+[c0000001fe047600] [c000000000059848] .notifier_call_chain+0x8c/0xe8
+[c0000001fe0476a0] [c000000000059d04] .__blocking_notifier_call_chain+0x58/0x84
+[c0000001fe047750] [c00000000036619c] .device_add+0x464/0x5c8
+[c0000001fe047820] [c000000000300ebc] .pci_device_add+0x14c/0x17c
+[c0000001fe0478c0] [c000000000300fbc] .pci_scan_single_device+0xd0/0xf4
+[c0000001fe047970] [c00000000030104c] .pci_scan_slot+0x6c/0x18c
+[c0000001fe047a10] [c00000000030226c] .pci_scan_child_bus+0x40/0x114
+[c0000001fe047ac0] [c000000000021974] .pcibios_scan_phb+0x240/0x2c8
+[c0000001fe047b70] [c00000000085a970] .pcibios_init+0x64/0xc8
+[c0000001fe047c00] [c000000000001884] .do_one_initcall+0xbc/0x224
+[c0000001fe047d00] [c000000000852d50] .kernel_init_freeable+0x14c/0x21c
+[c0000001fe047db0] [c000000000002078] .kernel_init+0x1c/0xfa4
+[c0000001fe047e30] [c000000000000884] .ret_from_kernel_thread+0x58/0xd4
+Instruction dump:
+7c7f1b79 4182001c 7fe4fb78 7f83e378 38a01000 4bffc905 60000000 7c641b78 
+e87e8008 7fa5eb78 48482ff5 60000000 <0fe00000> 7fe3fb78 4bf7bd39 60000000 
+
+
+Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 ---
- drivers/staging/dgap/dgap.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/iommu/fsl_pamu_domain.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 8929dbf..67da1d5 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -88,7 +88,8 @@ static int dgap_block_til_ready(struct tty_struct *tty, struct file *file,
- 				struct channel_t *ch);
- static int dgap_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
- 				unsigned long arg);
--static int dgap_tty_digigeta(struct channel_t *ch, struct digi_t __user *retinfo);
-+static int dgap_tty_digigeta(struct channel_t *ch,
-+			     struct digi_t __user *retinfo);
- static int dgap_tty_digiseta(struct channel_t *ch, struct board_t *bd,
- 			     struct un_t *un, struct digi_t __user *new_info);
- static int dgap_tty_digigetedelay(struct tty_struct *tty, int __user *retinfo);
-@@ -104,8 +105,9 @@ static void dgap_tty_flush_chars(struct tty_struct *tty);
- static void dgap_tty_flush_buffer(struct tty_struct *tty);
- static void dgap_tty_hangup(struct tty_struct *tty);
- static int dgap_wait_for_drain(struct tty_struct *tty);
--static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct un_t *un,
--			       unsigned int command, unsigned int __user *value);
-+static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd,
-+			       struct un_t *un, unsigned int command,
-+			       unsigned int __user *value);
- static int dgap_get_modem_info(struct channel_t *ch,
- 				unsigned int __user *value);
- static int dgap_tty_digisetcustombaud(struct channel_t *ch, struct board_t *bd,
-@@ -3076,8 +3078,9 @@ static int dgap_get_modem_info(struct channel_t *ch, unsigned int __user *value)
-  *
-  * Set modem signals, called by ld.
-  */
--static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct un_t *un,
--			       unsigned int command, unsigned int __user *value)
-+static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd,
-+			       struct un_t *un, unsigned int command,
-+			       unsigned int __user *value)
- {
- 	int ret;
- 	unsigned int arg;
-@@ -3153,7 +3156,8 @@ static int dgap_set_modem_info(struct channel_t *ch, struct board_t *bd, struct
-  *
-  *
-  */
--static int dgap_tty_digigeta(struct channel_t *ch, struct digi_t __user *retinfo)
-+static int dgap_tty_digigeta(struct channel_t *ch,
-+			     struct digi_t __user *retinfo)
- {
- 	struct digi_t tmp;
- 	ulong lock_flags;
+diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
+index 61d1daf..af5a548 100644
+--- a/drivers/iommu/fsl_pamu_domain.c
++++ b/drivers/iommu/fsl_pamu_domain.c
+@@ -984,7 +984,7 @@ static int fsl_pamu_add_device(struct device *dev)
+ 	struct iommu_group *group = ERR_PTR(-ENODEV);
+ 	struct pci_dev *pdev;
+ 	const u32 *prop;
+-	int ret, len;
++	int ret = 0, len;
+ 
+ 	/*
+ 	 * For platform devices we allocate a separate group for
+@@ -1007,7 +1007,13 @@ static int fsl_pamu_add_device(struct device *dev)
+ 	if (IS_ERR(group))
+ 		return PTR_ERR(group);
+ 
+-	ret = iommu_group_add_device(group, dev);
++	/*
++	 * Check if device has already been added to an iommu group.
++	 * Group could have already been created for a PCI device in
++	 * the iommu_group_get_for_dev path.
++	 */
++	if (!iommu_group_get(dev))
++		ret = iommu_group_add_device(group, dev);
+ 
+ 	iommu_group_put(group);
+ 	return ret;
 -- 
-1.8.5.5
+1.7.9.5
 
