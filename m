@@ -1,207 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaIDObV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:31:21 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:58326 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516AbaIDObR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:31:17 -0400
-Date: Thu, 4 Sep 2014 18:30:55 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
-CC: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] memory cgroup: my thoughts on memsw
-Message-ID: <20140904143055.GA20099@esperanza>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
+	id S1754507AbaIDOa4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:30:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39426 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753242AbaIDO1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:27:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,466,1406617200"; 
+   d="scan'208";a="568330639"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        Benjamin Romer <benjamin.romer@unisys.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v4 05/12] seq_file: provide an analogue of print_hex_dump()
+Date: Thu,  4 Sep 2014 17:26:52 +0300
+Message-Id: <1409840819-18976-6-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The new seq_hex_dump() is a complete analogue of print_hex_dump().
 
-Over its long history the memory cgroup has been developed rapidly, but
-rather in a disordered manner. As a result, today we have a bunch of
-features that are practically unusable and wants redesign (soft limits)
-or even not working (kmem accounting), not talking about the messy user
-interface we have (the _in_bytes suffix is driving me mad :-).
+We have few users of this functionality already. It allows to reduce their
+codebase.
 
-Fortunately, thanks to Tejun's unified cgroup hierarchy, we have a great
-chance to drop or redesign some of the old features and their
-interfaces. We should use this opportunity to examine every aspect of
-the memory cgroup design, because we will probably not be granted such a
-present in future.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ fs/seq_file.c            | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/seq_file.h |  4 ++++
+ 2 files changed, 54 insertions(+)
 
-That's why I'm starting a series of RFC's with *my thoughts* not only on
-kmem accounting, which I've been trying to fix for a while, but also on
-other parts of the memory cgroup. I'll be happy if anybody reads this to
-the end, but please don't kick me too hard if something will look stupid
-to you :-)
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 3857b72..66c721f4 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -12,6 +12,7 @@
+ #include <linux/slab.h>
+ #include <linux/cred.h>
+ #include <linux/mm.h>
++#include <linux/printk.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/page.h>
+@@ -794,6 +795,55 @@ void seq_pad(struct seq_file *m, char c)
+ }
+ EXPORT_SYMBOL(seq_pad);
+ 
++/* Analogue of print_hex_dump() */
++int seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
++		 int rowsize, int groupsize, const void *buf, size_t len,
++		 bool ascii)
++{
++	const u8 *ptr = buf;
++	int i, linelen, remaining = len;
++	int ret;
++
++	if (rowsize != 16 && rowsize != 32)
++		rowsize = 16;
++
++	for (i = 0; i < len; i += rowsize) {
++		linelen = min(remaining, rowsize);
++		remaining -= rowsize;
++
++		/* Prefix string */
++		ret = seq_printf(m, "%s", prefix_str);
++		if (ret < 0)
++			return ret;
++
++		/* Counter if asked */
++		if (prefix_type == DUMP_PREFIX_ADDRESS)
++			ret = seq_printf(m, "%p: ", ptr + i);
++		else if (prefix_type == DUMP_PREFIX_OFFSET)
++			ret = seq_printf(m, "%.8x: ", i);
++		if (ret < 0)
++			return ret;
++
++		/* Hex dump */
++		ret = hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
++					 m->buf + m->count, m->size - m->count,
++					 ascii);
++		if (m->count + ret >= m->size) {
++			seq_set_overflow(m);
++			return -1;
++		}
++		m->count += ret;
++
++		/* EOL */
++		ret = seq_putc(m, '\n');
++		if (ret < 0)
++			return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(seq_hex_dump);
++
+ struct list_head *seq_list_start(struct list_head *head, loff_t pos)
+ {
+ 	struct list_head *lh;
+diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
+index 52e0097..5de290c 100644
+--- a/include/linux/seq_file.h
++++ b/include/linux/seq_file.h
+@@ -107,6 +107,10 @@ int seq_write(struct seq_file *seq, const void *data, size_t len);
+ __printf(2, 3) int seq_printf(struct seq_file *, const char *, ...);
+ __printf(2, 0) int seq_vprintf(struct seq_file *, const char *, va_list args);
+ 
++int seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
++		 int rowsize, int groupsize, const void *buf, size_t len,
++		 bool ascii);
++
+ int seq_path(struct seq_file *, const struct path *, const char *);
+ int seq_dentry(struct seq_file *, struct dentry *, const char *);
+ int seq_path_root(struct seq_file *m, const struct path *path,
+-- 
+2.1.0
 
-
-Today's topic is (surprisingly!) the memsw resource counter and where it
-fails to satisfy user requests.
-
-Let's start from the very beginning. The memory cgroup has basically two
-resource counters (not counting kmem, which is unusable anyway):
-mem_cgroup->res (configured by memory.limit), which counts the total
-amount of user pages charged to the cgroup, and mem_cgroup->memsw
-(memory.memsw.limit), which is basically res + the cgroup's swap usage.
-Obviously, memsw always has both the value and limit less than the value
-and limit of res. That said, we have three options:
-
- - memory.limit=inf, memory.memsw.limit=inf
-   No limits, only accounting.
-
- - memory.limit=L<inf, memory.memsw.limit=inf
-   Not allowed to use more than L bytes of user pages, but use as much
-   swap as you want.
-
- - memory.limit=L<inf, memory.memsw.limit=S<inf, L<=S
-   Not allowed to use more than L bytes of user memory. Swap *plus*
-   memory usage is limited by S.
-
-When it comes to *hard* limits everything looks fine, but hard limits
-are not efficient for partitioning a large system among lots of
-containers, because it's hard to predict the right value for the limit,
-besides many workloads will do better when they are granted more file
-caches. There we need a kind of soft limit that is only used on global
-memory pressure to shrink containers exceeding it.
-
-
-Obviously the soft limit must be less than memory.limit and therefore
-memory.memsw.limit. And here comes a problem. Suppose admin sets a
-relatively high memsw.limit (say half of RAM) and a low soft limit for a
-container hoping it will use it for file caches when there's free
-memory, but when hard times come it will be shrunk back to the soft
-limit quickly. Suppose the container, instead of using the granted
-memory for caches, creates a lot of anonymous data filling up to its
-memsw limit (i.e. half of RAM). Then, when admin starts other
-containers, he might find out that they are effectively using only half
-of RAM. Why can this happen? See below.
-
-For example, if there's no or a little swap. It's pretty common for
-customers not to bother about creating TBs of swap to back TBs of RAM
-they have. One might propose to issue OOM if we can't reclaim anything
-from a container exceeding its soft limit. OK, let it be so, although
-it's still not agreed upon AFAIK.
-
-Another case. There's plenty of swap space out there so that we can swap
-out the guilty container completely. However, it will take us some
-reasonable amount of time especially if the container isn't standing
-still, but keeps touching its data. If other containers are mostly using
-file caches, they will experience heavy pressure for a long time, not
-saying about the slowdown caused by high disk usage. Unfair. One might
-object that we can set a limit on IO operations for the culprit (more
-limits and dependencies among them, I doubt admins will be happy!). This
-will slow it down and guarantee it won't be swapping back in pages that
-are being swapped out due to high memory pressure. However, disks have
-limited speed. That means, it doesn't solve the problem with unfair
-slowdown of other containers. What is worse, if we impose IO limit we
-will slow down swap out by ourselves! Because we shouldn't ignore IO
-limit for swap out, otherwise the system will be prune to DOS attacks
-targeted on disk from inside containers, which is what IO limit (as well
-as any other limit) is to protect against.
-
-Or perhaps, I'm missing something and malicious behaviour isn't
-considered when developing cgroups?!
-
-
-To sum it up, the current mem + memsw configuration scheme doesn't allow
-us to limit swap usage if we want to partition the system dynamically
-using soft limits. Actually, it also looks rather confusing to me. We
-have mem limit and mem+swap limit. I bet that from the first glance, an
-average admin will think it's possible to limit swap usage by setting
-the limits so that the difference between memory.memsw.limit and
-memory.limit equals the maximal swap usage, but (surprise!) it isn't
-really so. It holds if there's no global memory pressure, but otherwise
-swap usage is only limited by memory.memsw.limit! IMHO, it isn't
-something obvious.
-
-
-Finally, my understanding (may be crazy!) how the things should be
-configured. Just like now, there should be mem_cgroup->res accounting
-and limiting total user memory (cache+anon) usage for processes inside
-cgroups. This is where there's nothing to do. However, mem_cgroup->memsw
-should be reworked to account *only* memory that may be swapped out plus
-memory that has been swapped out (i.e. swap usage).
-
-This way, by setting memsw.limit (or how it should be called) less than
-memory soft limit we would solve the problem I described above. The
-container would be then allowed to use only file caches above its
-memsw.limit, which are usually easily shrinkable, and get OOM-kill while
-trying to eat too much swappable memory.
-
-The configuration will also be less confusing then IMO:
-
- - memory.limit - container can't use memory above this
- - memory.memsw.limit - container can't use swappable memory above this
-
->From this it clearly follows maximal swap usage is limited by
-memory.memsw.limit.
-
-One more thought. Anon memory and file caches are different and should
-be handled differently, so mixing them both under the same counter looks
-strange to me. Moreover, they are *already* handled differently
-throughout the kernel - just look at mm/vmscan.c. Here are the
-differences between them I see:
-
- - Anon memory is handled by the user application, while file caches are
-   all on the kernel. That means the application will *definitely* die
-   w/o anon memory. W/o file caches it usually can survive, but the more
-   caches it has the better it feels.
-
- - Anon memory is not that easy to reclaim. Swap out is a really slow
-   process, because data are usually read/written w/o any specific
-   order. Dropping file caches is much easier. Typically we have lots of
-   clean pages there.
-
- - Swap space is limited. And today, it's OK to have TBs of RAM and only
-   several GBs of swap. Customers simply don't want to waste their disk
-   space on that.
-
-IMO, these lead us to the need for limiting swap/swappable memory usage,
-but not swap+mem usage.
-
-
-Now, a bad thing about such a change (if it were ever considered).
-There's no way to convert old settings to new, i.e. if we currently have
-
-  mem <= L,
-  mem + swap <= S,
-  L <= S,
-
-we can set
-
-  mem <= L1,
-  swappable_mem <= S1,
-
-where either 
-
-L1 = L, S1 = S
-
-or
-
-L1 = L, S1 = S - L,
-
-but both configurations won't be exactly the same. In the first case
-memory+swap usage will be limited by L+S, not by S. In the second case,
-although memory+swap<S, the container won't be able to use more than S-L
-anonymous memory. This is the price we would have to pay if we decided
-to go with this change...
-
-
-Questions, comments, complains, threats?
-
-Thanks,
-Vladimir
