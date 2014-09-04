@@ -1,145 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548AbaIDU6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:58:54 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:47032 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219AbaIDU6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:58:52 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Catalin Iacob <iacobcatalin@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [GIT PULL] nohz: Fix warning with perf on full dynticks
-Date: Thu,  4 Sep 2014 22:58:45 +0200
-Message-Id: <1409864325-4008-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	id S1755557AbaIDU7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:59:24 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:59184 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755248AbaIDU6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 16:58:45 -0400
+Date: Thu, 4 Sep 2014 16:58:44 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] aio: block exit_aio() until all context requests are completed
+Message-ID: <20140904205844.GG13422@kvack.org>
+References: <1409737544-9392-1-git-send-email-guz.fnst@cn.fujitsu.com> <20140903144332.GU20066@kvack.org> <5407B697.9090501@cn.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5407B697.9090501@cn.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Thu, Sep 04, 2014 at 08:47:19AM +0800, Gu Zheng wrote:
+> That's good, but I did not find it, have you sent it to the open list?
 
-Please pull the timers/urgent branch that can be found at:
+Sorry, the aio list wasn't cc'd on that one -- it was on one of the other 
+development lists.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/urgent
+> IMO, there's no need to check the return value of kill_ioctx(), because
+> context can be marked as DEAD only by io_destroy(), and io_destroy() is
+> on the block mode. So if we run into the calling of kill_ioctx() in
+> exit_aio, the context is surely valid.
 
-HEAD: 40bea039593dfc7f3f9814dab844f6db43ae580b
+Fair point.  I applied your version.  A pull request has been sent.
 
-Summary:
+		-ben
 
-* A patch merged in this merge window turned the nohz full kick to
-become NMI-unsafe. But perf needs to use this kick from NMIs.
-This patch fixes the issue by restoring the old NMI-safe internals of
-the API.
+> Thanks,
+> Gu
+> 
+> > 
+> > 		-ben
+> > 
+> >> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> >> ---
+> >>  fs/aio.c |    7 ++++++-
+> >>  1 files changed, 6 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/fs/aio.c b/fs/aio.c
+> >> index 97bc62c..3e35b12 100644
+> >> --- a/fs/aio.c
+> >> +++ b/fs/aio.c
+> >> @@ -793,6 +793,8 @@ void exit_aio(struct mm_struct *mm)
+> >>  
+> >>  	for (i = 0; i < table->nr; ++i) {
+> >>  		struct kioctx *ctx = table->table[i];
+> >> +		struct completion requests_done =
+> >> +			COMPLETION_INITIALIZER_ONSTACK(requests_done);
+> >>  
+> >>  		if (!ctx)
+> >>  			continue;
+> >> @@ -804,7 +806,10 @@ void exit_aio(struct mm_struct *mm)
+> >>  		 * that it needs to unmap the area, just set it to 0.
+> >>  		 */
+> >>  		ctx->mmap_size = 0;
+> >> -		kill_ioctx(mm, ctx, NULL);
+> >> +		kill_ioctx(mm, ctx, &requests_done);
+> >> +
+> >> +		/* Wait until all IO for the context are done. */
+> >> +		wait_for_completion(&requests_done);
+> >>  	}
+> >>  
+> >>  	RCU_INIT_POINTER(mm->ioctx_table, NULL);
+> >> -- 
+> >> 1.7.7
+> > 
+> 
 
-Thanks,
-	Frederic
----
-
-Frederic Weisbecker (1):
-      nohz: Restore NMI safe local irq work for local nohz kick
-
-
- include/linux/tick.h     |  7 +------
- kernel/time/tick-sched.c | 14 ++++++++++++++
- 2 files changed, 15 insertions(+), 6 deletions(-)
-
----
-commit 40bea039593dfc7f3f9814dab844f6db43ae580b
-Author: Frederic Weisbecker <fweisbec@gmail.com>
-Date:   Wed Aug 13 18:50:16 2014 +0200
-
-    nohz: Restore NMI safe local irq work for local nohz kick
-    
-    The local nohz kick is currently used by perf which needs it to be
-    NMI-safe. Recent commit though (7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9)
-    changed its implementation to fire the local kick using the remote kick
-    API. It was convenient to make the code more generic but the remote kick
-    isn't NMI-safe.
-    
-    As a result:
-    
-    	WARNING: CPU: 3 PID: 18062 at kernel/irq_work.c:72 irq_work_queue_on+0x11e/0x140()
-    	CPU: 3 PID: 18062 Comm: trinity-subchil Not tainted 3.16.0+ #34
-    	0000000000000009 00000000903774d1 ffff880244e06c00 ffffffff9a7f1e37
-    	0000000000000000 ffff880244e06c38 ffffffff9a0791dd ffff880244fce180
-    	0000000000000003 ffff880244e06d58 ffff880244e06ef8 0000000000000000
-    	Call Trace:
-    	<NMI>  [<ffffffff9a7f1e37>] dump_stack+0x4e/0x7a
-    	[<ffffffff9a0791dd>] warn_slowpath_common+0x7d/0xa0
-    	[<ffffffff9a07930a>] warn_slowpath_null+0x1a/0x20
-    	[<ffffffff9a17ca1e>] irq_work_queue_on+0x11e/0x140
-    	[<ffffffff9a10a2c7>] tick_nohz_full_kick_cpu+0x57/0x90
-    	[<ffffffff9a186cd5>] __perf_event_overflow+0x275/0x350
-    	[<ffffffff9a184f80>] ? perf_event_task_disable+0xa0/0xa0
-    	[<ffffffff9a01a4cf>] ? x86_perf_event_set_period+0xbf/0x150
-    	[<ffffffff9a187934>] perf_event_overflow+0x14/0x20
-    	[<ffffffff9a020386>] intel_pmu_handle_irq+0x206/0x410
-    	[<ffffffff9a0b54d3>] ? arch_vtime_task_switch+0x63/0x130
-    	[<ffffffff9a01937b>] perf_event_nmi_handler+0x2b/0x50
-    	[<ffffffff9a007b72>] nmi_handle+0xd2/0x390
-    	[<ffffffff9a007aa5>] ? nmi_handle+0x5/0x390
-    	[<ffffffff9a0d131b>] ? lock_release+0xab/0x330
-    	[<ffffffff9a008062>] default_do_nmi+0x72/0x1c0
-    	[<ffffffff9a0c925f>] ? cpuacct_account_field+0xcf/0x200
-    	[<ffffffff9a008268>] do_nmi+0xb8/0x100
-    
-    Lets fix this by restoring the use of local irq work for the nohz local
-    kick.
-    
-    Reported-by: Catalin Iacob <iacobcatalin@gmail.com>
-    Reported-and-tested-by: Dave Jones <davej@redhat.com>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Thomas Gleixner <tglx@linutronix.de>
-    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 0590523..9a82c7d 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -183,13 +183,8 @@ static inline bool tick_nohz_full_cpu(int cpu)
- 
- extern void tick_nohz_init(void);
- extern void __tick_nohz_full_check(void);
-+extern void tick_nohz_full_kick(void);
- extern void tick_nohz_full_kick_cpu(int cpu);
--
--static inline void tick_nohz_full_kick(void)
--{
--	tick_nohz_full_kick_cpu(smp_processor_id());
--}
--
- extern void tick_nohz_full_kick_all(void);
- extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 99aa6ee..f654a8a 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -225,6 +225,20 @@ static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
- };
- 
- /*
-+ * Kick this CPU if it's full dynticks in order to force it to
-+ * re-evaluate its dependency on the tick and restart it if necessary.
-+ * This kick, unlike tick_nohz_full_kick_cpu() and tick_nohz_full_kick_all(),
-+ * is NMI safe.
-+ */
-+void tick_nohz_full_kick(void)
-+{
-+	if (!tick_nohz_full_cpu(smp_processor_id()))
-+		return;
-+
-+	irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+}
-+
-+/*
-  * Kick the CPU if it's full dynticks in order to force it to
-  * re-evaluate its dependency on the tick and restart it if necessary.
-  */
+-- 
+"Thought is the essence of where you are now."
