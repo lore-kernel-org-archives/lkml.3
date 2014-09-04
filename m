@@ -1,136 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801AbaIDPCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:02:04 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:47198 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226AbaIDPCA (ORCPT
+	id S1753512AbaIDPBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:01:55 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:22784 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797AbaIDPBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:02:00 -0400
-X-Auth-Info: knbG+xS3LLc+kh/8UzAAslfzfQak8GnYgf9j3hZNWhM=
-From: Marek Vasut <marex@denx.de>
-To: Yuan Yao <yao.yuan@freescale.com>
-Subject: Re: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c driver
-Date: Thu, 4 Sep 2014 16:38:45 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: wsa@the-dreams.de, LW@karo-electronics.de, mark.rutland@arm.com,
-        fugang.duan@freescale.com, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org
-References: <1407923215-3749-1-git-send-email-yao.yuan@freescale.com> <1407923215-3749-2-git-send-email-yao.yuan@freescale.com>
-In-Reply-To: <1407923215-3749-2-git-send-email-yao.yuan@freescale.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409041638.45537.marex@denx.de>
+	Thu, 4 Sep 2014 11:01:51 -0400
+X-AuditID: cbfee68f-f797f6d000001173-96-54087edd8eed
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Jaewon Kim <jaewon02.kim@samsung.com>
+Subject: [PATCH v2 4/4] mfd: max77693: Update DT binding to support haptic
+Date: Fri, 05 Sep 2014 00:01:31 +0900
+Message-id: <1409842891-26549-5-git-send-email-jaewon02.kim@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1409842891-26549-1-git-send-email-jaewon02.kim@samsung.com>
+References: <1409842891-26549-1-git-send-email-jaewon02.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsWyRsSkRPduHUeIwcx7whbXvzxntTi86AWj
+	xY6GI6wW978eZbS4+ekbq8XlXXPYLE53szqwe+ycdZfd4861PWwe804GevRtWcXo8XmTXABr
+	FJdNSmpOZllqkb5dAlfGsvc2BSt5Kj5ce8bawDiHq4uRk0NCwETi7pdTjBC2mMSFe+vZuhi5
+	OIQEljJKHHxwjBWm6Mbv3awQiemMEksftDNBOG1MEtcWdLCDVLEJaEt8X78YrENEoFKiv/sF
+	WAezQA+jxPf21cwgCWEBL4n7Py+AFbEIqEqsOvaJBcTmFfCQ6Jm9Cmg3B9A6BYk5k2xAwpwC
+	nhJdD1aAlQgBlSyY8o0FZKaEwHR2iY4tE9kg5ghIfJt8iAWiV1Zi0wFmiKslJQ6uuMEygVF4
+	ASPDKkbR1ILkguKk9CJjveLE3OLSvHS95PzcTYzAED/971n/Dsa7B6wPMQpwMCrx8Ba8YA8R
+	Yk0sK67MPcRoCrRhIrOUaHI+MJLySuINjc2MLExNTI2NzC3NlMR5F0r9DBYSSE8sSc1OTS1I
+	LYovKs1JLT7EyMTBKdXAqPz13/3Whib2yQ/ddtZy3D1mLen9ScND4fChItMdN+do3hKJv58/
+	UXKRgFDrp4NiMWHCrzcc239s5Uf3M3r/WCbuP7e2w6CmtWrP2dzEXW85rt2/9cntt+SilqM+
+	GZsLn3OJ9PdGlJ16+3zlpdK50xiZEqcfXs67z39S6Hr9pKv1b1Ze6Dnw7YISS3FGoqEWc1Fx
+	IgCU2vKjbAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t9jQd27dRwhBlc381hc//Kc1eLwoheM
+	FjsajrBa3P96lNHi5qdvrBaXd81hszjdzerA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx+dNcgGs
+	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
+	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM5a9tylYyVPx4doz1gbGOVxd
+	jJwcEgImEjd+72aFsMUkLtxbz9bFyMUhJDCdUWLpg3YmCKeNSeLagg52kCo2AW2J7+sXg3WI
+	CFRK9He/YAUpYhboYZT43r6aGSQhLOAlcf/nBbAiFgFViVXHPrGA2LwCHhI9s1cBreAAWqcg
+	MWeSDUiYU8BTouvBCrASIaCSBVO+sUxg5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cT
+	IziCnkntYFzZYHGIUYCDUYmHt+AFe4gQa2JZcWXuIUYJDmYlEV73PI4QId6UxMqq1KL8+KLS
+	nNTiQ4ymQEdNZJYSTc4HRndeSbyhsYmZkaWRuaGFkbG5kjjvgVbrQCGB9MSS1OzU1ILUIpg+
+	Jg5OqQZGHdkFPHlff5m+57nfxfum19/vvrWv5x//rTc0W7ZUTM3bcmelBMfzvSyP5PXPfu+/
+	LMs8yc0iWI1DxC5+ZU3/u2gNk2pmgSvmV+KP6Gr5pKvphF4y/m3eVrZgyVemb2s5uUv7HXgV
+	jGwPP53EYTRxx6eWYiGJ22pVsy55Wt7/fbJG4KyZkbsSS3FGoqEWc1FxIgD349YvtgIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 13, 2014 at 11:46:54 AM, Yuan Yao wrote:
-> Add dma support for i2c. This function depend on DMA driver.
-> You can turn on it by write both the dmas and dma-name properties in dts
-> node. DMA is optional, even DMA request unsuccessfully, i2c can also work
-> well.
-> 
-> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+This patch add haptic DT binding documentation and example
+to support haptic driver in max77693 Multifunction device.
 
-[...]
+Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/max77693.txt |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-> +/* Enable DMA if transfer byte size is bigger than this threshold.
-> + * As the hardware request, it must bigger than 4.
+diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
+index 11921cc..d178b9e 100644
+--- a/Documentation/devicetree/bindings/mfd/max77693.txt
++++ b/Documentation/devicetree/bindings/mfd/max77693.txt
+@@ -27,6 +27,17 @@ Optional properties:
+ 
+ 	[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
+ 
++- haptic : The haptic of max77693 have to be instantiated under subnod
++  named "haptic" using the following haptic format in example.
++  Haptic sensation from motor can be changed by changing a period cycle in pwms.
++
++ Required properties:
++	- compatible : Must be "maxim,max77693-hpatic"
++	- haptic-supply : power supply for haptic motor
++		[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
++	- pwms : phandle to the physical PWM device,
++		[*] refer Documentation/devicetree/bindings/pwm/pwm.txt
++
+ Example:
+ 	max77693@66 {
+ 		compatible = "maxim,max77693";
+@@ -52,4 +63,11 @@ Example:
+ 					regulator-boot-on;
+ 			};
+ 		};
++
++		haptic {
++			compatible = "maxim,max77693-haptic";
++			haptic-supply = <&haptic_supply>;
++			pwms = <&pwm 0 40000 0>;
++			pwm-names = "haptic";
++		};
+ 	};
+-- 
+1.7.9.5
 
-The comment is unclear, just by reading it, I have no clue what are the units 
-for this value. I can guess those would be bytes, but it would be a good idea
-to be explicit.
-
-Also, wasn't kernel comment style starting with leading /* , with the text 
-starting only on the next line ?
-
-> + */
-> +#define IMX_I2C_DMA_THRESHOLD	16
-> +#define IMX_I2C_DMA_TIMEOUT	1000
-> +
-
-[...]
-
-> +static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
-> +					struct i2c_msg *msgs)
-> +{
-> +	int result;
-> +	unsigned int temp = 0;
-> +	unsigned long orig_jiffies = jiffies;
-> +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> +	struct device *dev = &i2c_imx->adapter.dev;
-> +
-> +	dev_dbg(dev, "<%s> write slave address: addr=0x%x\n",
-> +		__func__, msgs->addr << 1);
-> +
-> +	reinit_completion(&i2c_imx->dma->cmd_complete);
-> +	dma->chan_using = dma->chan_tx;
-> +	dma->dma_transfer_dir = DMA_MEM_TO_DEV;
-> +	dma->dma_data_dir = DMA_TO_DEVICE;
-> +	dma->dma_len = msgs->len - 1;
-> +	result = i2c_imx_dma_xfer(i2c_imx, msgs);
-> +	if (result)
-> +		return result;
-> +
-> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +	temp |= I2CR_DMAEN;
-> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
-> +	/*
-> +	 * Write slave address.
-> +	 * The first byte muse be transmitted by the CPU.
-> +	 */
-> +	imx_i2c_write_reg(msgs->addr << 1, i2c_imx, IMX_I2C_I2DR);
-> +	result = wait_for_completion_interruptible_timeout(
-> +				&i2c_imx->dma->cmd_complete,
-> +				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
-> +	if (result <= 0) {
-> +		dmaengine_terminate_all(dma->chan_using);
-> +		if (result)
-> +			return result;
-> +		else
-> +			return -ETIMEDOUT;
-
-Shouldn't you force-disable the DMA here somehow (like unsetting I2CR_DMAEN 
-bit), if it failed or timed out?
-
-> +	}
-> +
-> +	/* Waiting for Transfer complete. */
-> +	while (1) {
-> +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
-> +		if (temp & I2SR_ICF)
-> +			break;
-> +		if (time_after(jiffies, orig_jiffies +
-> +				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT))) {
-> +			dev_dbg(&i2c_imx->adapter.dev, "<%s> Timeout\n",
-> +				__func__);
-> +			return -ETIMEDOUT;
-> +		}
-> +		schedule();
-> +	}
-> +
-> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> +	temp &= ~I2CR_DMAEN;
-> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> +
-> +	/* The last data byte must be transferred by the CPU. */
-> +	imx_i2c_write_reg(msgs->buf[msgs->len-1],
-> +				i2c_imx, IMX_I2C_I2DR);
-> +	result = i2c_imx_trx_complete(i2c_imx);
-> +	if (result)
-> +		return result;
-> +
-> +	result = i2c_imx_acked(i2c_imx);
-> +	if (result)
-> +		return result;
-> +
-> +	return 0;
-> +}
-[...]
-
-Thanks!
