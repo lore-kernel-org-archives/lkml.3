@@ -1,31 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490AbaIDUf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:35:28 -0400
-Received: from bowie.eng.utah.edu ([155.98.110.113]:22415 "EHLO
-	bowie.eng.utah.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336AbaIDUf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:35:27 -0400
-Message-ID: <5408CD0E.9080408@eng.utah.edu>
-Date: Thu, 04 Sep 2014 14:35:26 -0600
-From: Scotty Bauer <sbauer@eng.utah.edu>
+	id S1755559AbaIDUke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:40:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755311AbaIDUkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 16:40:32 -0400
+Message-ID: <5408CE32.8010204@redhat.com>
+Date: Thu, 04 Sep 2014 22:40:18 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, clemens@ladisch.de
-Subject: Re: [PATCH] kern/sys: Compat sysinfo syscall fix undefined behavior
-References: <5408B39D.4030400@eng.utah.edu> <20140904131408.5b50c44315263c497ac7d818@linux-foundation.org>
-In-Reply-To: <20140904131408.5b50c44315263c497ac7d818@linux-foundation.org>
+To: Chris J Arges <chris.j.arges@canonical.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
+References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <54088CB5.6050406@canonical.com> <54089DDE.6010004@redhat.com> <5408AC76.6030404@canonical.com> <5408BA6D.1070602@redhat.com> <5408C0B4.5040207@redhat.com> <5408CD83.50904@canonical.com>
+In-Reply-To: <5408CD83.50904@canonical.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 04/09/2014 22:37, Chris J Arges ha scritto:
+>> > -	boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
+>> > +	boot_ns = ktime_to_ns(ktime_sub(tk->offs_real, tk->offs_boot));
+>> >  
+>> >  	write_seqcount_begin(&vdata->seq);
+>> > 
+>> > If it doesn't work, then commit 02cba1598a2a3b689e79ad6dad2532521f638271
+>> > is also broken.
+>> > 
+>> > Paolo
+>> > 
+> Paolo,
+> That modification do your additional patch didn't work. However I was
+> able to modify the code as follows to get this test case working. The
+> only additional modification was:
+> +	vdata->nsec_base		= tk->xtime_sec * (u64)NSEC_PER_SEC
+> +					- boot_ns;
 
-On 09/04/2014 02:14 PM, Andrew Morton wrote:
-> If I'm reading it correctly, this is all dead code because si_meminfo() unconditionally sets sysinfo.mem_unit to PAGE_SIZE. It could all do with a bit of a cleanup, I suspect. 
-I'll do a little more research on this and do further clean up, if required.
+Right, it should have been
 
--Scotty
+	boot_ns = ktime_to_ns(ktime_sub(tk->offs_boot, tk->offs_real));
+
+I'll post the patch shortly.
+
+Thanks!
+
+Paolo
