@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631AbaIDGnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 02:43:16 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:31295 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaIDGnP (ORCPT
+	id S932716AbaIDGnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 02:43:49 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:29899 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289AbaIDGnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 02:43:15 -0400
-Message-ID: <540809FB.8020901@huawei.com>
-Date: Thu, 4 Sep 2014 14:43:07 +0800
+	Thu, 4 Sep 2014 02:43:47 -0400
+Message-ID: <54080A1A.7070207@huawei.com>
+Date: Thu, 4 Sep 2014 14:43:38 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2 1/2] cgroup: delay the clearing of cgrp->kn->priv
+Subject: [PATCH v2 2/2] cgroup: check cgroup liveliness before unbreaking
+ kernfs
+References: <540809FB.8020901@huawei.com>
+In-Reply-To: <540809FB.8020901@huawei.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
 X-Originating-IP: [10.177.18.230]
 X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020205.54080A21.00C8,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 35dd51037958a2b54fe1bd3ddac17595
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Run these two scripts concurrently:
+When cgroup_kn_lock_live() is called through some kernfs operation and
+another thread is calling cgroup_rmdir(), we'll trigger the warning in
+cgroup_get().
 
-    for ((; ;))
-    {
-        mkdir /cgroup/sub
-        rmdir /cgroup/sub
-    }
-
-    for ((; ;))
-    {
-        echo $$ > /cgroup/sub/cgroup.procs
-        echo $$ > /cgroup/cgroup.procs
-    }
-
-A kernel bug will be triggered:
-
-BUG: unable to handle kernel NULL pointer dereference at 00000038
-IP: [<c10bbd69>] cgroup_put+0x9/0x80
+------------[ cut here ]------------
+WARNING: CPU: 1 PID: 1228 at kernel/cgroup.c:1034 cgroup_get+0x89/0xa0()
 ...
 Call Trace:
- [<c10bbe19>] cgroup_kn_unlock+0x39/0x50
- [<c10bbe91>] cgroup_kn_lock_live+0x61/0x70
+ [<c16ee73d>] dump_stack+0x41/0x52
+ [<c10468ef>] warn_slowpath_common+0x7f/0xa0
+ [<c104692d>] warn_slowpath_null+0x1d/0x20
+ [<c10bb999>] cgroup_get+0x89/0xa0
+ [<c10bbe58>] cgroup_kn_lock_live+0x28/0x70
  [<c10be3c1>] __cgroup_procs_write.isra.26+0x51/0x230
  [<c10be5b2>] cgroup_tasks_write+0x12/0x20
  [<c10bb7b0>] cgroup_file_write+0x40/0x130
@@ -53,72 +53,46 @@ Call Trace:
  [<c1148e58>] vfs_write+0x98/0x1e0
  [<c114934d>] SyS_write+0x4d/0xa0
  [<c16f656b>] sysenter_do_call+0x12/0x12
+---[ end trace 6f2e0c38c2108a74 ]---
 
-We clear cgrp->kn->priv in the end of cgroup_rmdir(), but another
-concurrent thread can access kn->priv after the clearing.
-
-We should move the clearing to css_release_work_fn(). At that time
-no one is holding reference to the cgroup and no one can gain a new
-reference to access it.
+Fix this by calling css_tryget() instead of cgroup_get().
 
 v2:
-- remove RCU_INIT_POINTER() into the else block. (Tejun)
-- remove the cgroup_parent() check. (Tejun)
-- update the comment in css_tryget_online_from_dir().
+- move cgroup_tryget() right below cgroup_get() definition. (Tejun)
 
 Cc: <stable@vger.kernel.org> # 3.15+
 Reported-by: Toralf Förster <toralf.foerster@gmx.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/cgroup.c | 21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+ kernel/cgroup.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1c56924..205f793 100644
+index 709a6a0..51dd46e 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4181,6 +4181,15 @@ static void css_release_work_fn(struct work_struct *work)
- 		/* cgroup release path */
- 		cgroup_idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
- 		cgrp->id = -1;
-+
-+		/*
-+		 * There are two control paths which try to determine
-+		 * cgroup from dentry without going through kernfs -
-+		 * cgroupstats_build() and css_tryget_online_from_dir().
-+		 * Those are supported by RCU protecting clearing of
-+		 * cgrp->kn->priv backpointer.
-+		 */
-+		RCU_INIT_POINTER(*(void __rcu __force **)&cgrp->kn->priv, NULL);
- 	}
- 
- 	mutex_unlock(&cgroup_mutex);
-@@ -4601,16 +4610,6 @@ static int cgroup_rmdir(struct kernfs_node *kn)
- 
- 	cgroup_kn_unlock(kn);
- 
--	/*
--	 * There are two control paths which try to determine cgroup from
--	 * dentry without going through kernfs - cgroupstats_build() and
--	 * css_tryget_online_from_dir().  Those are supported by RCU
--	 * protecting clearing of cgrp->kn->priv backpointer, which should
--	 * happen after all files under it have been removed.
--	 */
--	if (!ret)
--		RCU_INIT_POINTER(*(void __rcu __force **)&kn->priv, NULL);
--
- 	cgroup_put(cgrp);
- 	return ret;
+@@ -1031,6 +1031,11 @@ static void cgroup_get(struct cgroup *cgrp)
+ 	css_get(&cgrp->self);
  }
-@@ -5175,7 +5174,7 @@ struct cgroup_subsys_state *css_tryget_online_from_dir(struct dentry *dentry,
- 	/*
- 	 * This path doesn't originate from kernfs and @kn could already
- 	 * have been or be removed at any point.  @kn->priv is RCU
--	 * protected for this access.  See cgroup_rmdir() for details.
-+	 * protected for this access.  See css_release_work_fn() for details.
+ 
++static bool cgroup_tryget(struct cgroup *cgrp)
++{
++	return css_tryget(&cgrp->self);
++}
++
+ static void cgroup_put(struct cgroup *cgrp)
+ {
+ 	css_put(&cgrp->self);
+@@ -1091,7 +1096,8 @@ static struct cgroup *cgroup_kn_lock_live(struct kernfs_node *kn)
+ 	 * protection against removal.  Ensure @cgrp stays accessible and
+ 	 * break the active_ref protection.
  	 */
- 	cgrp = rcu_dereference(kn->priv);
- 	if (cgrp)
+-	cgroup_get(cgrp);
++	if (!cgroup_tryget(cgrp))
++		return NULL;
+ 	kernfs_break_active_protection(kn);
+ 
+ 	mutex_lock(&cgroup_mutex);
 -- 
 1.8.0.2
 
