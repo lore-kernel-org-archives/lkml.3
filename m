@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaIDJes (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:34:48 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:46747 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787AbaIDJeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:34:46 -0400
-Date: Thu, 4 Sep 2014 10:34:42 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1409041025200.7902@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752660AbaIDJgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:36:47 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:11660
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752334AbaIDJgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 05:36:45 -0400
+From: Fancy Fang <chen.fang@freescale.com>
+To: <shawn.guo@freescale.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: clk-imx6sl: correct the pxp and epdc axi clock selections
+Date: Thu, 4 Sep 2014 16:33:12 +0800
+Message-ID: <1409819592-31462-1-git-send-email-chen.fang@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(89996001)(87286001)(102836001)(48376002)(33646002)(81342001)(50466002)(85306004)(68736004)(76482001)(79102001)(83072002)(87936001)(85852003)(77982001)(104016003)(50226001)(47776003)(80022001)(92726001)(26826002)(2371004)(46102001)(81542001)(4396001)(21056001)(20776003)(99396002)(104166001)(92566001)(88136002)(84676001)(36756003)(64706001)(110136001)(81156004)(50986999)(97736001)(77156001)(95666004)(106466001)(86362001)(93916002)(62966002)(107046002)(69596002)(44976005)(2351001)(74502001)(74662001)(19580395003)(19580405001)(83322001)(105606002)(31966008)(90102001)(229853001)(6806004);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB352;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:;
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1633449997-1409823282=:7902"
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0324C2C0E2
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=chen.fang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+The parent clocks of IMX6SL_CLK_PXP_AXI_SEL and IMX6SL_CLK_EPDC_AXI_SEL
+clocks are not the same. So split the epdc_pxp_sels into two different
+clock selections 'pxp_axi_sels' and 'epdc_axi_sels'.
 
---29444707-1633449997-1409823282=:7902
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Fancy Fang <chen.fang@freescale.com>
+Signed-off-by: Robby Cai <R63905@freescale.com>
+Acked-by: Shawn Guo <shawn.guo@freescale.com>
+---
+ arch/arm/mach-imx/clk-imx6sl.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/arch/arm/mach-imx/clk-imx6sl.c b/arch/arm/mach-imx/clk-imx6sl.c
+index 43261ea..d730dfa 100644
+--- a/arch/arm/mach-imx/clk-imx6sl.c
++++ b/arch/arm/mach-imx/clk-imx6sl.c
+@@ -47,7 +47,8 @@ static const char *csi_lcdif_sels[]	= { "mmdc", "pll2_pfd2", "pll3_120m", "pll3_
+ static const char *usdhc_sels[]		= { "pll2_pfd2", "pll2_pfd0", };
+ static const char *ssi_sels[]		= { "pll3_pfd2", "pll3_pfd3", "pll4_audio_div", "dummy", };
+ static const char *perclk_sels[]	= { "ipg", "osc", };
+-static const char *epdc_pxp_sels[]	= { "mmdc", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll2_pfd2", "pll3_pfd1", };
++static const char *pxp_axi_sels[]	= { "pll2_bus", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll2_pfd2", "pll3_pfd3", };
++static const char *epdc_axi_sels[]	= { "pll2_bus", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll2_pfd2", "pll3_pfd2", };
+ static const char *gpu2d_ovg_sels[]	= { "pll3_pfd1", "pll3_usb_otg", "pll2_bus", "pll2_pfd2", };
+ static const char *gpu2d_sels[]		= { "pll2_pfd2", "pll3_usb_otg", "pll3_pfd1", "pll2_bus", };
+ static const char *lcdif_pix_sels[]	= { "pll2_bus", "pll3_usb_otg", "pll5_video_div", "pll2_pfd0", "pll3_pfd0", "pll3_pfd1", };
+@@ -251,8 +252,8 @@ static void __init imx6sl_clocks_init(struct device_node *ccm_node)
+ 	clks[IMX6SL_CLK_SSI2_SEL]         = imx_clk_fixup_mux("ssi2_sel",   base + 0x1c, 12, 2, ssi_sels,          ARRAY_SIZE(ssi_sels),    imx_cscmr1_fixup);
+ 	clks[IMX6SL_CLK_SSI3_SEL]         = imx_clk_fixup_mux("ssi3_sel",   base + 0x1c, 14, 2, ssi_sels,          ARRAY_SIZE(ssi_sels),    imx_cscmr1_fixup);
+ 	clks[IMX6SL_CLK_PERCLK_SEL]       = imx_clk_fixup_mux("perclk_sel", base + 0x1c, 6,  1, perclk_sels,       ARRAY_SIZE(perclk_sels), imx_cscmr1_fixup);
+-	clks[IMX6SL_CLK_PXP_AXI_SEL]      = imx_clk_mux("pxp_axi_sel",      base + 0x34, 6,  3, epdc_pxp_sels,     ARRAY_SIZE(epdc_pxp_sels));
+-	clks[IMX6SL_CLK_EPDC_AXI_SEL]     = imx_clk_mux("epdc_axi_sel",     base + 0x34, 15, 3, epdc_pxp_sels,     ARRAY_SIZE(epdc_pxp_sels));
++	clks[IMX6SL_CLK_PXP_AXI_SEL]      = imx_clk_mux("pxp_axi_sel",      base + 0x34, 6,  3, pxp_axi_sels,      ARRAY_SIZE(pxp_axi_sels));
++	clks[IMX6SL_CLK_EPDC_AXI_SEL]     = imx_clk_mux("epdc_axi_sel",     base + 0x34, 15, 3, epdc_axi_sels,     ARRAY_SIZE(epdc_axi_sels));
+ 	clks[IMX6SL_CLK_GPU2D_OVG_SEL]    = imx_clk_mux("gpu2d_ovg_sel",    base + 0x18, 4,  2, gpu2d_ovg_sels,    ARRAY_SIZE(gpu2d_ovg_sels));
+ 	clks[IMX6SL_CLK_GPU2D_SEL]        = imx_clk_mux("gpu2d_sel",        base + 0x18, 8,  2, gpu2d_sels,        ARRAY_SIZE(gpu2d_sels));
+ 	clks[IMX6SL_CLK_LCDIF_PIX_SEL]    = imx_clk_mux("lcdif_pix_sel",    base + 0x38, 6,  3, lcdif_pix_sels,    ARRAY_SIZE(lcdif_pix_sels));
+-- 
+1.9.1
 
-Hi Linus,
-
-just i915 and vmwgfx fixes,
-
-i915 contains a bunch of fixes for recent regressions in outputs,
-vmwgfx fixes a possible loop for ever and a bad return code.
-
-Dave.
-
-The following changes since commit 59753a805499f1ffbca4ac0a24b3dff67bf00001:
-
-  Merge tag 'backlight-fixes-3.17' of git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight (2014-08-28 10:47:10 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 3aacfda0ecd9040521fbfb4a2c53cd6bf77ae4ee:
-
-  Merge tag 'drm-intel-fixes-2014-09-03' of git://anongit.freedesktop.org/drm-intel into drm-fixes (2014-09-04 11:20:00 +1000)
-
-----------------------------------------------------------------
-
-Dave Airlie (4):
-      Merge tag 'drm-intel-fixes-2014-08-28' of git://anongit.freedesktop.org/drm-intel into drm-fixes
-      drm/i915: handle G45/GM45 pulse detection connected state.
-      Merge branch 'vmwgfx-fixes-3.17' of git://people.freedesktop.org/~thomash/linux into drm-fixes
-      Merge tag 'drm-intel-fixes-2014-09-03' of git://anongit.freedesktop.org/drm-intel into drm-fixes
-
-Mathias Krause (1):
-      drm/i915: Remove bogus __init annotation from DMI callbacks
-
-Paulo Zanoni (1):
-      drm/i915: fix plane/cursor handling when runtime suspended
-
-Scot Doyle (2):
-      drm/i915: Ignore VBT backlight presence check on Acer C720 (4005U)
-      drm/i915: don't warn if backlight unexpectedly enabled
-
-Thomas Hellstrom (2):
-      drm/vmwgfx: Fix an incorrect OOM return value
-      drm/vmwgfx: Fix a potential infinite spin waiting for fifo idle
-
-Ville Syrjälä (2):
-      drm/i915: Move intel_ddi_set_vc_payload_alloc(false) to haswell_crtc_disable()
-      drm/i915: Fix lock dropping in intel_tv_detect()
-
- drivers/gpu/drm/i915/intel_bios.c       |  2 +-
- drivers/gpu/drm/i915/intel_crt.c        |  2 +-
- drivers/gpu/drm/i915/intel_display.c    | 34 +++++++++++++++++---
- drivers/gpu/drm/i915/intel_dp.c         | 55 ++++++++++++++++++++++-----------
- drivers/gpu/drm/i915/intel_lvds.c       |  2 +-
- drivers/gpu/drm/i915/intel_panel.c      |  8 ++---
- drivers/gpu/drm/i915/intel_tv.c         | 10 ++++--
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c | 11 +++----
- drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c    |  3 +-
- 9 files changed, 88 insertions(+), 39 deletions(-)
---29444707-1633449997-1409823282=:7902--
