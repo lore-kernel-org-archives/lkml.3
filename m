@@ -1,68 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613AbaIDAxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 20:53:20 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:34918 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150AbaIDAxT convert rfc822-to-8bit (ORCPT
+	id S932797AbaIDAzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 20:55:36 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:61066 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150AbaIDAzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 20:53:19 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        "Tomeu Vizoso" <tomeu.vizoso@collabora.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <5407A6B9.1080606@codeaurora.org>
-Cc: "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Peter De Schrijver" <pdeschrijver@nvidia.com>,
-        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
-        "Thierry Reding" <thierry.reding@gmail.com>,
-        "Javier Martinez Canillas" <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org
-References: <1409758148-20104-1-git-send-email-tomeu.vizoso@collabora.com>
- <1409758434-20810-1-git-send-email-tomeu.vizoso@collabora.com>
- <1409758434-20810-3-git-send-email-tomeu.vizoso@collabora.com>
- <5407A6B9.1080606@codeaurora.org>
-Message-ID: <20140904005305.11368.16931@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v9 5/6] clk: Add floor and ceiling constraints to clock rates
-Date: Wed, 03 Sep 2014 17:53:05 -0700
+	Wed, 3 Sep 2014 20:55:35 -0400
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
+        Zach Kuznia <zork@chromium.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: [PATCH v4 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
+Date: Wed,  3 Sep 2014 17:47:48 -0700
+Message-Id: <1409791668-18715-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <CACHYQ-r-+czyEBySdjNWr-3XmY1C2ErDJV0dnL=GDJOYPi1asw@mail.gmail.com>
+References: <CACHYQ-r-+czyEBySdjNWr-3XmY1C2ErDJV0dnL=GDJOYPi1asw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Boyd (2014-09-03 16:39:37)
-> On 09/03/14 08:33, Tomeu Vizoso wrote:
-> > +int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
-> > +{
-> > +     struct clk_core *clk = clk_to_clk_core(clk_user);
-> > +
-> > +     WARN(rate > 0 && rate < clk_user->floor_constraint,
-> > +          "clk %s dev %s con %s: new ceiling %lu lower than existing floor %lu\n",
-> > +          __clk_get_name(clk), clk_user->dev_id, clk_user->con_id, rate,
-> > +          clk_user->floor_constraint);
-> > +
-> > +     clk_user->ceiling_constraint = rate;
-> > +     return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-> > +}
-> > +EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
-> 
-> Maybe I'm late to this patch series given that Mike applied it, but I
-> wonder why we wouldn't just have one API that takes a min and a max,
-> i.e. clk_set_rate_range(clk, min, max)? Then clk_set_rate() is a small
-> wrapper on top that just sets min and max to the same value.
+Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
+CT_PANTILT_RELATIVE_CONTROL terminal control request.
 
-We certainly can have that. But being able to easily adjust a floor or
-ceiling value seems like a good thing to me, and that is what these
-functions do.
+Tested by plugging a Logitech ConferenceCam C3000e USB camera
+and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
+Verified that it can pan and tilt at the same time in both directions.
 
-If we decide to have a clk_set_rate_range (where we perhaps pass zero in
-for a value that we do not wish to constrain) then I imagine that
-clk_set_ceiling_rate and clk_set_floor_rate will simply become a wrapper
-for that function. No harm having it both ways. If one way of doing
-things falls out of favor we can always cull it and update all the
-users.
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+---
+Changes from v1/v2:
+- rebased
+Changes from v3:
+- removed gerrit-id
 
-Regards,
-Mike
+ drivers/media/usb/uvc/uvc_ctrl.c | 58 +++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 55 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
+index 0eb82106..d703cb0 100644
+--- a/drivers/media/usb/uvc/uvc_ctrl.c
++++ b/drivers/media/usb/uvc/uvc_ctrl.c
+@@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
+ 		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
+ 		.index		= 12,
+ 		.size		= 4,
+-		.flags		= UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
+-				| UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
+-				| UVC_CTRL_FLAG_GET_DEF
++		.flags		= UVC_CTRL_FLAG_SET_CUR
++				| UVC_CTRL_FLAG_GET_RANGE
+ 				| UVC_CTRL_FLAG_AUTO_UPDATE,
+ 	},
+ 	{
+@@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct uvc_control_mapping *mapping,
+ 	data[2] = min((int)abs(value), 0xff);
+ }
+ 
++static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
++	__u8 query, const __u8 *data)
++{
++	int first = mapping->offset / 8;
++	__s8 rel = (__s8)data[first];
++
++	switch (query) {
++	case UVC_GET_CUR:
++		return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
++						 : -data[first+1]);
++	case UVC_GET_MIN:
++		return -data[first+1];
++	case UVC_GET_MAX:
++	case UVC_GET_RES:
++	case UVC_GET_DEF:
++	default:
++		return data[first+1];
++	}
++}
++
++static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
++	__s32 value, __u8 *data)
++{
++	int first = mapping->offset / 8;
++
++	data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
++	data[first+1] = min_t(int, abs(value), 0xff);
++}
++
+ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+ 	{
+ 		.id		= V4L2_CID_BRIGHTNESS,
+@@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+ 		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
+ 	},
+ 	{
++		.id		= V4L2_CID_PAN_SPEED,
++		.name		= "Pan (Speed)",
++		.entity		= UVC_GUID_UVC_CAMERA,
++		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
++		.size		= 16,
++		.offset		= 0,
++		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
++		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
++		.get		= uvc_ctrl_get_rel_speed,
++		.set		= uvc_ctrl_set_rel_speed,
++	},
++	{
++		.id		= V4L2_CID_TILT_SPEED,
++		.name		= "Tilt (Speed)",
++		.entity		= UVC_GUID_UVC_CAMERA,
++		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
++		.size		= 16,
++		.offset		= 16,
++		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
++		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
++		.get		= uvc_ctrl_get_rel_speed,
++		.set		= uvc_ctrl_set_rel_speed,
++	},
++	{
+ 		.id		= V4L2_CID_PRIVACY,
+ 		.name		= "Privacy",
+ 		.entity		= UVC_GUID_UVC_CAMERA,
+-- 
+2.1.0.rc2.206.gedb03e5
+
