@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaIDKBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:01:15 -0400
-Received: from [200.170.94.4] ([200.170.94.4]:50295 "EHLO
-	wu04-tvt-spo.fly.com.br" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751520AbaIDKBO (ORCPT
+	id S1752619AbaIDKCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:02:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:50666 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304AbaIDKB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:01:14 -0400
-X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 06:01:13 EDT
-Message-Id: <201409040930.s849Ub8u083784@wu04-tvt-spo.fly.com.br>
-Date: Thu, 04 Sep 2014 07:23:11 -0300
-Subject: Urgent and Confidencial
-To: linux-kernel@vger.kernel.org
-From: Attorney Peter Kono <drkpy1111@gmail.com>
-Reply-To: drkpy1958@barid.com
+	Thu, 4 Sep 2014 06:01:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Andrew Pinski <apinski@cavium.com>, linux-kernel@vger.kernel.org,
+        pinskia@gmail.com
+Subject: Re: [PATCH 24/24] Add documentation about ARM64 ILP32 ABI
+Date: Thu, 04 Sep 2014 12:01:52 +0200
+Message-ID: <4031586.MjMM3BtNgn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1409779158-30963-25-git-send-email-apinski@cavium.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com> <1409779158-30963-25-git-send-email-apinski@cavium.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:gfbSkqXEqO09ZOZ5IJU7S6e09L2/Cen/pT49KtaJVO3
+ abMsPih+Kr2tgSST+TxnrEerhXzEmSm/MTsEYM6z8Wrrfk3Scb
+ mqVQyGpLeRESv1bOK5Kaf+ZnZY/PEPt+R/OloWbQBIZdfA24C7
+ pQ6IfhyisVm+oqlQGsgJLTZBz2YfCjE9/CLn01CTOT+u+/ogdt
+ nLHCbQCrAGepCJQQxHXTMxDWfSgHcuVIn5c1ZM809m+gzNPrR1
+ 2D//ibo7Zvrqh1n3RxoHqtgzvIDssMipkkVUonWFdowq1UXXL9
+ AhetWp40n27AOgt3VgCDMNhwL+K7Bzk7wJrEu82G8K65ofRm3H
+ W3yFPmLZo5zGXIX+qeno=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend
-This is Attorney Peter Kono again; I really do not mean to waste your time. Considering the fact that this is a £16,000,000.00 British Pounds.deal shear rate 50/50 % and it's bank to bank wire trasaction within three workind days.
- 
-I carefully contact you due to many Internet frauds nowadays.but i put my faith in God because all things in life is by risk but don't let me down now or after, This is Mr.Plaviashakunthala Lobo and his family was involved in plan crash 22nd of May 2010 in List of passengers on Air India Express flight that crash  32.Plaviashakunthala Lobo 33. Venishanikola Lobo
-34. Vishalfloid Lobo (child) and all family died without any inheritance or next of kin so i want you to work together with me been an attorney so this is Mr.Plaviashakunthala Lobo account details.
- 
-Bank name:       Bank of Africa
-Bank Address:    Cotonou Benin Republic
-Account name:    Plaviashakunthala Lobo
-Account Number:  1103-8022-1351
-Account Balance: 16,000,000.00 British Pounds (GBP)
-Date of deposit:  19th December, 2009
-Account officer:  Anita Morgan
- 
-I was with Mr.Plaviashakunthala Lobo as a legal witness when this money was deposited as fixed deposit in 2009. Since his demise, I have visited this bank three times. Contact the bank and ask for the confirmation of his involvement in the plane crash.check the website:  http://www.thehindu.com/news/national/list-of-passengers-on-air-india-express-flight/article435569.ece
- 
-Thanks
-Attorney Peter Kono 
-E-mail:   drkpy1958@barid.com
+On Wednesday 03 September 2014 14:19:18 Andrew Pinski wrote:
+> +This document describes the ILP32 syscall ABI and where it differs
+> +from the generic linux syscall interface.
+> +ILP32 sets __kernel_long_t and __kernel_ulong_t both to 64bit
+> +(long long).  This effects the following types:
+> +* time_t: unsigned long long
+> +* clock_t: unsigned long long
+> +* fsword_t: long long
+> +* suseconds_t: long long
+> +* swblk_t: long long
+> +* fd_mask_t: long long
 
+What about data structures derived from these? I'm worried that
+some of them (in particular time_t) leak into ioctl interfaces
+when they are getting included in some other data structure that
+is used as an ioctl argument.
 
+Do you have a list of which data structures change based on the
+scalar type changes?
+
+	Arnd
