@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaIDMjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:39:21 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:41560 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaIDMjM (ORCPT
+	id S1753752AbaIDMjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:39:43 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:33728 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaIDMjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 08:39:12 -0400
+	Thu, 4 Sep 2014 08:39:23 -0400
 From: Jeff Layton <jlayton@primarydata.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
         "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 03/17] locks: close potential race in lease_get_mtime
-Date: Thu,  4 Sep 2014 08:38:29 -0400
-Message-Id: <1409834323-7171-4-git-send-email-jlayton@primarydata.com>
+Subject: [PATCH v2 17/17] locks: clean up comments over fl_owner_t definition
+Date: Thu,  4 Sep 2014 08:38:43 -0400
+Message-Id: <1409834323-7171-18-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
 References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
@@ -21,46 +21,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lease_get_mtime is called without the i_lock held, so there's no
-guarantee about the stability of the list. Between the time when we
-assign "flock" and then dereference it to check whether it's a lease
-and for write, the lease could be freed.
+The contents of an fl_owner_t have morphed a bit over the years, fix up
+the comments to account for the changes.
 
-Ensure that that doesn't occur by taking the i_lock before trying
-to check the lease.
-
-Cc: J. Bruce Fields <bfields@fieldses.org>
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/locks.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ include/linux/fs.h | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 18e87f11a25f..4031324e6cca 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1456,8 +1456,18 @@ EXPORT_SYMBOL(__break_lease);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index ed4e1897099c..a51be79b7dc3 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -852,11 +852,19 @@ static inline struct file *get_file(struct file *f)
+ #define FILE_LOCK_DEFERRED 1
+ 
+ /*
+- * The POSIX file lock owner is determined by
+- * the "struct files_struct" in the thread group
+- * (or NULL for no owner - BSD locks).
++ * A generic "file lock owner" value. This is set differently for different
++ * types of locks.
+  *
+- * Lockd stuffs a "host" pointer into this.
++ * The POSIX file lock owner is determined by the "struct files_struct" in the
++ * thread group.
++ *
++ * Flock (BSD) locks, OFD locks and leases set the fl_owner to the
++ * file description pointer.
++ *
++ * lockd stuffs a "host" pointer into this
++ *
++ * nfsd stuffs a * nfs4_file pointer into this for leases, and a lockowner
++ * pointer into it for v4 locks.
   */
- void lease_get_mtime(struct inode *inode, struct timespec *time)
- {
--	struct file_lock *flock = inode->i_flock;
--	if (flock && IS_LEASE(flock) && (flock->fl_type == F_WRLCK))
-+	bool has_lease = false;
-+	struct file_lock *flock;
-+
-+	if (inode->i_flock) {
-+		spin_lock(&inode->i_lock);
-+		flock = inode->i_flock;
-+		if (flock && IS_LEASE(flock) && (flock->fl_type == F_WRLCK))
-+			has_lease = true;
-+		spin_unlock(&inode->i_lock);
-+	}
-+
-+	if (has_lease)
- 		*time = current_fs_time(inode->i_sb);
- 	else
- 		*time = inode->i_mtime;
+ typedef void *fl_owner_t;
+ 
 -- 
 1.9.3
 
