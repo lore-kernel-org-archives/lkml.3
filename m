@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125AbaIDOlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:41:22 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:41495 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816AbaIDOkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:40:51 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, David Paris <david.paris@st.com>
-Subject: [PATCH 3/4] watchdog: st_wdt: Provide binding documentation for ST's LPC Watchdog driver
-Date: Thu,  4 Sep 2014 15:39:51 +0100
-Message-Id: <1409841592-18890-5-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
-References: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
+	id S1753112AbaIDOn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:43:59 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:9430 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956AbaIDOn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:43:57 -0400
+X-IronPort-AV: E=Sophos;i="5.04,466,1406592000"; 
+   d="scan'208";a="168364048"
+Message-ID: <54087AA1.8010208@citrix.com>
+Date: Thu, 4 Sep 2014 15:43:45 +0100
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: David Vrabel <david.vrabel@citrix.com>, <xen-devel@lists.xensource.com>,
+        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
+        Juergen Gross <JGross@suse.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen: eliminate scalability issues from
+ initial mapping setup
+References: <1409834326-29287-1-git-send-email-jgross@suse.com> <1409834326-29287-4-git-send-email-jgross@suse.com> <54086244.7020601@citrix.com> <540862FE.7070108@citrix.com> <540893F00200007800030E4F@mail.emea.novell.com>
+In-Reply-To: <540893F00200007800030E4F@mail.emea.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Paris <david.paris@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- .../devicetree/bindings/watchdog/st-lpc-wdt.txt    | 27 ++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+On 04/09/14 15:31, Jan Beulich wrote:
+>>>> On 04.09.14 at 15:02, <andrew.cooper3@citrix.com> wrote:
+>> On 04/09/14 13:59, David Vrabel wrote:
+>>> On 04/09/14 13:38, Juergen Gross wrote:
+>>>> Direct Xen to place the initial P->M table outside of the initial
+>>>> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
+>>>> restriction on the size of the initial mapping limits the amount
+>>>> of memory a domain can be handed initially.
+>>> The three level p2m limits memory to 512 GiB on x86-64 but this patch
+>>> doesn't seem to address this limit and thus seems a bit useless to me.
+>> Any increase of the p2m beyond 3 levels will need to come with
+>> substantial libxc changes first.  3 level p2ms are hard coded throughout
+>> all the PV build and migrate code.
+> No, there no such dependency - the kernel could use 4 levels at
+> any time (sacrificing being able to get migrated), making sure it
+> only exposes the 3 levels hanging off the fourth level (or not
+> exposing this information at all) to external entities making this
+> wrong assumption.
+>
+> Jan
+>
 
-diff --git a/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-new file mode 100644
-index 0000000..f0e57ba
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-@@ -0,0 +1,27 @@
-+STMicroelectronics LPC Watchdog
-+===============================
-+
-+Required properties
-+
-+- compatible 	: "st,<soc>-watchdog"
-+- reg		: LPC registers base address + range
-+- reg-names	: Register map "base" and "syscfg-en" are compulsory "type" is
-+		  platform dependent and not required for the STiH407.
-+- clock-names 	: Should be "lpc_wdt"
-+- clocks	: Clock used by LPC device
-+- timeout-sec	: Qatchdog timeout in seconds
-+- st,syscfg	: Syscfg node used to configure cpu reset type and mask
-+- st,warm_reset	: If present, reset type will be 'warm'. If not, it will be cold
-+
-+Example:
-+	watchdog@fde05000 {
-+		compatible	= "st,stih416-lpc-watchdog";
-+		reg		= <0xfde05000 0x1000> <0x204 0x4>;
-+		reg-names	= "base", "syscfg-en"
-+		clock-names	= "lpc_wdt";
-+		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
-+		timeout-sec	= <600>;
-+		st,syscfg	= <&syscfg_core>;
-+		st,warm_reset;
-+	};
-+
--- 
-1.9.1
+That would require that the PV kernel must start with a 3 level p2m and
+fudge things afterwards.
 
+At a minimum, I would expect a patch to libxc to detect a 4 level PV
+guest and fail with a meaningful error, rather than an obscure "m2p
+doesn't match p2m for mfn/pfn X".
+
+~Andrew
