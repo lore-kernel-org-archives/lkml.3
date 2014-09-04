@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaIDOC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:02:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52638 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaIDOC0 (ORCPT
+	id S1751758AbaIDOEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:04:08 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:54099 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaIDOEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:02:26 -0400
-Date: Thu, 4 Sep 2014 07:02:25 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/55] 3.10.54-stable review
-Message-ID: <20140904140225.GF12499@kroah.com>
-References: <20140903220453.653576908@linuxfoundation.org>
- <20140903234405.GA27174@kroah.com>
- <5407EF92.1060508@roeck-us.net>
+	Thu, 4 Sep 2014 10:04:05 -0400
+Message-ID: <5408713A.3020600@linaro.org>
+Date: Thu, 04 Sep 2014 22:03:38 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5407EF92.1060508@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Marc Zyngier <marc.zyngier@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>
+CC: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-14-git-send-email-hanjun.guo@linaro.org> <5404AE56.80801@arm.com> <5405AE95.1020201@linaro.org> <5405BFE7.5060005@arm.com> <5405E626.4090306@linaro.org> <5406EDDC.3020208@arm.com> <5406F8BC.7000503@linaro.org>
+In-Reply-To: <5406F8BC.7000503@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 09:50:26PM -0700, Guenter Roeck wrote:
-> On 09/03/2014 04:44 PM, Greg Kroah-Hartman wrote:
-> >On Wed, Sep 03, 2014 at 03:04:50PM -0700, Greg Kroah-Hartman wrote:
-> >>This is the start of the stable review cycle for the 3.10.54 release.
-> >>There are 55 patches in this series, all will be posted as a response
-> >>to this one.  If anyone has any issues with these being applied, please
-> >>let me know.
-> >>
-> >>Responses should be made by Fri Sep  5 22:04:21 UTC 2014.
-> >>Anything received after that time might be too late.
-> >>
-> >>The whole patch series can be found in one patch at:
-> >>	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.54-rc1.gz
-> >>and the diffstat can be found below.
-> >
-> >-rc2 is now out to resolve some reported errors:
-> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.54-rc2.gz
-> >
-> >
-> Build results:
-> 	total: 137 pass: 137 fail: 0
-> 
-> Most of the qemu tests passed except for mips:smp, which crashes with
-> 
-> BUG: using smp_processor_id() in preemptible [00000000] code: kjournald/44
-> 
-> This is not a new problem, but an old one discovered due to an added
-> qemu test. I sent you a reference to a patch to fix this problem
-> a couple of weeks ago. Let me know if I should resend it.
+On 2014年09月03日 19:17, Hanjun Guo wrote:
+>>>>>>> +
+>>>>>>> +#ifdef CONFIG_ACPI
+>>>>>>> +#define ACPI_MAX_GIC_CPU_INTERFACE_ENTRIES  65535
+>>>>>> With GICv2? I doubt it.
+>>>>> I will create macro for each GIC driver:
+>>>>> #define ACPI_MAX_GICV2_CPU_INTERFACE_ENTRIES    8
+>>>>> #define ACPI_MAX_GICV3_CPU_INTERFACE_ENTRIES    65535
+>>>> Where do you get this value (ACPI_MAX_GICV3_CPU_INTERFACE_ENTRIES) from?
+>>> This value is for max processors entries in MADT, and we will use it to scan MADT
+>>> for SMP/GIC Init, I just make it big enough for GICv3/4. since ACPI core will stop
+>>> scan MADT if the real numbers of processors entries are reached no matter
+>>> how big ACPI_MAX_GICV3_CPU_INTERFACE_ENTRIES is, I think we can just
+>>> define a number big enough then it will work (x86 and ia64 did the same thing).
+>> Also, with GICv3++, there is no such thing as a memory-mapped CPU
+>> interface anymore. What you get is a bunch of redistributors (one per
+>> CPU). I assume what you have here actually describe the redistributors,
+>> and its name should reflect that.
+> As Sudeep said, it is not to link to GIC architecture, so I think we can keep
+> it stick with ACPI spec, in ACPI spec, it called "GICC structure" (section 5.2.12.14
+> in ACPI 5.1), so we can name it as ACPI_MAX_GICC_STRUCTURE_ENTRIES no matter
+> GICv2 or GICv3/4 (with GICv2, it may have more than 8 entries with some disabled
+> ones, will no more than 8 enabled entries).
+>
+> What do you think?
 
-My stable patch queue is well over 200 patches yet to be applied, don't
-worry, it's not lost, just behind a bunch of others...
+After more consideration on this, we think that we can remove those macros which
+introduce confusions, and just pass 0 to ACPI core for the max entries of GICC structure
+or GICR structure, ACPI core will continue scan all the entries in MADT with 0 passed.
+With that, we can avoid such name confusions for all GIC related structures in MADT
+no matter GICv2 or GICv3/4.
 
-thanks for testing all of these.
+Thanks
+Hanjun
 
-greg k-h
