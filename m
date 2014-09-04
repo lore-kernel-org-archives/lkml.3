@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754AbaIDWQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 18:16:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39152 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755665AbaIDWQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 18:16:40 -0400
-Message-ID: <5408E4A3.2060303@zytor.com>
-Date: Thu, 04 Sep 2014 15:16:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Jakub Jelinek <jakub@redhat.com>, Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <20140712181328.GA8738@redhat.com>	<54079B70.4050200@hurleysoftware.com>	<1409785893.30640.118.camel@pasglop>	<21512.10628.412205.873477@gargle.gargle.HOWL>	<20140904090952.GW17454@tucnak.redhat.com>	<540859EC.5000407@hurleysoftware.com> <20140904175044.4697aee4@alan.etchedpixels.co.uk> <5408C0AB.6050801@hurleysoftware.com>
-In-Reply-To: <5408C0AB.6050801@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755868AbaIDWUq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 18:20:46 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:58764 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755621AbaIDWUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 18:20:44 -0400
+Message-ID: <1409869242.5546.119.camel@x220>
+Subject: Re: [PATCH] IBM Akebono: Remove obsolete config select
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Alistair Popple <alistair@popple.id.au>
+Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Date: Fri, 05 Sep 2014 00:20:42 +0200
+In-Reply-To: <1774195.a1B25gz7RT@mexican>
+References: <1398998002.2925.15.camel@pasglop>
+	 <1399018005-23136-1-git-send-email-alistair@popple.id.au>
+	 <1402660592.28881.22.camel@x220> <1774195.a1B25gz7RT@mexican>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Sep 2014 22:20:42.0089 (UTC) FILETIME=[76C9ED90:01CFC88E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 12:42 PM, Peter Hurley wrote:
+On Fri, 2014-06-20 at 10:10 +1000, Alistair Popple wrote:
+> Hi Ben,
 > 
-> Or we could give up on the Alpha.
+> It looks like we may have missed this trivial fix? Can you please apply it to 
+> your tree?
 > 
+> Regards,
+> 
+> Alistair
+> 
+> On Fri, 13 Jun 2014 13:56:32 Paul Bolle wrote:
+> > On Fri, 2014-05-02 at 18:06 +1000, Alistair Popple wrote:
+> > > The original implementation of MMC support for Akebono introduced a
+> > > new configuration symbol (MMC_SDHCI_OF_476GTR). This symbol has been
+> > > dropped in favour of using the generic platform driver however the
+> > > select for this symbol was mistakenly left in the platform
+> > > configuration.
+> > > 
+> > > This patch removes the obsolete symbol selection.
+> > > 
+> > > Signed-off-by: Alistair Popple <alistair@popple.id.au>
+> > 
+> > This patch hasn't yet entered linux-next nor Linus' tree. Is it queued
+> > somewhere? If not, would a
+> >     Acked-by: Paul Bolle <pebolle@tiscali.nl>
+> > 
+> > help to get this trivial patch queued for either of those trees?
+> > 
+> > 
+> > Paul Bolle
+> > 
+> > > ---
+> > > 
+> > >  arch/powerpc/platforms/44x/Kconfig | 1 -
+> > >  1 file changed, 1 deletion(-)
+> > > 
+> > > diff --git a/arch/powerpc/platforms/44x/Kconfig
+> > > b/arch/powerpc/platforms/44x/Kconfig index 8beec7d..908bf11 100644
+> > > --- a/arch/powerpc/platforms/44x/Kconfig
+> > > +++ b/arch/powerpc/platforms/44x/Kconfig
+> > > @@ -220,7 +220,6 @@ config AKEBONO
+> > > 
+> > >  	select USB_EHCI_HCD_PLATFORM
+> > >  	select MMC_SDHCI
+> > >  	select MMC_SDHCI_PLTFM
+> > > 
+> > > -	select MMC_SDHCI_OF_476GTR
+> > > 
+> > >  	select ATA
+> > >  	select SATA_AHCI_PLATFORM
+> > >  	help
 
-If Alpha is turning into Voyager (kept alive only as a museum piece, but
-actively causing problems) then please let's kill it.
+This trivial cleanup is still not in linux-next nor in Linus' tree.
+Could someone else please have a look at it?
 
-	-hpa
+Thanks,
 
+
+Paul Bolle
 
