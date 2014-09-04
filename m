@@ -1,130 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797AbaIDAzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 20:55:36 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:61066 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150AbaIDAzf (ORCPT
+	id S933032AbaIDA7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 20:59:47 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:59165 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932813AbaIDA7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 20:55:35 -0400
-From: Vincent Palatin <vpalatin@chromium.org>
-To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
-        Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: [PATCH v4 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
-Date: Wed,  3 Sep 2014 17:47:48 -0700
-Message-Id: <1409791668-18715-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <CACHYQ-r-+czyEBySdjNWr-3XmY1C2ErDJV0dnL=GDJOYPi1asw@mail.gmail.com>
-References: <CACHYQ-r-+czyEBySdjNWr-3XmY1C2ErDJV0dnL=GDJOYPi1asw@mail.gmail.com>
+	Wed, 3 Sep 2014 20:59:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com>
+References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
+	<CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
+	<5406D942.4080405@intel.com>
+	<CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
+	<CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com>
+Date: Thu, 4 Sep 2014 08:59:42 +0800
+Message-ID: <CAC1bqKjV1kEb2vL=Vo_tO9XqPh11OdPGwpUooETnK0yXOYw6SQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
+From: Hsin-Hsiang Tseng <hsinhsiangtseng@gmail.com>
+To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>, h80.chung@samsung.com,
+        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
-CT_PANTILT_RELATIVE_CONTROL terminal control request.
+Hi, Jean-Michel
+Some platforms which using Samsung exynos SoC, we write u-boot related
+bin files in boot partitions(in my case boot partition 1) to boot on
+eMMC.
+Some platforms which using Qualcomm SoC, written at logical address
+0(User Data Area) and they use a-boot not u-boot.
+BTW, rpmb partition is not wide use now. As i know, some Intel
+platforms have use rpmb partition.
 
-Tested by plugging a Logitech ConferenceCam C3000e USB camera
-and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
-Verified that it can pan and tilt at the same time in both directions.
+Thanks,
+Hsinhsiang
 
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
----
-Changes from v1/v2:
-- rebased
-Changes from v3:
-- removed gerrit-id
-
- drivers/media/usb/uvc/uvc_ctrl.c | 58 +++++++++++++++++++++++++++++++++++++---
- 1 file changed, 55 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
-index 0eb82106..d703cb0 100644
---- a/drivers/media/usb/uvc/uvc_ctrl.c
-+++ b/drivers/media/usb/uvc/uvc_ctrl.c
-@@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
- 		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
- 		.index		= 12,
- 		.size		= 4,
--		.flags		= UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
--				| UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
--				| UVC_CTRL_FLAG_GET_DEF
-+		.flags		= UVC_CTRL_FLAG_SET_CUR
-+				| UVC_CTRL_FLAG_GET_RANGE
- 				| UVC_CTRL_FLAG_AUTO_UPDATE,
- 	},
- 	{
-@@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct uvc_control_mapping *mapping,
- 	data[2] = min((int)abs(value), 0xff);
- }
- 
-+static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
-+	__u8 query, const __u8 *data)
-+{
-+	int first = mapping->offset / 8;
-+	__s8 rel = (__s8)data[first];
-+
-+	switch (query) {
-+	case UVC_GET_CUR:
-+		return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
-+						 : -data[first+1]);
-+	case UVC_GET_MIN:
-+		return -data[first+1];
-+	case UVC_GET_MAX:
-+	case UVC_GET_RES:
-+	case UVC_GET_DEF:
-+	default:
-+		return data[first+1];
-+	}
-+}
-+
-+static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
-+	__s32 value, __u8 *data)
-+{
-+	int first = mapping->offset / 8;
-+
-+	data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
-+	data[first+1] = min_t(int, abs(value), 0xff);
-+}
-+
- static struct uvc_control_mapping uvc_ctrl_mappings[] = {
- 	{
- 		.id		= V4L2_CID_BRIGHTNESS,
-@@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
- 		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
- 	},
- 	{
-+		.id		= V4L2_CID_PAN_SPEED,
-+		.name		= "Pan (Speed)",
-+		.entity		= UVC_GUID_UVC_CAMERA,
-+		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
-+		.size		= 16,
-+		.offset		= 0,
-+		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
-+		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
-+		.get		= uvc_ctrl_get_rel_speed,
-+		.set		= uvc_ctrl_set_rel_speed,
-+	},
-+	{
-+		.id		= V4L2_CID_TILT_SPEED,
-+		.name		= "Tilt (Speed)",
-+		.entity		= UVC_GUID_UVC_CAMERA,
-+		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
-+		.size		= 16,
-+		.offset		= 16,
-+		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
-+		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
-+		.get		= uvc_ctrl_get_rel_speed,
-+		.set		= uvc_ctrl_set_rel_speed,
-+	},
-+	{
- 		.id		= V4L2_CID_PRIVACY,
- 		.name		= "Privacy",
- 		.entity		= UVC_GUID_UVC_CAMERA,
--- 
-2.1.0.rc2.206.gedb03e5
-
+2014-09-03 21:08 GMT+08:00 Jean-Michel Hautbois
+<jean-michel.hautbois@vodalys.com>:
+> 2014-09-03 11:09 GMT+02:00 Ulf Hansson <ulf.hansson@linaro.org>:
+>> On 3 September 2014 11:02, Adrian Hunter <adrian.hunter@intel.com> wrote:
+>>> On 09/03/2014 11:30 AM, Ulf Hansson wrote:
+>>>> On 2 September 2014 17:49, Jean-Michel Hautbois
+>>>> <jean-michel.hautbois@vodalys.com> wrote:
+>>>>> This property is useful when we don't want to access boot partitions on eMMC
+>>>>>
+>>>>> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+>>>>> ---
+>>>>>  Documentation/devicetree/bindings/mmc/mmc.txt | 1 +
+>>>>>  drivers/mmc/host/sdhci-esdhc-imx.c            | 8 ++++++++
+>>>>>  include/linux/platform_data/mmc-esdhc-imx.h   | 1 +
+>>>>>  3 files changed, 10 insertions(+)
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/mmc/mmc.txt b/Documentation/devicetree/bindings/mmc/mmc.txt
+>>>>> index 431716e..59cc854 100644
+>>>>> --- a/Documentation/devicetree/bindings/mmc/mmc.txt
+>>>>> +++ b/Documentation/devicetree/bindings/mmc/mmc.txt
+>>>>> @@ -40,6 +40,7 @@ Optional properties:
+>>>>>  - mmc-hs200-1_2v: eMMC HS200 mode(1.2V I/O) is supported
+>>>>>  - mmc-hs400-1_8v: eMMC HS400 mode(1.8V I/O) is supported
+>>>>>  - mmc-hs400-1_2v: eMMC HS400 mode(1.2V I/O) is supported
+>>>>> +- no-boot-part : when preset, tells to access boot partitions
+>>>>>
+>>>>>  *NOTE* on CD and WP polarity. To use common for all SD/MMC host controllers line
+>>>>>  polarity properties, we have to fix the meaning of the "normal" and "inverted"
+>>>>> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+>>>>> index ccec0e3..439e663 100644
+>>>>> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
+>>>>> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+>>>>> @@ -942,6 +942,11 @@ sdhci_esdhc_imx_probe_dt(struct platform_device *pdev,
+>>>>>         if (of_property_read_u32(np, "fsl,delay-line", &boarddata->delay_line))
+>>>>>                 boarddata->delay_line = 0;
+>>>>>
+>>>>> +       if (of_find_property(np, "no-boot-part", NULL))
+>>>>> +               boarddata->access_boot_part = false;
+>>>>> +       else
+>>>>> +               boarddata->access_boot_part = true;
+>>>>> +
+>>>>>         return 0;
+>>>>>  }
+>>>>>  #else
+>>>>> @@ -1119,6 +1124,9 @@ static int sdhci_esdhc_imx_probe(struct platform_device *pdev)
+>>>>>                 host->quirks2 |= SDHCI_QUIRK2_NO_1_8_V;
+>>>>>         }
+>>>>>
+>>>>> +       if (!boarddata->access_boot_part)
+>>>>> +               host->mmc->caps2 |= MMC_CAP2_BOOTPART_NOACC;
+>>>>> +
+>>>>
+>>>> Hmm, I don't think MMC_CAP2_BOOTPART_NOACC should have a DT binding.
+>>>> Does it describe the hardware in some form?
+>>>>
+>>>> Actually I would like to question why MMC_CAP2_BOOTPART_NOACC exists
+>>>> at all. If there are cards that don't supports the BOOT area,
+>>>> shouldn't we have a card quirk for it instead of a host cap? Maybe
+>>>> Adrian Hunter, how originally wrote the patch for adding
+>>>> MMC_CAP2_BOOTPART_NOACC, could help me understand the reasons behind
+>>>> it!?
+>>>
+>>> It was added because platform firmware was able to prevent access to the
+>>> boot partitions (for security I think), so attempts to access them would
+>>> fail messily.  It was not related to any specific card.
+>>
+>> Adrian, appreciate your clarification. After all it seems like adding
+>> a DT binding for it should be appropriate.
+>>
+>> Kind regards
+>> Uffe
+>
+> Thanks Adrian :).
+> Well, there is boot partitions and rpmb partition, and maybe should we
+> have a binding to prevent access to both of them ?
+> Something else came to my mind, when you want to boot on eMMC, do you
+> need to write u-boot in boot partitions or is it written at the
+> logical adress 0 which is what fdisk uses as start ?
+> Because, if this is not usuable but just scanned I can't see why we
+> bother doing it... ?
+>
+> Thanks,
+> JM
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
