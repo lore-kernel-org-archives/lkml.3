@@ -1,56 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158AbaIDTQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:16:42 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:34057 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855AbaIDTQl (ORCPT
+	id S1755332AbaIDTQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:16:51 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41269 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291AbaIDTQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:16:41 -0400
-Date: Thu, 4 Sep 2014 12:14:51 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Kautuk Consul <consul.kautuk@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Ionut Alexa <ionut.m.alexa@gmail.com>,
-        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: task_numa_fault() && TASK_DEAD
-In-Reply-To: <20140904103949.GA19300@redhat.com>
-Message-ID: <alpine.LSU.2.11.1409041210400.12218@eggly.anvils>
-References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com> <20140825155738.GA5944@redhat.com> <20140901153935.GQ27892@worktop.ger.corp.intel.com> <20140901175851.GA15210@redhat.com> <20140901190931.GD5806@worktop.ger.corp.intel.com>
- <20140902155208.GA28668@redhat.com> <20140902164714.GA17033@redhat.com> <20140903160819.GA7682@redhat.com> <20140904071139.GH3190@worktop.ger.corp.intel.com> <20140904103949.GA19300@redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Thu, 4 Sep 2014 15:16:48 -0400
+Date: Thu, 4 Sep 2014 12:16:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, josh@joshtriplett.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: RCU bug with v3.17-rc3 ?
+Message-ID: <20140904191642.GJ5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140904184021.GA13421@saruman.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904184021.GA13421@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090419-0928-0000-0000-0000049325F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Sep 2014, Oleg Nesterov wrote:
-> On 09/04, Peter Zijlstra wrote:
-> > On Wed, Sep 03, 2014 at 06:08:19PM +0200, Oleg Nesterov wrote:
-> >
-> > > And a stupid (really, I don't understand this code) question:
-> > >
-> > > 	/* for example, ksmd faulting in a user's mm */
-> > > 	if (!p->mm)
-> > > 		return;
+On Thu, Sep 04, 2014 at 01:40:21PM -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> I keep triggering the following Oops with -rc3 when writing to the mass
+> storage gadget driver:
 
-I don't understand your difficulty with that, I thought the comment
-was helpful enough.  Does the original commit comment help?
+v3.17-rc3, correct?
 
-commit 2832bc19f6668fd00116f61f821105040599ef8b
-Author: Hugh Dickins <hughd@google.com>
-Date:   Wed Dec 19 17:42:16 2012 -0800
+I take it that the test passes on some earlier version?
 
-    sched: numa: ksm: fix oops in task_numa_placment()
-    
-    task_numa_placement() oopsed on NULL p->mm when task_numa_fault() got
-    called in the handling of break_ksm() for ksmd.  That might be a
-    peculiar case, which perhaps KSM could takes steps to avoid? but it's
-    more robust if task_numa_placement() allows for such a possibility.
+							Thanx, Paul
+
+> | # modprobe g_mass_storage stall=0 removable=1 file=/dev/sda
+> | [   44.883554] Number of LUNs=8
+> | [   44.886709] Mass Storage Function, version: 2009/09/11
+> | [   44.892303] LUN: removable file: (no medium)
+> | [   44.896916] Number of LUNs=1
+> | [   44.901198] LUN: removable file: /dev/sda
+> | [   44.905410] Number of LUNs=1
+> | [   44.917706] g_mass_storage gadget: Mass Storage Gadget, version: 2009/09/11
+> | [   44.925018] g_mass_storage gadget: userspace failed to provide iSerialNumber
+> | [   44.932489] g_mass_storage gadget: g_mass_storage ready
+> | [   52.583773] g_mass_storage gadget: high-speed config #1: Linux File-Backed Storage
+> | # [   98.270585] Unable to handle kernel paging request at virtual address ffffffff
+> | [   98.278198] pgd = c0004000
+> | [   98.281027] [ffffffff] *pgd=ae7f6821, *pte=00000000, *ppte=00000000
+> | [   98.287648] Internal error: Oops: 17 [#1] SMP ARM
+> | [   98.292559] Modules linked in: g_mass_storage usb_f_mass_storage libcomposite configfs usb_storage xhci_hcd dwc3 udc_core matrix_keypad lis3lv02d_i2c dwc3_omap lis3lv02d input_polldev
+> | [   98.309721] CPU: 0 PID: 1820 Comm: file-storage Not tainted 3.17.0-rc3-00013-gc6b1a7d #806
+> | [   98.318346] task: ec356040 ti: ec378000 task.ti: ec378000
+> | [   98.324000] PC is at find_get_entry+0x7c/0x128
+> | [   98.328640] LR is at 0xfffffffa
+> | [   98.331912] pc : [<c011394c>]    lr : [<fffffffa>]    psr: a0000013
+> | [   98.331912] sp : ec379b50  ip : 00000000  fp : ec379b84
+> | [   98.343888] r10: c0c81243  r9 : 00000001  r8 : ea123d28
+> | [   98.349352] r7 : ec378010  r6 : 00000001  r5 : 00000000  r4 : 0000000f
+> | [   98.356181] r3 : ec379b3c  r2 : 00000000  r1 : 00000001  r0 : ffffffff
+> | [   98.363006] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> | [   98.370646] Control: 10c5387d  Table: ac2b0059  DAC: 00000015
+> | [   98.376641] Process file-storage (pid: 1820, stack limit = 0xec378248)
+> | [   98.383454] Stack: (0xec379b50 to 0xec37a000)
+> | [   98.388003] 9b40:                                     00000000 00000000 c01138d0 c002aa3c
+> | [   98.396560] 9b60: 0000000f 00000000 ea123d24 000200d0 00000001 000000d0 ec379bbc ec379b88
+> | [   98.405100] 9b80: c0114360 c01138dc c1486a00 60000013 ec379bc4 00001400 00000000 ea123d24
+> | [   98.413635] 9ba0: 00000c00 00000400 ec378010 c06dea0c ec379bdc ec379bc0 c011478c c0114330
+> | [   98.422183] 9bc0: 000000d0 c00904f8 c1486a00 00001400 ec379c04 ec379be0 c019cd68 c0114760
+> | [   98.430732] 9be0: c0090808 c0090590 ec379c34 00000001 00000c00 ea123d24 ec379c2c ec379c08
+> | [   98.439300] 9c00: c019ecbc c019cd44 00000c00 00000001 ec379c58 c019eb9c 00000c00 ec379d54
+> | [   98.447860] 9c20: ec379c8c ec379c30 c0113f14 c019ec8c 00000c00 00000001 ec379c58 ec379c5c
+> | [   98.456414] 9c40: ec378030 00000001 ec250cc0 00000000 00001400 00000000 c018195c c00acd08
+> | [   98.464974] 9c60: 5408b05a 00001000 ec250cc0 00000000 ec379d68 ea123d24 ec378010 00000000
+> | [   98.473533] 9c80: ec379cf4 ec379c90 c0115ed4 c0113e6c 00000001 00000000 c019f2b0 c0090590
+> | [   98.482071] 9ca0: ec379cc4 ec378010 c06c3df4 00001000 ea123c64 c019f2b0 ec379d54 ec379cc8
+> | [   98.490607] 9cc0: 00001400 00000000 00000001 ec379d68 ec379d54 ec379e30 ec250cc0 ec356040
+> | [   98.499178] 9ce0: ed7ab800 ec30d800 ec379d3c ec379cf8 c019f2b0 c0115c8c c06be3b8 c006dcec
+> | [   98.507741] 9d00: ec1b0010 ec30d800 ec379d08 ec379d08 ec379d10 ec379d10 ec379d18 ec379d18
+> | [   98.516288] 9d20: 00001400 00000000 ec379e30 ec250cc0 ec379dc4 ec379d40 c016618c c019f284
+> | [   98.524833] 9d40: 00001000 c0317b78 ec379d7c ec394000 00001000 00000003 00000000 00001000
+> | [   98.533385] 9d60: ec379d4c 00000001 ec250cc0 00000000 00000000 00000000 ec356040 00000000
+> | [   98.541946] 9d80: 00000000 00000000 00001400 00000000 00001000 00000000 00000000 00000000
+> | [   98.550482] 9da0: ec394000 ec250cc0 ec394000 ec379e30 00001000 00001000 ec379df4 ec379dc8
+> | [   98.559023] 9dc0: c0166a3c c01660f4 00000002 ec0ace20 00001000 0000000e ec0ace00 00000000
+> | [   98.567567] 9de0: 00001000 ed7ab800 ec379e64 ec379df8 bf0bc3b4 c0166994 0000006f 00001000
+> | [   98.576112] 9e00: bf0bc7a4 60000013 e8156000 0000000e 3930343d 00000000 bf0bc7a4 ec0ace00
+> | [   98.584660] 9e20: 00002400 00000000 00001400 00000000 00001400 00000000 ec379e64 00000000
+> | [   98.593193] 9e40: ed36ddc0 ec378018 ec30d894 ec0ace00 ec30d800 ec30d840 ec379ed4 ec379e68
+> | [   98.601754] 9e60: bf0bd1c8 bf0bc08c bf0bf6ec ec378010 c06c3df4 ec356040 00000001 00000000
+> | [   98.610305] 9e80: ec379eac ec379e90 c00906b0 c00904f8 ec30d894 ed36ddc0 ec378018 ec30d894
+> | [   98.618857] 9ea0: ec379ebc ec379eb0 c0090808 ec30d800 ed36ddc0 ec378018 ec30d894 00000000
+> | [   98.627405] 9ec0: 00000200 ec0ace00 ec379f14 ec379ed8 bf0bdbe8 bf0bc74c c06c3d94 ec0acc80
+> | [   98.635942] 9ee0: ec394000 ec30d800 bf0bd8cc ec0acc80 00000000 ec30d800 bf0bd8cc 00000000
+> | [   98.644465] 9f00: 00000000 00000000 ec379fac ec379f18 c0066ac4 bf0bd8d8 ed1d1040 00000000
+> | [   98.652990] 9f20: ec379f3c ec30d800 00000000 00000000 dead4ead ffffffff ffffffff c0c86138
+> | [   98.661526] 9f40: 00000000 00000000 c08998e0 00000000 c006dd7c ec379f54 ec379f54 00000000
+> | [   98.670077] 9f60: 00000000 dead4ead ffffffff ffffffff c0c86138 00000000 00000000 c08998e0
+> | [   98.678612] 9f80: 00000000 ec379f90 ec379f88 ec379f88 ec0acc80 c00669e0 00000000 00000000
+> | [   98.687148] 9fa0: 00000000 ec379fb0 c000eea8 c00669ec 00000000 00000000 00000000 00000000
+> | [   98.695699] 9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> | [   98.704249] 9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
+> | [   98.712805] [<c011394c>] (find_get_entry) from [<c0114360>] (pagecache_get_page+0x3c/0x1f0)
+> | [   98.721529] [<c0114360>] (pagecache_get_page) from [<c011478c>] (grab_cache_page_write_begin+0x38/0x50)
+> | [   98.731345] [<c011478c>] (grab_cache_page_write_begin) from [<c019cd68>] (block_write_begin+0x30/0x90)
+> | [   98.741067] [<c019cd68>] (block_write_begin) from [<c019ecbc>] (blkdev_write_begin+0x3c/0x48)
+> | [   98.749974] [<c019ecbc>] (blkdev_write_begin) from [<c0113f14>] (generic_perform_write+0xb4/0x1e4)
+> | [   98.759335] [<c0113f14>] (generic_perform_write) from [<c0115ed4>] (__generic_file_write_iter+0x254/0x51c)
+> | [   98.769424] [<c0115ed4>] (__generic_file_write_iter) from [<c019f2b0>] (blkdev_write_iter+0x38/0xc0)
+> | [   98.778978] [<c019f2b0>] (blkdev_write_iter) from [<c016618c>] (new_sync_write+0xa4/0xcc)
+> | [   98.787526] [<c016618c>] (new_sync_write) from [<c0166a3c>] (vfs_write+0xb4/0x1c0)
+> | [   98.795462] [<c0166a3c>] (vfs_write) from [<bf0bc3b4>] (do_write+0x334/0x53c [usb_f_mass_storage])
+> | [   98.804858] [<bf0bc3b4>] (do_write [usb_f_mass_storage]) from [<bf0bd1c8>] (do_scsi_command+0xa88/0x118c [usb_f_mass_storage])
+> | [   98.816782] [<bf0bd1c8>] (do_scsi_command [usb_f_mass_storage]) from [<bf0bdbe8>] (fsg_main_thread+0x31c/0x72c [usb_f_mass_storage])
+> | [   98.829249] [<bf0bdbe8>] (fsg_main_thread [usb_f_mass_storage]) from [<c0066ac4>] (kthread+0xe4/0x100)
+> | [   98.838993] [<c0066ac4>] (kthread) from [<c000eea8>] (ret_from_fork+0x14/0x20)
+> | [   98.846554] Code: e1a01009 eb0905d4 e3500000 0a00001f (e5904000) 
+> | [   98.853110] ---[ end trace 8bdf31522b942652 ]---
+> 
+> 
+> The setup is a bit "odd", I have a USB stick attached to the host port
+> on my platform and the peripheral port uses that stick as backing file.
+> that is connected to a laptop which I'm using to read/write to that
+> backing file. The problem doesn't seem to trigger if I run the exact
+> same test straight to the USB stick which is attached to the host port.
+> 
+> My test application is rather basic [1] which I run with a script [2] to
+> pass sensible arguments. I haven't found another way to reproducing this
+> yet, so it could very well be that g_mass_storage is at fault here, as I
+> also managed to trigger this when using a tmpfs as backing file.
+> 
+> Anyway, looking at PC:
+> 
+> | (gdb) list *(find_get_entry+0x7c)
+> | 0xc011394c is in find_get_entry (include/linux/radix-tree.h:196).
+> | 191      * radix_tree_deref_retry must be used to confirm validity of the pointer if
+> | 192      * only the read lock is held.
+> | 193      */
+> | 194     static inline void *radix_tree_deref_slot(void **pslot)
+> | 195     {
+> | 196             return rcu_dereference(*pslot);
+> | 197     }
+> | 198
+> | 199     /**
+> | 200      * radix_tree_deref_slot_protected      - dereference a slot without RCU lock but with tree lock held
+> | (gdb) 
+> 
+> And looking at the arguments for that function, we're passing r0 as
+> 0xffffffff and r1 as 1, which clearly is bogus, but I don't know, at
+> least not yet, where did those come from. I'll see if I can reproduce
+> the same problem with dummy_hcd to rule out a bug in my dwc3 driver :-)
+> 
+> cheers
+> 
+> -- 
+> balbi
+
+
