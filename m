@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557AbaIDU7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 16:59:24 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:59184 "EHLO kanga.kvack.org"
+	id S1755582AbaIDU7f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 16:59:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38255 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755248AbaIDU6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 16:58:45 -0400
-Date: Thu, 4 Sep 2014 16:58:44 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] aio: block exit_aio() until all context requests are completed
-Message-ID: <20140904205844.GG13422@kvack.org>
-References: <1409737544-9392-1-git-send-email-guz.fnst@cn.fujitsu.com> <20140903144332.GU20066@kvack.org> <5407B697.9090501@cn.fujitsu.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5407B697.9090501@cn.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1755248AbaIDU7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 16:59:33 -0400
+Message-ID: <5408D299.5000300@zytor.com>
+Date: Thu, 04 Sep 2014 13:59:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Matt Fleming <matt@console-pimps.org>, Yinghai Lu <yinghai@kernel.org>
+CC: Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>,
+        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
+References: <1409806207-3992-1-git-send-email-yinghai@kernel.org> <20140904100137.GK3001@console-pimps.org>
+In-Reply-To: <20140904100137.GK3001@console-pimps.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 08:47:19AM +0800, Gu Zheng wrote:
-> That's good, but I did not find it, have you sent it to the open list?
-
-Sorry, the aio list wasn't cc'd on that one -- it was on one of the other 
-development lists.
-
-> IMO, there's no need to check the return value of kill_ioctx(), because
-> context can be marked as DEAD only by io_destroy(), and io_destroy() is
-> on the block mode. So if we run into the calling of kill_ioctx() in
-> exit_aio, the context is surely valid.
-
-Fair point.  I applied your version.  A pull request has been sent.
-
-		-ben
-
-> Thanks,
-> Gu
+On 09/04/2014 03:01 AM, Matt Fleming wrote:
+> On Wed, 03 Sep, at 09:50:07PM, Yinghai Lu wrote:
+>> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
+>> loaded above 4G"), the kernel freezes at the earliest possible moment
+>> when trying to boot via UEFI on Asus laptop.
+>>
+>> Revert to old way to load initrd under 4G on first try,
+>> second try will use above 4G buffer when initrd is too big
+>> and does not fit under 4G.
+>>
+>> -v2: add print out for second try, and print out files buf address.
+>> -v3: can not snprintf
+>> -v4: drop address print out for files buf
+>>
+>> Reported-by: Mantas Mikulėnas <grawity@gmail.com>
+>> Tested-by: Anders Darander <anders@chargestorm.se>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> ---
+>>  arch/x86/boot/compressed/eboot.c |   18 +++++++++++-------
+>>  1 file changed, 11 insertions(+), 7 deletions(-)
 > 
-> > 
-> > 		-ben
-> > 
-> >> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> >> ---
-> >>  fs/aio.c |    7 ++++++-
-> >>  1 files changed, 6 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/fs/aio.c b/fs/aio.c
-> >> index 97bc62c..3e35b12 100644
-> >> --- a/fs/aio.c
-> >> +++ b/fs/aio.c
-> >> @@ -793,6 +793,8 @@ void exit_aio(struct mm_struct *mm)
-> >>  
-> >>  	for (i = 0; i < table->nr; ++i) {
-> >>  		struct kioctx *ctx = table->table[i];
-> >> +		struct completion requests_done =
-> >> +			COMPLETION_INITIALIZER_ONSTACK(requests_done);
-> >>  
-> >>  		if (!ctx)
-> >>  			continue;
-> >> @@ -804,7 +806,10 @@ void exit_aio(struct mm_struct *mm)
-> >>  		 * that it needs to unmap the area, just set it to 0.
-> >>  		 */
-> >>  		ctx->mmap_size = 0;
-> >> -		kill_ioctx(mm, ctx, NULL);
-> >> +		kill_ioctx(mm, ctx, &requests_done);
-> >> +
-> >> +		/* Wait until all IO for the context are done. */
-> >> +		wait_for_completion(&requests_done);
-> >>  	}
-> >>  
-> >>  	RCU_INIT_POINTER(mm->ioctx_table, NULL);
-> >> -- 
-> >> 1.7.7
-> > 
+> Thanks, I've picked this up and expanded on the commit message because a
+> lot of useful information was discussed on the mailing list that we
+> should definitely include.
+> 
+>   http://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/commit/?h=urgent&id=b524e05df6d466af2f7eea1f044369109e48e641
 > 
 
--- 
-"Thought is the essence of where you are now."
+I am fine with this patch, but at the same time I do want to note that
+there is an alternative to double-buffer the patch and/or (if that
+applies to the buggy BIOS) round up the size of the target buffer.
+
+	-hpa
+
