@@ -1,164 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaIDKka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:40:30 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54482 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaIDKk2 (ORCPT
+	id S1753174AbaIDKlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:41:13 -0400
+Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:47622 "EHLO
+	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752373AbaIDKlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:40:28 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] kcmp: Fix standard comparison bug
-Date: Thu,  4 Sep 2014 12:40:06 +0200
-Message-Id: <1409827206-4199-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
+	Thu, 4 Sep 2014 06:41:11 -0400
+Message-ID: <1409827235.3008.46.camel@linaro1.home>
+Subject: Re: [PATCH v5 3/3] kprobes: arm: enable OPTPROBES for ARM 32
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Wang Nan <wangnan0@huawei.com>, Russell King <linux@arm.linux.org.uk>,
+        "David A. Long" <dave.long@linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Pei Feiyue <peifeiyue@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 04 Sep 2014 11:40:35 +0100
+In-Reply-To: <20140903103044.GC32378@arm.com>
+References: <1409144552-12751-1-git-send-email-wangnan0@huawei.com>
+	 <1409144552-12751-4-git-send-email-wangnan0@huawei.com>
+	 <1409665784.2873.49.camel@linaro1.home> <5406EADC.8080009@hitachi.com>
+	 <20140903103044.GC32378@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The C operator <= defines a perfectly fine total ordering on the set
-of values representable in a long. However, unlike its namesake in the
-integers, it is not translation invariant, meaning that we do not have
-"b <= c" iff "a+b <= a+c" for all a,b,c.
+On Wed, 2014-09-03 at 11:30 +0100, Will Deacon wrote:
+> On Wed, Sep 03, 2014 at 11:18:04AM +0100, Masami Hiramatsu wrote:
+> > (2014/09/02 22:49), Jon Medhurst (Tixy) wrote:
+> > > 1. On SMP systems it's very slow because of kprobe's use of stop_machine
+> > > for applying and removing probes, this forces the system to idle and
+> > > wait for the next scheduler tick for each probe change.
+> > 
+> > Hmm, agreed. It seems that arm32 limitation of self-modifying code on SMP.
+> > I'm not sure how we can handle it, but I guess;
+> >  - for some processors which have better coherent cache for SMP, we can
+> >    atomically replace the breakpoint code with original code.
+> 
+> Except that it's not an architected breakpoint instruction, as I mentioned
+> before. It's also not really a property of the cache.
+> 
+> >  - Even if we get an "undefined instruction" exception, its handler can
+> >    ask kprobes if the address is under modifying or not. And if it is,
+> >    we can just return from the exception to retry the execution.
+> 
+> It's not as simple as that -- you could potentially see an interleaving of
+> the two instructions. The architecture is even broader than that:
+> 
+>  Concurrent modification and execution of instructions can lead to the
+>  resulting instruction performing any behavior that can be achieved by
+>  executing any sequence of instructions that can be executed from the
+>  same Exception level,
+> 
+> There are additional guarantees for some instructions (like the architected
+> BKPT instruction).
 
-This means that it is always wrong to try to boil down the
-relationship between two longs to a question about the sign of their
-difference, because the resulting relation [a LEQ b iff a-b <= 0] is
-neither anti-symmetric or transitive. The former is due to
--LONG_MIN==LONG_MIN (take any two a,b with a-b = LONG_MIN; then a LEQ
-b and b LEQ a, but a != b). The latter can either be seen observing
-that x LEQ x+1 for all x, implying x LEQ x+1 LEQ x+2 ... LEQ x-1 LEQ
-x; or more directly with the simple example a=LONG_MIN, b=0, c=1, for
-which a-b < 0, b-c < 0, but a-c > 0.
+I should point out that the current implementation of kprobes doesn't
+use stop_machine because it's trying to meet the above architecture
+restrictions, and that arming kprobes (changing probed instruction to an
+undefined instruction) isn't usually done under stop_machine, so other
+CPUs could be executing the original instruction as it's being modified.
 
-Note that it makes absolutely no difference that a transmogrying
-bijection has been applied before the comparison is done. In fact, had
-the obfuscation not been done, one could probably not observe the bug
-(assuming all values being compared always lie in one half of the
-address space, the mathematical value of a-b is always representable
-in a long). As it stands, one can easily obtain three file descriptors
-exhibiting the non-transitivity of kcmp().
+So, should we be making patch_text unconditionally use stop machine and
+remove all direct use of __patch_text? (E.g. by jump labels.)
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
-
-Side note 1: I can't see that ensuring the MSB of the multiplier is
-set serves any purpose other than obfuscating the obfuscating code.
-
-Side note 2:
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <assert.h>
-#include <sys/syscall.h>
-
-enum kcmp_type {
-        KCMP_FILE,
-        KCMP_VM,
-        KCMP_FILES,
-        KCMP_FS,
-        KCMP_SIGHAND,
-        KCMP_IO,
-        KCMP_SYSVSEM,
-
-        KCMP_TYPES,
-};
-
-pid_t pid;
-
-int kcmp(pid_t pid1, pid_t pid2, int type,
-	 unsigned long idx1, unsigned long idx2)
-{
-	return syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
-}
-
-int cmp_fd(int fd1, int fd2)
-{
-	int c = kcmp(pid, pid, KCMP_FILE, fd1, fd2);
-	if (c < 0) {
-		perror("kcmp");
-		exit(1);
-	}
-	assert(0 <= c && c < 3);
-	return c;
-}
-
-int cmp_fdp(const void *a, const void *b)
-{
-	static const int normalize[] = {0, -1, 1};
-	return normalize[cmp_fd(*(int*)a, *(int*)b)];
-}
-
-#define MAX 100 /* This is plenty; I've seen it trigger for MAX==3 */
-int main(int argc, char *argv[])
-{
-	int r, s, count = 0;
-	int REL[3] = {0,0,0};
-	int fd[MAX];
-	pid = getpid();
-
-	while (count < MAX) {
-		r = open("/dev/null", O_RDONLY);
-		if (r < 0)
-			break;
-		fd[count++] = r;
-	}
-	printf("opened %d file descriptors\n", count);
-
-	for (r = 0; r < count; ++r) {
-		for (s = r+1; s < count; ++s) {
-			REL[cmp_fd(fd[r], fd[s])]++;
-		}
-	}
-	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
-
-	qsort(fd, count, sizeof(fd[0]), cmp_fdp);
-	memset(REL, 0, sizeof(REL));
-
-	for (r = 0; r < count; ++r) {
-		for (s = r+1; s < count; ++s) {
-			REL[cmp_fd(fd[r], fd[s])]++;
-		}
-	}
-	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
-
-	return (REL[0] + REL[2] != 0);
-}
-
-
-
-
- kernel/kcmp.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/kcmp.c b/kernel/kcmp.c
-index e30ac0f..0aa69ea 100644
---- a/kernel/kcmp.c
-+++ b/kernel/kcmp.c
-@@ -44,11 +44,12 @@ static long kptr_obfuscate(long v, int type)
-  */
- static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
- {
--	long ret;
-+	long t1, t2;
- 
--	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
-+	t1 = kptr_obfuscate((long)v1, type);
-+	t2 = kptr_obfuscate((long)v2, type);
- 
--	return (ret < 0) | ((ret > 0) << 1);
-+	return (t1 < t2) | ((t1 > t2) << 1);
- }
- 
- /* The caller must have pinned the task */
 -- 
-2.0.4
+Tixy
 
