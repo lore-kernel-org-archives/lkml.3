@@ -1,73 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967AbaIDQN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:13:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184AbaIDQN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:13:57 -0400
-Date: Thu, 4 Sep 2014 17:11:24 +0100
-From: Aaron Tomlin <atomlin@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
-        oleg@redhat.com, pzijlstr@redhat.com, riel@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
-        rostedt@goodmis.org, hannes@cmpxchg.org,
-        aneesh.kumar@linux.vnet.ibm.com, akpm@google.com,
-        linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
-Subject: Re: [PATCH 2/2] sched: BUG when stack end location is over written
-Message-ID: <20140904161124.GD1436@atomlin.usersys.redhat.com>
-References: <1409842224-11847-1-git-send-email-atomlin@redhat.com>
- <1409842224-11847-3-git-send-email-atomlin@redhat.com>
- <20140904153231.GE346@worktop.programming.kicks-ass.net>
+	id S1753426AbaIDQQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:16:37 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60515 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaIDQQg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 12:16:36 -0400
+Date: Thu, 4 Sep 2014 09:16:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] dynticks: dynticks_idle is only modified locally use
+ this_cpu ops
+Message-ID: <20140904161629.GF5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140902211517.GO5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409021819500.5437@gentwo.org>
+ <20140903021152.GA14069@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409030846310.9372@gentwo.org>
+ <20140903144349.GT5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409031043540.24085@gentwo.org>
+ <20140903171409.GZ5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409031226001.24691@gentwo.org>
+ <20140903181931.GB5001@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409040944220.4565@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140904153231.GE346@worktop.programming.kicks-ass.net>
-X-PGP-Key: http://pgp.mit.edu/pks/lookup?search=atomlin%40redhat.com
-X-PGP-Fingerprint: 7906 84EB FA8A 9638 8D1E  6E9B E2DE 9658 19CC 77D6
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <alpine.DEB.2.11.1409040944220.4565@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090416-1542-0000-0000-000004894E54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 05:32:31PM +0200, Peter Zijlstra wrote:
-> On Thu, Sep 04, 2014 at 03:50:24PM +0100, Aaron Tomlin wrote:
-> > Currently in the event of a stack overrun a call to schedule()
-> > does not check for this type of corruption. This corruption is
-> > often silent and can go unnoticed. However once the corrupted
-> > region is examined at a later stage, the outcome is undefined
-> > and often results in a sporadic page fault which cannot be
-> > handled.
-> > 
-> > This patch checks for a stack overrun and takes appropriate
-> > action since the damage is already done, there is no point
-> > in continuing.
-> > 
-> > Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-> > ---
-> >  kernel/sched/core.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index ec1a286..d6af6a0 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -2660,6 +2660,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
-> >   */
-> >  static inline void schedule_debug(struct task_struct *prev)
-> >  {
-> > +	if (unlikely(prev != &init_task &&
-> > +		task_stack_end_corrupted(prev)))
-> > +		BUG();
+On Thu, Sep 04, 2014 at 10:04:17AM -0500, Christoph Lameter wrote:
 > 
-> superfluous linebreak, also we appear to have BUG_ON() for situations
-> just like these.
+> On Wed, 3 Sep 2014, Paul E. McKenney wrote:
 > 
-> secondly, while I appreciate the 'feature' you're making schedule()
-> slower for everybody, what do you propose to do about that?
+> > As noted earlier, in theory, the atomic operations could be nonatomic,
+> 
+> Well as demonstrated by the patch earlier: The atomic operations are only
+> used on a the local cpu. There is no synchronization in that sense needed
+> between processors because there is never a remote atomic operation.
 
-Understood. I will wrap this with a suitable Kconfig option.
+Easy to say!  ;-)
 
--- 
-Aaron Tomlin
+> > > The code looks fragile and bound to have issues in the future given the
+> > > barriers/atomics etc. Its going to be cleaner without that.
+> >
+> > What exactly looks fragile about it, and exactly what issues do you
+> > anticipate?
+> 
+> I am concerned about creation of unecessary synchronization issues. In
+> this case we have already discovered that the atomic operations on per
+> cpu variables are only used to modify the contents from the local cpu.
+> 
+> This means at minimum we can give up on the use of atomics and keep the
+> barriers to enforce visibility.
+
+Sounds like a desire for a potential optimization rather than any
+sort of fragility.  And in this case, it is not clear that your desire
+of replacing a value-returning atomic operation with a normal memory
+reference and a pair of memory barrier actually makes anything go faster.
+
+So in short, you don't see the potential for this use case actually
+breaking anything, correct?
+
+Besides RCU is not the only place where atomics are used on per-CPU
+variables.  For one thing, there are a number of per-CPU spinlocks in use
+in various places throughout the kernel.  For another thing, there is also
+a large number of per-CPU structures (not pointers to structures, actual
+structures), and I bet that a fair number of these feature cross-CPU
+writes and cross-CPU atomics.  RCU's rcu_data structures certainly do.
+
+> > > And we are right now focusing on the simplest case. The atomics scheme is
+> > > used multiple times in the RCU subsystem. There is more weird looking code
+> > > there like atomic_add using zero etc.
+> >
+> > The atomic_add_return(0,...) reads the value out, forcing full ordering.
+> > Again, in theory, this could be a volatile read with explicit memory-barrier
+> > instructions on either side, but it is not clear which wins.  (Keep in
+> > mind that almost all of the atomic_add_return(0,...) calls for a given
+> > dynticks counter are executed from a single kthread.)
+> >
+> > If systems continue to add CPUs like they have over the past decade or
+> > so, I expect that you will be seeing more code like RCU's, not less.
+> 
+> We have other code like this in multiple subsystems but it does not have
+> the barrier issues, per cpu variables are updated always without the use
+> of atomics and the inspection of the per cpu state from remote cpus works
+> just fine also without them.
+
+Including the per-CPU spinlocks?  That seems a bit unlikely.  And again,
+I expect that a fair number of the per-CPU structures involve cross-CPU
+synchronization.
+
+> I'd like to simplify this as much as possible and make it consistent
+> throughout the kernel.
+
+It already is consistent, just not in the manner that you want.  ;-)
+
+But -why- do you want these restrictions?  How does it help anything?
+
+							Thanx, Paul
+
