@@ -1,95 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaIDJRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:17:00 -0400
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:62531 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469AbaIDJQ5 (ORCPT
+	id S1754810AbaIDJSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:18:50 -0400
+Received: from smtprelay0058.hostedemail.com ([216.40.44.58]:60081 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751480AbaIDJSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:16:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <54082C68.8030400@linux.vnet.ibm.com>
-References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com>
-	<CAKohpomLW17B=Sk42tczzDF+VGwn7hT521osWPi5TcgqpCPZ_w@mail.gmail.com>
-	<53296AD0.5090908@linux.vnet.ibm.com>
-	<19131121.D211TBerqb@vostro.rjw.lan>
-	<CAKohpom0+bbyffZML2tJjXQDc+2q4PM8sVkL5pDA5WX=rmvtKA@mail.gmail.com>
-	<54082C68.8030400@linux.vnet.ibm.com>
-Date: Thu, 4 Sep 2014 14:46:56 +0530
-Message-ID: <CAKohpokvpWDbCbPYcV+fzzpaztZSi=yacdmyYfBLoSs4U2YO9A@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Sep 2014 05:18:48 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:334:355:368:369:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1544:1593:1594:1605:1711:1730:1747:1777:1792:2393:2559:2562:2687:2828:3138:3139:3140:3141:3142:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4321:4605:5007:7652:7903:8957:9040:9121:10011:10848:11026:11232:11233:11658:11914:12296:12438:12517:12519:12555:12740:13095:13141:13230:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: face78_2f5cc939bf42e
+X-Filterd-Recvd-Size: 5386
+Message-ID: <1409822323.2715.15.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch: allow optional shorter config descriptions
+From: Joe Perches <joe@perches.com>
+To: Vadim Bendebury <vbendeb@chromium.org>
+Cc: subssriprions@vsbe.com, vb@vsbe.com, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 04 Sep 2014 02:18:43 -0700
+In-Reply-To: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
+References: <1409761945-545-1-git-send-email-vbendeb@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 September 2014 14:40, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> cpufreq: Allow stop CPU callback to be used by all cpufreq drivers
->
-> Commit 367dc4aa introduced the stop CPU callback for intel_pstate
-> drivers. During the CPU_DOWN_PREPARE stage, this callback is invoked
-> so that drivers can take some action on the pstate of the cpu
-> before it is taken offline. This callback was assumed to be useful
-> only for those drivers which have implemented the set_policy CPU
-> callback because they have no other way to take action about the
-> cpufreq of a CPU which is being hotplugged out except in the exit
-> callback which is called very late in the offline process.
->
-> The drivers which implement the target/target_index callbacks were
-> expected to take care of requirements like the ones that commit
-> 367dc4aa addresses in the GOV_STOP notification event. But there
-> are disadvantages to restricting the usage of stop CPU callback
-> to cpufreq drivers that implement the set_policy callbacks and who
-> want to take explicit action on the setting the cpufreq during a
-> hotplug operation.
->
-> 1.GOV_STOP gets called for every CPU offline and drivers would usually
->   want to take action when the last cpu in the policy->cpus mask
->   is taken offline. As long as there is more than one cpu in the
->   policy->cpus mask, cpufreq core itself makes sure that the freq
->   for the other cpus in this mask is set according to the maximum load.
->   This is sensible and drivers which implement the target_index callback
->   would mostly not want to modify that. However the cpufreq core leaves a
->   loose end when the cpu in the policy->cpus mask is the last one to go offline;
->   it does nothing explicit to the frequency of the core. Drivers may need
->   a way to take some action here and stop CPU callback mechanism is the
->   best way to do it today.
->
-> 2.We cannot implement driver specific actions in the GOV_STOP mechanism.
->   So we will need another driver callback which is invoked from here which is
->   unnecessary.
->
->   Therefore this patch extends the usage of stop CPU callback to be used
->   by all cpufreq drivers as long as they have this callback implemented
->   and irrespective of whether they are set_policy/target_index drivers.
->   The assumption is if the drivers find the GOV_STOP path to be a suitable
->   way of implementing what they want to do with the freq of the cpu
->   going offine,they will not implement the stop CPU callback at all.
->
->   Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index d9fdedd..6463f35 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1380,7 +1380,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
->                 if (!cpufreq_suspended)
->                         pr_debug("%s: policy Kobject moved to cpu: %d from: %d\n",
->                                  __func__, new_cpu, cpu);
-> -       } else if (cpufreq_driver->stop_cpu && cpufreq_driver->setpolicy) {
-> +       } else if (cpufreq_driver->stop_cpu) {
->                 cpufreq_driver->stop_cpu(policy);
->         }
+On Wed, 2014-09-03 at 09:32 -0700, Vadim Bendebury wrote:
+> This script is used by many other projects, and in some of them the
+> requirement of at least 4 line long description for all Kconfig items
+> is excessive. This patch adds a command line option to control the
+> required minimum length.
+> 
+> Tested running this script over a patch including a two line config
+> description. The script generated a warning when invoked as is, and
+> did not generate it when invoked with --min-conf-desc-length=2.
+> 
+> Signed-off-by: Vadim Bendebury <vbendeb@chromium.org>
+> ---
+> 
+>  scripts/checkpatch.pl | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index b385bcb..8808bde 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -43,6 +43,7 @@ my $configuration_file = ".checkpatch.conf";
+>  my $max_line_length = 80;
+>  my $ignore_perl_version = 0;
+>  my $minimum_perl_version = 5.10.0;
+> +my $min_conf_desc_length = 4;
+>  
+>  sub help {
+>  	my ($exitcode) = @_;
+> @@ -63,6 +64,7 @@ Options:
+>    --types TYPE(,TYPE2...)    show only these comma separated message types
+>    --ignore TYPE(,TYPE2...)   ignore various comma separated message types
+>    --max-line-length=n        set the maximum line length, if exceeded, warn
+> +  --min-conf-desc-length=n   set the min description length, if shorter, warn
+>    --show-types               show the message "types" in the output
+>    --root=PATH                PATH to the kernel tree root
+>    --no-summary               suppress the per-file summary
+> @@ -131,6 +133,7 @@ GetOptions(
+>  	'types=s'	=> \@use,
+>  	'show-types!'	=> \$show_types,
+>  	'max-line-length=i' => \$max_line_length,
+> +	'min-conf-desc-length=i' => \$min_conf_desc_length,
+>  	'root=s'	=> \$root,
+>  	'summary!'	=> \$summary,
+>  	'mailback!'	=> \$mailback,
+> @@ -2281,7 +2284,8 @@ sub process {
+>  				$length++;
+>  			}
+>  			WARN("CONFIG_DESCRIPTION",
+> -			     "please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($is_start && $is_end && $length < 4);
+> +			     "please write a paragraph that describes the config symbol fully\n" . $herecurr)
+> +			    if ($is_start && $is_end && $length < $min_conf_desc_length);
+>  			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
+>  		}
 
-Rafael explicitly said earlier that he want to see a separate callback for
-->target() drivers, don't know why..
+Fine by me, but I think think this is the
+only checkpatch use of:
 
-It looks fine to me though.
+	WARN(foo) if (test);
+
+Every other checkpatch message block is:
+
+	if (test) {
+		WARN(foo);
+	}
+
+so I would prefer to change this use
+to match.
+---
+ scripts/checkpatch.pl | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d89857d..af4659c1 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -43,6 +43,7 @@ my $configuration_file = ".checkpatch.conf";
+ my $max_line_length = 80;
+ my $ignore_perl_version = 0;
+ my $minimum_perl_version = 5.10.0;
++my $min_conf_desc_length = 4;
+ 
+ sub help {
+ 	my ($exitcode) = @_;
+@@ -63,6 +64,7 @@ Options:
+   --types TYPE(,TYPE2...)    show only these comma separated message types
+   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
+   --max-line-length=n        set the maximum line length, if exceeded, warn
++  --min-conf-desc-length=n   set the min description length, if shorter, warn
+   --show-types               show the message "types" in the output
+   --root=PATH                PATH to the kernel tree root
+   --no-summary               suppress the per-file summary
+@@ -131,6 +133,7 @@ GetOptions(
+ 	'types=s'	=> \@use,
+ 	'show-types!'	=> \$show_types,
+ 	'max-line-length=i' => \$max_line_length,
++	'min-conf-desc-length=i' => \$min_conf_desc_length,
+ 	'root=s'	=> \$root,
+ 	'summary!'	=> \$summary,
+ 	'mailback!'	=> \$mailback,
+@@ -2280,9 +2283,10 @@ sub process {
+ 				}
+ 				$length++;
+ 			}
+-			WARN("CONFIG_DESCRIPTION",
+-			     "please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($is_start && $is_end && $length < 4);
+-			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
++			if ($is_start && $is_end && $length < $min_conf_desc_length) {
++				WARN("CONFIG_DESCRIPTION",
++				     "please write a paragraph that describes the config symbol fully\n" . $herecurr);
++			}
+ 		}
+ 
+ # discourage the addition of CONFIG_EXPERIMENTAL in Kconfig.
+
+
