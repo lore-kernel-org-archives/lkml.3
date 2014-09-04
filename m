@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaIDSrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:47:53 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:10301 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131AbaIDSrw (ORCPT
+	id S1755226AbaIDSsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:48:52 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:46648 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963AbaIDSst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:47:52 -0400
+	Thu, 4 Sep 2014 14:48:49 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
         akpm@linuxfoundation.org, arnd@arndb.de
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
         stefan.bader@canonical.com, luto@amacapital.net,
         konrad.wilk@oracle.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 3/5] x86, mm, asm-gen: Add ioremap_wt() for WT
-Date: Thu,  4 Sep 2014 12:35:37 -0600
-Message-Id: <1409855739-8985-4-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH 2/5] x86, mm, pat: Change reserve_memtype() to handle WT
+Date: Thu,  4 Sep 2014 12:35:36 -0600
+Message-Id: <1409855739-8985-3-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
 References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
@@ -23,108 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ioremap_wt() for creating WT mapping on x86.
-It follows the same model as ioremap_wc() for multi-architecture
-support.  ARCH_HAS_IOREMAP_WT is defined in the x86 version of
-io.h to indicate that ioremap_wt() is implemented on x86.
+This patch changes reserve_memtype() to handle the WT cache mode.
+When PAT is not enabled, it continues to set UC- to *new_type for
+any non-WB request.
+
+When a target range is RAM, reserve_ram_pages_type() fails for WT
+for now.  This function may not reserve a RAM range for WT since
+reserve_ram_pages_type() uses the page flags limited to three memory
+types, WB, WC and UC.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- arch/x86/include/asm/io.h   |    2 ++
- arch/x86/mm/ioremap.c       |   24 ++++++++++++++++++++++++
- include/asm-generic/io.h    |    4 ++++
- include/asm-generic/iomap.h |    4 ++++
- 4 files changed, 34 insertions(+)
+ arch/x86/include/asm/cacheflush.h |    4 ++++
+ arch/x86/mm/pat.c                 |   16 +++++++++++++---
+ 2 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index 71b9e65..c813c86 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -35,6 +35,7 @@
-   */
- 
- #define ARCH_HAS_IOREMAP_WC
-+#define ARCH_HAS_IOREMAP_WT
- 
- #include <linux/string.h>
- #include <linux/compiler.h>
-@@ -316,6 +317,7 @@ extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
- extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
- 				enum page_cache_mode pcm);
- extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
-+extern void __iomem *ioremap_wt(resource_size_t offset, unsigned long size);
- 
- extern bool is_early_ioremap_ptep(pte_t *ptep);
- 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 885fe44..952f4b4 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -155,6 +155,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 		prot = __pgprot(pgprot_val(prot) |
- 				cachemode2protval(_PAGE_CACHE_MODE_WC));
+diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
+index 157644b..c912680 100644
+--- a/arch/x86/include/asm/cacheflush.h
++++ b/arch/x86/include/asm/cacheflush.h
+@@ -53,6 +53,10 @@ static inline void set_page_memtype(struct page *pg,
+ 	case _PAGE_CACHE_MODE_WB:
+ 		memtype_flags = _PGMT_WB;
  		break;
 +	case _PAGE_CACHE_MODE_WT:
-+		prot = __pgprot(pgprot_val(prot) |
-+				cachemode2protval(_PAGE_CACHE_MODE_WT));
-+		break;
- 	case _PAGE_CACHE_MODE_WB:
++	case _PAGE_CACHE_MODE_WP:
++		pr_err("set_page_memtype: unsupported cachemode %d\n", memtype);
++		BUG();
+ 	default:
+ 		memtype_flags = _PGMT_DEFAULT;
  		break;
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index b1891dc..87b21dd 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -271,6 +271,8 @@ static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
+ 
+ /*
+  * For RAM pages, we use page flags to mark the pages with appropriate type.
++ * The page flags are currently limited to three types, WB, WC and UC. Hence,
++ * any request to WT or WP will fail with -EINVAL.
+  * Here we do two pass:
+  * - Find the memtype of all the pages in the range, look for any conflicts
+  * - In case of no conflicts, set the new memtype for pages in the range
+@@ -282,6 +284,13 @@ static int reserve_ram_pages_type(u64 start, u64 end,
+ 	struct page *page;
+ 	u64 pfn;
+ 
++	if ((req_type == _PAGE_CACHE_MODE_WT) ||
++	    (req_type == _PAGE_CACHE_MODE_WP)) {
++		if (new_type)
++			*new_type = _PAGE_CACHE_MODE_UC_MINUS;
++		return -EINVAL;
++	}
++
+ 	if (req_type == _PAGE_CACHE_MODE_UC) {
+ 		/* We do not support strong UC */
+ 		WARN_ON_ONCE(1);
+@@ -331,6 +340,7 @@ static int free_ram_pages_type(u64 start, u64 end)
+  * - _PAGE_CACHE_MODE_WC
+  * - _PAGE_CACHE_MODE_UC_MINUS
+  * - _PAGE_CACHE_MODE_UC
++ * - _PAGE_CACHE_MODE_WT
+  *
+  * If new_type is NULL, function will return an error if it cannot reserve the
+  * region with req_type. If new_type is non-NULL, function will return
+@@ -350,10 +360,10 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
+ 	if (!pat_enabled) {
+ 		/* This is identical to page table setting without PAT */
+ 		if (new_type) {
+-			if (req_type == _PAGE_CACHE_MODE_WC)
+-				*new_type = _PAGE_CACHE_MODE_UC_MINUS;
++			if (req_type == _PAGE_CACHE_MODE_WB)
++				*new_type = _PAGE_CACHE_MODE_WB;
+ 			else
+-				*new_type = req_type;
++				*new_type = _PAGE_CACHE_MODE_UC_MINUS;
+ 		}
+ 		return 0;
  	}
-@@ -249,6 +253,26 @@ void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
- }
- EXPORT_SYMBOL(ioremap_wc);
- 
-+/**
-+ * ioremap_wt	-	map memory into CPU space write through
-+ * @phys_addr:	bus address of the memory
-+ * @size:	size of the resource to map
-+ *
-+ * This version of ioremap ensures that the memory is marked write through.
-+ * Write through writes data into memory while keeping the cache up-to-date.
-+ *
-+ * Must be freed with iounmap.
-+ */
-+void __iomem *ioremap_wt(resource_size_t phys_addr, unsigned long size)
-+{
-+	if (pat_enabled)
-+		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
-+					__builtin_return_address(0));
-+	else
-+		return ioremap_nocache(phys_addr, size);
-+}
-+EXPORT_SYMBOL(ioremap_wt);
-+
- void __iomem *ioremap_cache(resource_size_t phys_addr, unsigned long size)
- {
- 	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WB,
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 975e1cc..405d418 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -322,6 +322,10 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- #define ioremap_wc ioremap_nocache
- #endif
- 
-+#ifndef ioremap_wt
-+#define ioremap_wt ioremap_nocache
-+#endif
-+
- static inline void iounmap(void __iomem *addr)
- {
- }
-diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
-index 1b41011..d8f8622 100644
---- a/include/asm-generic/iomap.h
-+++ b/include/asm-generic/iomap.h
-@@ -66,6 +66,10 @@ extern void ioport_unmap(void __iomem *);
- #define ioremap_wc ioremap_nocache
- #endif
- 
-+#ifndef ARCH_HAS_IOREMAP_WT
-+#define ioremap_wt ioremap_nocache
-+#endif
-+
- #ifdef CONFIG_PCI
- /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
- struct pci_dev;
