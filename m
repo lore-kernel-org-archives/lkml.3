@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaIDOwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:52:16 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47029 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750797AbaIDOwM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:52:12 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19vm4y+sTOskOrLOkcV4MwA
-Date: Thu, 4 Sep 2014 07:52:04 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: balbi@ti.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
-Message-ID: <20140904145203.GR11766@atomide.com>
-References: <53FF84DF.7080406@linutronix.de>
- <20140828225454.GM16006@atomide.com>
- <540048B4.7010807@linutronix.de>
- <20140829161221.GO16006@atomide.com>
- <5404B149.6010400@linutronix.de>
- <54060EDA.6060204@linutronix.de>
- <20140902201536.GC11766@atomide.com>
- <540745CC.2090901@linutronix.de>
- <20140903174845.GE11766@atomide.com>
- <54086CA7.8020507@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54086CA7.8020507@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753700AbaIDOxA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:53:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2512 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751635AbaIDOw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:52:57 -0400
+From: Aaron Tomlin <atomlin@redhat.com>
+To: peterz@infradead.org
+Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
+        atomlin@redhat.com, oleg@redhat.com, pzijlstr@redhat.com,
+        riel@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        x86@kernel.org, rostedt@goodmis.org, hannes@cmpxchg.org,
+        aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
+Subject: [PATCH 2/2] sched: BUG when stack end location is over written
+Date: Thu,  4 Sep 2014 15:50:24 +0100
+Message-Id: <1409842224-11847-3-git-send-email-atomlin@redhat.com>
+In-Reply-To: <1409842224-11847-1-git-send-email-atomlin@redhat.com>
+References: <1409842224-11847-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140904 06:46]:
-> On 09/03/2014 07:48 PM, Tony Lindgren wrote:
-> 
-> I will check this upper part of this email soon…
-> 
-> > OK. At least it's starting to now sound that the bugs are pretty much
-> > the same with 8250 and serial-omap :)
-> 
-> Do you see a reason for not posting the entire series again since now I
-> am bug compatible in the pm-runtime part? We have -rc3 and I would like
-> to get this merge the series I have now and this seems to be the only
-> problem I am aware of.
+Currently in the event of a stack overrun a call to schedule()
+does not check for this type of corruption. This corruption is
+often silent and can go unnoticed. However once the corrupted
+region is examined at a later stage, the outcome is undefined
+and often results in a sporadic page fault which cannot be
+handled.
 
-Yeah makes sense to me. Thanks for ensuring the bug
-compability :)
+This patch checks for a stack overrun and takes appropriate
+action since the damage is already done, there is no point
+in continuing.
 
-Regards,
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+---
+ kernel/sched/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Tony
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ec1a286..d6af6a0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2660,6 +2660,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
+  */
+ static inline void schedule_debug(struct task_struct *prev)
+ {
++	if (unlikely(prev != &init_task &&
++		task_stack_end_corrupted(prev)))
++		BUG();
+ 	/*
+ 	 * Test if we are atomic. Since do_exit() needs to call into
+ 	 * schedule() atomically, we ignore that path. Otherwise whine
+-- 
+1.9.3
+
