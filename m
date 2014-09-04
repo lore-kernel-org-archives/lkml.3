@@ -1,573 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457AbaIDMnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 08:43:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56751 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221AbaIDMjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 08:39:09 -0400
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, jbeulich@suse.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 1/3] xen: sync some headers with xen tree
-Date: Thu,  4 Sep 2014 14:38:44 +0200
-Message-Id: <1409834326-29287-2-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1409834326-29287-1-git-send-email-jgross@suse.com>
-References: <1409834326-29287-1-git-send-email-jgross@suse.com>
+	id S1754561AbaIDMoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 08:44:01 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44030 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaIDMjI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 08:39:08 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 07/17] nfsd: don't keep a pointer to the lease in nfs4_file
+Date: Thu,  4 Sep 2014 08:38:33 -0400
+Message-Id: <1409834323-7171-8-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be able to use an initially unmapped initrd with xen the following
-header files must be synced to a newer version from the xen tree:
+Now that we don't need to pass in an actual lease pointer to
+vfs_setlease on unlock, we can stop tracking a pointer to the lease in
+the nfs4_file.
 
-include/xen/interface/elfnote.h
-include/xen/interface/xen.h
+Switch all of the places that check the fi_lease to check fi_deleg_file
+instead. We always set that at the same time so it will have the same
+semantics.
 
-As the KEXEC and DUMPCORE related ELFNOTES are not relevant for the
-kernel they are omitted from elfnote.h.
-
-Signed-off-by: Juergen Gross <jgross@suse.com>
+Cc: J. Bruce Fields <bfields@fieldses.org>
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- include/xen/interface/elfnote.h | 102 ++++++++++++++-
- include/xen/interface/xen.h     | 272 ++++++++++++++++++++++++++++++++++++----
- 2 files changed, 348 insertions(+), 26 deletions(-)
+ fs/nfsd/nfs4state.c | 10 ++++------
+ fs/nfsd/state.h     |  1 -
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/include/xen/interface/elfnote.h b/include/xen/interface/elfnote.h
-index 6f4eae3..5501e7a 100644
---- a/include/xen/interface/elfnote.h
-+++ b/include/xen/interface/elfnote.h
-@@ -3,6 +3,24 @@
-  *
-  * Definitions used for the Xen ELF notes.
-  *
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ *
-  * Copyright (c) 2006, Ian Campbell, XenSource Ltd.
-  */
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 0cd252916e1a..d0a6e8e022a2 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -680,11 +680,10 @@ static void nfs4_put_deleg_lease(struct nfs4_file *fp)
+ {
+ 	lockdep_assert_held(&state_lock);
  
-@@ -18,12 +36,13 @@
-  *
-  * LEGACY indicated the fields in the legacy __xen_guest string which
-  * this a note type replaces.
-+ *
-+ * String values (for non-legacy) are NULL terminated ASCII, also known
-+ * as ASCIZ type.
-  */
- 
- /*
-  * NAME=VALUE pair (string).
-- *
-- * LEGACY: FEATURES and PAE
-  */
- #define XEN_ELFNOTE_INFO           0
- 
-@@ -137,10 +156,30 @@
- 
- /*
-  * Whether or not the guest supports cooperative suspend cancellation.
-+ * This is a numeric value.
-+ *
-+ * Default is 0
-  */
- #define XEN_ELFNOTE_SUSPEND_CANCEL 14
- 
- /*
-+ * The (non-default) location the initial phys-to-machine map should be
-+ * placed at by the hypervisor (Dom0) or the tools (DomU).
-+ * The kernel must be prepared for this mapping to be established using
-+ * large pages, despite such otherwise not being available to guests.
-+ * The kernel must also be able to handle the page table pages used for
-+ * this mapping not being accessible through the initial mapping.
-+ * (Only x86-64 supports this at present.)
-+ */
-+#define XEN_ELFNOTE_INIT_P2M      15
-+
-+/*
-+ * Whether or not the guest can deal with being passed an initrd not
-+ * mapped through its initial page tables.
-+ */
-+#define XEN_ELFNOTE_MOD_START_PFN 16
-+
-+/*
-  * The features supported by this kernel (numeric).
-  *
-  * Other than XEN_ELFNOTE_FEATURES on pre-4.2 Xen, this note allows a
-@@ -153,6 +192,65 @@
-  */
- #define XEN_ELFNOTE_SUPPORTED_FEATURES 17
- 
-+/*
-+ * The number of the highest elfnote defined.
-+ */
-+#define XEN_ELFNOTE_MAX XEN_ELFNOTE_SUPPORTED_FEATURES
-+
-+/*
-+ * System information exported through crash notes.
-+ *
-+ * The kexec / kdump code will create one XEN_ELFNOTE_CRASH_INFO
-+ * note in case of a system crash. This note will contain various
-+ * information about the system, see xen/include/xen/elfcore.h.
-+ */
-+#define XEN_ELFNOTE_CRASH_INFO 0x1000001
-+
-+/*
-+ * System registers exported through crash notes.
-+ *
-+ * The kexec / kdump code will create one XEN_ELFNOTE_CRASH_REGS
-+ * note per cpu in case of a system crash. This note is architecture
-+ * specific and will contain registers not saved in the "CORE" note.
-+ * See xen/include/xen/elfcore.h for more information.
-+ */
-+#define XEN_ELFNOTE_CRASH_REGS 0x1000002
-+
-+
-+/*
-+ * xen dump-core none note.
-+ * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_NONE
-+ * in its dump file to indicate that the file is xen dump-core
-+ * file. This note doesn't have any other information.
-+ * See tools/libxc/xc_core.h for more information.
-+ */
-+#define XEN_ELFNOTE_DUMPCORE_NONE               0x2000000
-+
-+/*
-+ * xen dump-core header note.
-+ * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_HEADER
-+ * in its dump file.
-+ * See tools/libxc/xc_core.h for more information.
-+ */
-+#define XEN_ELFNOTE_DUMPCORE_HEADER             0x2000001
-+
-+/*
-+ * xen dump-core xen version note.
-+ * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_XEN_VERSION
-+ * in its dump file. It contains the xen version obtained via the
-+ * XENVER hypercall.
-+ * See tools/libxc/xc_core.h for more information.
-+ */
-+#define XEN_ELFNOTE_DUMPCORE_XEN_VERSION        0x2000002
-+
-+/*
-+ * xen dump-core format version note.
-+ * xm dump-core code will create one XEN_ELFNOTE_DUMPCORE_FORMAT_VERSION
-+ * in its dump file. It contains a format version identifier.
-+ * See tools/libxc/xc_core.h for more information.
-+ */
-+#define XEN_ELFNOTE_DUMPCORE_FORMAT_VERSION     0x2000003
-+
- #endif /* __XEN_PUBLIC_ELFNOTE_H__ */
- 
- /*
-diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-index de08213..f68719f 100644
---- a/include/xen/interface/xen.h
-+++ b/include/xen/interface/xen.h
-@@ -3,6 +3,24 @@
-  *
-  * Guest OS interface to Xen.
-  *
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ *
-  * Copyright (c) 2004, K A Fraser
-  */
- 
-@@ -73,13 +91,23 @@
-  * VIRTUAL INTERRUPTS
-  *
-  * Virtual interrupts that a guest OS may receive from Xen.
-+ * In the side comments, 'V.' denotes a per-VCPU VIRQ while 'G.' denotes a
-+ * global VIRQ. The former can be bound once per VCPU and cannot be re-bound.
-+ * The latter can be allocated only once per guest: they must initially be
-+ * allocated to VCPU0 but can subsequently be re-bound.
-  */
--#define VIRQ_TIMER      0  /* Timebase update, and/or requested timeout.  */
--#define VIRQ_DEBUG      1  /* Request guest to dump debug info.           */
--#define VIRQ_CONSOLE    2  /* (DOM0) Bytes received on emergency console. */
--#define VIRQ_DOM_EXC    3  /* (DOM0) Exceptional event for some domain.   */
--#define VIRQ_DEBUGGER   6  /* (DOM0) A domain has paused for debugging.   */
--#define VIRQ_PCPU_STATE 9  /* (DOM0) PCPU state changed                   */
-+#define VIRQ_TIMER      0  /* V. Timebase update, and/or requested timeout.  */
-+#define VIRQ_DEBUG      1  /* V. Request guest to dump debug info.           */
-+#define VIRQ_CONSOLE    2  /* G. (DOM0) Bytes received on emergency console. */
-+#define VIRQ_DOM_EXC    3  /* G. (DOM0) Exceptional event for some domain.   */
-+#define VIRQ_TBUF       4  /* G. (DOM0) Trace buffer has records available.  */
-+#define VIRQ_DEBUGGER   6  /* G. (DOM0) A domain has paused for debugging.   */
-+#define VIRQ_XENOPROF   7  /* V. XenOprofile interrupt: new sample available */
-+#define VIRQ_CON_RING   8  /* G. (DOM0) Bytes received on console            */
-+#define VIRQ_PCPU_STATE 9  /* G. (DOM0) PCPU state changed                   */
-+#define VIRQ_MEM_EVENT  10 /* G. (DOM0) A memory event has occured           */
-+#define VIRQ_XC_RESERVED 11 /* G. Reserved for XenClient                     */
-+#define VIRQ_ENOMEM     12 /* G. (DOM0) Low on heap memory       */
- 
- /* Architecture-specific VIRQ definitions. */
- #define VIRQ_ARCH_0    16
-@@ -92,24 +120,68 @@
- #define VIRQ_ARCH_7    23
- 
- #define NR_VIRQS       24
-+
- /*
-- * MMU-UPDATE REQUESTS
-- *
-- * HYPERVISOR_mmu_update() accepts a list of (ptr, val) pairs.
-- * A foreigndom (FD) can be specified (or DOMID_SELF for none).
-- * Where the FD has some effect, it is described below.
-- * ptr[1:0] specifies the appropriate MMU_* command.
-+ * enum neg_errnoval HYPERVISOR_mmu_update(const struct mmu_update reqs[],
-+ *                                         unsigned count, unsigned *done_out,
-+ *                                         unsigned foreigndom)
-+ * @reqs is an array of mmu_update_t structures ((ptr, val) pairs).
-+ * @count is the length of the above array.
-+ * @pdone is an output parameter indicating number of completed operations
-+ * @foreigndom[15:0]: FD, the expected owner of data pages referenced in this
-+ *                    hypercall invocation. Can be DOMID_SELF.
-+ * @foreigndom[31:16]: PFD, the expected owner of pagetable pages referenced
-+ *                     in this hypercall invocation. The value of this field
-+ *                     (x) encodes the PFD as follows:
-+ *                     x == 0 => PFD == DOMID_SELF
-+ *                     x != 0 => PFD == x - 1
-  *
-+ * Sub-commands: ptr[1:0] specifies the appropriate MMU_* command.
-+ * -------------
-  * ptr[1:0] == MMU_NORMAL_PT_UPDATE:
-- * Updates an entry in a page table. If updating an L1 table, and the new
-- * table entry is valid/present, the mapped frame must belong to the FD, if
-- * an FD has been specified. If attempting to map an I/O page then the
-- * caller assumes the privilege of the FD.
-+ * Updates an entry in a page table belonging to PFD. If updating an L1 table,
-+ * and the new table entry is valid/present, the mapped frame must belong to
-+ * FD. If attempting to map an I/O page then the caller assumes the privilege
-+ * of the FD.
-  * FD == DOMID_IO: Permit /only/ I/O mappings, at the priv level of the caller.
-  * FD == DOMID_XEN: Map restricted areas of Xen's heap space.
-  * ptr[:2]  -- Machine address of the page-table entry to modify.
-  * val      -- Value to write.
-  *
-+ * There also certain implicit requirements when using this hypercall. The
-+ * pages that make up a pagetable must be mapped read-only in the guest.
-+ * This prevents uncontrolled guest updates to the pagetable. Xen strictly
-+ * enforces this, and will disallow any pagetable update which will end up
-+ * mapping pagetable page RW, and will disallow using any writable page as a
-+ * pagetable. In practice it means that when constructing a page table for a
-+ * process, thread, etc, we MUST be very dilligient in following these rules:
-+ *  1). Start with top-level page (PGD or in Xen language: L4). Fill out
-+ *      the entries.
-+ *  2). Keep on going, filling out the upper (PUD or L3), and middle (PMD
-+ *      or L2).
-+ *  3). Start filling out the PTE table (L1) with the PTE entries. Once
-+ *      done, make sure to set each of those entries to RO (so writeable bit
-+ *      is unset). Once that has been completed, set the PMD (L2) for this
-+ *      PTE table as RO.
-+ *  4). When completed with all of the PMD (L2) entries, and all of them have
-+ *      been set to RO, make sure to set RO the PUD (L3). Do the same
-+ *      operation on PGD (L4) pagetable entries that have a PUD (L3) entry.
-+ *  5). Now before you can use those pages (so setting the cr3), you MUST also
-+ *      pin them so that the hypervisor can verify the entries. This is done
-+ *      via the HYPERVISOR_mmuext_op(MMUEXT_PIN_L4_TABLE, guest physical frame
-+ *      number of the PGD (L4)). And this point the HYPERVISOR_mmuext_op(
-+ *      MMUEXT_NEW_BASEPTR, guest physical frame number of the PGD (L4)) can be
-+ *      issued.
-+ * For 32-bit guests, the L4 is not used (as there is less pagetables), so
-+ * instead use L3.
-+ * At this point the pagetables can be modified using the MMU_NORMAL_PT_UPDATE
-+ * hypercall. Also if so desired the OS can also try to write to the PTE
-+ * and be trapped by the hypervisor (as the PTE entry is RO).
-+ *
-+ * To deallocate the pages, the operations are the reverse of the steps
-+ * mentioned above. The argument is MMUEXT_UNPIN_TABLE for all levels and the
-+ * pagetable MUST not be in use (meaning that the cr3 is not set to it).
-+ *
-  * ptr[1:0] == MMU_MACHPHYS_UPDATE:
-  * Updates an entry in the machine->pseudo-physical mapping table.
-  * ptr[:2]  -- Machine address within the frame whose mapping to modify.
-@@ -119,6 +191,72 @@
-  * ptr[1:0] == MMU_PT_UPDATE_PRESERVE_AD:
-  * As MMU_NORMAL_PT_UPDATE above, but A/D bits currently in the PTE are ORed
-  * with those in @val.
-+ *
-+ * @val is usually the machine frame number along with some attributes.
-+ * The attributes by default follow the architecture defined bits. Meaning that
-+ * if this is a X86_64 machine and four page table layout is used, the layout
-+ * of val is:
-+ *  - 63 if set means No execute (NX)
-+ *  - 46-13 the machine frame number
-+ *  - 12 available for guest
-+ *  - 11 available for guest
-+ *  - 10 available for guest
-+ *  - 9 available for guest
-+ *  - 8 global
-+ *  - 7 PAT (PSE is disabled, must use hypercall to make 4MB or 2MB pages)
-+ *  - 6 dirty
-+ *  - 5 accessed
-+ *  - 4 page cached disabled
-+ *  - 3 page write through
-+ *  - 2 userspace accessible
-+ *  - 1 writeable
-+ *  - 0 present
-+ *
-+ *  The one bits that does not fit with the default layout is the PAGE_PSE
-+ *  also called PAGE_PAT). The MMUEXT_[UN]MARK_SUPER arguments to the
-+ *  HYPERVISOR_mmuext_op serve as mechanism to set a pagetable to be 4MB
-+ *  (or 2MB) instead of using the PAGE_PSE bit.
-+ *
-+ *  The reason that the PAGE_PSE (bit 7) is not being utilized is due to Xen
-+ *  using it as the Page Attribute Table (PAT) bit - for details on it please
-+ *  refer to Intel SDM 10.12. The PAT allows to set the caching attributes of
-+ *  pages instead of using MTRRs.
-+ *
-+ *  The PAT MSR is as follows (it is a 64-bit value, each entry is 8 bits):
-+ *                    PAT4                 PAT0
-+ *  +-----+-----+----+----+----+-----+----+----+
-+ *  | UC  | UC- | WC | WB | UC | UC- | WC | WB |  <= Linux
-+ *  +-----+-----+----+----+----+-----+----+----+
-+ *  | UC  | UC- | WT | WB | UC | UC- | WT | WB |  <= BIOS (default when machine boots)
-+ *  +-----+-----+----+----+----+-----+----+----+
-+ *  | rsv | rsv | WP | WC | UC | UC- | WT | WB |  <= Xen
-+ *  +-----+-----+----+----+----+-----+----+----+
-+ *
-+ *  The lookup of this index table translates to looking up
-+ *  Bit 7, Bit 4, and Bit 3 of val entry:
-+ *
-+ *  PAT/PSE (bit 7) ... PCD (bit 4) .. PWT (bit 3).
-+ *
-+ *  If all bits are off, then we are using PAT0. If bit 3 turned on,
-+ *  then we are using PAT1, if bit 3 and bit 4, then PAT2..
-+ *
-+ *  As you can see, the Linux PAT1 translates to PAT4 under Xen. Which means
-+ *  that if a guest that follows Linux's PAT setup and would like to set Write
-+ *  Combined on pages it MUST use PAT4 entry. Meaning that Bit 7 (PAGE_PAT) is
-+ *  set. For example, under Linux it only uses PAT0, PAT1, and PAT2 for the
-+ *  caching as:
-+ *
-+ *   WB = none (so PAT0)
-+ *   WC = PWT (bit 3 on)
-+ *   UC = PWT | PCD (bit 3 and 4 are on).
-+ *
-+ * To make it work with Xen, it needs to translate the WC bit as so:
-+ *
-+ *  PWT (so bit 3 on) --> PAT (so bit 7 is on) and clear bit 3
-+ *
-+ * And to translate back it would:
-+ *
-+ * PAT (bit 7 on) --> PWT (bit 3 on) and clear bit 7.
-  */
- #define MMU_NORMAL_PT_UPDATE      0 /* checked '*ptr = val'. ptr is MA.       */
- #define MMU_MACHPHYS_UPDATE       1 /* ptr = MA of frame to modify entry for  */
-@@ -127,7 +265,12 @@
- /*
-  * MMU EXTENDED OPERATIONS
-  *
-- * HYPERVISOR_mmuext_op() accepts a list of mmuext_op structures.
-+ * enum neg_errnoval HYPERVISOR_mmuext_op(mmuext_op_t uops[],
-+ *                                        unsigned int count,
-+ *                                        unsigned int *pdone,
-+ *                                        unsigned int foreigndom)
-+ */
-+/* HYPERVISOR_mmuext_op() accepts a list of mmuext_op structures.
-  * A foreigndom (FD) can be specified (or DOMID_SELF for none).
-  * Where the FD has some effect, it is described below.
-  *
-@@ -164,9 +307,23 @@
-  * cmd: MMUEXT_FLUSH_CACHE
-  * No additional arguments. Writes back and flushes cache contents.
-  *
-+ * cmd: MMUEXT_FLUSH_CACHE_GLOBAL
-+ * No additional arguments. Writes back and flushes cache contents
-+ * on all CPUs in the system.
-+ *
-  * cmd: MMUEXT_SET_LDT
-  * linear_addr: Linear address of LDT base (NB. must be page-aligned).
-  * nr_ents: Number of entries in LDT.
-+ *
-+ * cmd: MMUEXT_CLEAR_PAGE
-+ * mfn: Machine frame number to be cleared.
-+ *
-+ * cmd: MMUEXT_COPY_PAGE
-+ * mfn: Machine frame number of the destination page.
-+ * src_mfn: Machine frame number of the source page.
-+ *
-+ * cmd: MMUEXT_[UN]MARK_SUPER
-+ * mfn: Machine frame number of head of superpage to be [un]marked.
-  */
- #define MMUEXT_PIN_L1_TABLE      0
- #define MMUEXT_PIN_L2_TABLE      1
-@@ -183,12 +340,18 @@
- #define MMUEXT_FLUSH_CACHE      12
- #define MMUEXT_SET_LDT          13
- #define MMUEXT_NEW_USER_BASEPTR 15
-+#define MMUEXT_CLEAR_PAGE       16
-+#define MMUEXT_COPY_PAGE        17
-+#define MMUEXT_FLUSH_CACHE_GLOBAL 18
-+#define MMUEXT_MARK_SUPER       19
-+#define MMUEXT_UNMARK_SUPER     20
- 
- #ifndef __ASSEMBLY__
- struct mmuext_op {
- 	unsigned int cmd;
- 	union {
--		/* [UN]PIN_TABLE, NEW_BASEPTR, NEW_USER_BASEPTR */
-+		/* [UN]PIN_TABLE, NEW_BASEPTR, NEW_USER_BASEPTR
-+		 * CLEAR_PAGE, COPY_PAGE, [UN]MARK_SUPER */
- 		xen_pfn_t mfn;
- 		/* INVLPG_LOCAL, INVLPG_ALL, SET_LDT */
- 		unsigned long linear_addr;
-@@ -198,6 +361,8 @@ struct mmuext_op {
- 		unsigned int nr_ents;
- 		/* TLB_FLUSH_MULTI, INVLPG_MULTI */
- 		void *vcpumask;
-+		/* COPY_PAGE */
-+		xen_pfn_t src_mfn;
- 	} arg2;
- };
- DEFINE_GUEST_HANDLE_STRUCT(mmuext_op);
-@@ -225,10 +390,23 @@ DEFINE_GUEST_HANDLE_STRUCT(mmuext_op);
-  */
- #define VMASST_CMD_enable                0
- #define VMASST_CMD_disable               1
-+
-+/* x86/32 guests: simulate full 4GB segment limits. */
- #define VMASST_TYPE_4gb_segments         0
-+
-+/* x86/32 guests: trap (vector 15) whenever above vmassist is used. */
- #define VMASST_TYPE_4gb_segments_notify  1
-+
-+/*
-+ * x86 guests: support writes to bottom-level PTEs.
-+ * NB1. Page-directory entries cannot be written.
-+ * NB2. Guest must continue to remove all writable mappings of PTEs.
-+ */
- #define VMASST_TYPE_writable_pagetables  2
-+
-+/* x86/PAE guests: support PDPTs above 4GB. */
- #define VMASST_TYPE_pae_extended_cr3     3
-+
- #define MAX_VMASST_TYPE 3
- 
- #ifndef __ASSEMBLY__
-@@ -260,6 +438,15 @@ typedef uint16_t domid_t;
-  */
- #define DOMID_XEN  (0x7FF2U)
- 
-+/* DOMID_COW is used as the owner of sharable pages */
-+#define DOMID_COW  (0x7FF3U)
-+
-+/* DOMID_INVALID is used to identify pages with unknown owner. */
-+#define DOMID_INVALID (0x7FF4U)
-+
-+/* Idle domain. */
-+#define DOMID_IDLE (0x7FFFU)
-+
- /*
-  * Send an array of these to HYPERVISOR_mmu_update().
-  * NB. The fields are natural pointer/address size for this architecture.
-@@ -272,7 +459,9 @@ DEFINE_GUEST_HANDLE_STRUCT(mmu_update);
- 
- /*
-  * Send an array of these to HYPERVISOR_multicall().
-- * NB. The fields are natural register size for this architecture.
-+ * NB. The fields are logically the natural register size for this
-+ * architecture. In cases where xen_ulong_t is larger than this then
-+ * any unused bits in the upper portion must be zero.
-  */
- struct multicall_entry {
-     xen_ulong_t op;
-@@ -442,8 +631,48 @@ struct start_info {
- 	unsigned long mod_start;    /* VIRTUAL address of pre-loaded module.  */
- 	unsigned long mod_len;      /* Size (bytes) of pre-loaded module.     */
- 	int8_t cmd_line[MAX_GUEST_CMDLINE];
-+	/* The pfn range here covers both page table and p->m table frames.   */
-+	unsigned long first_p2m_pfn;/* 1st pfn forming initial P->M table.    */
-+	unsigned long nr_p2m_frames;/* # of pfns forming initial P->M table.  */
- };
- 
-+/* These flags are passed in the 'flags' field of start_info_t. */
-+#define SIF_PRIVILEGED    (1<<0)  /* Is the domain privileged? */
-+#define SIF_INITDOMAIN    (1<<1)  /* Is this the initial control domain? */
-+#define SIF_MULTIBOOT_MOD (1<<2)  /* Is mod_start a multiboot module? */
-+#define SIF_MOD_START_PFN (1<<3)  /* Is mod_start a PFN? */
-+#define SIF_PM_MASK       (0xFF<<8) /* reserve 1 byte for xen-pm options */
-+
-+/*
-+ * A multiboot module is a package containing modules very similar to a
-+ * multiboot module array. The only differences are:
-+ * - the array of module descriptors is by convention simply at the beginning
-+ *   of the multiboot module,
-+ * - addresses in the module descriptors are based on the beginning of the
-+ *   multiboot module,
-+ * - the number of modules is determined by a termination descriptor that has
-+ *   mod_start == 0.
-+ *
-+ * This permits to both build it statically and reference it in a configuration
-+ * file, and let the PV guest easily rebase the addresses to virtual addresses
-+ * and at the same time count the number of modules.
-+ */
-+struct xen_multiboot_mod_list {
-+	/* Address of first byte of the module */
-+	uint32_t mod_start;
-+	/* Address of last byte of the module (inclusive) */
-+	uint32_t mod_end;
-+	/* Address of zero-terminated command line */
-+	uint32_t cmdline;
-+	/* Unused, must be zero */
-+	uint32_t pad;
-+};
-+/*
-+ * The console structure in start_info.console.dom0
-+ *
-+ * This structure includes a variety of information required to
-+ * have a working VGA/VESA console.
-+ */
- struct dom0_vga_console_info {
- 	uint8_t video_type;
- #define XEN_VGATYPE_TEXT_MODE_3 0x03
-@@ -484,11 +713,6 @@ struct dom0_vga_console_info {
- 	} u;
- };
- 
--/* These flags are passed in the 'flags' field of start_info_t. */
--#define SIF_PRIVILEGED    (1<<0)  /* Is the domain privileged? */
--#define SIF_INITDOMAIN    (1<<1)  /* Is this the initial control domain? */
--#define SIF_PM_MASK       (0xFF<<8) /* reserve 1 byte for xen-pm options */
--
- typedef uint64_t cpumap_t;
- 
- typedef uint8_t xen_domain_handle_t[16];
+-	if (!fp->fi_lease)
++	if (!fp->fi_deleg_file)
+ 		return;
+ 	if (atomic_dec_and_test(&fp->fi_delegees)) {
+ 		vfs_setlease(fp->fi_deleg_file, F_UNLCK, NULL);
+-		fp->fi_lease = NULL;
+ 		fput(fp->fi_deleg_file);
+ 		fp->fi_deleg_file = NULL;
+ 	}
+@@ -3061,8 +3060,8 @@ static void nfsd4_init_file(struct nfs4_file *fp, struct knfsd_fh *fh)
+ 	INIT_LIST_HEAD(&fp->fi_stateids);
+ 	INIT_LIST_HEAD(&fp->fi_delegations);
+ 	fh_copy_shallow(&fp->fi_fhandle, fh);
++	fp->fi_deleg_file = NULL;
+ 	fp->fi_had_conflict = false;
+-	fp->fi_lease = NULL;
+ 	fp->fi_share_deny = 0;
+ 	memset(fp->fi_fds, 0, sizeof(fp->fi_fds));
+ 	memset(fp->fi_access, 0, sizeof(fp->fi_access));
+@@ -3803,13 +3802,12 @@ static int nfs4_setlease(struct nfs4_delegation *dp)
+ 	if (fp->fi_had_conflict)
+ 		goto out_unlock;
+ 	/* Race breaker */
+-	if (fp->fi_lease) {
++	if (fp->fi_deleg_file) {
+ 		status = 0;
+ 		atomic_inc(&fp->fi_delegees);
+ 		hash_delegation_locked(dp, fp);
+ 		goto out_unlock;
+ 	}
+-	fp->fi_lease = fl;
+ 	fp->fi_deleg_file = filp;
+ 	atomic_set(&fp->fi_delegees, 1);
+ 	hash_delegation_locked(dp, fp);
+@@ -3842,7 +3840,7 @@ nfs4_set_delegation(struct nfs4_client *clp, struct svc_fh *fh,
+ 	spin_lock(&state_lock);
+ 	spin_lock(&fp->fi_lock);
+ 	dp->dl_stid.sc_file = fp;
+-	if (!fp->fi_lease) {
++	if (!fp->fi_deleg_file) {
+ 		spin_unlock(&fp->fi_lock);
+ 		spin_unlock(&state_lock);
+ 		status = nfs4_setlease(dp);
+diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+index 4a89e00d7461..64f291a25a8c 100644
+--- a/fs/nfsd/state.h
++++ b/fs/nfsd/state.h
+@@ -477,7 +477,6 @@ struct nfs4_file {
+ 	atomic_t		fi_access[2];
+ 	u32			fi_share_deny;
+ 	struct file		*fi_deleg_file;
+-	struct file_lock	*fi_lease;
+ 	atomic_t		fi_delegees;
+ 	struct knfsd_fh		fi_fhandle;
+ 	bool			fi_had_conflict;
 -- 
-1.8.4.5
+1.9.3
 
