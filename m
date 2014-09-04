@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264AbaIDQR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:17:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48968 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaIDQR4 (ORCPT
+	id S1754385AbaIDQSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:18:39 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:59161 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaIDQSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:17:56 -0400
+	Thu, 4 Sep 2014 12:18:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409761696-15435-3-git-send-email-gdjakov@mm-sol.com>
+In-Reply-To: <1409761696-15435-4-git-send-email-gdjakov@mm-sol.com>
 References: <1409761696-15435-1-git-send-email-gdjakov@mm-sol.com>
-	<1409761696-15435-3-git-send-email-gdjakov@mm-sol.com>
-Date: Thu, 4 Sep 2014 18:17:55 +0200
-Message-ID: <CACRpkdbGTer98kSrG84PRthuK3wiHiL+pfM6rf3MmDrLC8fVXA@mail.gmail.com>
-Subject: Re: [PATCH v4 2/4] dt: Document Qualcomm APQ8084 pinctrl binding
+	<1409761696-15435-4-git-send-email-gdjakov@mm-sol.com>
+Date: Thu, 4 Sep 2014 18:18:37 +0200
+Message-ID: <CACRpkdaDL0c+uvs_NA-g9rsJB18CjZiF6pEjAXRrbT-VQG7EpA@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] ARM: dts: qcom: Add TLMM DT node for APQ8084
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Georgi Djakov <gdjakov@mm-sol.com>
 Cc: Kumar Gala <galak@codeaurora.org>,
@@ -35,13 +35,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Sep 3, 2014 at 6:28 PM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
 
-> Define a new binding for the Qualcomm TLMM (Top-Level Mode Mux) based pin
-> controller inside the APQ8084.
+> This patch adds the TLMM node for the APQ8084 platform.
 >
-> Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 > Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
 
-Patch applied.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Pls funnel this through the qcom git tree and ARM SoC.
 
 Yours,
 Linus Walleij
