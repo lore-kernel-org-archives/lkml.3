@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaIDHfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:35:11 -0400
-Received: from message.langara.bc.ca ([142.35.159.25]:53916 "EHLO
-	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614AbaIDHfJ (ORCPT
+	id S1756763AbaIDHf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:35:29 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:33214 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaIDHfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:35:09 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-Content-type: text/plain; charset=us-ascii
-From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org
-Message-id: <faeccadf18ff.5408162c@langara.bc.ca>
-Date: Thu, 04 Sep 2014 07:35:08 +0000 (GMT)
-X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
- 32bit)
-Content-language: en
-Subject: Re: How is pivot_root intended to be used?
-X-Accept-Language: en
-In-reply-to: <5406202A.30401@amacapital.net>
-References: <fc0cb509956.5404e2cc@langara.bc.ca> <5406202A.30401@amacapital.net>
+	Thu, 4 Sep 2014 03:35:25 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org
+Cc: riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [PATCH v5 09/11] sched: add usage_load_avg
+Date: Thu,  4 Sep 2014 09:34:39 +0200
+Message-Id: <1409816079-10131-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409051215-16788-10-git-send-email-vincent.guittot@linaro.org>
+References: <1409051215-16788-10-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you, I think I will change the code to be like:
+The update of update_rq_runnable_avg interface is missing for
+CONFIG_FAIR_GROUP_SCHED in the original patch
+"[PATCH v5 09/12] sched: add usage_load_avg"
 
-    int old_root = open("/", O_DIRECTORY);
-    if (-1 == old_root) {
-        perror("open");
-        return EXIT_FAILURE;
-    }
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
 
-    if (-1 == syscall(__NR_pivot_root, ".", ".")) {
-        perror("pivot_root");
-        return EXIT_FAILURE;
-    }
+Hi Peter,
 
-    if (-1 == fchdir(old_root)) {
-        perror("fchdir");
-        return EXIT_FAILURE;
-    }
+Do you prefer that I sent a new version of 
+"[PATCH v5 09/12] sched: add usage_load_avg" patch with the fix or this fix is
+enough ?
 
-    if (-1 == umount2(".", MNT_DETACH)) {
-        perror("umount");
-        return EXIT_FAILURE;
-    }
+Regards,
+Vincent
 
-    if (-1 == close(old_root)) {
-        perror("close");
-        return EXIT_FAILURE;
-    }
+ kernel/sched/fair.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-    if (-1 == chdir("/")) {
-        perror("chdir");
-        return EXIT_FAILURE;
-    }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1fd2131..cbe3eff 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2462,7 +2462,8 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+ 
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
+-	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
++	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable,
++			runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+ }
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+-- 
+1.9.1
 
-This seems more understandable to me and less likely to have bugs later on.
