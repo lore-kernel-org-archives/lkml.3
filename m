@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaIDSsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:48:51 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:46647 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074AbaIDSst (ORCPT
+	id S1754723AbaIDS4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:56:22 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:63224 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661AbaIDS4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:48:49 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        akpm@linuxfoundation.org, arnd@arndb.de
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net,
-        konrad.wilk@oracle.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 5/5] x86, mm, pat: Add pgprot_writethrough() for WT
-Date: Thu,  4 Sep 2014 12:35:39 -0600
-Message-Id: <1409855739-8985-6-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
+	Thu, 4 Sep 2014 14:56:20 -0400
+Message-ID: <5408B5CB.9040906@gmail.com>
+Date: Thu, 04 Sep 2014 20:56:11 +0200
+From: RICARD Christophe <christophe.ricard@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Samuel Ortiz <sameo@linux.intel.com>, mike@altlinux.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: 3.17-rc3 module dependency loops
+References: <20140904165500.GK2515@imap.altlinux.org>
+In-Reply-To: <20140904165500.GK2515@imap.altlinux.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds pgprot_writethrough() for setting WT to a given
-pgprot_t.
+Hi Michel,
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- arch/x86/include/asm/pgtable_types.h |    3 +++
- arch/x86/mm/pat.c                    |   10 ++++++++++
- include/asm-generic/pgtable.h        |    4 ++++
- 3 files changed, 17 insertions(+)
+Thank you for your feedback. I actually appology for the mistake.
+However, the issue got already reported and a fix proposal was done at 
+the following location:
+https://lists.01.org/pipermail/linux-nfc/2014-September/002918.html
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index bd2f50f..cc7c65d 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -394,6 +394,9 @@ extern int nx_enabled;
- #define pgprot_writecombine	pgprot_writecombine
- extern pgprot_t pgprot_writecombine(pgprot_t prot);
- 
-+#define pgprot_writethrough	pgprot_writethrough
-+extern pgprot_t pgprot_writethrough(pgprot_t prot);
-+
- /* Indicate that x86 has its own track and untrack pfn vma functions */
- #define __HAVE_PFNMAP_TRACKING
- 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 87b21dd..ed62ead 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -878,6 +878,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
- }
- EXPORT_SYMBOL_GPL(pgprot_writecombine);
- 
-+pgprot_t pgprot_writethrough(pgprot_t prot)
-+{
-+	if (pat_enabled)
-+		return __pgprot(pgprot_val(prot) |
-+				cachemode2protval(_PAGE_CACHE_MODE_WT));
-+	else
-+		return pgprot_noncached(prot);
-+}
-+EXPORT_SYMBOL_GPL(pgprot_writethrough);
-+
- #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_X86_PAT)
- 
- static struct memtype *memtype_get_idx(loff_t pos)
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 53b2acc..1af0ed9 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -249,6 +249,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
- #define pgprot_writecombine pgprot_noncached
- #endif
- 
-+#ifndef pgprot_writethrough
-+#define pgprot_writethrough pgprot_noncached
-+#endif
-+
- /*
-  * When walking page tables, get the address of the next boundary,
-  * or the end address of the range if that comes earlier.  Although no
+Best Regards
+Christophe
+
+Le 04/09/2014 18:55, Michael Shigorin a écrit :
+> 	Hello,
+> I've spotted these depmod loops while building 3.17-rc3:
+>
+> depmod: ERROR: Found 6 modules in dependency cycles!
+> depmod: ERROR: Cycle detected: st21nfcb -> ndlc -> nci -> nfc -> st21nfcb
+> depmod: ERROR: Cycle detected: nci -> nfc -> nci
+>
+> Had to disable NFC_NCI, NFC_ST21NFCB.
+>
+> PS: not subscribed to LKML, CC please.
+>
+
