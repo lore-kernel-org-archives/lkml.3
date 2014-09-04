@@ -1,139 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaIDWrD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 18:47:03 -0400
-Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:32754
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755358AbaIDWrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 18:47:01 -0400
-Message-ID: <1409870809.24184.163.camel@snotra.buserror.net>
-Subject: Re: [PATCH v2] QE: move qe code from arch/powerpc to drivers/soc
-From: Scott Wood <scottwood@freescale.com>
-To: Zhao Qiang <B45475@freescale.com>
-CC: <leoli@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <B07421@freescale.com>, <R63061@freescale.com>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 4 Sep 2014 17:46:49 -0500
-In-Reply-To: <1409807186-45816-1-git-send-email-B45475@freescale.com>
-References: <1409807186-45816-1-git-send-email-B45475@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S1756102AbaIDWuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 18:50:12 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50585 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755358AbaIDWuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 18:50:09 -0400
+Date: Thu, 4 Sep 2014 23:49:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        kyungmin.park@samsung.com, k.kozlowski@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Message-ID: <20140904224948.GX29327@sirena.org.uk>
+References: <1408343223-4043-1-git-send-email-cw00.choi@samsung.com>
+ <1408343223-4043-2-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:7941:f206:1e28:f0a]
-X-ClientProxiedBy: BN1PR02CA0017.namprd02.prod.outlook.com (10.141.56.17) To
- BN1PR0301MB0724.namprd03.prod.outlook.com (25.160.78.143)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 0324C2C0E2
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(189002)(199003)(377424004)(24454002)(51704005)(81542001)(81342001)(4396001)(104166001)(103116003)(102836001)(105586002)(106356001)(93916002)(86362001)(74502001)(76482001)(74662001)(92566001)(31966008)(92726001)(80022001)(46102001)(62966002)(50466002)(23676002)(85852003)(85306004)(50226001)(64706001)(110136001)(20776003)(107046002)(50986999)(76176999)(95666004)(33646002)(77096002)(77982001)(89996001)(88136002)(87286001)(42186005)(79102001)(90102001)(87976001)(21056001)(19580395003)(77156001)(19580405001)(83322001)(101416001)(3826002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0724;H:[IPv6:2601:2:5800:3f7:7941:f206:1e28:f0a];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YYdWNcbn0Z2BHBmW"
+Content-Disposition: inline
+In-Reply-To: <1408343223-4043-2-git-send-email-cw00.choi@samsung.com>
+X-Cookie: Simulated picture.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv4 1/2] regulator: of: Add support for parsing
+ regulator_state for suspend state
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 13:06 +0800, Zhao Qiang wrote:
-> LS1 is arm cpu and it has qe ip block.
-> move qe code from platform directory to public directory.
-> 
-> QE is an IP block integrates several comunications peripheral
-> controllers. It can implement a variety of applications, such
-> as uart, usb and tdm and so on.
-> 
-> Signed-off-by: Zhao Qiang <B45475@freescale.com>
-> ---
-> Changes for v2:
-> 	- mv code to drivers/soc
 
-Who will be the maintainer of this code once it lives in drivers/soc,
-especially once it is no longer used only by PPC?
+--YYdWNcbn0Z2BHBmW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->  44 files changed, 113 insertions(+), 113 deletions(-)
->  delete mode 100644 arch/powerpc/sysdev/qe_lib/Kconfig
->  create mode 100644 drivers/soc/qe/Kconfig
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/Makefile (100%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/gpio.c (99%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe.c (99%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe_ic.c (99%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe_ic.h (98%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe_io.c (99%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/ucc.c (98%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/ucc_fast.c (98%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/ucc_slow.c (98%)
->  rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/usb.c (96%)
+On Mon, Aug 18, 2014 at 03:27:02PM +0900, Chanwoo Choi wrote:
 
-drivers/soc/fsl-qe
-
-> diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
-> index 0f7c447..5da1a482 100644
-> --- a/drivers/soc/Makefile
-> +++ b/drivers/soc/Makefile
-> @@ -3,3 +3,5 @@
->  #
->  
->  obj-$(CONFIG_ARCH_QCOM)		+= qcom/
+> +		suspend_uV = of_get_property(suspend_np, "regulator-volt",
+> +						NULL);
+> +		if (suspend_uV) {
+> +			suspend_state->uV = be32_to_cpu(*suspend_uV);
 > +
-> +obj-$(CONFIG_QUICC_ENGINE)     += qe/
+> +			if (suspend_state->uV < constraints->min_uV)
+> +				suspend_state->uV = constraints->min_uV;
+> +			if (suspend_state->uV > constraints->max_uV)
+> +				suspend_state->uV = constraints->max_uV;
+> +		}
 
-Please keep the file consistent regarding tabs versus spaces.
+A few things here.  One is that this will fail if we don't have a
+voltage range specified at runtime.  It is possible that the user needs
+to override the voltage in suspend mode but not at runtime.  Perhaps we
+want to make them specify the runtime voltage anyway but if we do then
+the binding needs to say that this is mandatory even if it's just
+restating the hardware default.
 
-Plus, why do you need a newline between them?
+It's also not clear to me that the suspend voltage needs to be in the
+range that we can vary at runtime, especially if we're not giving
+permission for runtime variation.  From that point of view we should
+probably just not check, but if we are going to check we should print a
+warning that we're doing it so people know that what they set in the DT
+isn't being followed.
 
-> diff --git a/drivers/soc/qe/Kconfig b/drivers/soc/qe/Kconfig
-> new file mode 100644
-> index 0000000..8b03ca2
-> --- /dev/null
-> +++ b/drivers/soc/qe/Kconfig
-> @@ -0,0 +1,45 @@
-> +#
-> +# QE Communication options
-> +#
-> +config QUICC_ENGINE
-> +	bool "Freescale QUICC Engine (QE) Support"
-> +	depends on FSL_SOC && PPC32
-> +	select PPC_LIB_RHEAP
-> +	select CRC32
-> +	help
-> +	  The QUICC Engine (QE) is a new generation of communications
-> +	  coprocessors on Freescale embedded CPUs (akin to CPM in older chips).
-> +	  Selecting this option means that you wish to build a kernel
-> +	  for a machine with a QE coprocessor.
-> +
-> +config QE_GPIO
-> +	bool "QE GPIO support"
-> +	depends on QUICC_ENGINE
-> +	select ARCH_REQUIRE_GPIOLIB
-> +	help
-> +	  Say Y here if you're going to use hardware that connects to the
-> +	  QE GPIOs.
-> +
-> +config UCC_SLOW
-> +	bool
-> +	default y if SERIAL_QE
-> +	help
-> +	  This option provides qe_lib support to UCC slow
-> +	  protocols: UART, BISYNC, QMC
-> +
-> +config UCC_FAST
-> +	bool
-> +	default y if UCC_GETH
-> +	help
-> +	  This option provides qe_lib support to UCC fast
-> +	  protocols: HDLC, Ethernet, ATM, transparent
-> +
-> +config UCC
-> +	bool
-> +	default y if UCC_FAST || UCC_SLOW
-> +
-> +config QE_USB
-> +	bool
-> +	default y if USB_FSL_QE
-> +	help
-> +	  QE USB Controller support
+--YYdWNcbn0Z2BHBmW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-First could we give these names better namespacing?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--Scott
+iQIcBAEBAgAGBQJUCOyJAAoJELSic+t+oim9BC4P/1wdmDEPWmYTrg9qwl6vV3MH
+Ep9eoTOzzKQlJmwXTe9nSwh+NCllfwJdLg/v9Bv3wrtms+VmhzyeIEdKsY/dbh10
+5ip+TyNZF9DhdZLVR7Z/Tw026u3qKcGJ13AcqS/rrJ6VpIBPpvzEsxV7gsvtGvfN
+W1DLfe5nwbTCvPB+oIA5UE0o69frQ/8z727dE3wkK6EXyh8bwS6kHtlmAacok6p4
+aWnOPtXClkgwCZyS0P//qIAusEGfPv5J1lC+FXJ5cecsqhMVNUd1rMa6Db+Zbu77
+/Pgouf+Of2KLkTOnGvC3jaubuksWqmJXNwV8bD6J19RtP2SVC4KnK8pOdbq5Reh4
+imisNMHgpxpGilm17FbyDsr3Su6QthHdFcleG2w4Ug0BzoQ72BXzRmYGa4lLP8zr
+qhxPJqvrIthWOCbKrsbZtkfkukWWM1y05DpfFckFjKzQPjgwkTssl0pl/AoK3K0A
+ois6QAR2iSjocHWfRRuBZsJ3ARrOSbv9GY1trcbvt9L8z93aCHMSYo8PmocGAYoD
+9nLUTAm4VjNml8fm8YFSV0Qr+KHon05/ZjzmwFe0u6l25g15d+HGINQM/olMrCwY
+/ZyeGAcCR/Cf4rb6jCa7GiqxxOIFWqDag9Yy56nwL0jqfceSWA5Vr9p3O8Zc9uwd
+jXpHBpyohrzOyJ96ZxA8
+=p5/s
+-----END PGP SIGNATURE-----
 
-
+--YYdWNcbn0Z2BHBmW--
