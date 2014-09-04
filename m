@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaIDOS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:18:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44599 "EHLO mail.kernel.org"
+	id S1751741AbaIDO1K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:27:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21849 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaIDOSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:18:55 -0400
-Date: Thu, 4 Sep 2014 11:18:45 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
-Message-ID: <20140904141845.GD2997@kernel.org>
-References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1750797AbaIDO1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:27:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,466,1406617200"; 
+   d="scan'208";a="594560747"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        Benjamin Romer <benjamin.romer@unisys.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v4 11/12] kmemleak: use seq_hex_dump() to dump buffers
+Date: Thu,  4 Sep 2014 17:26:58 +0300
+Message-Id: <1409840819-18976-12-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 26, 2014 at 03:38:39PM +0900, Namhyung Kim escreveu:
-> There's a problem on finding correct kernel symbols when perf report
-> runs on a different kernel.  Although a part of the problem was solved
-> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
-> version when finding vmlinux"), there's a remaining problem still.
-> 
-> When perf records samples, it synthesizes the kernel map using
-> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
-> You can easily see it using 'perf report -D' command.
-> 
-> After finishing record, it goes through the recorded events to find
-> maps/dsos actually used.  And then record build-id info of them.
-> 
-> During this process, it needs to load symbols in a dso and it'd call
-> dso__load_vmlinux() since the default value of the symbol_conf.try_
-> vmlinux_path is true.  However it changes dso->long_name to a real
-> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
-> if one is running on a custom kernel.
-> 
-> It resulted in that perf report reads the build-id of the vmlinux, but
-> cannot use it since it only knows about the [kernel.kallsyms] map.  It
-> then falls back to possible vmlinux paths by using the recorded kernel
-> version (in case of a recent version) or a running kernel silently
-> (which might break the result).  I think it's worth going to the
-> stable tree.
-> 
-> I can think of a couple of ways to fix it.  In this patch, I changed
-> to use the name of "[kernel.kallsyms]" for the kernel build-id event
-> instead of not trying vmlinux paths.  This way we can provide maximum
-> info (like annotation) with minimum change IMHO.
-> 
-> Before:
-> 
->   $ perf record -a usleep 1
-> 
->   $ perf buildid-list
->   00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
-> 
->   $ perf buildid-list -H
->   0000000000000000000000000000000000000000 [kernel.kallsyms]
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->   0000000000000000000000000000000000000000 /tmp/perf-2523.map
-> 
-> After:
-> 
->   $ perf record -a usleep 1
-> 
->   $ perf buildid-list
->   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
+Instead of custom approach let's use recently introduced seq_hex_dump() helper.
 
-We are losing information, namely the pathname for the kernel used, that
-may be useful in analysis.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ mm/kmemleak.c | 21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
-Why not make sure that if there is a build-id in the perf.data header,
-then we completely refusing anything that doesn't match the build-id?
-I.e. the name is irrelevant for this purpose, the contents, as keyed by
-the build-id, is what matters.
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 3cda50c..bc14fdc 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -291,23 +291,14 @@ static void hex_dump_object(struct seq_file *seq,
+ 			    struct kmemleak_object *object)
+ {
+ 	const u8 *ptr = (const u8 *)object->pointer;
+-	int i, len, remaining;
+-	unsigned char linebuf[HEX_ROW_SIZE * 5];
++	size_t len;
+ 
+ 	/* limit the number of lines to HEX_MAX_LINES */
+-	remaining = len =
+-		min(object->size, (size_t)(HEX_MAX_LINES * HEX_ROW_SIZE));
+-
+-	seq_printf(seq, "  hex dump (first %d bytes):\n", len);
+-	for (i = 0; i < len; i += HEX_ROW_SIZE) {
+-		int linelen = min(remaining, HEX_ROW_SIZE);
+-
+-		remaining -= HEX_ROW_SIZE;
+-		hex_dump_to_buffer(ptr + i, linelen, HEX_ROW_SIZE,
+-				   HEX_GROUP_SIZE, linebuf, sizeof(linebuf),
+-				   HEX_ASCII);
+-		seq_printf(seq, "    %s\n", linebuf);
+-	}
++	len = min(object->size, (size_t)(HEX_MAX_LINES * HEX_ROW_SIZE));
++
++	seq_printf(seq, "  hex dump (first %zu bytes):\n", len);
++	seq_hex_dump(seq, "    ", DUMP_PREFIX_NONE, HEX_ROW_SIZE,
++		     HEX_GROUP_SIZE, ptr, len, HEX_ASCII);
+ }
+ 
+ /*
+-- 
+2.1.0
 
-- Arnaldo
-
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
-> 
->   $ perf buildid-list -H
->   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
->   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->   0000000000000000000000000000000000000000 /tmp/perf-2523.map
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/header.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 158c787ce0c4..5c4093dee467 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -263,6 +263,9 @@ static int __dsos__write_buildid_table(struct list_head *head,
->  			machine__mmap_name(machine, nm, sizeof(nm));
->  			name = nm;
->  			name_len = strlen(nm) + 1;
-> +		} else if (dso__is_vmlinux(pos)) {
-> +			name = pos->name;
-> +			name_len = strlen(pos->name) + 1;
->  		} else {
->  			name = pos->long_name;
->  			name_len = pos->long_name_len + 1;
-> -- 
-> 2.0.0
