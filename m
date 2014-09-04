@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225AbaIDFDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 01:03:18 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:29647 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaIDFDP (ORCPT
+	id S1751392AbaIDFEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 01:04:31 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:33188 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaIDFE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 01:03:15 -0400
-X-AuditID: cbfee68f-f797f6d000001173-7d-5407f2917826
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: "'Will Deacon'" <will.deacon@arm.com>,
-        NAVEEN KRISHNA CHATRADHI <ch.naveen@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, naushad@samsung.com,
-        "'Catalin Marinas'" <Catalin.Marinas@arm.com>, robh+dt@kernel.org,
-        thomas.ab@samsung.com
-References: <1409629756-14304-1-git-send-email-pankaj.dubey@samsung.com>
- <20140902084214.GE25379@arm.com>
-In-reply-to: <20140902084214.GE25379@arm.com>
-Subject: RE: [RESEND PATCH] arm64: dts: add <dt-bindings/> symlink
-Date: Thu, 04 Sep 2014 10:35:28 +0530
-Message-id: <002801cfc7fd$d9c5b5a0$8d5120e0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQFIUHAbXakzor/NOaPkTWAeyC6jkgHki6lDnPAza3A=
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsWyRsSkWnfiJ/YQg7YN3Bbvl/UwWtx9fpjR
-	Yv6Rc6wWmx5fY7W4vGsOm8Wno/9ZLVr3HmG36FjGaPHy4wkWB06PNfPWMHpsWtXJ5rF5Sb1H
-	35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZdw5dZaxoJO74ln3frYGxk7OLkZODgkBE4nrU56z
-	Q9hiEhfurWfrYuTiEBJYyihxbMNVFpiiLQf7mCES0xklVrbvYIJw/jJK3Ny9iA2kik1AV+LJ
-	+7nMILaIQLTElB1LGEGKmAWuMko8XfoJbJSQQLbE6cadYA2cQA3LztwF2y0s4CRxfk8rmM0i
-	oCoxc+sZsHpeAUuJhbd2M0HYghI/Jt8DizMLaEms33mcCcKWl9i85i0zxKkKEjvOvmaEOMJK
-	4tXvGVD14hKTHjxkBzlIQuAju0T7n1ssEMsEJL5NPgRkcwAlZCU2HYCaIylxcMUNlgmMErOQ
-	rJ6FZPUsJKtnIVmxgJFlFaNoakFyQXFSepGxXnFibnFpXrpecn7uJkZgTJ/+96x/B+PdA9aH
-	GAU4GJV4eAtesIcIsSaWFVfmHmI0BbpoIrOUaHI+MHHklcQbGpsZWZiamBobmVuaKYnzLpT6
-	GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUeNBcvHKYPHA64Z172t+fjmfpDXn8SLP9wmc
-	cxqeLsltfiu+K0O8MHG/yo0PC1/MeuVus4Rxi5nYnFV1NnvO9NvlPVy+1FVuRvrUSClj6/9T
-	LvUv1DH5Wjhtz/NA+91HWbq111kdkfZevHjmFvflzieumYpwNF1z9LTv1dKV/DXp0rrtfz+y
-	ZSuxFGckGmoxFxUnAgDFAYjF5AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd2Jn9hDDJYeZ7Z4v6yH0eLu88OM
-	FvOPnGO12PT4GqvF5V1z2Cw+Hf3PatG69wi7RccyRouXH0+wOHB6rJm3htFj06pONo/NS+o9
-	+rasYvT4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJ
-	xSdA1y0zB+geJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGnVNnGQs6
-	uSuede9na2Ds5Oxi5OSQEDCR2HKwjxnCFpO4cG89WxcjF4eQwHRGiZXtO5ggnL+MEjd3L2ID
-	qWIT0JV48n4uWIeIQLTElB1LGEGKmAWuMko8XfqJBSQhJJAtcbpxJ1gDJ1DDsjN32UFsYQEn
-	ifN7WsFsFgFViZlbz4DV8wpYSiy8tZsJwhaU+DH5HlicWUBLYv3O40wQtrzE5jVvoU5VkNhx
-	9jUjxBFWEq9+z4CqF5eY9OAh+wRGoVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuoV5yY
-	W1yal66XnJ+7iRGcMJ5J7WBc2WBxiFGAg1GJh7fgBXuIEGtiWXFl7iFGCQ5mJRHe2WeBQrwp
-	iZVVqUX58UWlOanFhxhNgT6dyCwlmpwPTGZ5JfGGxibmpsamliYWJmaWSuK8B1qtA4UE0hNL
-	UrNTUwtSi2D6mDg4pRoYO5bzsZ7fsuyRDB/n/7kN3ifW71W7v2TijmjmxLX6bDEbX5/9qe6c
-	oLfYofWwtdihtU/EF62erZSbc/2lVxKr4vEZf+9tsrzHtGSStFL6Ao1f8323KN+avs045Ear
-	a3zu3z3anL7/j68zXqEuxn1Eb3X8L0sn7bc2d9tlxH15OHMMBP9xbdpXqMRSnJFoqMVcVJwI
-	APtoybEuAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 4 Sep 2014 01:04:29 -0400
+Date: Thu, 4 Sep 2014 07:04:24 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Kautuk Consul <consul.kautuk@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH 1/1] do_exit(): Solve possibility of BUG() due to race
+ with try_to_wake_up()
+Message-ID: <20140904050424.GA26756@gmail.com>
+References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com>
+ <20140825155738.GA5944@redhat.com>
+ <20140901153935.GQ27892@worktop.ger.corp.intel.com>
+ <20140901175851.GA15210@redhat.com>
+ <20140901190931.GD5806@worktop.ger.corp.intel.com>
+ <20140902155208.GA28668@redhat.com>
+ <20140902164714.GA17033@redhat.com>
+ <20140902173910.GF27892@worktop.ger.corp.intel.com>
+ <20140903133640.GA25439@redhat.com>
+ <20140903144450.GB7083@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903144450.GB7083@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> -----Original Message-----
-> From: Will Deacon [mailto:will.deacon@arm.com]
-> Sent: Tuesday, September 02, 2014 2:12 PM
-> To: Pankaj Dubey
-> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
-> devicetree@vger.kernel.org; naushad@samsung.com; Catalin Marinas;
-> robh+dt@kernel.org; thomas.ab@samsung.com
-> Subject: Re: [RESEND PATCH] arm64: dts: add <dt-bindings/> symlink
+> > Ah, I simply do not know what is cheaper, even on x86. Well, 
+> > we need to enable/disable irqs, but again I do not really 
+> > know how much does this cost.
 > 
-> On Tue, Sep 02, 2014 at 04:49:16AM +0100, Pankaj Dubey wrote:
-> > Add symlink to include/dt-bindings from arch/arm64/boot/dts/include/
-> > to match the ones in ARM architectures so that preprocessed device
-> > tree files can include various useful constant definitions.
-> >
-> > See commit c58299aa8754 ("kbuild: create an "include chroot" for DT
-> > bindings") merged in v3.10-rc1 for details.
-> >
-> > CC: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > ---
-> >
-> > Resubmitting this change as now it will be required for Samsung ARM64
-> > based SoC.
-> 
-> Just include this change in the series adding a .dts that needs it -- it
-doesn't really
-> make sense in isolation (unless somebody desperately wants this in?).
-> 
+> Ah good point about that IRQ thing, yes that's horribly 
+> expensive.
 
-OK, we will include this patch in series adding a .dts that needs it in next
-respin.
+Enabling/disabling local IRQs is not really expensive (it's a 
+flat cost essentially - below 10 cycles on modern x86 CPUs) - 
+especially if we consider the 100x-1000x frequency difference 
+between schedule() and exit(), on typical systems:
 
-@Naveen: Please include this patch whenever you are respinning Exynos7 dts
-patches.
+  $ grep -E 'ctxt|processes' /proc/stat 
+  ctxt 47166536
+  processes 91876
+
+And that's from a system that emphatically does not schedule 
+much. On others the difference is much larger.
+
+So please don't push complexity into the scheduler from 
+lower-freq areas of the kernel!
 
 Thanks,
-Pankaj Dubey
-> Will
 
+	Ingo
