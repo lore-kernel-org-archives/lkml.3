@@ -1,32 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaIDOMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:12:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36141 "EHLO mx1.redhat.com"
+	id S1753592AbaIDOM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:12:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39600 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753434AbaIDOMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:12:52 -0400
+	id S1753434AbaIDOMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 10:12:55 -0400
 From: Denys Vlasenko <dvlasenk@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 1/3] uprobes: add comment with insn opcodes, mnemonics and why we dont support them
-Date: Thu,  4 Sep 2014 16:12:29 +0200
-Message-Id: <1409839951-8073-1-git-send-email-dvlasenk@redhat.com>
+Subject: [PATCH 2/3] uprobes: fix 1-byte opcode tables
+Date: Thu,  4 Sep 2014 16:12:30 +0200
+Message-Id: <1409839951-8073-2-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1409839951-8073-1-git-send-email-dvlasenk@redhat.com>
+References: <1409839951-8073-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After adding these, it's clear we have some awkward choices there.
-Some valid instructions are prohibited from uprobing while
-several invalid ones are allowed.
+This change fixes 1-byte opcode tables so that only insns
+for which we have real reasons to disallow probing are marked
+with unset bits.
 
-Hopefully future edits to the good-opcode tables will fix wrong bits
-or explain why those bits are not wrong.
+To that end:
 
-No actual code changes.
+Set bits for all prefix bytes. Their setting is ignored anyway -
+we check the bitmap against OPCODE1(insn), not against first byte.
+Keeping them set to 0 only confuses code reader with
+"why we don't support that opcode" question.
+
+Thus: enable bytes c4,c5 in 64-bit mode (VEX prefixes).
+Byte 62 (EVEX prefix) is not yet enabled since insn decoder
+does not support that yet.
+
+For 32-bit mode, enable probing of opcodes 63 (arpl) and d6 (salc).
+They don't require any special handling.
+
+For 64-bit mode, disable 9a and ea - these undefined opcodes
+were mistakenly left enabled.
 
 Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 CC: Jim Keniston <jkenisto@us.ibm.com>
@@ -35,194 +49,140 @@ CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 CC: Ingo Molnar <mingo@kernel.org>
 CC: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/uprobes.c | 153 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 134 insertions(+), 19 deletions(-)
+ arch/x86/kernel/uprobes.c | 66 +++++++++++++----------------------------------
+ 1 file changed, 18 insertions(+), 48 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 5d1cbfe..9ba2fb2 100644
+index 9ba2fb2..40dfb4e 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -66,6 +66,49 @@
-  * Good-instruction tables for 32-bit apps.  This is non-const and volatile
+@@ -67,18 +67,6 @@
   * to keep gcc from statically optimizing it out, as variable_test_bit makes
   * some versions of gcc to think only *(unsigned long*) is used.
-+ *
-+ * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
-+ * won't report *prefixes* as OPCODE1(insn).
-+ * 0f - 2-byte opcode prefix
-+ * 26,2e,36,3e - es:/cs:/ss:/ds:
-+ * 64 - fs: (marked as "good", why?)
-+ * 65 - gs: (marked as "good", why?)
-+ * 66 - operand-size prefix
-+ * 67 - address-size prefix
-+ * f0 - lock prefix
-+ * f2 - repnz    (marked as "good", why?)
-+ * f3 - rep/repz (marked as "good", why?)
-+ *
-+ * Opcodes we'll probably never support:
-+ * 6c-6f - ins,outs. SEGVs if used in userspace
-+ * e4-e7 - in,out imm. SEGVs if used in userspace
-+ * ec-ef - in,out acc. SEGVs if used in userspace
-+ * cc - int3. SIGTRAP if used in userspace
-+ * ce - into. Not used in userspace - no kernel support to make it useful. SEGVs
-+ *	(why we support bound (62) then? it's similar, and similarly unused...)
-+ * f1 - int1. SIGTRAP if used in userspace
-+ * f4 - hlt. SEGVs if used in userspace
-+ * fa - cli. SEGVs if used in userspace
-+ * fb - sti. SEGVs if used in userspace
-+ *
-+ * Opcodes which need some work to be supported:
-+ * 07,17,1f - pop es/ss/ds
-+ *	Normally not used in userspace, but would execute if used.
-+ *	Can cause GP or stack exception if tries to load wrong segment descriptor.
-+ *	We hesitate to run them under single step since kernel's handling
-+ *	of userspace single-stepping (TF flag) is fragile.
-+ *	We can easily refuse to support push es/cs/ss/ds (06/0e/16/1e)
-+ *	on the same grounds that they are never used.
-+ * cd - int N.
-+ *	Used by userspace for "int 80" syscall entry. (Other "int N"
-+ *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
-+ *	Not supported since kernel's handling of userspace single-stepping
-+ *	(TF flag) is fragile.
-+ * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
-+ *
-+ * Opcodes which can be enabled right away:
-+ * 63 - arpl. This insn has no unusual exceptions (it's basically an arith op).
-+ * d6 - salc. Undocumented "sign-extend carry flag to AL" insn
+  *
+- * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
+- * won't report *prefixes* as OPCODE1(insn).
+- * 0f - 2-byte opcode prefix
+- * 26,2e,36,3e - es:/cs:/ss:/ds:
+- * 64 - fs: (marked as "good", why?)
+- * 65 - gs: (marked as "good", why?)
+- * 66 - operand-size prefix
+- * 67 - address-size prefix
+- * f0 - lock prefix
+- * f2 - repnz    (marked as "good", why?)
+- * f3 - rep/repz (marked as "good", why?)
+- *
+  * Opcodes we'll probably never support:
+  * 6c-6f - ins,outs. SEGVs if used in userspace
+  * e4-e7 - in,out imm. SEGVs if used in userspace
+@@ -105,31 +93,27 @@
+  *	Not supported since kernel's handling of userspace single-stepping
+  *	(TF flag) is fragile.
+  * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
+- *
+- * Opcodes which can be enabled right away:
+- * 63 - arpl. This insn has no unusual exceptions (it's basically an arith op).
+- * d6 - salc. Undocumented "sign-extend carry flag to AL" insn
   */
  #if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
  static volatile u32 good_insns_32[256 / 32] = {
-@@ -94,7 +137,55 @@ static volatile u32 good_insns_32[256 / 32] = {
- #define good_insns_32	NULL
- #endif
- 
--/* Good-instruction tables for 64-bit apps */
-+/* Good-instruction tables for 64-bit apps.
-+ *
-+ * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
-+ * won't report *prefixes* as OPCODE1(insn).
-+ * 0f - 2-byte opcode prefix
-+ * 26,2e,36,3e - es:/cs:/ss:/ds:
-+ * 40-4f - rex prefixes
-+ * 64 - fs: (marked as "good", why?)
-+ * 65 - gs: (marked as "good", why?)
-+ * 66 - operand-size prefix
-+ * 67 - address-size prefix
-+ * f0 - lock prefix
-+ * f2 - repnz    (marked as "good", why?)
-+ * f3 - rep/repz (marked as "good", why?)
-+ *
-+ * Genuinely invalid opcodes:
-+ * 06,07 - formerly push/pop es
-+ * 0e - formerly push cs
-+ * 16,17 - formerly push/pop ss
-+ * 1e,1f - formerly push/pop ds
-+ * 27,2f,37,3f - formerly daa/das/aaa/aas
-+ * 60,61 - formerly pusha/popa
-+ * 62 - formerly bound. EVEX prefix for AVX512
-+ * 82 - formerly redundant encoding of Group1
-+ * 9a - formerly call seg:ofs (marked as "supported"???)
-+ * c4,c5 - formerly les/lds. VEX prefixes for AVX
-+ * ce - formerly into
-+ * d4,d5 - formerly aam/aad
-+ * d6 - formerly undocumented salc
-+ * ea - formerly jmp seg:ofs (marked as "supported"???)
-+ *
-+ * Opcodes we'll probably never support:
-+ * 6c-6f - ins,outs. SEGVs if used in userspace
-+ * e4-e7 - in,out imm. SEGVs if used in userspace
-+ * ec-ef - in,out acc. SEGVs if used in userspace
-+ * cc - int3. SIGTRAP if used in userspace
-+ * f1 - int1. SIGTRAP if used in userspace
-+ * f4 - hlt. SEGVs if used in userspace
-+ * fa - cli. SEGVs if used in userspace
-+ * fb - sti. SEGVs if used in userspace
-+ *
-+ * Opcodes which need some work to be supported:
-+ * cd - int N.
-+ *	Used by userspace for "int 80" syscall entry. (Other "int N"
-+ *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
-+ *	Not supported since kernel's handling of userspace single-stepping
-+ *	(TF flag) is fragile.
-+ * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
-+ */
- #if defined(CONFIG_X86_64)
- static volatile u32 good_insns_64[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-@@ -122,7 +213,48 @@ static volatile u32 good_insns_64[256 / 32] = {
- #define good_insns_64	NULL
- #endif
- 
--/* Using this for both 64-bit and 32-bit apps */
-+/* Using this for both 64-bit and 32-bit apps.
-+ * Opcodes we don't support:
-+ * 0f 00 - SLDT/STR/LLDT/LTR/VERR/VERW/-/- group. System insns
-+ * 0f 01 - SGDT/SIDT/LGDT/LIDT/SMSW/-/LMSW/INVLPG group.
-+ *	Also encodes tons of other system insns if mod=11.
-+ *	Some are in fact non-system: xend, xtest, rdtscp, maybe more
-+ * 0f 02 - lar (why? should be safe, it throws no exceptipons)
-+ * 0f 03 - lsl (why? should be safe, it throws no exceptipons)
-+ * 0f 04 - undefined
-+ * 0f 05 - syscall
-+ * 0f 06 - clts (CPL0 insn)
-+ * 0f 07 - sysret
-+ * 0f 08 - invd (CPL0 insn)
-+ * 0f 09 - wbinvd (CPL0 insn)
-+ * 0f 0a - undefined
-+ * 0f 0b - ud2
-+ * 0f 0c - undefined
-+ * 0f 0d - prefetchFOO (amd prefetch insns)
-+ * 0f 18 - prefetchBAR (intel prefetch insns)
-+ * 0f 24 - mov from test regs (perhaps entire 20-27 area can be disabled (special reg ops))
-+ * 0f 25 - undefined
-+ * 0f 26 - mov to test regs
-+ * 0f 27 - undefined
-+ * 0f 30 - wrmsr (CPL0 insn)
-+ * 0f 34 - sysenter
-+ * 0f 35 - sysexit
-+ * 0f 36 - undefined
-+ * 0f 37 - getsec
-+ * 0f 38-3f - 3-byte opcodes (why?? all look safe)
-+ * 0f 78 - vmread
-+ * 0f 79 - vmwrite
-+ * 0f 7a - undefined
-+ * 0f 7b - undefined
-+ * 0f 7c - undefined
-+ * 0f 7d - undefined
-+ * 0f a6 - undefined
-+ * 0f a7 - undefined
-+ * 0f b8 - popcnt (why?? it's an ordinary ALU op)
-+ * 0f d0 - undefined
-+ * 0f f0 - lddqu (why?? it's an ordinary vector load op)
-+ * 0f ff - undefined
-+ */
- static volatile u32 good_2byte_insns[256 / 32] = {
  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
  	/*      ----------------------------------------------         */
-@@ -148,23 +280,6 @@ static volatile u32 good_2byte_insns[256 / 32] = {
- #undef W
+-	W(0x00, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) | /* 00 */
++	W(0x00, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1) | /* 00 */
+ 	W(0x10, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) , /* 10 */
+-	W(0x20, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1) | /* 20 */
+-	W(0x30, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1) , /* 30 */
++	W(0x20, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 20 */
++	W(0x30, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 30 */
+ 	W(0x40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 40 */
+ 	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
+-	W(0x60, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
++	W(0x60, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
+ 	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
+ 	W(0x80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
+ 	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
+ 	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
+ 	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
+ 	W(0xc0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
+-	W(0xd0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
++	W(0xd0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
+ 	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
+-	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
++	W(0xf0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
+ 	/*      ----------------------------------------------         */
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ };
+@@ -139,19 +123,6 @@ static volatile u32 good_insns_32[256 / 32] = {
  
- /*
-- * opcodes we'll probably never support:
-- *
-- *  6c-6d, e4-e5, ec-ed - in
-- *  6e-6f, e6-e7, ee-ef - out
-- *  cc, cd - int3, int
-- *  cf - iret
-- *  d6 - illegal instruction
-- *  f1 - int1/icebp
-- *  f4 - hlt
-- *  fa, fb - cli, sti
-- *  0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
-- *
-- * invalid opcodes in 64-bit mode:
-- *
-- *  06, 0e, 16, 1e, 27, 2f, 37, 3f, 60-62, 82, c4-c5, d4-d5
-- *  63 - we support this opcode in x86_64 but not in i386.
-- *
-  * opcodes we may need to refine support for:
+ /* Good-instruction tables for 64-bit apps.
   *
-  *  0f - 2-byte instructions: For many of these instructions, the validity
+- * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
+- * won't report *prefixes* as OPCODE1(insn).
+- * 0f - 2-byte opcode prefix
+- * 26,2e,36,3e - es:/cs:/ss:/ds:
+- * 40-4f - rex prefixes
+- * 64 - fs: (marked as "good", why?)
+- * 65 - gs: (marked as "good", why?)
+- * 66 - operand-size prefix
+- * 67 - address-size prefix
+- * f0 - lock prefix
+- * f2 - repnz    (marked as "good", why?)
+- * f3 - rep/repz (marked as "good", why?)
+- *
+  * Genuinely invalid opcodes:
+  * 06,07 - formerly push/pop es
+  * 0e - formerly push cs
+@@ -159,14 +130,13 @@ static volatile u32 good_insns_32[256 / 32] = {
+  * 1e,1f - formerly push/pop ds
+  * 27,2f,37,3f - formerly daa/das/aaa/aas
+  * 60,61 - formerly pusha/popa
+- * 62 - formerly bound. EVEX prefix for AVX512
++ * 62 - formerly bound. EVEX prefix for AVX512 (not yet supported)
+  * 82 - formerly redundant encoding of Group1
+- * 9a - formerly call seg:ofs (marked as "supported"???)
+- * c4,c5 - formerly les/lds. VEX prefixes for AVX
++ * 9a - formerly call seg:ofs
+  * ce - formerly into
+  * d4,d5 - formerly aam/aad
+  * d6 - formerly undocumented salc
+- * ea - formerly jmp seg:ofs (marked as "supported"???)
++ * ea - formerly jmp seg:ofs
+  *
+  * Opcodes we'll probably never support:
+  * 6c-6f - ins,outs. SEGVs if used in userspace
+@@ -190,22 +160,22 @@ static volatile u32 good_insns_32[256 / 32] = {
+ static volatile u32 good_insns_64[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ 	/*      ----------------------------------------------         */
+-	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
++	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1) | /* 00 */
+ 	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
+-	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
+-	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
+-	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
++	W(0x20, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) | /* 20 */
++	W(0x30, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) , /* 30 */
++	W(0x40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 40 */
+ 	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
+-	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
++	W(0x60, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
+ 	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
+ 	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
+-	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
++	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1) , /* 90 */
+ 	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
+ 	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
+-	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
++	W(0xc0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
+ 	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
+-	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
+-	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
++	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0) | /* e0 */
++	W(0xf0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
+ 	/*      ----------------------------------------------         */
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ };
 -- 
 1.8.1.4
 
