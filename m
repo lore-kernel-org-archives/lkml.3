@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaIDNUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 09:20:52 -0400
-Received: from mail2.tiolive.com ([94.23.229.207]:39822 "EHLO
-	mail2.tiolive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaIDNUv (ORCPT
+	id S1752410AbaIDNWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 09:22:17 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56123 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846AbaIDNWO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 09:20:51 -0400
-From: Kirill Smelkov <kirr@nexedi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kirill Smelkov <kirr@nexedi.com>, Ken Chen <kenchen@google.com>
-Subject: [PATCH] hugetlbfs: document that sticky mounts are allowed
-Date: Thu,  4 Sep 2014 17:20:33 +0400
-Message-Id: <1409836833-4320-1-git-send-email-kirr@nexedi.com>
-X-Mailer: git-send-email 2.1.0.61.g11be0d6
+	Thu, 4 Sep 2014 09:22:14 -0400
+From: "Murphy, Dan" <dmurphy@ti.com>
+To: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH v2 1/2] doc: dt/bindings: input: introduce TI DRV2667
+ haptic driver description
+Thread-Topic: [PATCH v2 1/2] doc: dt/bindings: input: introduce TI DRV2667
+ haptic driver description
+Thread-Index: AQHPwHkALSGUIn9lmUKCrHajIRhdvw==
+Date: Thu, 4 Sep 2014 13:21:48 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49E385C5@DFLE09.ent.ti.com>
+References: <1408980413-8763-1-git-send-email-dmurphy@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 75897d60 (hugetlb: allow sticky directory mount option) added
-support for mounting hugetlbfs with sticky option set, like /tmp is
-usually mounted, but forgot to document that.
+Bumping x2
 
-Cc: Ken Chen <kenchen@google.com>
-Signed-off-by: Kirill Smelkov <kirr@nexedi.com>
----
- Documentation/vm/hugetlbpage.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 08/25/2014 10:26 AM, Murphy, Dan wrote:
+> DRV2667 is a haptic/vibrator driver for Linear Resonant Actuators.
+> Adding dt binding for this part
+> 
+> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+> ---
+> 
+> v2 - Removed extra tabs, changed node to function not device
+> added vbat-supply, and removed confusing description - https://patchwork.kernel.org/patch/4759381/
+> 
+>  .../devicetree/bindings/input/ti,drv2667.txt       |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/input/ti,drv2667.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/input/ti,drv2667.txt b/Documentation/devicetree/bindings/input/ti,drv2667.txt
+> new file mode 100644
+> index 0000000..996382c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/ti,drv2667.txt
+> @@ -0,0 +1,17 @@
+> +* Texas Instruments - drv2667 Haptics driver
+> +
+> +Required properties:
+> +	- compatible - "ti,drv2667" - DRV2667
+> +	- reg -  I2C slave address
+> +	- vbat-supply - Required supply regulator
+> +
+> +Example:
+> +
+> +haptics: haptics@59 {
+> +	compatible = "ti,drv2667";
+> +	reg = <0x59>;
+> +	vbat-supply = <&vbat>;
+> +};
+> +
+> +For more product information please see the link below:
+> +http://www.ti.com/product/drv2667
+> 
 
-diff --git a/Documentation/vm/hugetlbpage.txt b/Documentation/vm/hugetlbpage.txt
-index bdd4bb9..b64e0af 100644
---- a/Documentation/vm/hugetlbpage.txt
-+++ b/Documentation/vm/hugetlbpage.txt
-@@ -274,7 +274,7 @@ This command mounts a (pseudo) filesystem of type hugetlbfs on the directory
- /mnt/huge.  Any files created on /mnt/huge uses huge pages.  The uid and gid
- options sets the owner and group of the root of the file system.  By default
- the uid and gid of the current process are taken.  The mode option sets the
--mode of root of file system to value & 0777.  This value is given in octal.
-+mode of root of file system to value & 01777.  This value is given in octal.
- By default the value 0755 is picked. The size option sets the maximum value of
- memory (huge pages) allowed for that filesystem (/mnt/huge). The size is
- rounded down to HPAGE_SIZE.  The option nr_inodes sets the maximum number of
+
 -- 
-2.1.0.61.g11be0d6
+------------------
+Dan Murphy
