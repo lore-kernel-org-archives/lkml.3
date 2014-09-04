@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520AbaIDGsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 02:48:00 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:38508 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaIDGr6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 02:47:58 -0400
+	id S932108AbaIDGvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 02:51:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26547 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098AbaIDGvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 02:51:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,464,1406617200"; 
+   d="scan'208";a="586069003"
+Message-ID: <54080BF5.1070504@linux.intel.com>
+Date: Thu, 04 Sep 2014 09:51:33 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <54078C74.2060804@zytor.com>
-References: <5405E186.2080406@canonical.com>
-	<20140902192941.GB3001@console-pimps.org>
-	<CAKv+Gu_eSe+FeNkGm+w3sSsRn2_hr70xLVBieZgyhawAv6PQvw@mail.gmail.com>
-	<5406D0DB.90401@canonical.com>
-	<CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com>
-	<54073409.6030004@canonical.com>
-	<CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com>
-	<20140903175948.GH3001@console-pimps.org>
-	<54078C74.2060804@zytor.com>
-Date: Thu, 4 Sep 2014 08:47:57 +0200
-Message-ID: <CAKv+Gu8VkW+unei3vGZxor6ZGuLwsmKktcBJfy3+bKrkrKgPyw@mail.gmail.com>
-Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
- preparation patches
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ulf Winkelvos <ulf@winkelvos.de>,
-        Matt Fleming <matt.fleming@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net> <53F6F14B.1030609@redhat.com> <20140822074224.GB7372@gmail.com> <53FFEEC0.4000304@redhat.com> <540414AB.9000004@linux.intel.com> <54053998.4040604@redhat.com> <54056076.2030603@linux.intel.com> <20140902083124.GB10356@redhat.com> <5406B9E6.6050103@linux.intel.com> <20140903075104.GA6187@redhat.com>
+In-Reply-To: <20140903075104.GA6187@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 September 2014 23:47, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> Any reason we can't reuse the existing GOT fixup code in the early x86
->> boot code? We're not executing it before the EFI boot stub atm, which is
->> the reason Maarten is hitting these difficulties.
->>
->> Maarten, does the following help?
->>
->> If not, Ard please go ahead with option #2 above. Overkill yes, but I've
->> done the single __attribute__() hacks in other projects and someone
->> (usually me) always eventually forgets to tag some instance.
->>
->
-> I think we really have two options: either fix up the GOT (which may be
-> a null operation, if the GOT is empty) or we add a compile-time check
-> that the GOT is empty, lest we will keep having these problems.
->
-> Since the GOT fixup loop is only a few instructions, it doesn't seem to
-> be all that problematic to just do it -- but make sure we don't end up
-> running it twice on any code path!
->
+On 03/09/2014 10:51, Michael S. Tsirkin wrote:
+> On Wed, Sep 03, 2014 at 09:49:10AM +0300, Eliezer Tamir wrote:
+>> On 02/09/2014 11:31, Michael S. Tsirkin wrote:
+>>> On Tue, Sep 02, 2014 at 09:15:18AM +0300, Eliezer Tamir wrote:
 
-So how about we:
-- add ASSERT(_got == _egot, "GOT entries not supported in
-boot/compressed") to the linker script
-- #define __nogotentry __attribute__((visibility(hidden))) somewhere
-in compiler.h or wherever else it belongs
-- add the __nogotentry qualifiers to each extern that requires it,
-which is currently:
-early_serial_base
-efi_early
-free_mem_end_ptr
-free_mem_ptr
-real_mode
-- get rid of the fixup code in assembly
+>> Busy polling is not a general purpose feature, it's not something you
+>> can casually turn on and will "just work". Most applications should not
+>> be using busy polling. Currently it is used by multiserver applications
+>> that you spend days tuning to specific platforms.
+>>
+>> What the user wants is to lower both avg and maximum latencies, at the
+>> expense of everything else including power efficiency and sometimes
+>> even throughput. The only exception is making the system crash ;)
+>>
+>> While letting other things take precedence over busy polling might not
+>> hurt the avg latency much, it will kill your maximum latency.
+> 
+> If scheduler happens to run both server and client on the
+> same CPU, polling will hurt maximum latency even more.
+> So I guess different users want different things.
+> 
+> How about applications giving us a hint what they prefer?
+> For example, a new flag that says "I don't have anything useful to do so
+> let's do busy polling but my server is on the local system, so please
+> only poll if CPU is otherwise idle".
 
-Any idea what the oldest GCC is we should support?
+I'm sorry for being ambiguous, when I said multi-server application, I
+meant an app that runs on more than one server machine.
 
--- 
-Ard.
+The loopback test is as far as I know not interesting.
+
+Of course if busypoll becomes interesting for virtualization over
+loopback, I have no problem with that, provided that there is a way to
+get the old behavior and that it is well documented.
+
+-Eliezer
