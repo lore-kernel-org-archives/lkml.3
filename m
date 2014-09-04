@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaIDO1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 10:27:45 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:43124 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaIDO1n (ORCPT
+	id S1753207AbaIDO13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 10:27:29 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:62829 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbaIDO11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 10:27:43 -0400
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] locks: flock_make_lock should return a struct file_lock (or PTR_ERR)
-Date: Thu,  4 Sep 2014 10:27:35 -0400
-Message-Id: <1409840855-10557-1-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 1.9.3
+	Thu, 4 Sep 2014 10:27:27 -0400
+Date: Thu, 4 Sep 2014 16:27:21 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Dave Hansen <dave@sr71.net>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>, Tejun Heo <tj@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: regression caused by cgroups optimization in 3.17-rc2
+Message-ID: <20140904142721.GB14548@dhcp22.suse.cz>
+References: <54061505.8020500@sr71.net>
+ <5406262F.4050705@intel.com>
+ <54062F32.5070504@sr71.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54062F32.5070504@sr71.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliminate the need for a return pointer.
+[Sorry to reply so late]
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+On Tue 02-09-14 13:57:22, Dave Hansen wrote:
+> I, of course, forgot to include the most important detail.  This appears
+> to be pretty run-of-the-mill spinlock contention in the resource counter
+> code.  Nearly 80% of the CPU is spent spinning in the charge or uncharge
+> paths in the kernel.  It is apparently spinning on res_counter->lock in
+> both the charge and uncharge paths.
+> 
+> It already does _some_ batching here on the free side, but that
+> apparently breaks down after ~40 threads.
+> 
+> It's a no-brainer since the patch in question removed an optimization
+> skipping the charging, and now we're seeing overhead from the charging.
+> 
+> Here's the first entry from perf top:
+> 
+>     80.18%    80.18%  [kernel]               [k] _raw_spin_lock
+>                   |
+>                   --- _raw_spin_lock
+>                      |
+>                      |--66.59%-- res_counter_uncharge_until
+>                      |          res_counter_uncharge
+>                      |          uncharge_batch
+>                      |          uncharge_list
+>                      |          mem_cgroup_uncharge_list
+>                      |          release_pages
+>                      |          free_pages_and_swap_cache
+
+Ouch. free_pages_and_swap_cache completely kills the uncharge batching
+because it reduces it to PAGEVEC_SIZE batches.
+
+I think we really do not need PAGEVEC_SIZE batching anymore. We are
+already batching on tlb_gather layer. That one is limited so I think
+the below should be safe but I have to think about this some more. There
+is a risk of prolonged lru_lock wait times but the number of pages is
+limited to 10k and the heavy work is done outside of the lock. If this
+is really a problem then we can tear LRU part and the actual
+freeing/uncharging into a separate functions in this path.
+
+Could you test with this half baked patch, please? I didn't get to test
+it myself unfortunately.
 ---
- fs/locks.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 314135ad820b..735b8d3fa78c 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -326,17 +326,18 @@ static inline int flock_translate_cmd(int cmd) {
- }
- 
- /* Fill in a file_lock structure with an appropriate FLOCK lock. */
--static int flock_make_lock(struct file *filp, struct file_lock **lock,
--		unsigned int cmd)
-+static struct file_lock *
-+flock_make_lock(struct file *filp, unsigned int cmd)
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index ef1f39139b71..154444918685 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -265,18 +265,12 @@ void free_page_and_swap_cache(struct page *page)
+ void free_pages_and_swap_cache(struct page **pages, int nr)
  {
- 	struct file_lock *fl;
- 	int type = flock_translate_cmd(cmd);
-+
- 	if (type < 0)
--		return type;
-+		return ERR_PTR(type);
- 	
- 	fl = locks_alloc_lock();
- 	if (fl == NULL)
--		return -ENOMEM;
-+		return ERR_PTR(-ENOMEM);
+ 	struct page **pagep = pages;
++	int i;
  
- 	fl->fl_file = filp;
- 	fl->fl_owner = filp;
-@@ -345,8 +346,7 @@ static int flock_make_lock(struct file *filp, struct file_lock **lock,
- 	fl->fl_type = type;
- 	fl->fl_end = OFFSET_MAX;
- 	
--	*lock = fl;
--	return 0;
-+	return fl;
+ 	lru_add_drain();
+-	while (nr) {
+-		int todo = min(nr, PAGEVEC_SIZE);
+-		int i;
+-
+-		for (i = 0; i < todo; i++)
+-			free_swap_cache(pagep[i]);
+-		release_pages(pagep, todo, false);
+-		pagep += todo;
+-		nr -= todo;
+-	}
++	for (i = 0; i < nr; i++)
++		free_swap_cache(pagep[i]);
++	release_pages(pagep, nr, false);
  }
  
- static int assign_type(struct file_lock *fl, long type)
-@@ -1885,9 +1885,12 @@ SYSCALL_DEFINE2(flock, unsigned int, fd, unsigned int, cmd)
- 	    !(f.file->f_mode & (FMODE_READ|FMODE_WRITE)))
- 		goto out_putf;
- 
--	error = flock_make_lock(f.file, &lock, cmd);
--	if (error)
-+	lock = flock_make_lock(f.file, cmd);
-+	if (IS_ERR(lock)) {
-+		error = PTR_ERR(lock);
- 		goto out_putf;
-+	}
-+
- 	if (can_sleep)
- 		lock->fl_flags |= FL_SLEEP;
- 
+ /*
 -- 
-1.9.3
-
+Michal Hocko
+SUSE Labs
