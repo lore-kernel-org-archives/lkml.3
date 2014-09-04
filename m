@@ -1,82 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174AbaIDKlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:41:13 -0400
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:47622 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752373AbaIDKlL (ORCPT
+	id S1753257AbaIDKl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:41:58 -0400
+Received: from rhcavuit01.kulnet.kuleuven.be ([134.58.240.129]:60981 "EHLO
+	cavuit01.kulnet.kuleuven.be" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752373AbaIDKl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:41:11 -0400
-Message-ID: <1409827235.3008.46.camel@linaro1.home>
-Subject: Re: [PATCH v5 3/3] kprobes: arm: enable OPTPROBES for ARM 32
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Wang Nan <wangnan0@huawei.com>, Russell King <linux@arm.linux.org.uk>,
-        "David A. Long" <dave.long@linaro.org>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Pei Feiyue <peifeiyue@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 04 Sep 2014 11:40:35 +0100
-In-Reply-To: <20140903103044.GC32378@arm.com>
-References: <1409144552-12751-1-git-send-email-wangnan0@huawei.com>
-	 <1409144552-12751-4-git-send-email-wangnan0@huawei.com>
-	 <1409665784.2873.49.camel@linaro1.home> <5406EADC.8080009@hitachi.com>
-	 <20140903103044.GC32378@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
+	Thu, 4 Sep 2014 06:41:56 -0400
+X-KULeuven-Envelope-From: bart.tanghe@thomasmore.be
+X-KULeuven-Scanned: Found to be clean
+X-KULeuven-ID: 311D3138030.A358B
+X-KULeuven-Information: Katholieke Universiteit Leuven
+Message-ID: <540841EC.9010906@thomasmore.be>
+Date: Thu, 04 Sep 2014 12:41:48 +0200
+X-Kuleuven: This mail passed the K.U.Leuven mailcluster
+From: Bart Tanghe <bart.tanghe@thomasmore.be>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: monstr@monstr.eu, Arnd Bergmann <arnd@arndb.de>
+CC: thierry.reding@gmail.com, michal.simek@xilinx.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        grant.likely@linaro.org, linux-pwm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [rfc]pwm: add xilinx pwm driver
+References: <1400066773-14393-1-git-send-email-bart.tanghe@thomasmore.be> <53748D84.5040005@monstr.eu> <5049141.XmehsUeakV@wuerfel> <5374C773.6070402@monstr.eu>
+In-Reply-To: <5374C773.6070402@monstr.eu>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-03 at 11:30 +0100, Will Deacon wrote:
-> On Wed, Sep 03, 2014 at 11:18:04AM +0100, Masami Hiramatsu wrote:
-> > (2014/09/02 22:49), Jon Medhurst (Tixy) wrote:
-> > > 1. On SMP systems it's very slow because of kprobe's use of stop_machine
-> > > for applying and removing probes, this forces the system to idle and
-> > > wait for the next scheduler tick for each probe change.
-> > 
-> > Hmm, agreed. It seems that arm32 limitation of self-modifying code on SMP.
-> > I'm not sure how we can handle it, but I guess;
-> >  - for some processors which have better coherent cache for SMP, we can
-> >    atomically replace the breakpoint code with original code.
-> 
-> Except that it's not an architected breakpoint instruction, as I mentioned
-> before. It's also not really a property of the cache.
-> 
-> >  - Even if we get an "undefined instruction" exception, its handler can
-> >    ask kprobes if the address is under modifying or not. And if it is,
-> >    we can just return from the exception to retry the execution.
-> 
-> It's not as simple as that -- you could potentially see an interleaving of
-> the two instructions. The architecture is even broader than that:
-> 
->  Concurrent modification and execution of instructions can lead to the
->  resulting instruction performing any behavior that can be achieved by
->  executing any sequence of instructions that can be executed from the
->  same Exception level,
-> 
-> There are additional guarantees for some instructions (like the architected
-> BKPT instruction).
+See below
 
-I should point out that the current implementation of kprobes doesn't
-use stop_machine because it's trying to meet the above architecture
-restrictions, and that arming kprobes (changing probed instruction to an
-undefined instruction) isn't usually done under stop_machine, so other
-CPUs could be executing the original instruction as it's being modified.
+On 2014-05-15 15:56, Michal Simek wrote:
+> On 05/15/2014 02:20 PM, Arnd Bergmann wrote:
+>> On Thursday 15 May 2014 11:48:52 Michal Simek wrote:
+>>> On 05/14/2014 01:26 PM, Bart Tanghe wrote:
+>>>> 	add Xilinx PWM support - axi timer hardware block 
+>>>>
+>>>> Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
+>>>> diff --git a/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt b/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt
+>>>> new file mode 100644
+>>>> index 0000000..cb48926
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/pwm/pwm-xlnx.txt
+>>>> @@ -0,0 +1,20 @@
+>>>> +Xilinx PWM controller
+>>>> +
+>>>> +Required properties:
+>>>> +- compatible: should be "xlnx,pwm-xlnx"
+>>>> +- add a clock source to the description
+>>>> +
+>>>> +Examples:
+>>>> +
+>>>> +		axi_timer_0: timer@42800000 {
+>>>> +			clock-frequency = <100000000>;
+>>>
+>>> just remove this from example it is not needed and unused.
+>>>
+>>>
+>>>> +			clocks = <&clkc 15>;
+>>>> +			compatible = "xlnx,xlnx-pwm";
+>>>> +			reg = <0x42800000 0x10000>;
+>>>> +			xlnx,count-width = <0x20>;
+>>>> +			xlnx,gen0-assert = <0x1>;
+>>>> +			xlnx,gen1-assert = <0x1>;
+>>>> +			xlnx,one-timer-only = <0x0>;
+>>>> +			xlnx,trig0-assert = <0x1>;
+>>>> +			xlnx,trig1-assert = <0x1>;
+>>>> +		} ;
+>>>
+>>> ok. This has to be done completely differently.
+>>> I have looked around and found one a little bit older
+>>> example but it is in the Linux kernel.
+>>> It is pwm-atmel-tcb.c driver and atmel_tclib.c and tcb_clksrc.c.
+>>>
+>>> Arnd: Isn't there any newer better example how to manage it?
+>>
+>> Note that we have two atmel pwm drivers: drivers/misc/atmel_pwm.c 
+>> and drivers/pwm/pwm-atmel.c. If you want to take that as an example,
+>> make sure you use base on the latter.
+> 
+> Yes, I have seen that there are two drivers. atmel_pwm is older one
+> without using that tclib.
+> 
+>>
+>>> Back to atmel example - they are maintaining
+>>> internal list of timers (atmel_tclib.c)
+>>> and then clocksource driver (tcb_clksrc.c) is asking with atmel_tc_alloc() for it.
+>>> The same is for pwm driver (pwm-atmel-tcb.c).
+>>>
+>>> They probably have all timers the same which is not
+>>> our case because they can be different but this can be solved
+>>> with flags.
+>>>
+>>> From DT point of view I think this is the reasonable description
+>>>
+>>> axi_timer_0: timer@42800000 {
+>>> 	clocks = <&clkc 15>;
+>>> 	compatible = "xlnx,xps-timer-1.00.a";
+>>> 	interrupt-parent = <&xps_intc_0>;
+>>> 	interrupts = < 3 2 >;
+>>> 	reg = <0x42800000 0x10000>;
+>>> 	xlnx,count-width = <0x20>;
+>>> 	xlnx,gen0-assert = <0x1>;
+>>> 	xlnx,gen1-assert = <0x1>;
+>>> 	xlnx,one-timer-only = <0x0>;
+>>> 	xlnx,trig0-assert = <0x1>;
+>>> 	xlnx,trig1-assert = <0x1>;
+>>> } ;
+>>>
+>>>
+>>> pwm {
+>>>         compatible = "xlnx,timer-pwm";
+>>>         #pwm-cells = <2>;
+>>>         timer = <&axi_timer_0>;
+>>> };
+>>>
+>>>
+>>> Allocation function will also require to do a change
+>>> in clocksource driver because currently the first
+>>> timer in the DTS/system is taken for clocksource/clockevents
+>>> (others are just ignored).
+>>> That's why will be necessary to add clock-handle property
+>>> to cpu node to exactly describe which timer is system timer.
+>>> The same as is for interrupt-handle (more intc's can be in design).
+>>
+>> If there is just one set of registers, I wouldn't object to
+>> having just a single node in DT, and just one driver that registers
+>> to both the clocksource and the PWM interfaces. That might
+>> simplify the code.
+> 
+> IP is configurable as is normal for us.
+> You can select IP with just one timer.
+> It means register locations for specific timer are fixed.
+> http://www.xilinx.com/support/documentation/ip_documentation/xps_timer.pdf
+> 
+> timer0 - offset 0x0
+> timer1 - offset 0x10 (doesn't need to be synthesized)
+> 
+> There is one interrupt for both timers.
+> 
+> Timers can be as timers (up/down count/ reload with or without IRQs)
+> But then one options is to use both timers and generate PWM signal.
+> From full ip description in DT you can see xlnx,gen0-assert = <1>;
+> which can suggest that this IP can output PMW signal.
+> (We can also detect if PWM0 signal is connected just to be sure
+> that PWM can be enabled).
+> 
+> There is also capture trigger mode where external signal start/stop
+> timer counting.
+> 
+> It means there are 3 modes - timer, capture and PWM.
+> Timer (clocksource, clockevent) requires specific handling,
+> PWM has own subsystem and not sure if there is any subsystem for
+> capture mode. Is there any?
+> 
+> Not every timer configuration is suitable for all things
+> but fully configured timer can be used in all 3 modes.
+> 
+> 
+> I think that make sense to register and map all timers in the system
+> and classify them with flags (like can't be used for capture or PMW
+> if there are not outputs connected) and then use the best
+> timer for clocksource and clockevent. The best candidate is IP
+> with the lowest IRQ number in dual timer mode but in general
+> whatever timer can be used that's why we can't probably avoid
+> timer specification in DT.
+> In spite of this smells because you are saying via DT
+> to Linux which timer should be used for what purpose.
+> 
+Can anyone help me with a correct example devicetree description of this block?
+As metioned above, this can be used as timer, pwm and capture device.
+Is a description as below a good starting point?
 
-So, should we be making patch_text unconditionally use stop machine and
-remove all direct use of __patch_text? (E.g. by jump labels.)
+axi_timer_0: timer@42800000 {
+ 	clocks = <&clkc 15>;
+ 	compatible = "xlnx,xps-timer-1.00.a";
+ 	interrupt-parent = <&xps_intc_0>;
+ 	interrupts = < 3 2 >;
+ 	reg = <0x42800000 0x10000>;
+ 	xlnx,count-width = <0x20>;
+ 	xlnx,gen0-assert = <0x1>;
+ 	xlnx,gen1-assert = <0x1>;
+ 	xlnx,one-timer-only = <0x0>;
+ 	xlnx,trig0-assert = <0x1>;
+ 	xlnx,trig1-assert = <0x1>;
+ } ;
 
--- 
-Tixy
+ pwm {
+         compatible = "xlnx,timer-pwm";
+         #pwm-cells = <2>;
+         timer = <&axi_timer_0>;
+ };
 
+
+ clocksource {
+         compatible = "xlnx,timer-clk";
+         timer = <&axi_timer_0>;
+ };
+
+ IIOcapture {
+         compatible = "xlnx,timer-IIO";
+         timer = <&axi_timer_0>;
+ };
+
+> Thanks,
+> Michal
+> 
