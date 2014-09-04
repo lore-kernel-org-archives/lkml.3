@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaIDESq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 00:18:46 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:45844 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443AbaIDESn (ORCPT
+	id S1756440AbaIDEVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 00:21:24 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:50055 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaIDEVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 00:18:43 -0400
+	Thu, 4 Sep 2014 00:21:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409793159-2573-2-git-send-email-zyw@rock-chips.com>
+In-Reply-To: <1409793159-2573-4-git-send-email-zyw@rock-chips.com>
 References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
-	<1409793159-2573-2-git-send-email-zyw@rock-chips.com>
-Date: Wed, 3 Sep 2014 21:18:42 -0700
-X-Google-Sender-Auth: Lmmwo-E5oAi3--Gm5z3jueU-bVM
-Message-ID: <CAD=FV=U8XK945vJTnsY8FG3+WasOrMnoCYOF+b360HTyXVccfw@mail.gmail.com>
-Subject: Re: [PATCH v9 1/3] RTC: RK808: add RTC driver for RK808
+	<1409793159-2573-4-git-send-email-zyw@rock-chips.com>
+Date: Wed, 3 Sep 2014 21:21:21 -0700
+X-Google-Sender-Auth: -bf0D0Ha3sOfXUh-ThXfsmxtbjY
+Message-ID: <CAD=FV=VpJtc+t7qsofjyDncTsVZS3VCuAn0SvKsTjGhxMtyw3Q@mail.gmail.com>
+Subject: Re: [PATCH v9 3/3] regulator: RK808: Remove pdata from the regulator
 From: Doug Anderson <dianders@chromium.org>
 To: Chris Zhong <zyw@rock-chips.com>
 Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
@@ -45,23 +45,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Chris,
 
 On Wed, Sep 3, 2014 at 6:12 PM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Adding RTC driver for supporting RTC device present inside RK808 PMIC.
->
 > Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> Signed-off-by: Zhang Qing <zhangqing@rock-chips.com>
 >
 > Tested-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+>
+> Changes in v9:
+> Adviced by Doug
+> - add reg_np
+>
+> Changes in v8:
+> Adviced by Doug
+> - remove rk808_regulator_dts() function
+> - remove the check about "client->dev.of_node"
+>
+> Changes in v7:
+> - remove pdata struct from header file, add rk808_regulator struct
+>
+> Changes in v6:
+> - remove the redundant code
+>
+> Changes in v5:
+> - re-edit base on Mark's branch
+>
+> Changes in v4:
+> - use &client->dev replace rk808->dev
+>
+> Changes in v3: None
+> Changes in v2:
+> Adviced by Mark Browm:
+> - change of_find_node_by_name to find_child_by_name
+> - use RK808_NUM_REGULATORS as the name of the constant
+> - create a pdata when missing platform data
+> - use the rk808_reg name to supply_regulator name
+> - replace regulator_register with devm_regulator_register
+> - some other problem with coding style
+>
+>  drivers/regulator/rk808-regulator.c |   91 +++++++----------------------------
+>  1 file changed, 18 insertions(+), 73 deletions(-)
 
 Reviewed-by: Doug Anderson <dianders@chromium.org>
 Tested-by: Doug Anderson <dianders@chromium.org>
-
-
-> +       rk808_rtc->irq = platform_get_irq(pdev, 0);
-> +       if (rk808_rtc->irq < 0) {
-> +               dev_err(&pdev->dev, "Wake up is not possible as irq = %d\n",
-> +                       rk808_rtc->irq);
-
-Technically you shouldn't print the error if it's -EPROBE_DEFER.
-...but I think that's really unlikely here (I can't imagine any real
-cases where the interrupt parent for RK808 would actually be deferred)
-so I won't push it.
