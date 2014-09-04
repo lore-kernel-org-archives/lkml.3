@@ -1,126 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648AbaIDPB5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:01:57 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:47058 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaIDPBv (ORCPT
+	id S1753801AbaIDPCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:02:04 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:47198 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226AbaIDPCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:01:51 -0400
-X-AuditID: cbfee68e-f79536d000000fd1-93-54087edc9b92
-From: Jaewon Kim <jaewon02.kim@samsung.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH v2 1/4] mfd: max77693: Initialize haptic register map
-Date: Fri, 05 Sep 2014 00:01:28 +0900
-Message-id: <1409842891-26549-2-git-send-email-jaewon02.kim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1409842891-26549-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1409842891-26549-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsWyRsSkSPduHUeIwYW1zBbXvzxntTi86AWj
-	xY6GI6wW978eZbS4+ekbq8XlXXPYLE53szqwe+ycdZfd4861PWwe804GevRtWcXo8XmTXABr
-	FJdNSmpOZllqkb5dAlfGjZ4bzAXThStOzjzC2sD4n7+LkZNDQsBE4tPztywQtpjEhXvr2boY
-	uTiEBJYySuxrbmWFKXrSdZcJxBYSmM4o8WO9LkRRG5PEtQUd7CAJNgFtie/rF4M1iAhUSvR3
-	v2AFKWIW6GGU+N6+mhkkISzgKtG8+yvYJBYBVYlDtw+DreYV8JB4uaEbaDUH0DYFiTmTbEDC
-	nAKeEl0PVrBALPaQWDDlGwvITAmB6ewS+78uhZojIPFt8iEWiF5ZiU0HmCGOlpQ4uOIGywRG
-	4QWMDKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxAkP89L9nfTsYbx6wPsQowMGoxMNb8II9
-	RIg1say4MvcQoynQhonMUqLJ+cBIyiuJNzQ2M7IwNTE1NjK3NFMS502Q+hksJJCeWJKanZpa
-	kFoUX1Sak1p8iJGJg1OqgXGFe+ivM5VHTzosWn0j7dSrvYWutgdu1jy/+Tx6Ma/u/W+uhd85
-	D4hrLD6uuWXWK8MXGyfl37RdcKNiqfz51ROTmNL3BfvXcNW7xbU9SuSYJPTz0LyIz/1a2V+e
-	ffMtZrf13vDcUHVenu6PGbo3/lnZxHWtLPZeYqQ4zyq8VrlyYaxP5tYbDcJKLMUZiYZazEXF
-	iQDW6oLibAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t9jQd07dRwhBvM3Wlhc//Kc1eLwoheM
-	FjsajrBa3P96lNHi5qdvrBaXd81hszjdzerA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx+dNcgGs
-	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
-	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM2703GAumC5ccXLmEdYGxv/8
-	XYycHBICJhJPuu4yQdhiEhfurWcDsYUEpjNK/Fiv28XIBWS3MUlcW9DBDpJgE9CW+L5+MSuI
-	LSJQKdHf/YIVpIhZoIdR4nv7amaQhLCAq0Tz7q9gU1kEVCUO3T7MAmLzCnhIvNzQDbSBA2ib
-	gsScSTYgYU4BT4muBytYIBZ7SCyY8o1lAiPvAkaGVYyiqQXJBcVJ6bmGesWJucWleel6yfm5
-	mxjBEfRMagfjygaLQ4wCHIxKPLwFL9hDhFgTy4orcw8xSnAwK4nwuudxhAjxpiRWVqUW5ccX
-	leakFh9iNAU6aiKzlGhyPjC680riDY1NzIwsjcwNLYyMzZXEeQ+0WgcKCaQnlqRmp6YWpBbB
-	9DFxcEo1MO7afbxcRueHI9vSThkeUSsur76jf9aGZc1lkfL1+CTj7vw07/82iw3JMwtT8oy9
-	mO4vXyA/b6XBbYmT7/pjzBcdUpwbwWuyqoTpg4nS1pjafbyXeX0XzvkcZZm4PnfPrdalOT67
-	WuvCLjl/ZH9W7pjAfzTrkCi//77UVRI3mWfcVLj6elWkmRJLcUaioRZzUXEiAF0WQKi2AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 4 Sep 2014 11:02:00 -0400
+X-Auth-Info: knbG+xS3LLc+kh/8UzAAslfzfQak8GnYgf9j3hZNWhM=
+From: Marek Vasut <marex@denx.de>
+To: Yuan Yao <yao.yuan@freescale.com>
+Subject: Re: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c driver
+Date: Thu, 4 Sep 2014 16:38:45 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: wsa@the-dreams.de, LW@karo-electronics.de, mark.rutland@arm.com,
+        fugang.duan@freescale.com, shawn.guo@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org
+References: <1407923215-3749-1-git-send-email-yao.yuan@freescale.com> <1407923215-3749-2-git-send-email-yao.yuan@freescale.com>
+In-Reply-To: <1407923215-3749-2-git-send-email-yao.yuan@freescale.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409041638.45537.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add regmap_haptic initialization to use haptic register map
-in haptic device driver.
+On Wednesday, August 13, 2014 at 11:46:54 AM, Yuan Yao wrote:
+> Add dma support for i2c. This function depend on DMA driver.
+> You can turn on it by write both the dmas and dma-name properties in dts
+> node. DMA is optional, even DMA request unsuccessfully, i2c can also work
+> well.
+> 
+> Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
 
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/max77693.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+[...]
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 249c139..fbfed56 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
- 	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
- };
- 
-+static const struct regmap_config max77693_regmap_haptic_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = MAX77693_HAPTIC_REG_END,
-+};
-+
- static int max77693_i2c_probe(struct i2c_client *i2c,
- 			      const struct i2c_device_id *id)
- {
-@@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 	}
- 	i2c_set_clientdata(max77693->haptic, max77693);
- 
-+	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
-+					&max77693_regmap_haptic_config);
-+	if (IS_ERR(max77693->regmap_haptic)) {
-+		ret = PTR_ERR(max77693->regmap_haptic);
-+		dev_err(max77693->dev,
-+			"failed to initialize haptic register map: %d\n", ret);
-+		goto err_regmap;
-+	}
-+
- 	/*
- 	 * Initialize register map for MUIC device because use regmap-muic
- 	 * instance of MUIC device when irq of max77693 is initialized
-@@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 		ret = PTR_ERR(max77693->regmap_muic);
- 		dev_err(max77693->dev,
- 			"failed to allocate register map: %d\n", ret);
--		goto err_regmap_muic;
-+		goto err_regmap;
- 	}
- 
- 	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
-@@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 				&max77693->irq_data_led);
- 	if (ret) {
- 		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
--		goto err_regmap_muic;
-+		goto err_regmap;
- 	}
- 
- 	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
-@@ -265,7 +280,7 @@ err_irq_charger:
- 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
- err_irq_topsys:
- 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
--err_regmap_muic:
-+err_regmap:
- 	i2c_unregister_device(max77693->haptic);
- err_i2c_haptic:
- 	i2c_unregister_device(max77693->muic);
--- 
-1.7.9.5
+> +/* Enable DMA if transfer byte size is bigger than this threshold.
+> + * As the hardware request, it must bigger than 4.
 
+The comment is unclear, just by reading it, I have no clue what are the units 
+for this value. I can guess those would be bytes, but it would be a good idea
+to be explicit.
+
+Also, wasn't kernel comment style starting with leading /* , with the text 
+starting only on the next line ?
+
+> + */
+> +#define IMX_I2C_DMA_THRESHOLD	16
+> +#define IMX_I2C_DMA_TIMEOUT	1000
+> +
+
+[...]
+
+> +static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
+> +					struct i2c_msg *msgs)
+> +{
+> +	int result;
+> +	unsigned int temp = 0;
+> +	unsigned long orig_jiffies = jiffies;
+> +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> +	struct device *dev = &i2c_imx->adapter.dev;
+> +
+> +	dev_dbg(dev, "<%s> write slave address: addr=0x%x\n",
+> +		__func__, msgs->addr << 1);
+> +
+> +	reinit_completion(&i2c_imx->dma->cmd_complete);
+> +	dma->chan_using = dma->chan_tx;
+> +	dma->dma_transfer_dir = DMA_MEM_TO_DEV;
+> +	dma->dma_data_dir = DMA_TO_DEVICE;
+> +	dma->dma_len = msgs->len - 1;
+> +	result = i2c_imx_dma_xfer(i2c_imx, msgs);
+> +	if (result)
+> +		return result;
+> +
+> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
+> +	temp |= I2CR_DMAEN;
+> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+> +
+> +	/*
+> +	 * Write slave address.
+> +	 * The first byte muse be transmitted by the CPU.
+> +	 */
+> +	imx_i2c_write_reg(msgs->addr << 1, i2c_imx, IMX_I2C_I2DR);
+> +	result = wait_for_completion_interruptible_timeout(
+> +				&i2c_imx->dma->cmd_complete,
+> +				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
+> +	if (result <= 0) {
+> +		dmaengine_terminate_all(dma->chan_using);
+> +		if (result)
+> +			return result;
+> +		else
+> +			return -ETIMEDOUT;
+
+Shouldn't you force-disable the DMA here somehow (like unsetting I2CR_DMAEN 
+bit), if it failed or timed out?
+
+> +	}
+> +
+> +	/* Waiting for Transfer complete. */
+> +	while (1) {
+> +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
+> +		if (temp & I2SR_ICF)
+> +			break;
+> +		if (time_after(jiffies, orig_jiffies +
+> +				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT))) {
+> +			dev_dbg(&i2c_imx->adapter.dev, "<%s> Timeout\n",
+> +				__func__);
+> +			return -ETIMEDOUT;
+> +		}
+> +		schedule();
+> +	}
+> +
+> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
+> +	temp &= ~I2CR_DMAEN;
+> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+> +
+> +	/* The last data byte must be transferred by the CPU. */
+> +	imx_i2c_write_reg(msgs->buf[msgs->len-1],
+> +				i2c_imx, IMX_I2C_I2DR);
+> +	result = i2c_imx_trx_complete(i2c_imx);
+> +	if (result)
+> +		return result;
+> +
+> +	result = i2c_imx_acked(i2c_imx);
+> +	if (result)
+> +		return result;
+> +
+> +	return 0;
+> +}
+[...]
+
+Thanks!
