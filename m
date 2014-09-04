@@ -1,291 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862AbaIDJO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:14:29 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:57091 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132AbaIDJOZ (ORCPT
+	id S1754260AbaIDJRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:17:00 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:62531 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469AbaIDJQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:14:25 -0400
-Date: Thu, 4 Sep 2014 10:14:18 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v6 2/4] drivers/watchdog/menf21bmc_wdt: introduce MEN
- 14F021P00 BMC Watchdog driver
-Message-ID: <20140904091418.GD29612@lee--X1>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <f21b275c79866e0aa9bbc59e195ae5424e538300.1409161615.git.andreas.werner@men.de>
+	Thu, 4 Sep 2014 05:16:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f21b275c79866e0aa9bbc59e195ae5424e538300.1409161615.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54082C68.8030400@linux.vnet.ibm.com>
+References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com>
+	<CAKohpomLW17B=Sk42tczzDF+VGwn7hT521osWPi5TcgqpCPZ_w@mail.gmail.com>
+	<53296AD0.5090908@linux.vnet.ibm.com>
+	<19131121.D211TBerqb@vostro.rjw.lan>
+	<CAKohpom0+bbyffZML2tJjXQDc+2q4PM8sVkL5pDA5WX=rmvtKA@mail.gmail.com>
+	<54082C68.8030400@linux.vnet.ibm.com>
+Date: Thu, 4 Sep 2014 14:46:56 +0530
+Message-ID: <CAKohpokvpWDbCbPYcV+fzzpaztZSi=yacdmyYfBLoSs4U2YO9A@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patrick Marlier <patrick.marlier@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wim,
+On 4 September 2014 14:40, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> cpufreq: Allow stop CPU callback to be used by all cpufreq drivers
+>
+> Commit 367dc4aa introduced the stop CPU callback for intel_pstate
+> drivers. During the CPU_DOWN_PREPARE stage, this callback is invoked
+> so that drivers can take some action on the pstate of the cpu
+> before it is taken offline. This callback was assumed to be useful
+> only for those drivers which have implemented the set_policy CPU
+> callback because they have no other way to take action about the
+> cpufreq of a CPU which is being hotplugged out except in the exit
+> callback which is called very late in the offline process.
+>
+> The drivers which implement the target/target_index callbacks were
+> expected to take care of requirements like the ones that commit
+> 367dc4aa addresses in the GOV_STOP notification event. But there
+> are disadvantages to restricting the usage of stop CPU callback
+> to cpufreq drivers that implement the set_policy callbacks and who
+> want to take explicit action on the setting the cpufreq during a
+> hotplug operation.
+>
+> 1.GOV_STOP gets called for every CPU offline and drivers would usually
+>   want to take action when the last cpu in the policy->cpus mask
+>   is taken offline. As long as there is more than one cpu in the
+>   policy->cpus mask, cpufreq core itself makes sure that the freq
+>   for the other cpus in this mask is set according to the maximum load.
+>   This is sensible and drivers which implement the target_index callback
+>   would mostly not want to modify that. However the cpufreq core leaves a
+>   loose end when the cpu in the policy->cpus mask is the last one to go offline;
+>   it does nothing explicit to the frequency of the core. Drivers may need
+>   a way to take some action here and stop CPU callback mechanism is the
+>   best way to do it today.
+>
+> 2.We cannot implement driver specific actions in the GOV_STOP mechanism.
+>   So we will need another driver callback which is invoked from here which is
+>   unnecessary.
+>
+>   Therefore this patch extends the usage of stop CPU callback to be used
+>   by all cpufreq drivers as long as they have this callback implemented
+>   and irrespective of whether they are set_policy/target_index drivers.
+>   The assumption is if the drivers find the GOV_STOP path to be a suitable
+>   way of implementing what they want to do with the freq of the cpu
+>   going offine,they will not implement the stop CPU callback at all.
+>
+>   Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index d9fdedd..6463f35 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1380,7 +1380,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>                 if (!cpufreq_suspended)
+>                         pr_debug("%s: policy Kobject moved to cpu: %d from: %d\n",
+>                                  __func__, new_cpu, cpu);
+> -       } else if (cpufreq_driver->stop_cpu && cpufreq_driver->setpolicy) {
+> +       } else if (cpufreq_driver->stop_cpu) {
+>                 cpufreq_driver->stop_cpu(policy);
+>         }
 
-We're still waiting on your Ack?
+Rafael explicitly said earlier that he want to see a separate callback for
+->target() drivers, don't know why..
 
-> Added driver to support the 14F021P00 BMC Watchdog.
-> The BMC is a Board Management Controller including watchdog functionality.
-> 
-> Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> ---
->  drivers/watchdog/Kconfig         |  10 ++
->  drivers/watchdog/Makefile        |   1 +
->  drivers/watchdog/menf21bmc_wdt.c | 203 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 214 insertions(+)
->  create mode 100644 drivers/watchdog/menf21bmc_wdt.c
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 76dd541..96d72c2 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -95,6 +95,16 @@ config GPIO_WATCHDOG
->  	  If you say yes here you get support for watchdog device
->  	  controlled through GPIO-line.
->  
-> +config MENF21BMC_WATCHDOG
-> +	tristate "MEN 14F021P00 BMC Watchdog"
-> +	depends on MFD_MENF21BMC
-> +	select WATCHDOG_CORE
-> +	help
-> +	  Say Y here to include support for the MEN 14F021P00 BMC Watchdog.
-> +
-> +	  This driver can also be built as a module. If so the module
-> +	  will be called menf21bmc_wdt.
-> +
->  config WM831X_WATCHDOG
->  	tristate "WM831x watchdog"
->  	depends on MFD_WM831X
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index 468c320..de17014 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -178,3 +178,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
->  obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
->  obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
->  obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
-> +obj-$(CONFIG_MENF21BMC_WATCHDOG) += menf21bmc_wdt.o
-> diff --git a/drivers/watchdog/menf21bmc_wdt.c b/drivers/watchdog/menf21bmc_wdt.c
-> new file mode 100644
-> index 0000000..2042874
-> --- /dev/null
-> +++ b/drivers/watchdog/menf21bmc_wdt.c
-> @@ -0,0 +1,203 @@
-> +/*
-> + *  MEN 14F021P00 Board Management Controller (BMC) Watchdog Driver.
-> + *
-> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/device.h>
-> +#include <linux/module.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/i2c.h>
-> +
-> +#define DEVNAME "menf21bmc_wdt"
-> +
-> +#define BMC_CMD_WD_ON		0x11
-> +#define BMC_CMD_WD_OFF		0x12
-> +#define BMC_CMD_WD_TRIG		0x13
-> +#define BMC_CMD_WD_TIME		0x14
-> +#define BMC_CMD_WD_STATE	0x17
-> +#define BMC_WD_OFF_VAL		0x69
-> +#define BMC_CMD_RST_RSN		0x92
-> +
-> +#define BMC_WD_TIMEOUT_MIN	1	/* in sec */
-> +#define BMC_WD_TIMEOUT_MAX	6553	/* in sec */
-> +
-> +static bool nowayout = WATCHDOG_NOWAYOUT;
-> +module_param(nowayout, bool, 0);
-> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-> +				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-> +
-> +struct menf21bmc_wdt {
-> +	struct watchdog_device wdt;
-> +	struct i2c_client *i2c_client;
-> +};
-> +
-> +static int menf21bmc_wdt_set_bootstatus(struct menf21bmc_wdt *data)
-> +{
-> +	int rst_rsn;
-> +
-> +	rst_rsn = i2c_smbus_read_byte_data(data->i2c_client, BMC_CMD_RST_RSN);
-> +	if (rst_rsn < 0)
-> +		return rst_rsn;
-> +
-> +	if (rst_rsn == 0x02)
-> +		data->wdt.bootstatus |= WDIOF_CARDRESET;
-> +	else if (rst_rsn == 0x05)
-> +		data->wdt.bootstatus |= WDIOF_EXTERN1;
-> +	else if (rst_rsn == 0x06)
-> +		data->wdt.bootstatus |= WDIOF_EXTERN2;
-> +	else if (rst_rsn == 0x0A)
-> +		data->wdt.bootstatus |= WDIOF_POWERUNDER;
-> +
-> +	return 0;
-> +}
-> +
-> +static int menf21bmc_wdt_start(struct watchdog_device *wdt)
-> +{
-> +	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-> +
-> +	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_ON);
-> +}
-> +
-> +static int menf21bmc_wdt_stop(struct watchdog_device *wdt)
-> +{
-> +	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-> +
-> +	return i2c_smbus_write_byte_data(drv_data->i2c_client,
-> +					 BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-> +}
-> +
-> +static int
-> +menf21bmc_wdt_settimeout(struct watchdog_device *wdt, unsigned int timeout)
-> +{
-> +	int ret;
-> +	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-> +
-> +	/*
-> +	 *  BMC Watchdog does have a resolution of 100ms.
-> +	 *  Watchdog API defines the timeout in seconds, so we have to
-> +	 *  multiply the value.
-> +	 */
-> +	ret = i2c_smbus_write_word_data(drv_data->i2c_client,
-> +					BMC_CMD_WD_TIME, timeout * 10);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	wdt->timeout = timeout;
-> +
-> +	return 0;
-> +}
-> +
-> +static int menf21bmc_wdt_ping(struct watchdog_device *wdt)
-> +{
-> +	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-> +
-> +	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_TRIG);
-> +}
-> +
-> +static const struct watchdog_info menf21bmc_wdt_info = {
-> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-> +	.identity = DEVNAME,
-> +};
-> +
-> +static const struct watchdog_ops menf21bmc_wdt_ops = {
-> +	.owner		= THIS_MODULE,
-> +	.start		= menf21bmc_wdt_start,
-> +	.stop		= menf21bmc_wdt_stop,
-> +	.ping		= menf21bmc_wdt_ping,
-> +	.set_timeout	= menf21bmc_wdt_settimeout,
-> +};
-> +
-> +static int menf21bmc_wdt_probe(struct platform_device *pdev)
-> +{
-> +	int ret, bmc_timeout;
-> +	struct menf21bmc_wdt *drv_data;
-> +	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> +
-> +	drv_data = devm_kzalloc(&pdev->dev,
-> +				sizeof(struct menf21bmc_wdt), GFP_KERNEL);
-> +	if (!drv_data)
-> +		return -ENOMEM;
-> +
-> +	drv_data->wdt.ops = &menf21bmc_wdt_ops;
-> +	drv_data->wdt.info = &menf21bmc_wdt_info;
-> +	drv_data->wdt.min_timeout = BMC_WD_TIMEOUT_MIN;
-> +	drv_data->wdt.max_timeout = BMC_WD_TIMEOUT_MAX;
-> +	drv_data->i2c_client = i2c_client;
-> +
-> +	/*
-> +	 * Get the current wdt timeout value from the BMC because
-> +	 * the BMC will save the value set before if the system restarts.
-> +	 */
-> +	bmc_timeout = i2c_smbus_read_word_data(drv_data->i2c_client,
-> +					       BMC_CMD_WD_TIME);
-> +	if (bmc_timeout < 0) {
-> +		dev_err(&pdev->dev, "failed to get current WDT timeout\n");
-> +		return bmc_timeout;
-> +	}
-> +
-> +	watchdog_init_timeout(&drv_data->wdt, bmc_timeout / 10, &pdev->dev);
-> +	watchdog_set_nowayout(&drv_data->wdt, nowayout);
-> +	watchdog_set_drvdata(&drv_data->wdt, drv_data);
-> +	platform_set_drvdata(pdev, drv_data);
-> +
-> +	ret = menf21bmc_wdt_set_bootstatus(drv_data);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "failed to set Watchdog bootstatus\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = watchdog_register_device(&drv_data->wdt);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to register Watchdog device\n");
-> +		return ret;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "MEN 14F021P00 BMC Watchdog device enabled\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static int menf21bmc_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-> +
-> +	dev_warn(&pdev->dev,
-> +		 "Unregister MEN 14F021P00 BMC Watchdog device, board may reset\n");
-> +
-> +	watchdog_unregister_device(&drv_data->wdt);
-> +
-> +	return 0;
-> +}
-> +
-> +static void menf21bmc_wdt_shutdown(struct platform_device *pdev)
-> +{
-> +	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-> +
-> +	i2c_smbus_write_word_data(drv_data->i2c_client,
-> +				  BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-> +}
-> +
-> +static struct  platform_driver menf21bmc_wdt = {
-> +	.driver		= {
-> +		.owner = THIS_MODULE,
-> +		.name	= DEVNAME,
-> +	},
-> +	.probe		= menf21bmc_wdt_probe,
-> +	.remove		= menf21bmc_wdt_remove,
-> +	.shutdown	= menf21bmc_wdt_shutdown,
-> +};
-> +
-> +module_platform_driver(menf21bmc_wdt);
-> +
-> +MODULE_DESCRIPTION("MEN 14F021P00 BMC Watchdog driver");
-> +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:menf21bmc_wdt");
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+It looks fine to me though.
