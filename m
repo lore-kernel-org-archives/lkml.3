@@ -1,105 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639AbaIDBsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:48:14 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36732 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaIDBsM (ORCPT
+	id S1756760AbaIDBt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:49:28 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:54455 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaIDBt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:48:12 -0400
-Message-ID: <5407C4D5.3090601@hitachi.com>
-Date: Thu, 04 Sep 2014 10:48:05 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 3 Sep 2014 21:49:26 -0400
+Date: Wed, 3 Sep 2014 18:47:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 5/6] mm/hugetlb: add migration entry check in
+ __unmap_hugepage_range
+In-Reply-To: <1409276340-7054-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.LSU.2.11.1409031821220.11485@eggly.anvils>
+References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1409276340-7054-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 1/4] ftracetest: Initial commit for ftracetest
-References: <20140902110632.3207.20043.stgit@kbuild-f20.novalocal> <20140902110639.3207.38388.stgit@kbuild-f20.novalocal> <87r3zs9n6m.fsf@sejong.aot.lge.com>
-In-Reply-To: <87r3zs9n6m.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/04 10:41), Namhyung Kim wrote:
-> Hi Masami,
-> 
-> Just a nit..
-> 
-> 
-> On Tue, 02 Sep 2014 11:06:39 +0000, Masami Hiramatsu wrote:
->> ftracetest is a collection of testcase shell-scripts for ftrace.
->> To avoid regressions of ftrace, these testcases check correct
->> ftrace behaviors. If someone would like to add any features on
->> ftrace, the patch series should have at least one testcase for
->> checking the new behavior.
-> 
-> 
-> [SNIP]
->> +# Run one test case
->> +run_test() { # testfile
->> +  local testname=`basename $1`
->> +  local testlog=`mktemp --tmpdir=$LOG_DIR ${testname}-XXXXXX.log`
->> +  testcase $1
->> +  echo "execute: "$1 > $testlog
->> +  (cd $TRACING_DIR; set -x ; . $t) >> $testlog 2>&1
-> 
-> s/$t/$1/ ?
+On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
 
-Oops, right! I missed that. Since the $1 is same as $t, the
-test itself works, but it should be fixed.
-
-Thank you!
-
+> If __unmap_hugepage_range() tries to unmap the address range over which
+> hugepage migration is on the way, we get the wrong page because pte_page()
+> doesn't work for migration entries. This patch calls pte_to_swp_entry() and
+> migration_entry_to_page() to get the right page for migration entries.
 > 
-> Thanks,
-> Namhyung
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: <stable@vger.kernel.org>  # [2.6.36+]
+
+2.6.36+?  But this one doesn't affect hwpoisoned.
+I admit I've lost track of how far back hugetlb migration goes:
+oh, to 2.6.37+, that fits with what you marked on some commits earlier.
+But then 2/6 says 3.12+.  Help!  Please remind me of the sequence of events.
+
+> ---
+>  mm/hugetlb.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
 > 
-> 
->> +  ret=$?
->> +  if [ $ret -ne 0 ]; then
->> +    failed
->> +    catlog $testlog
->> +  else
->> +    passed
->> +    [ $KEEP_LOG -eq 0 ] && rm $testlog
->> +  fi
->> +}
->> +
->> +# Main loop
->> +for t in $TEST_CASES; do
->> +  run_test $t
->> +done
->> +prlog ""
->> +prlog "# of passed: " `echo $PASSED_CASES | wc -w`
->> +prlog "# of failed: " `echo $FAILED_CASES | wc -w`
->> +
->> +test -z "$FAILED_CASES" # if no error, return 0
->> diff --git a/tools/testing/ftrace/test.d/template b/tools/testing/ftrace/test.d/template
->> new file mode 100644
->> index 0000000..ce5f735
->> --- /dev/null
->> +++ b/tools/testing/ftrace/test.d/template
->> @@ -0,0 +1,4 @@
->> +#!/bin/sh
->> +# description: %HERE DESCRIBE WHAT THIS DOES%
->> +# you have to add ".tc" extention for your testcase file
->> +exit 0 # Return 0 if the test is passed, otherwise return !0
-> 
+> diff --git mmotm-2014-08-25-16-52.orig/mm/hugetlb.c mmotm-2014-08-25-16-52/mm/hugetlb.c
+> index 1ed9df6def54..0a4511115ee0 100644
+> --- mmotm-2014-08-25-16-52.orig/mm/hugetlb.c
+> +++ mmotm-2014-08-25-16-52/mm/hugetlb.c
+> @@ -2652,6 +2652,13 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+>  		if (huge_pte_none(pte))
+>  			goto unlock;
+>  
+> +		if (unlikely(is_hugetlb_entry_migration(pte))) {
+> +			swp_entry_t entry = pte_to_swp_entry(pte);
+> +
+> +			page = migration_entry_to_page(entry);
+> +			goto clear;
+> +		}
+> +
 
+This surprises me: are you sure?  Obviously you know hugetlb migration
+much better than I do: is it done in a significantly different way from
+order:0 page migration?  In the order:0 case, there is no reference to
+the page corresponding to the migration entry placed in a page table,
+just the remaining reference held by the task doing the migration.  But
+here you are jumping to the code which unmaps and frees a present page.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+I can see that a fix is necessary, but I would have expected it to
+consist of merely changing the "HWPoisoned" comment below to include
+migration entries, and changing its test from
+		if (unlikely(is_hugetlb_entry_hwpoisoned(pte))) {
+to
+		if (unlikely(!pte_present(pte))) {
 
-
+>  		/*
+>  		 * HWPoisoned hugepage is already unmapped and dropped reference
+>  		 */
+> @@ -2677,7 +2684,7 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+>  			 */
+>  			set_vma_resv_flags(vma, HPAGE_RESV_UNMAPPED);
+>  		}
+> -
+> +clear:
+>  		pte = huge_ptep_get_and_clear(mm, address, ptep);
+>  		tlb_remove_tlb_entry(tlb, ptep, address);
+>  		if (huge_pte_dirty(pte))
+> -- 
+> 1.9.3
