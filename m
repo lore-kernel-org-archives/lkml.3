@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaIDXN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 19:13:58 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:65438 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750725AbaIDXN5 (ORCPT
+	id S1753852AbaIDXSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 19:18:46 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:57324 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750793AbaIDXSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 19:13:57 -0400
-Message-ID: <1409872435.5546.135.camel@x220>
-Subject: Re: [GIT PULL] Staging driver patches for 3.15-rc1
+	Thu, 4 Sep 2014 19:18:45 -0400
+Message-ID: <1409872723.5546.137.camel@x220>
+Subject: Re: [PATCH] [TRIVIAL] gpio: fix comment typos 'CONFIG_GPIO_IRQCHIP'
 From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Insop Song <Insop.Song@gainspeed.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'insop.song@gmail.com'" <insop.song@gmail.com>
-Date: Fri, 05 Sep 2014 01:13:55 +0200
-In-Reply-To: <20140402230837.GA24324@kroah.com>
-References: <20140401184817.GA21855@kroah.com>
-	 <1396427043.18431.20.camel@x220> <20140402200428.GE26966@kroah.com>
-	 <7731bd53be4b49e2924a7002f74dc090@BY2PR07MB011.namprd07.prod.outlook.com>
-	 <20140402230837.GA24324@kroah.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 05 Sep 2014 01:18:43 +0200
+In-Reply-To: <1396598372.19661.10.camel@x220>
+References: <1396598372.19661.10.camel@x220>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Sep 2014 23:13:55.0277 (UTC) FILETIME=[E613BFD0:01CFC895]
+X-OriginalArrivalTime: 04 Sep 2014 23:18:44.0085 (UTC) FILETIME=[92385A50:01CFC896]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 16:08 -0700, Greg KH wrote:
-> On Wed, Apr 02, 2014 at 08:52:18PM +0000, Insop Song wrote:
-> > On Wed, April 02, 2014 1:04 PM, Greg KH wrote:
-> > > On Wed, Apr 02, 2014 at 10:24:03AM +0200, Paul Bolle wrote:
-> > > > On Tue, 2014-04-01 at 11:48 -0700, Greg KH wrote:
-> > > > > Staging driver pull request for 3.15-rc1
-> > > > >
-> > > > > Here's the huge drivers/staging/ update for 3.15-rc1.
-> > > > >
-> > > > > Loads of cleanup fixes, a few drivers removed, and some new ones
-> > > added.
-> > > > >
-> > > > > All have been in linux-next for a while.
-> > > > >
-> > > > >[...]
-> > > > >
-> > > > > Insop Song (1):
-> > > > >       staging: fpgaboot: Xilinx FPGA firmware download driver
-> > > >
-> > > > This commit adds checks for CONFIG_B4860G100. Is a patch to add a
-> > > > Kconfig symbol B4860G100 perhaps queued somewhere?
-> > > 
-> > > Insop, I thought this config option was coming from some other place, right?
-> > > 
-> > 
-> > Paul,
-> > I didn't include CONFIG_B4860G100 in Kconfig in original patch set,
-> > since programming FPGA method can vary in different system, and this
-> > was discussed during the review with Greg as well.
-> > 
-> > However, actual fpga programming method is well contained in io.c with
-> > ifdef-ed CONFIG_B4860G100, now I think I might better to update
-> > Kconfig to include CONFIG_B4860G100.
-> > 
-> > Greg, what do you think? Any harm to add custom board CONFIG* to
-> > staging Kconfig? Let me know.
-> 
-> Let's see what it would look like and we can go from there.
+Hi Jiri,
 
-Nothing appears to have changed: there are still checks for
-CONFIG_B4860G100 in next-20140904. Should I submit the trivial patch to
-remove those checks and the code they hide?
+On Fri, 2014-04-04 at 09:59 +0200, Paul Bolle wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested.
+> 
+> These two typos were introduced in commit 1425052097b5 ("gpio: add IRQ
+> chip helpers in gpiolib"), which has just been merged.
+> 
+>  include/linux/gpio/driver.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+> index 1827b43..8652ab7 100644
+> --- a/include/linux/gpio/driver.h
+> +++ b/include/linux/gpio/driver.h
+> @@ -102,7 +102,7 @@ struct gpio_chip {
+>  
+>  #ifdef CONFIG_GPIOLIB_IRQCHIP
+>  	/*
+> -	 * With CONFIG_GPIO_IRQCHIP we get an irqchip inside the gpiolib
+> +	 * With CONFIG_GPIOLIB_IRQCHIP we get an irqchip inside the gpiolib
+>  	 * to handle IRQs for most practical cases.
+>  	 */
+>  	struct irq_chip		*irqchip;
+> @@ -218,7 +218,7 @@ int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
+>  		irq_flow_handler_t handler,
+>  		unsigned int type);
+>  
+> -#endif /* CONFIG_GPIO_IRQCHIP */
+> +#endif /* CONFIG_GPIOLIB_IRQCHIP */
+>  
+>  #else /* CONFIG_GPIOLIB */
+
+Did you ever had a chance to look at this patch? It still applies to
+next-20140904.
 
 
 Paul Bolle
