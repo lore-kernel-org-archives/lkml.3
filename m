@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbaIDQbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:31:40 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:35898 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754572AbaIDQbW (ORCPT
+	id S1754615AbaIDQcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:32:05 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:49869 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753847AbaIDQbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:31:22 -0400
-X-Yandex-Uniq: 73697f5b-8ceb-4ead-b146-68abc3f5e261
+	Thu, 4 Sep 2014 12:31:21 -0400
+X-Yandex-Uniq: f53be01d-404b-47d4-b2ac-d036d1a5a688
 Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
 From: klamm@yandex-team.ru
 To: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Cc: stfomichev@yandex-team.ru
-Subject: [PATCH 18/19] hrtimers: calculate expires_next after all timers are executed
-Date: Thu,  4 Sep 2014 20:31:04 +0400
-Message-Id: <1409848265-17150-18-git-send-email-klamm@yandex-team.ru>
+Cc: stfomichev@yandex-team.ru, Roman Gushchin <klamm@yandex-team.ru>
+Subject: [PATCH 10/19] smart: smart gathering
+Date: Thu,  4 Sep 2014 20:30:56 +0400
+Message-Id: <1409848265-17150-10-git-send-email-klamm@yandex-team.ru>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1409848265-17150-1-git-send-email-klamm@yandex-team.ru>
 References: <77161409833206@webcorp01h.yandex-team.ru>
@@ -23,150 +23,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+From: Roman Gushchin <klamm@yandex-team.ru>
 
-I think I'm hitting particularly subtle issue with NOHZ_IDLE kernel.
+Previous patch denies starting new CFS tasks on a core with running rt
+tasks. The problem still exists if there are already running CFS tasks
+at the moment rt task starts.
+This patch introduces smart gathering - migration of running CFS tasks
+from all other CPUs to the CPU with rt task.
 
-The sequence is as follows:
-- CPU enters idle, we disable tick
-- hrtimer interrupt fires (for hrtimer_wakeup)
-- for clock base #1 (REALTIME) we wake up SCHED_RT thread and
-  start RT period timer (from start_rt_bandwidth) for clock base #0 (MONOTONIC)
-- because we already checked expiry time for clock base #0
-  we end up programming wrong wake up time (minutes, from tick_sched_timer)
-- then, we exit idle loop and restart tick;
-  but because tick_sched_timer is not leftmost (the leftmost one
-  is RT period timer) we don't program it
-
-So in the end, I see working CPU without tick interrupt.
-This eventually leads to RCU stall on that CPU: rcu_gp_kthread
-is not woken up because there is no tick (this is the reason
-I started digging this up).
-
-The proposed fix runs expired timers first and only then tries to find
-next expiry time for all clocks.
-
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
 ---
- include/linux/hrtimer.h |  2 ++
- kernel/hrtimer.c        | 41 +++++++++++++++++++++++++++++++----------
- 2 files changed, 33 insertions(+), 10 deletions(-)
+ kernel/sched/core.c  | 98 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h | 14 ++++++++
+ kernel/sysctl.c      |  1 +
+ 3 files changed, 113 insertions(+)
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index d19a5c2..520a671 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -141,6 +141,7 @@ struct hrtimer_sleeper {
-  * @get_time:		function to retrieve the current time of the clock
-  * @softirq_time:	the time when running the hrtimer queue in the softirq
-  * @offset:		offset of this clock to the monotonic base
-+ * @next:		time of the next event on this clock base
-  */
- struct hrtimer_clock_base {
- 	struct hrtimer_cpu_base	*cpu_base;
-@@ -151,6 +152,7 @@ struct hrtimer_clock_base {
- 	ktime_t			(*get_time)(void);
- 	ktime_t			softirq_time;
- 	ktime_t			offset;
-+	ktime_t			next;
- };
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9d888610c..5954f48 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2753,6 +2753,8 @@ void scheduler_tick(void)
+ 	curr->sched_class->task_tick(rq, curr, 0);
+ 	raw_spin_unlock(&rq->lock);
  
- enum  hrtimer_base_type {
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index aadf4b7..f4c028d 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -900,6 +900,8 @@ EXPORT_SYMBOL_GPL(hrtimer_forward);
- static int enqueue_hrtimer(struct hrtimer *timer,
- 			   struct hrtimer_clock_base *base)
- {
-+	ktime_t expires;
++	smart_tick(cpu);
 +
- 	debug_activate(timer);
+ 	perf_event_task_tick();
  
- 	timerqueue_add(&base->active, &timer->node);
-@@ -911,6 +913,10 @@ static int enqueue_hrtimer(struct hrtimer *timer,
- 	 */
- 	timer->state |= HRTIMER_STATE_ENQUEUED;
- 
-+	expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
-+	if (ktime_compare(base->next, expires) > 0)
-+		base->next = expires;
-+
- 	return (&timer->node == base->active.next);
+ #ifdef CONFIG_SMP
+@@ -4921,6 +4923,97 @@ static int migration_cpu_stop(void *data)
  }
  
-@@ -947,8 +953,10 @@ static void __remove_hrtimer(struct hrtimer *timer,
- 		}
+ #ifdef CONFIG_SMART
++
++DEFINE_PER_CPU_SHARED_ALIGNED(struct smart_gathering, smart_gathering_data);
++
++static int smart_gathering_cpu_stop(void *data)
++{
++	int this_cpu = smp_processor_id();
++	int dest_cpu = cpu_core_id(this_cpu);
++	struct rq *rq = cpu_rq(this_cpu);
++	struct task_struct *next;
++	struct smart_gathering *sg;
++	unsigned long flags;
++	int ret;
++	int iter;
++
++	WARN_ON(this_cpu == dest_cpu);
++
++	raw_spin_lock_irqsave(&rq->lock, flags);
++	for (iter = 0; iter < rq->cfs.h_nr_running; iter++) {
++		next = fair_sched_class.pick_next_task(rq);
++		if (!next)
++			break;
++		next->sched_class->put_prev_task(rq, next);
++
++		if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(next)) ||
++		    !cpu_online(dest_cpu))
++			break;
++
++		raw_spin_unlock(&rq->lock);
++		ret = __migrate_task(next, this_cpu, dest_cpu);
++		raw_spin_lock(&rq->lock);
++
++		if (!ret)
++			break;
++	}
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
++
++	sg = &smart_gathering_data(this_cpu);
++	spin_lock_irqsave(&sg->lock, flags);
++	WARN_ON(!sg->gather);
++	sg->gather = 0;
++	spin_unlock_irqrestore(&sg->lock, flags);
++
++	return 0;
++}
++
++void smart_tick(int cpu)
++{
++	unsigned long flags;
++	struct smart_gathering *sg;
++	int gather = 0;
++	struct rq *rq;
++	int core;
++	struct task_struct *curr;
++
++	if (idle_cpu(cpu) || !smart_enabled() ||
++	    !static_key_true(&smart_cfs_gather))
++		return;
++
++	rcu_read_lock();
++
++	core = cpu_core_id(cpu);
++	if (cpu != core) {
++		rq = cpu_rq(core);
++		curr = rq->curr;
++		if (rt_task(curr) && curr->mm)
++			gather = 1;
++
++		rq = cpu_rq(cpu);
++		curr = rq->curr;
++		if (rt_task(curr))
++			gather = 0;
++	}
++
++	if (gather) {
++		sg = &smart_gathering_data(cpu);
++
++		spin_lock_irqsave(&sg->lock, flags);
++		if (sg->gather)
++			gather = 0;
++		else
++			sg->gather = 1;
++		spin_unlock_irqrestore(&sg->lock, flags);
++	}
++
++	rcu_read_unlock();
++
++	if (gather)
++		stop_one_cpu_nowait(cpu, smart_gathering_cpu_stop, NULL,
++				    &sg->work);
++}
++
+ int smart_migrate_task(struct task_struct *p, int prev_cpu,
+ 		       int dest_cpu)
+ {
+@@ -7093,6 +7186,11 @@ void __init sched_init(void)
  #endif
+ 		init_rq_hrtick(rq);
+ 		atomic_set(&rq->nr_iowait, 0);
++
++#ifdef CONFIG_SMART
++		spin_lock_init(&smart_gathering_data(i).lock);
++		smart_gathering_data(i).gather = 0;
++#endif
  	}
--	if (!timerqueue_getnext(&base->active))
-+	if (!timerqueue_getnext(&base->active)) {
- 		base->cpu_base->active_bases &= ~(1 << base->index);
-+		base->next = ktime_set(KTIME_SEC_MAX, 0);
-+	}
- out:
- 	timer->state = newstate;
- }
-@@ -1300,6 +1308,7 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
-  */
- void hrtimer_interrupt(struct clock_event_device *dev)
+ 
+ 	set_load_weight(&init_task);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c7c1cdc..80d202e 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1394,11 +1394,19 @@ struct smart_node_data {
+ 	atomic_t nr_rt_running;
+ } ____cacheline_aligned_in_smp;
+ 
++struct smart_gathering {
++	spinlock_t lock;
++	int gather;
++	struct cpu_stop_work work;
++};
++
+ extern struct static_key __smart_initialized;
+ extern struct static_key __smart_enabled;
++extern struct static_key smart_cfs_gather;
+ extern struct static_key smart_cfs_throttle;
+ 
+ DECLARE_PER_CPU_SHARED_ALIGNED(struct smart_core_data, smart_core_data);
++DECLARE_PER_CPU_SHARED_ALIGNED(struct smart_gathering, smart_gathering_data);
+ extern struct smart_node_data smart_node_data[MAX_NUMNODES];
+ 
+ static inline int cpu_core_id(int cpu)
+@@ -1408,6 +1416,7 @@ static inline int cpu_core_id(int cpu)
+ 
+ #define smart_data(cpu) per_cpu(smart_core_data, cpu_core_id(cpu))
+ #define smart_node_ptr(cpu) smart_node_data[cpu_to_node(cpu)]
++#define smart_gathering_data(cpu) per_cpu(smart_gathering_data, cpu)
+ 
+ static inline bool smart_enabled(void)
  {
-+	struct hrtimer_clock_base *base;
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
- 	ktime_t expires_next, now, entry_time, delta;
- 	int i, retries = 0;
-@@ -1322,7 +1331,6 @@ retry:
- 	cpu_base->expires_next.tv64 = KTIME_MAX;
+@@ -1586,6 +1595,7 @@ static inline void reset_smart_score(struct sched_rt_entity *rt_se)
+ 	atomic_set(&rt_se->smart_score, 0);
+ }
  
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
--		struct hrtimer_clock_base *base;
- 		struct timerqueue_node *node;
- 		ktime_t basenow;
++void smart_tick(int cpu);
+ int smart_migrate_task(struct task_struct *p, int prev_cpu, int dest_cpu);
+ void build_smart_topology(void);
  
-@@ -1351,14 +1359,8 @@ retry:
- 			 */
+@@ -1620,4 +1630,8 @@ static inline bool cpu_allowed_for_cfs(int cpu)
+ 	return true;
+ }
  
- 			if (basenow.tv64 < hrtimer_get_softexpires_tv64(timer)) {
--				ktime_t expires;
--
--				expires = ktime_sub(hrtimer_get_expires(timer),
--						    base->offset);
--				if (expires.tv64 < 0)
--					expires.tv64 = KTIME_MAX;
--				if (expires.tv64 < expires_next.tv64)
--					expires_next = expires;
-+				base->next = ktime_sub(hrtimer_get_expires(timer),
-+						       base->offset);
- 				break;
- 			}
- 
-@@ -1367,6 +1369,25 @@ retry:
- 	}
- 
- 	/*
-+	 * Because timer handler may add new timer on a different clock base,
-+	 * we need to find next expiry only after we execute all timers.
-+	 */
-+	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
-+		ktime_t expires;
++static inline void smart_tick(int cpu)
++{
++}
 +
-+		if (!(cpu_base->active_bases & (1 << i)))
-+			continue;
-+
-+		base = cpu_base->clock_base + i;
-+		expires = base->next;
-+
-+		if (expires.tv64 < 0)
-+			expires.tv64 = KTIME_MAX;
-+		if (expires.tv64 < expires_next.tv64)
-+			expires_next = expires;
-+	}
-+
-+	/*
- 	 * Store the new expiry value so the migration code can verify
- 	 * against it.
- 	 */
+ #endif /* CONFIG_SMART */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 7ee22ef..a1e71e9 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -176,6 +176,7 @@ extern int no_unaligned_warning;
+ #endif
+ 
+ #ifdef CONFIG_SMART
++struct static_key smart_cfs_gather = STATIC_KEY_INIT_TRUE;
+ struct static_key smart_cfs_throttle = STATIC_KEY_INIT_TRUE;
+ #endif
+ 
 -- 
 1.9.3
 
