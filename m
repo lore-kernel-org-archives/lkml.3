@@ -1,236 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723AbaIDBNf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 21:13:35 -0400
-Received: from mail-pa0-f65.google.com ([209.85.220.65]:39445 "EHLO
-	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933454AbaIDBNd (ORCPT
+	id S933750AbaIDBOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 21:14:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933250AbaIDBOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 21:13:33 -0400
-From: Chris Zhong <zyw@rock-chips.com>
-To: dianders@chromium.org, heiko@sntech.de
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        a.zummo@towertech.it, mturquette@linaro.org, akpm@linux-foundation.org,
-        broonie@kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        grant.likely@linaro.org, hl@rock-chips.com, huangtao@rock-chips.com,
-        cf@rock-chips.com, zhangqing@rock-chips.com, xxx@rock-chips.com,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH v9 3/3] regulator: RK808: Remove pdata from the regulator
-Date: Thu,  4 Sep 2014 09:12:39 +0800
-Message-Id: <1409793159-2573-4-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
-References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
+	Wed, 3 Sep 2014 21:14:21 -0400
+Date: Wed, 3 Sep 2014 18:14:20 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Frans Klaver <fransklaver@gmail.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
+Message-ID: <20140904011420.GA31350@kroah.com>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+ <20140904004947.GA17138@vmdeb7>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904004947.GA17138@vmdeb7>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+On Wed, Sep 03, 2014 at 05:49:47PM -0700, Darren Hart wrote:
+> On Thu, Sep 04, 2014 at 12:53:25AM +0200, Frans Klaver wrote:
+> > In store_sys_acpi, if count equals zero, or parse_arg()s sscanf call
+> > fails, 'value' remains possibly uninitialized. In that case 'value'
+> > shouldn't be used to produce the store_sys_acpi()s return value.
+> > 
+> > Only test the return value of set_acpi() if we can actually call it.
+> > Return rv otherwise.
+> > 
+> > Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> > ---
+> >  drivers/platform/x86/eeepc-laptop.c | 8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> > index bd533c2..41f12ba 100644
+> > --- a/drivers/platform/x86/eeepc-laptop.c
+> > +++ b/drivers/platform/x86/eeepc-laptop.c
+> > @@ -279,10 +279,10 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
+> >  	int rv, value;
+> >  
+> >  	rv = parse_arg(buf, count, &value);
+> > -	if (rv > 0)
+> > -		value = set_acpi(eeepc, cm, value);
+> 
+> That was rather horrible wasn't it? :-)
+> 
+> > -	if (value < 0)
+> > -		return -EIO;
+> > +	if (rv > 0) {
+> > +		if (set_acpi(eeepc, cm, value) < 0)
+> > +			return -EIO;
+> 
+> Is there a compelling reason not to propogate the return code of set_acpi?
+> (ENODEV specifically). I see -EIO in Documentation/filesystems/sysfs.txt, but
+> it's used by default if the show() pointer is NULL (for example), but otherwise
+> propogates the error.
+> 
+> Specifically it states:
+> 
+> - show() or store() can always return errors. If a bad value comes
+>   through, be sure to return an error.
+> 
+> Greg, does this need to be -EIO? or is returning someting like ENODEV preferable
+> if it more accurately reflects the error?
 
-Tested-by: Heiko Stuebner <heiko@sntech.de>
----
+Just return the value of set_acpi() and you should be fine.
 
-Changes in v9:
-Adviced by Doug
-- add reg_np
+thanks,
 
-Changes in v8:
-Adviced by Doug
-- remove rk808_regulator_dts() function
-- remove the check about "client->dev.of_node"
-
-Changes in v7:
-- remove pdata struct from header file, add rk808_regulator struct
-
-Changes in v6:
-- remove the redundant code
-
-Changes in v5:
-- re-edit base on Mark's branch
-
-Changes in v4:
-- use &client->dev replace rk808->dev
-
-Changes in v3: None
-Changes in v2:
-Adviced by Mark Browm:
-- change of_find_node_by_name to find_child_by_name
-- use RK808_NUM_REGULATORS as the name of the constant
-- create a pdata when missing platform data
-- use the rk808_reg name to supply_regulator name
-- replace regulator_register with devm_regulator_register
-- some other problem with coding style
-
- drivers/regulator/rk808-regulator.c |   91 +++++++----------------------------
- 1 file changed, 18 insertions(+), 73 deletions(-)
-
-diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
-index e372008..0d5afc4 100644
---- a/drivers/regulator/rk808-regulator.c
-+++ b/drivers/regulator/rk808-regulator.c
-@@ -3,8 +3,8 @@
-  *
-  * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-  *
-- * Author: Chris Zhong <zyw@rock-chips.com>
-- * Author: Zhang Qing <zhangqing@rock-chips.com>
-+ * Author: Chris Zhong<zyw@rock-chips.com>
-+ * Author: Zhang Qing<zhanqging@rock-chips.com>
-  *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms and conditions of the GNU General Public License,
-@@ -14,24 +14,16 @@
-  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  * more details.
-- *
-  */
- 
- #include <linux/module.h>
--#include <linux/init.h>
- #include <linux/i2c.h>
--#include <linux/err.h>
--#include <linux/platform_device.h>
- #include <linux/mfd/rk808.h>
--#include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/of_regulator.h>
--#include <linux/regmap.h>
--#include <linux/slab.h>
--/*
-- * Field Definitions.
-- */
-+
-+/* Field Definitions */
- #define RK808_BUCK_VSEL_MASK	0x3f
- #define RK808_BUCK4_VSEL_MASK	0xf
- #define RK808_LDO_VSEL_MASK	0x1f
-@@ -50,10 +42,6 @@ static const int buck_contr_base_addr[] = {
- 	RK808_BUCK4_CONFIG_REG,
- };
- 
--#define rk808_BUCK_SET_VOL_REG(x) (buck_set_vol_base_addr[x])
--#define rk808_BUCK_CONTR_REG(x) (buck_contr_base_addr[x])
--#define rk808_LDO_SET_VOL_REG(x) (ldo_set_vol_base_addr[x])
--
- static const int ldo_set_vol_base_addr[] = {
- 	RK808_LDO1_ON_VSEL_REG,
- 	RK808_LDO2_ON_VSEL_REG,
-@@ -65,9 +53,7 @@ static const int ldo_set_vol_base_addr[] = {
- 	RK808_LDO8_ON_VSEL_REG,
- };
- 
--/*
-- * rk808 voltage number
-- */
-+/* rk808 voltage number */
- static const struct regulator_linear_range rk808_buck_voltage_ranges[] = {
- 	REGULATOR_LINEAR_RANGE(700000, 0, 63, 12500),
- };
-@@ -308,77 +294,35 @@ static struct of_regulator_match rk808_reg_matches[] = {
- 	[RK808_ID_SWITCH2]	= { .name = "SWITCH_REG2" },
- };
- 
--static int rk808_regulator_dts(struct i2c_client *client,
--			       struct rk808_board *pdata)
--{
--	struct device_node *np, *reg_np;
--	int i, ret;
--
--	np = client->dev.of_node;
--	if (!np) {
--		dev_err(&client->dev, "could not find pmic sub-node\n");
--		return -ENXIO;
--	}
--
--	reg_np = of_get_child_by_name(np, "regulators");
--	if (!reg_np)
--		return -ENXIO;
--
--	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
--				 RK808_NUM_REGULATORS);
--	if (ret < 0) {
--		dev_err(&client->dev,
--			"failed to parse regulator data: %d\n", ret);
--		return ret;
--	}
--
--	for (i = 0; i < RK808_NUM_REGULATORS; i++) {
--		if (!rk808_reg_matches[i].init_data ||
--		    !rk808_reg_matches[i].of_node)
--			continue;
--
--		pdata->rk808_init_data[i] = rk808_reg_matches[i].init_data;
--		pdata->of_node[i] = rk808_reg_matches[i].of_node;
--	}
--
--	return 0;
--}
--
- static int rk808_regulator_probe(struct platform_device *pdev)
- {
- 	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
- 	struct i2c_client *client = rk808->i2c;
--	struct rk808_board *pdata = dev_get_platdata(&client->dev);
-+	struct device_node *reg_np;
- 	struct regulator_config config = {};
- 	struct regulator_dev *rk808_rdev;
--	struct regulator_init_data *reg_data;
--	int i = 0;
--	int ret = 0;
-+	int ret, i;
- 
--	if (!pdata) {
--		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
--		if (!pdata)
--			return -ENOMEM;
--	}
-+	reg_np = of_get_child_by_name(client->dev.of_node, "regulators");
-+	if (!reg_np)
-+		return -ENXIO;
- 
--	ret = rk808_regulator_dts(client, pdata);
--	if (ret)
-+	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
-+				 RK808_NUM_REGULATORS);
-+	if (ret < 0)
- 		return ret;
- 
- 	/* Instantiate the regulators */
- 	for (i = 0; i < RK808_NUM_REGULATORS; i++) {
--		reg_data = pdata->rk808_init_data[i];
--		if (!reg_data)
-+		if (!rk808_reg_matches[i].init_data ||
-+		    !rk808_reg_matches[i].of_node)
- 			continue;
- 
- 		config.dev = &client->dev;
- 		config.driver_data = rk808;
- 		config.regmap = rk808->regmap;
--
--		if (client->dev.of_node)
--			config.of_node = pdata->of_node[i];
--
--		config.init_data = reg_data;
-+		config.of_node = rk808_reg_matches[i].of_node;
-+		config.init_data = rk808_reg_matches[i].init_data;
- 
- 		rk808_rdev = devm_regulator_register(&pdev->dev,
- 						     &rk808_reg[i], &config);
-@@ -388,6 +332,7 @@ static int rk808_regulator_probe(struct platform_device *pdev)
- 			return PTR_ERR(rk808_rdev);
- 		}
- 	}
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
+greg k-h
