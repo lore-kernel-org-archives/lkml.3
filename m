@@ -1,219 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaIDVZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 17:25:04 -0400
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:61193 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404AbaIDVZC (ORCPT
+	id S1755881AbaIDVZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 17:25:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56166 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755635AbaIDVZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 17:25:02 -0400
-From: Andrew Hunter <ahh@google.com>
-To: linux-kernel@vger.kernel.org, john.stultz@linaro.org, tglx@linutronix.de,
-        unmobile@gmail.com, pjt@google.com, jacobsa@google.com
-Cc: Andrew Hunter <ahh@google.com>
-Subject: [PATCH] sched: fix timeval conversion to jiffies
-Date: Thu,  4 Sep 2014 14:17:16 -0700
-Message-Id: <1409865436-5310-1-git-send-email-ahh@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1407456558-18509-1-git-send-email-ahh@google.com>
-References: <1407456558-18509-1-git-send-email-ahh@google.com>
+	Thu, 4 Sep 2014 17:25:30 -0400
+Date: Thu, 4 Sep 2014 14:25:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Greg KH <greg@kroah.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Subject: Re: [PATCH] kernel: add support for gcc 5
+Message-Id: <20140904142529.860f4dc4514def7fb7a9d365@linux-foundation.org>
+In-Reply-To: <CAFLxGvx0Os=qJP8XSpCvj17SNNk6YA1bNZoQsVO3CksgfFbxfQ@mail.gmail.com>
+References: <1409845039-5751-1-git-send-email-sasha.levin@oracle.com>
+	<20140904141215.9e6125150824d0768aedbfcb@linux-foundation.org>
+	<CAFLxGvx0Os=qJP8XSpCvj17SNNk6YA1bNZoQsVO3CksgfFbxfQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-timeval_to_jiffies tried to round a timeval up to an integral number
-of jiffies, but the logic for doing so was incorrect: intervals
-corresponding to exactly N jiffies would become N+1. This manifested
-itself particularly repeatedly stopping/starting an itimer:
+On Thu, 4 Sep 2014 23:19:34 +0200 Richard Weinberger <richard.weinberger@gmail.com> wrote:
 
-setitimer(ITIMER_PROF, &val, NULL);
-setitimer(ITIMER_PROF, NULL, &val);
+> On Thu, Sep 4, 2014 at 11:12 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Thu,  4 Sep 2014 11:37:19 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+> >
+> >> We're missing include/linux/compiler-gcc5.h which is required now
+> >> because gcc branched off to v5 in trunk.
+> >>
+> >> Just copy the relevant bits out of include/linux/compiler-gcc4.h,
+> >> no new code is added as of now.
+> >>
+> >> This fixes a build error when using gcc 5.
+> >
+> > I think I'll stick a cc:stable on this one, as people will presumably
+> > wish to compile older kernels with newer gcc's at some time in the
+> > future.
+> 
+> CC'ing Hannes, he sent a much simpler gcc5 patch a few days ago.
+> https://lkml.org/lkml/2014/8/26/710
 
-would add a full tick to val, _even if it was exactly representable in
-terms of jiffies_ (say, the result of a previous rounding.)  Doing
-this repeatedly would cause unbounded growth in val.  So fix the math.
+That approach won't last for long - as soon as we add some
+gcc5-specific thing, we'll need a new file.
 
-Here's what was wrong with the conversion: we essentially computed
-(eliding seconds)
+Let history be a guide:
 
-jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
-
-by using scaling arithmetic, which took the best approximation of
-NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
-x/(2^USEC_JIFFIE_SC), and computed:
-
-jiffies = (usec * x) >> USEC_JIFFIE_SC
-
-and rounded this calculation up in the intermediate form (since we
-can't necessarily exactly represent TICK_NSEC in usec.) But the
-scaling arithmetic is a (very slight) *over*approximation of the true
-value; that is, instead of dividing by (1 usec/ 1 jiffie), we
-effectively divided by (1 usec/1 jiffie)-epsilon (rounding
-down). This would normally be fine, but we want to round timeouts up,
-and we did so by adding 2^USEC_JIFFIE_SC - 1 before the shift; this
-would be fine if our division was exact, but dividing this by the
-slightly smaller factor was equivalent to adding just _over_ 1 to the
-final result (instead of just _under_ 1, as desired.)
-
-In particular, with HZ=1000, we consistently computed that 10000 usec
-was 11 jiffies; the same was true for any exact multiple of
-TICK_NSEC.
-
-We could possibly still round in the intermediate form, adding
-something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
-convert usec->nsec, round in nanoseconds, and then convert using
-time*spec*_to_jiffies.  This adds one constant multiplication, and is
-not observably slower in microbenchmarks on recent x86 hardware.
-
-Tested: the following program:
-
-int main() {
-  struct itimerval zero = {{0, 0}, {0, 0}};
-  /* Initially set to 10 ms. */
-  struct itimerval initial = zero;
-  initial.it_interval.tv_usec = 10000;
-  setitimer(ITIMER_PROF, &initial, NULL);
-  /* Save and restore several times. */
-  for (size_t i = 0; i < 10; ++i) {
-    struct itimerval prev;
-    setitimer(ITIMER_PROF, &zero, &prev);
-    /* on old kernels, this goes up by TICK_USEC every iteration */
-    printf("previous value: %ld %ld %ld %ld\n",
-           prev.it_interval.tv_sec, prev.it_interval.tv_usec,
-           prev.it_value.tv_sec, prev.it_value.tv_usec);
-    setitimer(ITIMER_PROF, &prev, NULL);
-  }
-    return 0;
-}
-
-Signed-off-by: Andrew Hunter <ahh@google.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Reported-by: Aaron Jacobs <jacobsa@google.com>
-Change-Id: I7cd0f0764847fd055d39531f54e6ea3dd3ce5453
----
- include/linux/jiffies.h | 12 -----------
- kernel/time.c           | 54 +++++++++++++++++++++++++++----------------------
- 2 files changed, 30 insertions(+), 36 deletions(-)
-
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 1f44466..c367cbd 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -258,23 +258,11 @@ extern unsigned long preset_lpj;
- #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
- #endif
- #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
--#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
- #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
-                                 TICK_NSEC -1) / (u64)TICK_NSEC))
- 
- #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
-                                         TICK_NSEC -1) / (u64)TICK_NSEC))
--#define USEC_CONVERSION  \
--                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
--                                        TICK_NSEC -1) / (u64)TICK_NSEC))
--/*
-- * USEC_ROUND is used in the timeval to jiffie conversion.  See there
-- * for more details.  It is the scaled resolution rounding value.  Note
-- * that it is a 64-bit value.  Since, when it is applied, we are already
-- * in jiffies (albit scaled), it is nothing but the bits we will shift
-- * off.
-- */
--#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
- /*
-  * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
-  * into seconds.  The 64-bit case will overflow if we are not careful,
-diff --git a/kernel/time.c b/kernel/time.c
-index 7c7964c..3c49ab4 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -496,17 +496,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
-  * that a remainder subtract here would not do the right thing as the
-  * resolution values don't fall on second boundries.  I.e. the line:
-  * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
-+ * Note that due to the small error in the multiplier here, this
-+ * rounding is incorrect for sufficiently large values of tv_nsec, but
-+ * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
-+ * OK.
-  *
-  * Rather, we just shift the bits off the right.
-  *
-  * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
-  * value to a scaled second value.
-  */
--unsigned long
--timespec_to_jiffies(const struct timespec *value)
-+static unsigned long
-+__timespec_to_jiffies(unsigned long sec, long nsec)
- {
--	unsigned long sec = value->tv_sec;
--	long nsec = value->tv_nsec + TICK_NSEC - 1;
-+	nsec = nsec + TICK_NSEC - 1;
- 
- 	if (sec >= MAX_SEC_IN_JIFFIES){
- 		sec = MAX_SEC_IN_JIFFIES;
-@@ -517,6 +520,13 @@ timespec_to_jiffies(const struct timespec *value)
- 		 (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
- 
- }
-+
-+unsigned long
-+timespec_to_jiffies(const struct timespec *value)
-+{
-+	return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
-+}
-+
- EXPORT_SYMBOL(timespec_to_jiffies);
- 
- void
-@@ -533,31 +543,27 @@ jiffies_to_timespec(const unsigned long jiffies, struct timespec *value)
- }
- EXPORT_SYMBOL(jiffies_to_timespec);
- 
--/* Same for "timeval"
-+/*
-+ * We could use a similar algorithm to timespec_to_jiffies (with a
-+ * different multiplier for usec instead of nsec). But this has a
-+ * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
-+ * usec value, since it's not necessarily integral.
-  *
-- * Well, almost.  The problem here is that the real system resolution is
-- * in nanoseconds and the value being converted is in micro seconds.
-- * Also for some machines (those that use HZ = 1024, in-particular),
-- * there is a LARGE error in the tick size in microseconds.
--
-- * The solution we use is to do the rounding AFTER we convert the
-- * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
-- * Instruction wise, this should cost only an additional add with carry
-- * instruction above the way it was done above.
-+ * We could instead round in the intermediate scaled representation
-+ * (i.e. in units of 1/2^(large scale) jiffies) but that's also
-+ * perilous: the scaling introduces a small positive error, which
-+ * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
-+ * units to the intermediate before shifting) leads to accidental
-+ * overflow and overestimates.
-+ *
-+ * At the cost of one additional multiplication by a constant, just
-+ * use the timespec implementation.
-  */
- unsigned long
- timeval_to_jiffies(const struct timeval *value)
- {
--	unsigned long sec = value->tv_sec;
--	long usec = value->tv_usec;
--
--	if (sec >= MAX_SEC_IN_JIFFIES){
--		sec = MAX_SEC_IN_JIFFIES;
--		usec = 0;
--	}
--	return (((u64)sec * SEC_CONVERSION) +
--		(((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
--		 (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
-+	return __timespec_to_jiffies(value->tv_sec,
-+				     value->tv_usec * NSEC_PER_USEC);
- }
- EXPORT_SYMBOL(timeval_to_jiffies);
- 
--- 
-2.1.0.rc2.206.gedb03e5
-
+diff -u include/linux/compiler-gcc3.h include/linux/compiler-gcc4.h
