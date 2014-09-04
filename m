@@ -1,56 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200AbaIDJFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:05:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30926 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540AbaIDJFh (ORCPT
+	id S1755427AbaIDJGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:06:15 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:49096 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755240AbaIDJGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:05:37 -0400
-Message-ID: <54082B25.9090600@oracle.com>
-Date: Thu, 04 Sep 2014 05:04:37 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 05:06:10 -0400
+Date: Thu, 4 Sep 2014 10:06:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH 1/3] mfd: max77693: Initialize haptic register map
+Message-ID: <20140904090605.GB29612@lee--X1>
+References: <1409570071-26719-1-git-send-email-jaewon02.kim@samsung.com>
+ <1409570071-26719-2-git-send-email-jaewon02.kim@samsung.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: mm: BUG in unmap_page_range
-References: <53DD5F20.8010507@oracle.com> <alpine.LSU.2.11.1408040418500.3406@eggly.anvils> <20140805144439.GW10819@suse.de> <alpine.LSU.2.11.1408051649330.6591@eggly.anvils> <53E17F06.30401@oracle.com> <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com>
-In-Reply-To: <540127AC.4040804@oracle.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409570071-26719-2-git-send-email-jaewon02.kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 09:23 PM, Sasha Levin wrote:
-> On 08/27/2014 11:26 AM, Mel Gorman wrote:
->> > diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
->> > index 281870f..ffea570 100644
->> > --- a/include/asm-generic/pgtable.h
->> > +++ b/include/asm-generic/pgtable.h
->> > @@ -723,6 +723,9 @@ static inline pte_t pte_mknuma(pte_t pte)
->> >  
->> >  	VM_BUG_ON(!(val & _PAGE_PRESENT));
->> >  
->> > +	/* debugging only, specific to x86 */
->> > +	VM_BUG_ON(val & _PAGE_PROTNONE);
->> > +
->> >  	val &= ~_PAGE_PRESENT;
->> >  	val |= _PAGE_NUMA;
-> Triggered again, the first VM_BUG_ON got hit, the second one never did.
+On Mon, 01 Sep 2014, Jaewon Kim wrote:
 
-Okay, this bug has reproduced quite a few times since then that I no longer
-suspect it's random memory corruption. I'd be happy to try out more debug
-patches if you have any leads.
+> This patch add regmap_haptic initialization to use haptic register map
+> in haptic device driver.
+> 
+> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/mfd/max77693.c |   21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
 
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Thanks,
-Sasha
+Can this patch go in without the Input one?
+
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index 249c139..fbfed56 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
+>  	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
+>  };
+>  
+> +static const struct regmap_config max77693_regmap_haptic_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +	.max_register = MAX77693_HAPTIC_REG_END,
+> +};
+> +
+>  static int max77693_i2c_probe(struct i2c_client *i2c,
+>  			      const struct i2c_device_id *id)
+>  {
+> @@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  	}
+>  	i2c_set_clientdata(max77693->haptic, max77693);
+>  
+> +	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
+> +					&max77693_regmap_haptic_config);
+> +	if (IS_ERR(max77693->regmap_haptic)) {
+> +		ret = PTR_ERR(max77693->regmap_haptic);
+> +		dev_err(max77693->dev,
+> +			"failed to initialize haptic register map: %d\n", ret);
+> +		goto err_regmap;
+> +	}
+> +
+>  	/*
+>  	 * Initialize register map for MUIC device because use regmap-muic
+>  	 * instance of MUIC device when irq of max77693 is initialized
+> @@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  		ret = PTR_ERR(max77693->regmap_muic);
+>  		dev_err(max77693->dev,
+>  			"failed to allocate register map: %d\n", ret);
+> -		goto err_regmap_muic;
+> +		goto err_regmap;
+>  	}
+>  
+>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+> @@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  				&max77693->irq_data_led);
+>  	if (ret) {
+>  		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
+> -		goto err_regmap_muic;
+> +		goto err_regmap;
+>  	}
+>  
+>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+> @@ -265,7 +280,7 @@ err_irq_charger:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
+>  err_irq_topsys:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
+> -err_regmap_muic:
+> +err_regmap:
+>  	i2c_unregister_device(max77693->haptic);
+>  err_i2c_haptic:
+>  	i2c_unregister_device(max77693->muic);
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
