@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904AbaIDSZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 14:25:38 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:51374 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713AbaIDSZg (ORCPT
+	id S1754967AbaIDS1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 14:27:47 -0400
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:47213 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaIDS1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 14:25:36 -0400
+	Thu, 4 Sep 2014 14:27:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140904084938.2664bf0a@tlielax.poochiereds.net>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
-	<1409834323-7171-2-git-send-email-jlayton@primarydata.com>
-	<CAHQdGtTqG8aW-cte2PW6pVw+OeCXATgr1BZwdhponuWMjzNg8g@mail.gmail.com>
-	<20140904084938.2664bf0a@tlielax.poochiereds.net>
-Date: Thu, 4 Sep 2014 14:25:35 -0400
-X-Google-Sender-Auth: h1J_ihLUYwPbm0oso0GGUuuCWzo
-Message-ID: <CAABAsM6v3-f_7cco8f_F5Wpy7PWJOUywQHH7A=mZ-LyHRASZ7Q@mail.gmail.com>
-Subject: Re: [PATCH v2 01/17] locks: consolidate "nolease" routines
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Jeff Layton <jeff.layton@primarydata.com>
-Cc: Devel FS Linux <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        cluster-devel <cluster-devel@redhat.com>
+In-Reply-To: <53F242D1.4050506@ahsoftware.de>
+References: <20140812153812.2923046a@monolith.infinux.org>
+	<20140812202129.GA20344@home.goodmis.org>
+	<yw1xr40l2whi.fsf@unicorn.mansr.com>
+	<20140813082756.GB2923@twins.programming.kicks-ass.net>
+	<20140813090013.GA20581@pd.tnic>
+	<53F242D1.4050506@ahsoftware.de>
+Date: Thu, 4 Sep 2014 19:27:45 +0100
+Message-ID: <CANszf4jauBAhaTogvSprhhspKywXSu_8xkWh+ETsWMMUDKo0=g@mail.gmail.com>
+Subject: Re: OT: Open letter to the Linux World
+From: Rogelio Serrano <rogelio.serrano@gmail.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Christopher Barry <christopher.r.barry@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 8:49 AM, Jeff Layton <jeff.layton@primarydata.com> wrote:
-> On Thu, 4 Sep 2014 08:41:51 -0400
-> Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+On Mon, Aug 18, 2014 at 7:15 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 13.08.2014 11:00, schrieb Borislav Petkov:
 >
->> On Thu, Sep 4, 2014 at 8:38 AM, Jeff Layton <jlayton@primarydata.com> wrote:
->> > GFS2 and NFS have setlease routines that always just return -EINVAL.
->> > Turn that into a generic routine that can live in fs/libfs.c.
->> >
->> > Cc: Trond Myklebust <trond.myklebust@primarydata.com>
->> > Cc: <linux-nfs@vger.kernel.org>
->> > Cc: Steven Whitehouse <swhiteho@redhat.com>
->> > Cc: <cluster-devel@redhat.com>
->> > Signed-off-by: Jeff Layton <jlayton@primarydata.com>
->> > ---
->> >  fs/gfs2/file.c     | 22 +---------------------
->> >  fs/libfs.c         | 16 ++++++++++++++++
->> >  fs/nfs/file.c      | 13 +------------
->> >  fs/nfs/internal.h  |  1 -
->> >  fs/nfs/nfs4file.c  |  2 +-
->> >  include/linux/fs.h |  1 +
->> >  6 files changed, 20 insertions(+), 35 deletions(-)
+>> On Wed, Aug 13, 2014 at 10:27:56AM +0200, Peter Zijlstra wrote:
+>>>
+>>> And the thing is; we're all very busy so we tend to take the 'easy'
+>>> way out for things like this; but wholesale switching all my machines
+>>> is indeed painful, and I'm not liking.
 >>
->> Acked-by: Trond Myklebust <trond.myklebust@primarydata.com>
 >>
+>> Right, I think kernel people will gladly jump on a sane solution devoid
+>> of that kids-jerking-off-on-linux-desktop-just-for-the-fun-of-it
+>> situation if someone would present them with one. So, if someone would
+>> come up and do a sane init design without the jerking off, kernel people
+>> would jump on that in a heartbeat. Someone might even start getting
+>> patches from them too. ^^Hint^^ ^^hint^^.
+>>
+>> :-)
 >
-> Thanks. While spinning this up, I did have a momentary pause to wonder
-> if -ENOLCK would be a better return value here.
 >
-> It would make it easier to distinguish this from from "oops, I passed
-> in bogus arguments". For now, I'll leave it as -EINVAL, but it's
-> something to consider...
+> Hmm, a sane and maintainable solution would use C++ with which people don't
+> have to manually build lists or hashes for every structure like in the
+> kernel (generic programming done right). So you won't find much kernel
+> developers there. ;)
 >
 
-Actually, it looks as if when you compile with !CONFIG_FILE_LOCKING,
-then fcntl_setlease() returns the value '0' (which would be
-"success!"). The word "confusing" only begins to describe it all.
+Seriously Dude?
 
-Cheers
-  Trond
+Have you tried it? I was using c++ before during and after the stl was
+standardised
+and the memories of the resulting induced self hair pulling still
+gives me the shivers.
+Try writing a real time kernel with full c++ support. You have to
+provide the entire c++
+runtime in the kernel!
+
+I still do a little c++ programming when i am forced to but its only
+in small pieces.
+Ill go crazy otherwise.
+
+
+> Regards,
+>
+> Alexander Holler
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
