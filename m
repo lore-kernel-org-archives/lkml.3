@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173AbaIDJF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 05:05:27 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:48700 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753620AbaIDJFY (ORCPT
+	id S1755200AbaIDJFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 05:05:40 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30926 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540AbaIDJFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 05:05:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AugrABoqCFR5LKYhPGdsb2JhbABZgw2DVoUHqAYGmkGFaQEDAQEBgQgXBQEBAQE4NoQDAQEEATocIwULCAMOCgklDwUlAwcaE4g6B75WARcYhWSJUQeETAWca4whjHUrL4JPAQEB
-Date: Thu, 4 Sep 2014 19:05:12 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, xuejiufei@huawei.com,
-        ming.lei@canonical.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-Message-ID: <20140904090512.GL20473@dastard>
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com>
- <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
+	Thu, 4 Sep 2014 05:05:37 -0400
+Message-ID: <54082B25.9090600@oracle.com>
+Date: Thu, 04 Sep 2014 05:04:37 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140903161000.f383fa4c1a4086de054cb6a0@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+References: <53DD5F20.8010507@oracle.com> <alpine.LSU.2.11.1408040418500.3406@eggly.anvils> <20140805144439.GW10819@suse.de> <alpine.LSU.2.11.1408051649330.6591@eggly.anvils> <53E17F06.30401@oracle.com> <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com>
+In-Reply-To: <540127AC.4040804@oracle.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 04:10:00PM -0700, Andrew Morton wrote:
-> On Wed,  3 Sep 2014 13:54:54 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
-> 
-> > commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
-> > introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
-> > when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
-> > run into I/O, like in superblock shrinker.
-> 
-> Is there an actual bug which inspired this fix?  If so, please describe
-> it.
-> 
-> I don't think it's accurate to say that __GFP_FS implies __GFP_IO. 
-> Where did that info come from?
+On 08/29/2014 09:23 PM, Sasha Levin wrote:
+> On 08/27/2014 11:26 AM, Mel Gorman wrote:
+>> > diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+>> > index 281870f..ffea570 100644
+>> > --- a/include/asm-generic/pgtable.h
+>> > +++ b/include/asm-generic/pgtable.h
+>> > @@ -723,6 +723,9 @@ static inline pte_t pte_mknuma(pte_t pte)
+>> >  
+>> >  	VM_BUG_ON(!(val & _PAGE_PRESENT));
+>> >  
+>> > +	/* debugging only, specific to x86 */
+>> > +	VM_BUG_ON(val & _PAGE_PROTNONE);
+>> > +
+>> >  	val &= ~_PAGE_PRESENT;
+>> >  	val |= _PAGE_NUMA;
+> Triggered again, the first VM_BUG_ON got hit, the second one never did.
 
-Pretty damn clear to me:
+Okay, this bug has reproduced quite a few times since then that I no longer
+suspect it's random memory corruption. I'd be happy to try out more debug
+patches if you have any leads.
 
-#define GFP_ATOMIC      (__GFP_HIGH)
-#define GFP_NOIO        (__GFP_WAIT)
-#define GFP_NOFS        (__GFP_WAIT | __GFP_IO)
-#define GFP_KERNEL      (__GFP_WAIT | __GFP_IO | __GFP_FS)
 
-especially when you consider the layering of the subsystems that use
-these contexts. i.e. KERNEL on top of FS on top of IO on top of
-ATOMIC....
-
-IOWs, asking for (__GFP_WAIT | __GFP_FS) reclaim context is
-something outside the defined reclaim heirarchy. Filesystems
-*depend* on being about to do IO to perform recalim of dirty
-objects, whether it be the page cache, inode cache or any other
-filesystem cache that can hold dirty objects.
-
-> And the superblock shrinker is a good example of why this shouldn't be
-> the case.  The main thing that code does is to reclaim clean fs objects
-> without performing IO.
-
-Filesystem shrinkers do indeed perform IO from the superblock
-shrinker and have for years. Even clean inodes can require IO before
-they can be freed - e.g. on an orphan list, need truncation of
-post-eof blocks, need to wait for ordered operations to complete
-before it can be freed, etc.
-
-IOWs, Ext4, btrfs and XFS all can issue and/or block on
-arbitrary amounts of IO in the superblock shrinker context. XFS, in
-particular, has been doing transactions and IO from the VFS inode
-cache shrinker since it was first introduced....
-
-> AFAICT the proposed patch will significantly
-> weaken PF_MEMALLOC_NOIO allocation attempts by needlessly preventing
-> the kernel from reclaiming such objects?
-
-PF_MEMALLOC_NOIO is the anomolous case. It also has very few users,
-who all happen to be working around very rare deadlocks caused by
-vmalloc() hard coding GFP_KERNEL allocations deep in it's stack. So
-the impact of fixing this anomoly is going to be completely
-unnoticable...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+Sasha
