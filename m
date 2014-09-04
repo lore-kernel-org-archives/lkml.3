@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375AbaIDTm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:42:59 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:61136 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292AbaIDTmw (ORCPT
+	id S1755292AbaIDTuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:50:01 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44229 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194AbaIDTt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:42:52 -0400
-Message-ID: <5408C0B4.5040207@redhat.com>
-Date: Thu, 04 Sep 2014 21:42:44 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 15:49:59 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX192vZHSN4VQy/otlZvxUEER
+Date: Thu, 4 Sep 2014 12:49:52 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: linux-omap@vger.kernel.org, rogerq@ti.com,
+        Lokesh Vutla <lokeshvutla@ti.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] ARM: dts: dra7-evm: fixes for mux and VTT control
+Message-ID: <20140904194951.GB14698@atomide.com>
+References: <1409837008-32144-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Chris J Arges <chris.j.arges@canonical.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
-References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <54088CB5.6050406@canonical.com> <54089DDE.6010004@redhat.com> <5408AC76.6030404@canonical.com> <5408BA6D.1070602@redhat.com>
-In-Reply-To: <5408BA6D.1070602@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409837008-32144-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2014 21:15, Paolo Bonzini ha scritto:
-> Il 04/09/2014 20:16, Chris J Arges ha scritto:
->>> +	boot_ns = timespec_to_ns(&tk->total_sleep_time)
->>> +		+ tk->wall_to_monotonic.tv_sec * (u64)NSEC_PER_SEC
->>> +		+ tk->wall_to_monotonic.tv_nsec
->>> +		+ tk->xtime_sec * (u64)NSEC_PER_SEC;
+* Nishanth Menon <nm@ti.com> [140904 06:24]:
+> Hi,
 > 
-> So this means that the above 3.16-based code is not the same as
+> The following series was inspired in part by http://marc.info/?l=linux-omap&m=140974309205295&w=2
+> causing me to try and do an audit of pinctrl configurations on the platform.
 > 
->         boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
+> Further, failures on latest board updates in the automated farm also
+> caused identification of a fix which was yet to be send to upstream
+> from product kernel. Slightly unrelated patches in this series.
 > 
-> in 3.17.  Everything else in the patch you tested is the same as the
-> code that is in 3.17, so that's a start.
-> 
-> Paolo
-> 
+> So here they are..
+> based on v3.17-rc1:
+> before-dra7xx-evm:  Boot FAIL: http://paste.ubuntu.org.cn/1477597
+> (fails can be at different times though.. random crashes without VTT is usual)..
+> after-dra7xx-evm:  Boot PASS: http://paste.ubuntu.org.cn/1477596
 
-Based on commit 02cba1598a2a3b689e79ad6dad2532521f638271 we have:
+Thanks applying both into omap-for-v3.17/fixes-v2.
 
-   offs_real - offs_boot = wall_to_monotonic + total_sleep_time
+Regards,
 
-The patch I posted this morning separates tk->xtime_sec out of boot_ns, so
-all that is missing should be a change in boot_ns from base_mono + offs_boot
-to offs_real - offs_boot.
-
-Chris, can you try this patch on top of the previous one:
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 92493e10937c..811eecc43fe8 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1031,7 +1031,7 @@ static void update_pvclock_gtod(struct timekeeper *tk)
- 	struct pvclock_gtod_data *vdata = &pvclock_gtod_data;
- 	u64 boot_ns;
- 
--	boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
-+	boot_ns = ktime_to_ns(ktime_sub(tk->offs_real, tk->offs_boot));
- 
- 	write_seqcount_begin(&vdata->seq);
-
-If it doesn't work, then commit 02cba1598a2a3b689e79ad6dad2532521f638271
-is also broken.
-
-Paolo
+Tony
