@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471AbaIDAt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Sep 2014 20:49:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49812 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaIDAt5 (ORCPT
+	id S932613AbaIDAxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Sep 2014 20:53:20 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:34918 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150AbaIDAxT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Sep 2014 20:49:57 -0400
-Date: Wed, 3 Sep 2014 17:49:47 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
-Message-ID: <20140904004947.GA17138@vmdeb7>
-References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+	Wed, 3 Sep 2014 20:53:19 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        "Tomeu Vizoso" <tomeu.vizoso@collabora.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <5407A6B9.1080606@codeaurora.org>
+Cc: "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Peter De Schrijver" <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
+        "Thierry Reding" <thierry.reding@gmail.com>,
+        "Javier Martinez Canillas" <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+References: <1409758148-20104-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1409758434-20810-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1409758434-20810-3-git-send-email-tomeu.vizoso@collabora.com>
+ <5407A6B9.1080606@codeaurora.org>
+Message-ID: <20140904005305.11368.16931@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v9 5/6] clk: Add floor and ceiling constraints to clock rates
+Date: Wed, 03 Sep 2014 17:53:05 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 12:53:25AM +0200, Frans Klaver wrote:
-> In store_sys_acpi, if count equals zero, or parse_arg()s sscanf call
-> fails, 'value' remains possibly uninitialized. In that case 'value'
-> shouldn't be used to produce the store_sys_acpi()s return value.
+Quoting Stephen Boyd (2014-09-03 16:39:37)
+> On 09/03/14 08:33, Tomeu Vizoso wrote:
+> > +int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
+> > +{
+> > +     struct clk_core *clk = clk_to_clk_core(clk_user);
+> > +
+> > +     WARN(rate > 0 && rate < clk_user->floor_constraint,
+> > +          "clk %s dev %s con %s: new ceiling %lu lower than existing floor %lu\n",
+> > +          __clk_get_name(clk), clk_user->dev_id, clk_user->con_id, rate,
+> > +          clk_user->floor_constraint);
+> > +
+> > +     clk_user->ceiling_constraint = rate;
+> > +     return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
+> > +}
+> > +EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
 > 
-> Only test the return value of set_acpi() if we can actually call it.
-> Return rv otherwise.
-> 
-> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> ---
->  drivers/platform/x86/eeepc-laptop.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index bd533c2..41f12ba 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -279,10 +279,10 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
->  	int rv, value;
->  
->  	rv = parse_arg(buf, count, &value);
-> -	if (rv > 0)
-> -		value = set_acpi(eeepc, cm, value);
+> Maybe I'm late to this patch series given that Mike applied it, but I
+> wonder why we wouldn't just have one API that takes a min and a max,
+> i.e. clk_set_rate_range(clk, min, max)? Then clk_set_rate() is a small
+> wrapper on top that just sets min and max to the same value.
 
-That was rather horrible wasn't it? :-)
+We certainly can have that. But being able to easily adjust a floor or
+ceiling value seems like a good thing to me, and that is what these
+functions do.
 
-> -	if (value < 0)
-> -		return -EIO;
-> +	if (rv > 0) {
-> +		if (set_acpi(eeepc, cm, value) < 0)
-> +			return -EIO;
+If we decide to have a clk_set_rate_range (where we perhaps pass zero in
+for a value that we do not wish to constrain) then I imagine that
+clk_set_ceiling_rate and clk_set_floor_rate will simply become a wrapper
+for that function. No harm having it both ways. If one way of doing
+things falls out of favor we can always cull it and update all the
+users.
 
-Is there a compelling reason not to propogate the return code of set_acpi?
-(ENODEV specifically). I see -EIO in Documentation/filesystems/sysfs.txt, but
-it's used by default if the show() pointer is NULL (for example), but otherwise
-propogates the error.
-
-Specifically it states:
-
-- show() or store() can always return errors. If a bad value comes
-  through, be sure to return an error.
-
-Greg, does this need to be -EIO? or is returning someting like ENODEV preferable
-if it more accurately reflects the error?
-
--- 
-Darren Hart
-Intel Open Source Technology Center
+Regards,
+Mike
