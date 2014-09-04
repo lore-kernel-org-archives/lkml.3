@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaIDQxe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 12:53:34 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:37166 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764AbaIDQxd (ORCPT
+	id S1754219AbaIDQ4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 12:56:51 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:33983 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaIDQ4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 12:53:33 -0400
+	Thu, 4 Sep 2014 12:56:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409409935-8775-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1409409935-8775-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Thu, 4 Sep 2014 18:53:28 +0200
-Message-ID: <CACRpkdbYP3AMZEyeJnS0H6rgMs2sPOaW4xvRSnRVDLs=ahk=jA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: st: Add remove function and remove gpio_chip on failure
+In-Reply-To: <20140831152456.GA25207@udknight>
+References: <20140831152456.GA25207@udknight>
+Date: Thu, 4 Sep 2014 18:56:49 +0200
+Message-ID: <CACRpkdZ35WTug2ZUN3-hqg9-BB59eHO+vzOsUE+C-yb+AEp2Zg@mail.gmail.com>
+Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        kernel@stlinux.com,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Wang YanQing <udknight@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>, andi@lisas.de, dforsi@gmail.com,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 4:45 PM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
+On Sun, Aug 31, 2014 at 5:24 PM, Wang YanQing <udknight@gmail.com> wrote:
 
-> This patch adds a remove function to platform_driver to unload
-> the driver in a cleaner way. This also releases gpiochip related
-> resources by calling gpiochip_remove when gpiochip_irqchip_add fails.
+> PL2303 USB Serial devices may has GPIOs, this patch add
+> basic PL2303 gpio support.
 >
-> CC: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-> CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.com>
-> CC: Maxime Coquelin <maxime.coquelin@st.com>
-> CC: Patrice Chotard <patrice.chotard@st.com>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> Known issue:
+> If gpios are in use(export to userspace through sysfs interface, etc),
+> then call pl2303_release(unplug usb-serial convertor, modprobe -r, etc),
+> will cause trouble, so we need to make sure there is no gpio user before
+> call pl2303_release.
 >
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  Note: I sniffed office HXD gpio test program to get
+>        gpios control protocol with PL2303 RA, so I only
+>        test it with PL2303 RA and HXA, I don't have HXD,
+>        but because it is *office* HXD gpio test program,
+>        so if it doesn't work with HXD, I will feel surprise.
+>
+>  Changes
+>  v7-v8:
+>  1: add support for four dedicated gpios on HXD and RA
+>  2: fix problem reported by Johan Hovold in v7
+>  3: fix checkpatch.pl's warning
 
-Srinivas/Patrice: can you have a look at this?
+This has been looking nice from the GPIO side of things
+for a while so:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
 Linus Walleij
