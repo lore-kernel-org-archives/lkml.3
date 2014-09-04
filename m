@@ -1,104 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331AbaIDFXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 01:23:13 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:32829 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaIDFXL (ORCPT
+	id S1755587AbaIDFep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 01:34:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56851 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaIDFeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 01:23:11 -0400
+	Thu, 4 Sep 2014 01:34:44 -0400
+Date: Wed, 3 Sep 2014 22:33:42 -0700
+From: tip-bot for Mark Rustad <tipbot@zytor.com>
+Message-ID: <tip-315427691c7a064718b5ad7d378d7f1c1898a626@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, mark.d.rustad@intel.com,
+        jeffrey.t.kirsher@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        mark.d.rustad@intel.com, tglx@linutronix.de,
+        jeffrey.t.kirsher@intel.com
+In-Reply-To: <1409739444-13635-1-git-send-email-jeffrey.t.kirsher@intel.com>
+References: <1409739444-13635-1-git-send-email-jeffrey.t.kirsher@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/core] locking/semaphore:
+  Resolve some shadow warnings
+Git-Commit-ID: 315427691c7a064718b5ad7d378d7f1c1898a626
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1409778695.5546.55.camel@x220>
-References: <20140901065916.28909.35097.stgit@zurg>
-	<20140901071639.28909.88888.stgit@zurg>
-	<1409778695.5546.55.camel@x220>
-Date: Thu, 4 Sep 2014 09:23:10 +0400
-Message-ID: <CALYGNiOrTRHYbirZ1CNrvzsN9qKC3TgHnQQp9Am8pQqbZvdQ_A@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] kconfig: link CONFIG_CROSS_COMPILE with
- environment variable
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 1:11 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Hi Konstantin,
->
-> On Mon, 2014-09-01 at 11:16 +0400, Konstantin Khlebnikov wrote:
->> Cross-compiler tool prefix can be set in command line, in the environment
->> variable CROSS_COMPILE or in config file, in option CONFIG_COROSS_COMPILE.
->> Also some arch/*/Makefile provides default value.
->>
->> This patch links config option CONFIG_CROSS_COMPILE and variable CROSS_COMPILE
->> in both directions: environment/command line has higher priority and updates
->> value saved in the config file, config option acts as default value for it.
->>
->> This is especially useful together with option O=dir which allows to create
->> separate directory for each target architecture and kernel flavor:
->>
->> # make O=build/arm ARCH=arm CROSS_COMPILE=arm-none-eabi- defconfig
->> # make -C build/arm
->>
->> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
->
-> I have only had a quick glance at this series. Just a quick question to
-> help me understand where it is going.
->
-> Would this patch mean that, if a (def)config file has both ARCH and
-> CROSS_COMPILE set, one could use that (def)config file and invoke "make
-> $whatever_target" and expect it to do the right thing (provided a
-> suitable cross compiler is installed)?
->
-> This implies cross compiler prefixes are standardized across
-> distributions, I guess. Maybe they're not.
+Commit-ID:  315427691c7a064718b5ad7d378d7f1c1898a626
+Gitweb:     http://git.kernel.org/tip/315427691c7a064718b5ad7d378d7f1c1898a626
+Author:     Mark Rustad <mark.d.rustad@intel.com>
+AuthorDate: Wed, 3 Sep 2014 03:17:24 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 4 Sep 2014 07:17:24 +0200
 
-As I know they are not strictly standardized.
-Naming convention is arch[-vendor][-os]-abi, but there is a lot of
-possible combinations.
+locking/semaphore: Resolve some shadow warnings
 
->
->> ---
->>  Makefile     |    6 +++++-
->>  init/Kconfig |    1 +
->>  2 files changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/Makefile b/Makefile
->> index f648405..1044f40 100644
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -263,7 +263,11 @@ endif
->>  # "make" in the configured kernel build directory always uses that.
->>  # Default value for CROSS_COMPILE is not to prefix executables
->>  # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
->> -CROSS_COMPILE        ?= $(CONFIG_CROSS_COMPILE:"%"=%)
->> +ifndef CROSS_COMPILE
->> +     CROSS_COMPILE := $(shell $(srctree)/scripts/config \
->> +                             --file $(KBUILD_OUTPUT)$(KCONFIG_CONFIG) \
->> +                             --if-undef "" --state "CROSS_COMPILE")
->> +endif
->>
->>  # Architecture as present in compile.h
->>  UTS_MACHINE  := $(ARCH)
->> diff --git a/init/Kconfig b/init/Kconfig
->> index e84c642..1c2f621 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -47,6 +47,7 @@ config INIT_ENV_ARG_LIMIT
->>
->>  config CROSS_COMPILE
->>       string "Cross-compiler tool prefix"
->> +     option env="CROSS_COMPILE"
->>       help
->>         Same as running 'make CROSS_COMPILE=prefix-' but stored for
->>         default make runs in this kernel build directory.  You don't
->>
->
->
-> Paul Bolle
->
+Resolve some shadow warnings resulting from using the name
+jiffies, which is a well-known global. This is not a problem
+of course, but it could be a trap for someone copying and
+pasting code, and it just makes W=2 a little cleaner.
+
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1409739444-13635-1-git-send-email-jeffrey.t.kirsher@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/locking/semaphore.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/locking/semaphore.c b/kernel/locking/semaphore.c
+index 6815171..b8120ab 100644
+--- a/kernel/locking/semaphore.c
++++ b/kernel/locking/semaphore.c
+@@ -36,7 +36,7 @@
+ static noinline void __down(struct semaphore *sem);
+ static noinline int __down_interruptible(struct semaphore *sem);
+ static noinline int __down_killable(struct semaphore *sem);
+-static noinline int __down_timeout(struct semaphore *sem, long jiffies);
++static noinline int __down_timeout(struct semaphore *sem, long timeout);
+ static noinline void __up(struct semaphore *sem);
+ 
+ /**
+@@ -145,14 +145,14 @@ EXPORT_SYMBOL(down_trylock);
+ /**
+  * down_timeout - acquire the semaphore within a specified time
+  * @sem: the semaphore to be acquired
+- * @jiffies: how long to wait before failing
++ * @timeout: how long to wait before failing
+  *
+  * Attempts to acquire the semaphore.  If no more tasks are allowed to
+  * acquire the semaphore, calling this function will put the task to sleep.
+  * If the semaphore is not released within the specified number of jiffies,
+  * this function returns -ETIME.  It returns 0 if the semaphore was acquired.
+  */
+-int down_timeout(struct semaphore *sem, long jiffies)
++int down_timeout(struct semaphore *sem, long timeout)
+ {
+ 	unsigned long flags;
+ 	int result = 0;
+@@ -161,7 +161,7 @@ int down_timeout(struct semaphore *sem, long jiffies)
+ 	if (likely(sem->count > 0))
+ 		sem->count--;
+ 	else
+-		result = __down_timeout(sem, jiffies);
++		result = __down_timeout(sem, timeout);
+ 	raw_spin_unlock_irqrestore(&sem->lock, flags);
+ 
+ 	return result;
+@@ -248,9 +248,9 @@ static noinline int __sched __down_killable(struct semaphore *sem)
+ 	return __down_common(sem, TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT);
+ }
+ 
+-static noinline int __sched __down_timeout(struct semaphore *sem, long jiffies)
++static noinline int __sched __down_timeout(struct semaphore *sem, long timeout)
+ {
+-	return __down_common(sem, TASK_UNINTERRUPTIBLE, jiffies);
++	return __down_common(sem, TASK_UNINTERRUPTIBLE, timeout);
+ }
+ 
+ static noinline void __sched __up(struct semaphore *sem)
