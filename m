@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222AbaIDTGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:06:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41424 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755063AbaIDTGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:06:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,467,1406617200"; 
-   d="scan'208";a="475257291"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Borislav Petkov" <bp@alien8.de>,
-        "Henrique de Moraes Holschuh" <hmh@hmh.eng.br>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH] x86/microcode: add parameter dis_ucode_ldr in kernel-paramenters.txt
-Date: Thu,  4 Sep 2014 12:07:06 -0700
-Message-Id: <1409857626-55464-1-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.8.0.1
+	id S1755264AbaIDTHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:07:20 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:40603 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194AbaIDTHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 15:07:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409793159-2573-4-git-send-email-zyw@rock-chips.com>
+References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
+	<1409793159-2573-4-git-send-email-zyw@rock-chips.com>
+Date: Thu, 4 Sep 2014 12:07:16 -0700
+X-Google-Sender-Auth: z988y_-ukN7HfT4xv7DXRipYV5w
+Message-ID: <CAD=FV=VhB93xOTYB3LoZhq2bsjRh8uZp4ehyPLzU_A+=f8NV0w@mail.gmail.com>
+Subject: Re: [PATCH v9 3/3] regulator: RK808: Remove pdata from the regulator
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Turquette <mturquette@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
+        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        xxx <xxx@rock-chips.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Dmitry Torokhov <dtor@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kever Yang <kever.yang@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+Hi,
 
-The kernel parameter dis_ucode_ldr disables early loading microcode from
-initrd. The parameter was introduced earlier by Borislave Petkov.
+On Wed, Sep 3, 2014 at 6:12 PM, Chris Zhong <zyw@rock-chips.com> wrote:
 
-This patch adds the explanation for this parameter in
-Documentation/kernel-parameters.txt for user convenience.
+> - * Author: Chris Zhong <zyw@rock-chips.com>
+> - * Author: Zhang Qing <zhangqing@rock-chips.com>
+> + * Author: Chris Zhong<zyw@rock-chips.com>
+> + * Author: Zhang Qing<zhanqging@rock-chips.com>
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- Documentation/kernel-parameters.txt | 7 +++++++
- 1 file changed, 7 insertions(+)
+As Dmitry pointed out, you probably shouldn't have changed these
+lines--they were good like they were.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5ae8608..eef098f 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -841,6 +841,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	dhash_entries=	[KNL]
- 			Set number of hash buckets for dentry cache.
- 
-+	dis_ucode_ldr	[X86]
-+			This parameter disables the early microcode loader.
-+			This is useful mostly in debugging situations where
-+			we want to turn off early microcode loading from the
-+			initrd, as a means to be able to rule out its
-+			influence on the machine.
-+
- 	disable=	[IPV6]
- 			See Documentation/networking/ipv6.txt.
- 
--- 
-1.8.1.2
-
+-Doug
