@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaIDKdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:33:36 -0400
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:34569 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaIDKde (ORCPT
+	id S1752344AbaIDKha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:37:30 -0400
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:34473 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaIDKh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:33:34 -0400
+	Thu, 4 Sep 2014 06:37:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAL8zT=i-T9DHd1F5=YpovM9i0LwpUswm6am1Qyf6kG_g3Xj2Qg@mail.gmail.com>
-References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
- <CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
- <5406D942.4080405@intel.com> <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
- <CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com>
- <CAPDyKFoe6Zkr+QLZRc3azn8JvpsQXdSNLHTLmy5O-nnbVy9C1A@mail.gmail.com> <CAL8zT=i-T9DHd1F5=YpovM9i0LwpUswm6am1Qyf6kG_g3Xj2Qg@mail.gmail.com>
-From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Date: Thu, 4 Sep 2014 12:33:18 +0200
-X-Google-Sender-Auth: QiXXn5A3GLZmYnYUpHN2-s93TK0
-Message-ID: <CAL8zT=hkvFvnrswRnQRV4LXHOUxHqTVUQDjhDnhBcRRSEFjEhA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
+In-Reply-To: <540838DB.1070202@linux.vnet.ibm.com>
+References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com>
+	<CAKohpomLW17B=Sk42tczzDF+VGwn7hT521osWPi5TcgqpCPZ_w@mail.gmail.com>
+	<53296AD0.5090908@linux.vnet.ibm.com>
+	<19131121.D211TBerqb@vostro.rjw.lan>
+	<CAKohpom0+bbyffZML2tJjXQDc+2q4PM8sVkL5pDA5WX=rmvtKA@mail.gmail.com>
+	<54082C68.8030400@linux.vnet.ibm.com>
+	<CAKohpokvpWDbCbPYcV+fzzpaztZSi=yacdmyYfBLoSs4U2YO9A@mail.gmail.com>
+	<540838DB.1070202@linux.vnet.ibm.com>
+Date: Thu, 4 Sep 2014 16:07:28 +0530
+Message-ID: <CAKohpomH=ODnDT1FxrGVLOiOpA9NecQR134tUKQk-bRXLGPRYw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
+        Patrick Marlier <patrick.marlier@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-04 11:37 GMT+02:00 Jean-Michel Hautbois
-<jean-michel.hautbois@vodalys.com>:
-> Hi Ulf,
->
->> I am not sure adding a DT binding for non access to rpmb would be
->> needed. At least until we heard of a similar case as Adrian describes
->> but for rpmb.
->>
->> BTW, I just posted a patch which disabled partition scan of the boot
->> area, what to you think about that?
->> http://marc.info/?l=linux-mmc&m=140973496402028&w=2
->>
->> Finally I am also wondering whether we could and thus should, handle
->> these situations entirely without using a host cap. In principle what
->> we need is a more sophisticated error handling when the switch errors
->> occurs, while trying to switch to the boot area/rpmb partitions. Could
->> you maybe investigate that option, before we decide to add a new DT
->> binding?
->
-> According to me and what Hsin-Hsiang Tseng wrote, it seems that we
-> should be able to have access to boot partitions if we want to give a
-> possibility of writing u-boot in one (or both) of them. This is the
-> way the i.MX6 will boot on a eMMC if I read the reference manual
-> correctly, but I didn't tested it yet.
-> But there is no need to scan those partitions at boot, as there will
-> probably never be a partition table inside, as you said.
-> All we need is providing access to mmc[n]blkpboot0 and mmc[n]blkpboot1
-> and a way to tell which one is used as default boot partition.
->
-> This is my point of view, but I didn't read JESD84-A441 so I don't
-> know if this is the good way.
->
-> Regards,
-> JM
+On 4 September 2014 15:33, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> I think Rafael's point was that since no driver that had implemented the
+> target_index callback was using it at the time that this patch was
+> proposed, it was be best to couple the check on existence of stop_cpu
+> callback with the the check on the kind of cpufreq driver. However
+> powerpc is also in need of this today and we implement the target_index
+> callback and find it convenient to use the stop CPU callback.
 
-BTW, here is an interesting commit from Freescale tree :
-http://git.freescale.com/git/cgit.cgi/imx/linux-2.6-imx.git/commit/?h=imx_3.10.17_1.0.0_ga&id=28774b788ae0de5d88045dd60cac3656c305821d
+No, this is what he said..
 
-JM
+"
+So to me, (1) the new ->stop() should *only* be called for ->setpolicy drivers,
+because the purpose of it should be to "allow ->setpolicy drivers to do what the
+GOV_STOP will do for regular drivers"
+"
+
+> Rafael, in which case would it not make sense to remove the check on
+> driver->setpolicy above?
+>
+> Besides, I don't understand very well why we had this double check in
+> the first place. Only if the drivers are in need of the functionality
+> like stop_cpu, would they have implemented this callback right? If we
+> are to assume that the drivers which have implemented the target_index
+> callback should never be needing it, they would not have implemented the
+> stop CPU callback either. So what was that, which was blatantly wrong
+> with just having a check on stop_cpu? I did go through the discussion
+> but did not find a convincing answer to this.
+
+The idea was to get something similar to GOV_STOP for setpolicy drivers.
+But in the end we didn't get to that. What we do in GOV_STOP is stop
+changing CPUs frequency, but here in stop_cpu() we can stop changing
+CPUs frequency OR take it to minimum, whatever we want..
+
+As I said earlier, probably we should just do what you did in your patch +
+some documentation changes.
