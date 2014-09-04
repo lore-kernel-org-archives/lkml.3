@@ -1,50 +1,475 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaIDKLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:11:10 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:55252 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387AbaIDKLI (ORCPT
+	id S1752931AbaIDKLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:11:23 -0400
+Received: from rhcavspool01.kulnet.kuleuven.be ([134.58.240.193]:52577 "EHLO
+	cavspool01.kulnet.kuleuven.be" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752373AbaIDKLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Sep 2014 06:11:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Andrew Pinski <apinski@cavium.com>, linux-kernel@vger.kernel.org,
-        pinskia@gmail.com
-Subject: Re: [PATCH 08/24] Allow a 32bit ABI to use the naming of the 64bit ABI syscalls to avoid confusion of not splitting the registers
-Date: Thu, 04 Sep 2014 12:11:04 +0200
-Message-ID: <3318813.yqP9pCQtAB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409779158-30963-9-git-send-email-apinski@cavium.com>
-References: <1409779158-30963-1-git-send-email-apinski@cavium.com> <1409779158-30963-9-git-send-email-apinski@cavium.com>
+X-Greylist: delayed 339 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 06:11:07 EDT
+X-KULeuven-Envelope-From: bart.tanghe@thomasmore.be
+X-KULeuven-Scanned: Found to be clean
+X-KULeuven-ID: 24C03128089.A13C1
+X-KULeuven-Information: Katholieke Universiteit Leuven
+Message-ID: <5408395E.2030305@thomasmore.be>
+Date: Thu, 04 Sep 2014 12:05:18 +0200
+X-Kuleuven: This mail passed the K.U.Leuven mailcluster
+From: Bart Tanghe <bart.tanghe@thomasmore.be>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:V/2CjRBc5f0IMVR53dk49WgjlfFpVDj6+OfUbvwcmOG
- tY8wIwo8wAL2hr1Pf3m23lW3KFhh9YrNZmMKBKagZEcbgroSYf
- lakSvMU25s2eYfWZJpksqxyzI0bbNcz1oXsScP6OnimxZIw4VR
- F/CUmUw8DODUbd4K/r3+K580NQHu4YZU1e5z9gsMcNqap+BDb6
- kRiiaf5qRkuvkUllhnpBkl/GgIGpo0wEP3hDNPLF2Gj+aOKvUp
- IqejbOeW/9AF5yezzCaLhOHTleUW1kpaDg4sIBpkLLTYpQ13hY
- xl7zZHEtNAHG+SmTGpmqSFddo+3C0MCWAas6zavTIG3MpZJ0aW
- NHjEIm2AQD3IYx3JgnmE=
-X-UI-Out-Filterresults: notjunk:1;
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: swarren@wwwdotorg.org, tim.kryger@linaro.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
+Subject: Re: [resend rfc v3] pwm: add BCM2835 PWM driver
+References: <1398689686-30317-1-git-send-email-bart.tanghe@thomasmore.be> <20140825131908.GG4163@ulmo.nvidia.com>
+In-Reply-To: <20140825131908.GG4163@ulmo.nvidia.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 September 2014 14:19:02 Andrew Pinski wrote:
-> + * For 32bit abis where 64bit can be passed via one
-> + * register, use the same naming as the 64bit ones
-> + * as they will only have a 64 bit off_t.
->   */
-> -#if __BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)
-> +#if (__BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)) || \
-> +       defined(__ARCH_WANT_64BIT_SYSCALLS)
+No problem. Thanks for the feedback.
+I've got some question below.
+
+On 2014-08-25 15:19, Thierry Reding wrote:
+> Sorry for taking so long to reply to this, I had completely forgotten.
 > 
+> On Mon, Apr 28, 2014 at 02:54:46PM +0200, Bart Tanghe wrote:
+>> 	Add some better error handling and Device table support
+>> 	Added Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
+>> 	
+>> Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
+> 
+> There should be a description about this driver in the commit message.
+> The above reads like a changelog since earlier versions of this patch,
+> in which case it should go below a --- separator line, like so:
+> 
+> 	Commit message goes here...
+> 	...
+> 
+> 	Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
+> 	---
+> 	Changes in v3:
+> 	- add some better error handling
+> 	- add device tree support
+> 
+> I assume that "device table" was meant to be "device tree"? Also it
+> might be useful to mention Raspberry Pi in the commit message.
+> 
+>> diff --git a/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
+>> new file mode 100644
+>> index 0000000..44c0b95
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
+>> @@ -0,0 +1,13 @@
+>> +bcm2835 PWM controller
+> 
+> I think this ought to be "BCM2835". Again, maybe this should mention the
+> Raspberry Pi so that when people search for it they get a match on this
+> document.
+> 
+>> +Required properties:
+>> +- compatible: should be "bcrm,pwm-bcm2835"
+> 
+> According to Documentation/devicetree/bindings/vendor-prefixes.txt this
+> should be "brcm,...". Also I'd suggest putting the SoC first, followed
+> by the hardware block name:
+> 
+> 	"brcm,bcm2835-pwm"
+> 
+>> +- reg: physical base address and length of the controller's registers
+>> +
+>> +Examples:
+>> +
+>> +pwm@0x2020C000 {
+>> +	compatible = "bcrm,pwm-bcm2835";
+>> +	reg = <0x2020C000 0x28>;
+> 
+> I think other BCM2835 device tree bindings use lower-case for addresses,
+> so you might want to follow that for consistency. Also unit-addresses
+> are always in hexadecimal and shouldn't take a 0x prefix, so the above
+> would become:
+> 
+> 	pwm@2020c000 {
+> 		...
+> 	};
+> 
+>> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+>> index 22f2f28..20341a3 100644
+>> --- a/drivers/pwm/Kconfig
+>> +++ b/drivers/pwm/Kconfig
+>> @@ -62,6 +62,18 @@ config PWM_ATMEL_TCB
+>>  	  To compile this driver as a module, choose M here: the module
+>>  	  will be called pwm-atmel-tcb.
+>>  
+>> +config PWM_BCM2835
+>> +	tristate "BCM2835 PWM support"
+>> +	depends on MACH_BCM2835 || MACH_BCM2708
+>> +	help
+>> +	  PWM framework driver for BCM2835 controller (raspberry pi)
+> 
+> I think the correct capitalization would be "Raspberry Pi".
+> 
+>> +	  Only 1 channel is implemented.
+> 
+> How many can it take? Why haven't all been implemented?
 
-I'm not sure if __ARCH_WANT_64BIT_SYSCALLS is the best name for
-this, since it's really only about off_t. It took me a while
-to understand what you are doing here.
+BCM2835 can take 2 pwm channels. 
+I can implement 2 channels but can't physically test the second channel. Is that a problem?
+> 
+>> +	  The pwm core is tested with a pwm basic frequency of 1Mhz.
+>> +	  Use period above 1000ns
+> 
+> s/pwm/PWM/ in prose. Why this restriction? Doesn't it work with higher
+> frequencies? Perhaps this shouldn't be a comment in the Kconfig entry
+> but rather a runtime check (and error message)?
 
-	Arnd
+The frequency of the pwm hardware core is 19.7 MHZ.
+I'll implement a runtime check.
+
+> 
+>> diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
+>> new file mode 100644
+>> index 0000000..ec9829b
+>> --- /dev/null
+>> +++ b/drivers/pwm/pwm-bcm2835.c
+>> @@ -0,0 +1,198 @@
+>> +/*
+>> + * pwm-bcm2835 driver
+>> + * Standard raspberry pi (gpio18 - pwm0)
+> 
+> Just drop these two lines, they don't provide very useful information.
+> 
+>> +#include <linux/clk.h>
+>> +#include <linux/err.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/pwm.h>
+>> +
+>> +/*mmio regiser mapping*/
+> 
+> s/mmio/MMIO/, s/regiser/register/. Also spaces after /* and before */.
+> 
+>> +
+>> +#define DUTY		0x14
+>> +#define PERIOD		0x10
+>> +#define CHANNEL		0x10
+> 
+> CHANNEL doesn't seem to be used.
+> 
+>> +
+>> +#define PWM_ENABLE	0x00000001
+>> +#define PWM_POLARITY	0x00000010
+>> +
+>> +#define MASK_CTL_PWM	0x000000FF
+> 
+> I prefer lowercase for hexadecimals. And there's no need to repeat all
+> the leading zeroes. PWM_ENABLE and PWM_POLARITY seem to be bits, so I'd
+> prefer:
+> 
+> 	#define PWM_ENABLE (1 << 0)
+> 	#define PWM_POLARITY (1 << 4)
+> 
+>> +#define CTL_PWM		0x00000081
+> 
+> What does this value mean? Also even if this register is at offset 0 you
+> should still add a symbolic name for it.
+> 
+>> +#define DRIVER_AUTHOR "Bart Tanghe <bart.tanghe@thomasmore.be>"
+>> +#define DRIVER_DESC "A bcm2835 pwm driver - raspberry pi development platform"
+> 
+> These are only used once, so you don't have to #define them. Use them in
+> the MODULE_*() macros directly.
+> 
+> Also, perhaps a better and more generic description would be:
+> 
+> 	"Broadcom BCM2835 (Raspberry Pi) PWM driver"
+> 
+> And perhaps even drop "(Raspberry Pi)" since presumably the driver will
+> work on any BCM2835-based board.
+> 
+>> +struct bcm2835_pwm_chip {
+>> +	struct pwm_chip chip;
+>> +	struct device *dev;
+>> +	int channel;
+> 
+> This field seems to be unused.
+> 
+>> +	int scaler;
+> 
+> Perhaps this should be unsigned long instead of int?
+> 
+>> +	void __iomem *mmio_base;
+> 
+> Calling this something like "base" or "regs" will save a lot of
+> characters when accessing registers.
+> 
+>> +static inline struct bcm2835_pwm_chip *to_bcm2835_pwm_chip(
+>> +					struct pwm_chip *chip){
+>> +
+>> +	return container_of(chip, struct bcm2835_pwm_chip, chip);
+>> +}
+> 
+> The preferred way to write the above is:
+> 
+> 	static inline struct bcm2835_pwm_chip *
+> 	to_bcm2835_pwm_chip(struct pwm_chip *chip)
+> 	{
+> 		...
+> 	}
+> 
+> Perhaps if you make names a little shorter you can even get away without
+> wrapping it:
+> 
+> static inline struct bcm2835_pwm *to_bcm2835_pwm(struct pwm_chip *chip)
+> {
+> 	...
+> }
+> 
+>> +static int bcm2835_pwm_config(struct pwm_chip *chip,
+>> +			      struct pwm_device *pwm,
+>> +			      int duty_ns, int period_ns){
+> 
+> The pwm argument still fits on the first line. Also the opening brace
+> ({) should go on a separate line.
+> 
+>> +
+>> +	struct bcm2835_pwm_chip *pc;
+>> +
+>> +	pc = container_of(chip, struct bcm2835_pwm_chip, chip);
+> 
+> This should use the to_bcm2835_pwm() function defined earlier.
+> 
+>> +
+>> +	iowrite32(duty_ns/pc->scaler, pc->mmio_base + DUTY);
+>> +	iowrite32(period_ns/pc->scaler, pc->mmio_base + PERIOD);
+> 
+> These should use writel() instead of iowrite32() and there need to be
+> spaces around '/'.
+> 
+>> +static int bcm2835_pwm_enable(struct pwm_chip *chip,
+>> +			      struct pwm_device *pwm){
+> 
+> Same as above.
+> 
+>> +
+>> +	struct bcm2835_pwm_chip *pc;
+>> +
+>> +	pc = container_of(chip, struct bcm2835_pwm_chip, chip);
+> 
+> Should use to_bcm2835_pwm() and can go on a single line:
+> 
+> 	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
+> 
+>> +
+>> +	iowrite32(ioread32(pc->mmio_base) | PWM_ENABLE, pc->mmio_base);
+> 
+> Please break this up into:
+> 
+> 	u32 value;
+> 	...
+> 	value = readl(pc->mmio_base + ...);
+> 	value |= PWM_ENABLE;
+> 	writel(value, pc->mmio_base + ...);
+> 
+>> +static void bcm2835_pwm_disable(struct pwm_chip *chip,
+>> +				struct pwm_device *pwm)
+>> +{
+>> +	struct bcm2835_pwm_chip *pc;
+>> +
+>> +	pc = to_bcm2835_pwm_chip(chip);
+> 
+> The above can go on a single line.
+> 
+>> +
+>> +	iowrite32(ioread32(pc->mmio_base) & ~PWM_ENABLE, pc->mmio_base);
+>> +}
+> 
+> Same as above and below.
+> 
+>> +static int bcm2835_pwm_probe(struct platform_device *pdev)
+>> +{
+>> +	struct bcm2835_pwm_chip *pwm;
+>> +
+> 
+> Gratuitous blank line.
+> 
+>> +	int ret;
+>> +	struct resource *r;
+>> +	u32 start, end;
+> 
+> start and end don't seem to be used.
+> 
+>> +	struct clk *clk;
+>> +
+>> +	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
+>> +	if (!pwm) {
+>> +		dev_err(&pdev->dev, "failed to allocate memory\n");
+> 
+> No need for this error message.
+> 
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	pwm->dev = &pdev->dev;
+>> +
+>> +	clk = clk_get(&pdev->dev, NULL);
+> 
+> devm_clk_get()? Also, don't you want to keep a reference to the clock in
+> struct bcm2835_pwm so that you can disable the clock on driver removal?
+> 
+>> +	if (IS_ERR(clk)) {
+>> +		dev_err(&pdev->dev, "could not find clk: %ld\n", PTR_ERR(clk));
+> 
+> In text I prefer to use "clock" rather than "clk".
+> 
+>> +		devm_kfree(&pdev->dev, pwm);
+> 
+> No need for this. The point of the devm_*() functions is that you don't
+> have to manually clean up the resources that they manage.
+> 
+>> +		return PTR_ERR(clk);
+>> +	}
+>> +
+>> +	pwm->scaler = (int)1000000000/clk_get_rate(clk);
+> 
+> There's NSEC_PER_SEC and you shouldn't cast this if you change the type
+> of scaler to unsigned long. So this becomes:
+> 
+> 	pwm->scaler = NSEC_PER_SEC / clk_get_rate(clk);
+> 
+>> +
+>> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
+>> +	if (IS_ERR(pwm->mmio_base)) {
+>> +		devm_kfree(&pdev->dev, pwm);
+> 
+> Again, no need to free the memory here.
+> 
+>> +		return PTR_ERR(pwm->mmio_base);
+>> +	}
+>> +
+>> +	start = r->start;
+>> +	end = r->end;
+>> +
+>> +	pwm->chip.dev = &pdev->dev;
+>> +	pwm->chip.ops = &bcm2835_pwm_ops;
+>> +	pwm->chip.npwm = 2;
+> 
+> The Kconfig entry says that only a single PWM is implemented, so this
+> should be 1, shouldn't it?
+> 
+>> +
+>> +	ret = pwmchip_add(&pwm->chip);
+>> +	if (ret < 0) {
+>> +		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
+>> +		devm_kfree(&pdev->dev, pwm);
+> 
+> Drop this.
+> 
+>> +		return -1;
+> 
+> This needs to propagate ret.
+> 
+>> +	}
+>> +
+>> +	/*set the pwm0 configuration*/
+> 
+> Spaces after /* and before */.
+> 
+>> +	iowrite32((ioread32(pwm->mmio_base) & ~MASK_CTL_PWM)
+>> +				| CTL_PWM, pwm->mmio_base);
+> 
+> Should this perhaps be delayed until the PWM is requested? What are the
+> consequences of configuring the PWM?
+> 
+> Also split this up into an explicit read/modify/write sequence please.
+> 
+>> +
+>> +	platform_set_drvdata(pdev, pwm);
+>> +
+>> +	return 0;
+>> +}
+> 
+> I notice that you never prepare or enable the clock here. Perhaps this
+> isn't required because it's always on, but I think you should still call
+> clk_prepare_enable() here (and clk_disable_unprepare() in .remove()) to
+> make sure the driver is more portable.
+The frequency can be minimized by a clock_divider ( the pwm clock is default disabled). this has to be done by
+a clock driver, as mentioned in a previous comment by Stephen Warren.
+
+Any clock programming should be performed by a clock driver. We don't
+have one of those upstream yet, mainly because it would rely on talking
+to the firmware (running on the VideoCore) to manipulate the clocks, and
+we don't have a firmware protocol driver either.
+
+Nowadays, I'm using a userspace program to change the clock_divider, but would like to implement this in a clock driver.
+The clock hardware description isn't implemented in the datasheet. I can convert the userspace prog to a clock driver but this is very experimental.
+If anyone has some suggestions?
+> 
+>> +
+>> +static int bcm2835_pwm_remove(struct platform_device *pdev)
+>> +{
+>> +
+> 
+> Gratuitous blank line.
+> 
+>> +	struct bcm2835_pwm_chip *pc;
+>> +	pc  = platform_get_drvdata(pdev);
+> 
+> The above can go on a single line.
+> 
+>> +
+>> +	if (WARN_ON(!pc))
+>> +		return -ENODEV;
+> 
+> There's no need for this check.
+> 
+>> +
+>> +	return pwmchip_remove(&pc->chip);
+>> +}
+>> +
+>> +static const struct of_device_id bcm2835_pwm_of_match[] = {
+>> +	{ .compatible = "bcrm,pwm-bcm2835", },
+> 
+> s/bcrm/brcm/
+> 
+>> +	{ /* sentinel */ }
+>> +};
+>> +
+> 
+> Gratuitous blank line.
+> 
+>> +MODULE_DEVICE_TABLE(of, bcm2835_pwm_of_match);
+>> +
+>> +static struct platform_driver bcm2835_pwm_driver = {
+>> +	.driver = {
+>> +		.name = "pwm-bcm2835",
+>> +		.owner = THIS_MODULE,
+> 
+> No need to initialize .owner here. module_platform_driver() will do that
+> for you.
+> 
+>> +		.of_match_table = bcm2835_pwm_of_match,
+>> +	},
+>> +	.probe = bcm2835_pwm_probe,
+>> +	.remove = bcm2835_pwm_remove,
+>> +};
+>> +module_platform_driver(bcm2835_pwm_driver);
+>> +
+>> +MODULE_LICENSE("GPL v2");
+>> +MODULE_AUTHOR(DRIVER_AUTHOR);
+>> +MODULE_DESCRIPTION(DRIVER_DESC);
+> 
+> A more natural ordering would be:
+> 
+> 	MODULE_AUTHOR(...);
+> 	MODULE_DESCRIPTION(...);
+> 	MODULE_LICENSE(...);
+> 
+> Thierry
+> 
