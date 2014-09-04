@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaIDPNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 11:13:13 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:49966 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaIDPNL (ORCPT
+	id S1751752AbaIDPRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 11:17:03 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:56812 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaIDPRB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 11:13:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,466,1406592000"; 
-   d="scan'208";a="169127696"
-Message-ID: <54088183.7020608@citrix.com>
-Date: Thu, 4 Sep 2014 16:13:07 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 4 Sep 2014 11:17:01 -0400
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, Andrew Cooper <andrew.cooper3@citrix.com>
-CC: <xen-devel@lists.xensource.com>, <boris.ostrovsky@oracle.com>,
-        <konrad.wilk@oracle.com>, Juergen Gross <JGross@suse.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen: eliminate scalability issues from
- initial mapping setup
-References: <1409834326-29287-1-git-send-email-jgross@suse.com> <1409834326-29287-4-git-send-email-jgross@suse.com> <54086244.7020601@citrix.com> <540862FE.7070108@citrix.com> <540893F00200007800030E4F@mail.emea.novell.com>
-In-Reply-To: <540893F00200007800030E4F@mail.emea.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+In-Reply-To: <1409843242-6596-1-git-send-email-shuahkh@osg.samsung.com>
+References: <1409843242-6596-1-git-send-email-shuahkh@osg.samsung.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 4 Sep 2014 11:16:29 -0400
+Message-ID: <CAJhHMCCuyC3HUfUktTpkQcxnqJDpA2O0Gqc8wZMq0TwB5PeY6w@mail.gmail.com>
+Subject: Re: [PATCH] selftests/memfd: fix mfd_fail_open() to pass in buf to printf
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "open list:KERNEL SELFTEST F..." <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/14 15:31, Jan Beulich wrote:
->>>> On 04.09.14 at 15:02, <andrew.cooper3@citrix.com> wrote:
->> On 04/09/14 13:59, David Vrabel wrote:
->>> On 04/09/14 13:38, Juergen Gross wrote:
->>>> Direct Xen to place the initial P->M table outside of the initial
->>>> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
->>>> restriction on the size of the initial mapping limits the amount
->>>> of memory a domain can be handed initially.
->>> The three level p2m limits memory to 512 GiB on x86-64 but this patch
->>> doesn't seem to address this limit and thus seems a bit useless to me.
->>
->> Any increase of the p2m beyond 3 levels will need to come with
->> substantial libxc changes first.  3 level p2ms are hard coded throughout
->> all the PV build and migrate code.
-> 
-> No, there no such dependency - the kernel could use 4 levels at
-> any time (sacrificing being able to get migrated), making sure it
-> only exposes the 3 levels hanging off the fourth level (or not
-> exposing this information at all) to external entities making this
-> wrong assumption.
+On Thu, Sep 4, 2014 at 11:07 AM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+> mfd_fail_open() doesn't pass in the buffer to printf resulting
+> in the following warning:
+>
+> memfd_test.c: In function ‘mfd_fail_open’:
+> memfd_test.c:208:3: warning: format ‘%s’ expects a matching ‘char *’ argument [-Wformat=]
+>    printf("open(%s) didn't fail as expected\n");
+>    ^
+>
+> This change fixes the problem.
+>
+> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 
-I don't think we want a kernel that may or may not be saved or migrated
-based on how much memory it has.
+Hi Shuah,
 
-Nor do we want a kernel that has even more differences between dom0 and
-domU.
+I already sent in a patch to fix this:
 
-David
+https://lkml.org/lkml/2014/8/31/85
+
+Can you please pick that up?
+
+Thanks!
+-- 
+Pranith
