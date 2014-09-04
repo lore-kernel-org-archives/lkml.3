@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaIDKba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 06:31:30 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:38331 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaIDKb2 (ORCPT
+	id S1752677AbaIDKdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 06:33:36 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:34569 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaIDKde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 06:31:28 -0400
-Date: Thu, 4 Sep 2014 11:31:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jaewon Kim <jaewon02.kim@samsung.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH 1/3] mfd: max77693: Initialize haptic register map
-Message-ID: <20140904103121.GG1397@lee--X1>
-References: <1409570071-26719-1-git-send-email-jaewon02.kim@samsung.com>
- <1409570071-26719-2-git-send-email-jaewon02.kim@samsung.com>
- <20140904090605.GB29612@lee--X1>
- <54083BCB.1000603@samsung.com>
+	Thu, 4 Sep 2014 06:33:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54083BCB.1000603@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAL8zT=i-T9DHd1F5=YpovM9i0LwpUswm6am1Qyf6kG_g3Xj2Qg@mail.gmail.com>
+References: <1409672977-26972-1-git-send-email-jean-michel.hautbois@vodalys.com>
+ <CAPDyKFrwCzQJvbpbue4T=HWLmbq5sZOP3RXwiupKvXe71uboUw@mail.gmail.com>
+ <5406D942.4080405@intel.com> <CAPDyKFrnF4biUGkLgkzz2RNdY1yLp2_bfvoWMM55yx-_TG6ENw@mail.gmail.com>
+ <CAL8zT=j0TfC=RaA5L+Zm3ACk=D57tb+k6HNrQnSjd4JY_iupCQ@mail.gmail.com>
+ <CAPDyKFoe6Zkr+QLZRc3azn8JvpsQXdSNLHTLmy5O-nnbVy9C1A@mail.gmail.com> <CAL8zT=i-T9DHd1F5=YpovM9i0LwpUswm6am1Qyf6kG_g3Xj2Qg@mail.gmail.com>
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Thu, 4 Sep 2014 12:33:18 +0200
+X-Google-Sender-Auth: QiXXn5A3GLZmYnYUpHN2-s93TK0
+Message-ID: <CAL8zT=hkvFvnrswRnQRV4LXHOUxHqTVUQDjhDnhBcRRSEFjEhA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: Enable boot partition access from DT
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Chris Ball <chris@printf.net>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Sep 2014, Jaewon Kim wrote:
+2014-09-04 11:37 GMT+02:00 Jean-Michel Hautbois
+<jean-michel.hautbois@vodalys.com>:
+> Hi Ulf,
+>
+>> I am not sure adding a DT binding for non access to rpmb would be
+>> needed. At least until we heard of a similar case as Adrian describes
+>> but for rpmb.
+>>
+>> BTW, I just posted a patch which disabled partition scan of the boot
+>> area, what to you think about that?
+>> http://marc.info/?l=linux-mmc&m=140973496402028&w=2
+>>
+>> Finally I am also wondering whether we could and thus should, handle
+>> these situations entirely without using a host cap. In principle what
+>> we need is a more sophisticated error handling when the switch errors
+>> occurs, while trying to switch to the boot area/rpmb partitions. Could
+>> you maybe investigate that option, before we decide to add a new DT
+>> binding?
+>
+> According to me and what Hsin-Hsiang Tseng wrote, it seems that we
+> should be able to have access to boot partitions if we want to give a
+> possibility of writing u-boot in one (or both) of them. This is the
+> way the i.MX6 will boot on a eMMC if I read the reference manual
+> correctly, but I didn't tested it yet.
+> But there is no need to scan those partitions at boot, as there will
+> probably never be a partition table inside, as you said.
+> All we need is providing access to mmc[n]blkpboot0 and mmc[n]blkpboot1
+> and a way to tell which one is used as default boot partition.
+>
+> This is my point of view, but I didn't read JESD84-A441 so I don't
+> know if this is the good way.
+>
+> Regards,
+> JM
 
-> 
-> 2014년 09월 04일 18:06에 Lee Jones 이(가) 쓴 글:
-> >On Mon, 01 Sep 2014, Jaewon Kim wrote:
-> >
-> >>This patch add regmap_haptic initialization to use haptic register map
-> >>in haptic device driver.
-> >>
-> >>Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-> >>Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-> >>---
-> >>  drivers/mfd/max77693.c |   21 ++++++++++++++++++---
-> >>  1 file changed, 18 insertions(+), 3 deletions(-)
-> >Acked-by: Lee Jones <lee.jones@linaro.org>
-> >
-> >Can this patch go in without the Input one?
-> 
-> Yes. There is no problem without Input driver patch.
+BTW, here is an interesting commit from Freescale tree :
+http://git.freescale.com/git/cgit.cgi/imx/linux-2.6-imx.git/commit/?h=imx_3.10.17_1.0.0_ga&id=28774b788ae0de5d88045dd60cac3656c305821d
 
-Once you've split the Documentation patch, I will take them all.
-
-> >>diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-> >>index 249c139..fbfed56 100644
-> >>--- a/drivers/mfd/max77693.c
-> >>+++ b/drivers/mfd/max77693.c
-> >>@@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
-> >>  	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
-> >>  };
-> >>
-> >>+static const struct regmap_config max77693_regmap_haptic_config = {
-> >>+	.reg_bits = 8,
-> >>+	.val_bits = 8,
-> >>+	.max_register = MAX77693_HAPTIC_REG_END,
-> >>+};
-> >>+
-> >>  static int max77693_i2c_probe(struct i2c_client *i2c,
-> >>  			      const struct i2c_device_id *id)
-> >>  {
-> >>@@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
-> >>  	}
-> >>  	i2c_set_clientdata(max77693->haptic, max77693);
-> >>
-> >>+	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
-> >>+					&max77693_regmap_haptic_config);
-> >>+	if (IS_ERR(max77693->regmap_haptic)) {
-> >>+		ret = PTR_ERR(max77693->regmap_haptic);
-> >>+		dev_err(max77693->dev,
-> >>+			"failed to initialize haptic register map: %d\n", ret);
-> >>+		goto err_regmap;
-> >>+	}
-> >>+
-> >>  	/*
-> >>  	 * Initialize register map for MUIC device because use regmap-muic
-> >>  	 * instance of MUIC device when irq of max77693 is initialized
-> >>@@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
-> >>  		ret = PTR_ERR(max77693->regmap_muic);
-> >>  		dev_err(max77693->dev,
-> >>  			"failed to allocate register map: %d\n", ret);
-> >>-		goto err_regmap_muic;
-> >>+		goto err_regmap;
-> >>  	}
-> >>
-> >>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
-> >>@@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
-> >>  				&max77693->irq_data_led);
-> >>  	if (ret) {
-> >>  		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
-> >>-		goto err_regmap_muic;
-> >>+		goto err_regmap;
-> >>  	}
-> >>
-> >>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
-> >>@@ -265,7 +280,7 @@ err_irq_charger:
-> >>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
-> >>  err_irq_topsys:
-> >>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
-> >>-err_regmap_muic:
-> >>+err_regmap:
-> >>  	i2c_unregister_device(max77693->haptic);
-> >>  err_i2c_haptic:
-> >>  	i2c_unregister_device(max77693->muic);
-> 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+JM
