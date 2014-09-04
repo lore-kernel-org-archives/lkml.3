@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303AbaIDTQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 15:16:07 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:64673 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067AbaIDTQE (ORCPT
+	id S1755158AbaIDTQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 15:16:42 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:34057 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855AbaIDTQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 15:16:04 -0400
-Message-ID: <5408BA6D.1070602@redhat.com>
-Date: Thu, 04 Sep 2014 21:15:57 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 15:16:41 -0400
+Date: Thu, 4 Sep 2014 12:14:51 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Kautuk Consul <consul.kautuk@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Ionut Alexa <ionut.m.alexa@gmail.com>,
+        Guillaume Morin <guillaume@morinfr.org>, linux-kernel@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: task_numa_fault() && TASK_DEAD
+In-Reply-To: <20140904103949.GA19300@redhat.com>
+Message-ID: <alpine.LSU.2.11.1409041210400.12218@eggly.anvils>
+References: <1408964064-21447-1-git-send-email-consul.kautuk@gmail.com> <20140825155738.GA5944@redhat.com> <20140901153935.GQ27892@worktop.ger.corp.intel.com> <20140901175851.GA15210@redhat.com> <20140901190931.GD5806@worktop.ger.corp.intel.com>
+ <20140902155208.GA28668@redhat.com> <20140902164714.GA17033@redhat.com> <20140903160819.GA7682@redhat.com> <20140904071139.GH3190@worktop.ger.corp.intel.com> <20140904103949.GA19300@redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Chris J Arges <chris.j.arges@canonical.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
-References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <54088CB5.6050406@canonical.com> <54089DDE.6010004@redhat.com> <5408AC76.6030404@canonical.com>
-In-Reply-To: <5408AC76.6030404@canonical.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2014 20:16, Chris J Arges ha scritto:
->> +	boot_ns = timespec_to_ns(&tk->total_sleep_time)
->> +		+ tk->wall_to_monotonic.tv_sec * (u64)NSEC_PER_SEC
->> +		+ tk->wall_to_monotonic.tv_nsec
->> +		+ tk->xtime_sec * (u64)NSEC_PER_SEC;
+On Thu, 4 Sep 2014, Oleg Nesterov wrote:
+> On 09/04, Peter Zijlstra wrote:
+> > On Wed, Sep 03, 2014 at 06:08:19PM +0200, Oleg Nesterov wrote:
+> >
+> > > And a stupid (really, I don't understand this code) question:
+> > >
+> > > 	/* for example, ksmd faulting in a user's mm */
+> > > 	if (!p->mm)
+> > > 		return;
 
-So this means that the above 3.16-based code is not the same as
+I don't understand your difficulty with that, I thought the comment
+was helpful enough.  Does the original commit comment help?
 
-        boot_ns = ktime_to_ns(ktime_add(tk->tkr.base_mono, tk->offs_boot));
+commit 2832bc19f6668fd00116f61f821105040599ef8b
+Author: Hugh Dickins <hughd@google.com>
+Date:   Wed Dec 19 17:42:16 2012 -0800
 
-in 3.17.  Everything else in the patch you tested is the same as the
-code that is in 3.17, so that's a start.
-
-Paolo
+    sched: numa: ksm: fix oops in task_numa_placment()
+    
+    task_numa_placement() oopsed on NULL p->mm when task_numa_fault() got
+    called in the handling of break_ksm() for ksmd.  That might be a
+    peculiar case, which perhaps KSM could takes steps to avoid? but it's
+    more robust if task_numa_placement() allows for such a possibility.
