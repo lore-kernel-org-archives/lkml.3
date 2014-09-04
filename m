@@ -1,167 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102AbaIDGdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 02:33:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:23734 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932957AbaIDGdB (ORCPT
+	id S1756631AbaIDGnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 02:43:16 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:31295 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaIDGnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 02:33:01 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-07-5408079bd9e3
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mina86@mina86.com,
-        m.szyprowski@samsung.com, andrzej.p@samsung.com, k.opasiak@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v7 2/2] usb: gadget: f_fs: virtual endpoint address mapping
-Date: Thu, 04 Sep 2014 08:32:18 +0200
-Message-id: <1409812338-16012-3-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1409812338-16012-1-git-send-email-r.baldyga@samsung.com>
-References: <1409812338-16012-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQd3Z7BwhBv0HdS1mvWxnsTh4v96i
-	efF6NovbE6exWVzeNYfNYtGyVmaLtUfuslssON7CavHg8E52B06P/XPXsHus+/OKyaNvyypG
-	j+M3tjN5fN4kF8AaxWWTkpqTWZZapG+XwJUx/9oRtoLH6hWTWuewNzBeVOhi5OCQEDCRuNhe
-	0cXICWSKSVy4t56ti5GLQ0hgOqPEoQUn2UESQgLtTBLnj4qA2GwCOhJbvk9gBLFFBAQk1r+4
-	xA7SwCzwgFGi/dZlNpCEsIC3xO6lr8GKWARUJTp/HwSy2Tl4BVwlmn0hdslJnDw2mRXkBE4B
-	N4mLe9whNrlKTJnziHkCI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMEB9kx6B+Oq
-	BotDjAIcjEo8vAUv2EOEWBPLiitzDzFKcDArifDOPgsU4k1JrKxKLcqPLyrNSS0+xCjNwaIk
-	znuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwNiY/Hb7pKxpbo7lD6oX/l3R/Gldk3vLdOG5eTEL
-	4soeK07TOxHof1spc22q3eRPYvsds7eqzC7ur55aMls585CxxsFTTg0CJjP1Z7/ybOJ4xGsR
-	ufHp9OxDE3mray39lVdYBsbx+/3gYD9q5bS3W1lNTbFOp/PxMau5GdtWFaw7MKk88n3KRSWW
-	4oxEQy3mouJEAHEZbBAsAgAA
+	Thu, 4 Sep 2014 02:43:15 -0400
+Message-ID: <540809FB.8020901@huawei.com>
+Date: Thu, 4 Sep 2014 14:43:07 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2 1/2] cgroup: delay the clearing of cgrp->kn->priv
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces virtual endpoint address mapping. It separates
-function logic form physical endpoint addresses making it more hardware
-independent.
+Run these two scripts concurrently:
 
-Following modifications changes user space API, so to enable them user
-have to switch on the FUNCTIONFS_VIRTUAL_ADDR flag in descriptors.
+    for ((; ;))
+    {
+        mkdir /cgroup/sub
+        rmdir /cgroup/sub
+    }
 
-Endpoints are now refered using virtual endpoint addresses chosen by
-user in endpoint descpriptors. This applies to each context when endpoint
-address can be used:
-- when accessing endpoint files in FunctionFS filesystemi (in file name),
-- in setup requests directed to specific endpoint (in wIndex field),
-- in descriptors returned by FUNCTIONFS_ENDPOINT_DESC ioctl.
+    for ((; ;))
+    {
+        echo $$ > /cgroup/sub/cgroup.procs
+        echo $$ > /cgroup/cgroup.procs
+    }
 
-In endpoint file names the endpoint address number is formatted as
-double-digit hexadecimal value ("ep%02x") which has few advantages -
-it is easy to parse, allows to easly recognize endpoint direction basing
-on its name (IN endpoint number starts with digit 8, and OUT with 0)
-which can be useful for debugging purpose, and it makes easier to introduce
-further features allowing to use each endpoint number in both directions
-to have more endpoints available for function if hardware supports this
-(for example we could have ep01 which is endpoint 1 with OUT direction,
-and ep81 which is endpoint 1 with IN direction).
+A kernel bug will be triggered:
 
-Physical endpoint address can be still obtained using ioctl named
-FUNCTIONFS_ENDPOINT_REVMAP, but now it's not neccesary to handle
-USB transactions properly.
+BUG: unable to handle kernel NULL pointer dereference at 00000038
+IP: [<c10bbd69>] cgroup_put+0x9/0x80
+...
+Call Trace:
+ [<c10bbe19>] cgroup_kn_unlock+0x39/0x50
+ [<c10bbe91>] cgroup_kn_lock_live+0x61/0x70
+ [<c10be3c1>] __cgroup_procs_write.isra.26+0x51/0x230
+ [<c10be5b2>] cgroup_tasks_write+0x12/0x20
+ [<c10bb7b0>] cgroup_file_write+0x40/0x130
+ [<c11aee71>] kernfs_fop_write+0xd1/0x160
+ [<c1148e58>] vfs_write+0x98/0x1e0
+ [<c114934d>] SyS_write+0x4d/0xa0
+ [<c16f656b>] sysenter_do_call+0x12/0x12
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+We clear cgrp->kn->priv in the end of cgroup_rmdir(), but another
+concurrent thread can access kn->priv after the clearing.
+
+We should move the clearing to css_release_work_fn(). At that time
+no one is holding reference to the cgroup and no one can gain a new
+reference to access it.
+
+v2:
+- remove RCU_INIT_POINTER() into the else block. (Tejun)
+- remove the cgroup_parent() check. (Tejun)
+- update the comment in css_tryget_online_from_dir().
+
+Cc: <stable@vger.kernel.org> # 3.15+
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/usb/gadget/function/f_fs.c  | 23 +++++++++++++++++++++--
- drivers/usb/gadget/function/u_fs.h  |  2 ++
- include/uapi/linux/usb/functionfs.h |  1 +
- 3 files changed, 24 insertions(+), 2 deletions(-)
+ kernel/cgroup.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index 978a4c9..4d3a0d5 100644
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -1557,7 +1557,10 @@ static int ffs_epfiles_create(struct ffs_data *ffs)
- 		epfile->ffs = ffs;
- 		mutex_init(&epfile->mutex);
- 		init_waitqueue_head(&epfile->wait);
--		sprintf(epfiles->name, "ep%u",  i);
-+		if (ffs->user_flags & FUNCTIONFS_VIRTUAL_ADDR)
-+			sprintf(epfiles->name, "ep%02x", ffs->eps_addrmap[i]);
-+		else
-+			sprintf(epfiles->name, "ep%u", i);
- 		if (!unlikely(ffs_sb_create_file(ffs->sb, epfiles->name, epfile,
- 						 &ffs_epfile_operations,
- 						 &epfile->dentry))) {
-@@ -2106,10 +2109,12 @@ static int __ffs_data_got_descs(struct ffs_data *ffs,
- 		break;
- 	case FUNCTIONFS_DESCRIPTORS_MAGIC_V2:
- 		flags = get_unaligned_le32(data + 8);
-+		ffs->user_flags = flags;
- 		if (flags & ~(FUNCTIONFS_HAS_FS_DESC |
- 			      FUNCTIONFS_HAS_HS_DESC |
- 			      FUNCTIONFS_HAS_SS_DESC |
--			      FUNCTIONFS_HAS_MS_OS_DESC)) {
-+			      FUNCTIONFS_HAS_MS_OS_DESC |
-+			      FUNCTIONFS_VIRTUAL_ADDR)) {
- 			ret = -ENOSYS;
- 			goto error;
- 		}
-@@ -2464,7 +2469,13 @@ static int __ffs_func_bind_do_descs(enum ffs_entity_type type, u8 *valuep,
- 	} else {
- 		struct usb_request *req;
- 		struct usb_ep *ep;
-+		u8 bEndpointAddress;
- 
-+		/*
-+		 * We back up bEndpointAddress because autoconfig overwrites
-+		 * it with physical endpoint address.
-+		 */
-+		bEndpointAddress = ds->bEndpointAddress;
- 		pr_vdebug("autoconfig\n");
- 		ep = usb_ep_autoconfig(func->gadget, ds);
- 		if (unlikely(!ep))
-@@ -2479,6 +2490,12 @@ static int __ffs_func_bind_do_descs(enum ffs_entity_type type, u8 *valuep,
- 		ffs_ep->req = req;
- 		func->eps_revmap[ds->bEndpointAddress &
- 				 USB_ENDPOINT_NUMBER_MASK] = idx + 1;
-+		/*
-+		 * If we use virtual address mapping, we restore
-+		 * original bEndpointAddress value.
-+		 */
-+		if (func->ffs->user_flags & FUNCTIONFS_VIRTUAL_ADDR)
-+			ds->bEndpointAddress = bEndpointAddress;
- 	}
- 	ffs_dump_mem(": Rewritten ep desc", ds, ds->bLength);
- 
-@@ -2923,6 +2940,8 @@ static int ffs_func_setup(struct usb_function *f,
- 		ret = ffs_func_revmap_ep(func, le16_to_cpu(creq->wIndex));
- 		if (unlikely(ret < 0))
- 			return ret;
-+		if (func->ffs->user_flags & FUNCTIONFS_VIRTUAL_ADDR)
-+			ret = func->ffs->eps_addrmap[ret];
- 		break;
- 
- 	default:
-diff --git a/drivers/usb/gadget/function/u_fs.h b/drivers/usb/gadget/function/u_fs.h
-index d48897e..cd128e3 100644
---- a/drivers/usb/gadget/function/u_fs.h
-+++ b/drivers/usb/gadget/function/u_fs.h
-@@ -224,6 +224,8 @@ struct ffs_data {
- 	void				*ms_os_descs_ext_prop_name_avail;
- 	void				*ms_os_descs_ext_prop_data_avail;
- 
-+	unsigned			user_flags;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1c56924..205f793 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4181,6 +4181,15 @@ static void css_release_work_fn(struct work_struct *work)
+ 		/* cgroup release path */
+ 		cgroup_idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
+ 		cgrp->id = -1;
 +
- 	u8				eps_addrmap[15];
++		/*
++		 * There are two control paths which try to determine
++		 * cgroup from dentry without going through kernfs -
++		 * cgroupstats_build() and css_tryget_online_from_dir().
++		 * Those are supported by RCU protecting clearing of
++		 * cgrp->kn->priv backpointer.
++		 */
++		RCU_INIT_POINTER(*(void __rcu __force **)&cgrp->kn->priv, NULL);
+ 	}
  
- 	unsigned short			strings_count;
-diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
-index 7677108..d2ca92e 100644
---- a/include/uapi/linux/usb/functionfs.h
-+++ b/include/uapi/linux/usb/functionfs.h
-@@ -19,6 +19,7 @@ enum functionfs_flags {
- 	FUNCTIONFS_HAS_HS_DESC = 2,
- 	FUNCTIONFS_HAS_SS_DESC = 4,
- 	FUNCTIONFS_HAS_MS_OS_DESC = 8,
-+	FUNCTIONFS_VIRTUAL_ADDR = 16,
- };
+ 	mutex_unlock(&cgroup_mutex);
+@@ -4601,16 +4610,6 @@ static int cgroup_rmdir(struct kernfs_node *kn)
  
- /* Descriptor of an non-audio endpoint */
+ 	cgroup_kn_unlock(kn);
+ 
+-	/*
+-	 * There are two control paths which try to determine cgroup from
+-	 * dentry without going through kernfs - cgroupstats_build() and
+-	 * css_tryget_online_from_dir().  Those are supported by RCU
+-	 * protecting clearing of cgrp->kn->priv backpointer, which should
+-	 * happen after all files under it have been removed.
+-	 */
+-	if (!ret)
+-		RCU_INIT_POINTER(*(void __rcu __force **)&kn->priv, NULL);
+-
+ 	cgroup_put(cgrp);
+ 	return ret;
+ }
+@@ -5175,7 +5174,7 @@ struct cgroup_subsys_state *css_tryget_online_from_dir(struct dentry *dentry,
+ 	/*
+ 	 * This path doesn't originate from kernfs and @kn could already
+ 	 * have been or be removed at any point.  @kn->priv is RCU
+-	 * protected for this access.  See cgroup_rmdir() for details.
++	 * protected for this access.  See css_release_work_fn() for details.
+ 	 */
+ 	cgrp = rcu_dereference(kn->priv);
+ 	if (cgrp)
 -- 
-1.9.1
+1.8.0.2
 
