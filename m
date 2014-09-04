@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670AbaIDHZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 03:25:54 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:39809 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614AbaIDHZw (ORCPT
+	id S1756698AbaIDH3y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 03:29:54 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:50897 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475AbaIDH3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 03:25:52 -0400
-X-ASG-Debug-ID: 1409815546-0759e778ba5a5520002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Johan Hovold <johan@kernel.org>
-CC: Frans Klaver <frans.klaver@xsens.com>,
-        Frans Klaver <fransklaver@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] usb: serial: xsens_mt: always bind to interface number 1
-Date: Thu, 4 Sep 2014 09:25:37 +0200
-X-ASG-Orig-Subj: [PATCH 2/2] usb: serial: xsens_mt: always bind to interface number 1
-Message-ID: <1409815537-25000-1-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <CAH6sp9Me6wVTnNGn9Z4pLDsFyTz27EgcEvedF8PrcH-fw+awBQ@mail.gmail.com>
-References: <CAH6sp9Me6wVTnNGn9Z4pLDsFyTz27EgcEvedF8PrcH-fw+awBQ@mail.gmail.com>
+	Thu, 4 Sep 2014 03:29:53 -0400
+Date: Thu, 4 Sep 2014 08:29:49 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ulf Winkelvos <ulf@winkelvos.de>,
+        Matt Fleming <matt.fleming@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
+ preparation patches
+Message-ID: <20140904072949.GI3001@console-pimps.org>
+References: <5405E186.2080406@canonical.com>
+ <20140902192941.GB3001@console-pimps.org>
+ <CAKv+Gu_eSe+FeNkGm+w3sSsRn2_hr70xLVBieZgyhawAv6PQvw@mail.gmail.com>
+ <5406D0DB.90401@canonical.com>
+ <CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com>
+ <54073409.6030004@canonical.com>
+ <CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com>
+ <20140903175948.GH3001@console-pimps.org>
+ <54078C74.2060804@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.49]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1409815546
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9160
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54078C74.2060804@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Probe is testing if the current interface provides two bulk endpoints.
-While this achieves the goal of only binding to the correct interface,
-we already know we can find the device on interface number 1. Stop
-checking the endpoints and just return successfully when interface
-number 1 is probed.
+On Wed, 03 Sep, at 02:47:32PM, H. Peter Anvin wrote:
+> 
+> I think we really have two options: either fix up the GOT (which may be
+> a null operation, if the GOT is empty) or we add a compile-time check
+> that the GOT is empty, lest we will keep having these problems.
+> 
+> Since the GOT fixup loop is only a few instructions, it doesn't seem to
+> be all that problematic to just do it -- but make sure we don't end up
+> running it twice on any code path!
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/usb/serial/xsens_mt.c | 23 ++++-------------------
- 1 file changed, 4 insertions(+), 19 deletions(-)
+Urgh, I totally did make it run twice. My bad.
 
-diff --git a/drivers/usb/serial/xsens_mt.c b/drivers/usb/serial/xsens_mt.c
-index d500ccd..3837d51 100644
---- a/drivers/usb/serial/xsens_mt.c
-+++ b/drivers/usb/serial/xsens_mt.c
-@@ -41,28 +41,13 @@ static const struct usb_device_id id_table[] = {
- };
- MODULE_DEVICE_TABLE(usb, id_table);
- 
--static int has_required_endpoints(const struct usb_host_interface *interface)
--{
--	__u8 i;
--	int has_bulk_in = 0;
--	int has_bulk_out = 0;
--
--	for (i = 0; i < interface->desc.bNumEndpoints; ++i) {
--		if (usb_endpoint_is_bulk_in(&interface->endpoint[i].desc))
--			has_bulk_in = 1;
--		else if (usb_endpoint_is_bulk_out(&interface->endpoint[i].desc))
--			has_bulk_out = 1;
--	}
--
--	return has_bulk_in && has_bulk_out;
--}
--
- static int xsens_mt_probe(struct usb_serial *serial,
- 					const struct usb_device_id *id)
- {
--	if (!has_required_endpoints(serial->interface->cur_altsetting))
--		return -ENODEV;
--	return 0;
-+	if (serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
-+		return 0;
-+
-+	return -ENODEV;
- }
- 
- static struct usb_serial_driver xsens_mt_device = {
 -- 
-2.1.0
-
+Matt Fleming, Intel Open Source Technology Center
