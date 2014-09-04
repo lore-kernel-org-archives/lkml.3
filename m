@@ -1,96 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930AbaIDR4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 13:56:43 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:45494 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174AbaIDR4l (ORCPT
+	id S1754960AbaIDR6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 13:58:38 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:37254 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449AbaIDR6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 13:56:41 -0400
-Message-ID: <5408A7D3.7090508@redhat.com>
-Date: Thu, 04 Sep 2014 19:56:35 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 13:58:36 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH RESEND] gpio: lib-sysfs: Add 'wakeup' attribute
+Date: Thu,  4 Sep 2014 10:58:25 -0700
+Message-Id: <1409853506-26279-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.1.0.1.g27b9230
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: chris.j.arges@canonical.com, kvm@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
-References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1409835487-14371-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/09/2014 14:58, Paolo Bonzini ha scritto:
-> Commit cbcf2dd3b3d4 (x86: kvm: Make kvm_get_time_and_clockread() nanoseconds
-> based, 2014-07-16) forgot to add tk->xtime_sec, thus breaking kvmclock on
-> hosts that have a reliable TSC.  Add it back; and since the field boot_ns
-> is not anymore related to the host boot-based clock, rename boot_ns->nsec_base
-> and the existing nsec_base->snsec_base.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Reported-by: Chris J Arges <chris.j.arges@canonical.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/kvm/x86.c | 11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 8f1e22d3b286..92493e10937c 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1020,8 +1020,8 @@ struct pvclock_gtod_data {
->  		u32	shift;
->  	} clock;
->  
-> -	u64		boot_ns;
->  	u64		nsec_base;
-> +	u64		snsec_base;
->  };
->  
->  static struct pvclock_gtod_data pvclock_gtod_data;
-> @@ -1042,8 +1042,9 @@ static void update_pvclock_gtod(struct timekeeper *tk)
->  	vdata->clock.mult		= tk->tkr.mult;
->  	vdata->clock.shift		= tk->tkr.shift;
->  
-> -	vdata->boot_ns			= boot_ns;
-> -	vdata->nsec_base		= tk->tkr.xtime_nsec;
-> +	vdata->nsec_base		= tk->xtime_sec * (u64)NSEC_PER_SEC
-> +					+ boot_ns;
-> +	vdata->snsec_base		= tk->tkr.xtime_nsec;
+Add an attribute 'wakeup' to the GPIO sysfs interface which allows
+marking/unmarking a GPIO as wake IRQ.
+The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
+is associated with that GPIO and the irqchip implements set_wake().
+Writing 'enabled' to that file will enable wake for that GPIO, while
+writing 'disabled' will disable wake.
+Reading that file will return either 'disabled' or 'enabled' depening on
+the currently set flag for the GPIO's IRQ.
 
-Hmm, I found this comment in kernel/time/timekeeping.c
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+Hi all,
 
-        /*
-         * The xtime based monotonic readout is:
-         *      nsec = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec + now();
-         * The ktime based monotonic readout is:
-         *      nsec = base_mono + now();
+I originally submitted this patch with a few fixes for Zynq's GPIO driver
+(https://lkml.org/lkml/2014/8/29/391). Since this change is not just
+Zynq-related and has broader impact, Linus asked me to post this again, separate
+from the Zynq series.
 
-so this patch makes no sense.  The offs_boot part must be broken.
+Let me just quote myself from the original submission:
+"I'm still not fully convinced that the gpio_keys are the best
+replacement for the sysfs interface when it comes to inputs. For that
+reason and to have a way to do some quick wake testing, I'd like to
+propose adding the ability to control wake through the sysfs interface
+(patch 3)."
 
-Paolo
+	Thanks,
+	Sören
 
->  
->  	write_seqcount_end(&vdata->seq);
->  }
-> @@ -1413,10 +1414,10 @@ static int do_monotonic_boot(s64 *t, cycle_t *cycle_now)
->  	do {
->  		seq = read_seqcount_begin(&gtod->seq);
->  		mode = gtod->clock.vclock_mode;
-> -		ns = gtod->nsec_base;
-> +		ns = gtod->snsec_base;
->  		ns += vgettsc(cycle_now);
->  		ns >>= gtod->clock.shift;
-> -		ns += gtod->boot_ns;
-> +		ns += gtod->nsec_base;
->  	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
->  	*t = ns;
->  
-> 
+ drivers/gpio/gpiolib-sysfs.c | 75 ++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 69 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+index 5f2150b619a7..aaf021eaaff5 100644
+--- a/drivers/gpio/gpiolib-sysfs.c
++++ b/drivers/gpio/gpiolib-sysfs.c
+@@ -286,6 +286,56 @@ found:
+ 
+ static DEVICE_ATTR(edge, 0644, gpio_edge_show, gpio_edge_store);
+ 
++static ssize_t gpio_wakeup_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	ssize_t			status;
++	const struct gpio_desc	*desc = dev_get_drvdata(dev);
++	int			irq = gpiod_to_irq(desc);
++	struct irq_desc		*irq_desc = irq_to_desc(irq);
++
++	mutex_lock(&sysfs_lock);
++
++	if (irqd_is_wakeup_set(&irq_desc->irq_data))
++		status = sprintf(buf, "enabled\n");
++	else
++		status = sprintf(buf, "disabled\n");
++
++	mutex_unlock(&sysfs_lock);
++
++	return status;
++}
++
++static ssize_t gpio_wakeup_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	int			ret;
++	unsigned int		on;
++	struct gpio_desc	*desc = dev_get_drvdata(dev);
++	int			irq = gpiod_to_irq(desc);
++
++	mutex_lock(&sysfs_lock);
++
++	if (sysfs_streq("enabled", buf))
++		on = true;
++	else if (sysfs_streq("disabled", buf))
++		on = false;
++	else
++		return -EINVAL;
++
++	ret = irq_set_irq_wake(irq, on);
++
++	mutex_unlock(&sysfs_lock);
++
++	if (ret)
++		pr_warn("%s: failed to %s wake\n", __func__,
++				on ? "enable" : "disable");
++
++	return size;
++}
++
++static DEVICE_ATTR(wakeup, 0644, gpio_wakeup_show, gpio_wakeup_store);
++
+ static int sysfs_set_active_low(struct gpio_desc *desc, struct device *dev,
+ 				int value)
+ {
+@@ -526,7 +576,7 @@ static struct class gpio_class = {
+ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ {
+ 	unsigned long		flags;
+-	int			status;
++	int			status, irq;
+ 	const char		*ioname = NULL;
+ 	struct device		*dev;
+ 	int			offset;
+@@ -582,11 +632,24 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ 			goto fail_unregister_device;
+ 	}
+ 
+-	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
+-				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
+-		status = device_create_file(dev, &dev_attr_edge);
+-		if (status)
+-			goto fail_unregister_device;
++	irq = gpiod_to_irq(desc);
++	if (irq >= 0) {
++		struct irq_desc *irq_desc = irq_to_desc(irq);
++		struct irq_chip	*irqchip = irq_desc_get_chip(irq_desc);
++
++		if (direction_may_change ||
++				!test_bit(FLAG_IS_OUT, &desc->flags)) {
++			status = device_create_file(dev, &dev_attr_edge);
++			if (status)
++				goto fail_unregister_device;
++		}
++
++		if (irqchip->flags & IRQCHIP_SKIP_SET_WAKE ||
++				irqchip->irq_set_wake) {
++			status = device_create_file(dev, &dev_attr_wakeup);
++			if (status)
++				goto fail_unregister_device;
++		}
+ 	}
+ 
+ 	set_bit(FLAG_EXPORT, &desc->flags);
+-- 
+2.1.0.1.g27b9230
 
