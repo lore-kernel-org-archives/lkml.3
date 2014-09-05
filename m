@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287AbaIEHrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:47:43 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:39838 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040AbaIEHrL (ORCPT
+	id S1756266AbaIEHrm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:47:42 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:32793 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756000AbaIEHri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:47:11 -0400
-From: Robert Richter <rric@kernel.org>
-To: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>,
-        devicetree@vger.kernel.org
-Subject: [PATCH v2 3/4] arm64, thunder: Document devicetree bindings for Cavium Thunder SoC
-Date: Fri,  5 Sep 2014 09:46:44 +0200
-Message-Id: <1409903205-2762-4-git-send-email-rric@kernel.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1409903205-2762-1-git-send-email-rric@kernel.org>
-References: <1409903205-2762-1-git-send-email-rric@kernel.org>
+	Fri, 5 Sep 2014 03:47:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140905071925.GC9323@mtj.dyndns.org>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <1409899047-13045-4-git-send-email-mcgrof@do-not-panic.com> <20140905071925.GC9323@mtj.dyndns.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 5 Sep 2014 00:47:16 -0700
+X-Google-Sender-Auth: UdtGBzP27mC3d6nBA_H1uxCI6ck
+Message-ID: <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+On Fri, Sep 5, 2014 at 12:19 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Sep 04, 2014 at 11:37:24PM -0700, Luis R. Rodriguez wrote:
+> ...
+>> +             /*
+>> +              * I got SIGKILL, but wait for 60 more seconds for completion
+>> +              * unless chosen by the OOM killer. This delay is there as a
+>> +              * workaround for boot failure caused by SIGKILL upon device
+>> +              * driver initialization timeout.
+>> +              *
+>> +              * N.B. this will actually let the thread complete regularly,
+>> +              * wait_for_completion() will be used eventually, the 60 second
+>> +              * try here is just to check for the OOM over that time.
+>> +              */
+>> +             WARN_ONCE(!test_thread_flag(TIF_MEMDIE),
+>> +                       "Got SIGKILL but not from OOM, if this issue is on probe use .driver.async_probe\n");
+>> +             for (i = 0; i < 60 && !test_thread_flag(TIF_MEMDIE); i++)
+>> +                     if (wait_for_completion_timeout(&done, HZ))
+>> +                             goto wait_done;
+>> +
+>
+> Ugh... Jesus, this is way too hacky, so now we fail on 90s timeout
+> instead of 30?
 
-This patch adds documentation for the devicetree bindings used by the
-DT files of Cavium Thunder SoC platforms.
+Nope! I fell into the same trap and only with tons of patience by part
+of Tetsuo with me was I able to grok that the 60 seconds here are not
+for increasing the timeout, this is just time spent checking to ensure
+that the OOM wasn't the one who triggered the SIGKILL. Even if the
+drivers took eons it should be fine now, I tried it :D
 
-Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-Signed-off-by: Robert Richter <rrichter@cavium.com>
----
- Documentation/devicetree/bindings/arm/cavium-thunder.txt | 10 ++++++++++
- Documentation/devicetree/bindings/arm/cpus.txt           |  1 +
- 2 files changed, 11 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
+>  Why do we even need this with the proposed async
+> probing changes?
 
-diff --git a/Documentation/devicetree/bindings/arm/cavium-thunder.txt b/Documentation/devicetree/bindings/arm/cavium-thunder.txt
-new file mode 100644
-index 000000000000..6f63a5866902
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/cavium-thunder.txt
-@@ -0,0 +1,10 @@
-+Cavium Thunder platform device tree bindings
-+--------------------------------------------
-+
-+Boards with Cavium's Thunder SoC shall have following properties.
-+
-+Root Node
-+---------
-+Required root node properties:
-+
-+  - compatible = "cavium,thunder-88xx";
-diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-index 298e2f6b33c6..578796a2cfa9 100644
---- a/Documentation/devicetree/bindings/arm/cpus.txt
-+++ b/Documentation/devicetree/bindings/arm/cpus.txt
-@@ -166,6 +166,7 @@ nodes to be present and contain the properties described below.
- 			    "arm,cortex-r5"
- 			    "arm,cortex-r7"
- 			    "brcm,brahma-b15"
-+			    "cavium,thunder"
- 			    "faraday,fa526"
- 			    "intel,sa110"
- 			    "intel,sa1100"
--- 
-2.0.1
+Ah -- well without it the way we "find" drivers that need this new
+"async feature" is by a bug report and folks saying their system can't
+boot, or they say their device doesn't come up. That's all. Tracing
+this to systemd and a timeout was one of the most ugliest things ever.
+There two insane bug reports you can go check:
 
+mptsas was the first:
+
+http://article.gmane.org/gmane.linux.kernel/1669550
+https://bugs.launchpad.net/ubuntu/+source/systemd/+bug/1297248
+
+Then cxgb4:
+
+https://bugzilla.novell.com/show_bug.cgi?id=877622
+
+I only had Cc'd you on the newest gem pata_marvell :
+
+https://bugzilla.kernel.org/show_bug.cgi?id=59581
+
+We can't seriously expect to be doing all this work for every driver.
+a WARN_ONCE() would enable us to find the drivers that need this new
+async probe "feature".
+
+  Luis
