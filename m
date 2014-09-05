@@ -1,35 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaIERfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:35:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54865 "EHLO mx1.redhat.com"
+	id S1754809AbaIERfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:35:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54245 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100AbaIERfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:35:05 -0400
-Message-ID: <5409F43B.1050900@redhat.com>
-Date: Fri, 05 Sep 2014 19:34:51 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752433AbaIERfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:35:33 -0400
+Date: Fri, 5 Sep 2014 19:35:30 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, falcon@meizu.com, tiwai@suse.de,
+        tj@kernel.org, arjan@linux.intel.com, linux-kernel@vger.kernel.org,
+        hare@suse.com, akpm@linux-foundation.org,
+        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
+        bpoirier@suse.de, santosh@chelsio.com, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140905173529.GB17986@wotan.suse.de>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <1409899047-13045-4-git-send-email-mcgrof@do-not-panic.com> <20140905105949.GA22778@redhat.com>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: Mikulas Patocka <mpatocka@redhat.com>,
-        Hannes Frederic Sowa <hannes@redhat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH] bpf: fix a false positive kmemcheck warning
-References: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com> <5409E2C8.2080200@redhat.com> <1409936457.5306.2.camel@localhost> <5409EE70.9020304@redhat.com> <alpine.LRH.2.02.1409051313350.5269@file01.intranet.prod.int.rdu2.redhat.com> <5409F032.50101@redhat.com> <CAMEtUuyX8Oak48vS+EDLmHY6p0yjrYNr9YXLNEYJsS7HsuooRg@mail.gmail.com>
-In-Reply-To: <CAMEtUuyX8Oak48vS+EDLmHY6p0yjrYNr9YXLNEYJsS7HsuooRg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905105949.GA22778@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 07:21 PM, Alexei Starovoitov wrote:
-...
-> imo it's cleaner to convert to bool unconditionally instead
-> of annotating things everywhere.
+On Fri, Sep 05, 2014 at 12:59:49PM +0200, Oleg Nesterov wrote:
+> On 09/04, Luis R. Rodriguez wrote:
+> >
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> >
+> > The new umh kill option has allowed kthreads to receive
+> > kill signals but they are generally accepting all sources
+> > of kill signals
+> 
+> And I think this is right,
+> 
+> > while the original motivation was to enable
+> > through the OOM from sending the kill.
+> 
+> even if the main concern was OOM.
+> 
+> > Users can provide a log output and it should be clear on
+> > the trace what probe / driver got the kill signal.
+> 
+> Well, if you need a WARN output, perhaps you could just add
+> WARN_ON(fatal_signal_pending()) at the end of load_module() ?
 
-Will do, fine as well.
+We could and that's a good idea, thanks! This however would
+at least allow the device to be functional in the case the
+kill was received during kthread usage, but it would certainly
+also set precedents for doing similar things in the kernel
+which I do agree with is hacky. If we had upstream at
+least WARN_ON(fatal_signal_pending()) as you note then
+I think it would at least be a reasonable compromise.
+
+> Not only kthread_create() can fail if systemd sends SIGKILL.
+
+Sure, although its currently the only source found and debugged.
+
+> > Although Oleg had rejected a
+> > similar change a while ago
+> 
+> And honestly, I still dislike this change.
+
+Don't blame you. The code is sensitive and hacky.
+
+  Luis
