@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481AbaIENqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:46:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28509 "EHLO mx1.redhat.com"
+	id S932503AbaIENqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:46:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31569 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932438AbaIENqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:46:22 -0400
-Date: Fri, 5 Sep 2014 15:43:53 +0200
+	id S932438AbaIENq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 09:46:26 -0400
+Date: Fri, 5 Sep 2014 15:43:40 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Suresh Siddha <sbsiddha@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/5] x86, fpu: introduce try_to_restore_fpu()
-Message-ID: <20140905134353.GA14262@redhat.com>
+Subject: [PATCH v2 1/5] x86, fpu: introduce per-cpu "bool in_kernel_fpu"
+Message-ID: <20140905134340.GA14242@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,89 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cosmetic. Every caller of restore_fpu_checking() does drop_init_fpu()
-on failure, add the trivial helper and update the callers.
+interrupted_kernel_fpu_idle() tries to detect if kernel_fpu_begin()
+is safe or not. In particular it should obviously deny the nested
+kernel_fpu_begin() and this logic doesn't look clean.
+
+If use_eager_fpu() == T we rely on a) __thread_has_fpu() check in
+interrupted_kernel_fpu_idle(), and b) on the fact that _begin() does
+__thread_clear_has_fpu().
+
+Otherwise we demand that the interrupted task has no FPU if it is in
+kernel mode, this works because __kernel_fpu_begin() does clts() and
+interrupted_kernel_fpu_idle() checks X86_CR0_TS.
+
+Add the per-cpu "bool in_kernel_fpu" variable, and change this code
+to check/set/clear it. This allows to do some cleanups and fixes.
+
+Note that the current code looks racy. Say, kernel_fpu_begin() right
+after math_state_restore()->__thread_fpu_begin() will overwrite the
+regs we are going to restore. This patch doesn't try to fix this, it
+only adds a comment, but "in_kernel_fpu" can also be used to implement
+kernel_fpu_disable() / kernel_fpu_enable().
+
+The patch also moves WARN_ON_ONCE() under preempt_disable() just to
+make this_cpu_read() look better, this is not really needed. And in
+fact I think we should move it into __kernel_fpu_begin().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/include/asm/fpu-internal.h |   15 +++++++++++----
- arch/x86/kernel/i387.c              |    8 +++-----
- arch/x86/kernel/traps.c             |    8 +++-----
- 3 files changed, 17 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/i387.h |    2 +-
+ arch/x86/kernel/i387.c      |   10 ++++++++++
+ 2 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 4cbb40e..e71c7f5 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -384,6 +384,15 @@ static inline void drop_init_fpu(struct task_struct *tsk)
- 	}
- }
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index ed8089d..5e275d3 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -40,8 +40,8 @@ extern void __kernel_fpu_end(void);
  
-+static inline bool try_to_restore_fpu(struct task_struct *tsk)
-+{
-+	if (unlikely(restore_fpu_checking(tsk))) {
-+		drop_init_fpu(tsk);
-+		return false;
-+	}
-+	return true;
-+}
-+
- /*
-  * FPU state switching for scheduling.
-  *
-@@ -462,10 +471,8 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
-  */
- static inline void switch_fpu_finish(struct task_struct *new, fpu_switch_t fpu)
+ static inline void kernel_fpu_begin(void)
  {
--	if (fpu.preload) {
--		if (unlikely(restore_fpu_checking(new)))
--			drop_init_fpu(new);
--	}
-+	if (fpu.preload)
-+		try_to_restore_fpu(new);
+-	WARN_ON_ONCE(!irq_fpu_usable());
+ 	preempt_disable();
++	WARN_ON_ONCE(!irq_fpu_usable());
+ 	__kernel_fpu_begin();
  }
  
- /*
 diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index ece91cf..1918f67 100644
+index d5dd808..8fb8868 100644
 --- a/arch/x86/kernel/i387.c
 +++ b/arch/x86/kernel/i387.c
-@@ -104,12 +104,10 @@ void __kernel_fpu_end(void)
+@@ -19,6 +19,8 @@
+ #include <asm/fpu-internal.h>
+ #include <asm/user.h>
+ 
++static DEFINE_PER_CPU(bool, in_kernel_fpu);
++
+ /*
+  * Were we in an interrupt that interrupted kernel mode?
+  *
+@@ -33,6 +35,9 @@
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
++	if (this_cpu_read(in_kernel_fpu))
++		return false;
++
+ 	if (use_eager_fpu())
+ 		return __thread_has_fpu(current);
+ 
+@@ -73,6 +78,9 @@ void __kernel_fpu_begin(void)
  {
  	struct task_struct *me = current;
  
--	if (__thread_has_fpu(me)) {
--		if (WARN_ON(restore_fpu_checking(me)))
--			drop_init_fpu(me);
--	} else if (!use_eager_fpu()) {
-+	if (__thread_has_fpu(me))
-+		WARN_ON(!try_to_restore_fpu(me));
-+	else if (!use_eager_fpu())
++	this_cpu_write(in_kernel_fpu, true);
++
++	/* FIXME: race with math_state_restore()-like code */
+ 	if (__thread_has_fpu(me)) {
+ 		__thread_clear_has_fpu(me);
+ 		__save_init_fpu(me);
+@@ -99,6 +107,8 @@ void __kernel_fpu_end(void)
+ 	} else {
  		stts();
--	}
+ 	}
++
++	this_cpu_write(in_kernel_fpu, false);
+ }
+ EXPORT_SYMBOL(__kernel_fpu_end);
  
- 	this_cpu_write(in_kernel_fpu, false);
- }
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index c632843..f516cf1 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -670,12 +670,10 @@ void math_state_restore(void)
- 	/* Avoid __kernel_fpu_begin() right after __thread_fpu_begin() */
- 	kernel_fpu_disable();
- 	__thread_fpu_begin(tsk);
--	if (unlikely(restore_fpu_checking(tsk))) {
--		drop_init_fpu(tsk);
--		force_sig_info(SIGSEGV, SEND_SIG_PRIV, tsk);
--	} else {
-+	if (likely(try_to_restore_fpu(tsk)))
- 		tsk->thread.fpu_counter++;
--	}
-+	else
-+		force_sig_info(SIGSEGV, SEND_SIG_PRIV, tsk);
- 	kernel_fpu_enable();
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
 -- 
 1.5.5.1
 
