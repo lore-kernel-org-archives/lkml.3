@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460AbaIEP1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:27:13 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:44690 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbaIEP1M (ORCPT
+	id S1755724AbaIEP2L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:28:11 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:59098 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaIEP2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:27:12 -0400
-Message-ID: <5409D64D.4090501@atmel.com>
-Date: Fri, 5 Sep 2014 17:27:09 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 5 Sep 2014 11:28:08 -0400
+Date: Fri, 5 Sep 2014 08:27:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
+        David Paris <david.paris@st.com>
+Subject: Re: [PATCH 3/4] watchdog: st_wdt: Provide binding documentation for
+ ST's LPC Watchdog driver
+Message-ID: <20140905152758.GA10670@roeck-us.net>
+References: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
+ <1409841592-18890-5-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: at91: rm9200: fix clock registration
-References: <1409926533-7853-1-git-send-email-alexandre.belloni@free-electrons.com> <5409D608.9040708@atmel.com>
-In-Reply-To: <5409D608.9040708@atmel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409841592-18890-5-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2014 17:26, Nicolas Ferre :
-> On 05/09/2014 16:15, Alexandre Belloni :
->> Actually register clocks from device tree when using the common clock
->> framework.
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> 
-> Indeed, thanks: I'll queue it in at91-3.18-fixes.
+On Thu, Sep 04, 2014 at 03:39:51PM +0100, Lee Jones wrote:
+> Signed-off-by: David Paris <david.paris@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-s/18/17/
+You might want to copy the devicetree mailing list for bindings approval.
 
-Sorry.
+> ---
+>  .../devicetree/bindings/watchdog/st-lpc-wdt.txt    | 27 ++++++++++++++++++++++
+>  1 file changed, 27 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+> new file mode 100644
+> index 0000000..f0e57ba
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+> @@ -0,0 +1,27 @@
+> +STMicroelectronics LPC Watchdog
+> +===============================
+> +
+> +Required properties
+> +
+> +- compatible 	: "st,<soc>-watchdog"
 
-> 
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> 
->> ---
->>  arch/arm/mach-at91/board-dt-rm9200.c | 11 ++++++++++-
->>  1 file changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
->> index 61ea21445664..a598481a3570 100644
->> --- a/arch/arm/mach-at91/board-dt-rm9200.c
->> +++ b/arch/arm/mach-at91/board-dt-rm9200.c
->> @@ -14,6 +14,7 @@
->>  #include <linux/gpio.h>
->>  #include <linux/of.h>
->>  #include <linux/of_irq.h>
->> +#include <linux/clk-provider.h>
->>  
->>  #include <asm/setup.h>
->>  #include <asm/irq.h>
->> @@ -24,13 +25,21 @@
->>  #include "at91_aic.h"
->>  #include "generic.h"
->>  
->> +static void __init rm9200_dt_timer_init(void)
->> +{
->> +#if defined(CONFIG_COMMON_CLK)
->> +	of_clk_init(NULL);
->> +#endif
->> +	at91rm9200_timer_init();
->> +}
->> +
->>  static const char *at91rm9200_dt_board_compat[] __initdata = {
->>  	"atmel,at91rm9200",
->>  	NULL
->>  };
->>  
->>  DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
->> -	.init_time      = at91rm9200_timer_init,
->> +	.init_time      = rm9200_dt_timer_init,
->>  	.map_io		= at91_map_io,
->>  	.init_early	= at91rm9200_dt_initialize,
->>  	.dt_compat	= at91rm9200_dt_board_compat,
->>
-> 
-> 
+Is this acceptable ? I thought the supported bindings have to be listed
+explicitly.
 
+> +- reg		: LPC registers base address + range
+> +- reg-names	: Register map "base" and "syscfg-en" are compulsory "type" is
 
--- 
-Nicolas Ferre
+'.' after compulsory ?
+
+> +		  platform dependent and not required for the STiH407.
+> +- clock-names 	: Should be "lpc_wdt"
+> +- clocks	: Clock used by LPC device
+> +- timeout-sec	: Qatchdog timeout in seconds
+
+Watchdog
+
+> +- st,syscfg	: Syscfg node used to configure cpu reset type and mask
+> +- st,warm_reset	: If present, reset type will be 'warm'. If not, it will be cold
+
+s/cold/cold./ ?
+
+> +
+> +Example:
+> +	watchdog@fde05000 {
+> +		compatible	= "st,stih416-lpc-watchdog";
+> +		reg		= <0xfde05000 0x1000> <0x204 0x4>;
+> +		reg-names	= "base", "syscfg-en"
+> +		clock-names	= "lpc_wdt";
+> +		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
+> +		timeout-sec	= <600>;
+> +		st,syscfg	= <&syscfg_core>;
+> +		st,warm_reset;
+> +	};
+> +
+
+Empty line at the end results in a whitespace error when applying.
+
+Guenter
