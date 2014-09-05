@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741AbaIEN7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:59:11 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44487 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932318AbaIEN7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:59:08 -0400
-Date: Fri, 5 Sep 2014 14:58:16 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sebastian Reichel <sre@debian.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Pavel Machek <pavel@ucw.cz>, Fabio Estevam <festevam@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Message-ID: <20140905135816.GE20164@leverpostej>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201409051338.40988@pali>
- <20140905134542.GD20164@leverpostej>
- <201409051552.05447@pali>
+	id S932509AbaIEOAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:00:53 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755002AbaIEOAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 10:00:52 -0400
+Message-ID: <5409C210.9040204@nod.at>
+Date: Fri, 05 Sep 2014 16:00:48 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201409051552.05447@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>, Paul Bolle <pebolle@tiscali.nl>
+CC: Lennox Wu <lennox.wu@gmail.com>, Chen Liqin <liqin.linux@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/28] Remove GENERIC_HAS_IOMAP
+References: <1391971686-9517-1-git-send-email-richard@nod.at>	 <1391971686-9517-17-git-send-email-richard@nod.at>	 <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>	 <1397553547.1985.25.camel@x220>	 <CAF0htA403PKyAgQjrMpYgawNZWKZm06UYrgV-7N_9tbas=SniA@mail.gmail.com>	 <1397673008.6361.0.camel@x220> <1403082609.1984.66.camel@x220>	 <CAF0htA691-9ccAr1FX-7xdBgx+OYjv7bG0VRMzETj_=0HW9pUQ@mail.gmail.com> <1409909543.5546.150.camel@x220> <5409C156.4040405@roeck-us.net>
+In-Reply-To: <5409C156.4040405@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 02:52:05PM +0100, Pali Rohár wrote:
-> On Friday 05 September 2014 15:45:42 Mark Rutland wrote:
-> > On Fri, Sep 05, 2014 at 12:38:40PM +0100, Pali Rohár wrote:
-> > > On Wednesday 18 June 2014 18:54:24 Pali Rohár wrote:
-> > > > Machine name from board description is some generic name
-> > > > on DT kernel. DT provides machine name property which is
-> > > > specific for board, so use it instead generic one when
-> > > > possible.
-> > > > 
-> > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > > ---
-> > > > 
-> > > >  arch/arm/kernel/setup.c |    7 +++++--
-> > > >  1 file changed, 5 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/arch/arm/kernel/setup.c
-> > > > b/arch/arm/kernel/setup.c index 8a16ee5..fbc7b4f 100644
-> > > > --- a/arch/arm/kernel/setup.c
-> > > > +++ b/arch/arm/kernel/setup.c
-> > > > @@ -875,10 +875,13 @@ void __init setup_arch(char
-> > > > **cmdline_p)
-> > > > 
-> > > >  	setup_processor();
-> > > >  	mdesc = setup_machine_fdt(__atags_pointer);
-> > > > 
-> > > > -	if (!mdesc)
-> > > > +	if (mdesc)
-> > > > +		machine_name = of_flat_dt_get_machine_name();
-> > > > +	else
-> > > > 
-> > > >  		mdesc = setup_machine_tags(__atags_pointer,
-> > > > 
-> > > > __machine_arch_type); machine_desc = mdesc;
-> > > > -	machine_name = mdesc->name;
-> > > > +	if (!machine_name)
-> > > > +		machine_name = mdesc->name;
-> > > > 
-> > > >  	if (mdesc->reboot_mode != REBOOT_HARD)
-> > > >  	
-> > > >  		reboot_mode = mdesc->reboot_mode;
-> > > 
-> > > So, do you really want to break userspace which reading file
-> > > /proc/cpuinfo (after migration from boardcode --> DT)?
-> > 
-> > You have no guarantee model name in the DT == the name in a
-> > board file anyhow, and trying to force that is wrong. So
-> > further to Russell's reply, I must NAK this from a DT
-> > perspective.
-> > 
-> > Realistically your userspace is already broken if relying on
-> > such things. You built something that only ever worked for a
-> > particular arbitrary string. So it was already broken for
-> > every other board, and there was never any guarantee that new
-> > boards where your userspace could have worked would share the
-> > same name.
-> > 
-> > You're trying to fix the wrong side of the equation.
-> > 
-> > Mark.
+Am 05.09.2014 15:57, schrieb Guenter Roeck:
+> On 09/05/2014 02:32 AM, Paul Bolle wrote:
+>> Guenter, Richard,
+>>
+>> On Thu, 2014-06-19 at 03:53 +0800, Lennox Wu wrote:
+>>> 2014-06-18 17:10 GMT+08:00 Paul Bolle <pebolle@tiscali.nl>:
+>>>>> On Wed, 2014-04-16 at 20:30 +0200, Paul Bolle wrote:
+>>>>> On Thu, 2014-04-17 at 01:29 +0800, Lennox Wu wrote:
+>>>>>> OK, we will merge it into our tree.
+>>>>
+>>>> The last few messages in this thread were sent shortly after v3.15-rc1.
+>>>> We're now at v3.16-rc1 and those three references to GENERIC_HAS_IOMAP
+>>>> are still there.
+>>>>
+>>>> Are there any issues with this patch?
+>>>>
+>>>>
+>>>> Paul Bolle
+>>>>
+>>> NO, there is no issue. We just want to push patches in a batched way.
+>>> The patch will show recently. Thank you.
+>>
+>> And at v3.17-rc3 this patch has still not shown up in mainline. Do you
+>> have suggestions for an alternative route to get this triviality finally
+>> merged?
+>>
 > 
-> So what is your suggestion for identifing board (name/type) which 
-> will work with any kernel (and will not be broken again by kernel 
-> later)?
+> I merged it with the latest kernel, added Lennox' Ack, and sent it to
+> trivial@kernel.org. Let's see what happens.
 
-Without knowing your use case I have no idea if that's even a sane thing
-to do.
-
-Mark.
+Thanks a lot Guenther!
