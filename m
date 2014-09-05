@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337AbaIEHPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:15:48 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:59206 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaIEHPp (ORCPT
+	id S1755980AbaIEHRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:17:07 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:61558 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaIEHRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:15:45 -0400
-Date: Fri, 5 Sep 2014 16:15:35 +0900
+	Fri, 5 Sep 2014 03:17:04 -0400
+Date: Fri, 5 Sep 2014 16:16:43 +0900
 From: Tejun Heo <tj@kernel.org>
 To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
@@ -15,40 +15,40 @@ Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
         oleg@redhat.com, hare@suse.com, akpm@linux-foundation.org,
         penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
         bpoirier@suse.de, santosh@chelsio.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, linux-ide@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, patrakov@gmail.com
-Subject: Re: [RFC v2 6/6] pata_marvell: use async probe
-Message-ID: <20140905071535.GA9323@mtj.dyndns.org>
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>, MPT-FusionLinux.pdl@avagotech.com,
+        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [RFC v2 5/6] mptsas: use async probe
+Message-ID: <20140905071643.GB9323@mtj.dyndns.org>
 References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
- <1409899047-13045-7-git-send-email-mcgrof@do-not-panic.com>
+ <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409899047-13045-7-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 11:37:27PM -0700, Luis R. Rodriguez wrote:
-> diff --git a/drivers/ata/pata_marvell.c b/drivers/ata/pata_marvell.c
-> index ae9feb1..6a543b9 100644
-> --- a/drivers/ata/pata_marvell.c
-> +++ b/drivers/ata/pata_marvell.c
-> @@ -175,6 +175,7 @@ static struct pci_driver marvell_pci_driver = {
->  	.suspend		= ata_pci_device_suspend,
->  	.resume			= ata_pci_device_resume,
->  #endif
-> +	.driver.async_probe = true,
+On Thu, Sep 04, 2014 at 11:37:26PM -0700, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> Its reported that mptsas can at times take over 30 seconds
+> to recognize SCSI storage devices [0], this is done on the
+> driver's probe path. Use the the new asynch probe to
+> circumvent systemd from killing this driver.
 
-You can't do this.  There's nothing special about pata_marvell.  Sure
-there was a bug report which made long probe durations more common on
-this driver on certain configurations but those long durations can
-happen on *any* libata driver and singling out pata_marvell for async
-probing is adding a different probing behavior basically arbitrarily.
-I really can't see how this marking random drivers with async probing
-would work, so one driver does synchronous probing while the
-equivalent next one doesn't?  That's crazy.
+Again, *ANY* SCSI storage controller may.  The fact that a specific
+bug report was filed on mptsas doesn't really mean anything.
 
 Thanks.
 
