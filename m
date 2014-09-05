@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830AbaIEDw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 23:52:58 -0400
-Received: from imap.thunk.org ([74.207.234.97]:39200 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653AbaIEDw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 23:52:56 -0400
-Date: Thu, 4 Sep 2014 23:17:35 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
-        jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, paulmck@linux.vnet.ibm.com,
-        peterz@infradead.org, adilger.kernel@dilger.ca, minchan@kernel.org,
-        gunho.lee@lge.com
-Subject: Re: [PATCHv4 0/3] new APIs to allocate buffer-cache with user
- specific flag
-Message-ID: <20140905031735.GD1971@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Joonsoo Kim <iamjoonsoo.kim@lge.com>, Gioh Kim <gioh.kim@lge.com>,
-	Andrew Morton <akpm@linux-foundation.org>, jack@suse.cz,
-	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-	paulmck@linux.vnet.ibm.com, peterz@infradead.org,
-	adilger.kernel@dilger.ca, minchan@kernel.org, gunho.lee@lge.com
-References: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
- <20140904151612.7bf5b813069ff78973e01571@linux-foundation.org>
- <540905B1.1050200@lge.com>
- <20140905011419.GE4364@thunk.org>
- <20140905014808.GA26070@js1304-P5Q-DELUXE>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905014808.GA26070@js1304-P5Q-DELUXE>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1755297AbaIED64 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 23:58:56 -0400
+Received: from smtprelay0222.hostedemail.com ([216.40.44.222]:35647 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751999AbaIED6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 23:58:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:2840:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6119:6120:7652:7901:7903:8531:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13149:13230:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cave69_4da08f64bb857
+X-Filterd-Recvd-Size: 2111
+Message-ID: <1409889532.2770.30.camel@joe-AO725>
+Subject: Re: [PATCH] kernel: add support for gcc 5
+From: Joe Perches <joe@perches.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, akpm@linuxfoundation.org,
+        mingo@kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 04 Sep 2014 20:58:52 -0700
+In-Reply-To: <54092FE0.3030004@oracle.com>
+References: <1409845039-5751-1-git-send-email-sasha.levin@oracle.com>
+	 <20140904212535.GA5059@drone.musicnaut.iki.fi>
+	 <1409870628.2310799.163815377.623F33D2@webmail.messagingengine.com>
+	 <1409874455.2770.26.camel@joe-AO725> <54092FE0.3030004@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonson,
+On Thu, 2014-09-04 at 23:37 -0400, Sasha Levin wrote:
+> On 09/04/2014 07:47 PM, Joe Perches wrote:
+> > On Fri, 2014-09-05 at 00:43 +0200, Hannes Frederic Sowa wrote:
+> >> > Most statements are already depending on GCC_VERSION, maybe we can just
+> >> > unify all gcc specific headers to one, still trying to keep the file
+> >> > organized? ;)
+> > Maybe something like:
+> > 
+> > gnu development of gcc will be more frequent and the use of
+> > compiler-gcc<major>.h likely will not be convenient anymore.
+> > 
+> > Integrate the individual compiler-gcc<major>.h files into
+> > compiler-gcc.h.
+> 
+> Please no. We have a similar file we maintain in our team that's supposed to
+> do something very similar for kernel versions. It goes all the way back to
+> 2.6.9 and it's a *horrible* mess.
+> 
+> This is how compiler-gcc.h will end up looking in a while.
 
-Thanks for the update.  I've applied Gioh's patches to the ext4 tree,
-but I'd appreciate a further clarification.  My understanding with the
-problem you were trying to address is that with the current CMA
-implementation, kswapd was getting activiated too early, yes?
+As gcc options are generally upward compatible,
+I don't think it will but there's no great way
+to predict the future.
 
-But it would still be a good idea to try to use non-moveable memory in
-preference in favor of CMA memory; even if the page migration can move
-the contents of the page elsewhere, wouldn't be better to avoid
-needing to do the page migation in the first place.  Given that the
-ext4 file systems are getting mounted very early in the boot process,
-when there should be plenty of CMA and non-CMA elegible memory
-available, why was CMA memory getting selected for the buffer cache
-allocations when non-CMA memory available?
+It wouldn't be as complicated as say backports.
 
-In other words, even without Gioh's patch to force the use of non-CMA
-eligible memory, wouldn't it be better if the memory allocator used
-non-CMA preferentially if it were available.  This should be
-orthogonal to whether or not kswaped gets activiated, right?
 
-Regards,
-
-							- Ted
