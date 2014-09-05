@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaIETGI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:06:08 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16827 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529AbaIETGD (ORCPT
+	id S1754709AbaIETG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:06:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54823 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaIETDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:06:03 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61a-f79e46d00000134f-36-540a0998f1bb
-Content-transfer-encoding: 8BIT
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: lmctlx@gmail.com, Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org
-Subject: [PATCH 3.14-stable] usb: gadget: f_fs: drop duplicate
- usb_functionfs_descs_head declaration
-Date: Fri, 05 Sep 2014 21:04:44 +0200
-Message-id: <1409943884-13823-1-git-send-email-k.lewandowsk@samsung.com>
-X-Mailer: git-send-email 2.0.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t9jQd0ZnFwhBruWmFkcvF9v0bx4PZtF
-	46e5zBaXd81hs1h44BG7xYLjLawWCzY+YnRg99g56y67x/65a9g91v15xeTRt2UVo8fxG9uZ
-	PD5vkgtgi+KySUnNySxLLdK3S+DKOHRlJ1PBC4GKW9d+sDQwfuPtYuTkkBAwkbj46QIjhC0m
-	ceHeerYuRi4OIYHpjBKr9x5iAUnwCghK/Jh8D8jm4GAWkJc4cikbJMwsoC4xad4iZoj6DiaJ
-	iS/7wOrZBIwkvh3awAxiiwgoSGzufcYK0XCZUeLfWScQW1ggTWL1yn4mEJtFQFViTdNsdohd
-	HhKHm9axQBwkJ/Hz4nX2CYx8s5CcMQvhjFlIzljAyLyKUTS1ILmgOCk911CvODG3uDQvXS85
-	P3cTIzh0n0ntYFzZYHGIUYCDUYmHd8FnjhAh1sSy4srcQ4wSHMxKIrxpPzhDhHhTEiurUovy
-	44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBKNTCqvo/nfSI4n5HvVEW135lf
-	/+/YfHLJnnYlTWf16kzjtwyH2fezX0u9cmvCRkmtXqEbQs1rdPMSWcU+OabmxL15uPfEz/Ib
-	86cfc91lc+TDh30/Nn/6mfz5wMT1YfWGpYv7NAQOvLn02ceR55Jff/XSP0/eT3ngLa/94lLg
-	7D0RZy99tk9Z+jWwRomlOCPRUIu5qDgRAMSgzaxZAgAA
+	Fri, 5 Sep 2014 15:03:11 -0400
+Date: Fri, 05 Sep 2014 12:03:09 -0700 (PDT)
+Message-Id: <20140905.120309.442605076285121829.davem@davemloft.net>
+To: hannes@stressinduktion.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spender@grsecurity.net, dborkman@redhat.com, ast@plumgrid.com,
+        keescook@chromium.org
+Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images
+ read-only
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
+	<2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Sep 2014 12:03:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applicable for 3.14-stable only.
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date: Tue,  2 Sep 2014 22:53:44 +0200
 
-This commit drops duplicate declaration of struct usb_functionfs_descs_head
-erronousely added in commit 28c5980b54 ("usb: gadget: f_fs: resurect
-usb_functionfs_descs_head structure").
+> From: Daniel Borkmann <dborkman@redhat.com>
+> 
+> With eBPF getting more extended and exposure to user space is on it's way,
+> hardening the memory range the interpreter uses to steer its command flow
+> seems appropriate.  This patch moves the to be interpreted bytecode to
+> read-only pages.
+> 
+> In case we execute a corrupted BPF interpreter image for some reason e.g.
+> caused by an attacker which got past a verifier stage, it would not only
+> provide arbitrary read/write memory access but arbitrary function calls
+> as well. After setting up the BPF interpreter image, its contents do not
+> change until destruction time, thus we can setup the image on immutable
+> made pages in order to mitigate modifications to that code. The idea
+> is derived from commit 314beb9bcabf ("x86: bpf_jit_comp: secure bpf jit
+> against spraying attacks").
+> 
+> This is possible because bpf_prog is not part of sk_filter anymore.
+> After setup bpf_prog cannot be altered during its life-time. This prevents
+> any modifications to the entire bpf_prog structure (incl. function/JIT
+> image pointer).
+> 
+> Every eBPF program (including classic BPF that are migrated) have to call
+> bpf_prog_select_runtime() to select either interpreter or a JIT image
+> as a last setup step, and they all are being freed via bpf_prog_free(),
+> including non-JIT. Therefore, we can easily integrate this into the
+> eBPF life-time, plus since we directly allocate a bpf_prog, we have no
+> performance penalty.
+> 
+> Tested with seccomp and test_bpf testsuite in JIT/non-JIT mode and manual
+> inspection of kernel_page_tables.  Brad Spengler proposed the same idea
+> via Twitter during development of this patch.
+> 
+> Joint work with Hannes Frederic Sowa.
+> 
+> Suggested-by: Brad Spengler <spender@grsecurity.net>
+> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+> Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-Fix from 28c5980b54 is applicable only for v3.15-rc1 and newer kernels.
-
-This fixes error in uapi:
-
-  /src/linux$ make -C tools usb
-
-  make: Entering directory '/src/linux/tools'
-    DESCEND  usb
-  make[1]: Entering directory '/src/linux/tools/usb'
-  gcc -Wall -Wextra -g -I../include -o testusb testusb.c -lpthread
-  gcc -Wall -Wextra -g -I../include -o ffs-test ffs-test.c -lpthread
-  In file included from ffs-test.c:41:0:
-  ../../include/uapi/linux/usb/functionfs.h:42:8: error: redefinition of ‘struct usb_functionfs_descs_head’
-   struct usb_functionfs_descs_head {
-          ^
-  ../../include/uapi/linux/usb/functionfs.h:31:8: note: originally defined here
-   struct usb_functionfs_descs_head {
-          ^
-
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
----
- include/uapi/linux/usb/functionfs.h | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
-index 29e9c7a..f279394 100644
---- a/include/uapi/linux/usb/functionfs.h
-+++ b/include/uapi/linux/usb/functionfs.h
-@@ -27,24 +27,18 @@ struct usb_endpoint_descriptor_no_audio {
- 	__u8  bInterval;
- } __attribute__((packed));
- 
--/* Legacy format, deprecated as of 3.14. */
--struct usb_functionfs_descs_head {
--	__le32 magic;
--	__le32 length;
--	__le32 fs_count;
--	__le32 hs_count;
--} __attribute__((packed, deprecated));
- 
- /*
-  * All numbers must be in little endian order.
-  */
- 
-+/* Legacy format, deprecated as of 3.14. */
- struct usb_functionfs_descs_head {
- 	__le32 magic;
- 	__le32 length;
- 	__le32 fs_count;
- 	__le32 hs_count;
--} __attribute__((packed));
-+} __attribute__((packed, deprecated));
- 
- /*
-  * Descriptors format:
--- 
-2.0.1
-
+Applied, thanks.
