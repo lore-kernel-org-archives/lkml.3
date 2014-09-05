@@ -1,217 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581AbaIEJZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 05:25:44 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:34769 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756045AbaIEJZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 05:25:41 -0400
-Date: Fri, 5 Sep 2014 11:25:37 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Dave Hansen <dave@sr71.net>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Tejun Heo <tj@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-Message-ID: <20140905092537.GC26243@dhcp22.suse.cz>
-References: <54061505.8020500@sr71.net>
- <5406262F.4050705@intel.com>
- <54062F32.5070504@sr71.net>
- <20140904142721.GB14548@dhcp22.suse.cz>
- <5408CB2E.3080101@sr71.net>
+	id S1756594AbaIEJ0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 05:26:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22810 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755909AbaIEJ0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 05:26:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,471,1406617200"; 
+   d="scan'208";a="568780481"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "atull@opensource.altera.com" <atull@opensource.altera.com>
+Subject: Re: [PATCH 3/3 v2] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Topic: [PATCH 3/3 v2] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Index: AQHPyNcp/ZRAVyzApUOJPkFrjH7HF5vyNAAA
+Date: Fri, 5 Sep 2014 09:24:42 +0000
+Message-ID: <1409909082.30155.86.camel@intel.com>
+References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+	 <1409928798-31895-4-git-send-email-alvin.chen@intel.com>
+In-Reply-To: <1409928798-31895-4-git-send-email-alvin.chen@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.168]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <19A51FCC913AFA45A7583E8A1C64529D@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5408CB2E.3080101@sr71.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s859QswV015992
 
-On Thu 04-09-14 13:27:26, Dave Hansen wrote:
-> On 09/04/2014 07:27 AM, Michal Hocko wrote:
-> > Ouch. free_pages_and_swap_cache completely kills the uncharge batching
-> > because it reduces it to PAGEVEC_SIZE batches.
-> > 
-> > I think we really do not need PAGEVEC_SIZE batching anymore. We are
-> > already batching on tlb_gather layer. That one is limited so I think
-> > the below should be safe but I have to think about this some more. There
-> > is a risk of prolonged lru_lock wait times but the number of pages is
-> > limited to 10k and the heavy work is done outside of the lock. If this
-> > is really a problem then we can tear LRU part and the actual
-> > freeing/uncharging into a separate functions in this path.
-> > 
-> > Could you test with this half baked patch, please? I didn't get to test
-> > it myself unfortunately.
+On Fri, 2014-09-05 at 07:53 -0700, Weike Chen wrote:
+> This patch enables suspend and resume mode for the power management, and
+> it is based on Josef Ahmad's previous work.
 > 
-> 3.16 settled out at about 11.5M faults/sec before the regression.  This
-> patch gets it back up to about 10.5M, which is good.
+> Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
+> Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
 
-Dave, would you be willing to test the following patch as well? I do not
-have a huge machine at hand right now. It would be great if you could
-run the same load within a !root memcg. We have basically the same
-sub-optimality there as well. The root bypass will be re-introduced for
-now but I think we can make the regular memcg load better regardless and
-this would be also preparation for later root bypass removal again.
----
->From 17c4c8710f3ec37fe04866bd18dbc68a0f47b560 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 5 Sep 2014 11:16:17 +0200
-Subject: [PATCH] mm, memcg: Do not kill release batching in
- free_pages_and_swap_cache
+I have to recall my reviwed-by tag since patch is quite changed and as I
+understood Linus is continuing to be changed.
 
-free_pages_and_swap_cache limits release_pages to PAGEVEC_SIZE chunks.
-This is not a big deal for the normal release path but it completely
-kills memcg uncharge batching which reduces res_counter spin_lock
-contention. Dave has noticed this with his page fault scalability test
-case on a large machine when the lock was basically dominating on all
-CPUs:
-    80.18%    80.18%  [kernel]               [k] _raw_spin_lock
-                  |
-                  --- _raw_spin_lock
-                     |
-                     |--66.59%-- res_counter_uncharge_until
-                     |          res_counter_uncharge
-                     |          uncharge_batch
-                     |          uncharge_list
-                     |          mem_cgroup_uncharge_list
-                     |          release_pages
-                     |          free_pages_and_swap_cache
-                     |          tlb_flush_mmu_free
-                     |          |
-                     |          |--90.12%-- unmap_single_vma
-                     |          |          unmap_vmas
-                     |          |          unmap_region
-                     |          |          do_munmap
-                     |          |          vm_munmap
-                     |          |          sys_munmap
-                     |          |          system_call_fastpath
-                     |          |          __GI___munmap
-                     |          |
-                     |           --9.88%-- tlb_flush_mmu
-                     |                     tlb_finish_mmu
-                     |                     unmap_region
-                     |                     do_munmap
-                     |                     vm_munmap
-                     |                     sys_munmap
-                     |                     system_call_fastpath
-                     |                     __GI___munmap
+> Signed-off-by: Weike Chen <alvin.chen@intel.com>
+> ---
+>  drivers/gpio/gpio-dwapb.c |  102 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 102 insertions(+)
+> 
+> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+> index 6db7501..a103def 100644
+> --- a/drivers/gpio/gpio-dwapb.c
+> +++ b/drivers/gpio/gpio-dwapb.c
+> @@ -54,6 +54,7 @@ struct dwapb_gpio_port {
+>  	struct bgpio_chip	bgc;
+>  	bool			is_registered;
+>  	struct dwapb_gpio	*gpio;
+> +	unsigned int		idx;
+>  };
+>  
+>  struct dwapb_gpio {
+> @@ -376,6 +377,7 @@ static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
+>  
+>  	port = &gpio->ports[offs];
+>  	port->gpio = gpio;
+> +	port->idx = pp->idx;
+>  
+>  	dat = gpio->regs + GPIO_EXT_PORTA + (pp->idx * GPIO_EXT_PORT_SIZE);
+>  	set = gpio->regs + GPIO_SWPORTA_DR + (pp->idx * GPIO_SWPORT_DR_SIZE);
+> @@ -594,10 +596,110 @@ static const struct of_device_id dwapb_of_match[] = {
+>  };
+>  MODULE_DEVICE_TABLE(of, dwapb_of_match);
+>  
+> +#ifdef CONFIG_PM_SLEEP
+> +/* Store GPIO context across system-wide suspend/resume transitions */
+> +static struct dwapb_context {
+> +	u32 data[DWAPB_MAX_PORTS];
+> +	u32 dir[DWAPB_MAX_PORTS];
+> +	u32 ext[DWAPB_MAX_PORTS];
+> +	u32 int_en;
+> +	u32 int_mask;
+> +	u32 int_type;
+> +	u32 int_pol;
+> +	u32 int_deb;
+> +} dwapb_context;
+> +
+> +static int dwapb_gpio_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
+> +	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
+> +	unsigned long flags;
+> +	int i;
+> +
+> +	spin_lock_irqsave(&bgc->lock, flags);
+> +	for (i = 0; i < gpio->nr_ports; i++) {
+> +		unsigned int offset;
+> +		unsigned int idx = gpio->ports[i].idx;
+> +
+> +		offset = GPIO_SWPORTA_DDR + (idx * GPIO_SWPORT_DDR_SIZE);
+> +		dwapb_context.dir[i]	= dwapb_read(gpio, offset);
+> +
+> +		offset = GPIO_SWPORTA_DR + (idx * GPIO_SWPORT_DR_SIZE);
+> +		dwapb_context.data[i]	= dwapb_read(gpio, offset);
+> +
+> +		offset = GPIO_EXT_PORTA + (idx * GPIO_EXT_PORT_SIZE);
+> +		dwapb_context.ext[i]	= dwapb_read(gpio, offset);
+> +
+> +		if (idx == 0) {
+> +			dwapb_context.int_mask = dwapb_read(gpio, GPIO_INTMASK);
+> +			dwapb_context.int_en = dwapb_read(gpio, GPIO_INTEN);
+> +			dwapb_context.int_pol =
+> +					dwapb_read(gpio, GPIO_INT_POLARITY);
+> +			dwapb_context.int_type =
+> +					dwapb_read(gpio, GPIO_INTTYPE_LEVEL);
+> +			dwapb_context.int_deb =
+> +					dwapb_read(gpio, GPIO_PORTA_DEBOUNCE);
+> +
+> +			/* Mask out interrupts */
+> +			dwapb_write(gpio, GPIO_INTMASK, 0xffffffff);
+> +		}
+> +	}
+> +	spin_unlock_irqrestore(&bgc->lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dwapb_gpio_resume(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
+> +	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
+> +	unsigned long flags;
+> +	int i;
+> +
+> +	spin_lock_irqsave(&bgc->lock, flags);
+> +	for (i = 0; i < gpio->nr_ports; i++) {
+> +		unsigned int offset;
+> +		unsigned int idx = gpio->ports[i].idx;
+> +
+> +		offset = GPIO_SWPORTA_DR + (idx * GPIO_SWPORT_DR_SIZE);
+> +		dwapb_write(gpio, offset, dwapb_context.data[i]);
+> +
+> +		offset = GPIO_SWPORTA_DDR + (idx * GPIO_SWPORT_DDR_SIZE);
+> +		dwapb_write(gpio, offset, dwapb_context.dir[i]);
+> +
+> +		offset = GPIO_EXT_PORTA + (idx * GPIO_EXT_PORT_SIZE);
+> +		dwapb_write(gpio, offset, dwapb_context.ext[i]);
+> +
+> +		if (idx == 0) {
+> +			dwapb_write(gpio, GPIO_INTTYPE_LEVEL,
+> +				    dwapb_context.int_type);
+> +			dwapb_write(gpio, GPIO_INT_POLARITY,
+> +				    dwapb_context.int_pol);
+> +			dwapb_write(gpio, GPIO_PORTA_DEBOUNCE,
+> +				    dwapb_context.int_deb);
+> +			dwapb_write(gpio, GPIO_INTEN, dwapb_context.int_en);
+> +			dwapb_write(gpio, GPIO_INTMASK, dwapb_context.int_mask);
+> +
+> +			/* Clear out spurious interrupts */
+> +			dwapb_write(gpio, GPIO_PORTA_EOI, 0xffffffff);
+> +		}
+> +	}
+> +	spin_unlock_irqrestore(&bgc->lock, flags);
+> +
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(dwapb_gpio_pm_ops, dwapb_gpio_suspend,
+> +			 dwapb_gpio_resume);
+> +
+>  static struct platform_driver dwapb_gpio_driver = {
+>  	.driver		= {
+>  		.name	= "gpio-dwapb",
+>  		.owner	= THIS_MODULE,
+> +		.pm	= &dwapb_gpio_pm_ops,
+>  		.of_match_table = of_match_ptr(dwapb_of_match),
+>  	},
+>  	.probe		= dwapb_gpio_probe,
 
-In his case the load was running in the root memcg and that part
-has been handled by reverting 05b843012335 ("mm: memcontrol: use
-root_mem_cgroup res_counter") because this is a clear regression.
-But it makes sense to help loads which are running within a memcg
-as well. So this is basically a performance optimization.
-
-There is no reason to limit release_pages to PAGEVEC_SIZE batches other
-than lru_lock held times. This logic, however, can be moved inside the
-function. mem_cgroup_uncharge_list and free_hot_cold_page_list do not
-hold any lock for the whole pages_to_free list so it is safe to call
-them in a single run.
-
-Page reference count and LRU handling is moved to release_lru_pages and
-that is run in PAGEVEC_SIZE batches.
-
-Reported-by: Dave Hansen <dave@sr71.net>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/swap.c       | 27 +++++++++++++++++++++------
- mm/swap_state.c | 14 ++++----------
- 2 files changed, 25 insertions(+), 16 deletions(-)
-
-diff --git a/mm/swap.c b/mm/swap.c
-index 6b2dc3897cd5..8af99dd68dd2 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -888,9 +888,9 @@ void lru_add_drain_all(void)
- }
- 
- /*
-- * Batched page_cache_release().  Decrement the reference count on all the
-- * passed pages.  If it fell to zero then remove the page from the LRU and
-- * free it.
-+ * Batched lru release. Decrement the reference count on all the passed pages.
-+ * If it fell to zero then remove the page from the LRU and add it to the given
-+ * list to be freed by the caller.
-  *
-  * Avoid taking zone->lru_lock if possible, but if it is taken, retain it
-  * for the remainder of the operation.
-@@ -900,10 +900,10 @@ void lru_add_drain_all(void)
-  * grabbed the page via the LRU.  If it did, give up: shrink_inactive_list()
-  * will free it.
-  */
--void release_pages(struct page **pages, int nr, bool cold)
-+static void release_lru_pages(struct page **pages, int nr,
-+			      struct list_head *pages_to_free)
- {
- 	int i;
--	LIST_HEAD(pages_to_free);
- 	struct zone *zone = NULL;
- 	struct lruvec *lruvec;
- 	unsigned long uninitialized_var(flags);
-@@ -943,11 +943,26 @@ void release_pages(struct page **pages, int nr, bool cold)
- 		/* Clear Active bit in case of parallel mark_page_accessed */
- 		__ClearPageActive(page);
- 
--		list_add(&page->lru, &pages_to_free);
-+		list_add(&page->lru, pages_to_free);
- 	}
- 	if (zone)
- 		spin_unlock_irqrestore(&zone->lru_lock, flags);
-+}
-+/*
-+ * Batched page_cache_release(). Frees and uncharges all given pages
-+ * for which the reference count drops to 0.
-+ */
-+void release_pages(struct page **pages, int nr, bool cold)
-+{
-+	LIST_HEAD(pages_to_free);
- 
-+	while (nr) {
-+		int batch = min(nr, PAGEVEC_SIZE);
-+
-+		release_lru_pages(pages, batch, &pages_to_free);
-+		pages += batch;
-+		nr -= batch;
-+	}
- 	mem_cgroup_uncharge_list(&pages_to_free);
- 	free_hot_cold_page_list(&pages_to_free, cold);
- }
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index ef1f39139b71..154444918685 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -265,18 +265,12 @@ void free_page_and_swap_cache(struct page *page)
- void free_pages_and_swap_cache(struct page **pages, int nr)
- {
- 	struct page **pagep = pages;
-+	int i;
- 
- 	lru_add_drain();
--	while (nr) {
--		int todo = min(nr, PAGEVEC_SIZE);
--		int i;
--
--		for (i = 0; i < todo; i++)
--			free_swap_cache(pagep[i]);
--		release_pages(pagep, todo, false);
--		pagep += todo;
--		nr -= todo;
--	}
-+	for (i = 0; i < nr; i++)
-+		free_swap_cache(pagep[i]);
-+	release_pages(pagep, nr, false);
- }
- 
- /*
--- 
-2.1.0
 
 -- 
-Michal Hocko
-SUSE Labs
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
