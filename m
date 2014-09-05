@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664AbaIEODe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:03:34 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:50064 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147AbaIEODd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:03:33 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Fri, 5 Sep 2014 10:03:29 -0400
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 11/17] locks: move freeing of leases outside of
- i_lock
-Message-ID: <20140905100329.00da1065@tlielax.poochiereds.net>
-In-Reply-To: <20140904175014.GE16935@infradead.org>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
-	<1409834323-7171-12-git-send-email-jlayton@primarydata.com>
-	<20140904175014.GE16935@infradead.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S932682AbaIEOET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:04:19 -0400
+Received: from 8bytes.org ([81.169.241.247]:39024 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932147AbaIEOES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 10:04:18 -0400
+Date: Fri, 5 Sep 2014 16:04:15 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: iommu@lists.linux-foundation.org, alex.williamson@redhat.com,
+        Emilian.Medve@freescale.com, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iommu/fsl: Fix warning resulting from adding PCI
+ device twice
+Message-ID: <20140905140414.GA11931@8bytes.org>
+References: <1409830725-4469-1-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409830725-4469-1-git-send-email-Varun.Sethi@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Sep 2014 10:50:14 -0700
-Christoph Hellwig <hch@infradead.org> wrote:
-
-> On Thu, Sep 04, 2014 at 08:38:37AM -0400, Jeff Layton wrote:
-> > There was only one place where we still could free a file_lock while
-> > holding the i_lock -- lease_modify. Add a new list_head argument to the
-> > lm_change operation, pass in a private list when calling it, and fix
-> > those callers to dispose of the list once the lock has been dropped.
+On Thu, Sep 04, 2014 at 05:08:45PM +0530, Varun Sethi wrote:
+> iommu_group_get_for_dev determines the iommu group for the PCI device and adds
+> the device to the group.
 > 
-> As mentioned I don't see a real need for this, but it does look correct
-> to me.
+> In the PAMU driver we were again adding the device to the same group without checking
+> if the device already had an iommu group. This resulted in the following warning.
+>
+> [...]
 > 
-> Reviewed-by: Christoph Hellwig <hch@lst.de>
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> ---
+> v2 changes
+> - directly check for the device iommu_group
+> 
+>  drivers/iommu/fsl_pamu_domain.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 
-Yeah, it's not strictly necessary, but I think it simplifies the API
-for potential users. We already have the infrastructure to handle
-deferring file_lock removal so we might as well take advantage of it
-here too.
+Applied to iommu/fixes and added stable tag, thanks.
 
--- 
-Jeff Layton <jlayton@primarydata.com>
