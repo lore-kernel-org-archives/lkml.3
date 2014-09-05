@@ -1,129 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaIEATo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 20:19:44 -0400
-Received: from webmail.tpnet.fi ([62.106.63.33]:35566 "EHLO webmail.tpnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755692AbaIEATn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 20:19:43 -0400
-X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 20:19:43 EDT
-From: Anssi Hannula <anssi.hannula@iki.fi>
-To: Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] dm cache: fix race causing dirty blocks to be marked as clean
-Date: Fri,  5 Sep 2014 03:11:28 +0300
-Message-Id: <1409875888-1255-1-git-send-email-anssi.hannula@iki.fi>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <53F10F80.6080204@iki.fi>
-References: <53F10F80.6080204@iki.fi>
+	id S1755812AbaIEAYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:24:10 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:38020 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184AbaIEAYI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 20:24:08 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
+References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
+	<CABPqkBRdbp6nDBFsz0gdp+qpNu+H6C4pyPTAC-EKYFoca2z+sQ@mail.gmail.com>
+Date: Fri, 05 Sep 2014 09:23:56 +0900
+In-Reply-To: <CABPqkBRdbp6nDBFsz0gdp+qpNu+H6C4pyPTAC-EKYFoca2z+sQ@mail.gmail.com>
+	(Stephane Eranian's message of "Thu, 4 Sep 2014 16:37:51 +0200")
+Message-ID: <8761h2ap9f.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a writeback or a promotion of a block is completed, the cell of
-that block is removed from the prison, the block is marked as clean, and
-the clear_dirty() callback of the cache policy is called.
+Hi Stephane,
 
-Unfortunately, performing those actions in this order allows an incoming
-new write bio for that block to come in before clearing the dirty status
-is completed and therefore possibly causing one of these two scenarios:
+On Thu, 4 Sep 2014 16:37:51 +0200, Stephane Eranian wrote:
+> On Tue, Aug 26, 2014 at 8:38 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+>>
+>> There's a problem on finding correct kernel symbols when perf report
+>> runs on a different kernel.  Although a part of the problem was solved
+>> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+>> version when finding vmlinux"), there's a remaining problem still.
+>>
+>> When perf records samples, it synthesizes the kernel map using
+>> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+>> You can easily see it using 'perf report -D' command.
+>>
+>> After finishing record, it goes through the recorded events to find
+>> maps/dsos actually used.  And then record build-id info of them.
+>>
+>> During this process, it needs to load symbols in a dso and it'd call
+>> dso__load_vmlinux() since the default value of the symbol_conf.try_
+>> vmlinux_path is true.  However it changes dso->long_name to a real
+>> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
+>> if one is running on a custom kernel.
+>>
+>> It resulted in that perf report reads the build-id of the vmlinux, but
+>> cannot use it since it only knows about the [kernel.kallsyms] map.  It
+>> then falls back to possible vmlinux paths by using the recorded kernel
+>> version (in case of a recent version) or a running kernel silently
+>> (which might break the result).  I think it's worth going to the
+>> stable tree.
+>>
+>> I can think of a couple of ways to fix it.  In this patch, I changed
+>> to use the name of "[kernel.kallsyms]" for the kernel build-id event
+>> instead of not trying vmlinux paths.  This way we can provide maximum
+>> info (like annotation) with minimum change IMHO.
+>>
+>> Before:
+>>
+>>   $ perf record -a usleep 1
+>>
+>>   $ perf buildid-list
+>>   00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
+>>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>>
+>>   $ perf buildid-list -H
+>>   0000000000000000000000000000000000000000 [kernel.kallsyms]
+>>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
+>>
+> There is something I don't understand in your example above.  The -H
+> option shows only DSO with samples. So why do you get the buildid
+> without -H and you get no buildid with -H? In other words, I don't
+> connect the dots between what -H does on the buildid change for the
+> kernel. Looks like you have the buildid in the perf.data file.
 
-Scenario A:
+Without -H, it just prints all DSOs found in build-id table (rebuilt
+during read perf data file header) and skips processing events.  But
+with -H, it'd process the event records and so set kernel map to
+'[kernel.kallsyms]' - since the kernel mmap event always has the name -
+and mark it as hit.  Thus the actual vmlinux can't be marked and then
+cannot be printed.
 
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called,
-.                               but block already dirty
-.                               => it does nothing
-clear_dirty()                 .
-- block marked clean          .
-- policy clear_dirty() called .
+Hmm.. now I'm curious that why the -H option is needed at all.. the perf
+record already wrote build-ids that are actually hits..
 
-Result: Block is marked clean even though it is actually dirty. No
-writeback will occur.
-
-Scenario B:
-
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-clear_dirty()                 .
-- block marked clean          .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called
-.                             - block marked dirty
-.                             - policy set_dirty() called
-- policy clear_dirty() called .
-
-Result: Block is properly marked as dirty, but policy thinks it is clean
-and therefore never asks us to writeback it.
-This case is visible in "dmsetup status" dirty block count (which
-normally decreases to 0 on a quiet device).
-
-Fix these issues by calling clear_dirty() before calling cell_defer().
-Incoming bios for that block will then be detained in the cell and
-released only after clear_dirty() has completed, so the race will not
-occur.
-
-Found by inspecting the code after noticing spurious dirty counts
-(scenario B).
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: Joe Thornber <ejt@redhat.com>
-Cc: stable@vger.kernel.org
----
-
-> Unfortunately it seems there is some other potentially more serious bug
-> still in there...
-
-After looking through the code that indeed seems to be the case, as
-explained above.
-
-Unless I'm missing something?
-
-I can't say with 100% certainty if this fixes the spurious counts I saw
-since those took quite a long time (1-2 weeks?) to appear and the load
-of that system is somewhat irregular.
-
-
- drivers/md/dm-cache-target.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index 1af40ee209e2..7130505c2425 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -895,8 +895,8 @@ static void migration_success_pre_commit(struct dm_cache_migration *mg)
- 	struct cache *cache = mg->cache;
- 
- 	if (mg->writeback) {
--		cell_defer(cache, mg->old_ocell, false);
- 		clear_dirty(cache, mg->old_oblock, mg->cblock);
-+		cell_defer(cache, mg->old_ocell, false);
- 		cleanup_migration(mg);
- 		return;
- 
-@@ -951,13 +951,13 @@ static void migration_success_post_commit(struct dm_cache_migration *mg)
- 		}
- 
- 	} else {
-+		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		if (mg->requeue_holder)
- 			cell_defer(cache, mg->new_ocell, true);
- 		else {
- 			bio_endio(mg->new_ocell->holder, 0);
- 			cell_defer(cache, mg->new_ocell, false);
- 		}
--		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		cleanup_migration(mg);
- 	}
- }
--- 
-1.8.4.5
-
+Thanks,
+Namhyung
