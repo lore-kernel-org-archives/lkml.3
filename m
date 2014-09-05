@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465AbaIEQAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:00:48 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:58986 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaIEQAp (ORCPT
+	id S1752769AbaIEQBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:01:40 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:51949 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaIEQBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:00:45 -0400
-Date: Fri, 5 Sep 2014 20:00:29 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] memory cgroup: my thoughts on memsw
-Message-ID: <20140905160029.GF25641@esperanza>
-References: <20140904143055.GA20099@esperanza>
- <5408E1CD.3090004@jp.fujitsu.com>
- <20140905082846.GA25641@esperanza>
- <5409C6BB.7060009@jp.fujitsu.com>
+	Fri, 5 Sep 2014 12:01:39 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.17 #1
+Date: Fri, 5 Sep 2014 18:01:36 +0200
+Message-ID: <1409932896-4533-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5409C6BB.7060009@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 11:20:43PM +0900, Kamezawa Hiroyuki wrote:
-> Basically, I don't like OOM Kill. Anyone don't like it, I think.
-> 
-> In recent container use, application may be build as "stateless" and
-> kill-and-respawn may not be problematic, but I think killing "a" process
-> by oom-kill is too naive.
-> 
-> If your proposal is triggering notification to user space at hitting
-> anon+swap limit, it may be useful.
-> ...Some container-cluster management software can handle it.
-> For example, container may be restarted.
-> 
-> Memcg has threshold notifier and vmpressure notifier.
-> I think you can enhance it.
-[...]
-> My point is that "killing a process" tend not to be able to fix the situation.
-> For example, fork-bomb by "make -j" cannot be handled by it.
-> 
-> So, I don't want to think about enhancing OOM-Kill. Please think of better
-> way to survive. With the help of countainer-management-softwares, I think
-> we can have several choices.
-> 
-> Restart contantainer (killall) may be the best if container app is stateless.
-> Or container-management can provide some failover.
+Arnd, Olof, Kevin,
 
-The problem I'm trying to set out is not about OOM actually (sorry if
-the way I explain is confusing). We could probably configure OOM to kill
-a whole cgroup (not just a process) and/or improve user-notification so
-that the userspace could react somehow. I'm sure it must and will be
-discussed one day.
+Little pull-request for fixing CCF conversion done during 3.17.
+The use of at91sam9g20 proper compatibility string is useful when booting
+without U-Boot (this is why we discover it now).
 
-The problem is that *before* invoking OOM on *global* pressure we're
-trying to reclaim containers' memory and if there's progress we won't
-invoke OOM. This can result in a huge slow down of the whole system (due
-to swap out).
+Thanks, best regards,
 
-And if we want to fully make use of soft limits, we currently have no
-means to limit anon memory at all. It's just impossible, because
-memsw.limit must be > soft limit, otherwise it makes no sense. So we
-will be trying to swap out under global pressure until we finally
-realize there's no point in it and call OOM. If we don't, we'll be
-suffering until the load goes away by itself.
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
 
-> The 1st reason we added memsw.limit was for avoiding that the whole swap
-> is used up by a cgroup where memory-leak of forkbomb running and not for
-> some intellegent controls.
-> 
-> From your opinion, I feel what you want is avoiding charging against page-caches.
-> But thiking docker at el, page-cache is not shared between containers any more.
-> I think "including cache" makes sense.
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
-Not exactly. It's not about sharing caches among containers. The point
-is (1) it's difficult to estimate the size of file caches that will max
-out the performance of a container, and (2) a typical workload will
-perform better and put less pressure on disk if it has more caches.
+are available in the git repository at:
 
-Now imagine a big host running a small number of containers and
-therefore having a lot of free memory most of time, but still
-experiencing load spikes once an hour/day/whatever when memory usage
-raises up drastically. It'd be unwise to set hard limits for those
-containers that are running regularly, because they'd probably perform
-much better if they had more file caches. So the admin decides to use
-soft limits instead. He is forced to use memsw.limit > the soft limit,
-but this is unsafe, because the container may eat anon memory up to
-memsw.limit then, and anon memory isn't easy to get rid of when it comes
-to the global pressure. If the admin had a mean to limit swappable
-memory, he could avoid it. This is what I was trying to illustrate by
-the example in the first e-mail of this thread.
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
 
-Note if there were no soft limits, the current setup would be just fine,
-otherwise it fails. And soft limits are proved to be useful AFAIK.
+for you to fetch changes up to ea4fc621adec8956944ecdb9a36c549cba8718c0:
 
-Thanks,
-Vladimir
+  ARM: at91/dt: rm9200: fix usb clock definition (2014-09-05 17:36:12 +0200)
+
+----------------------------------------------------------------
+First AT91 fixes batch for 3.17:
+- compatibility string precision
+- clock registration and USB DT fix for at91rm9200
+
+----------------------------------------------------------------
+Alexandre Belloni (2):
+      ARM: at91: rm9200: fix clock registration
+      ARM: at91/dt: rm9200: fix usb clock definition
+
+Gaël PORTAY (1):
+      ARM: at91/dt: sam9g20: set at91sam9g20 pllb driver
+
+ arch/arm/boot/dts/at91rm9200.dtsi    |  2 +-
+ arch/arm/boot/dts/at91sam9g20.dtsi   |  1 +
+ arch/arm/mach-at91/board-dt-rm9200.c | 11 ++++++++++-
+ 3 files changed, 12 insertions(+), 2 deletions(-)
+
+-- 
+Nicolas Ferre
