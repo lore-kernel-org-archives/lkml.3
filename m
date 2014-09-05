@@ -1,119 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaIEUIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:08:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50971 "EHLO mail.zytor.com"
+	id S1752078AbaIEUIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:08:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57737 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909AbaIEUI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:08:29 -0400
-Message-ID: <540A17A6.1000802@zytor.com>
-Date: Fri, 05 Sep 2014 13:05:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752020AbaIEUIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 16:08:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,474,1406617200"; 
+   d="scan'208";a="475552590"
+From: "John L. Hammond" <john.hammond@intel.com>
+To: <greg@kroah.com>, <andreas.dilger@intel.com>, <oleg.drokin@intel.com>
+CC: <linux-kernel@vger.kernel.org>, "John L. Hammond" <john.hammond@intel.com>
+Subject: [PATCH 00/12] staging/lustre: yet more dead code removal
+Date: Fri, 5 Sep 2014 15:08:06 -0500
+Message-ID: <1409947698-30781-1-git-send-email-john.hammond@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Gerd Hoffmann <kraxel@redhat.com>, linux-kernel@vger.kernel.org
-CC: coreboot@coreboot.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>
-Subject: Re: [PATCH] x86: add coreboot framebuffer support
-References: <1409826307-23075-1-git-send-email-kraxel@redhat.com>
-In-Reply-To: <1409826307-23075-1-git-send-email-kraxel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.1.200.108]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 03:25 AM, Gerd Hoffmann wrote:
-> Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-> ---
->  arch/x86/Kconfig           |  12 +++
->  arch/x86/kernel/Makefile   |   1 +
->  arch/x86/kernel/coreboot.c | 232 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 245 insertions(+)
->  create mode 100644 arch/x86/kernel/coreboot.c
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 778178f..3aeb038 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -2372,6 +2372,18 @@ config X86_SYSFB
->  
->  	  If unsure, say Y.
->  
-> +config COREBOOT
-> +	bool "coreboot"
-> +	depends on X86_SYSFB
-> +	depends on FB_SIMPLE
-> +	help
-> +	  Add coreboot framebuffer support to the linux kernel.	 Say Y here
-> +	  if you want the linux kernel find and use the firmware framebuffer
-> +	  initialized by coreboot.  Useful when using the linux kernel as
-> +	  coreboot payload.
-> +
-> +	  If unsure, or if you don't know what coreboot is, say N.
-> +
->  endmenu
->  
+From: "John L. Hammond" <john.hammond@intel.com>
 
-This should NOT be named CONFIG_COREBOOT.  CONFIG_FB_COREBOOT perhaps.
+Howdy,
 
-> +
-> +struct cb_header {
-> +	u32     signature;
-> +	u32     header_bytes;
-> +	u32     header_checksum;
-> +	u32     table_bytes;
-> +	u32     table_checksum;
-> +	u32     table_entries;
-> +};
-> +
-> +#define CB_TAG_MAINBOARD        0x0003
-> +#define CB_TAG_VERSION          0x0004
-> +#define CB_TAG_FORWARD          0x0011
-> +#define CB_TAG_FRAMEBUFFER      0x0012
-> +
-> +struct cb_mainboard {
-> +	u8      vendor_idx;
-> +	u8      part_idx;
-> +	char    strings[0];
-> +};
-> +
-> +struct cb_framebuffer {
-> +	u64     physical_address;
-> +	u32     x_resolution;
-> +	u32     y_resolution;
-> +	u32     bytes_per_line;
-> +	u8      bits_per_pixel;
-> +	u8      red_mask_pos;
-> +	u8      red_mask_size;
-> +	u8      green_mask_pos;
-> +	u8      green_mask_size;
-> +	u8      blue_mask_pos;
-> +	u8      blue_mask_size;
-> +	u8      reserved_mask_pos;
-> +	u8      reserved_mask_size;
-> +};
-> +
-> +struct cb_entry {
-> +	u32     tag;
-> +	u32     size;
-> +	union {
-> +		char    string[0];
-> +		u64     forward;
-> +		struct cb_mainboard   mb;
-> +		struct cb_framebuffer fb;
-> +	} u;
-> +};
-> +
-> +#define CB_SIGNATURE 0x4f49424C  /* "LBIO" */
-> +
+This series yet removes more dead and obsolete code from drivers/staging/lustre
+in the form of methods from struct obd_ops and server specific llog handling.
 
-This stuff belongs in a header file.
+John L. Hammond (12):
+  staging/lustre/lov: remove unused OBD methods
+  staging/lustre/osc: remove unused OBD methods
+  staging/lustre/osc: remove obsolete llog handling code
+  staging/lustre: remove obd_ost.h
+  staging/lustre/mdc: remove unused OBD methods
+  staging/lustre/mdc: inline llog methods
+  staging/lustre/mgc: inline mgc_cancel()
+  staging/lustre: remove unused OBD methods
+  staging/lustre/mgc: remove server specific llog handling
+  staging/lustre/ptlrpc: remove sptlrpc_conf_target_get_rules()
+  staging/lustre/obdclass: remove llog_ioctl.c
+  staging/lustre/obdclass: remove local_storage.[ch]
 
-I'm not a fan of Coreboot having invented its own nonstandard hacks, but
-I guess it is pretty much unavoidable.
+ .../staging/lustre/lustre/include/lustre_lite.h    |    1 -
+ drivers/staging/lustre/lustre/include/lustre_log.h |   10 -
+ drivers/staging/lustre/lustre/include/lustre_sec.h |    3 -
+ drivers/staging/lustre/lustre/include/obd.h        |   47 -
+ drivers/staging/lustre/lustre/include/obd_class.h  |  279 ------
+ drivers/staging/lustre/lustre/include/obd_ost.h    |  100 ---
+ drivers/staging/lustre/lustre/lov/lov_internal.h   |   45 -
+ drivers/staging/lustre/lustre/lov/lov_merge.c      |   27 -
+ drivers/staging/lustre/lustre/lov/lov_obd.c        |  531 ------------
+ drivers/staging/lustre/lustre/lov/lov_pack.c       |  172 ----
+ drivers/staging/lustre/lustre/lov/lov_request.c    |  784 -----------------
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |  157 +---
+ drivers/staging/lustre/lustre/mgc/mgc_request.c    |  101 +--
+ drivers/staging/lustre/lustre/obdclass/Makefile    |    4 +-
+ drivers/staging/lustre/lustre/obdclass/debug.c     |    1 -
+ drivers/staging/lustre/lustre/obdclass/genops.c    |    1 -
+ .../staging/lustre/lustre/obdclass/llog_ioctl.c    |  418 ---------
+ drivers/staging/lustre/lustre/obdclass/llog_obd.c  |   25 -
+ .../staging/lustre/lustre/obdclass/local_storage.c |  894 --------------------
+ .../staging/lustre/lustre/obdclass/local_storage.h |   91 --
+ .../lustre/lustre/obdclass/lprocfs_status.c        |   20 -
+ .../staging/lustre/lustre/osc/osc_cl_internal.h    |    1 -
+ drivers/staging/lustre/lustre/osc/osc_quota.c      |    2 +-
+ drivers/staging/lustre/lustre/osc/osc_request.c    |  401 +--------
+ drivers/staging/lustre/lustre/ptlrpc/recover.c     |    1 -
+ drivers/staging/lustre/lustre/ptlrpc/sec_config.c  |  327 -------
+ 26 files changed, 82 insertions(+), 4361 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/include/obd_ost.h
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/llog_ioctl.c
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/local_storage.c
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/local_storage.h
 
-	-hpa
-
+-- 
+1.7.9.5
 
