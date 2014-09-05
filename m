@@ -1,161 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaIEGfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:35:07 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:34464 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaIEGfE (ORCPT
+	id S1752653AbaIEGhg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:37:36 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:60827 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaIEGhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:35:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <041101cfc793$d5cdd4b0$81697e10$@samsung.com>
-References: <1408749185-14133-1-git-send-email-javier.martinez@collabora.co.uk>
-	<041101cfc793$d5cdd4b0$81697e10$@samsung.com>
-Date: Fri, 5 Sep 2014 12:05:03 +0530
-Message-ID: <CAEC9eQNy=3LwwyAEJOSt1vFkZACzx9CAzAbsrpS2q4RfW3JiUw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ARM: exynos_defconfig: Enable options for display
- panel support
-From: Ajay kumar <ajaynumb@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>, InKi Dae <inki.dae@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>,
-        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
-        Ajay Kumar <ajaykumar.rs@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Sep 2014 02:37:34 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
+        tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, hare@suse.com,
+        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
+        joseph.salisbury@canonical.com, bpoirier@suse.de, santosh@chelsio.com,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [RFC v2 0/6] driver-core: add asynch probe support
+Date: Thu,  4 Sep 2014 23:37:21 -0700
+Message-Id: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-On Wed, Sep 3, 2014 at 9:56 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Javier Martinez Canillas wrote:
->>
->> Many Exynos devices have a display panel, most of them just have
->> a simple panel while others have more complex configurations that
->> requires an embedded DisplayPort (eDP) to LVDS display bridge.
->>
->> This patch enables the following features to support both setups:
->>
->> - Direct Rendering Manager (DRM)
->> - DRM bridge registration and lookup framework
->> - Parade ps8622/ps8625 eDP/LVDS bridge
->> - NXP ptn3460 eDP/LVDS bridge
->> - Exynos Fully Interactive Mobile Display controller (FIMD)
->> - Panel registration and lookup framework
->> - Simple panels
->> - Backlight and LCD device support
->>
-> Thanks a lot.
->
->
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> ---
->>
->> Some of the options enabled here (e.g: the eDP/LVDS bridges)
->> are still not merged in mainline so this patch depends on
->> the following posted patches that were still not merged:
->>
->> "drm/bridge: Modify drm_bridge core to support driver model" [0]
->> "drm/bridge: Add i2c based driver for ptn3460 bridge" [1]
->> "drm/bridge: Add i2c based driver for ps8622/ps8625 bridge" [2]
->>
-> BTW, I can't find its re-spin...how was going on?
-I already sent this a week back.Find it here:
-http://www.spinics.net/lists/dri-devel/msg66740.html
+Here's a complete reimplementation of asynch loading support, it
+discards completely the hippie / pipe dream idea that we need asynch
+loading of modules / subsystems in general and just addresses running
+probe asynchronously. This respin is based on Tejun's recommendation
+on how to treat the probe asynchronously, we avoid async_schedule()
+completely and just peg a struct work_struct on the driver private
+structure. This obviously also means we have to flush_work() before
+the driver's own remove() is called, we do that too.
 
-Inki Dae,
-In this patchset, patch "[PATCH V7 5/12] drm/exynos: dp: support drm_bridge"
-introduces following Kconfig error:
-drivers/video/fbdev/Kconfig:5:error: recursive dependency detected!
-drivers/video/fbdev/Kconfig:5: symbol FB is selected by DRM_KMS_FB_HELPER
-drivers/gpu/drm/Kconfig:39: symbol DRM_KMS_FB_HELPER depends on DRM_KMS_HELPER
-drivers/gpu/drm/Kconfig:33: symbol DRM_KMS_HELPER is selected by DRM_BRIDGE
-drivers/gpu/drm/bridge/Kconfig:1: symbol DRM_BRIDGE is selected by DRM_EXYNOS_DP
-drivers/gpu/drm/exynos/Kconfig:53: symbol DRM_EXYNOS_DP depends on
-DRM_EXYNOS_FIMD
-drivers/gpu/drm/exynos/Kconfig:28: symbol DRM_EXYNOS_FIMD depends on FB_S3C
-drivers/video/fbdev/Kconfig:2038: symbol FB_S3C depends on FB
+Tejun's concerns on this regressing some driver's scripts which expect
+the device to be available after loading remains valid, and the only
+thing we can do to help there is to annotate the expecations on the
+use of this "feature" to driver users. Scripts should be not be relying
+on the driver init anyway so that type of usage should be phased out
+and they should be hunting in udev for things popping up.
 
-How to fix this?
-Can we remove dependency between FB_S3C and DRM_EXYNOS_FIMD?
+I'm a bit concerned about this actually regressing load time on
+drivers that use this though instead of just having the module
+probe run off of finit_module() though. Even with a kthread alternative
+at least Santosh (Cc'd) has noted a regression in terms of time it
+takes to complete probe on cxgb4. I'll eventually get your exact
+numbers, but for now its an obvious regression *with* kthreads,
+this solution goes with:
 
->> But I wanted to post anyways to make easier for others to
->> figure out what are the needed options to have the display
->> working on their Exynos machines.
->>
->> In order to test the display panel on the Peach machines,
->> the following patches are also needed:
->>
->> "ARM: dts: Add DT changes for display on peach_pit" [3]
->> "ARM: dts: Add DT changes for display on peach_pi" [4]
->>
-> I'll have a look them soon.
-The above ones are older versions. Latest ones are here:
-1) http://www.spinics.net/lists/linux-samsung-soc/msg35344.html
-2) http://www.spinics.net/lists/arm-kernel/msg358324.html
-3) http://www.spinics.net/lists/arm-kernel/msg358325.html
+queue_work(system_unbound_wq, async_probe_work)
 
-Among the above, patch (1) can be merged because corresponding
-driver changes are already merged!
+This is surely going to make things even worse... We could
+use system_highpri_wq, or change the scheduling priority, but
+for that I'd prefer to get feedback and someone to decide what
+the right choice (TM) should be.
 
-Ajay
+It is very important to highlight that async probe was added here
+in light of issues found on *two* domains now that creeped up in
+parallel:
 
-> - Kukjin
->
->> Best regards,
->> Javier
->>
->> [0]: http://patchwork.ozlabs.org/patch/373792/
->> [1]: http://patchwork.ozlabs.org/patch/373793/
->> [2]: http://patchwork.ozlabs.org/patch/373794/
->> [3]: http://www.spinics.net/lists/arm-kernel/msg350568.html
->> [4]: http://www.spinics.net/lists/arm-kernel/msg350569.html
->>
->>  arch/arm/configs/exynos_defconfig | 14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
->>
->> diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
->> index 676c744..f69d57e 100644
->> --- a/arch/arm/configs/exynos_defconfig
->> +++ b/arch/arm/configs/exynos_defconfig
->> @@ -101,11 +101,25 @@ CONFIG_REGULATOR_S2MPA01=y
->>  CONFIG_REGULATOR_S2MPS11=y
->>  CONFIG_REGULATOR_S5M8767=y
->>  CONFIG_REGULATOR_TPS65090=y
->> +CONFIG_DRM=y
->> +CONFIG_DRM_BRIDGE=y
->> +CONFIG_DRM_PS8622=y
->> +CONFIG_DRM_EXYNOS=y
->> +CONFIG_DRM_EXYNOS_FIMD=y
->> +CONFIG_DRM_EXYNOS_DP=y
->> +CONFIG_DRM_PANEL=y
->> +CONFIG_DRM_PANEL_SIMPLE=y
->>  CONFIG_FB=y
->>  CONFIG_FB_MODE_HELPERS=y
->>  CONFIG_FB_SIMPLE=y
->>  CONFIG_EXYNOS_VIDEO=y
->>  CONFIG_EXYNOS_MIPI_DSI=y
->> +CONFIG_BACKLIGHT_LCD_SUPPORT=y
->> +CONFIG_LCD_CLASS_DEVICE=y
->> +CONFIG_LCD_PLATFORM=y
->> +CONFIG_BACKLIGHT_CLASS_DEVICE=y
->> +CONFIG_BACKLIGHT_GENERIC=y
->> +CONFIG_BACKLIGHT_PWM=y
->>  CONFIG_FRAMEBUFFER_CONSOLE=y
->>  CONFIG_FONTS=y
->>  CONFIG_FONT_7x14=y
->> --
->> 2.0.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+0) some built-in drivers delaying init
+1) systemd 30 second timeout
+
+I have been exchanging some e-mails with Tetsuo about his
+original proposed work around that started this work when the
+systemd 30 second timeout issue creeped up first, this series
+includes a slightly modified version of that work around
+which should address the sigkill even without 786235ee merged.
+There may be others -- and that needs to be witch hunted.
+It would also now safely allow us to find drivers that run
+over the limit without killing systems / modules. I think that's
+probably the best thing to do for now -- as we sweep through and
+find these, we could eventually nuke the WARN_ONCE() and completely
+listen to the kill. For now its just causing more problems than
+solving anything, but its a good reflection of balance of desires
+and design between userspace / kernelspace.
+
+Luis R. Rodriguez (6):
+  driver-core: generalize freeing driver private member
+  driver-core: add driver async_probe support
+  kthread: warn on kill signal if not OOM
+  cxgb4: use async probe
+  mptsas: use async probe
+  pata_marvell: use async probe
+
+ drivers/ata/pata_marvell.c                      |  1 +
+ drivers/base/base.h                             |  6 +++
+ drivers/base/bus.c                              | 72 ++++++++++++++++++++++---
+ drivers/base/dd.c                               |  4 ++
+ drivers/message/fusion/mptsas.c                 |  1 +
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |  1 +
+ include/linux/device.h                          |  5 ++
+ kernel/kmod.c                                   | 21 +++++++-
+ kernel/kthread.c                                | 19 +++++++
+ 9 files changed, 122 insertions(+), 8 deletions(-)
+
+-- 
+2.0.3
+
