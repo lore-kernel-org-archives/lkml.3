@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaIEBma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 21:42:30 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:58688 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaIEBm2 (ORCPT
+	id S1753076AbaIEBrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 21:47:21 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49906 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaIEBrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 21:42:28 -0400
+	Thu, 4 Sep 2014 21:47:19 -0400
+X-Original-SENDERIP: 10.177.222.131
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 5 Sep 2014 10:48:09 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Gioh Kim <gioh.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>, jack@suse.cz,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        paulmck@linux.vnet.ibm.com, peterz@infradead.org,
+        adilger.kernel@dilger.ca, minchan@kernel.org, gunho.lee@lge.com
+Subject: Re: [PATCHv4 0/3] new APIs to allocate buffer-cache with user
+ specific flag
+Message-ID: <20140905014808.GA26070@js1304-P5Q-DELUXE>
+References: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
+ <20140904151612.7bf5b813069ff78973e01571@linux-foundation.org>
+ <540905B1.1050200@lge.com>
+ <20140905011419.GE4364@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20140905011804.GC30520@kernel.org>
-References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
- <20140904141845.GD2997@kernel.org> <87a96f9bci.fsf@sejong.aot.lge.com> <20140905011804.GC30520@kernel.org>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 5 Sep 2014 10:42:07 +0900
-X-Google-Sender-Auth: FtRs5lV--ny2FDgfiQEVm3MYt9A
-Message-ID: <CAM9d7ch9JscoJjrSRYpO3i7WzPtD2qDnJnwyEYHHLGdypDqW=Q@mail.gmail.com>
-Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905011419.GE4364@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 10:18 AM, Arnaldo Carvalho de Melo
-<acme@kernel.org> wrote:
-> Em Fri, Sep 05, 2014 at 09:09:49AM +0900, Namhyung Kim escreveu:
->> The perf report rebuilds machine states from the event records only.  In
->> this case, the kernel map was recorded in the name of [kernel.kallsyms]
->> so it couldn't find the build-id from the table.
->
-> Ok, but then we can special case this one, no?
->
-> Somehow mark in the buildid table that that entry is the one for the
-> kernel and hook it up to the synthesized event that has the
-> [kernel.kallsyms].ref_reloc_sym entry.
+On Thu, Sep 04, 2014 at 09:14:19PM -0400, Theodore Ts'o wrote:
+> On Fri, Sep 05, 2014 at 09:37:05AM +0900, Gioh Kim wrote:
+> > >But what were the problems which were observed in standard kernels and
+> > >what effect did this patchset have upon them?  Some quantitative
+> > >measurements will really help here.
+> > 
+> > The problem is that I cannot allocate entire CMA memory.
+> > >
+> > Actually the problem is not found without Joonsoo's patch:
+> > https://lkml.org/lkml/2014/5/28/64.  Without it CMA memory is free
+> > and every CMA-memory allocation is successed.
+> > 
+> > If the Joonsoo's patch is applied, the CMA memory is allocated
+> > generally when system boots-up.
+> 
+> As I said earlier, I'm happy to carry this patch in the ext4 tree,
+> because as it turns out I could use this facility for another purpose
+> (to cause a few buffer cache allocations to happen with __GFP_NOFAIL).
+> 
+> I do have one question; I note that Joonsoo's patch dates back to May,
+> and yet this has not hit the mainline kernel, and I haven't seen any
+> discussions about this patch after May.  Has there been some pushback
+> from the mm maintainers about Joonsoo's approach with respect to this
+> patch?   What is the current status of that patch set?
 
-Maybe we can search vmlinux in machine->kernel_dsos first when
-processing kernel mmap event.  And in this case do you want replace
-the name of mapping to a fullname of vmlinux?
+Hello,
 
-Thanks,
-Namhyung
+That patchset is postponed, but will be continued. The reason is that
+another bugs turn up frequently if that patchset is applied. I will
+fix this bug first and will re-submit that patchset. Following is
+the attempt to fix this bug.
+
+https://lkml.org/lkml/2014/8/26/147
+
+Thanks.
