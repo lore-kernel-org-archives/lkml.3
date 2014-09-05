@@ -1,199 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856AbaIDX62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 19:58:28 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34926 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaIDX61 (ORCPT
+	id S1755408AbaIEAJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:09:57 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:32779 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478AbaIEAJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 19:58:27 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 5 Sep 2014 08:59:53 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Heesub Shin <heesub.shin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>, Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>
-Subject: Re: [RFC 3/3] zram: add swap_get_free hint
-Message-ID: <20140904235952.GA32561@bbox>
-References: <1409794786-10951-1-git-send-email-minchan@kernel.org>
- <1409794786-10951-4-git-send-email-minchan@kernel.org>
- <54080606.3050106@samsung.com>
+	Thu, 4 Sep 2014 20:09:56 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
+References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
+	<20140904141845.GD2997@kernel.org>
+Date: Fri, 05 Sep 2014 09:09:49 +0900
+In-Reply-To: <20140904141845.GD2997@kernel.org> (Arnaldo Carvalho de Melo's
+	message of "Thu, 4 Sep 2014 11:18:45 -0300")
+Message-ID: <87a96f9bci.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <54080606.3050106@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heesub,
+Hi Arnaldo,
 
-On Thu, Sep 04, 2014 at 03:26:14PM +0900, Heesub Shin wrote:
-> Hello Minchan,
-> 
-> First of all, I agree with the overall purpose of your patch set.
+On Thu, 4 Sep 2014 11:18:45 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Aug 26, 2014 at 03:38:39PM +0900, Namhyung Kim escreveu:
+>> There's a problem on finding correct kernel symbols when perf report
+>> runs on a different kernel.  Although a part of the problem was solved
+>> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+>> version when finding vmlinux"), there's a remaining problem still.
+>> 
+>> When perf records samples, it synthesizes the kernel map using
+>> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+>> You can easily see it using 'perf report -D' command.
+>> 
+>> After finishing record, it goes through the recorded events to find
+>> maps/dsos actually used.  And then record build-id info of them.
+>> 
+>> During this process, it needs to load symbols in a dso and it'd call
+>> dso__load_vmlinux() since the default value of the symbol_conf.try_
+>> vmlinux_path is true.  However it changes dso->long_name to a real
+>> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
+>> if one is running on a custom kernel.
+>> 
+>> It resulted in that perf report reads the build-id of the vmlinux, but
+>> cannot use it since it only knows about the [kernel.kallsyms] map.  It
+>> then falls back to possible vmlinux paths by using the recorded kernel
+>> version (in case of a recent version) or a running kernel silently
+>> (which might break the result).  I think it's worth going to the
+>> stable tree.
+>> 
+>> I can think of a couple of ways to fix it.  In this patch, I changed
+>> to use the name of "[kernel.kallsyms]" for the kernel build-id event
+>> instead of not trying vmlinux paths.  This way we can provide maximum
+>> info (like annotation) with minimum change IMHO.
+>> 
+>> Before:
+>> 
+>>   $ perf record -a usleep 1
+>> 
+>>   $ perf buildid-list
+>>   00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
+>>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>> 
+>>   $ perf buildid-list -H
+>>   0000000000000000000000000000000000000000 [kernel.kallsyms]
+>>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
+>> 
+>> After:
+>> 
+>>   $ perf record -a usleep 1
+>> 
+>>   $ perf buildid-list
+>>   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
+>
+> We are losing information, namely the pathname for the kernel used, that
+> may be useful in analysis.
 
-Thank you.
-
-> 
-> On 09/04/2014 10:39 AM, Minchan Kim wrote:
-> >This patch implement SWAP_GET_FREE handler in zram so that VM can
-> >know how many zram has freeable space.
-> >VM can use it to stop anonymous reclaiming once zram is full.
-> >
-> >Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >---
-> >  drivers/block/zram/zram_drv.c | 18 ++++++++++++++++++
-> >  1 file changed, 18 insertions(+)
-> >
-> >diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >index 88661d62e46a..8e22b20aa2db 100644
-> >--- a/drivers/block/zram/zram_drv.c
-> >+++ b/drivers/block/zram/zram_drv.c
-> >@@ -951,6 +951,22 @@ static int zram_slot_free_notify(struct block_device *bdev,
-> >  	return 0;
-> >  }
-> >
-> >+static int zram_get_free_pages(struct block_device *bdev, long *free)
-> >+{
-> >+	struct zram *zram;
-> >+	struct zram_meta *meta;
-> >+
-> >+	zram = bdev->bd_disk->private_data;
-> >+	meta = zram->meta;
-> >+
-> >+	if (!zram->limit_pages)
-> >+		return 1;
-> >+
-> >+	*free = zram->limit_pages - zs_get_total_pages(meta->mem_pool);
-> 
-> Even if 'free' is zero here, there may be free spaces available to
-> store more compressed pages into the zs_pool. I mean calculation
-> above is not quite accurate and wastes memory, but have no better
-> idea for now.
-
-Yeb, good point.
-
-Actually, I thought about that but in this patchset, I wanted to
-go with conservative approach which is a safe guard to prevent
-system hang which is terrible than early OOM kill.
-
-Whole point of this patchset is to add a facility to VM and VM
-collaborates with zram via the interface to avoid worst case
-(ie, system hang) and logic to throttle could be enhanced by
-several approaches in future but I agree my logic was too simple
-and conservative.
-
-We could improve it with [anti|de]fragmentation in future but
-at the moment, below simple heuristic is not too bad for first
-step. :)
+Right.  That's a problem.
 
 
----
- drivers/block/zram/zram_drv.c | 15 ++++++++++-----
- drivers/block/zram/zram_drv.h |  1 +
- 2 files changed, 11 insertions(+), 5 deletions(-)
+>
+> Why not make sure that if there is a build-id in the perf.data header,
+> then we completely refusing anything that doesn't match the build-id?
+> I.e. the name is irrelevant for this purpose, the contents, as keyed by
+> the build-id, is what matters.
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 8e22b20aa2db..af9dfe6a7d2b 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -410,6 +410,7 @@ static bool zram_free_page(struct zram *zram, size_t index)
- 	atomic64_sub(zram_get_obj_size(meta, index),
- 			&zram->stats.compr_data_size);
- 	atomic64_dec(&zram->stats.pages_stored);
-+	atomic_set(&zram->alloc_fail, 0);
- 
- 	meta->table[index].handle = 0;
- 	zram_set_obj_size(meta, index, 0);
-@@ -600,10 +601,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	alloced_pages = zs_get_total_pages(meta->mem_pool);
- 	if (zram->limit_pages && alloced_pages > zram->limit_pages) {
- 		zs_free(meta->mem_pool, handle);
-+		atomic_inc(&zram->alloc_fail);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
- 
-+	atomic_set(&zram->alloc_fail, 0);
- 	update_used_max(zram, alloced_pages);
- 
- 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
-@@ -951,6 +954,7 @@ static int zram_slot_free_notify(struct block_device *bdev,
- 	return 0;
- }
- 
-+#define FULL_THRESH_HOLD 32
- static int zram_get_free_pages(struct block_device *bdev, long *free)
- {
- 	struct zram *zram;
-@@ -959,12 +963,13 @@ static int zram_get_free_pages(struct block_device *bdev, long *free)
- 	zram = bdev->bd_disk->private_data;
- 	meta = zram->meta;
- 
--	if (!zram->limit_pages)
--		return 1;
--
--	*free = zram->limit_pages - zs_get_total_pages(meta->mem_pool);
-+	if (zram->limit_pages &&
-+		(atomic_read(&zram->alloc_fail) > FULL_THRESH_HOLD)) {
-+		*free = 0;
-+		return 0;
-+	}
- 
--	return 0;
-+	return 1;
- }
- 
- static int zram_swap_hint(struct block_device *bdev,
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index 779d03fa4360..182a2544751b 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -115,6 +115,7 @@ struct zram {
- 	u64 disksize;	/* bytes */
- 	int max_comp_streams;
- 	struct zram_stats stats;
-+	atomic_t alloc_fail;
- 	/*
- 	 * the number of pages zram can consume for storing compressed data
- 	 */
--- 
-2.0.0
+The perf report rebuilds machine states from the event records only.  In
+this case, the kernel map was recorded in the name of [kernel.kallsyms]
+so it couldn't find the build-id from the table.
 
-> 
-> heesub
-> 
-> >+
-> >+	return 0;
-> >+}
-> >+
-> >  static int zram_swap_hint(struct block_device *bdev,
-> >  				unsigned int hint, void *arg)
-> >  {
-> >@@ -958,6 +974,8 @@ static int zram_swap_hint(struct block_device *bdev,
-> >
-> >  	if (hint == SWAP_SLOT_FREE)
-> >  		ret = zram_slot_free_notify(bdev, (unsigned long)arg);
-> >+	else if (hint == SWAP_GET_FREE)
-> >+		ret = zram_get_free_pages(bdev, arg);
-> >
-> >  	return ret;
-> >  }
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thanks,
+Namhyung
 
--- 
-Kind regards,
-Minchan Kim
+
+>
+> - Arnaldo
+>
+>>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>> 
+>>   $ perf buildid-list -H
+>>   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
+>>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
+>>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
+>>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
+>>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
+>> 
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/perf/util/header.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>> 
+>> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+>> index 158c787ce0c4..5c4093dee467 100644
+>> --- a/tools/perf/util/header.c
+>> +++ b/tools/perf/util/header.c
+>> @@ -263,6 +263,9 @@ static int __dsos__write_buildid_table(struct list_head *head,
+>>  			machine__mmap_name(machine, nm, sizeof(nm));
+>>  			name = nm;
+>>  			name_len = strlen(nm) + 1;
+>> +		} else if (dso__is_vmlinux(pos)) {
+>> +			name = pos->name;
+>> +			name_len = strlen(pos->name) + 1;
+>>  		} else {
+>>  			name = pos->long_name;
+>>  			name_len = pos->long_name_len + 1;
+>> -- 
+>> 2.0.0
