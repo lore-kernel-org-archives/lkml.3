@@ -1,349 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599AbaIEPPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:15:17 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:34064 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaIEPPO (ORCPT
+	id S932632AbaIEPQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:16:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54153 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932211AbaIEPQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:15:14 -0400
-Date: Fri, 5 Sep 2014 11:04:53 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2014-09-05
-Message-ID: <20140905150453.GB3454@tuxdriver.com>
+	Fri, 5 Sep 2014 11:16:48 -0400
+Date: Fri, 5 Sep 2014 17:16:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yan Zheng <zheng.z.yan@intel.com>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
+Message-ID: <20140905151640.GN19379@twins.programming.kicks-ass.net>
+References: <20140901181808.GA6427@leverpostej>
+ <20140901190534.GC5806@worktop.ger.corp.intel.com>
+ <20140902185807.GA7434@leverpostej>
+ <20140903115013.GA3127@leverpostej>
+ <20140904104402.GS4783@worktop.ger.corp.intel.com>
+ <20140904110740.GB32228@leverpostej>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140904110740.GB32228@leverpostej>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 04, 2014 at 12:07:40PM +0100, Mark Rutland wrote:
+> Thanks for taking a look. If you have any ideas I'm happy to try another
+> approach.
 
---jRHKVT23PllUwdXP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Dave,
-
-Please pull this batch of fixes intended for the 3.17 stream...
-
-For the mac80211 bits, Johannes says:
-
-"Here are a few fixes for mac80211. One has been discussed for a while
-and adds a terminating NUL-byte to the alpha2 sent to userspace, which
-shouldn't be necessary but since many places treat it as a string we
-couldn't move to just sending two bytes.
-
-In addition to that, we have two VLAN fixes from Felix, a mesh fix, a
-fix for the recently introduced RX aggregation offload, a revert for
-a broken patch (that luckily didn't really cause any harm) and a small
-fix for alignment in debugfs."
-
-For the iwlwifi bits, Emmanuel says:
-
-"I revert a patch that disabled CTS to self in dvm because users
-reported issues. The revert is CCed to stable since the offending
-patch was sent to stable too. I also bump the firmware API versions
-since a new firmware is coming up. On top of that, Marcel fixes a
-bug I introduced while fixing a bug in our Kconfig file."
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
+How horrible is the below patch (performance wise). It does pretty much
+the same thing except that percpu_rw_semaphore is a lot saner, its
+read side performance should be minimal in the absence of writes.
 
 ---
-
-The following changes since commit c66517165610b911e4c6d268f28d8c640832dbd1:
-
-  rtlwifi: rtl8192cu: Add new ID (2014-08-25 15:39:23 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git tags/=
-master-2014-09-04
-
-for you to fetch changes up to 1bd3fa7b8c9b2936c16c6e6452f9cc991c405872:
-
-  Merge branch 'for-john' of git://git.kernel.org/pub/scm/linux/kernel/git/=
-iwlwifi/iwlwifi-fixes (2014-09-04 13:12:02 -0400)
-
-----------------------------------------------------------------
-
-Bob Copeland (1):
-      mac80211: mesh_plink: handle confirm frames with new plid
-
-Denton Gentry (1):
-      mac80211: fix start_seq_num in Rx reorder offload
-
-Eliad Peller (1):
-      regulatory: add NUL to alpha2
-
-Emmanuel Grumbach (2):
-      Revert "iwlwifi: dvm: don't enable CTS to self"
-      iwlwifi: bump firmware API version to 10 for 7000 and 8000
-
-Felix Fietkau (2):
-      mac80211: ignore AP_VLAN in ieee80211_recalc_chanctx_chantype
-      mac80211: fix smps mode check for AP_VLAN
-
-Johannes Berg (2):
-      Revert "mac80211: disable uAPSD if all ACs are under ACM"
-      mac80211: fix agg_status debugfs file alignment
-
-John W. Linville (2):
-      Merge tag 'mac80211-for-john-2014-08-29' of git://git.kernel.org/.../=
-jberg/mac80211
-      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-f=
-ixes
-
-Marcel Holtmann (1):
-      iwlwifi: Remove module build requirement for Intel Wireless WiFi
-
- drivers/net/wireless/iwlwifi/Kconfig    |  2 --
- drivers/net/wireless/iwlwifi/dvm/rxon.c | 12 ++++++++++++
- drivers/net/wireless/iwlwifi/iwl-7000.c |  4 ++--
- drivers/net/wireless/iwlwifi/iwl-8000.c |  2 +-
- include/net/regulatory.h                |  2 +-
- net/mac80211/chan.c                     |  2 ++
- net/mac80211/debugfs_sta.c              |  2 +-
- net/mac80211/iface.c                    |  4 ++--
- net/mac80211/mesh_plink.c               |  7 ++++++-
- net/mac80211/mlme.c                     |  3 +--
- net/mac80211/sta_info.c                 |  7 +++++--
- 11 files changed, 33 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/Kconfig b/drivers/net/wireless/iw=
-lwifi/Kconfig
-index 6451d2b6abcf..824f5e287783 100644
---- a/drivers/net/wireless/iwlwifi/Kconfig
-+++ b/drivers/net/wireless/iwlwifi/Kconfig
-@@ -51,7 +51,6 @@ config IWLWIFI_LEDS
-=20
- config IWLDVM
- 	tristate "Intel Wireless WiFi DVM Firmware support"
--	depends on m
- 	default IWLWIFI
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1573,6 +1573,7 @@ config PERF_EVENTS
+ 	depends on HAVE_PERF_EVENTS
+ 	select ANON_INODES
+ 	select IRQ_WORK
++	select PERCPU_RWSEM
  	help
- 	  This is the driver that supports the DVM firmware which is
-@@ -60,7 +59,6 @@ config IWLDVM
-=20
- config IWLMVM
- 	tristate "Intel Wireless WiFi MVM Firmware support"
--	depends on m
- 	help
- 	  This is the driver that supports the MVM firmware which is
- 	  currently only available for 7260 and 3160 devices.
-diff --git a/drivers/net/wireless/iwlwifi/dvm/rxon.c b/drivers/net/wireless=
-/iwlwifi/dvm/rxon.c
-index 6dc5dd3ced44..ed50de6362ed 100644
---- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-@@ -1068,6 +1068,13 @@ int iwlagn_commit_rxon(struct iwl_priv *priv, struct=
- iwl_rxon_context *ctx)
- 	/* recalculate basic rates */
- 	iwl_calc_basic_rates(priv, ctx);
-=20
-+	/*
-+	 * force CTS-to-self frames protection if RTS-CTS is not preferred
-+	 * one aggregation protection method
-+	 */
-+	if (!priv->hw_params.use_rts_for_aggregation)
-+		ctx->staging.flags |=3D RXON_FLG_SELF_CTS_EN;
-+
- 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
- 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
- 		ctx->staging.flags |=3D RXON_FLG_SHORT_SLOT_MSK;
-@@ -1473,6 +1480,11 @@ void iwlagn_bss_info_changed(struct ieee80211_hw *hw,
- 	else
- 		ctx->staging.flags &=3D ~RXON_FLG_TGG_PROTECT_MSK;
-=20
-+	if (bss_conf->use_cts_prot)
-+		ctx->staging.flags |=3D RXON_FLG_SELF_CTS_EN;
-+	else
-+		ctx->staging.flags &=3D ~RXON_FLG_SELF_CTS_EN;
-+
- 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
-=20
- 	if (vif->type =3D=3D NL80211_IFTYPE_AP ||
-diff --git a/drivers/net/wireless/iwlwifi/iwl-7000.c b/drivers/net/wireless=
-/iwlwifi/iwl-7000.c
-index 48730064da73..d67a37a786aa 100644
---- a/drivers/net/wireless/iwlwifi/iwl-7000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-7000.c
-@@ -67,8 +67,8 @@
- #include "iwl-agn-hw.h"
-=20
- /* Highest firmware API version supported */
--#define IWL7260_UCODE_API_MAX	9
--#define IWL3160_UCODE_API_MAX	9
-+#define IWL7260_UCODE_API_MAX	10
-+#define IWL3160_UCODE_API_MAX	10
-=20
- /* Oldest version we won't warn about */
- #define IWL7260_UCODE_API_OK	9
-diff --git a/drivers/net/wireless/iwlwifi/iwl-8000.c b/drivers/net/wireless=
-/iwlwifi/iwl-8000.c
-index 44b19e015102..e93c6972290b 100644
---- a/drivers/net/wireless/iwlwifi/iwl-8000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-8000.c
-@@ -67,7 +67,7 @@
- #include "iwl-agn-hw.h"
-=20
- /* Highest firmware API version supported */
--#define IWL8000_UCODE_API_MAX	9
-+#define IWL8000_UCODE_API_MAX	10
-=20
- /* Oldest version we won't warn about */
- #define IWL8000_UCODE_API_OK	8
-diff --git a/include/net/regulatory.h b/include/net/regulatory.h
-index 259992444e80..dad7ab20a8cb 100644
---- a/include/net/regulatory.h
-+++ b/include/net/regulatory.h
-@@ -167,7 +167,7 @@ struct ieee80211_reg_rule {
- struct ieee80211_regdomain {
- 	struct rcu_head rcu_head;
- 	u32 n_reg_rules;
--	char alpha2[2];
-+	char alpha2[3];
- 	enum nl80211_dfs_regions dfs_region;
- 	struct ieee80211_reg_rule reg_rules[];
- };
-diff --git a/net/mac80211/chan.c b/net/mac80211/chan.c
-index 0375009ddc0d..399ad82c997f 100644
---- a/net/mac80211/chan.c
-+++ b/net/mac80211/chan.c
-@@ -541,6 +541,8 @@ static void ieee80211_recalc_chanctx_chantype(struct ie=
-ee80211_local *local,
- 			continue;
- 		if (rcu_access_pointer(sdata->vif.chanctx_conf) !=3D conf)
- 			continue;
-+		if (sdata->vif.type =3D=3D NL80211_IFTYPE_AP_VLAN)
-+			continue;
-=20
- 		if (!compat)
- 			compat =3D &sdata->vif.bss_conf.chandef;
-diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
-index 3db96648b45a..86173c0de40e 100644
---- a/net/mac80211/debugfs_sta.c
-+++ b/net/mac80211/debugfs_sta.c
-@@ -167,7 +167,7 @@ static ssize_t sta_agg_status_read(struct file *file, c=
-har __user *userbuf,
- 	p +=3D scnprintf(p, sizeof(buf) + buf - p, "next dialog_token: %#02x\n",
- 			sta->ampdu_mlme.dialog_token_allocator + 1);
- 	p +=3D scnprintf(p, sizeof(buf) + buf - p,
--		       "TID\t\tRX active\tDTKN\tSSN\t\tTX\tDTKN\tpending\n");
-+		       "TID\t\tRX\tDTKN\tSSN\t\tTX\tDTKN\tpending\n");
-=20
- 	for (i =3D 0; i < IEEE80211_NUM_TIDS; i++) {
- 		tid_rx =3D rcu_dereference(sta->ampdu_mlme.tid_rx[i]);
-diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
-index 01eede7406a5..f75e5f132c5a 100644
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1175,8 +1175,8 @@ static void ieee80211_iface_work(struct work_struct *=
-work)
- 			if (sta) {
- 				u16 last_seq;
-=20
--				last_seq =3D le16_to_cpu(
--					sta->last_seq_ctrl[rx_agg->tid]);
-+				last_seq =3D IEEE80211_SEQ_TO_SN(le16_to_cpu(
-+					sta->last_seq_ctrl[rx_agg->tid]));
-=20
- 				__ieee80211_start_rx_ba_session(sta,
- 						0, 0,
-diff --git a/net/mac80211/mesh_plink.c b/net/mac80211/mesh_plink.c
-index 63b874101b27..c47194d27149 100644
---- a/net/mac80211/mesh_plink.c
-+++ b/net/mac80211/mesh_plink.c
-@@ -959,7 +959,8 @@ mesh_plink_get_event(struct ieee80211_sub_if_data *sdat=
-a,
- 		if (!matches_local)
- 			event =3D CNF_RJCT;
- 		if (!mesh_plink_free_count(sdata) ||
--		    (sta->llid !=3D llid || sta->plid !=3D plid))
-+		    sta->llid !=3D llid ||
-+		    (sta->plid && sta->plid !=3D plid))
- 			event =3D CNF_IGNR;
- 		else
- 			event =3D CNF_ACPT;
-@@ -1080,6 +1081,10 @@ mesh_process_plink_frame(struct ieee80211_sub_if_dat=
-a *sdata,
- 		goto unlock_rcu;
+ 	  Enable kernel support for various performance events provided
+ 	  by software and hardware.
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -42,6 +42,7 @@
+ #include <linux/module.h>
+ #include <linux/mman.h>
+ #include <linux/compat.h>
++#include <linux/percpu-rwsem.h>
+ 
+ #include "internal.h"
+ 
+@@ -3418,12 +3419,14 @@ static void perf_remove_from_owner(struc
  	}
-=20
-+	/* 802.11-2012 13.3.7.2 - update plid on CNF if not set */
-+	if (!sta->plid && event =3D=3D CNF_ACPT)
-+		sta->plid =3D plid;
+ }
+ 
++static struct percpu_rw_semaphore perf_rwsem;
 +
- 	changed |=3D mesh_plink_fsm(sdata, sta, event);
-=20
- unlock_rcu:
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index 31a8afaf7332..b82a12a9f0f1 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -4376,8 +4376,7 @@ int ieee80211_mgd_assoc(struct ieee80211_sub_if_data =
-*sdata,
- 	rcu_read_unlock();
-=20
- 	if (bss->wmm_used && bss->uapsd_supported &&
--	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD) &&
--	    sdata->wmm_acm !=3D 0xff) {
-+	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD)) {
- 		assoc_data->uapsd =3D true;
- 		ifmgd->flags |=3D IEEE80211_STA_UAPSD_ENABLED;
- 	} else {
-diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
-index c6ee2139fbc5..441875f03750 100644
---- a/net/mac80211/sta_info.c
-+++ b/net/mac80211/sta_info.c
-@@ -1094,8 +1094,11 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info=
- *sta)
- 	unsigned long flags;
- 	struct ps_data *ps;
-=20
--	if (sdata->vif.type =3D=3D NL80211_IFTYPE_AP ||
--	    sdata->vif.type =3D=3D NL80211_IFTYPE_AP_VLAN)
-+	if (sdata->vif.type =3D=3D NL80211_IFTYPE_AP_VLAN)
-+		sdata =3D container_of(sdata->bss, struct ieee80211_sub_if_data,
-+				     u.ap);
+ /*
+  * Called when the last reference to the file is gone.
+  */
+ static void put_event(struct perf_event *event)
+ {
+-	struct perf_event_context *ctx = event->ctx;
++	struct perf_event_context *ctx;
+ 
+ 	if (!atomic_long_dec_and_test(&event->refcount))
+ 		return;
+@@ -3431,6 +3434,9 @@ static void put_event(struct perf_event
+ 	if (!is_kernel_event(event))
+ 		perf_remove_from_owner(event);
+ 
++	percpu_down_read(&perf_rwsem);
++	ctx = event->ctx;
 +
-+	if (sdata->vif.type =3D=3D NL80211_IFTYPE_AP)
- 		ps =3D &sdata->bss->ps;
- 	else if (ieee80211_vif_is_mesh(&sdata->vif))
- 		ps =3D &sdata->u.mesh.ps;
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---jRHKVT23PllUwdXP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUCdEVAAoJEJctW/TcYTgG8Q4P/iilQ3IwOQpW0QRqXdk4ZxPe
-lmHCc1XJHkR5KZSK5llsmf7Rr+kgpDCf9JHt9qIJCS+yD96l2p8LmTSbwGn87VI2
-uS399TrDnTyxdm9iQt3KVT98ZdvbCWzx09nENLYEShZ6c2bt8VOcFnmCqm2ZflXD
-hYhisDie5wvGKkYGZ1JgIYN0vBToEi0qAGgFUNgC/xhpBEWNiGS9PS2fRJx3L7td
-K+oX691/88fTq3DtFCvA0TfDmvFD4RjmYjlx+TQeRL4vFiDxziwWqAfqibMx1GC1
-ePtQAB3CY0Cp4SM0jA/HRuahmDuASpNA+AI3xTlpfXsr17wi8zEeiQMrVjplIUjI
-QUTEN80Fc3K5Xj0xx4nDx64BiZgBznZKdqrtSPp8SZhGuCf9pxC+S+F1jtoemQey
-XNNS4mUZYYdFPJi7RvPQ8pjkLNxi7WZ3YF0q/SoI4mseAqwFBp3L3lBKR71R/OV7
-kgGzkrj4vNSDvK+3009WNxwb1Axv7WqeYPyRh77uHTGuRNkPOcYw4fKGAqAZm2CY
-MV1U8OTKPCyr18fQxDxx2F0UAwaDWDLNHLt9v5HMC+jOvZqB0vTvexxwiEgU1Zoa
-dbX9jjFM1ue/HNMQlnFlQtXNtScrsolNs+KT+apEIMamw7ONzxYxmove0vY4QgV8
-KOwbzem3qmcefWWfwx1y
-=FTE9
------END PGP SIGNATURE-----
-
---jRHKVT23PllUwdXP--
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	/*
+ 	 * There are two ways this annotation is useful:
+@@ -3447,6 +3453,7 @@ static void put_event(struct perf_event
+ 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
+ 	perf_remove_from_context(event, true);
+ 	mutex_unlock(&ctx->mutex);
++	percpu_up_read(&perf_rwsem);
+ 
+ 	_free_event(event);
+ }
+@@ -7534,6 +7541,8 @@ void perf_pmu_migrate_context(struct pmu
+ 	struct perf_event *event, *tmp;
+ 	LIST_HEAD(events);
+ 
++	percpu_down_write(&perf_rwsem);
++
+ 	src_ctx = &per_cpu_ptr(pmu->pmu_cpu_context, src_cpu)->ctx;
+ 	dst_ctx = &per_cpu_ptr(pmu->pmu_cpu_context, dst_cpu)->ctx;
+ 
+@@ -7559,6 +7568,8 @@ void perf_pmu_migrate_context(struct pmu
+ 		get_ctx(dst_ctx);
+ 	}
+ 	mutex_unlock(&dst_ctx->mutex);
++
++	percpu_up_write(&perf_rwsem);
+ }
+ EXPORT_SYMBOL_GPL(perf_pmu_migrate_context);
+ 
+@@ -8198,6 +8209,7 @@ void __init perf_event_init(void)
+ 
+ 	idr_init(&pmu_idr);
+ 
++	percpu_init_rwsem(&perf_rwsem);
+ 	perf_event_init_all_cpus();
+ 	init_srcu_struct(&pmus_srcu);
+ 	perf_pmu_register(&perf_swevent, "software", PERF_TYPE_SOFTWARE);
