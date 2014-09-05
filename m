@@ -1,75 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaIESEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 14:04:10 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:49457 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaIESEI (ORCPT
+	id S1751545AbaIESKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 14:10:03 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49667 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaIESJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 14:04:08 -0400
-Date: Fri, 5 Sep 2014 14:04:03 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v1 1/6] arm: fiq: Replace default FIQ handler
-In-Reply-To: <54097C6B.7040805@linaro.org>
-Message-ID: <alpine.LFD.2.11.1409051348200.16533@knanqh.ubzr>
-References: <1409662853-29313-1-git-send-email-daniel.thompson@linaro.org> <1409846620-14542-1-git-send-email-daniel.thompson@linaro.org> <1409846620-14542-2-git-send-email-daniel.thompson@linaro.org> <alpine.LFD.2.11.1409041452500.16533@knanqh.ubzr>
- <54097C6B.7040805@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Fri, 5 Sep 2014 14:09:58 -0400
+Date: Fri, 5 Sep 2014 11:09:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Michael Cree <mcree@orcon.net.nz>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+Message-ID: <20140905180950.GU5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140712181328.GA8738@redhat.com>
+ <54079B70.4050200@hurleysoftware.com>
+ <1409785893.30640.118.camel@pasglop>
+ <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
+ <1409824374.4246.62.camel@pasglop>
+ <5408E458.3@zytor.com>
+ <54090AF4.7060406@hurleysoftware.com>
+ <54091B30.2090509@zytor.com>
+ <20140905081648.GB5281@omega>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905081648.GB5281@omega>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090518-1344-0000-0000-000003F987BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014, Daniel Thompson wrote:
-
-> On 04/09/14 19:57, Nicolas Pitre wrote:
-> > On Thu, 4 Sep 2014, Daniel Thompson wrote:
+On Fri, Sep 05, 2014 at 08:16:48PM +1200, Michael Cree wrote:
+> On Thu, Sep 04, 2014 at 07:08:48PM -0700, H. Peter Anvin wrote:
+> > On 09/04/2014 05:59 PM, Peter Hurley wrote:
+> > > I have no idea how prevalent the ev56 is compared to the ev5.
+> > > Still we're talking about a chip that came out in 1996.
 > > 
-> >> +@ svc_exit_via_fiq - similar to svc_exit but switches to FIQ mode before exit
-> >> +@
-> >> +@ This macro acts in a similar manner to svc_exit but switches to FIQ
-> >> +@ mode to restore the final part of the register state.
-> >> +@
-> >> +@ We cannot use the normal svc_exit procedure because that would
-> >> +@ clobber spsr_svc (FIQ could be delivered during the first few instructions
-> >> +@ of vector_swi meaning its contents have not been saved anywhere).
-> >> +@
-> > 
-> > Wouldn't it be better for this macro to live in entry-header.S alongside 
-> > the others?
+> > Ah yes, I stand corrected.  According to Wikipedia, the affected CPUs
+> > were all the 2106x CPUs (EV4, EV45, LCA4, LCA45) plus the 21164 with no
+> > suffix (EV5).  However, we're still talking about museum pieces here.
 > 
-> I'm not sure either way.
+> Yes, that is correct, EV56 is the first Alpha CPU to have the byte-word
+> extension (BWX) CPU instructions.
 > 
-> svc_exit_from_fiq isn't needed by entry-common.S and cannot be used by
-> entry-v7m.S because v7m has no FIQ. For that reason I decided to place
-> it alongside svc_entry in entry-armv.S rather than alongside svc_exit in
-> entry-header.S .
+> It would not worry me if the kernel decided to assume atomic aligned
+> scalar accesses for all arches, thus terminating support for Alphas
+> without BWX.
+> 
+> The X server, ever since the libpciaccess change, does not work on
+> Alphas without BWX.
+> 
+> Debian Alpha (pretty much up to date at Debian-Ports) is still compiled
+> for all Alphas, i.e., without BWX.  The last attempt to start compiling
+> Debian Alpha with BWX, about three years ago when Alpha was kicked out
+> to Debian-Ports resulted in a couple or so complaints so got nowhere.
+> It's frustrating supporting the lowest common demoninator as many of
+> the bugs specific to Alpha can be resolved by recompiling with the BWX.
+> The kernel no longer supporting Alphas without BWX might just be the
+> incentive we need to switch Debian Alpha to compiling with BWX.
 
-Here's a list of macros from entry-headers.S that I don't see being used 
-in entry-v7m.S: zero_fp, alignment_trap, store_user_sp_lr, 
-load_user_sp_lr, svc_exit, ct_user_exit, ct_user_enter.
+Very good, then I update my patch as follows.  Thoughts?
 
-Yet, entry-header.S contains macros such as v7m_exception_entry and 
-v7m_exception_slow_exit which are unlikely to ever be used in 
-entry-armv.S.
+							Thanx, Paul
 
-> I am happy to move it if you have a strong preference here. Please let
-> me know.
+------------------------------------------------------------------------
 
-I don't have a strong preference, but a preference nevertheless.
+documentation: Record limitations of bitfields and small variables
 
-It just looks odd that a file is already dedicated to gather all those 
-macros for similar purposes and this one is not there.  That makes 
-future code review/maintenance a bit annoying if similar things are not 
-kept in one place.
+This commit documents the fact that it is not safe to use bitfields as
+shared variables in synchronization algorithms.  It also documents that
+CPUs must provide one-byte and two-byte load and store instructions
+in order to be supported by the Linux kernel.  (Michael Cree
+has agreed to the resulting non-support of pre-EV56 Alpha CPUs:
+https://lkml.org/lkml/2014/9/5/143.
 
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Nicolas
+diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+index 87be0a8a78de..455df6b298f7 100644
+--- a/Documentation/memory-barriers.txt
++++ b/Documentation/memory-barriers.txt
+@@ -269,6 +269,30 @@ And there are a number of things that _must_ or _must_not_ be assumed:
+ 	STORE *(A + 4) = Y; STORE *A = X;
+ 	STORE {*A, *(A + 4) } = {X, Y};
+ 
++And there are anti-guarantees:
++
++ (*) These guarantees do not apply to bitfields, because compilers often
++     generate code to modify these using non-atomic read-modify-write
++     sequences.  Do not attempt to use bitfields to synchronize parallel
++     algorithms.
++
++ (*) Even in cases where bitfields are protected by locks, all fields
++     in a given bitfield must be protected by one lock.  If two fields
++     in a given bitfield are protected by different locks, the compiler's
++     non-atomic read-modify-write sequences can cause an update to one
++     field to corrupt the value of an adjacent field.
++
++ (*) These guarantees apply only to properly aligned and sized scalar
++     variables.  "Properly sized" currently means variables that are the
++     same size as "char", "short", "int" and "long".  "Properly aligned"
++     means the natural alignment, thus no constraints for "char",
++     two-byte alignment for "short", four-byte alignment for "int",
++     and either four-byte or eight-byte alignment for "long", on 32-bit
++     and 64-bit systems, respectively.  Note that this means that the
++     Linux kernel does not support pre-EV56 Alpha CPUs, because these
++     older CPUs do not provide one-byte and two-byte loads and stores.
++     Alpha EV56 and later Alpha CPUs are still supported.
++
+ 
+ =========================
+ WHAT ARE MEMORY BARRIERS?
+
