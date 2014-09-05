@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158AbaIEMDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:03:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41830 "EHLO mga01.intel.com"
+	id S932191AbaIEMEQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:04:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21225 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756856AbaIEMDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:03:53 -0400
+	id S932171AbaIEMEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 08:04:14 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="381881472"
+X-IronPort-AV: E=Sophos;i="5.04,472,1406617200"; 
+   d="scan'208";a="598475282"
 From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
 To: "Chen, Alvin" <alvin.chen@intel.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -24,46 +24,83 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Westerberg, Mika" <mika.westerberg@intel.com>,
         "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
         "atull@opensource.altera.com" <atull@opensource.altera.com>
-Subject: Re: [PATCH 2/3 v2] GPIO: gpio-dwapb: Support Debounce
-Thread-Topic: [PATCH 2/3 v2] GPIO: gpio-dwapb: Support Debounce
-Thread-Index: AQHPyNcp8n6awOMU40SWtvGXv+WZgZvyM52AgAAS5sCAABnogA==
-Date: Fri, 5 Sep 2014 12:03:41 +0000
-Message-ID: <1409918621.30155.90.camel@intel.com>
+Subject: Re: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Thread-Topic: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver
+ binding to MFD driver
+Thread-Index: AQHPyNc/kBMLSfD+Nk6gyOY6CiHQz5vyMzuAgAAX0oCAABToAA==
+Date: Fri, 5 Sep 2014 12:02:01 +0000
+Message-ID: <1409918522.30155.89.camel@intel.com>
 References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
-	 <1409928798-31895-3-git-send-email-alvin.chen@intel.com>
-	 <1409908999.30155.85.camel@intel.com>
-	 <4656BEB6164FC34F8171C6538F1A595B2E98298B@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E98298B@SHSMSX101.ccr.corp.intel.com>
+	 <1409928798-31895-2-git-send-email-alvin.chen@intel.com>
+	 <1409908917.30155.84.camel@intel.com>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9829DA@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E9829DA@SHSMSX101.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [10.237.72.168]
 Content-Type: text/plain; charset="utf-8"
-Content-ID: <9D13CE650961014F84335F080D1C19F3@intel.com>
+Content-ID: <4716A4D10706B54DB49DB39C9F341257@intel.com>
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s85C414Y017065
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s85C4PYh017073
 
-On Fri, 2014-09-05 at 09:35 +0000, Chen, Alvin wrote:
-> > Subject: Re: [PATCH 2/3 v2] GPIO: gpio-dwapb: Support Debounce
+On Fri, 2014-09-05 at 10:20 +0000, Chen, Alvin wrote:
+> > > -	port->bgc.gc.ngpio = ngpio;
+> > > -	port->bgc.gc.of_node = port_np;
+> > > +#ifdef CONFIG_OF_GPIO
 > > 
-> > On Fri, 2014-09-05 at 07:53 -0700, Weike Chen wrote:
-> > > This patch enables 'debounce' for the designware GPIO, and it is based
-> > > on Josef Ahmad's previous work.
-> > 
-> > Can we split dwapb_read/write introducing and changing from this patch to a
-> > separate one?
-> > 
-> Since the 'debounce' feature also needs read/write, if we splite this patch, then for 'debounce',
-> One patch use readl/writel, and another patch change to dwapb_read/write. It seems duplicate since
-> the previous patch use readl/writel and the fllowing one change it immediately.
-> Since this patch is small, could we just make them together? How do you think?
+> > Do we really need this #ifdef ?
+> > of_node will be NULL anyway, or I missed something?
+> Yes, otherwise, can't compile it. Please refer 'struct gpio_chip', 'gc.of_node' is in OF_GPIO micro also.
 
-Make the dwapb_writel/readl patch goes first in the series.
+Ah, okay. Thus, it depends to Linus opinion, since I, for example, would
+like to see this field present in the structure independently of
+OF_GPIO.
+
+> 
+> > > +	if (pp->irq)
+> > 
+> > irq == 0 is a valid hwirq (hardware irq) number. Yes, there is unlikely we have it
+> > somewhere, but still it's possible. And yes, IRQ framework doesn't work with
+> > virq == 0 (*virtual* irq), but accepts hwirq == 0. I recommend to use int type for
+> > irq line number, and recognize negative value (usually -1) as no irq needed /
+> > found.
+> Understand. But if you refer the original code, you can see:
+> irq = irq_of_parse_and_map(node, 0);
+> If (!irq) {
+> ......
+> return;
+> }
+> From above code, if irq=0, it indicates irq is not supported for OF devices. If we use '-1' to indicate irq is not supported. To make OF work, then our code should be:
+
+Yes, like I said above. You introduce hw irq in the pdata, which could
+be 0.
+
+
+> irq = irq_of_parse_and_map(node, 0);
+> If (!irq) {
+> pp->irq = -1;
+> return;
+> } else {
+> pp->irq = irq;
+> }
+> Then the code looks strange.
+> 
+> How do you think?
+
+If I understood correctly you messed up with hwirq vs. virq.
+Otherwise you have mention that you are using virq everywhere (I guess
+you may rename the field in the structure), but in this case the field
+in the platform_data looks a bit strange. Linus, what do you think?
+
+
+P.S. Please, remove my Reviewed-by tag since code is changed enough.
 
 -- 
 Andy Shevchenko <andriy.shevchenko@intel.com>
