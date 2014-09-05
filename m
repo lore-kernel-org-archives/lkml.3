@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326AbaIEH6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:58:40 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:41609 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaIEH6i (ORCPT
+	id S1756396AbaIEH7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:59:46 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:40665 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaIEH7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:58:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANjd3nc5==yDpRVMxP+bzhqhEqyK4SUam=Ood4RMpsN5esuG4A@mail.gmail.com>
-References: <20140831152456.GA25207@udknight>
-	<20140904173521.GA20343@localhost.localdomain>
-	<CANjd3nc5==yDpRVMxP+bzhqhEqyK4SUam=Ood4RMpsN5esuG4A@mail.gmail.com>
-Date: Fri, 5 Sep 2014 09:58:38 +0200
-Message-ID: <CACRpkdbkh10brE0Qy4mGFMxwWDLCiYRYB+i-5QTABxO9jcDyfA@mail.gmail.com>
-Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
-From: Linus Walleij <linus.walleij@linaro.org>
-To: zoobab@gmail.com
-Cc: Wang YanQing <udknight@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Johan Hovold <jhovold@gmail.com>, andi@lisas.de, dforsi@gmail.com,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Sep 2014 03:59:45 -0400
+Message-ID: <1409903983.9532.0.camel@linux-fkkt.site>
+Subject: Re: [3.16.1 REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
+From: Oliver Neukum <oliver@neukum.org>
+To: Nix <nix@esperi.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 05 Sep 2014 09:59:43 +0200
+In-Reply-To: <874mwnosz1.fsf@spindle.srvr.nix>
+References: <878um4tg09.fsf@spindle.srvr.nix>
+	 <1409569752.24385.12.camel@linux-fkkt.site>
+	 <874mwnosz1.fsf@spindle.srvr.nix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 11:57 PM, Benjamin Henrion <zoobab@gmail.com> wrote:
-> On Thu, Sep 4, 2014 at 7:35 PM, Wang YanQing <udknight@gmail.com> wrote:
->> On Sun, Aug 31, 2014 at 11:24:56PM +0800, Wang YanQing wrote:
->>> PL2303 USB Serial devices may has GPIOs, this patch add
->>> basic PL2303 gpio support.
->>>
->>> Known issue:
->>> If gpios are in use(export to userspace through sysfs interface, etc),
->>> then call pl2303_release(unplug usb-serial convertor, modprobe -r, etc),
->>> will cause trouble, so we need to make sure there is no gpio user before
->>> call pl2303_release.
->>>
->>> Signed-off-by: Wang YanQing <udknight@gmail.com>
->>> ---
->>>  Note: I sniffed office HXD gpio test program to get
->>>        gpios control protocol with PL2303 RA, so I only
->>>        test it with PL2303 RA and HXA, I don't have HXD,
->>>        but because it is *office* HXD gpio test program,
->>>        so if it doesn't work with HXD, I will feel surprise.
->
-> I can confirm your patch is working fine on the HXD:
->
-> http://www.zoobab.com/pl2303hxd-gpio
->
-> I am still hunting for a simple C program to test the speed of the
-> GPIOs and sysfs, if you have a good reference.
+On Fri, 2014-09-05 at 00:40 +0100, Nix wrote:
+> I'm working around this confusing morass by rebooting into each test
+> kernel, unplugging and replugging the entropy key if it was fubared,
+> then rebooting into the same kernel again and seeing if it was still
+> fubared. But this is not terribly fast, particularly not on a headless
+> compact-flash-based Geode box which doesn't even complete booting
+> without the entropy source which this bug cuts off :) so it'll be
+> sometime tomorrow before I can get this bisection done, I'm afraid.
 
-The exercise of the GPIO sysfs interface should be discouraged.
-I would put emphasis on in-kernel tests and working on a better
-userspace GPIO interface than the sysfs thing.
+Ugh. My sympathies. I cannot suggest a better method, I am afraid.
 
-Yours,
-Linus Walleij
+	Regards
+		Oliver
+
+
