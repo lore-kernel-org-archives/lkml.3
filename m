@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355AbaIERcR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:32:17 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:34896 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaIERah (ORCPT
+	id S1754448AbaIERck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:32:40 -0400
+Received: from mail-oi0-f73.google.com ([209.85.218.73]:61543 "EHLO
+	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237AbaIERag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:30:37 -0400
+	Fri, 5 Sep 2014 13:30:36 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -21,9 +21,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         linux-mips@linux-mips.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 11/16] of: Add binding document for MIPS GIC
-Date: Fri,  5 Sep 2014 10:30:13 -0700
-Message-Id: <1409938218-9026-12-git-send-email-abrestic@chromium.org>
+Subject: [PATCH v2 10/16] of: Add vendor prefix for MIPS Technologies, Inc.
+Date: Fri,  5 Sep 2014 10:30:12 -0700
+Message-Id: <1409938218-9026-11-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
 References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
@@ -31,68 +31,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Global Interrupt Controller (GIC) present on certain MIPS systems
-can be used to route external interrupts to individual VPEs and CPU
-interrupt vectors.  It also supports a timer and software-generated
-interrupts.
+Add the vendor prefix "mti" for MIPS Technologies, Inc.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
-Changes from v1:
- - moved from mips/ to interrupt-controller/
- - removed interrupts and interrupt-parent properties
- - added available-cpu-vectors property
- - dropped third cell in interrupt specifier
+New for v2.
 ---
- .../bindings/interrupt-controller/mips-gic.txt     | 39 ++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt b/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
-new file mode 100644
-index 0000000..81ca911
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/mips-gic.txt
-@@ -0,0 +1,39 @@
-+MIPS Global Interrupt Controller (GIC)
-+
-+The MIPS GIC routes external interrupts to individual VPEs and IRQ pins.
-+It also supports local (per-processor) interrupts and software-generated
-+interrupts which can be used as IPIs.
-+
-+Required properties:
-+- compatible : Should be "mti,global-interrupt-controller"
-+- reg : Base address and length of the GIC registers.
-+- interrupts : Core interrupts to which the GIC may route external interrupts.
-+- interrupt-controller : Identifies the node as an interrupt controller
-+- #interrupt-cells : Specifies the number of cells needed to encode an
-+  interrupt specifier.  Should be 2.
-+  - The first cell is the GIC interrupt number.
-+  - The second cell encodes the interrupt flags.
-+    See <include/dt-bindings/interrupt-controller/irq.h> for a list of valid
-+    flags.
-+- mti,available-cpu-vectors : Specifies the list of CPU interrupt vectors
-+  to which the GIC may route interrupts.  May contain up to 6 entries, one
-+  for each of the CPU's hardware interrupt vectors.  Valid values are 2 - 7.
-+
-+Example:
-+
-+	gic: interrupt-controller@1bdc0000 {
-+		compatible = "mti,global-interrupt-controller";
-+		reg = <0x1bdc0000 0x20000>;
-+
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+
-+		mti,available-cpu-vectors = <2>, <3>, <4>, <5>;
-+	};
-+
-+	uart@18101400 {
-+		...
-+		interrupt-parent = <&gic>;
-+		interrupts = <24 IRQ_TYPE_LEVEL_HIGH>;
-+		...
-+	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index ac7269f..efa5a5b 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -86,6 +86,7 @@ microchip	Microchip Technology Inc.
+ mosaixtech	Mosaix Technologies, Inc.
+ moxa	Moxa
+ mpl	MPL AG
++mti	MIPS Technologies, Inc.
+ mundoreader	Mundo Reader S.L.
+ murata	Murata Manufacturing Co., Ltd.
+ mxicy	Macronix International Co., Ltd.
 -- 
 2.1.0.rc2.206.gedb03e5
 
