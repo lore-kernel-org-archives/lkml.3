@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaIEWtr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:49:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43545 "EHLO
+	id S1754667AbaIEWuN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:50:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43598 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876AbaIEWrp (ORCPT
+	with ESMTP id S1753859AbaIEWro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:47:45 -0400
+	Fri, 5 Sep 2014 18:47:44 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH v2 15/15] ARM: dts: qcom: Add necessary DT data for Krait cpufreq
-Date: Fri,  5 Sep 2014 15:47:36 -0700
-Message-Id: <1409957256-23729-18-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH v2 14/15] cpufreq: Add module to register cpufreq on Krait CPUs
+Date: Fri,  5 Sep 2014 15:47:35 -0700
+Message-Id: <1409957256-23729-17-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
 References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
@@ -22,764 +22,254 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the necessary DT nodes and data so we can probe the cpufreq
-driver on MSM devices with Krait CPUs.
+Register a cpufreq-generic device whenever we detect that a
+"qcom,krait" compatible CPU is present in DT.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
+ drivers/cpufreq/Kconfig.arm    |   9 ++
+ drivers/cpufreq/Makefile       |   1 +
+ drivers/cpufreq/qcom-cpufreq.c | 199 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 209 insertions(+)
+ create mode 100644 drivers/cpufreq/qcom-cpufreq.c
 
-We can go faster than this, but I've limited it to the safe frequencies
-until we have regulator support where we would need to increase the
-voltages from whatever the bootloader picks before going faster.
-
- arch/arm/boot/dts/qcom-apq8064.dtsi | 230 ++++++++++++++++++++++++++
- arch/arm/boot/dts/qcom-msm8960.dtsi |  49 ++++++
- arch/arm/boot/dts/qcom-msm8974.dtsi | 311 +++++++++++++++++++++++++++++++++++-
- 3 files changed, 586 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-index 92bf793622c3..f01296bdb8f4 100644
---- a/arch/arm/boot/dts/qcom-apq8064.dtsi
-+++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-@@ -21,6 +21,9 @@
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc0>;
- 			qcom,saw = <&saw0>;
-+			clocks = <&kraitcc 0>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index b0b0ca1e9aac..5eb3bbce2f58 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -129,6 +129,15 @@ config ARM_OMAP2PLUS_CPUFREQ
+ 	depends on ARCH_OMAP2PLUS
+ 	default ARCH_OMAP2PLUS
  
- 		cpu@1 {
-@@ -31,6 +34,9 @@
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc1>;
- 			qcom,saw = <&saw1>;
-+			clocks = <&kraitcc 1>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
- 
- 		cpu@2 {
-@@ -41,6 +47,9 @@
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc2>;
- 			qcom,saw = <&saw2>;
-+			clocks = <&kraitcc 2>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
- 
- 		cpu@3 {
-@@ -51,6 +60,9 @@
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc3>;
- 			qcom,saw = <&saw3>;
-+			clocks = <&kraitcc 3>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
- 
- 		L2: l2-cache {
-@@ -64,6 +76,214 @@
- 		interrupts = <1 10 0x304>;
- 	};
- 
-+	qcom,pvs {
-+		qcom,pvs-format-a;
-+		qcom,speed0-pvs0-bin-v0 =
-+			< 384000000 950000  >,
-+			< 486000000 975000  >,
-+			< 594000000 1000000  >,
-+			< 702000000 1025000  >,
-+			< 810000000 1075000  >,
-+			< 918000000 1100000  >;
++config ARM_QCOM_CPUFREQ
++	tristate "Qualcomm based"
++	depends on ARCH_QCOM
++	select PM_OPP
++	help
++	  This adds the CPUFreq driver for Qualcomm SoC based boards.
 +
-+		qcom,speed0-pvs1-bin-v0 =
-+			< 384000000 900000  >,
-+			< 486000000 925000  >,
-+			< 594000000 950000  >,
-+			< 702000000 975000  >,
-+			< 810000000 1025000  >,
-+			< 918000000 1050000  >;
++	  If in doubt, say N.
 +
-+		qcom,speed0-pvs3-bin-v0 =
-+			< 384000000 850000  >,
-+			< 486000000 875000  >,
-+			< 594000000 900000  >,
-+			< 702000000 925000  >,
-+			< 810000000 975000  >,
-+			< 918000000 1000000  >;
+ config ARM_S3C_CPUFREQ
+ 	bool
+ 	help
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index e8efe9b8d55f..b345bca5fa09 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_ARM_IMX6Q_CPUFREQ)		+= imx6q-cpufreq.o
+ obj-$(CONFIG_ARM_INTEGRATOR)		+= integrator-cpufreq.o
+ obj-$(CONFIG_ARM_KIRKWOOD_CPUFREQ)	+= kirkwood-cpufreq.o
+ obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)	+= omap-cpufreq.o
++obj-$(CONFIG_ARM_QCOM_CPUFREQ)		+= qcom-cpufreq.o
+ obj-$(CONFIG_PXA25x)			+= pxa2xx-cpufreq.o
+ obj-$(CONFIG_PXA27x)			+= pxa2xx-cpufreq.o
+ obj-$(CONFIG_PXA3xx)			+= pxa3xx-cpufreq.o
+diff --git a/drivers/cpufreq/qcom-cpufreq.c b/drivers/cpufreq/qcom-cpufreq.c
+new file mode 100644
+index 000000000000..aa8eb97144b6
+--- /dev/null
++++ b/drivers/cpufreq/qcom-cpufreq.c
+@@ -0,0 +1,199 @@
++/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+		qcom,speed0-pvs4-bin-v0 =
-+			< 384000000 850000  >,
-+			< 486000000 875000  >,
-+			< 594000000 900000  >,
-+			< 702000000 925000  >,
-+			< 810000000 962500  >,
-+			< 918000000 975000  >;
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/cpu.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/pm_opp.h>
++#include <linux/init.h>
 +
-+		qcom,speed1-pvs0-bin-v0 =
-+			< 384000000 950000  >,
-+			< 486000000 950000  >,
-+			< 594000000 950000  >,
-+			< 702000000 962500  >,
-+			< 810000000 1000000  >,
-+			< 918000000 1025000  >;
++static void __init get_krait_bin_format_a(int *speed, int *pvs, int *pvs_ver)
++{
++	void __iomem *base;
++	u32 pte_efuse;
 +
-+		qcom,speed1-pvs1-bin-v0 =
-+			< 384000000 950000  >,
-+			< 486000000 950000  >,
-+			< 594000000 950000  >,
-+			< 702000000 962500  >,
-+			< 810000000 975000  >,
-+			< 918000000 1000000  >;
++	*speed = *pvs = *pvs_ver = 0;
 +
-+		qcom,speed1-pvs2-bin-v0 =
-+			< 384000000 925000  >,
-+			< 486000000 925000  >,
-+			< 594000000 925000  >,
-+			< 702000000 925000  >,
-+			< 810000000 937500  >,
-+			< 918000000 950000  >;
++	base = ioremap(0x007000c0, 4);
++	if (!base) {
++		pr_warn("Unable to read efuse data. Defaulting to 0!\n");
++		return;
++	}
 +
-+		qcom,speed1-pvs3-bin-v0 =
-+			< 384000000 900000  >,
-+			< 486000000 900000  >,
-+			< 594000000 900000  >,
-+			< 702000000 900000  >,
-+			< 810000000 900000  >,
-+			< 918000000 925000  >;
++	pte_efuse = readl_relaxed(base);
++	iounmap(base);
 +
-+		qcom,speed1-pvs4-bin-v0 =
-+			< 384000000 875000  >,
-+			< 486000000 875000  >,
-+			< 594000000 875000  >,
-+			< 702000000 875000  >,
-+			< 810000000 887500  >,
-+			< 918000000 900000  >;
++	*speed = pte_efuse & 0xf;
++	if (*speed == 0xf)
++		*speed = (pte_efuse >> 4) & 0xf;
 +
-+		qcom,speed1-pvs5-bin-v0 =
-+			< 384000000 875000  >,
-+			< 486000000 875000  >,
-+			< 594000000 875000  >,
-+			< 702000000 875000  >,
-+			< 810000000 887500  >,
-+			< 918000000 900000  >;
++	if (*speed == 0xf) {
++		*speed = 0;
++		pr_warn("Speed bin: Defaulting to %d\n", *speed);
++	} else {
++		pr_info("Speed bin: %d\n", *speed);
++	}
 +
-+		qcom,speed1-pvs6-bin-v0 =
-+			< 384000000 875000  >,
-+			< 486000000 875000  >,
-+			< 594000000 875000  >,
-+			< 702000000 875000  >,
-+			< 810000000 887500  >,
-+			< 918000000 900000  >;
++	*pvs = (pte_efuse >> 10) & 0x7;
++	if (*pvs == 0x7)
++		*pvs = (pte_efuse >> 13) & 0x7;
 +
-+		qcom,speed2-pvs0-bin-v0 =
-+			< 384000000 950000  >,
-+			< 486000000 950000  >,
-+			< 594000000 950000  >,
-+			< 702000000 950000  >,
-+			< 810000000 962500  >,
-+			< 918000000 975000  >;
++	if (*pvs == 0x7) {
++		*pvs = 0;
++		pr_warn("PVS bin: Defaulting to %d\n", *pvs);
++	} else {
++		pr_info("PVS bin: %d\n", *pvs);
++	}
++}
 +
-+		qcom,speed2-pvs1-bin-v0 =
-+			< 384000000 925000  >,
-+			< 486000000 925000  >,
-+			< 594000000 925000  >,
-+			< 702000000 925000  >,
-+			< 810000000 937500  >,
-+			< 918000000 950000  >;
++static void __init get_krait_bin_format_b(int *speed, int *pvs, int *pvs_ver)
++{
++	u32 pte_efuse, redundant_sel;
++	void __iomem *base;
 +
-+		qcom,speed2-pvs2-bin-v0 =
-+			< 384000000 900000  >,
-+			< 486000000 900000  >,
-+			< 594000000 900000  >,
-+			< 702000000 900000  >,
-+			< 810000000 912500  >,
-+			< 918000000 925000  >;
++	*speed = 0;
++	*pvs = 0;
++	*pvs_ver = 0;
 +
-+		qcom,speed2-pvs3-bin-v0 =
-+			< 384000000 900000  >,
-+			< 486000000 900000  >,
-+			< 594000000 900000  >,
-+			< 702000000 900000  >,
-+			< 810000000 900000  >,
-+			< 918000000 912500  >;
++	base = ioremap(0xfc4b80b0, 8);
++	if (!base) {
++		pr_warn("Unable to read efuse data. Defaulting to 0!\n");
++		return;
++	}
 +
-+		qcom,speed2-pvs4-bin-v0 =
-+			< 384000000 875000  >,
-+			< 486000000 875000  >,
-+			< 594000000 875000  >,
-+			< 702000000 875000  >,
-+			< 810000000 887500  >,
-+			< 918000000 900000  >;
++	pte_efuse = readl_relaxed(base);
++	redundant_sel = (pte_efuse >> 24) & 0x7;
++	*speed = pte_efuse & 0x7;
++	/* 4 bits of PVS are in efuse register bits 31, 8-6. */
++	*pvs = ((pte_efuse >> 28) & 0x8) | ((pte_efuse >> 6) & 0x7);
++	*pvs_ver = (pte_efuse >> 4) & 0x3;
 +
-+		qcom,speed2-pvs5-bin-v0 =
-+			< 384000000 875000  >,
-+			< 486000000 875000  >,
-+			< 594000000 875000  >,
-+			< 702000000 875000  >,
-+			< 810000000 887500  >,
-+			< 918000000 900000  >;
++	switch (redundant_sel) {
++	case 1:
++		*speed = (pte_efuse >> 27) & 0xf;
++		break;
++	case 2:
++		*pvs = (pte_efuse >> 27) & 0xf;
++		break;
++	}
 +
-+		qcom,speed2-pvs6-bin-v0 =
-+			< 384000000 875000  >,
-+			< 486000000 875000  >,
-+			< 594000000 875000  >,
-+			< 702000000 875000  >,
-+			< 810000000 887500  >,
-+			< 918000000 900000  >;
++	/* Check SPEED_BIN_BLOW_STATUS */
++	if (pte_efuse & BIT(3)) {
++		pr_info("Speed bin: %d\n", *speed);
++	} else {
++		pr_warn("Speed bin not set. Defaulting to 0!\n");
++		*speed = 0;
++	}
 +
-+		qcom,speed14-pvs0-bin-v0 =
-+			< 384000000 950000 >,
-+			< 486000000 950000 >,
-+			< 594000000 950000 >,
-+			< 702000000 962500 >,
-+			< 810000000 1000000 >,
-+			< 918000000 1025000 >;
++	/* Check PVS_BLOW_STATUS */
++	pte_efuse = readl_relaxed(base + 0x4) & BIT(21);
++	if (pte_efuse) {
++		pr_info("PVS bin: %d\n", *pvs);
++	} else {
++		pr_warn("PVS bin not set. Defaulting to 0!\n");
++		*pvs = 0;
++	}
 +
-+		qcom,speed14-pvs1-bin-v0 =
-+			< 384000000 950000 >,
-+			< 486000000 950000 >,
-+			< 594000000 950000 >,
-+			< 702000000 962500 >,
-+			< 810000000 975000 >,
-+			< 918000000 1000000 >;
++	pr_info("PVS version: %d\n", *pvs_ver);
++	iounmap(base);
++}
 +
-+		qcom,speed14-pvs2-bin-v0 =
-+			< 384000000 925000 >,
-+			< 486000000 925000 >,
-+			< 594000000 925000 >,
-+			< 702000000 925000 >,
-+			< 810000000 937500 >,
-+			< 918000000 950000 >;
++static int __init qcom_cpufreq_populate_opps(void)
++{
++	int len, num_rows, i, k;
++	char table_name[] = "qcom,speedXX-pvsXX-bin-vXX";
++	struct device_node *np;
++	struct device *dev;
++	int cpu = 0;
++	int speed, pvs, pvs_ver;
++	int cols;
 +
-+		qcom,speed14-pvs3-bin-v0 =
-+			< 384000000 900000 >,
-+			< 486000000 900000 >,
-+			< 594000000 900000 >,
-+			< 702000000 900000 >,
-+			< 810000000 900000 >,
-+			< 918000000 925000 >;
++	np = of_find_node_by_name(NULL, "qcom,pvs");
++	if (!np)
++		pr_warn("Can't find PVS node\n");
 +
-+		qcom,speed14-pvs4-bin-v0 =
-+			< 384000000 875000 >,
-+			< 486000000 875000 >,
-+			< 594000000 875000 >,
-+			< 702000000 875000 >,
-+			< 810000000 887500 >,
-+			< 918000000 900000 >;
++	if (of_property_read_bool(np, "qcom,pvs-format-a")) {
++		get_krait_bin_format_a(&speed, &pvs, &pvs_ver);
++		cols = 2;
++	} else {
++		get_krait_bin_format_b(&speed, &pvs, &pvs_ver);
++		cols = 3;
++	}
 +
-+		qcom,speed14-pvs5-bin-v0 =
-+			< 384000000 875000 >,
-+			< 486000000 875000 >,
-+			< 594000000 875000 >,
-+			< 702000000 875000 >,
-+			< 810000000 887500 >,
-+			< 918000000 900000 >;
++	snprintf(table_name, sizeof(table_name),
++			"qcom,speed%d-pvs%d-bin-v%d", speed, pvs, pvs_ver);
++again:
++	dev = get_cpu_device(cpu);
++	if (!dev)
++		return -ENODEV;
 +
-+		qcom,speed14-pvs6-bin-v0 =
-+			< 384000000 875000 >,
-+			< 486000000 875000 >,
-+			< 594000000 875000 >,
-+			< 702000000 875000 >,
-+			< 810000000 887500 >,
-+			< 918000000 900000 >;
-+	};
++	if (!of_find_property(np, table_name, &len))
++		return -EINVAL;
 +
-+	kraitcc: clock-controller {
-+		compatible = "qcom,krait-cc-v1";
-+		#clock-cells = <1>;
-+	};
++	len /= sizeof(u32);
++	if (len % cols || len == 0)
++		return -EINVAL;
 +
- 	soc: soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -92,21 +312,31 @@
- 		acc0: clock-controller@2088000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
-+			clock-output-names = "acpu0_aux";
- 		};
- 
- 		acc1: clock-controller@2098000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x02098000 0x1000>, <0x02008000 0x1000>;
-+			clock-output-names = "acpu1_aux";
- 		};
- 
- 		acc2: clock-controller@20a8000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x020a8000 0x1000>, <0x02008000 0x1000>;
-+			clock-output-names = "acpu2_aux";
- 		};
- 
- 		acc3: clock-controller@20b8000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x020b8000 0x1000>, <0x02008000 0x1000>;
-+			clock-output-names = "acpu3_aux";
-+		};
++	num_rows = len / cols;
 +
-+		l2cc: clock-controller@2011000 {
-+			compatible = "qcom,kpss-gcc";
-+			reg = <0x2011000 0x1000>;
-+			clock-output-names = "acpu_l2_aux";
- 		};
- 
- 		saw0: regulator@2089000 {
-diff --git a/arch/arm/boot/dts/qcom-msm8960.dtsi b/arch/arm/boot/dts/qcom-msm8960.dtsi
-index 5303e53e34dc..c034e3df2679 100644
---- a/arch/arm/boot/dts/qcom-msm8960.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8960.dtsi
-@@ -23,6 +23,10 @@
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc0>;
- 			qcom,saw = <&saw0>;
-+			clocks = <&kraitcc 0>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
++	for (i = 0, k = 0; i < num_rows; i++) {
++		u32 freq, volt;
 +
- 		};
- 
- 		cpu@1 {
-@@ -33,6 +37,10 @@
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc1>;
- 			qcom,saw = <&saw1>;
-+			clocks = <&kraitcc 1>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
++		of_property_read_u32_index(np, table_name, k++, &freq);
++		of_property_read_u32_index(np, table_name, k++, &volt);
++		while (k % cols)
++			k++; /* Skip uA entries if present */
++		if (dev_pm_opp_add(dev, freq, volt))
++			pr_warn("failed to add OPP %u\n", freq);
++	}
 +
- 		};
- 
- 		L2: l2-cache {
-@@ -47,6 +55,39 @@
- 		qcom,no-pc-write;
- 	};
- 
-+	qcom,pvs {
-+		qcom,pvs-format-a;
-+			/* Hz		uV */
-+		qcom,speed0-pvs0-bin-v0 =
-+			<  384000000  950000 >,
-+			<  486000000  975000 >,
-+			<  594000000 1000000 >,
-+			<  702000000 1025000 >,
-+			<  810000000 1075000 >,
-+			<  918000000 1100000 >;
++	if (cpu++ < num_possible_cpus())
++		goto again;
 +
-+		qcom,speed0-pvs1-bin-v0 =
-+			<  384000000  900000 >,
-+			<  486000000  925000 >,
-+			<  594000000  950000 >,
-+			<  702000000  975000 >,
-+			<  810000000 1025000 >,
-+			<  918000000 1050000 >;
++	return 0;
++}
 +
-+		qcom,speed0-pvs3-bin-v0 =
-+			<  384000000  850000 >,
-+			<  486000000  875000 >,
-+			<  594000000  900000 >,
-+			<  702000000  925000 >,
-+			<  810000000  975000 >,
-+			<  918000000 1000000 >;
-+	};
++static int __init qcom_cpufreq_driver_init(void)
++{
++	struct platform_device_info devinfo = { .name = "cpufreq-generic", };
++	struct device *cpu_dev;
++	struct device_node *np;
++	struct platform_device *pdev;
 +
-+	kraitcc: clock-controller {
-+		compatible = "qcom,krait-cc-v1";
-+		#clock-cells = <1>;
-+	};
++	cpu_dev = get_cpu_device(0);
++	if (!cpu_dev)
++		return -ENODEV;
 +
- 	soc: soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -100,11 +141,19 @@
- 		acc0: clock-controller@2088000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
-+			clock-output-names = "acpu0_aux";
- 		};
- 
- 		acc1: clock-controller@2098000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x02098000 0x1000>, <0x02008000 0x1000>;
-+			clock-output-names = "acpu1_aux";
-+		};
++	np = of_node_get(cpu_dev->of_node);
++	if (!np)
++		return -ENOENT;
 +
-+		l2cc: clock-controller@2011000 {
-+			compatible = "qcom,kpss-gcc";
-+			reg = <0x2011000 0x1000>;
-+			clock-output-names = "acpu_l2_aux";
- 		};
- 
- 		saw0: regulator@2089000 {
-diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-index 69dca2aca25a..567a40186136 100644
---- a/arch/arm/boot/dts/qcom-msm8974.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-@@ -14,40 +14,52 @@
- 		#size-cells = <0>;
- 		interrupts = <1 9 0xf04>;
- 
--		cpu@0 {
-+		cpu0: cpu@0 {
- 			compatible = "qcom,krait";
- 			enable-method = "qcom,kpss-acc-v2";
- 			device_type = "cpu";
- 			reg = <0>;
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc0>;
-+			clocks = <&kraitcc 0>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
- 
--		cpu@1 {
-+		cpu1: cpu@1 {
- 			compatible = "qcom,krait";
- 			enable-method = "qcom,kpss-acc-v2";
- 			device_type = "cpu";
- 			reg = <1>;
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc1>;
-+			clocks = <&kraitcc 1>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
- 
--		cpu@2 {
-+		cpu2: cpu@2 {
- 			compatible = "qcom,krait";
- 			enable-method = "qcom,kpss-acc-v2";
- 			device_type = "cpu";
- 			reg = <2>;
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc2>;
-+			clocks = <&kraitcc 2>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
- 
--		cpu@3 {
-+		cpu3: cpu@3 {
- 			compatible = "qcom,krait";
- 			enable-method = "qcom,kpss-acc-v2";
- 			device_type = "cpu";
- 			reg = <3>;
- 			next-level-cache = <&L2>;
- 			qcom,acc = <&acc3>;
-+			clocks = <&kraitcc 3>;
-+			clock-names = "cpu";
-+			clock-latency = <100000>;
- 		};
- 
- 		L2: l2-cache {
-@@ -71,6 +83,267 @@
- 		clock-frequency = <19200000>;
- 	};
- 
-+	qcom,pvs {
-+		qcom,pvs-format-b;
-+			/* Hz		uV	ua */
-+		qcom,speed0-pvs0-bin-v0 =
-+			<  300000000  815000  73 >,
-+			<  345600000  825000  85 >,
-+			<  422400000  835000 104 >,
-+			<  499200000  845000 124 >,
-+			<  576000000  855000 144 >,
-+			<  652800000  865000 165 >,
-+			<  729600000  875000 186 >,
-+			<  806400000  890000 208 >,
-+			<  883200000  900000 229 >,
-+			<  960000000  915000 252 >;
++	if (!of_device_is_compatible(np, "qcom,krait")) {
++		of_node_put(np);
++		return -ENODEV;
++	}
++	of_node_put(np);
 +
-+		qcom,speed0-pvs1-bin-v0 =
-+			<  300000000  800000  73 >,
-+			<  345600000  810000  85 >,
-+			<  422400000  820000 104 >,
-+			<  499200000  830000 124 >,
-+			<  576000000  840000 144 >,
-+			<  652800000  850000 165 >,
-+			<  729600000  860000 186 >,
-+			<  806400000  875000 208 >,
-+			<  883200000  885000 229 >,
-+			<  960000000  895000 252 >;
++	qcom_cpufreq_populate_opps();
++	pdev = platform_device_register_full(&devinfo);
 +
-+		qcom,speed0-pvs2-bin-v0 =
-+			<  300000000  785000  73 >,
-+			<  345600000  795000  85 >,
-+			<  422400000  805000 104 >,
-+			<  499200000  815000 124 >,
-+			<  576000000  825000 144 >,
-+			<  652800000  835000 165 >,
-+			<  729600000  845000 186 >,
-+			<  806400000  855000 208 >,
-+			<  883200000  865000 229 >,
-+			<  960000000  875000 252 >;
++	return PTR_ERR_OR_ZERO(pdev);
++}
++module_init(qcom_cpufreq_driver_init);
 +
-+		qcom,speed0-pvs3-bin-v0 =
-+			<  300000000  775000  73 >,
-+			<  345600000  780000  85 >,
-+			<  422400000  790000 104 >,
-+			<  499200000  800000 124 >,
-+			<  576000000  810000 144 >,
-+			<  652800000  820000 165 >,
-+			<  729600000  830000 186 >,
-+			<  806400000  840000 208 >,
-+			<  883200000  850000 229 >,
-+			<  960000000  860000 252 >;
-+
-+		qcom,speed0-pvs4-bin-v0 =
-+			<  300000000  775000  73 >,
-+			<  345600000  775000  85 >,
-+			<  422400000  780000 104 >,
-+			<  499200000  790000 124 >,
-+			<  576000000  800000 144 >,
-+			<  652800000  810000 165 >,
-+			<  729600000  820000 186 >,
-+			<  806400000  830000 208 >,
-+			<  883200000  840000 229 >,
-+			<  960000000  850000 252 >;
-+
-+		qcom,speed0-pvs5-bin-v0 =
-+			<  300000000  750000  73 >,
-+			<  345600000  760000  85 >,
-+			<  422400000  770000 104 >,
-+			<  499200000  780000 124 >,
-+			<  576000000  790000 144 >,
-+			<  652800000  800000 165 >,
-+			<  729600000  810000 186 >,
-+			<  806400000  820000 208 >,
-+			<  883200000  830000 229 >,
-+			<  960000000  840000 252 >;
-+
-+		qcom,speed0-pvs6-bin-v0 =
-+			<  300000000  750000  73 >,
-+			<  345600000  750000  85 >,
-+			<  422400000  760000 104 >,
-+			<  499200000  770000 124 >,
-+			<  576000000  780000 144 >,
-+			<  652800000  790000 165 >,
-+			<  729600000  800000 186 >,
-+			<  806400000  810000 208 >,
-+			<  883200000  820000 229 >,
-+			<  960000000  830000 252 >;
-+
-+		qcom,speed2-pvs0-bin-v0 =
-+			<  300000000  800000  72 >,
-+			<  345600000  800000  83 >,
-+			<  422400000  805000 102 >,
-+			<  499200000  815000 121 >,
-+			<  576000000  825000 141 >,
-+			<  652800000  835000 161 >,
-+			<  729600000  845000 181 >,
-+			<  806400000  855000 202 >,
-+			<  883200000  865000 223 >,
-+			<  960000000  875000 245 >;
-+
-+		qcom,speed2-pvs1-bin-v0 =
-+			<  300000000  800000  72 >,
-+			<  345600000  800000  83 >,
-+			<  422400000  800000 102 >,
-+			<  499200000  800000 121 >,
-+			<  576000000  810000 141 >,
-+			<  652800000  820000 161 >,
-+			<  729600000  830000 181 >,
-+			<  806400000  840000 202 >,
-+			<  883200000  850000 223 >,
-+			<  960000000  860000 245 >;
-+
-+		qcom,speed2-pvs2-bin-v0 =
-+			<  300000000  775000  72 >,
-+			<  345600000  775000  83 >,
-+			<  422400000  775000 102 >,
-+			<  499200000  785000 121 >,
-+			<  576000000  795000 141 >,
-+			<  652800000  805000 161 >,
-+			<  729600000  815000 181 >,
-+			<  806400000  825000 202 >,
-+			<  883200000  835000 223 >,
-+			<  960000000  845000 245 >;
-+
-+		qcom,speed2-pvs3-bin-v0 =
-+			<  300000000  775000  72 >,
-+			<  345600000  775000  83 >,
-+			<  422400000  775000 102 >,
-+			<  499200000  775000 121 >,
-+			<  576000000  780000 141 >,
-+			<  652800000  790000 161 >,
-+			<  729600000  800000 181 >,
-+			<  806400000  810000 202 >,
-+			<  883200000  820000 223 >,
-+			<  960000000  830000 245 >;
-+
-+		qcom,speed2-pvs4-bin-v0 =
-+			<  300000000  775000  72 >,
-+			<  345600000  775000  83 >,
-+			<  422400000  775000 102 >,
-+			<  499200000  775000 121 >,
-+			<  576000000  775000 141 >,
-+			<  652800000  780000 161 >,
-+			<  729600000  790000 181 >,
-+			<  806400000  800000 202 >,
-+			<  883200000  810000 223 >,
-+			<  960000000  820000 245 >;
-+
-+		qcom,speed2-pvs5-bin-v0 =
-+			<  300000000  750000  72 >,
-+			<  345600000  750000  83 >,
-+			<  422400000  750000 102 >,
-+			<  499200000  750000 121 >,
-+			<  576000000  760000 141 >,
-+			<  652800000  770000 161 >,
-+			<  729600000  780000 181 >,
-+			<  806400000  790000 202 >,
-+			<  883200000  800000 223 >,
-+			<  960000000  810000 245 >;
-+
-+		qcom,speed2-pvs6-bin-v0 =
-+			<  300000000  750000  72 >,
-+			<  345600000  750000  83 >,
-+			<  422400000  750000 102 >,
-+			<  499200000  750000 121 >,
-+			<  576000000  750000 141 >,
-+			<  652800000  760000 161 >,
-+			<  729600000  770000 181 >,
-+			<  806400000  780000 202 >,
-+			<  883200000  790000 223 >,
-+			<  960000000  800000 245 >;
-+
-+		qcom,speed1-pvs0-bin-v0 =
-+			<  300000000  775000  72 >,
-+			<  345600000  775000  83 >,
-+			<  422400000  775000 101 >,
-+			<  499200000  780000 120 >,
-+			<  576000000  790000 139 >,
-+			<  652800000  800000 159 >,
-+			<  729600000  810000 180 >,
-+			<  806400000  820000 200 >,
-+			<  883200000  830000 221 >,
-+			<  960000000  840000 242 >;
-+
-+		qcom,speed1-pvs1-bin-v0 =
-+			<  300000000  775000  72 >,
-+			<  345600000  775000  83 >,
-+			<  422400000  775000 101 >,
-+			<  499200000  775000 120 >,
-+			<  576000000  775000 139 >,
-+			<  652800000  785000 159 >,
-+			<  729600000  795000 180 >,
-+			<  806400000  805000 200 >,
-+			<  883200000  815000 221 >,
-+			<  960000000  825000 242 >;
-+
-+		qcom,speed1-pvs2-bin-v0 =
-+			<  300000000  750000  72 >,
-+			<  345600000  750000  83 >,
-+			<  422400000  750000 101 >,
-+			<  499200000  750000 120 >,
-+			<  576000000  760000 139 >,
-+			<  652800000  770000 159 >,
-+			<  729600000  780000 180 >,
-+			<  806400000  790000 200 >,
-+			<  883200000  800000 221 >,
-+			<  960000000  810000 242 >;
-+
-+		qcom,speed1-pvs3-bin-v0 =
-+			<  300000000  750000  72 >,
-+			<  345600000  750000  83 >,
-+			<  422400000  750000 101 >,
-+			<  499200000  750000 120 >,
-+			<  576000000  750000 139 >,
-+			<  652800000  755000 159 >,
-+			<  729600000  765000 180 >,
-+			<  806400000  775000 200 >,
-+			<  883200000  785000 221 >,
-+			<  960000000  795000 242 >;
-+
-+		qcom,speed1-pvs4-bin-v0 =
-+			<  300000000  750000  72 >,
-+			<  345600000  750000  83 >,
-+			<  422400000  750000 101 >,
-+			<  499200000  750000 120 >,
-+			<  576000000  750000 139 >,
-+			<  652800000  750000 159 >,
-+			<  729600000  755000 180 >,
-+			<  806400000  765000 200 >,
-+			<  883200000  775000 221 >,
-+			<  960000000  785000 242 >;
-+
-+		qcom,speed1-pvs5-bin-v0 =
-+			<  300000000  725000  72 >,
-+			<  345600000  725000  83 >,
-+			<  422400000  725000 101 >,
-+			<  499200000  725000 120 >,
-+			<  576000000  725000 139 >,
-+			<  652800000  735000 159 >,
-+			<  729600000  745000 180 >,
-+			<  806400000  755000 200 >,
-+			<  883200000  765000 221 >,
-+			<  960000000  775000 242 >;
-+
-+		qcom,speed1-pvs6-bin-v0 =
-+			<  300000000  725000  72 >,
-+			<  345600000  725000  83 >,
-+			<  422400000  725000 101 >,
-+			<  499200000  725000 120 >,
-+			<  576000000  725000 139 >,
-+			<  652800000  725000 159 >,
-+			<  729600000  735000 180 >,
-+			<  806400000  745000 200 >,
-+			<  883200000  755000 221 >,
-+			<  960000000  765000 242 >;
-+	};
-+
-+	kraitcc: clock-controller {
-+		compatible = "qcom,krait-cc-v2";
-+		#clock-cells = <1>;
-+	};
-+
- 	soc: soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -144,6 +417,36 @@
- 			};
- 		};
- 
-+		clock-controller@f9016000 {
-+			compatible = "qcom,hfpll";
-+			reg = <0xf9016000 0x30>;
-+			clock-output-names = "hfpll_l2";
-+		};
-+
-+		clock-controller@f908a000 {
-+			compatible = "qcom,hfpll";
-+			reg = <0xf908a000 0x30>, <0xf900a000 0x30>;
-+			clock-output-names = "hfpll0";
-+		};
-+
-+		clock-controller@f909a000 {
-+			compatible = "qcom,hfpll";
-+			reg = <0xf909a000 0x30>, <0xf900a000 0x30>;
-+			clock-output-names = "hfpll1";
-+		};
-+
-+		clock-controller@f90aa000 {
-+			compatible = "qcom,hfpll";
-+			reg = <0xf90aa000 0x30>, <0xf900a000 0x30>;
-+			clock-output-names = "hfpll2";
-+		};
-+
-+		clock-controller@f90ba000 {
-+			compatible = "qcom,hfpll";
-+			reg = <0xf90ba000 0x30>, <0xf900a000 0x30>;
-+			clock-output-names = "hfpll3";
-+		};
-+
- 		saw_l2: regulator@f9012000 {
- 			compatible = "qcom,saw2";
- 			reg = <0xf9012000 0x1000>;
++MODULE_DESCRIPTION("Qualcomm CPUfreq driver");
++MODULE_LICENSE("GPL v2");
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
