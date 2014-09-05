@@ -1,111 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157AbaIEHXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:23:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42524 "EHLO mx2.suse.de"
+	id S1756176AbaIEHYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:24:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21996 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924AbaIEHXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:23:34 -0400
-Message-ID: <540964F0.8070809@suse.com>
-Date: Fri, 05 Sep 2014 09:23:28 +0200
-From: Hannes Reinecke <hare@suse.com>
-Organization: SuSE Linux Products GmbH
+	id S1751641AbaIEHYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 03:24:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,471,1406617200"; 
+   d="scan'208";a="568737874"
+Message-ID: <540964C0.1050702@intel.com>
+Date: Fri, 05 Sep 2014 10:22:40 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        dmitry.torokhov@gmail.com, falcon@meizu.com, tiwai@suse.de,
-        tj@kernel.org, arjan@linux.intel.com
-CC: linux-kernel@vger.kernel.org, oleg@redhat.com, akpm@linux-foundation.org,
-        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
-        bpoirier@suse.de, santosh@chelsio.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Casey Leedom <leedom@chelsio.com>, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [RFC v2 5/6] mptsas: use async probe
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
+To: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
+References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1409893157-469-1-git-send-email-namhyung@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 08:37 AM, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 09/05/2014 07:59 AM, Namhyung Kim wrote:
+> There's a problem on finding correct kernel symbols when perf report
+> runs on a different kernel.  Although a part of the problem was solved
+> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+> version when finding vmlinux"), there's a remaining problem still.
 > 
-> Its reported that mptsas can at times take over 30 seconds
-> to recognize SCSI storage devices [0], this is done on the
-> driver's probe path. Use the the new asynch probe to
-> circumvent systemd from killing this driver.
+> When perf records samples, it synthesizes the kernel map using
+> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+> You can easily see it using 'perf report -D' command.
 > 
-> [0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
+> After finishing record, it goes through the recorded events to find
+> maps/dsos actually used.  And then record build-id info of them.
 > 
-> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
-> Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-> Cc: Tim Gardner <tim.gardner@canonical.com>
-> Cc: Pierre Fersing <pierre-fersing@pierref.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Benjamin Poirier <bpoirier@suse.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-> Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
-> Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-> Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
-> Cc: Hariprasad S <hariprasad@chelsio.com>
-> Cc: Santosh Rastapur <santosh@chelsio.com>
-> Cc: Casey Leedom <leedom@chelsio.com>
-> Cc: MPT-FusionLinux.pdl@avagotech.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> During this process, it needs to load symbols in a dso and it'd call
+> dso__load_vmlinux() since the default value of the symbol_conf.try_
+> vmlinux_path is true.  However it changes dso->long_name to a real
+> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
+> if one is running on a custom kernel.
+> 
+> It resulted in that perf report reads the build-id of the vmlinux, but
+> cannot use it since it only knows about the [kernel.kallsyms] map.  It
+> then falls back to possible vmlinux paths by using the recorded kernel
+> version (in case of a recent version) or a running kernel silently.
+> 
+> Even with the recent tools, this still has a possibility of breaking
+> the result.  As the build directory is a symbolic link, if one built a
+> new kernel in the same directory with different source/config, the old
+> link to vmlinux will point the new file.  So it's absolutely needed to
+> use build-id when finding a kernel image.
+> 
+> In this patch, it's now changed to try to search a kernel dso using
+> "vmlinux" shortname (which always has a build-id) and, if not found,
+> search "[kernel.kallsyms]".
+> 
+> Before:
+> 
+>   $ perf report
+>   # Children      Self  Command  Shared Object      Symbol
+>   # ........  ........  .......  .................  ...............................
+>   #
+>       72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
+>       72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
+>       72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
+>       71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
+>    ...
+> 
+> After (for the same perf.data):
+> 
+>       72.15%     0.00%  swapper  vmlinux  [k] cpu_startup_entry
+>       72.15%     0.00%  swapper  vmlinux  [k] arch_cpu_idle
+>       72.15%     0.00%  swapper  vmlinux  [k] default_idle
+>       71.87%    71.87%  swapper  vmlinux  [k] native_safe_halt
+>    ...
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  drivers/message/fusion/mptsas.c | 1 +
->  1 file changed, 1 insertion(+)
+>  tools/perf/util/machine.c | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-> index 0707fa2..6dfee95 100644
-> --- a/drivers/message/fusion/mptsas.c
-> +++ b/drivers/message/fusion/mptsas.c
-> @@ -5385,6 +5385,7 @@ static struct pci_driver mptsas_driver = {
->  	.suspend	= mptscsih_suspend,
->  	.resume		= mptscsih_resume,
->  #endif
-> +	.driver.async_probe = true,
->  };
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index b2ec38bf211e..d9f828f3b54f 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+>  				strlen(kmmap_prefix));
+>  		/*
+>  		 * Should be there already, from the build-id table in
+> -		 * the header.
+> +		 * the header (but maybe with a different name: "vmlinux").
+>  		 */
+> -		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+> -						     kmmap_prefix);
+> +		struct dso *kernel = dsos__find(&machine->kernel_dsos,
+> +						"vmlinux", true);
+
+Isn't "vmlinux" just the basename of the original file name, so if it had a
+different name this wouldn't work e.g. if the filename had been
+/boot/vmlinuz-3.11.0-26-generic then you would need
+"vmlinuz-3.11.0-26-generic" for this to work?
+
+> +
+> +		if (kernel == NULL)
+> +			kernel = __dsos__findnew(&machine->kernel_dsos,
+> +						 kmmap_prefix);
+>  		if (kernel == NULL)
+>  			goto out_problem;
 >  
->  static int __init
 > 
-This is the wrong appoach.
-First of all, the mptsas, mpt2sas, and mpt3sas all share the same
-driver layout, so any issue happeing with this driver will most
-likely affect the others, too.
-Secondly the driver is event-based anyway, so we should be moving
-the initialisation to the already existing event handler:
-
-diff --git a/drivers/message/fusion/mptsas.c
-b/drivers/message/fusion/mptsas.c
-index 0707fa2..6f41e2c 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -5305,7 +5305,7 @@ mptsas_probe(struct pci_dev *pdev, const
-struct pci_device_id *id)
-        /* older firmware doesn't support expander events */
-        if ((ioc->facts.HeaderVersion >> 8) < 0xE)
-                ioc->old_sas_discovery_protocal = 1;
--       mptsas_scan_sas_topology(ioc);
-+       mptsas_queue_rescan(ioc);
-        mptsas_fw_event_on(ioc);
-        return 0;
-
 
