@@ -1,103 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660AbaIEASC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 20:18:02 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37223 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577AbaIEAR6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 20:17:58 -0400
-Date: Thu, 4 Sep 2014 17:17:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140905001751.GL5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140712181328.GA8738@redhat.com>
- <54079B70.4050200@hurleysoftware.com>
- <1409785893.30640.118.camel@pasglop>
- <21512.10628.412205.873477@gargle.gargle.HOWL>
- <20140904090952.GW17454@tucnak.redhat.com>
- <540859EC.5000407@hurleysoftware.com>
- <20140904175044.4697aee4@alan.etchedpixels.co.uk>
- <5408C0AB.6050801@hurleysoftware.com>
- <5408E4A3.2060303@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5408E4A3.2060303@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090500-3532-0000-0000-000004620A05
+	id S1755774AbaIEATo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:19:44 -0400
+Received: from webmail.tpnet.fi ([62.106.63.33]:35566 "EHLO webmail.tpnet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755692AbaIEATn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 20:19:43 -0400
+X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Sep 2014 20:19:43 EDT
+From: Anssi Hannula <anssi.hannula@iki.fi>
+To: Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] dm cache: fix race causing dirty blocks to be marked as clean
+Date: Fri,  5 Sep 2014 03:11:28 +0300
+Message-Id: <1409875888-1255-1-git-send-email-anssi.hannula@iki.fi>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <53F10F80.6080204@iki.fi>
+References: <53F10F80.6080204@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 03:16:03PM -0700, H. Peter Anvin wrote:
-> On 09/04/2014 12:42 PM, Peter Hurley wrote:
-> > 
-> > Or we could give up on the Alpha.
-> > 
-> 
-> If Alpha is turning into Voyager (kept alive only as a museum piece, but
-> actively causing problems) then please let's kill it.
+When a writeback or a promotion of a block is completed, the cell of
+that block is removed from the prison, the block is marked as clean, and
+the clear_dirty() callback of the cache policy is called.
 
-Sorry for being slow to join this thread, but I propose the following
-patch.  If we can remove support for all CPUs that to not support
-direct access to bytes and shorts (which I would very much like to
-see happen), I will remove the last non-guarantee.
+Unfortunately, performing those actions in this order allows an incoming
+new write bio for that block to come in before clearing the dirty status
+is completed and therefore possibly causing one of these two scenarios:
 
-							Thanx, Paul
+Scenario A:
 
-------------------------------------------------------------------------
+Thread 1                      Thread 2
+cell_defer()                  .
+- cell removed from prison    .
+- detained bios queued        .
+.                             incoming write bio
+.                             remapped to cache
+.                             set_dirty() called,
+.                               but block already dirty
+.                               => it does nothing
+clear_dirty()                 .
+- block marked clean          .
+- policy clear_dirty() called .
 
-documentation: Record limitations of bitfields and small variables
+Result: Block is marked clean even though it is actually dirty. No
+writeback will occur.
 
-This commit documents the fact that it is not safe to use bitfields
-as shared variables in synchronization algorithms.
+Scenario B:
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Thread 1                      Thread 2
+cell_defer()                  .
+- cell removed from prison    .
+- detained bios queued        .
+clear_dirty()                 .
+- block marked clean          .
+.                             incoming write bio
+.                             remapped to cache
+.                             set_dirty() called
+.                             - block marked dirty
+.                             - policy set_dirty() called
+- policy clear_dirty() called .
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 87be0a8a78de..a28bfe4fd759 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -269,6 +269,26 @@ And there are a number of things that _must_ or _must_not_ be assumed:
- 	STORE *(A + 4) = Y; STORE *A = X;
- 	STORE {*A, *(A + 4) } = {X, Y};
+Result: Block is properly marked as dirty, but policy thinks it is clean
+and therefore never asks us to writeback it.
+This case is visible in "dmsetup status" dirty block count (which
+normally decreases to 0 on a quiet device).
+
+Fix these issues by calling clear_dirty() before calling cell_defer().
+Incoming bios for that block will then be detained in the cell and
+released only after clear_dirty() has completed, so the race will not
+occur.
+
+Found by inspecting the code after noticing spurious dirty counts
+(scenario B).
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: Joe Thornber <ejt@redhat.com>
+Cc: stable@vger.kernel.org
+---
+
+> Unfortunately it seems there is some other potentially more serious bug
+> still in there...
+
+After looking through the code that indeed seems to be the case, as
+explained above.
+
+Unless I'm missing something?
+
+I can't say with 100% certainty if this fixes the spurious counts I saw
+since those took quite a long time (1-2 weeks?) to appear and the load
+of that system is somewhat irregular.
+
+
+ drivers/md/dm-cache-target.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index 1af40ee209e2..7130505c2425 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -895,8 +895,8 @@ static void migration_success_pre_commit(struct dm_cache_migration *mg)
+ 	struct cache *cache = mg->cache;
  
-+And there are anti-guarantees:
-+
-+ (*) These guarantees do not apply to bitfields, because compilers often
-+     generate code to modify these using non-atomic read-modify-write
-+     sequences.  Do not attempt to use bitfields to synchronize parallel
-+     algorithms.
-+
-+ (*) Even in cases where bitfields are protected by locks, all fields
-+     in a given bitfield must be protected by one lock.  If two fields
-+     in a given bitfield are protected by different locks, the compiler's
-+     non-atomic read-modify-write sequences can cause an update to one
-+     field to corrupt the value of an adjacent field.
-+
-+ (*) These guarantees apply only to properly aligned and sized scalar
-+     variables.  "Properly sized" currently means "int" and "long",
-+     because some CPU families do not support loads and stores of
-+     other sizes.  ("Some CPU families" is currently believed to
-+     be only Alpha 21064.  If this is actually the case, a different
-+     non-guarantee is likely to be formulated.)
-+
+ 	if (mg->writeback) {
+-		cell_defer(cache, mg->old_ocell, false);
+ 		clear_dirty(cache, mg->old_oblock, mg->cblock);
++		cell_defer(cache, mg->old_ocell, false);
+ 		cleanup_migration(mg);
+ 		return;
  
- =========================
- WHAT ARE MEMORY BARRIERS?
+@@ -951,13 +951,13 @@ static void migration_success_post_commit(struct dm_cache_migration *mg)
+ 		}
+ 
+ 	} else {
++		clear_dirty(cache, mg->new_oblock, mg->cblock);
+ 		if (mg->requeue_holder)
+ 			cell_defer(cache, mg->new_ocell, true);
+ 		else {
+ 			bio_endio(mg->new_ocell->holder, 0);
+ 			cell_defer(cache, mg->new_ocell, false);
+ 		}
+-		clear_dirty(cache, mg->new_oblock, mg->cblock);
+ 		cleanup_migration(mg);
+ 	}
+ }
+-- 
+1.8.4.5
 
