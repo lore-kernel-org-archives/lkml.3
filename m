@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755AbaIEKas (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:30:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46046 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756478AbaIEKaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:30:46 -0400
-Date: Fri, 5 Sep 2014 11:30:42 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linuxfoundation.org>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Default to node-ordering on 64-bit NUMA
- machines
-Message-ID: <20140905103041.GH17501@suse.de>
-References: <20140901125551.GI12424@suse.de>
- <20140902135120.GC29501@cmpxchg.org>
- <20140902152143.GL12424@suse.de>
- <20140904152915.GB10794@cmpxchg.org>
+	id S1756770AbaIEKeV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:34:21 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51391 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756461AbaIEKeU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 06:34:20 -0400
+Date: Fri, 5 Sep 2014 11:33:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Guodong Xu <guodong.xu@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140905103347.GC29327@sirena.org.uk>
+References: <1409879666.5208.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nxoMry5nym+Z12ly"
 Content-Disposition: inline
-In-Reply-To: <20140904152915.GB10794@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409879666.5208.2.camel@phoenix>
+X-Cookie: Simulated picture.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: hi6421: Fix misleading comment
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 11:29:29AM -0400, Johannes Weiner wrote:
-> On Tue, Sep 02, 2014 at 04:21:43PM +0100, Mel Gorman wrote:
-> > On Tue, Sep 02, 2014 at 09:51:20AM -0400, Johannes Weiner wrote:
-> > > On Mon, Sep 01, 2014 at 01:55:51PM +0100, Mel Gorman wrote:
-> > > > I cannot find a good reason to incur a performance penalty on all 64-bit NUMA
-> > > > machines in case someone throws a brain damanged TV or graphics card in there.
-> > > > This patch defaults to node-ordering on 64-bit NUMA machines. I was tempted
-> > > > to make it default everywhere but I understand that some embedded arches may
-> > > > be using 32-bit NUMA where I cannot predict the consequences.
-> > > 
-> > > This patch is a step in the right direction, but I'm not too fond of
-> > > further fragmenting this code and where it applies, while leaving all
-> > > the complexity from the heuristics and the zonelist building in, just
-> > > on spec.  Could we at least remove the heuristics too?  If anybody is
-> > > affected by this, they can always override the default on the cmdline.
-> > 
-> > I see no problem with deleting the heuristics. Default node for 64-bit
-> > and default zone for 32-bit sound ok to you?
-> 
-> Is there a strong reason against defaulting both to node order?  Zone
-> ordering, if anything, is a niche application.  We might even be able
-> to remove it in the future.  We still have the backup of allowing the
-> user to explicitely request zone ordering on the commandline, should
-> someone depend on it unexpectedly.
 
-Low memory depletion is the reason to default to zone order on 32-bit
-NUMA. If processes on node 0 deplete the Normal zone from normal
-activity then other nodes must keep reclaiming from Normal for all kernel
-allocations. The problem is worse if CONFIG_HIGHPTE is not set.
+--nxoMry5nym+Z12ly
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-A default of node-ordering on 32-bit NUMA increases low memory pressure
-leading to increased reclaim and potentially easier to trigger OOM. I
-expect this problem was worse in the past when the normal zone could be
-filled with dirty pages under writeback.  However low memory pressure is
-still enough of a concern that I'm wary of changing the default of 32-bit
-NUMA without knowing who even cares about 32-bit NUMA.
+On Fri, Sep 05, 2014 at 09:14:26AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
--- 
-Mel Gorman
-SUSE Labs
+Applied, thanks.
+
+--nxoMry5nym+Z12ly
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUCZGIAAoJELSic+t+oim9B+YP/R3ql/DxzWQAORfZYzH5f+iC
+y7611N0EZYnIQ5vPUfEu9/AIXItAR+QUlYLRIVjwMLF4Cm8SiMcRGdyZVLXDh8Dc
+9Cu/qmL5Kgd7kNydVsSSrnk6Kd5VpIex4afodTgTNWjBv+a+GADvxJ4Fa7dfKtaU
+IDgnvYQWOsSzdDwSv81zZ43B1bq0shQqUxHWje6PeCt0dzuH6wvFWoRK1AzXS1P6
+/cAAANVSk17OoaWCfDxDl/HcrM33YGTOLvQA5jepL5KKRO/sXoBSOT+hxqZPB3FT
+DQZbRpKPXNxGHbDTZivFuOfSBAfxCZeuf4DpqbBgpt2yQ+9QoI1KtL0dyCO46cpM
+DBvziwx50DKUPW3V8u0NmefxpghwNRmIxqPcFZ6wTJYBPWB419TRd9wAI1azAtUd
+vTsX6aRXwJav8qAJNae4iS47bBjPRQzAVL7lvRTU+X8Ue1lEr4LZEKAjlMfTUc54
+F1oIBlKeJp1Z6G2iYxr1iuSPdOmTcoaL7tFmfCEeT4oXRHC0P0RMwQMtYJnE5m4t
+RGtb15+sVz2YLRq6yc7H7kKVj0Hf0/yRgLiUVRnGxt+yJCcHWINliH8kX2cAhUQr
+SYTnKNzJzV+HyW/UcUWayxB4DWmNV+mY04Y9ZKxi0UARsrPdMH0FM32DgyHEwtD5
+bZGsP8V+e2c6HKwLIhcf
+=JDAR
+-----END PGP SIGNATURE-----
+
+--nxoMry5nym+Z12ly--
