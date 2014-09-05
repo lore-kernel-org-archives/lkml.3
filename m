@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357AbaIEEGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 00:06:53 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:41413 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaIEEGv (ORCPT
+	id S1751782AbaIEEI6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 00:08:58 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59507 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750762AbaIEEI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 00:06:51 -0400
-Date: Thu, 4 Sep 2014 21:06:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140905040645.GO5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <54079B70.4050200@hurleysoftware.com>
- <1409785893.30640.118.camel@pasglop>
- <21512.10628.412205.873477@gargle.gargle.HOWL>
- <20140904090952.GW17454@tucnak.redhat.com>
- <540859EC.5000407@hurleysoftware.com>
- <20140904175044.4697aee4@alan.etchedpixels.co.uk>
- <5408C0AB.6050801@hurleysoftware.com>
- <20140905001751.GL5001@linux.vnet.ibm.com>
- <1409883098.5078.14.camel@jarvis.lan>
- <5409243C.4080704@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5409243C.4080704@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090504-1542-0000-0000-0000048CFAB4
+	Fri, 5 Sep 2014 00:08:57 -0400
+X-Sasl-enc: quHYDhEdoD3/wr1oXYqWGPfKc8VMVsGRrv389SNH12G0 1409890135
+Message-ID: <1409890133.10788.23.camel@localhost>
+Subject: Re: [PATCH] kernel: add support for gcc 5
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Joe Perches <joe@perches.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        akpm@linuxfoundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 05 Sep 2014 06:08:53 +0200
+In-Reply-To: <54092FE0.3030004@oracle.com>
+References: <1409845039-5751-1-git-send-email-sasha.levin@oracle.com>
+		 <20140904212535.GA5059@drone.musicnaut.iki.fi>
+		 <1409870628.2310799.163815377.623F33D2@webmail.messagingengine.com>
+	 <1409874455.2770.26.camel@joe-AO725> <54092FE0.3030004@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
-> Hi James,
-> 
-> On 09/04/2014 10:11 PM, James Bottomley wrote:
-> > On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
-> >> +And there are anti-guarantees:
-> >> +
-> >> + (*) These guarantees do not apply to bitfields, because compilers often
-> >> +     generate code to modify these using non-atomic read-modify-write
-> >> +     sequences.  Do not attempt to use bitfields to synchronize parallel
-> >> +     algorithms.
-> >> +
-> >> + (*) Even in cases where bitfields are protected by locks, all fields
-> >> +     in a given bitfield must be protected by one lock.  If two fields
-> >> +     in a given bitfield are protected by different locks, the compiler's
-> >> +     non-atomic read-modify-write sequences can cause an update to one
-> >> +     field to corrupt the value of an adjacent field.
-> >> +
-> >> + (*) These guarantees apply only to properly aligned and sized scalar
-> >> +     variables.  "Properly sized" currently means "int" and "long",
-> >> +     because some CPU families do not support loads and stores of
-> >> +     other sizes.  ("Some CPU families" is currently believed to
-> >> +     be only Alpha 21064.  If this is actually the case, a different
-> >> +     non-guarantee is likely to be formulated.)
+On Do, 2014-09-04 at 23:37 -0400, Sasha Levin wrote:
+> On 09/04/2014 07:47 PM, Joe Perches wrote:
+> > On Fri, 2014-09-05 at 00:43 +0200, Hannes Frederic Sowa wrote:
+> >> > Most statements are already depending on GCC_VERSION, maybe we can just
+> >> > unify all gcc specific headers to one, still trying to keep the file
+> >> > organized? ;)
+> > Maybe something like:
 > > 
-> > This is a bit unclear.  Presumably you're talking about definiteness of
-> > the outcome (as in what's seen after multiple stores to the same
-> > variable).
+> > gnu development of gcc will be more frequent and the use of
+> > compiler-gcc<major>.h likely will not be convenient anymore.
+> > 
+> > Integrate the individual compiler-gcc<major>.h files into
+> > compiler-gcc.h.
 > 
-> No, the last conditions refers to adjacent byte stores from different
-> cpu contexts (either interrupt or SMP).
+> Please no. We have a similar file we maintain in our team that's supposed to
+> do something very similar for kernel versions. It goes all the way back to
+> 2.6.9 and it's a *horrible* mess.
 > 
-> > The guarantees are only for natural width on Parisc as well,
-> > so you would get a mess if you did byte stores to adjacent memory
-> > locations.
-> 
-> For a simple test like:
-> 
-> struct x {
-> 	long a;
-> 	char b;
-> 	char c;
-> 	char d;
-> 	char e;
-> };
-> 
-> void store_bc(struct x *p) {
-> 	p->b = 1;
-> 	p->c = 2;
-> }
-> 
-> on parisc, gcc generates separate byte stores
-> 
-> void store_bc(struct x *p) {
->    0:	34 1c 00 02 	ldi 1,ret0
->    4:	0f 5c 12 08 	stb ret0,4(r26)
->    8:	34 1c 00 04 	ldi 2,ret0
->    c:	e8 40 c0 00 	bv r0(rp)
->   10:	0f 5c 12 0a 	stb ret0,5(r26)
-> 
-> which appears to confirm that on parisc adjacent byte data
-> is safe from corruption by concurrent cpu updates; that is,
-> 
-> CPU 0                | CPU 1
->                      |
-> p->b = 1             | p->c = 2
->                      |
-> 
-> will result in p->b == 1 && p->c == 2 (assume both values
-> were 0 before the call to store_bc()).
+> This is how compiler-gcc.h will end up looking in a while.
 
-What Peter said.  I would ask for suggestions for better wording, but
-I would much rather be able to say that single-byte reads and writes
-are atomic and that aligned-short reads and writes are also atomic.
+Something along these lines? We can make '4' a macro describing it
+references the latest possible compiler-gccX.h file.
 
-Thus far, it looks like we lose only very old Alpha systems, so unless
-I hear otherwise, I update my patch to outlaw these very old systems.
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -103,7 +103,12 @@
+ #define __gcc_header(x) #x
+ #define _gcc_header(x) __gcc_header(linux/compiler-gcc##x.h)
+ #define gcc_header(x) _gcc_header(x)
++
++#if __GNUC__ > 4
++#include gcc_header(4)
++#else
+ #include gcc_header(__GNUC__)
++#endif
+ 
+ #if !defined(__noclone)
+ #define __noclone      /* not needed */
 
-						Thanx, Paul
+
+I still think we should start chaining newer gcc header files to
+deduplicate the content. What do you think?
+
+Bye,
+Hannes
+
 
