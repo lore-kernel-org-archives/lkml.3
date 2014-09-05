@@ -1,100 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344AbaIEMbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:31:21 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35914 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932179AbaIEMbT (ORCPT
+	id S1757014AbaIEMfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:35:15 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:23866 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaIEMfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:31:19 -0400
-Message-ID: <5409AD0A.5090305@hurleysoftware.com>
-Date: Fri, 05 Sep 2014 08:31:06 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>,
-        "'paulmck@linux.vnet.ibm.com'" <paulmck@linux.vnet.ibm.com>
-CC: Jakub Jelinek <jakub@redhat.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-arm@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <21512.10628.412205.873477@gargle.gargle.HOWL> <20140904090952.GW17454@tucnak.redhat.com> <540859EC.5000407@hurleysoftware.com> <20140904175044.4697aee4@alan.etchedpixels.co.uk> <5408C0AB.6050801@hurleysoftware.com> <20140905001751.GL5001@linux.vnet.ibm.com> <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com> <20140905040645.GO5001@linux.vnet.ibm.com> <063D6719AE5E284EB5DD2968C1650D6D17487F66@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17487F66@AcuExch.aculab.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Fri, 5 Sep 2014 08:35:10 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-10-5409adfce22d
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v5 RESEND 3/3] ARM: exynos4: hotplug: Fix CPU idle clock down
+ after CPU off
+Date: Fri, 05 Sep 2014 14:34:55 +0200
+Message-id: <1409920495-16533-3-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1409920495-16533-1-git-send-email-k.kozlowski@samsung.com>
+References: <1409920495-16533-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xK7p/1nKGGJz8K26xccZ6Vot5n2Ut
+	Xr8wtOhdcJXN4mzTG3aLTY+vsVpc3jWHzWLG+X1MFrcv81qsPXKX3eLkn15Gi1W7/jA68Hi0
+	NPeweeycdZfd4861PWwem5fUe/RtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfGjo6D7AUnNCt+
+	T7jG2sD4Q7GLkZNDQsBE4uns2cwQtpjEhXvr2boYuTiEBJYySuzrOcsM4fQxSSzafwKsik3A
+	WGLz8iVgVSICOxgllt+7zA7iMAscYZJYdmIzE0iVsECsxOsZt9hAbBYBVYmF/9awgti8Au4S
+	a/qfskHsk5M4eWwyWJxTwEPib0czC4gtBFQz+d065gmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YW
+	l+al6yXn525ihITj1x2MS49ZHWIU4GBU4uHt0OQMEWJNLCuuzD3EKMHBrCTC6z4FKMSbklhZ
+	lVqUH19UmpNafIiRiYNTqoFx4m2zcx/n75Zh2H8w92/ydLtJuS3P/CSu/cldMZd7H+el3y/c
+	aw46XD5lv8eotGVf+jspR4fX2U4KCp5M9213SQVs+PUwT67t13zJ2qvRPpHK80xFZ53kK5bL
+	7TrxOvVxl1GRfomcyMoNnxU1JgnuVXzdffruu3+PufUuftTRfnT58Mw5b15UK7EUZyQaajEX
+	FScCAM56yG4lAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc linux-arm ]
+On Exynos4 USE_DELAYED_RESET_ASSERTION must be set in
+ARM_COREx_OPTION register during CPU power down. This is the proper way
+of powering down CPU on Exynos4.
 
-Hi David,
+Additionally on Exynos4212 without this the CPU clock down feature won't
+work after powering down some CPU and the online CPUs will work at full
+frequency chosen by CPUfreq governor.
 
-On 09/05/2014 04:30 AM, David Laight wrote:
-> I've seen gcc generate 32bit accesses for 16bit structure members on arm.
-> It does this because of the more limited range of the offsets for the 16bit access.
-> OTOH I don't know if it ever did this for writes - so it may be moot.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-Can you recall the particulars, like what ARM config or what code?
+---
+Changes since v4:
+1. Rebase on linux-next-20140804.
+2. Add Reviewed-by Tomasz Figa.
 
-I tried an overly-simple test to see if gcc would bump up to the word load for
-the 12-bit offset mode, but it stuck with register offset rather than immediate
-offset. [I used the compiler options for allmodconfig and a 4.8 cross-compiler.]
+Changes since v3:
+1. Add patches moving hotplug code to platsmp.c file (patches 1 and 2).
+   Suggested by Tomasz Figa.
+2. Remove declaration of exynos_clear_delayed_reset_assertion() in
+   header because hotplug code is integrated into platsmp.c file.
+   Suggested by Tomasz Figa.
+3. Replace 'clear' helper with 'set' helper. Suggested by Tomasz Figa.
 
-Maybe the test doesn't generate enough register pressure on the compiler?
+Changes since v2:
+1. Add missing disable of the "use delayed reset assertion" feature
+   when starting secondary CPU (suggested by Tomasz Figa).
 
-Regards,
-Peter Hurley
+Changes since v1:
+1. Use delayed reset assertion on all Exynos4 family and all cores, not
+   only on core 1 of Exynos4212.
+2. Rebase on Tomasz Figa's patch:
+   ARM: EXYNOS: Fix core ID used by platsmp and hotplug code
+   http://www.spinics.net/lists/linux-samsung-soc/msg31604.html
+   Tomasz's patch is currently applied to Kukjin's v3.16-samsung-fixes-4
+---
+ arch/arm/mach-exynos/platsmp.c  | 43 +++++++++++++++++++++++++++++++++++++++--
+ arch/arm/mach-exynos/regs-pmu.h |  3 +++
+ 2 files changed, 44 insertions(+), 2 deletions(-)
 
-#define ARRAY_SIZE(x)  (sizeof(x)/sizeof((x)[0]))
-
-struct x {
-	long unused[64];
-	short b[12];
-	int unused2[10];
-	short c;
-};
-
-void store_c(struct x *p, short a[]) {
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(p->b); i++)
-		p->b[i] = a[i];
-	p->c = 2;
-}
-
-
-void store_c(struct x *p, short a[]) {
-   0:	e1a0c00d 	mov	ip, sp
-   4:	e3a03000 	mov	r3, #0
-   8:	e92dd800 	push	{fp, ip, lr, pc}
-   c:	e24cb004 	sub	fp, ip, #4
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(p->b); i++)
-		p->b[i] = a[i];
-  10:	e191c0b3 	ldrh	ip, [r1, r3]
-  14:	e0802003 	add	r2, r0, r3
-  18:	e2822c01 	add	r2, r2, #256	; 0x100
-  1c:	e2833002 	add	r3, r3, #2
-  20:	e3530018 	cmp	r3, #24
-  24:	e1c2c0b0 	strh	ip, [r2]
-  28:	1afffff8 	bne	10 <store_c+0x10>
-	p->c = 2;
-  2c:	e3a03d05 	mov	r3, #320	; 0x140
-  30:	e3a02002 	mov	r2, #2
-  34:	e18020b3 	strh	r2, [r0, r3]
-  38:	e89da800 	ldm	sp, {fp, sp, pc}
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 83b20a38a598..99c151bf30ad 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -34,8 +34,32 @@
+ 
+ extern void exynos4_secondary_startup(void);
+ 
++/*
++ * Set or clear the USE_DELAYED_RESET_ASSERTION option, set on Exynos4 SoCs
++ * during hot-(un)plugging CPUx.
++ *
++ * The feature can be cleared safely during first boot of secondary CPU.
++ *
++ * Exynos4 SoCs require setting USE_DELAYED_RESET_ASSERTION during powering
++ * down a CPU so the CPU idle clock down feature could properly detect global
++ * idle state when CPUx is off.
++ */
++static void exynos_set_delayed_reset_assertion(u32 core_id, bool enable)
++{
++	if (soc_is_exynos4()) {
++		unsigned int tmp;
++
++		tmp = pmu_raw_readl(EXYNOS_ARM_CORE_OPTION(core_id));
++		if (enable)
++			tmp |= S5P_USE_DELAYED_RESET_ASSERTION;
++		else
++			tmp &= ~(S5P_USE_DELAYED_RESET_ASSERTION);
++		pmu_raw_writel(tmp, EXYNOS_ARM_CORE_OPTION(core_id));
++	}
++}
++
+ #ifdef CONFIG_HOTPLUG_CPU
+-static inline void cpu_leave_lowpower(void)
++static inline void cpu_leave_lowpower(u32 core_id)
+ {
+ 	unsigned int v;
+ 
+@@ -49,6 +73,8 @@ static inline void cpu_leave_lowpower(void)
+ 	  : "=&r" (v)
+ 	  : "Ir" (CR_C), "Ir" (0x40)
+ 	  : "cc");
++
++	 exynos_set_delayed_reset_assertion(core_id, false);
+ }
+ 
+ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+@@ -61,6 +87,14 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+ 		/* Turn the CPU off on next WFI instruction. */
+ 		exynos_cpu_power_down(core_id);
+ 
++		/*
++		 * Exynos4 SoCs require setting
++		 * USE_DELAYED_RESET_ASSERTION so the CPU idle
++		 * clock down feature could properly detect
++		 * global idle state when CPUx is off.
++		 */
++		exynos_set_delayed_reset_assertion(core_id, true);
++
+ 		wfi();
+ 
+ 		if (pen_release == core_id) {
+@@ -286,6 +320,9 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 		udelay(10);
+ 	}
+ 
++	/* No harm if this is called during first boot of secondary CPU */
++	exynos_set_delayed_reset_assertion(core_id, false);
++
+ 	/*
+ 	 * now the secondary core is starting up let it run its
+ 	 * calibrations, then wait for it to finish
+@@ -376,6 +413,8 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
+ static void exynos_cpu_die(unsigned int cpu)
+ {
+ 	int spurious = 0;
++	u32 mpidr = cpu_logical_map(cpu);
++	u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+ 
+ 	v7_exit_coherency_flush(louis);
+ 
+@@ -385,7 +424,7 @@ static void exynos_cpu_die(unsigned int cpu)
+ 	 * bring this CPU back into the world of cache
+ 	 * coherency, and then restore interrupts
+ 	 */
+-	cpu_leave_lowpower();
++	cpu_leave_lowpower(core_id);
+ 
+ 	if (spurious)
+ 		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
+diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
+index 96a1569262b5..4e9b4440e2bd 100644
+--- a/arch/arm/mach-exynos/regs-pmu.h
++++ b/arch/arm/mach-exynos/regs-pmu.h
+@@ -20,6 +20,7 @@
+ 
+ #define S5P_USE_STANDBY_WFI0			(1 << 16)
+ #define S5P_USE_STANDBY_WFE0			(1 << 24)
++#define S5P_USE_DELAYED_RESET_ASSERTION		BIT(12)
+ 
+ #define EXYNOS_SWRESET				0x0400
+ #define EXYNOS5440_SWRESET			0x00C4
+@@ -106,6 +107,8 @@
+ 			(EXYNOS_ARM_CORE0_CONFIGURATION + (0x80 * (_nr)))
+ #define EXYNOS_ARM_CORE_STATUS(_nr)		\
+ 			(EXYNOS_ARM_CORE_CONFIGURATION(_nr) + 0x4)
++#define EXYNOS_ARM_CORE_OPTION(_nr)		\
++			(EXYNOS_ARM_CORE_CONFIGURATION(_nr) + 0x8)
+ 
+ #define EXYNOS_ARM_COMMON_CONFIGURATION		0x2500
+ #define EXYNOS_COMMON_CONFIGURATION(_nr)	\
+-- 
+1.9.1
 
