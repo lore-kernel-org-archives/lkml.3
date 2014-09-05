@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaIEG0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:26:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41293 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaIEG0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:26:22 -0400
+	id S1753905AbaIEG0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:26:53 -0400
+Received: from mail-bn1bon0137.outbound.protection.outlook.com ([157.56.111.137]:58000
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752283AbaIEG0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 02:26:48 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv2 3/4] Clocksource: Flextimer: Set cpumask to cpu_possible_mask
+Date: Fri, 5 Sep 2014 13:02:19 +0800
+Message-ID: <1409893340-30027-4-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1409893340-30027-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1409893340-30027-1-git-send-email-Li.Xiubo@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019016)(6009001)(189002)(199003)(105606002)(104166001)(26826002)(95666004)(81542001)(46102001)(81342001)(229853001)(64706001)(47776003)(50986999)(74502001)(76176999)(68736004)(74662001)(87286001)(80022001)(20776003)(104016003)(102836001)(36756003)(48376002)(83322001)(97736001)(84676001)(107046002)(44976005)(19580405001)(99396002)(50226001)(6806004)(92726001)(4396001)(85852003)(106466001)(83072002)(93916002)(575784001)(86362001)(89996001)(77982001)(92566001)(62966002)(79102001)(50466002)(31966008)(77156001)(85306004)(88136002)(76482001)(19580395003)(90102001)(21056001)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0622;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <87bnquk4fe.fsf@rustcorp.com.au>
-References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com>
-	<20140902162146.GA28741@infradead.org>
-	<5405EF38.60007@kernel.dk>
-	<20140903121902.7a9f5a5a@tom-ThinkPad-T410>
-	<87bnquk4fe.fsf@rustcorp.com.au>
-Date: Fri, 5 Sep 2014 14:26:19 +0800
-Message-ID: <CACVXFVPeGvmv_hSz+_+1Wj3DuUMtQiE-zjq6_fLZveiHH3NuUw@mail.gmail.com>
-Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
-From: Ming Lei <ming.lei@canonical.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kick In <pierre-andre.morey@canonical.com>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0325F6C77B
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 1:43 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Ming Lei <ming.lei@canonical.com> writes:
->> On Tue, 02 Sep 2014 10:24:24 -0600
->> Jens Axboe <axboe@kernel.dk> wrote:
->>
->>> On 09/02/2014 10:21 AM, Christoph Hellwig wrote:
->>> > Btw, one thing we should reconsider is where we set
->>> > QUEUE_FLAG_NO_SG_MERGE.  At least for virtio-blk it seems to me that
->>> > doing the S/G merge should be a lot cheaper than fanning out into the
->>> > indirect descriptors.
->>
->> Indirect is always considered first no matter SG merge is off or on,
->> at least from current virtio-blk implementation.
->>
->> But it is a good idea to try direct descriptor first, the below simple
->> change can improve randread(libaio, O_DIRECT, multi-queue) 7% in my test,
->> and 77% transfer starts to use direct descriptor, and almost all transfer
->> uses indirect descriptor only in current upstream implementation.
->
-> Hi Ming!
->
->         In general, we want to use direct descriptors of we have plenty
-> of descriptors, and indirect if the ring is going to fill up.  I was
-> thinking about this just yesterday, in fact.
+The Flextimer is not tied to CPU0, make it usable on any CPU.
+For Vybrid there is only one CPU, while for LS1+ there are more
+than one.
 
-I thought about the idea further and looks it isn't mature at least for
-virtio-blk:
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/clocksource/fsl_ftm_timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-- the queue num is a bit small, for example 128 returned from QEMU
-- so it is easy to exhaust all direct descriptors, and queue has to be
-stopped
+diff --git a/drivers/clocksource/fsl_ftm_timer.c b/drivers/clocksource/fsl_ftm_timer.c
+index ccb8c32..c0ce603 100644
+--- a/drivers/clocksource/fsl_ftm_timer.c
++++ b/drivers/clocksource/fsl_ftm_timer.c
+@@ -214,7 +214,7 @@ static int __init ftm_clockevent_init(unsigned long freq, int irq)
+ 		return err;
+ 	}
+ 
+-	ftm_clockevent.cpumask = cpumask_of(0);
++	ftm_clockevent.cpumask = cpu_all_mask;
+ 	ftm_clockevent.irq = irq;
+ 
+ 	clockevents_config_and_register(&ftm_clockevent,
+-- 
+2.1.0.27.g96db324
 
-My previous test is based on null_blk which is quite fast so no
-above problem.
-
-IMO, there are at least two advantages by using indirect descriptors:
-
-- queue won't be stopped because descriptor is enough(may not be true
-for other virtio devices, like virtio-net, rx traffic is difficult to predict)
-- good cache utilization because all descriptors are put together
-
-The main problem is the extra kmalloc(), which might be
-improved by a memory pool.
-
->
-> I've been trying to use EWMA to figure out how full the ring gets, but
-
-How full should have been figured out by num_free?
-
-> so far it's not working well.  I'm still hacking on a solution though,
-> and your thoughts would be welcome.
-
-I am wondering if it is easy to predict how many transfers will be coming
-with some mathematics model. My concern is that the cost caused by
-stopping queue may overwhelm advantage from using direct descriptor.
-
-
-Thanks,
