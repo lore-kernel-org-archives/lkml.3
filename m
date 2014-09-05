@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaIEIDS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 04:03:18 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:36786 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaIEIDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 04:03:14 -0400
+	id S1756347AbaIEIDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 04:03:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43402 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700AbaIEIDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 04:03:36 -0400
+Message-ID: <54096E56.3050809@suse.com>
+Date: Fri, 05 Sep 2014 10:03:34 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1409415565-13232-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1409415565-13232-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Fri, 5 Sep 2014 10:03:13 +0200
-Message-ID: <CACRpkdbunsVd5Y2aiS6dXAgD6DpyFe8ukm12n7YM97M=q7X+mQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: bcm281xx: Add remove function to pinctrl_unregister
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sherman Yin <syin@broadcom.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, jbeulich@suse.com
+Subject: Re: [PATCH 3/3] xen: eliminate scalability issues from initial mapping
+ setup
+References: <1409834326-29287-1-git-send-email-jgross@suse.com> <1409834326-29287-4-git-send-email-jgross@suse.com> <54086244.7020601@citrix.com>
+In-Reply-To: <54086244.7020601@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 6:19 PM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
-
-> This patch adds a remove function in platform_driver to pinctrl_unregister
-> for clean unloading.
-> This makes local struct pinctrl_dev a part of struct bcm281xx_pinctrl_data to
-> be accessed from pdev in remove function.
+On 09/04/2014 02:59 PM, David Vrabel wrote:
+> On 04/09/14 13:38, Juergen Gross wrote:
+>> Direct Xen to place the initial P->M table outside of the initial
+>> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
+>> restriction on the size of the initial mapping limits the amount
+>> of memory a domain can be handed initially.
 >
-> CC: Sherman Yin <syin@broadcom.com>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> The three level p2m limits memory to 512 GiB on x86-64 but this patch
+> doesn't seem to address this limit and thus seems a bit useless to me.
 
-Since this driver is a "bool" in Kconfig, it is not loaded as a module
-and .remove() is never called.
+Yeah, there seem to be some bits missing...
 
-So this is unnecessary.
+I'll add another patch to support a 4 level p2m scheme in the kernel.
+For the Xen tools I'll do it, too.
 
-Yours,
-Linus Walleij
+
+Juergen
