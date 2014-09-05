@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770AbaIEQTU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:19:20 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:50111 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124AbaIEQTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:19:19 -0400
+	id S1751928AbaIEQUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:20:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742AbaIEQUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 12:20:35 -0400
+Message-ID: <5409E2C8.2080200@redhat.com>
+Date: Fri, 05 Sep 2014 18:20:24 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
-Date: Fri, 5 Sep 2014 09:19:17 -0700
-Message-ID: <CAMEtUuwx12Df79KV6kG+5eGJ=zH4XQ8+rpnst9WKT1oueYZTkQ@mail.gmail.com>
-Subject: Re: [PATCH] bpf: fix a false positive kmemcheck warning
-From: Alexei Starovoitov <ast@plumgrid.com>
 To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
+CC: Alexei Starovoitov <ast@plumgrid.com>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] bpf: fix a false positive kmemcheck warning
+References: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 9:01 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+Hi Mikulas,
+
+On 09/05/2014 06:01 PM, Mikulas Patocka wrote:
 > This patch fixes false positive kmemcheck warning in bpf.
 >
 > When we try to write the variable len, the compiler generates a code that
@@ -32,35 +35,48 @@ On Fri, Sep 5, 2014 at 9:01 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
 > 32-bit word back. The reading of the word results in kmemcheck warning due
 > to reading uninitialized memory. This patch fixes it by avoiding using bit
 > fields when kmemcheck is enabled.
+>
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
-It will conflict with pending Hannes's patch.
-Once it's in, I can rebase and actually make it unconditional.
-These bit savings probably not worth it, since bpf_prog is
-dominated by program anyway.
+You need to submit this patch to netdev (Cc'ed).
 
-JITs would need to be updated as well, since they're now do
-->jited = 1;
-I can fix this all up.
-Do you mind sharing the kmemcheck warning you see?
-
+> ---
+>   include/linux/filter.h |    5 +++++
+>   1 file changed, 5 insertions(+)
+>
 > Index: linux-2.6/include/linux/filter.h
 > ===================================================================
-> --- linux-2.6.orig/include/linux/filter.h       2014-09-04 23:04:26.000000000 +0200
-> +++ linux-2.6/include/linux/filter.h    2014-09-04 23:43:05.000000000 +0200
-
-why diff says 2.6 ? Kinda odd.
-
+> --- linux-2.6.orig/include/linux/filter.h	2014-09-04 23:04:26.000000000 +0200
+> +++ linux-2.6/include/linux/filter.h	2014-09-04 23:43:05.000000000 +0200
 > @@ -325,8 +325,13 @@ struct sock;
->  struct seccomp_data;
+>   struct seccomp_data;
 >
->  struct bpf_prog {
+>   struct bpf_prog {
 > +#ifdef CONFIG_KMEMCHECK
-> +       bool                    jited;
-> +       u32                     len;
+> +	bool			jited;
+> +	u32			len;
 > +#else
->         u32                     jited:1,        /* Is our filter JIT'ed? */
->                                 len:31;         /* Number of filter blocks */
+>   	u32			jited:1,	/* Is our filter JIT'ed? */
+>   				len:31;		/* Number of filter blocks */
 > +#endif
->         struct sock_fprog_kern  *orig_prog;     /* Original BPF program */
->         unsigned int            (*bpf_func)(const struct sk_buff *skb,
->                                             const struct bpf_insn *filter);
+>   	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
+>   	unsigned int		(*bpf_func)(const struct sk_buff *skb,
+>   					    const struct bpf_insn *filter);
+
+I don't really like this if-def. If you really want to fix it, can't
+you just use :
+
+   kmemcheck_bitfield_begin(bpf_anc_data)
+   ...
+   kmemcheck_bitfield_end(bpf_anc_data)
+
+et al infrastructure as container (in case in future we will add some more
+bit flags, since len doesn't really need all 31 bit universe)?
+
+Note, there are currently some patches pending in patchwork that also fill
+the u32 hole thus the extra bool would introduce a new hole after that.
+
+Therefore, I think above would be better.
+
+Thanks,
+Daniel
