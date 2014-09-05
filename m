@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaIERaf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:30:35 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:33677 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaIERaa (ORCPT
+	id S1754543AbaIERc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:32:59 -0400
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:55870 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016AbaIERae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:30:30 -0400
+	Fri, 5 Sep 2014 13:30:34 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -21,9 +21,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
         linux-mips@linux-mips.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 01/16] MIPS: Provide a generic plat_irq_dispatch
-Date: Fri,  5 Sep 2014 10:30:03 -0700
-Message-Id: <1409938218-9026-2-git-send-email-abrestic@chromium.org>
+Subject: [PATCH v2 08/16] irqchip: mips-gic: Implement generic irq_ack/irq_eoi callbacks
+Date: Fri,  5 Sep 2014 10:30:10 -0700
+Message-Id: <1409938218-9026-9-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
 References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
@@ -31,69 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For platforms which boot with device-tree and use the MIPS CPU interrupt
-controller binding, a generic plat_irq_dispatch() can be used since all
-CPU interrupts should be mapped through the CPU IRQ domain.  Implement a
-plat_irq_dispatch() which simply handles the highest pending interrupt.
+Implement a default gic_irq_ack() and gic_finish_irq().  These are
+suitable for handling IPIs on Malta and the upcoming Danube board.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Tested-by: Jonas Gorski <jogo@openwrt.org>
 ---
 No changes from v1.
 ---
- arch/mips/kernel/irq_cpu.c | 28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
+ drivers/irqchip/irq-mips-gic.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/mips/kernel/irq_cpu.c b/arch/mips/kernel/irq_cpu.c
-index e498f2b..9cf8459 100644
---- a/arch/mips/kernel/irq_cpu.c
-+++ b/arch/mips/kernel/irq_cpu.c
-@@ -116,6 +116,24 @@ void __init mips_cpu_irq_init(void)
+diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
+index f29bb4e..0549768 100644
+--- a/drivers/irqchip/irq-mips-gic.c
++++ b/drivers/irqchip/irq-mips-gic.c
+@@ -239,6 +239,20 @@ static void gic_unmask_irq(struct irq_data *d)
+ 	GIC_SET_INTR_MASK(d->irq - gic_irq_base);
  }
  
- #ifdef CONFIG_IRQ_DOMAIN
-+static struct irq_domain *mips_intc_domain;
-+
-+asmlinkage void __weak plat_irq_dispatch(void)
++void __weak gic_irq_ack(struct irq_data *d)
 +{
-+	unsigned int pending = read_c0_cause() & read_c0_status() & ST0_IM;
-+	unsigned int hw;
-+	int irq;
++	GIC_CLR_INTR_MASK(d->irq - gic_irq_base);
 +
-+	if (!pending) {
-+		spurious_interrupt();
-+		return;
-+	}
-+
-+	hw = fls(pending) - CAUSEB_IP - 1;
-+	irq = irq_linear_revmap(mips_intc_domain, hw);
-+	do_IRQ(irq);
++	/* Clear edge detector */
++	if (gic_irq_flags[d->irq - gic_irq_base] & GIC_TRIG_EDGE)
++		GICWRITE(GIC_REG(SHARED, GIC_SH_WEDGE), d->irq - gic_irq_base);
 +}
 +
- static int mips_cpu_intc_map(struct irq_domain *d, unsigned int irq,
- 			     irq_hw_number_t hw)
++void __weak gic_finish_irq(struct irq_data *d)
++{
++	GIC_SET_INTR_MASK(d->irq - gic_irq_base);
++}
++
+ static int gic_set_type(struct irq_data *d, unsigned int type)
  {
-@@ -141,15 +159,15 @@ static const struct irq_domain_ops mips_cpu_intc_irq_domain_ops = {
- int __init mips_cpu_intc_init(struct device_node *of_node,
- 			      struct device_node *parent)
- {
--	struct irq_domain *domain;
--
- 	/* Mask interrupts. */
- 	clear_c0_status(ST0_IM);
- 	clear_c0_cause(CAUSEF_IP);
- 
--	domain = irq_domain_add_legacy(of_node, 8, MIPS_CPU_IRQ_BASE, 0,
--				       &mips_cpu_intc_irq_domain_ops, NULL);
--	if (!domain)
-+	mips_intc_domain = irq_domain_add_legacy(of_node, 8,
-+						 MIPS_CPU_IRQ_BASE, 0,
-+						 &mips_cpu_intc_irq_domain_ops,
-+						 NULL);
-+	if (!mips_intc_domain)
- 		panic("Failed to add irqdomain for MIPS CPU");
- 
- 	return 0;
+ 	unsigned int irq = d->irq - gic_irq_base;
 -- 
 2.1.0.rc2.206.gedb03e5
 
