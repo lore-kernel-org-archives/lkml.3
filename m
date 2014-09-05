@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaIEHUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:20:49 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:39025 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828AbaIEHUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:20:47 -0400
-Message-ID: <54096459.7020201@mm-sol.com>
-Date: Fri, 05 Sep 2014 10:20:57 +0300
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756127AbaIEHWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:22:13 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:5970 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754415AbaIEHWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 03:22:11 -0400
+X-IronPort-AV: E=Sophos;i="5.04,471,1406563200"; 
+   d="scan'208";a="35556526"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>, Fabian Frederick <fabf@skynet.be>
+Subject: [PATCH] userns: use marco instead of magic number for max userns level
+Date: Fri, 5 Sep 2014 13:39:25 +0800
+Message-ID: <1409895565-26572-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Kumar Gala <galak@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Andy Gross <agross@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v4 4/4] pinctrl: qcom: Make the target processor value
- configurable
-References: <1409761696-15435-1-git-send-email-gdjakov@mm-sol.com>	<1409761696-15435-5-git-send-email-gdjakov@mm-sol.com> <CACRpkdZQouNk0z1AQHbjULJXdRK07-kZDXLcnx0Xayew0fnocA@mail.gmail.com>
-In-Reply-To: <CACRpkdZQouNk0z1AQHbjULJXdRK07-kZDXLcnx0Xayew0fnocA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 07:20 PM, Linus Walleij wrote:
-> On Wed, Sep 3, 2014 at 6:28 PM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
-> 
->> Currently the value used to specify that interrupts from the gpio should
->> be routed to the application processor is hardcoded for all Qualcomm SoCs.
->> But the new APQ8084 SoC uses a different value. To resolve this, we make
->> this value configurable for each SoC. For all existing SoCs we continue
->> to use the current value, and only for APQ8084 we use the new value.
->>
->> Suggested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->> Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> 
-> Patch applied.
-> 
-> Yours,
-> Linus Walleij
-> 
+Use marco instead of magic number
+for max user namespace level.
 
-Thank you, Bjorn and Linus!
+Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+---
+ kernel/user_namespace.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index aa312b0..5435489 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -47,6 +47,8 @@ static void set_cred_user_ns(struct cred *cred, struct user_namespace *user_ns)
+ 	cred->user_ns = user_ns;
+ }
+ 
++#define MAX_USER_NS_LEVEL 32
++
+ /*
+  * Create a new user namespace, deriving the creator from the user in the
+  * passed credentials, and replacing that user with the new root user for the
+@@ -62,7 +64,7 @@ int create_user_ns(struct cred *new)
+ 	kgid_t group = new->egid;
+ 	int ret;
+ 
+-	if (parent_ns->level > 32)
++	if (parent_ns->level > MAX_USER_NS_LEVEL)
+ 		return -EUSERS;
+ 
+ 	/*
+-- 
+1.9.0
+
