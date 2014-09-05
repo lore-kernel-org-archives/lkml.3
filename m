@@ -1,40 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689AbaIEDlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 23:41:53 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:38464 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaIEDlw (ORCPT
+	id S1755735AbaIEDq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 23:46:58 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53137 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230AbaIEDq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 23:41:52 -0400
+	Thu, 4 Sep 2014 23:46:57 -0400
+Message-ID: <5409322F.8020805@infradead.org>
+Date: Thu, 04 Sep 2014 20:46:55 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Date: Fri, 5 Sep 2014 11:41:51 +0800
-Message-ID: <CAFx2hwSeBijAjcUBWZOhRrFa8CkvDLFe=JtgPneVUWh=ekLoxw@mail.gmail.com>
-Subject: [PATCH] openvswitch: Remove redundant comment in file net/openvswitch/vport.h
-From: Lawrance Jing <lawrancejing@gmail.com>
-To: dev@openvswitch.org
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org
+CC: mm-commits@vger.kernel.org
+Subject: Re: + mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
+ added to -mm tree
+References: <54076ec4.SXX1dzKOV7x8UJki%akpm@linux-foundation.org> <20140905004455.GA23894@js1304-P5Q-DELUXE>
+In-Reply-To: <20140905004455.GA23894@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: lawrancejing <lawrancejing@gmail.com>
+On 09/04/14 17:44, Joonsoo Kim wrote:
+> On Wed, Sep 03, 2014 at 12:40:52PM -0700, akpm@linux-foundation.org wrote:
+>>
+>> The patch titled
+>>      Subject: mm: fix kmemcheck.c build errors
+>> has been added to the -mm tree.  Its filename is
+>>      mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
+>>
+>> This patch should soon appear at
+>>     http://ozlabs.org/~akpm/mmots/broken-out/mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
+>> and later at
+>>     http://ozlabs.org/~akpm/mmotm/broken-out/mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
+>>
+>> Before you just go and hit "reply", please:
+>>    a) Consider who else should be cc'ed
+>>    b) Prefer to cc a suitable mailing list as well
+>>    c) Ideally: find the original patch on the mailing list and do a
+>>       reply-to-all to that, adding suitable additional cc's
+>>
+>> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>>
+>> The -mm tree is included into linux-next and is updated
+>> there every 3-4 working days
+>>
+>> ------------------------------------------------------
+>> From: Randy Dunlap <rdunlap@infradead.org>
+>> Subject: mm: fix kmemcheck.c build errors
+>>
+>> Add header files to fix kmemcheck.c build errors:
+>>
+>> ../mm/kmemcheck.c:70:7: error: dereferencing pointer to incomplete type
+>> ../mm/kmemcheck.c:83:15: error: dereferencing pointer to incomplete type
+>> ../mm/kmemcheck.c:95:8: error: dereferencing pointer to incomplete type
+>> ../mm/kmemcheck.c:95:21: error: dereferencing pointer to incomplete type
+>>
+>> ../mm/slab.h: In function 'cache_from_obj':
+>> ../mm/slab.h:283:2: error: implicit declaration of function 'memcg_kmem_enabled' [-Werror=implicit-function-declaration]
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>> ---
+>>
+>>  mm/kmemcheck.c |    1 +
+>>  mm/slab.h      |    2 ++
+>>  2 files changed, 3 insertions(+)
+>>
+>> diff -puN mm/kmemcheck.c~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2 mm/kmemcheck.c
+>> --- a/mm/kmemcheck.c~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2
+>> +++ a/mm/kmemcheck.c
+>> @@ -2,6 +2,7 @@
+>>  #include <linux/mm_types.h>
+>>  #include <linux/mm.h>
+>>  #include <linux/slab.h>
+>> +#include "slab.h"
+>>  #include <linux/kmemcheck.h>
+>>  
+>>  void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
+>> diff -puN mm/slab.h~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2 mm/slab.h
+>> --- a/mm/slab.h~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2
+>> +++ a/mm/slab.h
+>> @@ -268,6 +268,8 @@ static inline void memcg_uncharge_slab(s
+>>  }
+>>  #endif
+>>  
+>> +#include <linux/memcontrol.h>
+>> +
+>>  static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
+>>  {
+>>  	struct kmem_cache *cachep;
+> 
+> Hello, Andrew.
+> 
+> Could you take another fix instead of this?
+> This also make build failure if CONFIG_MEMCG_KMEM=y.
+> Please see following patch I sent.
+> 
+> https://lkml.org/lkml/2014/8/31/148
+> 
+> The only difference is position of memcontrol.h header.
+> 
+> Thanks.
 
-In file net/openvswitch/vport.h, line#35 and line#37 are the same,
-the patch will remove one to make code more clean.
+Ack that.  Thanks.
 
-Signed-off-by: lawrancejing <lawrancejing@gmail.com>
----
-
-
---- net/openvswitch/vport.h.orig 2014-08-22 02:45:36.474929300 +0800
-+++ net/openvswitch/vport.h 2014-08-22 02:46:15.041929282 +0800
-@@ -34,7 +34,6 @@ struct vport_parms;
-
- /* The following definitions are for users of the vport subsytem: */
-
--/* The following definitions are for users of the vport subsytem: */
- struct vport_net {
-  struct vport __rcu *gre_vport;
- };
+-- 
+~Randy
