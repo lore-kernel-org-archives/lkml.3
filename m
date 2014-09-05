@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbaIEXGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:06:24 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:34408 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaIEXGW (ORCPT
+	id S1754103AbaIEXG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:06:58 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:51119 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaIEXG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:06:22 -0400
+	Fri, 5 Sep 2014 19:06:56 -0400
 From: behanw@converseincode.com
-To: zohar@linux.vnet.ibm.com
-Cc: d.kasatkin@samsung.com, james.l.morris@oracle.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, serge@hallyn.com,
+To: davem@davemloft.net, herbert@gondor.apana.org.au
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org,
-        Behan Webster <behanw@converseincode.com>,
-        Mark Charlebois <charlebm@gmail.com>,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>
-Subject: [PATCH] security, crypto: LLVMLinux: Remove VLAIS from ima_crypto.c
-Date: Fri,  5 Sep 2014 16:06:00 -0700
-Message-Id: <1409958360-8061-1-git-send-email-behanw@converseincode.com>
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu
+Subject: [PATCH v2] crypto: LLVMLinux: Remove VLAIS usage from crypto/testmgr.c
+Date: Fri,  5 Sep 2014 16:06:47 -0700
+Message-Id: <1409958407-9173-1-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,13 +24,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This patch allocates the appropriate amount of memory
+The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+precludes the use of compilers which don't implement VLAIS (for instance the
+Clang compiler). This patch instead allocates the appropriate amount of memory
 using an char array.
-
-The new code can be compiled with both gcc and clang.
 
 struct shash_desc contains a flexible array member member ctx declared with
 CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
@@ -47,144 +42,42 @@ The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
 as would be the case for a struct containing a member with
 CRYPTO_MINALIGN_ATTR.
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Cc: pageexec@freemail.hu
 ---
- security/integrity/ima/ima_crypto.c | 53 +++++++++++++++++--------------------
- 1 file changed, 25 insertions(+), 28 deletions(-)
+ crypto/testmgr.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index 0bd7328..a6aa2b0 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -380,17 +380,16 @@ static int ima_calc_file_hash_tfm(struct file *file,
- 	loff_t i_size, offset = 0;
- 	char *rbuf;
- 	int rc, read = 0;
--	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
--	} desc;
-+	char desc[sizeof(struct shash_desc) +
-+		crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *shash = (struct shash_desc *)desc;
- 
--	desc.shash.tfm = tfm;
--	desc.shash.flags = 0;
-+	shash->tfm = tfm;
-+	shash->flags = 0;
- 
- 	hash->length = crypto_shash_digestsize(tfm);
- 
--	rc = crypto_shash_init(&desc.shash);
-+	rc = crypto_shash_init(shash);
- 	if (rc != 0)
- 		return rc;
- 
-@@ -420,7 +419,7 @@ static int ima_calc_file_hash_tfm(struct file *file,
- 			break;
- 		offset += rbuf_len;
- 
--		rc = crypto_shash_update(&desc.shash, rbuf, rbuf_len);
-+		rc = crypto_shash_update(shash, rbuf, rbuf_len);
- 		if (rc)
- 			break;
- 	}
-@@ -429,7 +428,7 @@ static int ima_calc_file_hash_tfm(struct file *file,
- 	kfree(rbuf);
- out:
- 	if (!rc)
--		rc = crypto_shash_final(&desc.shash, hash->digest);
-+		rc = crypto_shash_final(shash, hash->digest);
- 	return rc;
- }
- 
-@@ -487,18 +486,17 @@ static int ima_calc_field_array_hash_tfm(struct ima_field_data *field_data,
- 					 struct ima_digest_data *hash,
- 					 struct crypto_shash *tfm)
- {
--	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
--	} desc;
-+	char desc[sizeof(struct shash_desc) +
-+		crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *shash = (struct shash_desc *)desc;
- 	int rc, i;
- 
--	desc.shash.tfm = tfm;
--	desc.shash.flags = 0;
-+	shash->tfm = tfm;
-+	shash->flags = 0;
- 
- 	hash->length = crypto_shash_digestsize(tfm);
- 
--	rc = crypto_shash_init(&desc.shash);
-+	rc = crypto_shash_init(shash);
- 	if (rc != 0)
- 		return rc;
- 
-@@ -508,7 +506,7 @@ static int ima_calc_field_array_hash_tfm(struct ima_field_data *field_data,
- 		u32 datalen = field_data[i].len;
- 
- 		if (strcmp(td->name, IMA_TEMPLATE_IMA_NAME) != 0) {
--			rc = crypto_shash_update(&desc.shash,
-+			rc = crypto_shash_update(shash,
- 						(const u8 *) &field_data[i].len,
- 						sizeof(field_data[i].len));
- 			if (rc)
-@@ -518,13 +516,13 @@ static int ima_calc_field_array_hash_tfm(struct ima_field_data *field_data,
- 			data_to_hash = buffer;
- 			datalen = IMA_EVENT_NAME_LEN_MAX + 1;
- 		}
--		rc = crypto_shash_update(&desc.shash, data_to_hash, datalen);
-+		rc = crypto_shash_update(shash, data_to_hash, datalen);
- 		if (rc)
- 			break;
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index ac2b631..34f5a32 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -1714,16 +1714,16 @@ static int alg_test_crc32c(const struct alg_test_desc *desc,
  	}
  
- 	if (!rc)
--		rc = crypto_shash_final(&desc.shash, hash->digest);
-+		rc = crypto_shash_final(shash, hash->digest);
+ 	do {
+-		struct {
+-			struct shash_desc shash;
+-			char ctx[crypto_shash_descsize(tfm)];
+-		} sdesc;
++		char sdesc[sizeof(struct shash_desc) +
++			crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
++		struct shash_desc *shash = (struct shash_desc *)sdesc;
++		u32 *ctx = (u32 *)shash_desc_ctx(shash);
  
- 	return rc;
- }
-@@ -565,15 +563,14 @@ static int __init ima_calc_boot_aggregate_tfm(char *digest,
- {
- 	u8 pcr_i[TPM_DIGEST_SIZE];
- 	int rc, i;
--	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
--	} desc;
-+	char desc[sizeof(struct shash_desc) +
-+		crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *shash = (struct shash_desc *)desc;
+-		sdesc.shash.tfm = tfm;
+-		sdesc.shash.flags = 0;
++		shash->tfm = tfm;
++		shash->flags = 0;
  
--	desc.shash.tfm = tfm;
--	desc.shash.flags = 0;
-+	shash->tfm = tfm;
-+	shash->flags = 0;
- 
--	rc = crypto_shash_init(&desc.shash);
-+	rc = crypto_shash_init(shash);
- 	if (rc != 0)
- 		return rc;
- 
-@@ -581,10 +578,10 @@ static int __init ima_calc_boot_aggregate_tfm(char *digest,
- 	for (i = TPM_PCR0; i < TPM_PCR8; i++) {
- 		ima_pcrread(i, pcr_i);
- 		/* now accumulate with current aggregate */
--		rc = crypto_shash_update(&desc.shash, pcr_i, TPM_DIGEST_SIZE);
-+		rc = crypto_shash_update(shash, pcr_i, TPM_DIGEST_SIZE);
- 	}
- 	if (!rc)
--		crypto_shash_final(&desc.shash, digest);
-+		crypto_shash_final(shash, digest);
- 	return rc;
- }
- 
+-		*(u32 *)sdesc.ctx = le32_to_cpu(420553207);
+-		err = crypto_shash_final(&sdesc.shash, (u8 *)&val);
++		*ctx = le32_to_cpu(420553207);
++		err = crypto_shash_final(shash, (u8 *)&val);
+ 		if (err) {
+ 			printk(KERN_ERR "alg: crc32c: Operation failed for "
+ 			       "%s: %d\n", driver, err);
 -- 
 1.9.1
 
