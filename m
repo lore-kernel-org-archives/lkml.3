@@ -1,88 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaIEO0L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:26:11 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45091 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757094AbaIEO0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:26:09 -0400
-Date: Fri, 5 Sep 2014 15:22:46 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Robert Richter <rric@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        Olof Johansson <olof@lixom.net>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-Subject: Re: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium
- Thunder SoC Family
-Message-ID: <20140905142245.GG20164@leverpostej>
-References: <1409903205-2762-1-git-send-email-rric@kernel.org>
- <20140905110552.GH30401@n2100.arm.linux.org.uk>
- <20140905125147.GC20164@leverpostej>
- <7863371.EMkUuntQWU@wuerfel>
+	id S1757124AbaIEO0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:26:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50726 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757101AbaIEO0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 10:26:16 -0400
+Message-ID: <5409C803.8060007@suse.de>
+Date: Fri, 05 Sep 2014 16:26:11 +0200
+From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7863371.EMkUuntQWU@wuerfel>
-Thread-Topic: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium
- Thunder SoC Family
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Georgi Djakov <gdjakov@mm-sol.com>, galak@codeaurora.org
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        iivanov@mm-sol.com
+Subject: Re: [PATCH v3] ARM: dts: qcom: Add initial IFC6540 board device tree
+References: <1409763031-16873-1-git-send-email-gdjakov@mm-sol.com>
+In-Reply-To: <1409763031-16873-1-git-send-email-gdjakov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hi,
 
-[...]
-
-> A common pattern these days is to do dependencies like
+Am 03.09.2014 18:50, schrieb Georgi Djakov:
+> Add basic support for the IFC6540 single-board computer boards, that are
+> based on the APQ8084 SoC. This patch adds the initial device tree and the
+> neccessary nodes required for enabling the serial port and eMMC.
 > 
-> arch/*/Kconfig:
-> 	config ARCH_FOO
-> 	bool "Enable support for Foo platform"
-> 	help
-> 	  ...
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> ---
+> Changes since v2:
+>  - Squashed all patches into one. (suggested by Kumar Gala)
 > 
+> Changes since v1:
+>  - This time add linux-arm-msm list to the CC.
+>  - Include a third patch for enabling the eMMC.
 > 
-> drivers/*/Kconfig
-> 	config SUBSYS_FOO
-> 	bool "SUBSYS driver for Foo"
-> 	depends on ARCH_FOO || COMPILE_TEST
-> 	depends on OF && REGULATOR && GENERIC_PHY # or whatever
-
-Russell's comments w.r.t. Kconfig warnings when config names change
-still holds regardless of select vs depends on.
-
-> That way we can enable everything in the defconfig, but someone
-> who likes to build a more specialized kernel can disable the
-> other platforms and won't get the drivers that are specific to
-> those.
+>  arch/arm/boot/dts/Makefile                 |    1 +
+>  arch/arm/boot/dts/qcom-apq8084-ifc6540.dts |   23 +++++++++++++++++++++++
+>  arch/arm/boot/dts/qcom-apq8084.dtsi        |   23 +++++++++++++++++++++++
+>  3 files changed, 47 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/qcom-apq8084-ifc6540.dts
 > 
-> I personally think this is a bit more verbose than what we need, but
-> I don't strongly object doing it that way.
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index b022972..df8453a 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -345,6 +345,7 @@ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
+>  dtb-$(CONFIG_ARCH_QCOM) += \
+>  	qcom-apq8064-ifc6410.dtb \
+>  	qcom-apq8074-dragonboard.dtb \
+> +	qcom-apq8084-ifc6540.dtb \
+>  	qcom-apq8084-mtp.dtb \
+>  	qcom-msm8660-surf.dtb \
+>  	qcom-msm8960-cdp.dtb
+> diff --git a/arch/arm/boot/dts/qcom-apq8084-ifc6540.dts b/arch/arm/boot/dts/qcom-apq8084-ifc6540.dts
+> new file mode 100644
+> index 0000000..c9ff108
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/qcom-apq8084-ifc6540.dts
+> @@ -0,0 +1,23 @@
+> +#include "qcom-apq8084.dtsi"
+> +
+> +/ {
+> +	model = "Qualcomm APQ8084/IFC6540";
+> +	compatible = "qcom,apq8084-ifc6540", "qcom,apq8084";
+> +
+> +	soc {
+> +		serial@f995e000 {
+> +			status = "okay";
+> +		};
+> +
+> +		sdhci@f9824900 {
+> +			bus-width = <8>;
+> +			non-removable;
+> +			status = "okay";
+> +		};
+> +
+> +		sdhci@f98a4900 {
+> +			cd-gpios = <&tlmm 122 GPIO_ACTIVE_LOW>;
+> +			bus-width = <4>;
+> +		};
+> +	};
+> +};
+> diff --git a/arch/arm/boot/dts/qcom-apq8084.dtsi b/arch/arm/boot/dts/qcom-apq8084.dtsi
+> index 21d01e5..1f130bc 100644
+> --- a/arch/arm/boot/dts/qcom-apq8084.dtsi
+> +++ b/arch/arm/boot/dts/qcom-apq8084.dtsi
+> @@ -3,6 +3,7 @@
+>  #include "skeleton.dtsi"
+>  
+>  #include <dt-bindings/clock/qcom,gcc-apq8084.h>
+> +#include <dt-bindings/gpio/gpio.h>
+>  
+>  / {
+>  	model = "Qualcomm APQ 8084";
+> @@ -203,5 +204,27 @@
+>  			clock-names = "core", "iface";
+>  			status = "disabled";
+>  		};
+> +
+> +		sdhci@f9824900 {
+> +			compatible = "qcom,sdhci-msm-v4";
+> +			reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
+> +			reg-names = "hc_mem", "core_mem";
+> +			interrupts = <0 123 0>, <0 138 0>;
 
-You'd still be able to do this without ARCH_FOO, though you would need
-to know which drivers are necessary for a particular SoC. That seems to
-be the way things are handled on x86; I don't recall having to select
-support for specific machines there, just the individual drivers.
+I see that you've used GPIO_ACTIVE_* above. Is the trailing zero here
+possibly IRQ_TYPE_NONE?
 
-> The code size really should not matter much on ARM64 though: it's
-> unlikely we will see a lot of systems with less than a few gigabytes
-> of memory, and I expect that a generic kernel would be e.g. 6 MB
-> instead of 4 MB for a platform specific kernel.
+> +			interrupt-names = "hc_irq", "pwr_irq";
+> +			clocks = <&gcc GCC_SDCC1_APPS_CLK>, <&gcc GCC_SDCC1_AHB_CLK>;
+> +			clock-names = "core", "iface";
+> +			status = "disabled";
+> +		};
+> +
+> +		sdhci@f98a4900 {
+> +			compatible = "qcom,sdhci-msm-v4";
+> +			reg = <0xf98a4900 0x11c>, <0xf98a4000 0x800>;
+> +			reg-names = "hc_mem", "core_mem";
+> +			interrupts = <0 125 0>, <0 221 0>;
+> +			interrupt-names = "hc_irq", "pwr_irq";
+> +			clocks = <&gcc GCC_SDCC2_APPS_CLK>, <&gcc GCC_SDCC2_AHB_CLK>;
+> +			clock-names = "core", "iface";
+> +			status = "disabled";
+> +		};
 
-Agreed. If there kernel size begins looking unwieldy we either need to
-be compiling more things as modules or a more drastic kernel weight loss
-program.
+If you assign labels to these two nodes, you can reference them in the
+.dts as &labelname {...};. Same for the uart node. That avoids
+duplicating the hierarchy, detects spelling mistakes at compile time and
+reduces indentation. Cf. the recent ifc6410 patch.
 
-Mark.
+Also, is sdhci the best node name here? Usually it's not supposed to
+reflect the exact interface used (e.g., usb vs. ehci).
+
+>  	};
+>  };
+
+Otherwise looks good.
+
+Regards,
+Andreas
+
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
