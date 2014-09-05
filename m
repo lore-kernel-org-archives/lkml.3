@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266AbaIEPxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:53:23 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:17366 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaIEPxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:53:22 -0400
-Message-ID: <1409931772.28990.197.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-From: Toshi Kani <toshi.kani@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 05 Sep 2014 09:42:52 -0600
-In-Reply-To: <5409D99C.10305@zytor.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
-			 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
-			 <20140904201123.GA9116@khazad-dum.debian.net>
-	 <5408C9C4.1010705@zytor.com>
-			 <20140904231923.GA15320@khazad-dum.debian.net>
-			 <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
-			 <1409876991.28990.172.camel@misato.fc.hp.com>
-			 <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>
-		 <1409925614.28990.184.camel@misato.fc.hp.com> <5409D197.2060900@zytor.com>
-	 <1409930574.28990.192.camel@misato.fc.hp.com> <5409D99C.10305@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751587AbaIEPx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:53:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44091 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156AbaIEPx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 11:53:57 -0400
+Date: Fri, 5 Sep 2014 10:53:21 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <maxime.coquelin@st.com>, <patrice.chotard@st.com>,
+        <srinivas.kandagatla@gmail.com>, <lee.jones@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <peppe.cavallaro@st.com>
+Subject: Re: [PATCH v6 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
+ HC
+Message-ID: <20140905155321.GF24449@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409931392-22340-1-git-send-email-peter.griffin@linaro.org>
+ <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
+ <20140905154700.GE24449@saruman.home>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y1L3PTX8QE8cb2T+"
+Content-Disposition: inline
+In-Reply-To: <20140905154700.GE24449@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-05 at 08:41 -0700, H. Peter Anvin wrote:
-> On 09/05/2014 08:22 AM, Toshi Kani wrote:
-> > On Fri, 2014-09-05 at 08:07 -0700, H. Peter Anvin wrote:
-> >> On 09/05/2014 07:00 AM, Toshi Kani wrote:
-> >>>
-> >>> That's a fine idea, but as Ingo also suggested, I am going to disable
-> >>> this feature on all Pentium 4 models.  That should give us a safety
-> >>> margin.  Using slot 4 has a benefit that it keeps the PAT setup
-> >>> consistent with Xen.      
-> >>>
-> >>
-> >> Slot 4 is also the maximally problematic one, because it is the one that
-> >> might be incorrectly invoked for the page tables themselves.
-> > 
-> > Good point.  I wonder if Xen folks feel strongly about keeping the PAT
-> > setup consistent with the kernel.  If not, we may choose to use slot 6
-> > (or 7).
-> > 
-> 
-> Who cares what the Xen folks "feel strongly about"?  If strong feelings
-> were a design criterion Xen support would have been pulled from the
-> kernel a long, long time ago.
-> 
-> The important thing is how to design for the situation that we currently
-> have to live with.
+--Y1L3PTX8QE8cb2T+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I see.  Then, I am going to use slot 7 for WT as suggested by Andy.  I
-think it is the safest slot as slot 3 is UC and is not currently used.
+On Fri, Sep 05, 2014 at 10:47:01AM -0500, Felipe Balbi wrote:
+> Hi,
+>=20
+> On Fri, Sep 05, 2014 at 04:36:30PM +0100, Peter Griffin wrote:
+> > +static int st_dwc3_remove_child(struct device *dev, void *c)
+> > +{
+> > +	struct platform_device *pdev =3D to_platform_device(dev);
+> > +
+> > +	of_device_unregister(pdev);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int st_dwc3_remove(struct platform_device *pdev)
+> > +{
+> > +	struct st_dwc3 *dwc3_data =3D platform_get_drvdata(pdev);
+> > +
+> > +	device_for_each_child(&pdev->dev, NULL, st_dwc3_remove_child);
+>=20
+> same as before, of_platform_depopulate(). I can fix this one myself this
+> time.
 
-Thanks,
--Toshi
+it's in my testign/next branch, please make sure it looks alright.
 
+--=20
+balbi
+
+--Y1L3PTX8QE8cb2T+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUCdxxAAoJEIaOsuA1yqRETUsP/0a6P2X0Emj5opvf9JPRjxHN
+ADZyrZuaGJWaPZtElplAdVYmpWzqPJ/XsO+V6WRhOSQO0BqW2zJPQ02Ao8N4rw3s
+7ar7+T5TkOnNmctfTg+rA7a9snXuuK/IJWm+4URGgeaQJmqai6/rMnFOdiBd71ft
+grE5mhbjIM+TrwEfzW3prctNdYbhakB5yDSczxa7NPK0IDt9Ic0N6BkieBhcTWqj
+JU5FteTeKfZgweJLqRdfwFgmEEwoeF/EZF73oCIMjV/9FHYz79MmhV8DYV/deeBc
+CGGKWVCglUhAfUAoQiLadSnBcvB7mTklRYnEkysje2Q3zPwXyt7wEzVsW7blQFk1
+7bxHTslyH8D6HBkcY//jydDyVzVHCT/fWHt86ZFSy9x+O9a7f6q6DsI7cqqVQXSC
+qDplebSC1AiXFKdwCDiLGgyKg5sl4z05JQPGEvLfK5xlTA91mZM5kSDh/sZtcpXM
+r273ejeHFyX8dTfVt8CdZ+Xc0VCVOvirBNGxTceaT4Z1bZpwgpDVGtjaWpIDFwx/
+VCEWEs7A2KByahYNlIYTBpxZJdph5YmTAGvgihQVEJTZLK/0+07KX+dTiGuAIXR6
+gVzBK21M7tUFAc99l7kzliueRA4odfJQwNDjP+IVlUz6ahFZwEghL9RAOJZmL4cW
+M8aLD07H8U9Uaj10g1mb
+=b7D2
+-----END PGP SIGNATURE-----
+
+--Y1L3PTX8QE8cb2T+--
