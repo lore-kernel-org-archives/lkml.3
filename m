@@ -1,155 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaIEPjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:39:53 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:42178 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaIEPjw (ORCPT
+	id S1752696AbaIEPkB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:40:01 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49454 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaIEPj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:39:52 -0400
-Date: Fri, 5 Sep 2014 17:39:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Dave Hansen <dave@sr71.net>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Tejun Heo <tj@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-Message-ID: <20140905153948.GH26243@dhcp22.suse.cz>
-References: <54061505.8020500@sr71.net>
- <5406262F.4050705@intel.com>
- <54062F32.5070504@sr71.net>
- <20140904142721.GB14548@dhcp22.suse.cz>
- <5408CB2E.3080101@sr71.net>
- <20140905092537.GC26243@dhcp22.suse.cz>
- <20140905144723.GB13392@cmpxchg.org>
+	Fri, 5 Sep 2014 11:39:57 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Fri, 5 Sep 2014 17:38:35 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
+        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
+        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] gpio: add support for the Diolan DLN-2 USB GPIO
+ driver
+Message-ID: <20140905153835.GC13242@localhost>
+References: <1409930279-1382-1-git-send-email-octavian.purdila@intel.com>
+ <1409930279-1382-4-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140905144723.GB13392@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1409930279-1382-4-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-09-14 10:47:23, Johannes Weiner wrote:
-> On Fri, Sep 05, 2014 at 11:25:37AM +0200, Michal Hocko wrote:
-> > @@ -900,10 +900,10 @@ void lru_add_drain_all(void)
-> >   * grabbed the page via the LRU.  If it did, give up: shrink_inactive_list()
-> >   * will free it.
-> >   */
-> > -void release_pages(struct page **pages, int nr, bool cold)
-> > +static void release_lru_pages(struct page **pages, int nr,
-> > +			      struct list_head *pages_to_free)
-> >  {
-> >  	int i;
-> > -	LIST_HEAD(pages_to_free);
-> >  	struct zone *zone = NULL;
-> >  	struct lruvec *lruvec;
-> >  	unsigned long uninitialized_var(flags);
-> > @@ -943,11 +943,26 @@ void release_pages(struct page **pages, int nr, bool cold)
-> >  		/* Clear Active bit in case of parallel mark_page_accessed */
-> >  		__ClearPageActive(page);
-> >  
-> > -		list_add(&page->lru, &pages_to_free);
-> > +		list_add(&page->lru, pages_to_free);
-> >  	}
-> >  	if (zone)
-> >  		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> > +}
-> > +/*
-> > + * Batched page_cache_release(). Frees and uncharges all given pages
-> > + * for which the reference count drops to 0.
-> > + */
-> > +void release_pages(struct page **pages, int nr, bool cold)
-> > +{
-> > +	LIST_HEAD(pages_to_free);
-> >  
-> > +	while (nr) {
-> > +		int batch = min(nr, PAGEVEC_SIZE);
-> > +
-> > +		release_lru_pages(pages, batch, &pages_to_free);
-> > +		pages += batch;
-> > +		nr -= batch;
-> > +	}
-> 
-> We might be able to process a lot more pages in one go if nobody else
-> needs the lock or the CPU.  Can't we just cycle the lock or reschedule
-> if necessary?
+On Fri, Sep 05, 2014 at 06:17:59PM +0300, Octavian Purdila wrote:
 
-Is it safe to cond_resched here for all callers? I hope it is but there
-are way too many callers to check so I am not 100% sure.
-
-Besides that spin_needbreak doesn't seem to be available for all architectures.
-git grep "arch_spin_is_contended(" -- arch/
-arch/arm/include/asm/spinlock.h:static inline int arch_spin_is_contended(arch_spinlock_t *lock)
-arch/arm64/include/asm/spinlock.h:static inline int arch_spin_is_contended(arch_spinlock_t *lock)
-arch/ia64/include/asm/spinlock.h:static inline int arch_spin_is_contended(arch_spinlock_t *lock)
-arch/mips/include/asm/spinlock.h:static inline int arch_spin_is_contended(arch_spinlock_t *lock)
-arch/x86/include/asm/spinlock.h:static inline int arch_spin_is_contended(arch_spinlock_t *lock)
-
-Moreover it doesn't seem to do anything for !CONFIG_PREEMPT but this
-should be trivial to fix.
-
-I am also not sure this will work well in all cases. If we have a heavy
-reclaim activity on other CPUs then this path might be interrupted too
-often resulting in too much lock bouncing. So I guess we want at least
-few pages to be processed in one run. On the other hand if the lock is
-not contended then doing batches and retake the lock shouldn't add too
-much overhead, no?
-
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 6b2dc3897cd5..ee0cf21dd521 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -944,6 +944,15 @@ void release_pages(struct page **pages, int nr, bool cold)
->  		__ClearPageActive(page);
->  
->  		list_add(&page->lru, &pages_to_free);
+> +static int dln2_do_remove(struct dln2_gpio *dln2)
+> +{
+> +	/* When removing the DLN2 USB device, gpiochip_remove may fail
+> +	 * due to i2c drivers holding a GPIO pin. However, the i2c bus
+> +	 * will eventually be removed triggering an i2c driver remove
+> +	 * which will release the GPIO pin. So retrying the operation
+> +	 * later should succeed. */
+> +	int ret = gpiochip_remove(&dln2->gpio);
+> +	struct device *dev = dln2->gpio.dev;
 > +
-> +		if (should_resched() ||
-> +		    (zone && spin_needbreak(&zone->lru_lock))) {
-> +			if (zone) {
-> +				spin_unlock_irqrestore(&zone->lru_lock, flags);
-> +				zone = NULL;
-> +			}
-> +			cond_resched();
-> +		}
->  	}
->  	if (zone)
->  		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> diff --git a/mm/swap_state.c b/mm/swap_state.c
-> index 3e0ec83d000c..c487ca4682a4 100644
-> --- a/mm/swap_state.c
-> +++ b/mm/swap_state.c
-> @@ -262,19 +262,12 @@ void free_page_and_swap_cache(struct page *page)
->   */
->  void free_pages_and_swap_cache(struct page **pages, int nr)
->  {
-> -	struct page **pagep = pages;
-> +	int i;
->  
->  	lru_add_drain();
-> -	while (nr) {
-> -		int todo = min(nr, PAGEVEC_SIZE);
-> -		int i;
-> -
-> -		for (i = 0; i < todo; i++)
-> -			free_swap_cache(pagep[i]);
-> -		release_pages(pagep, todo, false);
-> -		pagep += todo;
-> -		nr -= todo;
-> -	}
-> +	for (i = 0; i < nr; i++)
-> +		free_swap_cache(pages[i]);
-> +	release_pages(pages, nr, false);
->  }
->  
->  /*
+> +	if (ret < 0) {
+> +		if (ret == -EBUSY)
+> +			schedule_delayed_work(&dln2->remove_work.work, HZ/10);
+> +		else
+> +			dev_warn(dev, "error removing gpio chip: %d\n", ret);
+> +	} else {
+> +		kfree(dln2);
+> +	}
+> +
+> +	return ret;
+> +}
 
--- 
-Michal Hocko
-SUSE Labs
+Apparently, the return value from gpiochip_remove is going away:
+
+	"Start to kill off the return value from gpiochip_remove() by
+	removing the __must_check attribute and removing all checks
+	inside the drivers/gpio directory. The rationale is: well what
+	were we supposed to do if there is an error code? Not much:
+	print an error message. And gpiolib already does that. So make
+	this function return void eventually."
+
+	https://www.mail-archive.com/linux-gpio@vger.kernel.org/msg03468.html
+
+Also, have you considered what happens if there are gpios exported
+through sysfs? These may never be released.
+
+In general, how well have these patches been tested with disconnect
+events? At least gpiolib is known to blow up (sooner or later) when a
+gpiochip is removed when having requested gpios.
+
+Johan
