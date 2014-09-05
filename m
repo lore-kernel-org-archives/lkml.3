@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762AbaIEO2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:28:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45124 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932443AbaIEO2F (ORCPT
+	id S932802AbaIEO2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:28:41 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:61294 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443AbaIEO2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:28:05 -0400
-Message-ID: <5409C84A.90000@arm.com>
-Date: Fri, 05 Sep 2014 15:27:22 +0100
-From: Andre Przywara <andre.przywara@arm.com>
-Organization: ARM Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 5 Sep 2014 10:28:39 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC PATCH 1/1] drivers: introduce ARM SBSA generic UART driver
-References: <1409328803-1953-1-git-send-email-andre.przywara@arm.com> <3749748.k4a1nSHDdj@wuerfel> <CAL_JsqKGbSd5BymnFhT8KBjbBCPO8wsrHhG9Qn20c7mrrxTDDA@mail.gmail.com> <2856634.LN9gbfSP9v@wuerfel>
-In-Reply-To: <2856634.LN9gbfSP9v@wuerfel>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [2a04:ac01:1:1:76d0:2bff:fe97:1662]
+In-Reply-To: <5409C5FC.6020406@kernel.dk>
+References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk>
+ <53E7251B.3080305@kieser.ca> <540966BA.9030106@gmail.com> <5409C5FC.6020406@kernel.dk>
+From: Vasiliy Tolstov <v.tolstov@selfip.ru>
+Date: Fri, 5 Sep 2014 18:28:23 +0400
+X-Google-Sender-Auth: hcJ0fwYglrVc9ZLc-ec5edvg2n0
+Message-ID: <CACaajQvnELSGtudtPXv1ELosk0JT4GjcqUWXtjJ_r4Hb-8ebKw@mail.gmail.com>
+Subject: Re: [GIT PULL] bcache changes for 3.17
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Francis Moreau <francis.moro@gmail.com>,
+        Kent Overstreet <kmo@daterainc.com>, Peter Kieser <peter@kieser.ca>,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-09-05 18:17 GMT+04:00 Jens Axboe <axboe@kernel.dk>:
+>
+> We need to do something about this. From this latest pull, looks like
+> all should go to stable:
+>
+> 5b1016e62f74c53e0330403025954c8d95384c03
+> 9aa61a992acceeec0d1de2cd99938421498659d5
+> dbd810ab678d262d3772d29b65844d7b20dc47bc
+> 8b326d3a2a76912dfed2f0ab937d59fae9512ca2
+> e5112201c1285841f8b565ece5d6ae7e0d7947a2
+> a664d0f05a2ec02c8f042db536d84d15d6e19e81
+> c5aa4a3157b55bdca18dd2a9d9f43314470b6d32
+> 9e5c353510b26500bd6b8309823ac9ef2837b761
+> bcf090e0040e30f8409e6a535a01e6473afb096f
+> 501d52a90cbe652b41336c206ff0e95799d5a9b5
+> 8e0948080670f6330229718b15a6a1a011d441ce
+> 60ae81eee86dd7a520db8c1e3d702b49fc0418b5
+> 913dc33fb2720fb5f979011664294137ddd8b13b
+> 6b708de64adb6dc8319e7aeac922b46904fbeeec
+> 400ffaa2acd72274e2c7293a9724382383bebf3e
+> d83353b319d47ef8cce82467da6a25c2d558253f
+> bf0c55c986540483c34ca640f2eef4c3314388b1
+> c9a78332b42cbdcdd386a95192a716b67d1711a4
+> 2452cc89063a2a6890368f185c4b6d7d8802175b
+> 25abade29616d42d60f9bd5e6a5ad07f7314e39e
+> 5b25abade29616d42d60f9bd5e6a5ad07f7314e3
+> 789d21dbd9d8889e62c79ec19585fcc97e42ef07
+> 0781c8748cf1ea2b0dcd966571103909528c4efa
+>
+> (from oldest to newest). And that's just from 3.16 to 3.17-rc3, going
+> all the way back to 3.10 would be a lot of work. If there's anyone that
+> cares about bcache on stable kernels (and actually use it), now would be
+> a good time to pipe up.
 
 
-On 02/09/14 20:34, Arnd Bergmann wrote:
-> On Tuesday 02 September 2014 12:38:23 Rob Herring wrote:
->> On Tue, Sep 2, 2014 at 8:48 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> On Tuesday 02 September 2014 08:20:53 Rob Herring wrote:
->>>>>>
->>>>>> This alone is not okay. There is no such implementation of hardware.
->>>>>
->>>>> But the SBSA explicitly allows this. I don't know of any vendor who just
->>>>> implements the subset, but I've been told that this has been asked for.
->>>>
->>>> To use baudrate as an example, that must be configurable somehow
->>>> either with pl011 registers or in a vendor specific way. I suppose you
->>>> could do an actual implementation with all those things hardcoded in
->>>> the design, but that seems unlikely.
->>>
->>> Why does the baudrate need to be configurable? I think it's completely
->>> reasonable to specify a console port that has a fixed (as in the
->>> OS must not care) rate, and that can be implemented either as a UART
->>> with a programmable rate or as a set of registers that directly talks
->>> to a remote system management device over whatever hardware protocol
->>> they choose.
->>
->> Sure. It is also completely reasonable that baudrate is configurable
->> and vendors can implement it however they choose since the SBSA does
->> not specify it. IIRC, the enabling and disabling bits are not
->> specified either.
->>
->> Not having configurability is simply one variation on possible
->> implementations.
-> 
-> It's not obvious to me though that we are served better by a
-> pl011 driver that allows any possible subset of the features,
-> rather than having the existing driver for pl011, and a new driver
-> for the sbsa subset, which then won't allow any of the optional
-> features.
-> 
-> Yes, there is some duplication, but a driver for this kind of
-> dumb console port should be doable in very little code, at
-> least less than the proposed implementation.
+I'm interesting on backporting this to 3.14.y
 
-I see your point, but as long as this means to introduce another serial
-prefix I would rather avoid it.
-As said in the other mail, I think the integration into PL011 does not
-look too bad, so we can discuss again this when I post the code later.
 
-Cheers,
-Andre.
+-- 
+Vasiliy Tolstov,
+e-mail: v.tolstov@selfip.ru
+jabber: vase@selfip.ru
