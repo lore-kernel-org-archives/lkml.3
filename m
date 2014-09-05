@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343AbaIEA3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 20:29:31 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:55032 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106AbaIEA33 (ORCPT
+	id S1755473AbaIEAdd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:33:33 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:38447 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaIEAdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 20:29:29 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Thu, 4 Sep 2014 20:29:26 -0400
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 05/17] locks: generic_delete_lease doesn't need a
- file_lock at all
-Message-ID: <20140904202926.74c76ee2@tlielax.poochiereds.net>
-In-Reply-To: <20140904201424.GB26054@infradead.org>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
-	<1409834323-7171-6-git-send-email-jlayton@primarydata.com>
-	<20140904201424.GB26054@infradead.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Thu, 4 Sep 2014 20:33:31 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: zyf@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <f4aadac526d095f39719ce7399789bd9>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <540904D3.1070004@rock-chips.com>
+Date: Fri, 05 Sep 2014 08:33:23 +0800
+From: Caesar Wang <caesar.wang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, zyw@rock-chips.com, addy.ke@rock-chips.com,
+        zhaoyifeng <zyf@rock-chips.com>
+Subject: Re: [PATCH v4 1/4] thermal: rockchip: add driver for thermal
+References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com> <1409710239-19941-2-git-send-email-caesar.wang@rock-chips.com> <20140904170559.GB10224@core.coreip.homeip.net>
+In-Reply-To: <20140904170559.GB10224@core.coreip.homeip.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Sep 2014 13:14:24 -0700
-Christoph Hellwig <hch@infradead.org> wrote:
 
-> On Thu, Sep 04, 2014 at 08:38:31AM -0400, Jeff Layton wrote:
-> > Ensure that it's OK to pass in a NULL file_lock double pointer on
-> > a F_UNLCK request and convert the vfs_setlease F_UNLCK callers to
-> > do just that.
-> > 
-> > Finally, turn the BUG_ON in generic_setlease into a WARN_ON_ONCE
-> > with an error return. That's a problem we can handle without
-> > crashing the box if it occurs.
-> 
-> Can we just make generic_delete_lease (maye renamed to vfs_delete_lease)
-> the interface for deleting leases instead of going through a useless
-> multiplex and file operation?
-> 
-
-I'm not sure that change really makes sense to me at this point.
-
-Suppose we have an exportable filesystem with a ->setlease
-implementation [1]. We end up calling into it to set up a lease and it
-calls generic_add_lease. If we make the change you're suggesting, then
-we'll have no parallel to a ->setlease op when removing that lease.
-
-We could of course make a ->dellease op or something, but I'd rather
-not introduce that change until I've had a chance to do some other
-cleanup to the file locking infrastructure.
-
-So...I'm not opposed to doing what you suggest, but I'd rather not do it
-just yet until I've gotten a little farther with some other cleanup of
-how we deal with locks in general. I think it'll be easier to do that
-once some other changes have gone in.
-
-I'll post a draft patchset based on those changes "real soon now" as an
-RFC. Hopefully at that point my rationale will make a bit more sense...
-
-[1]: of course, only cifs has a non-trivial one for now and it's pretty
-half-assed...
+在 2014年09月05日 01:06, Dmitry Torokhov 写道:
+> Hi Caesar,
+>
+> On Wed, Sep 03, 2014 at 10:10:36AM +0800, Caesar Wang wrote:
+>> +static int rockchip_thermal_remove(struct platform_device *pdev)
+>> +{
+>> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
+>> +
+>> +	rockchip_thermal_control(data, false);
+>> +
+>> +	thermal_zone_device_unregister(data->tz);
+>> +	cpufreq_cooling_unregister(data->cdev);
+>> +	cpufreq_cooling_unregister(data->cdev);
+> It looks like we are unregistering the same cooling device one too many times.
+>
+> Thanks.
+>
+yes,I made a stupid mistake.  Thanks~
 
 -- 
-Jeff Layton <jlayton@primarydata.com>
+Best regards,
+Caesar
+
+
