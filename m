@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796AbaIEOXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:23:31 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51099 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932614AbaIEOX3 (ORCPT
+	id S932841AbaIEOXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:23:46 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:49614 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932614AbaIEOXo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:23:29 -0400
-X-Sasl-enc: MAEA11t/Dv4P6So1BG+3pK1FWYMg/kl73OYeOpUcqWww 1409927008
-Date: Fri, 5 Sep 2014 11:23:16 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: early microcode: how to disable at runtime?
-Message-ID: <20140905142316.GC1511@khazad-dum.debian.net>
-References: <20140901174322.GA15533@khazad-dum.debian.net>
- <ea40f7c4-ec8d-4be5-8f8c-bbd11ab07252@email.android.com>
- <20140901195921.GA18675@khazad-dum.debian.net>
- <20140902063354.GA32105@nazgul.tnic>
- <20140902131651.GA10691@khazad-dum.debian.net>
- <20140903064015.GA3941@nazgul.tnic>
- <20140903124302.GA18507@khazad-dum.debian.net>
- <20140904154246.GA10884@nazgul.tnic>
- <20140904174509.GB26007@khazad-dum.debian.net>
- <20140905085000.GA11432@nazgul.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905085000.GA11432@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Sep 2014 10:23:44 -0400
+Date: Fri, 5 Sep 2014 16:23:30 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-gpio@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: single: fix freudian slip
+Message-ID: <20140905162330.75247029@ipc1.ka-ro>
+In-Reply-To: <1409903739-25998-1-git-send-email-linus.walleij@linaro.org>
+References: <1409903739-25998-1-git-send-email-linus.walleij@linaro.org>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Sep 2014, Borislav Petkov wrote:
-> On Thu, Sep 04, 2014 at 02:45:10PM -0300, Henrique de Moraes Holschuh wrote:
-> > Can we get it backported to -stable, please (3.10 and later)?
+Hi,
+
+Linus Walleij wrote:
+> commit 03e9f0cac5da6af85758276cb4624caf5911f2b9
+> "pinctrl: clean up after enable refactoring"
+> renamed the vtable callback .enable to .set_mux. The
+> renaming was done manually, and one of the alterations
+> contained a freudian slip. I confess, I am human.
 > 
-> I don't see how stable rules apply here.
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/pinctrl/pinctrl-single.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+> index 9032422ad18f..fb94b772ad62 100644
+> --- a/drivers/pinctrl/pinctrl-single.c
+> +++ b/drivers/pinctrl/pinctrl-single.c
+> @@ -519,7 +519,7 @@ static const struct pinmux_ops pcs_pinmux_ops = {
+>  	.get_functions_count = pcs_get_functions_count,
+>  	.get_function_name = pcs_get_function_name,
+>  	.get_function_groups = pcs_get_function_groups,
+> -	.set_mux = pcs_sex_mux,
+> +	.set_mux = pcs_set_mux,
+>  	.gpio_request_enable = pcs_request_gpio,
+>  };
+>  
+Congrats, you passed the Turing test! ;)
 
-It would be better if this functionality was generally available where early
-microcode loading is supported.  As far as stable/longterm kernel.org
-kernels are concerned, I believe that'd be 3.10, 3.12 and 3.14.
 
-But it is no big deal as far as I'm concerned.
-
+Lothar Waßmann
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
