@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaIER5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:57:39 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:64890 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048AbaIER5g (ORCPT
+	id S1751839AbaIESAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 14:00:46 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38945 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaIESAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:57:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, lee.jones@linaro.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH RESEND v5 1/5] usb: host: ehci-st: Add EHCI support for ST STB devices
-Date: Fri, 05 Sep 2014 19:57:28 +0200
-Message-ID: <202755915.brE74x99uQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409937829-23708-2-git-send-email-peter.griffin@linaro.org>
-References: <1409937829-23708-1-git-send-email-peter.griffin@linaro.org> <1409937829-23708-2-git-send-email-peter.griffin@linaro.org>
+	Fri, 5 Sep 2014 14:00:45 -0400
+Date: Sat, 6 Sep 2014 03:00:40 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140905180040.GC12991@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <20140905140815.GA10455@mtj.dyndns.org>
+ <CAM_iQpUJONZ7UWTzJoqsbYfHsp5HnRVR-mhpP_kvR3AUafELqQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aFknGXGZD/cKX2ZHB0XUcN+oZMhqvBd/m+y6ndOkB6z
- vplsYekjEB2cA1+PVm3cBYqFZD24ZKefbmc5nvjbdaDOIxVJlY
- guNrEyR3tavgZyNixopLv+nIUgqf/ppIKMBiaI5NCB0pbubw2Q
- XkCWszw48OFgWfIpN6+0/7EQupvrD9jfs+q+t5IxVuBItPEBeA
- 8ls70zAmkV5yG5G1FvpvCiQkhzmUK49IK10oN5GmOU214YdyI+
- awZfh62Jpadn9lN0erO4nmQ+Oqt0BQG00UWHwLLj5kax64nGyt
- P5f4JkeAOENYsnOJlgjeSrCTzb5q0xifS0UM3+G3DGU1ckEQXS
- 7lMfVCJulq/uCTZrzYpY=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM_iQpUJONZ7UWTzJoqsbYfHsp5HnRVR-mhpP_kvR3AUafELqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 September 2014 18:23:45 Peter Griffin wrote:
-> +struct st_platform_priv {
-> +       struct clk *clks[USB_MAX_CLKS];
-> +       struct clk *clk48;
-> +       struct reset_control *rst;
-> +       struct reset_control *pwr;
-> +       struct phy *phy;
-> +};
+On Fri, Sep 05, 2014 at 09:31:50AM -0700, Cong Wang wrote:
+> On Fri, Sep 5, 2014 at 7:08 AM, Tejun Heo <tj@kernel.org> wrote:
+> >> +     /* It might not be safe to check TIF_MEMDIE for pm freeze. */
+> >
+> > This is just another representation of the following code which isn't
+> > particularly useful.  Wouldn't it be better if the comment actually
+> > explains why this might not be safe?
+> 
+> I don't know actually, I never understand pm code, just don't
+> want to take the risk of breaking it as you told. :)
 
-Any reason why this is in a shared header file? It looks like
-duplicating the structure under two different names would
-actually be shorter and keep the drivers more readable as they'd
-be self-contained, even when they have the exact same structure.
+Let's please try to understand and explain it properly.  Reading
+intricate code like this w/ comment which doesn't really explain
+anything can be very frustrating for other people reading the code.
+Rafael, can you please help?
 
-Do both drivers use all fields?
+Shouldn't the primary goal of the comment be explaining why we need
+TIF_MEMDIE check there at all anyway?  The deadlock possiblity is not
+very obvious.
 
-	Arnd
+Thanks.
+
+-- 
+tejun
