@@ -1,33 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999AbaIEGiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:38:05 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:33632 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909AbaIEGh4 (ORCPT
+	id S1756032AbaIEGiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:38:09 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:34724 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755909AbaIEGiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:37:56 -0400
+	Fri, 5 Sep 2014 02:38:06 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
         tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, hare@suse.com,
         akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
         joseph.salisbury@canonical.com, bpoirier@suse.de, santosh@chelsio.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Casey Leedom <leedom@chelsio.com>, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: [RFC v2 4/6] cxgb4: use async probe
-Date: Thu,  4 Sep 2014 23:37:25 -0700
-Message-Id: <1409899047-13045-5-git-send-email-mcgrof@do-not-panic.com>
+        "Luis R. Rodriguez" <mcgrof@suse.com>, linux-ide@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, patrakov@gmail.com
+Subject: [RFC v2 6/6] pata_marvell: use async probe
+Date: Thu,  4 Sep 2014 23:37:27 -0700
+Message-Id: <1409899047-13045-7-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
@@ -37,49 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-cxgb4 probe can take up to over 1 minute when the firmware is
-is written and installed on the device, even after this the device
-driver still does some device probing and can take quite a bit.
-systemd will kill this driver when probe does take over 30 seconds,
-use the asynch probe mechanism to circumvent this.
+Alexander reported that on his Sony VAIO VPCZ23A4R laptop
+experiences long delays on boot when connected to its dock
+station on pre 3.9 kernels but anything after 3.9 will cause
+the device to not be detected at all ending with:
 
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+[   38.065673] pata_marvell 0000:1a:00.0: no available native port
+[   38.065769] pata_acpi 0000:1a:00.0: no available native port
+
+This laptop has a Marvell 88SE6121 SATA II Controller [11ab:6121]
+and a BluRay writer attached. The reason for the delays are
+caused by SRST errors and the link being slow to respond.
+The pata_marvell driver is a simple libata wrapper so the
+real required changes need to be made on libata however not
+many folks are around and available anymore with intimate
+knowledge and experience with these devices. Alexander notes
+that it may be that *any* ATA BMDMA controller that fails to
+respond to an identify command until a reset or other device
+poking might suffer from similar fate, this needs to be
+investigated further. Using async probe the issue caused
+by systemd killing the driver after taking over 30 seconds
+on probe.
+
+[0] https://bugzilla.kernel.org/show_bug.cgi?id=59581
+
+Cc: Tejun Heo <tj@kernel.org>
+Cc: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Cc: Pierre Fersing <pierre-fersing@pierref.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Benjamin Poirier <bpoirier@suse.de>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
-Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
-Cc: Hariprasad S <hariprasad@chelsio.com>
-Cc: Santosh Rastapur <santosh@chelsio.com>
-Cc: Casey Leedom <leedom@chelsio.com>
-Cc: MPT-FusionLinux.pdl@avagotech.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
+Cc: patrakov@gmail.com
+Reported-by: "Alexander E. Patrakov" <patrakov@gmail.com>
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 1 +
+ drivers/ata/pata_marvell.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-index 18fb9c6..5f7d24a 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -6794,6 +6794,7 @@ static struct pci_driver cxgb4_driver = {
- 	.remove   = remove_one,
- 	.shutdown = remove_one,
- 	.err_handler = &cxgb4_eeh,
+diff --git a/drivers/ata/pata_marvell.c b/drivers/ata/pata_marvell.c
+index ae9feb1..6a543b9 100644
+--- a/drivers/ata/pata_marvell.c
++++ b/drivers/ata/pata_marvell.c
+@@ -175,6 +175,7 @@ static struct pci_driver marvell_pci_driver = {
+ 	.suspend		= ata_pci_device_suspend,
+ 	.resume			= ata_pci_device_resume,
+ #endif
 +	.driver.async_probe = true,
  };
  
- static int __init cxgb4_init_module(void)
+ module_pci_driver(marvell_pci_driver);
 -- 
 2.0.3
 
