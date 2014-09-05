@@ -1,96 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820AbaIEOUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:20:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34091 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932305AbaIEOUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:20:05 -0400
-Date: Fri, 5 Sep 2014 09:19:45 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Todd Poynor <toddpoynor@google.com>
-CC: <balbi@ti.com>, Kiran Kumar Raparthy <kiran.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Badhri Jagan Sridharan <badhri@google.com>,
-        Ruchi Kandoi <kandoiruchi@google.com>
-Subject: Re: [RFC v2 2/2] usb: phy: Temporarily hold wakeupsource on charger
- connect and disconnect events
-Message-ID: <20140905141945.GC24449@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409658558-12318-1-git-send-email-kiran.kumar@linaro.org>
- <20140902145435.GF16872@saruman.home>
- <CAAW3YpZJ0JrYL4OxJ18Vq1kVWVWN+XFRBkTbgDS5SFUQ6HUJqg@mail.gmail.com>
+	id S932582AbaIEOWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:22:53 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:49537 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176AbaIEOWv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 10:22:51 -0400
+Message-ID: <5409C730.3020202@linaro.org>
+Date: Fri, 05 Sep 2014 16:22:40 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GPJrCs/72TxItFYR"
-Content-Disposition: inline
-In-Reply-To: <CAAW3YpZJ0JrYL4OxJ18Vq1kVWVWN+XFRBkTbgDS5SFUQ6HUJqg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?R2HDq2wgUE9SVEFZ?= <gael.portay@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCHv3 3/4] ARM: at91/tclib: mask interruptions at shutdown
+ and probe
+References: <1409926480-16367-1-git-send-email-gael.portay@gmail.com> <1409926480-16367-4-git-send-email-gael.portay@gmail.com>
+In-Reply-To: <1409926480-16367-4-git-send-email-gael.portay@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GPJrCs/72TxItFYR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/05/2014 04:14 PM, Gaël PORTAY wrote:
+> Shutdown properly the timer counter block by masking interruptions. Otherwise,
+> a segmentation may happen when kexec-ing a new kernel (see backtrace below).
+> An interruption may happen before the handler is set, leading to a kernel
+> segmentation fault.
+>
+> Furthermore, we make sure the interruptions are masked when the driver is
+> initialized. This will prevent freshly kexec-ed kernel from crashing when
+> launched from a kernel which does not properly mask interruptions at shutdown.
+>
+> The backtrace below happened after kexec-ing a new kernel, from a kernel
+> that did not shut down properly leaving interruptions unmasked.
+>
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> pgd = c0004000
+> [00000000] *pgd=00000000
+> Internal error: Oops: 80000005 [#1] ARM
+> Modules linked in:
+> CPU: 0 PID: 1 Comm: swapper Not tainted 3.16.0+ #144
+> task: c1828aa0 ti: c182a000 task.ti: c182a000
+> PC is at 0x0
+> LR is at ch2_irq+0x28/0x30
+> pc : [<00000000>]    lr : [<c01db904>]    psr: 000000d3
+> sp : c182bd38  ip : c182bd48  fp : c182bd44
+> r10: c0373390  r9 : c1825b00  r8 : 60000053
+> r7 : 00000000  r6 : 00000000  r5 : 00000013  r4 : c036e800
+> r3 : 00000000  r2 : 00002004  r1 : c036e760  r0 : c036e760
+> Flags: nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 0005317f  Table: 20004000  DAC: 00000017
+> Process swapper (pid: 1, stack limit = 0xc182a1c0)
+> Stack: (0xc182bd38 to 0xc182c000)
+> bd20:                                                       c182bd7c c182bd48
+> bd40: c0045430 c01db8ec 00000000 c18c6f40 c182bd74 c1825b00 c035cec4 00000000
+> bd60: c182be2c 60000053 c1825b34 00000000 c182bd94 c182bd80 c0045570 c0045408
+> bd80: 00000000 c1825b00 c182bdac c182bd98 c0047f34 c0045550 00000013 c036619c
+> bda0: c182bdc4 c182bdb0 c0044da4 c0047e98 0000007f 00000013 c182bde4 c182bdc8
+> bdc0: c0009e34 c0044d8c fefff000 c0046728 60000053 ffffffff c182bdf4 c182bde8
+> bde0: c00086a8 c0009ddc c182be74 c182bdf8 c000cb80 c0008674 00000000 00000013
+> be00: 00000000 00014200 c1825b00 c036e800 00000013 c035ed98 60000053 c1825b34
+> be20: 00000000 c182be74 c182be20 c182be40 c0047994 c0046728 60000053 ffffffff
+> be40: 00000013 c036e800 c182be64 c1825b00 00000013 c036e800 c035ed98 c03874bc
+> be60: 00000004 c036e700 c182be94 c182be78 c004689c c0046398 c036e760 c18c6080
+> be80: 00000000 c035ed10 c182bedc c182be98 c0348b08 c004684c 0000000c c034dac8
+> bea0: 004c4b3f c028c338 c036e760 00000013 c014ecc8 c18e67e0 c035b9c0 c0348884
+> bec0: c035b9c0 c182a020 00000000 00000000 c182bf54 c182bee0 c00089fc c0348894
+> bee0: c00da51c c1ffcc78 c182bf0c c182bef8 c002d100 c002d09c c1ffcc78 00000000
+> bf00: c182bf54 c182bf10 c002d308 c0336570 c182bf3c c0334e44 00000003 00000003
+> bf20: 00000030 c0334b44 c0044d74 00000003 00000003 c034dac8 c0350a94 c0373440
+> bf40: c0373440 00000030 c182bf94 c182bf58 c0336d24 c000890c 00000003 00000003
+> bf60: c0336560 c182bf64 c182bf64 6e616e0d 00000000 c0272fc8 00000000 00000000
+> bf80: 00000000 00000000 c182bfac c182bf98 c0272fd8 c0336bd8 c182a000 00000000
+> bfa0: 00000000 c182bfb0 c00095d0 c0272fd8 00000000 00000000 00000000 00000000
+> bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 374d27cd 33cc33e4
+> Backtrace:
+> [<c01db8dc>] (ch2_irq) from [<c0045430>] (handle_irq_event_percpu+0x38/0x148)
+> [<c00453f8>] (handle_irq_event_percpu) from [<c0045570>] (handle_irq_event+0x30/0x40)
+>   r10:00000000 r9:c1825b34 r8:60000053 r7:c182be2c r6:00000000 r5:c035cec4
+>   r4:c1825b00
+> [<c0045540>] (handle_irq_event) from [<c0047f34>] (handle_fasteoi_irq+0xac/0x11c)
+>   r4:c1825b00 r3:00000000
+> [<c0047e88>] (handle_fasteoi_irq) from [<c0044da4>] (generic_handle_irq+0x28/0x38)
+>   r5:c036619c r4:00000013
+> [<c0044d7c>] (generic_handle_irq) from [<c0009e34>] (handle_IRQ+0x68/0x88)
+>   r4:00000013 r3:0000007f
+> [<c0009dcc>] (handle_IRQ) from [<c00086a8>] (at91_aic_handle_irq+0x44/0x4c)
+>   r6:ffffffff r5:60000053 r4:c0046728 r3:fefff000
+> [<c0008664>] (at91_aic_handle_irq) from [<c000cb80>] (__irq_svc+0x40/0x4c)
+> Exception stack(0xc182bdf8 to 0xc182be40)
+> bde0:                                                       00000000 00000013
+> be00: 00000000 00014200 c1825b00 c036e800 00000013 c035ed98 60000053 c1825b34
+> be20: 00000000 c182be74 c182be20 c182be40 c0047994 c0046728 60000053 ffffffff
+> [<c0046388>] (__setup_irq) from [<c004689c>] (setup_irq+0x60/0x8c)
+>   r10:c036e700 r9:00000004 r8:c03874bc r7:c035ed98 r6:c036e800 r5:00000013
+>   r4:c1825b00
+> [<c004683c>] (setup_irq) from [<c0348b08>] (tcb_clksrc_init+0x284/0x31c)
+>   r6:c035ed10 r5:00000000 r4:c18c6080 r3:c036e760
+> [<c0348884>] (tcb_clksrc_init) from [<c00089fc>] (do_one_initcall+0x100/0x1b4)
+>   r10:00000000 r9:00000000 r8:c182a020 r7:c035b9c0 r6:c0348884 r5:c035b9c0
+>   r4:c18e67e0
+> [<c00088fc>] (do_one_initcall) from [<c0336d24>] (kernel_init_freeable+0x15c/0x224)
+>   r9:00000030 r8:c0373440 r7:c0373440 r6:c0350a94 r5:c034dac8 r4:00000003
+> [<c0336bc8>] (kernel_init_freeable) from [<c0272fd8>] (kernel_init+0x10/0xec)
+>   r9:00000000 r8:00000000 r7:00000000 r6:00000000 r5:c0272fc8 r4:00000000
+> [<c0272fc8>] (kernel_init) from [<c00095d0>] (ret_from_fork+0x14/0x24)
+>   r4:00000000 r3:c182a000
+> Code: bad PC value
+> ---[ end trace 5b30f0017e282e47 ]---
+> Kernel panic - not syncing: Fatal exception in interrupt
+>
+> Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 
-On Fri, Sep 05, 2014 at 12:40:22AM -0700, Todd Poynor wrote:
-> On Tue, Sep 2, 2014 at 7:54 AM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Tue, Sep 02, 2014 at 05:19:18PM +0530, Kiran Kumar Raparthy wrote:
-> ...
-> >> diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-=
-wakeupsource.c
-> >> index fca2010..70fa05e 100644
-> >> --- a/drivers/usb/phy/otg-wakeupsource.c
-> >> +++ b/drivers/usb/phy/otg-wakeupsource.c
-> >> @@ -48,7 +48,7 @@ static void otgws_handle_event(struct usb_phy *otgws=
-_xceiv, unsigned long event)
-> >>       case USB_EVENT_NONE:
-> >>       case USB_EVENT_ID:
-> >>       case USB_EVENT_CHARGER:
-> >> -             usb_drop_wsource(otgws_xceiv);
-> >> +             usb_temporary_hold_wsource(otgws_xceiv);
-> >
-> > looks like this won't work. You're holding the lock even on
-> > USB_EVEN_NONE. Why ?
->=20
-> It temporarily holds a timed wakeup source on USB disconnect events,
-> to allow the rest of the system time to react to the USB disconnection
-> (dropping host sessions, updating charger status, etc.) prior to
-> re-allowing suspend.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-alright, please add a note like this to commit log.
++ a nit below
 
---=20
-balbi
+> ---
+>   drivers/misc/atmel_tclib.c | 16 ++++++++++++++++
+>   include/linux/atmel_tc.h   |  5 +++++
+>   2 files changed, 21 insertions(+)
+>
+> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
+> index d505d1e..cc42f39 100644
+> --- a/drivers/misc/atmel_tclib.c
+> +++ b/drivers/misc/atmel_tclib.c
+> @@ -109,6 +109,7 @@ static int __init tc_probe(struct platform_device *pdev)
+>   	struct clk	*clk;
+>   	int		irq;
+>   	struct resource	*r;
+> +	unsigned int	i;
+>
+>   	irq = platform_get_irq(pdev, 0);
+>   	if (irq < 0)
+> @@ -157,18 +158,33 @@ static int __init tc_probe(struct platform_device *pdev)
+>   	if (tc->irq[2] < 0)
+>   		tc->irq[2] = irq;
+>
+> +	for (i = 0; i < 3; i++)
+> +		writel(ATMEL_TC_ALL_IRQ, tc->regs + ATMEL_TC_REG(i, IDR));
+> +
+>   	spin_lock(&tc_list_lock);
+>   	list_add_tail(&tc->node, &tc_list);
+>   	spin_unlock(&tc_list_lock);
+>
+> +	platform_set_drvdata(pdev, tc);
+> +
+>   	return 0;
+>   }
+>
+> +static void tc_shutdown (struct platform_device *pdev)
 
---GPJrCs/72TxItFYR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Typo : extra space between the function name and the parenthesis.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> +{
+> +	int i;
+> +	struct atmel_tc *tc = platform_get_drvdata(pdev);
+> +
+> +	for (i = 0; i < 3; i++)
+> +		writel(ATMEL_TC_ALL_IRQ, tc->regs + ATMEL_TC_REG(i, IDR));
+> +}
+> +
+>   static struct platform_driver tc_driver = {
+>   	.driver = {
+>   		.name	= "atmel_tcb",
+>   		.of_match_table	= of_match_ptr(atmel_tcb_dt_ids),
+>   	},
+> +	.shutdown = tc_shutdown,
+>   };
+>
+>   static int __init tc_init(void)
+> diff --git a/include/linux/atmel_tc.h b/include/linux/atmel_tc.h
+> index d8aa884..b87c1c7 100644
+> --- a/include/linux/atmel_tc.h
+> +++ b/include/linux/atmel_tc.h
+> @@ -260,5 +260,10 @@ extern const u8 atmel_tc_divisors[5];
+>   #define     ATMEL_TC_LDRAS	(1 <<  5)	/* RA loading */
+>   #define     ATMEL_TC_LDRBS	(1 <<  6)	/* RB loading */
+>   #define     ATMEL_TC_ETRGS	(1 <<  7)	/* external trigger */
+> +#define     ATMEL_TC_ALL_IRQ	(ATMEL_TC_COVFS	| ATMEL_TC_LOVRS | \
+> +				 ATMEL_TC_CPAS | ATMEL_TC_CPBS | \
+> +				 ATMEL_TC_CPCS | ATMEL_TC_LDRAS | \
+> +				 ATMEL_TC_LDRBS | ATMEL_TC_ETRGS) \
+> +				 /* all IRQs */
+>
+>   #endif
+>
 
-iQIcBAEBAgAGBQJUCcaBAAoJEIaOsuA1yqRE1vYQAIZ7X2aoCg+92STcCQ6eHtE3
-nGQ7pevYlltE5TgNFAVdDiFyYVKqFJRHKAbv1fvFXNqgtrLqyD8mv7eGqQwixaYU
-S9khXSR9kdty4vpRkybWolhwrlSCf5W9dSTkZ8FSkOy+Va8TnK24e8RnUuvQTf9U
-UEUByXGXlN/KoWTOoxt3EX3rcEmn9K4y9TdskK6W9wihzJnFY7yQ8spUXO9Oax4C
-FR73SmL37UR1P0/grnJfLS80kK26WOFZNcv5hsC3q1KiVdKatmN6LjME4ZScou1J
-WJUEn8fbiuKoywSgJZ0R4USBbpANNah/jTUp/1bPCtfw8kZiQk52DbrkWcPasBQ1
-dw1G4JWvXPJaVbzomg6FuLxB6hG4b/DgZdH4ED08HL/lLzX4AZ4CcqK47EsQflhd
-uiI85uj659Hp6asCCwO3F+t58QeHpIRA4VhdqJsIQLV+orSdPGfybyOw6XCvXffw
-k+Yr4bswASABHA9isNyAu/PrH0584L1acotpVz+/dr2z+waWnAEHXpZHbkfRcD0a
-f7JTwaQznK/OdZaFRyEMTvfYOpMhWXNeW2+pCgbN4c4zv/ZOMzdgOyD6e2Q4/b0o
-xODdQZZc6xFoUbXwdBmQR0jX/RYuOLDb38OcykQB1MC3ZL8KfXv6xjLR6SboH1tA
-kOlBu1NDNi2PcFv7GGkw
-=Xcv7
------END PGP SIGNATURE-----
 
---GPJrCs/72TxItFYR--
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
