@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074AbaIEGi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:38:57 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:61552 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaIEGiB (ORCPT
+	id S1751788AbaIEGqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:46:38 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:34694 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaIEGqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:38:01 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
-        tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, hare@suse.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de, santosh@chelsio.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Casey Leedom <leedom@chelsio.com>, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: [RFC v2 5/6] mptsas: use async probe
-Date: Thu,  4 Sep 2014 23:37:26 -0700
-Message-Id: <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+	Fri, 5 Sep 2014 02:46:36 -0400
+X-Greylist: delayed 3229 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Sep 2014 02:46:36 EDT
+Message-ID: <54094FA7.6000809@roeck-us.net>
+Date: Thu, 04 Sep 2014 22:52:39 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Xuetao Guan <gxt@pku.edu.cn>
+CC: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFJlOiDlm57lpI3vvJogUmU6IOWbnuWkje+8miA=?=
+ =?UTF-8?B?U3RhdHVzIG9mICd1bmljb3JlMzInIGFyY2hpdGVjdHVyZSBpbiBMaW51eCBrZXI=?=
+ =?UTF-8?B?bmVs?=
+References: <926403536.39754.1409733179383.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <926403536.39754.1409733179383.JavaMail.root@bj-mail03.pku.edu.cn>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54094FAF.0057,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 09/03/2014 01:32 AM, Xuetao Guan  wrote:
+>
+[ ... ]
 
-Its reported that mptsas can at times take over 30 seconds
-to recognize SCSI storage devices [0], this is done on the
-driver's probe path. Use the the new asynch probe to
-circumvent systemd from killing this driver.
+>> Please try the following patch. That seems to do it.
+>> I am sure it can be improved, but it is a start.
+>>
+>> Thanks,
+>> Guenter
+>
+> Thanks. I'll test it.
+> BTW, Qemu codestyle is different, and tab should be replaced with blanks.
+>
 
-[0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
+Here is where I am. User space code (busybox) was compiled
+using the unicore toolchain available on the web.
 
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Cc: Pierre Fersing <pierre-fersing@pierref.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Benjamin Poirier <bpoirier@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
-Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
-Cc: Hariprasad S <hariprasad@chelsio.com>
-Cc: Santosh Rastapur <santosh@chelsio.com>
-Cc: Casey Leedom <leedom@chelsio.com>
-Cc: MPT-FusionLinux.pdl@avagotech.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- drivers/message/fusion/mptsas.c | 1 +
- 1 file changed, 1 insertion(+)
+...
+serio: i8042 KBD port at 0x6eb00060,0x6eb00064 irq 22
+mousedev: PS/2 mouse device common for all mice
+Enable UniCore-F64 support.
+Warning: unable to open an initial console.
+Freeing unused kernel memory: 1156K (c0408000 - c0529000)
 
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 0707fa2..6dfee95 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -5385,6 +5385,7 @@ static struct pci_driver mptsas_driver = {
- 	.suspend	= mptscsih_suspend,
- 	.resume		= mptscsih_resume,
- #endif
-+	.driver.async_probe = true,
- };
- 
- static int __init
--- 
-2.0.3
+Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+
+---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+
+The kernel tries to execute the init program, which fails with SIGSEGV.
+I confirmed that the init program is loaded and starts to execute.
+
+Any idea what might cause such a problem ?
+
+Thanks,
+Guenter
 
