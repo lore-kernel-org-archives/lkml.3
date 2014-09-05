@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaIEQBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:01:40 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:51949 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaIEQBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:01:39 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes for 3.17 #1
-Date: Fri, 5 Sep 2014 18:01:36 +0200
-Message-ID: <1409932896-4533-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	id S1752971AbaIEQCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:02:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27479 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209AbaIEQCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 12:02:12 -0400
+Date: Fri, 5 Sep 2014 12:01:59 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Daniel Borkmann <dborkman@redhat.com>
+cc: Alexei Starovoitov <ast@plumgrid.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH] bpf: fix a false positive kmemcheck warning
+Message-ID: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+This patch fixes false positive kmemcheck warning in bpf.
 
-Little pull-request for fixing CCF conversion done during 3.17.
-The use of at91sam9g20 proper compatibility string is useful when booting
-without U-Boot (this is why we discover it now).
+When we try to write the variable len, the compiler generates a code that
+reads the 32-bit word, modifies the bits belonging to "len" and writes the
+32-bit word back. The reading of the word results in kmemcheck warning due
+to reading uninitialized memory. This patch fixes it by avoiding using bit
+fields when kmemcheck is enabled.
 
-Thanks, best regards,
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+---
+ include/linux/filter.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to ea4fc621adec8956944ecdb9a36c549cba8718c0:
-
-  ARM: at91/dt: rm9200: fix usb clock definition (2014-09-05 17:36:12 +0200)
-
-----------------------------------------------------------------
-First AT91 fixes batch for 3.17:
-- compatibility string precision
-- clock registration and USB DT fix for at91rm9200
-
-----------------------------------------------------------------
-Alexandre Belloni (2):
-      ARM: at91: rm9200: fix clock registration
-      ARM: at91/dt: rm9200: fix usb clock definition
-
-Gaël PORTAY (1):
-      ARM: at91/dt: sam9g20: set at91sam9g20 pllb driver
-
- arch/arm/boot/dts/at91rm9200.dtsi    |  2 +-
- arch/arm/boot/dts/at91sam9g20.dtsi   |  1 +
- arch/arm/mach-at91/board-dt-rm9200.c | 11 ++++++++++-
- 3 files changed, 12 insertions(+), 2 deletions(-)
-
--- 
-Nicolas Ferre
+Index: linux-2.6/include/linux/filter.h
+===================================================================
+--- linux-2.6.orig/include/linux/filter.h	2014-09-04 23:04:26.000000000 +0200
++++ linux-2.6/include/linux/filter.h	2014-09-04 23:43:05.000000000 +0200
+@@ -325,8 +325,13 @@ struct sock;
+ struct seccomp_data;
+ 
+ struct bpf_prog {
++#ifdef CONFIG_KMEMCHECK
++	bool			jited;
++	u32			len;
++#else
+ 	u32			jited:1,	/* Is our filter JIT'ed? */
+ 				len:31;		/* Number of filter blocks */
++#endif
+ 	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
+ 	unsigned int		(*bpf_func)(const struct sk_buff *skb,
+ 					    const struct bpf_insn *filter);
