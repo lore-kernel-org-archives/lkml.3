@@ -1,105 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763AbaIETlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:41:12 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:35228 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaIETlJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:41:09 -0400
+	id S1752044AbaIETlX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:41:23 -0400
+Received: from sauhun.de ([89.238.76.85]:56820 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925AbaIETlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 15:41:20 -0400
+Date: Fri, 5 Sep 2014 21:41:32 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.17
+Message-ID: <20140905194125.GA2876@katana>
 MIME-Version: 1.0
-In-Reply-To: <20140904172748.GO7156@arm.com>
-References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
-	<1409781429-27593-4-git-send-email-keescook@chromium.org>
-	<20140904170349.GL7156@arm.com>
-	<CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
-	<20140904172748.GO7156@arm.com>
-Date: Fri, 5 Sep 2014 12:41:08 -0700
-X-Google-Sender-Auth: xJVTz4zC1qHZboQmRszFex_6ipY
-Message-ID: <CAGXu5jJVJ1F=6Q909ppuKoWPdSoz7bTLLxBiY_5eQ=nQQiCHmw@mail.gmail.com>
-Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
-From: Kees Cook <keescook@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
-        Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 10:27 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Thu, Sep 04, 2014 at 06:23:42PM +0100, Kees Cook wrote:
->> On Thu, Sep 4, 2014 at 10:03 AM, Will Deacon <will.deacon@arm.com> wrote:
->> > Hi Kees,
->> >
->> > On Wed, Sep 03, 2014 at 10:57:04PM +0100, Kees Cook wrote:
->> >> This is used from set_fixmap() and clear_fixmap() via asm-generic/fixmap.h.
->> >> Also makes sure that the fixmap allocation fits into the expected range.
->> >>
->> >> Based on patch by Rabin Vincent.
->> >
->> > [...]
->> >
->> >> +void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot)
->> >> +{
->> >> +     unsigned long vaddr = __fix_to_virt(idx);
->> >> +     pte_t *pte = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
->> >> +
->> >> +     /* Make sure fixmap region does not exceed available allocation. */
->> >> +     BUILD_BUG_ON(FIXADDR_START + (__end_of_fixed_addresses * PAGE_SIZE) >
->> >> +                  FIXADDR_END);
->> >> +     BUG_ON(idx >= __end_of_fixed_addresses);
->> >> +
->> >> +     if (pgprot_val(prot))
->> >> +             set_pte_at(NULL, vaddr, pte,
->> >> +                     pfn_pte(phys >> PAGE_SHIFT, prot));
->> >> +     else
->> >> +             pte_clear(NULL, vaddr, pte);
->> >> +
->> >> +     /*
->> >> +      * Given the potential a15 tlbi errata, we can only do tlb flushes
->> >> +      * with interrupts disabled. Callers must have taken care of this.
->> >> +      */
->> >> +     WARN_ON_ONCE(!irqs_disabled());
->> >> +     flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
->> >
->> > Aha, this explains why we were confusing each other! The issue is that
->> > interrupts must be *enabled*, so this code does the exact opposite of
->> > what we need.
->> >
->> > I think this got lost in a sea of double negatives during the last round
->> > of review.
->>
->> Ah! If this is the case, perhaps we can get away with
->> local_flush_tlb_kernel_range() then?
->
-> That's a bit tricky, since you need to ensure that preemption is disabled
-> until the mapping is put back like it was.
 
-Even with CONFIG_ARM_ERRATA_798181 enabled, I don't see a problem here
-using flush_tlb_kernel_range(). When doing the ftrace work, this was
-trivial to trip over, so I think we're in a good state here.
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I've tested this on real hardware now too, and nothing falls over.
-I'll get rid of the comment and the WARN_ON_ONCE, but AFAICT, this is
-safe.
+Linus,
 
-Do you have a suggestion about what needs fixing?
+here are I2C driver bugfixes for the 3.17 release. Details can be found
+in the commit messages, yet I think this is typical driver stuff. Please
+pull.
 
--Kees
+Thanks,
 
--- 
-Kees Cook
-Chrome OS Security
+   Wolfram
+
+
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+
+for you to fetch changes up to 91bfe2989af02e709ca01ccf518c4fbda3efc70f:
+
+  Revert "i2c: rcar: remove spinlock" (2014-09-04 19:59:42 +0200)
+
+----------------------------------------------------------------
+Chen-Yu Tsai (1):
+      i2c: mv64xxx: continue probe when clock-frequency is missing
+
+Marek Roszko (1):
+      i2c: at91: add bound checking on SMBus block length bytes
+
+Sergei Shtylyov (2):
+      i2c: rcar: fix MNR interrupt handling
+      Revert "i2c: rcar: remove spinlock"
+
+Simon Lindgren (1):
+      i2c: at91: Fix a race condition during signal handling in at91_do_twi_xfer.
+
+addy ke (1):
+      i2c: rk3x: fix bug that cause transfer fails in master receive mode
+
+ drivers/i2c/busses/i2c-at91.c    | 32 ++++++++++++++++++++++++++------
+ drivers/i2c/busses/i2c-mv64xxx.c |  3 +--
+ drivers/i2c/busses/i2c-rcar.c    | 37 +++++++++++++++++++++++++++++++------
+ drivers/i2c/busses/i2c-rk3x.c    |  4 ++++
+ 4 files changed, 62 insertions(+), 14 deletions(-)
+
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIbBAEBAgAGBQJUChHlAAoJEBQN5MwUoCm2WxoP+Kc+IpaRVAQJrkAUASijQN1A
+8uxNvVjJSVXevlUoJNvsxfIcvDgIgnk/yDrrXtk9xKyduMcmLecyXP5mTh7MxdMa
+uIDxwNOBsCUz1LvE8ewoVPRZ1zV/5OMQYaNgy6Qa7/LqhJXAmdzFVjshkTfHVVd8
+osHZU2d3HC4rwVUrl1Yw6V0RrtcB4jULOJhEX8h+25/N9G/zI2Z5SiVfG1J7ve2y
+3DwCjjrXnnxLPyOSKezpRVgjKWHPswmJb4XAcZDqaxQieJwGX1D5PmCjihq2QtcK
+NHX2N59i1TIcKNj0prQiONux3x+Z8s6RUH6iuIBDkWGgYNtuRAYwltm8qLh1yYzR
+T5KHlWmmO3UatM/pkCinjyefvC8sGNmyS6nQVR4/BbhxyBpwyOeksY2UUmT0fmwU
+HI9o1TCUgYpwb2yNkp+StWEzwB1zPCNlaUKSmoCKeXKCrOvGUBO4Dbuu4MJrRrXq
+Y0WM/m4C+JP/mPsalQbjXqFgOYArvE2duujO/N08rAcntvvN1HTGRgGJH5UFWrnc
+cUno4Dt3GTrTgTEzEPdeZ/ZX1WOTaI/xGQJbxCSmRL3IlF1RJDR3IOnMxtKiHHll
+9kQiy62LQImeuaQunNavCB4bCq1F5cCPJo9nCTTaki3bDdxC109GWoXbRC+dlm3R
+2wNMXxoAquDIXe5cgTc=
+=W/B9
+-----END PGP SIGNATURE-----
+
+--7AUc2qLy4jB3hD7Z--
