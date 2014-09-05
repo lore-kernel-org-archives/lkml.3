@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724AbaIEP2L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:28:11 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:59098 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaIEP2I (ORCPT
+	id S1752661AbaIEP3d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:29:33 -0400
+Received: from smtp-out-239.synserver.de ([212.40.185.239]:1041 "EHLO
+	smtp-out-239.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaIEP3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:28:08 -0400
-Date: Fri, 5 Sep 2014 08:27:58 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
-        David Paris <david.paris@st.com>
-Subject: Re: [PATCH 3/4] watchdog: st_wdt: Provide binding documentation for
- ST's LPC Watchdog driver
-Message-ID: <20140905152758.GA10670@roeck-us.net>
-References: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
- <1409841592-18890-5-git-send-email-lee.jones@linaro.org>
+	Fri, 5 Sep 2014 11:29:31 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 1095
+Message-ID: <5409D6D8.2020802@metafoo.de>
+Date: Fri, 05 Sep 2014 17:29:28 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409841592-18890-5-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 1/3] dmaengine: pl330: Do not dereference pl330_thread
+ pointer before non-NULL check
+References: <1409929466-29506-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1409929466-29506-1-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 03:39:51PM +0100, Lee Jones wrote:
-> Signed-off-by: David Paris <david.paris@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On 09/05/2014 05:04 PM, Krzysztof Kozlowski wrote:
+> Do not dereference the 'struct pl330_thread *thrd' before the check for
+> non-NULL value.
+>
+> This fixes following warning:
+> drivers/dma/pl330.c:1376 pl330_submit_req() warn: variable dereferenced before check 'thrd' (see line 1367)
 
-You might want to copy the devicetree mailing list for bindings approval.
+I think we can just drop that whole line of checks, none of them will ever 
+be true.
 
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > ---
->  .../devicetree/bindings/watchdog/st-lpc-wdt.txt    | 27 ++++++++++++++++++++++
->  1 file changed, 27 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-> new file mode 100644
-> index 0000000..f0e57ba
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-> @@ -0,0 +1,27 @@
-> +STMicroelectronics LPC Watchdog
-> +===============================
-> +
-> +Required properties
-> +
-> +- compatible 	: "st,<soc>-watchdog"
+>   drivers/dma/pl330.c | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index d5149aacd2fe..47d82070848d 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -1364,7 +1364,7 @@ static inline u32 _prepare_ccr(const struct pl330_reqcfg *rqc)
+>   static int pl330_submit_req(struct pl330_thread *thrd,
+>   	struct dma_pl330_desc *desc)
+>   {
+> -	struct pl330_dmac *pl330 = thrd->dmac;
+> +	struct pl330_dmac *pl330;
+>   	struct _xfer_spec xs;
+>   	unsigned long flags;
+>   	void __iomem *regs;
+> @@ -1376,6 +1376,7 @@ static int pl330_submit_req(struct pl330_thread *thrd,
+>   	if (!desc || !thrd || thrd->free)
+>   		return -EINVAL;
+>
+> +	pl330 = thrd->dmac;
+>   	regs = thrd->dmac->base;
+>
+>   	if (pl330->state == DYING
+>
 
-Is this acceptable ? I thought the supported bindings have to be listed
-explicitly.
-
-> +- reg		: LPC registers base address + range
-> +- reg-names	: Register map "base" and "syscfg-en" are compulsory "type" is
-
-'.' after compulsory ?
-
-> +		  platform dependent and not required for the STiH407.
-> +- clock-names 	: Should be "lpc_wdt"
-> +- clocks	: Clock used by LPC device
-> +- timeout-sec	: Qatchdog timeout in seconds
-
-Watchdog
-
-> +- st,syscfg	: Syscfg node used to configure cpu reset type and mask
-> +- st,warm_reset	: If present, reset type will be 'warm'. If not, it will be cold
-
-s/cold/cold./ ?
-
-> +
-> +Example:
-> +	watchdog@fde05000 {
-> +		compatible	= "st,stih416-lpc-watchdog";
-> +		reg		= <0xfde05000 0x1000> <0x204 0x4>;
-> +		reg-names	= "base", "syscfg-en"
-> +		clock-names	= "lpc_wdt";
-> +		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
-> +		timeout-sec	= <600>;
-> +		st,syscfg	= <&syscfg_core>;
-> +		st,warm_reset;
-> +	};
-> +
-
-Empty line at the end results in a whitespace error when applying.
-
-Guenter
