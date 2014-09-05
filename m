@@ -1,419 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaIERZW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:25:22 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33681 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451AbaIERYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:24:01 -0400
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, arnd@arndb.de
-Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH RESEND v5 2/5] usb: host: ohci-st: Add OHCI driver support for ST STB devices
-Date: Fri,  5 Sep 2014 18:23:46 +0100
-Message-Id: <1409937829-23708-3-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409937829-23708-1-git-send-email-peter.griffin@linaro.org>
-References: <1409937829-23708-1-git-send-email-peter.griffin@linaro.org>
+	id S1754194AbaIERZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:25:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54074 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433AbaIERZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:25:49 -0400
+Date: Fri, 5 Sep 2014 19:25:41 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, falcon@meizu.com, tiwai@suse.de,
+        tj@kernel.org, arjan@linux.intel.com, linux-kernel@vger.kernel.org,
+        hare@suse.com, akpm@linux-foundation.org,
+        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
+        bpoirier@suse.de, santosh@chelsio.com, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC v2 2/6] driver-core: add driver async_probe support
+Message-ID: <20140905172541.GA17986@wotan.suse.de>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <1409899047-13045-3-git-send-email-mcgrof@do-not-panic.com> <20140905112417.GB22778@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905112417.GB22778@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the glue code required to ensure the on-chip OHCI
-controller works on STi consumer electronics SoC's from STMicroelectronics.
+On Fri, Sep 05, 2014 at 01:24:17PM +0200, Oleg Nesterov wrote:
+> On 09/04, Luis R. Rodriguez wrote:
+> >
+> >  struct driver_private {
+> >  	struct kobject kobj;
+> >  	struct klist klist_devices;
+> >  	struct klist_node knode_bus;
+> >  	struct module_kobject *mkobj;
+> > +	struct driver_attach_work *attach_work;
+> >  	struct device_driver *driver;
+> 
+> I am not arguing, just curious...
+> 
+> Are you trying to shrink sizeof(driver_private) ? 
 
-It mainly manages the setting and enabling of the relevant clocks and manages
-the reset / power signals to the IP block.
+Yeap.
 
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- drivers/usb/host/Kconfig   |   8 ++
- drivers/usb/host/Makefile  |   1 +
- drivers/usb/host/ohci-st.c | 339 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 348 insertions(+)
- create mode 100644 drivers/usb/host/ohci-st.c
+> The code can be simpler
+> if you just embedd "struct work_struct attach_work" into driver_private,
+> and you do not need "struct driver_attach_work" or another ->driver pointer
+> this way.
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 82800a7..609efe2 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -761,6 +761,14 @@ config USB_HCD_SSB
- 
- 	  If unsure, say N.
- 
-+config USB_HCD_ST
-+	tristate "ST USB driver for ST SoC Series"
-+	depends on ARCH_STI && OF
-+	select GENERIC_PHY
-+	help
-+	  Enable support for the on-chip OHCI & EHCI controller found on
-+	  STMicroelectronics consumer electronics SoC's.
-+
- config USB_HCD_TEST_MODE
- 	bool "HCD test mode support"
- 	---help---
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 144c038..ae2db0b 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -77,3 +77,4 @@ obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
- obj-$(CONFIG_USB_FUSBH200_HCD)	+= fusbh200-hcd.o
- obj-$(CONFIG_USB_FOTG210_HCD)	+= fotg210-hcd.o
- obj-$(CONFIG_USB_MAX3421_HCD)	+= max3421-hcd.o
-+obj-$(CONFIG_USB_HCD_ST)	+= ehci-st.o ohci-st.o
-diff --git a/drivers/usb/host/ohci-st.c b/drivers/usb/host/ohci-st.c
-new file mode 100644
-index 0000000..738d6c6
---- /dev/null
-+++ b/drivers/usb/host/ohci-st.c
-@@ -0,0 +1,339 @@
-+/*
-+ * ST OHCI driver
-+ *
-+ * Copyright (C) 2014 STMicroelectronics – All Rights Reserved
-+ *
-+ * Author: Peter Griffin <peter.griffin@linaro.org>
-+ *
-+ * Derived from ohci-platform.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/hrtimer.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/reset.h>
-+#include <linux/usb/ohci_pdriver.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+
-+#include "ohci.h"
-+#include "usb-st-common.h"
-+
-+#define DRIVER_DESC "OHCI STMicroelectronics driver"
-+
-+#define hcd_to_ohci_priv(h) ((struct st_platform_priv *)hcd_to_ohci(h)->priv)
-+
-+static const char hcd_name[] = "ohci-st";
-+
-+static int st_ohci_platform_power_on(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
-+	int clk, ret;
-+
-+	ret = reset_control_deassert(priv->pwr);
-+	if (ret)
-+		return ret;
-+
-+	ret = reset_control_deassert(priv->rst);
-+	if (ret)
-+		goto err_assert_power;
-+
-+	/* some SoCs don't have a dedicated 48Mhz clock, but those that do
-+	   need the rate to be explicitly set */
-+	if (priv->clk48) {
-+		ret = clk_set_rate(priv->clk48, 48000000);
-+		if (ret)
-+			goto err_assert_reset;
-+	}
-+
-+	for (clk = 0; clk < USB_MAX_CLKS && priv->clks[clk]; clk++) {
-+		ret = clk_prepare_enable(priv->clks[clk]);
-+		if (ret)
-+			goto err_disable_clks;
-+	}
-+
-+	ret = phy_init(priv->phy);
-+	if (ret)
-+		goto err_disable_clks;
-+
-+	ret = phy_power_on(priv->phy);
-+	if (ret)
-+		goto err_exit_phy;
-+
-+	return 0;
-+
-+err_exit_phy:
-+	phy_exit(priv->phy);
-+err_disable_clks:
-+	while (--clk >= 0)
-+		clk_disable_unprepare(priv->clks[clk]);
-+err_assert_reset:
-+	reset_control_assert(priv->rst);
-+err_assert_power:
-+	reset_control_assert(priv->pwr);
-+
-+	return ret;
-+}
-+
-+static void st_ohci_platform_power_off(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
-+
-+	int clk;
-+
-+	reset_control_assert(priv->pwr);
-+
-+	reset_control_assert(priv->rst);
-+
-+	phy_power_off(priv->phy);
-+
-+	phy_exit(priv->phy);
-+
-+	for (clk = USB_MAX_CLKS - 1; clk >= 0; clk--)
-+		if (priv->clks[clk])
-+			clk_disable_unprepare(priv->clks[clk]);
-+}
-+
-+static struct hc_driver __read_mostly ohci_platform_hc_driver;
-+
-+static const struct ohci_driver_overrides platform_overrides __initconst = {
-+	.product_desc =		"ST OHCI controller",
-+	.extra_priv_size =	sizeof(struct st_platform_priv),
-+};
-+
-+static struct usb_ohci_pdata ohci_platform_defaults = {
-+	.power_on =		st_ohci_platform_power_on,
-+	.power_suspend =	st_ohci_platform_power_off,
-+	.power_off =		st_ohci_platform_power_off,
-+};
-+
-+static int st_ohci_platform_probe(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd;
-+	struct resource *res_mem;
-+	struct usb_ohci_pdata *pdata = &ohci_platform_defaults;
-+	struct st_platform_priv *priv;
-+	struct ohci_hcd *ohci;
-+	int err, irq, clk = 0;
-+
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	irq = platform_get_irq(dev, 0);
-+	if (irq < 0) {
-+		dev_err(&dev->dev, "no irq provided");
-+		return irq;
-+	}
-+
-+	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	if (!res_mem) {
-+		dev_err(&dev->dev, "no memory resource provided");
-+		return -ENXIO;
-+	}
-+
-+	hcd = usb_create_hcd(&ohci_platform_hc_driver, &dev->dev,
-+			dev_name(&dev->dev));
-+	if (!hcd)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(dev, hcd);
-+	dev->dev.platform_data = pdata;
-+	priv = hcd_to_ohci_priv(hcd);
-+	ohci = hcd_to_ohci(hcd);
-+
-+	priv->phy = devm_phy_get(&dev->dev, "usb");
-+	if (IS_ERR(priv->phy)) {
-+		err = PTR_ERR(priv->phy);
-+		goto err_put_hcd;
-+	}
-+
-+	for (clk = 0; clk < USB_MAX_CLKS; clk++) {
-+		priv->clks[clk] = of_clk_get(dev->dev.of_node, clk);
-+		if (IS_ERR(priv->clks[clk])) {
-+			err = PTR_ERR(priv->clks[clk]);
-+			if (err == -EPROBE_DEFER)
-+				goto err_put_clks;
-+			priv->clks[clk] = NULL;
-+			break;
-+		}
-+	}
-+
-+	/* some SoCs don't have a dedicated 48Mhz clock, but those that
-+	   do need the rate to be explicitly set */
-+	priv->clk48 = devm_clk_get(&dev->dev, "clk48");
-+	if (IS_ERR(priv->clk48)) {
-+		dev_info(&dev->dev, "48MHz clk not found\n");
-+		priv->clk48 = NULL;
-+	}
-+
-+	priv->pwr = devm_reset_control_get_optional(&dev->dev, "power");
-+	if (IS_ERR(priv->pwr)) {
-+		err = PTR_ERR(priv->pwr);
-+		goto err_put_clks;
-+	}
-+
-+	priv->rst = devm_reset_control_get_optional(&dev->dev, "softreset");
-+	if (IS_ERR(priv->rst)) {
-+		err = PTR_ERR(priv->rst);
-+		goto err_put_clks;
-+	}
-+
-+	if (pdata->power_on) {
-+		err = pdata->power_on(dev);
-+		if (err < 0)
-+			goto err_power;
-+	}
-+
-+	hcd->rsrc_start = res_mem->start;
-+	hcd->rsrc_len = resource_size(res_mem);
-+
-+	hcd->regs = devm_ioremap_resource(&dev->dev, res_mem);
-+	if (IS_ERR(hcd->regs)) {
-+		err = PTR_ERR(hcd->regs);
-+		goto err_power;
-+	}
-+	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
-+	if (err)
-+		goto err_power;
-+
-+	device_wakeup_enable(hcd->self.controller);
-+
-+	platform_set_drvdata(dev, hcd);
-+
-+	return err;
-+
-+err_power:
-+	if (pdata->power_off)
-+		pdata->power_off(dev);
-+
-+err_put_clks:
-+	while (--clk >= 0)
-+		clk_put(priv->clks[clk]);
-+err_put_hcd:
-+	if (pdata == &ohci_platform_defaults)
-+		dev->dev.platform_data = NULL;
-+
-+	usb_put_hcd(hcd);
-+
-+	return err;
-+}
-+
-+static int st_ohci_platform_remove(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct usb_ohci_pdata *pdata = dev_get_platdata(&dev->dev);
-+	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
-+	int clk;
-+
-+	usb_remove_hcd(hcd);
-+
-+	if (pdata->power_off)
-+		pdata->power_off(dev);
-+
-+
-+	for (clk = 0; clk < USB_MAX_CLKS && priv->clks[clk]; clk++)
-+		clk_put(priv->clks[clk]);
-+
-+	usb_put_hcd(hcd);
-+
-+	if (pdata == &ohci_platform_defaults)
-+		dev->dev.platform_data = NULL;
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int st_ohci_suspend(struct device *dev)
-+{
-+	struct usb_hcd *hcd = dev_get_drvdata(dev);
-+	struct usb_ohci_pdata *pdata = dev->platform_data;
-+	struct platform_device *pdev =
-+		container_of(dev, struct platform_device, dev);
-+	bool do_wakeup = device_may_wakeup(dev);
-+	int ret;
-+
-+	ret = ohci_suspend(hcd, do_wakeup);
-+	if (ret)
-+		return ret;
-+
-+	if (pdata->power_suspend)
-+		pdata->power_suspend(pdev);
-+
-+	return ret;
-+}
-+
-+static int st_ohci_resume(struct device *dev)
-+{
-+	struct usb_hcd *hcd = dev_get_drvdata(dev);
-+	struct usb_ohci_pdata *pdata = dev_get_platdata(dev);
-+	struct platform_device *pdev =
-+		container_of(dev, struct platform_device, dev);
-+	int err;
-+
-+	if (pdata->power_on) {
-+		err = pdata->power_on(pdev);
-+		if (err < 0)
-+			return err;
-+	}
-+
-+	ohci_resume(hcd, false);
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(st_ohci_pm_ops, st_ohci_suspend, st_ohci_resume);
-+
-+#endif /* CONFIG_PM_SLEEP */
-+
-+static const struct of_device_id st_ohci_platform_ids[] = {
-+	{ .compatible = "st,st-ohci-300x", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, st_ohci_platform_ids);
-+
-+static struct platform_driver ohci_platform_driver = {
-+	.probe		= st_ohci_platform_probe,
-+	.remove		= st_ohci_platform_remove,
-+	.shutdown	= usb_hcd_platform_shutdown,
-+	.driver		= {
-+		.name	= "st-ohci",
-+#ifdef CONFIG_PM_SLEEP
-+		.pm	= &st_ohci_pm_ops,
-+#endif
-+		.of_match_table = st_ohci_platform_ids,
-+	}
-+};
-+
-+static int __init ohci_platform_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+
-+	ohci_init_driver(&ohci_platform_hc_driver, &platform_overrides);
-+	return platform_driver_register(&ohci_platform_driver);
-+}
-+module_init(ohci_platform_init);
-+
-+static void __exit ohci_platform_cleanup(void)
-+{
-+	platform_driver_unregister(&ohci_platform_driver);
-+}
-+module_exit(ohci_platform_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_AUTHOR("Peter Griffin <peter.griffin@linaro.org>");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
+Agreed, I considered it and figured it wouldn't make much sense
+to push onto folks more bytes if this feature was optional and
+likely only used by a few drivers, so a pointer / kzalloc seemed
+better to deal with. This saves us 24 bytes. I even tried to
+implement a container_of_p() for pointers but that obviosly
+didn't work well fast as a pointer can have any address and is
+not relative to the parent, and if its on stack the address
+can vary depending on implementation. For example the first member
+should always have the same address as the struct but if the
+first member is a pointer it would be off for me by 12 bytes.
+I am not sure if this is standarized or not.
 
+  Luis
