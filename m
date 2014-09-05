@@ -1,90 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408AbaIENqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:46:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25033 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757015AbaIENqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:46:15 -0400
-Date: Fri, 5 Sep 2014 15:43:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Suresh Siddha <sbsiddha@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/5] x86, fpu: don't abuse ->has_fpu in
-	__kernel_fpu_{begin,end}()
-Message-ID: <20140905134344.GA14249@redhat.com>
+	id S932501AbaIENwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:52:17 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:45002 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932273AbaIENwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 09:52:15 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
+Date: Fri, 5 Sep 2014 15:52:05 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13.0-32-generic; KDE/4.13.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Sebastian Reichel <sre@debian.org>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Pavel Machek <pavel@ucw.cz>, Fabio Estevam <festevam@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <201409051338.40988@pali> <20140905134542.GD20164@leverpostej>
+In-Reply-To: <20140905134542.GD20164@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905134325.GA14228@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: multipart/signed;
+  boundary="nextPart2474447.dz5nrn0Vt0";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409051552.05447@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have in_kernel_fpu we can remove __thread_clear_has_fpu()
-in __kernel_fpu_begin(). And this allows to replace the asymmetrical
-and nontrivial use_eager_fpu+tsk_used_math check in kernel_fpu_end()
-with the same __thread_has_fpu().
+--nextPart2474447.dz5nrn0Vt0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-The logic becomes really simple; if _begin() does save() then _end()
-needs restore(), this is controlled by __thread_has_fpu(). Otherwise
-they do clts/stts unless use_eager_fpu().
+On Friday 05 September 2014 15:45:42 Mark Rutland wrote:
+> On Fri, Sep 05, 2014 at 12:38:40PM +0100, Pali Roh=C3=A1r wrote:
+> > On Wednesday 18 June 2014 18:54:24 Pali Roh=C3=A1r wrote:
+> > > Machine name from board description is some generic name
+> > > on DT kernel. DT provides machine name property which is
+> > > specific for board, so use it instead generic one when
+> > > possible.
+> > >=20
+> > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > ---
+> > >=20
+> > >  arch/arm/kernel/setup.c |    7 +++++--
+> > >  1 file changed, 5 insertions(+), 2 deletions(-)
+> > >=20
+> > > diff --git a/arch/arm/kernel/setup.c
+> > > b/arch/arm/kernel/setup.c index 8a16ee5..fbc7b4f 100644
+> > > --- a/arch/arm/kernel/setup.c
+> > > +++ b/arch/arm/kernel/setup.c
+> > > @@ -875,10 +875,13 @@ void __init setup_arch(char
+> > > **cmdline_p)
+> > >=20
+> > >  	setup_processor();
+> > >  	mdesc =3D setup_machine_fdt(__atags_pointer);
+> > >=20
+> > > -	if (!mdesc)
+> > > +	if (mdesc)
+> > > +		machine_name =3D of_flat_dt_get_machine_name();
+> > > +	else
+> > >=20
+> > >  		mdesc =3D setup_machine_tags(__atags_pointer,
+> > >=20
+> > > __machine_arch_type); machine_desc =3D mdesc;
+> > > -	machine_name =3D mdesc->name;
+> > > +	if (!machine_name)
+> > > +		machine_name =3D mdesc->name;
+> > >=20
+> > >  	if (mdesc->reboot_mode !=3D REBOOT_HARD)
+> > >  =09
+> > >  		reboot_mode =3D mdesc->reboot_mode;
+> >=20
+> > So, do you really want to break userspace which reading file
+> > /proc/cpuinfo (after migration from boardcode --> DT)?
+>=20
+> You have no guarantee model name in the DT =3D=3D the name in a
+> board file anyhow, and trying to force that is wrong. So
+> further to Russell's reply, I must NAK this from a DT
+> perspective.
+>=20
+> Realistically your userspace is already broken if relying on
+> such things. You built something that only ever worked for a
+> particular arbitrary string. So it was already broken for
+> every other board, and there was never any guarantee that new
+> boards where your userspace could have worked would share the
+> same name.
+>=20
+> You're trying to fix the wrong side of the equation.
+>=20
+> Mark.
 
-Not only this makes begin/end symmetrical and imo more understandable,
-potentially this allows to change irq_fpu_usable() to avoid all other
-checks except "in_kernel_fpu".
+So what is your suggestion for identifing board (name/type) which=20
+will work with any kernel (and will not be broken again by kernel=20
+later)?
 
-Also, with this patch __kernel_fpu_end() does restore_fpu_checking()
-and WARNs if it fails instead of math_state_restore(). I think this
-looks better because we no longer need __thread_fpu_begin(), and it
-would be better to report the failure in this case.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/i387.c |   19 ++++++-------------
- 1 files changed, 6 insertions(+), 13 deletions(-)
+--nextPart2474447.dz5nrn0Vt0
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 8fb8868..19dd36d 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -82,9 +82,7 @@ void __kernel_fpu_begin(void)
- 
- 	/* FIXME: race with math_state_restore()-like code */
- 	if (__thread_has_fpu(me)) {
--		__thread_clear_has_fpu(me);
- 		__save_init_fpu(me);
--		/* We do 'stts()' in __kernel_fpu_end() */
- 	} else if (!use_eager_fpu()) {
- 		this_cpu_write(fpu_owner_task, NULL);
- 		clts();
-@@ -94,17 +92,12 @@ EXPORT_SYMBOL(__kernel_fpu_begin);
- 
- void __kernel_fpu_end(void)
- {
--	if (use_eager_fpu()) {
--		/*
--		 * For eager fpu, most the time, tsk_used_math() is true.
--		 * Restore the user math as we are done with the kernel usage.
--		 * At few instances during thread exit, signal handling etc,
--		 * tsk_used_math() is false. Those few places will take proper
--		 * actions, so we don't need to restore the math here.
--		 */
--		if (likely(tsk_used_math(current)))
--			math_state_restore();
--	} else {
-+	struct task_struct *me = current;
-+
-+	if (__thread_has_fpu(me)) {
-+		if (WARN_ON(restore_fpu_checking(me)))
-+			drop_init_fpu(me);
-+	} else if (!use_eager_fpu()) {
- 		stts();
- 	}
- 
--- 
-1.5.5.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlQJwAUACgkQi/DJPQPkQ1JsUgCbBHVxSwXT5NJT5YLndjaWqV2J
+al0AnRUGbfJXuwapu1XLtvK+/oCvwUmq
+=rfoi
+-----END PGP SIGNATURE-----
+
+--nextPart2474447.dz5nrn0Vt0--
