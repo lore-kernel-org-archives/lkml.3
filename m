@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007AbaIEVNr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:13:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34543 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713AbaIEVNp (ORCPT
+	id S1753072AbaIEVOo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:14:44 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:65085 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144AbaIEVOm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:13:45 -0400
-Date: Fri, 5 Sep 2014 23:13:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Nishanth Menon <nm@ti.com>
-cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
-        Mark Brown <broonie@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 3/3] mfd: palmas: Add support for optional wakeup
-In-Reply-To: <1409950311-25236-4-git-send-email-nm@ti.com>
-Message-ID: <alpine.DEB.2.10.1409052311210.5472@nanos>
-References: <1409950311-25236-1-git-send-email-nm@ti.com> <1409950311-25236-4-git-send-email-nm@ti.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 5 Sep 2014 17:14:42 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <540A2080.8050404@zytor.com>
+References: <CALCETrUaZ8w92g96SmFEZDE0Jr+0Moeo+S24-TyW8crrK5reSg@mail.gmail.com>
+ <540A1800.3000005@zytor.com> <540A2080.8050404@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 5 Sep 2014 14:14:20 -0700
+Message-ID: <CALCETrXFD=D=W6pjQfhzzWU-ZOZzkJ=ZMxF5=sKxFx7NAg7xng@mail.gmail.com>
+Subject: Re: Post-merge-window ping (Re: [PATCH v4 0/5] x86: two-phase syscall
+ tracing and seccomp fastpath)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014, Nishanth Menon wrote:
-> +	if (!palmas->wakeirq)
-> +		goto no_wake_irq;
-> +
-> +	ret = devm_request_irq(palmas->dev, palmas->wakeirq,
-> +			       palmas_wake_irq,
-> +			       IRQF_ONESHOT | pdata->irq_flags,
+On Fri, Sep 5, 2014 at 1:43 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 09/05/2014 01:07 PM, H. Peter Anvin wrote:
+>> On 08/26/2014 06:32 PM, Andy Lutomirski wrote:
+>>> On Mon, Jul 28, 2014 at 8:38 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> This applies to:
+>>>> git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git seccomp-fastpath
+>>>>
+>>>> Gitweb:
+>>>> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/fastpath
+>>>
+>>> Hi all-
+>>>
+>>> AFAIK the only thing that's changed since I submitted it is that the
+>>> 3.17 merge window is closed.  Kees rebased the tree this applies to,
+>>> but I think the patches all still apply.  What, if anything, do I need
+>>> to do to help this along for 3.18?
+>>>
+>>
+>> Just put this stuff in a branch and running through my personal test
+>> battery now.
+>>
+>
+> ... and they fail build testing.  Specifically, both i386 and x86-64
+> allnoconfig fail with:
 
-Why is this marked IRQF_ONESHOT?
+OK, that's embarrassing.  Also, this has been sitting on
+git.kernel.org forever and kbuild never spotted it either.  Hmm.
 
-> +			       dev_name(palmas->dev),
-> +			       &palmas);
-> +	if (ret < 0)
-> +		goto err_i2c;
+Anyway, updates coming.
 
-Why err and not doing the obvious clearing of palmas->wakeirq and
-keep at least the i2c functional?
+--Andy
 
-Thanks,
+>
+> arch/x86/kernel/ptrace.c: In function ‘syscall_trace_enter_phase2’:
+>   LD      fs/quota/built-in.o
+> ../arch/x86/kernel/ptrace.c:1579:2: error: implicit declaration of
+> function ‘seccomp_phase2’ [-Werror=implicit-function-declaration]
+>   if (phase1_result > 1 && seccomp_phase2(phase1_result)) {
+>   ^
+> cc1: some warnings being treated as errors
+>   CC      arch/x86/kernel/step.o
+> make[4]: *** [arch/x86/kernel/ptrace.o] Error 1
+>
+>         -hpa
+>
+>
 
-	tglx
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
