@@ -1,357 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813AbaIEKm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:42:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26630 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756552AbaIEKm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:42:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,472,1406617200"; 
-   d="scan'208";a="475422507"
-Message-ID: <540994C7.6030306@intel.com>
-Date: Fri, 05 Sep 2014 13:47:35 +0300
-From: Daniel Baluta <daniel.baluta@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756721AbaIEKqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:46:10 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:52838
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756364AbaIEKqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 06:46:08 -0400
+Date: Fri, 5 Sep 2014 12:45:47 +0200
+From: Robert Richter <robert.richter@caviumnetworks.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Robert Richter <rric@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium
+ Thunder SoC Family
+Message-ID: <20140905104547.GT4703@rric.localhost>
+References: <1409903205-2762-1-git-send-email-rric@kernel.org>
+ <1409903205-2762-2-git-send-email-rric@kernel.org>
+ <20140905093239.GC30401@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>, jic23@kernel.org, pmeerw@pmeerw.net
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tsechih_Lin@asus.com
-Subject: Re: [PATCH v5] iio: Add Dyna-Image AL3320A ambient light sensor driver
-References: <1409595843-8118-1-git-send-email-daniel.baluta@intel.com> <54098423.3030405@gmx.de>
-In-Reply-To: <54098423.3030405@gmx.de>
-Content-Type: text/plain; charset=iso-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140905093239.GC30401@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [92.224.199.72]
+X-ClientProxiedBy: DBXPR04CA003.eurprd04.prod.outlook.com (10.255.191.151) To
+ BLUPR0701MB803.namprd07.prod.outlook.com (10.141.253.24)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0325F6C77B
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(6069001)(24454002)(51704005)(189002)(199003)(105586002)(81342001)(50466002)(102836001)(85306004)(86362001)(95666004)(23726002)(19580405001)(90102001)(19580395003)(83322001)(101416001)(80022001)(64706001)(79102001)(106356001)(110136001)(66066001)(47776003)(20776003)(81542001)(76176999)(97756001)(107046002)(33656002)(77982001)(74502001)(21056001)(92566001)(54356999)(50986999)(31966008)(83072002)(99396002)(74662001)(87976001)(85852003)(4396001)(92726001)(46102001)(46406003)(76482001)(42186005)(575784001)(76506005)(77096002)(83506001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR0701MB803;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05.09.14 10:32:40, Russell King - ARM Linux wrote:
+> On Fri, Sep 05, 2014 at 09:46:42AM +0200, Robert Richter wrote:
+> > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > 
+> > Increase maximum numbers of cpus to 32. This relates to current
+> > maximal possible cpu number. Increasing this to 64 cpus will be a
+> > separate patch not part of this enablement patches.
+> > 
+> > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > ---
+> >  arch/arm64/Kconfig | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> > index fd4e81a4e1ce..77fb82b0f684 100644
+> > --- a/arch/arm64/Kconfig
+> > +++ b/arch/arm64/Kconfig
+> > @@ -134,6 +134,11 @@ source "kernel/Kconfig.freezer"
+> >  
+> >  menu "Platform selection"
+> >  
+> > +config ARCH_THUNDER
+> > +	bool "Cavium Inc. Thunder SoC Family"
+> > +	help
+> > +	  This enables support for Cavium's Thunder Family of SoCs.
+> > +
+> >  config ARCH_VEXPRESS
+> >  	bool "ARMv8 software model (Versatile Express)"
+> >  	select ARCH_REQUIRE_GPIOLIB
+> > @@ -256,6 +261,7 @@ config NR_CPUS
+> >  	range 2 32
+> >  	depends on SMP
+> >  	# These have to remain sorted largest to smallest
+> > +	default "32" if ARCH_THUNDER
+> >  	default "8"
+> 
+> Why do you need ARCH_THUNDER?  If it's just to change this default,
 
-On 09/05/2014 12:36 PM, Hartmut Knaack wrote:
-> Daniel Baluta schrieb:
->> Minimal implementation. This driver provides raw illuminance readings.
->>
->> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
->> by Tsechih Lin <Tsechih_Lin@asus.com>
->>
->> * https://android.googlesource.com/kernel/msm.git
-> Almost there. But I have two more issues, which you will find inline.
->> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->> ---
->> Changes since v4: (reported by Peter)
->> 	* no need to fix endianess when reading raw value
->>
->> Changes since v3: (reported by Hartmut and Jonathan)
->>          * dropped the local store for the range, instead read it when necessary
->>          * removed wrapper functions
->>          * added in_illuminance_scale_available attribute
->>          * fix bug when reading raw value, use i2c_smbus_read_word instead of
->>            i2c_smbus_read_word_swapped and fix the endianess after read.
->>          * small coding style fixes
->>
->> Changes since v2: (reported by Peter Meerwald)
->>          * removed definition of DATA_HIGH and SW_RESET as they are not used
->>          * added a comment to al3320a_get_adc_value() function
->>          * added thresholds on TODO list
->>          * small style fixes
->>
->> Changes since v1: (reported by Peter Meerwald)
->>          * used u8 instead of int for passing gain and mean_time
->>          * used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
->>          * used devm_iio_device_register instead of iio_device_register
->>          * small style fixes
->>
->>   drivers/iio/light/Kconfig   |   10 ++
->>   drivers/iio/light/Makefile  |    1 +
->>   drivers/iio/light/al3320a.c |  229 +++++++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 240 insertions(+)
->>   create mode 100644 drivers/iio/light/al3320a.c
->>
->> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
->> index bf05ca5..5bea821 100644
->> --- a/drivers/iio/light/Kconfig
->> +++ b/drivers/iio/light/Kconfig
->> @@ -17,6 +17,16 @@ config ADJD_S311
->>   	 This driver can also be built as a module.  If so, the module
->>   	 will be called adjd_s311.
->>   
->> +config AL3320A
->> +	tristate "AL3320A ambient light sensor"
->> +	depends on I2C
->> +	help
->> +	 Say Y here if you want to build a driver for the Dyna Image AL3320A
->> +	 ambient light sensor.
->> +
->> +	 To compile this driver as a module, choose M here: the
->> +	 module will be called al3320a.
->> +
->>   config APDS9300
->>   	tristate "APDS9300 ambient light sensor"
->>   	depends on I2C
->> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
->> index 8b8c09f..47877a3 100644
->> --- a/drivers/iio/light/Makefile
->> +++ b/drivers/iio/light/Makefile
->> @@ -4,6 +4,7 @@
->>   
->>   # When adding new entries keep the list in alphabetical order
->>   obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
->> +obj-$(CONFIG_AL3320A)		+= al3320a.o
->>   obj-$(CONFIG_APDS9300)		+= apds9300.o
->>   obj-$(CONFIG_CM32181)		+= cm32181.o
->>   obj-$(CONFIG_CM36651)		+= cm36651.o
->> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
->> new file mode 100644
->> index 0000000..760224c
->> --- /dev/null
->> +++ b/drivers/iio/light/al3320a.c
->> @@ -0,0 +1,229 @@
->> +/*
->> + * AL3320A - Dyna Image Ambient Light Sensor
->> + *
->> + * Copyright (c) 2014, Intel Corporation.
->> + *
->> + * This file is subject to the terms and conditions of version 2 of
->> + * the GNU General Public License.  See the file COPYING in the main
->> + * directory of this archive for more details.
->> + *
->> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
->> + *
->> + * TODO: interrupt support, thresholds
->> + *
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/init.h>
->> +#include <linux/i2c.h>
->> +
->> +#include <linux/iio/iio.h>
->> +#include <linux/iio/sysfs.h>
->> +
->> +#define AL3320A_DRV_NAME "al3320a"
->> +
->> +#define AL3320A_REG_CONFIG		0x00
->> +#define AL3320A_REG_STATUS		0x01
->> +#define AL3320A_REG_INT			0x02
->> +#define AL3320A_REG_WAIT		0x06
->> +#define AL3320A_REG_CONFIG_RANGE	0x07
->> +#define AL3320A_REG_PERSIST		0x08
->> +#define AL3320A_REG_MEAN_TIME		0x09
->> +#define AL3320A_REG_ADUMMY		0x0A
->> +#define AL3320A_REG_DATA_LOW		0x22
->> +
->> +#define AL3320A_REG_LOW_THRESH_LOW	0x30
->> +#define AL3320A_REG_LOW_THRESH_HIGH	0x31
->> +#define AL3320A_REG_HIGH_THRESH_LOW	0x32
->> +#define AL3320A_REG_HIGH_THRESH_HIGH	0x33
->> +
->> +#define AL3320A_CONFIG_DISABLE		0x00
->> +#define AL3320A_CONFIG_ENABLE		0x01
->> +
->> +#define AL3320A_GAIN_SHIFT		1
->> +
->> +/* chip params default values */
->> +#define AL3320A_DEFAULT_MEAN_TIME	4
->> +#define AL3320A_DEFAULT_WAIT_TIME	0 /* no waiting */
->> +
->> +#define AL3320A_SCALE_AVAILABLE "0.512 0.128 0.032 0.01"
->> +
->> +enum al3320a_range {
->> +	AL3320A_RANGE_1, /* 33.28K lux */
->> +	AL3320A_RANGE_2, /* 8.32K lux  */
->> +	AL3320A_RANGE_3, /* 2.08K lux  */
->> +	AL3320A_RANGE_4  /* 0.65K lux  */
->  From my knowledge, the format is usually "value space coefficient unit", so for example 0.65 Klux.
-The datasheet uses "0.65K lux" form. Also:
+No, we need it just to enable all our drivers on the SoC. We want to
+enable the SoC by using defconfig + ARCH_THUNDER. As said in my other
+mail, I put it here to be able to base all other thunder driver patch
+sets on this initial base patch set. Otherwise this particular patch
+and also the dtb patch need to be shipped with all other driver patch
+sets. This might lead to duplicate submissions of the same patch.
 
-$ iio/drivers/iio/light$ grep lux isl29125.c
-             *val2 = 152590; /* 10k lux full range */
-             *val2 = 5722; /* 375 lux full range */
+With doing defconfig + ARCH_THUNDER we also want to enable the max
+number of cpus that is currently supported. I only enable 32 cpus
+since booting more cpus is untested. There might be problems at the 32
+cpu boundary. Just setting it to 64 does not mean a kernel will
+actually boot more than 32 cpus. But if it will be ack'ed, I would be
+fine to set NR_CPUS to 32 or 64 in general and independent from
+ARCH_THUNDER.
 
-I think that ranges are expressed with "0.65K lux" form because it's 
-easier to read. More than
-that the symbol for lux is "lx" so 0.65K lux should be written as 0.65 
-klx. [1]
+For simplicity I better drop setting NR_CPUS in this patch.
 
-Anyhow, this is not an issue for me, I can change it.
->> +};
->> +
->> +static const int al3320a_scales[][2] = {
->> +	{0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
->> +};
->> +
->> +struct al3320a_data {
->> +	struct i2c_client *client;
->> +};
->> +
->> +static const struct iio_chan_spec al3320a_channels[] = {
->> +	{
->> +		.type	= IIO_LIGHT,
->> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
->> +				      BIT(IIO_CHAN_INFO_SCALE),
->> +	}
->> +};
->> +
->> +static IIO_CONST_ATTR(in_illuminance_scale_available, AL3320A_SCALE_AVAILABLE);
->> +
->> +static struct attribute *al3320a_attributes[] = {
->> +	&iio_const_attr_in_illuminance_scale_available.dev_attr.attr,
->> +	NULL,
->> +};
->> +
->> +static const struct attribute_group al3320a_attribute_group = {
->> +	.attrs = al3320a_attributes,
->> +};
->> +
->> +static int al3320a_init(struct al3320a_data *data)
->> +{
->> +	int ret;
->> +
->> +	/* power on */
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
->> +					AL3320A_CONFIG_ENABLE);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
->> +					AL3320A_RANGE_3 << AL3320A_GAIN_SHIFT);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
->> +					AL3320A_DEFAULT_MEAN_TIME);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
->> +					AL3320A_DEFAULT_WAIT_TIME);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	return 0;
->> +}
->> +
->> +static int al3320a_read_raw(struct iio_dev *indio_dev,
->> +			    struct iio_chan_spec const *chan, int *val,
->> +			    int *val2, long mask)
->> +{
->> +	struct al3320a_data *data = iio_priv(indio_dev);
->> +	int ret;
->> +
->> +	switch (mask) {
->> +	case IIO_CHAN_INFO_RAW:
->> +		/*
->> +		 * ALS ADC value is stored in two adjacent registers:
->> +		 * - low byte of output is stored at AL3320A_REG_DATA_LOW
->> +		 * - high byte of output is stored at AL3320A_REG_DATA_LOW + 1
->> +		 */
->> +		ret = i2c_smbus_read_word_data(data->client,
->> +					       AL3320A_REG_DATA_LOW);
->> +		if (ret < 0)
->> +			return ret;
->> +		*val = ret;
->> +		return IIO_VAL_INT;
->> +	case IIO_CHAN_INFO_SCALE:
->> +		ret = i2c_smbus_read_byte_data(data->client,
->> +					       AL3320A_REG_CONFIG_RANGE);
->> +		if (ret < 0)
->> +			return ret;
->> +		ret >>= AL3320A_GAIN_SHIFT;
-> You need to make sure that ret won't exceed ARRAY_SIZE(al3320a_scales).
-Agree. I will fix this in next version.
->> +		*val = al3320a_scales[ret][0];
->> +		*val2 = al3320a_scales[ret][1];
->> +		return IIO_VAL_INT_PLUS_MICRO;
->> +	}
->> +	return -EINVAL;
->> +}
->> +
->> +static int al3320a_write_raw(struct iio_dev *indio_dev,
->> +			     struct iio_chan_spec const *chan, int val,
->> +			     int val2, long mask)
->> +{
->> +	struct al3320a_data *data = iio_priv(indio_dev);
->> +	int i;
->> +
->> +	switch (mask) {
->> +	case IIO_CHAN_INFO_SCALE:
->> +		for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
->> +			if (val == al3320a_scales[i][0] &&
->> +			    val2 == al3320a_scales[i][1])
->> +				return i2c_smbus_write_byte_data(data->client,
->> +					AL3320A_REG_CONFIG_RANGE,
->> +					i << AL3320A_GAIN_SHIFT);
->> +		}
->> +		break;
->> +	}
->> +	return -EINVAL;
->> +}
->> +
->> +static const struct iio_info al3320a_info = {
->> +	.driver_module	= THIS_MODULE,
->> +	.read_raw	= al3320a_read_raw,
->> +	.write_raw	= al3320a_write_raw,
->> +	.attrs		= &al3320a_attribute_group,
->> +};
->> +
->> +static int al3320a_probe(struct i2c_client *client,
->> +			 const struct i2c_device_id *id)
->> +{
->> +	struct al3320a_data *data;
->> +	struct iio_dev *indio_dev;
->> +	int ret;
->> +
->> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
->> +	if (!indio_dev)
->> +		return -ENOMEM;
->> +
->> +	data = iio_priv(indio_dev);
->> +	i2c_set_clientdata(client, indio_dev);
->> +	data->client = client;
->> +
->> +	indio_dev->dev.parent = &client->dev;
->> +	indio_dev->info = &al3320a_info;
->> +	indio_dev->name = AL3320A_DRV_NAME;
->> +	indio_dev->channels = al3320a_channels;
->> +	indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
->> +	indio_dev->modes = INDIO_DIRECT_MODE;
->> +
->> +	ret = al3320a_init(data);
->> +	if (ret < 0) {
->> +		dev_err(&client->dev, "al3320a chip init failed\n");
->> +		return ret;
->> +	}
->> +	return devm_iio_device_register(&client->dev, indio_dev);
->> +}
->> +
->> +static int al3320a_remove(struct i2c_client *client)
->> +{
->> +	return i2c_smbus_write_byte_data(client, AL3320A_REG_CONFIG,
->> +					 AL3320A_CONFIG_DISABLE);
->> +}
->> +
->> +static const struct i2c_device_id al3320a_id[] = {
->> +	{"al3320a", 0},
->> +	{}
->> +};
->> +MODULE_DEVICE_TABLE(i2c, al3320a_id);
->> +
->> +static struct i2c_driver al3320a_driver = {
->> +	.driver = {
->> +		.name = AL3320A_DRV_NAME,
->> +	},
->> +	.probe		= al3320a_probe,
->> +	.remove		= al3320a_remove,
->> +	.id_table	= al3320a_id,
->> +};
->> +
->> +module_i2c_driver(al3320a_driver);
->> +
->> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
->> +MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
->> +MODULE_LICENSE("GPL v2");
+-Robert
 
-thanks,
-Daniel.
-
-[1] http://en.wikipedia.org/wiki/Lux
+> please don't bother - we don't do this kind of thing on x86, so why
+> should it be done here?  Just ensure that NR_CPUS is appropriately
+> adjusted.  Alternatively, look at how x86 deals with this (with
+> X86_BIGSMP / MAXSMP).
