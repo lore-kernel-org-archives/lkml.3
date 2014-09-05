@@ -1,108 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139AbaIEKXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:23:54 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:46572 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120AbaIEKXw (ORCPT
+	id S1756610AbaIEKaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:30:20 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51378 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478AbaIEKaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:23:52 -0400
-Date: Fri, 5 Sep 2014 12:23:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, hpa@zytor.com,
-        tglx@linutronix.de, mingo@redhat.com, akpm@linuxfoundation.org,
-        arnd@arndb.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        jgross@suse.com, stefan.bader@canonical.com, luto@amacapital.net,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-Message-ID: <20140905102347.GA30096@gmail.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
- <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
- <20140904201123.GA9116@khazad-dum.debian.net>
- <1409862708.28990.141.camel@misato.fc.hp.com>
- <1409873255.28990.158.camel@misato.fc.hp.com>
+	Fri, 5 Sep 2014 06:30:19 -0400
+Date: Fri, 5 Sep 2014 11:30:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140905103001.GB29327@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zF+zMOaY3GLhGz1l"
 Content-Disposition: inline
-In-Reply-To: <1409873255.28990.158.camel@misato.fc.hp.com>
+X-Cookie: Simulated picture.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] regulator fixes for v3.17
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Toshi Kani <toshi.kani@hp.com> wrote:
+--zF+zMOaY3GLhGz1l
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, 2014-09-04 at 14:31 -0600, Toshi Kani wrote:
-> > On Thu, 2014-09-04 at 17:11 -0300, Henrique de Moraes Holschuh wrote:
-> > > On Thu, 04 Sep 2014, Toshi Kani wrote:
-> > > > This patch sets WT to the PA4 slot in the PAT MSR when the processor
-> > > > is not affected by the PAT errata.  The upper 4 slots of the PAT MSR
-> > > > are continued to be unused on the following Intel processors.
-> > > > 
-> > > >   errata           cpuid
-> > > >   --------------------------------------
-> > > >   Pentium 2, A52   family 0x6, model 0x5
-> > > >   Pentium 3, E27   family 0x6, model 0x7
-> > > >   Pentium M, Y26   family 0x6, model 0x9
-> > > >   Pentium 4, N46   family 0xf, model 0x0
-> > > > 
-> > > > For these affected processors, _PAGE_CACHE_MODE_WT is redirected to UC-
-> > > > per the default setup in __cachemode2pte_tbl[].
-> > > 
-> > > There are at least two PAT errata.  The blacklist is in
-> > > arch/x86/kernel/cpu/intel.c:
-> > > 
-> > >         if (c->x86 == 6 && c->x86_model < 15)
-> > >                 clear_cpu_cap(c, X86_FEATURE_PAT);
-> > > 
-> > > It covers model 13, which is not in your blacklist.
-> > > 
-> > > It *is* possible that PAT would work on model 13, as I don't think it has
-> > > any PAT errata listed and it was blacklisted "just in case" (from memory. I
-> > > did not re-check), but this is untested, and unwise to enable on an aging
-> > > platform.
-> > > 
-> > > I am worried of uncharted territory, here.  I'd actually advocate for not
-> > > enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
-> > > is using them as well.  Is this a real concern, or am I being overly
-> > > cautious?
-> > 
-> > The blacklist you pointed out covers a different PAT errata, and is
-> > still effective after this change.  pat_init() will call pat_disable()
-> > and the PAT will continue to be disabled on these processors.  There is
-> > no change for them.
-> > 
-> > My blacklist covers the PAT errata that makes the upper four bit
-> > unusable when the PAT is enabled.
-> 
-> I checked more carefully, and it turns out that the processors 
-> that have the WC bug with PAT/MTRR also have the upper four bit 
-> bug in PAT as well.  The updated blacklist is:
-> 
->    errata               cpuid
->    --------------------------------------
->    Pentium 2, A52       family 0x6, model 0x5
->    Pentium 3, E27       family 0x6, model 0x7, 0x8
->    Pentium 3 Xeon, G26  family 0x6, model 0x7, 0x8, 0xa
->    Pentium M, Y26       family 0x6, model 0x9
->    Pentium M 90nm, X9   family 0x6, model 0xd
->    Pentium 4, N46       family 0xf, model 0x0
->                 
-> So, the check can be the same as cpu/intel.c, except that early 
-> Pentium 4 steppings also have the upper four bit bug.  I will 
-> update the check. In any case, this check is only meaningful 
-> for P4 since the PAT is disabled for P2/3/M.
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
 
-Any reason why we have to create such a sharp boundary, instead 
-of simply saying: 'disable PAT on all x86 CPU families that have 
-at least one buggy model'?
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
-That would nicely sort out all the broken CPUs, and would make it 
-highly unlikely that we'd accidentally forget about a model or 
-two.
+are available in the git repository at:
 
-Thanks,
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/=
+regulator-v3.17-rc3
 
-	Ingo
+for you to fetch changes up to a65c86630632c534e9dd3cf76c1c5a5c98970873:
+
+  Merge remote-tracking branches 'regulator/fix/doc' and 'regulator/fix/tps=
+65090' into regulator-linus (2014-09-05 10:53:18 +0100)
+
+----------------------------------------------------------------
+regulator: Documentation fixes for v3.17
+
+All the fixes people have found for the regulator API have been
+documentation fixes, avoiding warnings while building the kerneldoc,
+fixing some errors in one of the DT bindings documents and fixing some
+typos in the header.
+
+----------------------------------------------------------------
+Andreas F=E4rber (1):
+      regulator: tps65090: Fix tps65090 typos in example
+
+Geert Uytterhoeven (1):
+      regulator: Proofread documentation
+
+Mark Brown (1):
+      Merge remote-tracking branches 'regulator/fix/doc' and 'regulator/fix=
+/tps65090' into regulator-linus
+
+Randy Dunlap (1):
+      regulator: fix kernel-doc warnings in header files
+
+ Documentation/devicetree/bindings/regulator/tps65090.txt | 4 ++--
+ Documentation/power/regulator/consumer.txt               | 7 ++++---
+ Documentation/power/regulator/design.txt                 | 8 ++++----
+ Documentation/power/regulator/machine.txt                | 4 ++--
+ Documentation/power/regulator/overview.txt               | 6 +++---
+ Documentation/power/regulator/regulator.txt              | 6 +++---
+ include/linux/regulator/driver.h                         | 2 ++
+ include/linux/regulator/machine.h                        | 1 +
+ 8 files changed, 21 insertions(+), 17 deletions(-)
+
+--zF+zMOaY3GLhGz1l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUCZCmAAoJELSic+t+oim9l+oQAIS5Bfoj5P3oN34YnJhVO/i6
+O0SjOxPg4iW5gdXqKznqqTs9XUbxAggZ1RJtQ/jABmuGxvCbDHQJJ+NdSP8FzwrO
+PVa7+QbPWptgHNGx7RPDpKFc7Y9U6JetAzxPiuwj9Twb8TjSKwzUWM2rpifIYx3o
+zVwef8JBuDWDDby+x6jqB7gzLy9ksrwXZ+TWZpxyPZ5moYoJxk3BUvy5AcZ+JwcW
+P7XsUtOyVlSFerqtSL+E9ffU1BqPiqQr1RvL49nIJaTbxae+DlZmxoWOfAFjAyZF
+/ATINodClfLFWyujn+itf8EREtW5DqVXsdWqv0gm/eZ9nxtbQ4z+THuxI91e91RR
+Omqnug2T39WWY5xqBDPcEi35JohoOhrGQqxqrZVA9M9LYii2/ia367iDdG1eK07l
+9A5iiFcbm5LfDi+woYXto4y9LnqZLnzts16SHVnWp/VLQO8LGcgcy68AE7dmv6xO
+wxu0hzObKPhpm3ylnaev68nh/FN6kzuRY5Ojg8BPj1xAeh6aOLgnmF0mVSr/Hmdc
+gwm0Ftqxby8XHqMynYwDfd1Z73EtRAt/3gNSQ4/BI4HBsxVRrWU/gxDoD26ZFD3u
+Py7J4VU5cRFLBOPsurZveLunlItUfimjTQE3pA45MIKrigSg7gYO0pubyJbfOtXd
+gw7FKgRLArlpYEjMhKKD
+=prTW
+-----END PGP SIGNATURE-----
+
+--zF+zMOaY3GLhGz1l--
