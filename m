@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765AbaIEDhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 23:37:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17950 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453AbaIEDhc (ORCPT
+	id S1755689AbaIEDlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 23:41:53 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:38464 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaIEDlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 23:37:32 -0400
-Message-ID: <54092FE0.3030004@oracle.com>
-Date: Thu, 04 Sep 2014 23:37:04 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 23:41:52 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: Aaro Koskinen <aaro.koskinen@iki.fi>, akpm@linuxfoundation.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel: add support for gcc 5
-References: <1409845039-5751-1-git-send-email-sasha.levin@oracle.com>	 <20140904212535.GA5059@drone.musicnaut.iki.fi>	 <1409870628.2310799.163815377.623F33D2@webmail.messagingengine.com> <1409874455.2770.26.camel@joe-AO725>
-In-Reply-To: <1409874455.2770.26.camel@joe-AO725>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Date: Fri, 5 Sep 2014 11:41:51 +0800
+Message-ID: <CAFx2hwSeBijAjcUBWZOhRrFa8CkvDLFe=JtgPneVUWh=ekLoxw@mail.gmail.com>
+Subject: [PATCH] openvswitch: Remove redundant comment in file net/openvswitch/vport.h
+From: Lawrance Jing <lawrancejing@gmail.com>
+To: dev@openvswitch.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 07:47 PM, Joe Perches wrote:
-> On Fri, 2014-09-05 at 00:43 +0200, Hannes Frederic Sowa wrote:
->> > Most statements are already depending on GCC_VERSION, maybe we can just
->> > unify all gcc specific headers to one, still trying to keep the file
->> > organized? ;)
-> Maybe something like:
-> 
-> gnu development of gcc will be more frequent and the use of
-> compiler-gcc<major>.h likely will not be convenient anymore.
-> 
-> Integrate the individual compiler-gcc<major>.h files into
-> compiler-gcc.h.
+From: lawrancejing <lawrancejing@gmail.com>
 
-Please no. We have a similar file we maintain in our team that's supposed to
-do something very similar for kernel versions. It goes all the way back to
-2.6.9 and it's a *horrible* mess.
+In file net/openvswitch/vport.h, line#35 and line#37 are the same,
+the patch will remove one to make code more clean.
 
-This is how compiler-gcc.h will end up looking in a while.
+Signed-off-by: lawrancejing <lawrancejing@gmail.com>
+---
 
 
-Thanks,
-Sasha
+--- net/openvswitch/vport.h.orig 2014-08-22 02:45:36.474929300 +0800
++++ net/openvswitch/vport.h 2014-08-22 02:46:15.041929282 +0800
+@@ -34,7 +34,6 @@ struct vport_parms;
+
+ /* The following definitions are for users of the vport subsytem: */
+
+-/* The following definitions are for users of the vport subsytem: */
+ struct vport_net {
+  struct vport __rcu *gre_vport;
+ };
