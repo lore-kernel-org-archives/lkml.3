@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657AbaIERUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:20:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17445 "EHLO mx1.redhat.com"
+	id S1753721AbaIERUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:20:41 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37760 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166AbaIERUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:20:06 -0400
-Date: Fri, 5 Sep 2014 13:19:59 -0400
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Thomas Hellstrom <thellstrom@vmware.com>, Brian Paul <brianp@vmware.com>,
-        David Airlie <airlied@linux.ie>
-Cc: dmarlin@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/vmwgfx: Fix drm.h include
-Message-ID: <20140905171959.GO5216@hansolo.jdub.homelinux.org>
+	id S1753213AbaIERUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:20:39 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>, Tejun Heo <tj@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [RESEND: PATCH] ahci: add pcid for Marvel 0x9182 controller
+Date: Fri, 5 Sep 2014 13:21:00 -0400
+Message-ID: <1409937660-30544-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The userspace drm.h include doesn't prefix the drm directory.  This can lead
-to compile failures as /usr/include/drm/ isn't in the standard gcc include
-paths.  Fix it to be <drm/drm.h>, which matches the rest of the driver drm
-header files that get installed into /usr/include/drm.
+Keystone K2E EVM uses Marvel 0x9182 controller. This requires support
+for the ID in the ahci driver.
 
-Red Hat Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1138759
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 
-Fixes: 1d7a5cbf8f74e
-Reported-by: Jeffrey Bastian <jbastian@redhat.com>
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- include/uapi/drm/vmwgfx_drm.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ - Resending with some description in the commit log
+ drivers/ata/ahci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/uapi/drm/vmwgfx_drm.h b/include/uapi/drm/vmwgfx_drm.h
-index 4fc66f6b12ce..c472bedbe38e 100644
---- a/include/uapi/drm/vmwgfx_drm.h
-+++ b/include/uapi/drm/vmwgfx_drm.h
-@@ -29,7 +29,7 @@
- #define __VMWGFX_DRM_H__
- 
- #ifndef __KERNEL__
--#include <drm.h>
-+#include <drm/drm.h>
- #endif
- 
- #define DRM_VMW_MAX_SURFACE_FACES 6
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index a29f801..02a415e 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -442,6 +442,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9182 */
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9182),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
 -- 
-1.9.3
+1.7.9.5
+
