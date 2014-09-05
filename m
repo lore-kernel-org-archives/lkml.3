@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbaIESRv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 14:17:51 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44636 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750863AbaIESRt (ORCPT
+	id S1752903AbaIESUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 14:20:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34160 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750908AbaIESUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 14:17:49 -0400
-Date: Fri, 5 Sep 2014 19:17:31 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: linux-next: Tree for Sep 1
-Message-ID: <20140905181731.GK30401@n2100.arm.linux.org.uk>
-References: <20140901230728.GM29327@sirena.org.uk> <1627064.QhxvejlWdk@amdc1032> <alpine.DEB.2.11.1409020857110.9201@gentwo.org> <alpine.DEB.2.11.1409020958530.9608@gentwo.org> <20140904171123.GD26364@mtj.dyndns.org> <alpine.DEB.2.11.1409041259110.14314@gentwo.org>
+	Fri, 5 Sep 2014 14:20:47 -0400
+Date: Fri, 5 Sep 2014 20:20:44 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Jason Cooper <jason@lakedaemon.net>, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: mvebu: Fix uninitialized variable in
+ mvebu_get_tgt_attr()
+Message-ID: <20140905202044.4c166a43@free-electrons.com>
+In-Reply-To: <20140905174122.GD8080@google.com>
+References: <1407512045-26969-1-git-send-email-geert+renesas@glider.be>
+	<20140905174122.GD8080@google.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409041259110.14314@gentwo.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 12:59:39PM -0500, Christoph Lameter wrote:
-> On Fri, 5 Sep 2014, Tejun Heo wrote:
-> 
-> > I suppose this should go through percpu/for-3.18-consistent-ops?  Can
-> > we please cc irq folks and get acks?
-> 
-> Russell and Nicolas were cced. This is arm specific.
+Dear Bjorn Helgaas,
 
-Sorry, but I don't have much to do with ARM IRQ stuff anymore -
-everything that gets moved out of arch/arm has responsibility
-automatically transferred to someone else without any referral to
-me.
+On Fri, 5 Sep 2014 11:41:22 -0600, Bjorn Helgaas wrote:
 
-Hence, it's up to the genirq/irqchip maintainers now.
+> This fix looks right to me.  I added a stable tag as follows.  Thomas
+> and/or Jason, and you ack this?
 
+Hum, I think I would actually prefer something like:
+
+                if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_IO)
+                        rtype = IORESOURCE_IO;
+                else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
+                        rtype = IORESOURCE_MEM;
++		else
++			continue;
+
+So that we're explicit with the fact that we only care about I/O and
+MEM32 resource types.
+
+Thanks,
+
+Thomas
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
