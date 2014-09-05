@@ -1,409 +1,495 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaIEUKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:10:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1261 "EHLO mga11.intel.com"
+	id S1752783AbaIEUK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:10:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45940 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701AbaIEUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:10:17 -0400
+	id S1752670AbaIEUKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 16:10:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,474,1406617200"; 
-   d="scan'208";a="475552925"
+   d="scan'208";a="598712976"
 From: "John L. Hammond" <john.hammond@intel.com>
 To: <greg@kroah.com>, <andreas.dilger@intel.com>, <oleg.drokin@intel.com>
 CC: <linux-kernel@vger.kernel.org>, "John L. Hammond" <john.hammond@intel.com>
-Subject: [PATCH 10/12] staging/lustre/ptlrpc: remove sptlrpc_conf_target_get_rules()
-Date: Fri, 5 Sep 2014 15:08:16 -0500
-Message-ID: <1409947698-30781-11-git-send-email-john.hammond@intel.com>
+Subject: [PATCH 11/12] staging/lustre/obdclass: remove llog_ioctl.c
+Date: Fri, 5 Sep 2014 15:08:17 -0500
+Message-ID: <1409947698-30781-12-git-send-email-john.hammond@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1409947698-30781-1-git-send-email-john.hammond@intel.com>
 References: <1409947698-30781-1-git-send-email-john.hammond@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.1.200.108]
+X-Originating-IP: [10.1.200.106]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "John L. Hammond" <john.hammond@intel.com>
 
-Remove the unused function sptlrpc_conf_target_get_rules() and its
-supporting functions.
+Remove the unused function llog_ioctl() and the file
+lustre/obdclass/llog_ioctl.c.
 
 Signed-off-by: John L. Hammond <john.hammond@intel.com>
 ---
- drivers/staging/lustre/lustre/include/lustre_sec.h |    3 -
- drivers/staging/lustre/lustre/ptlrpc/sec_config.c  |  327 --------------------
- 2 files changed, 330 deletions(-)
+ drivers/staging/lustre/lustre/include/lustre_log.h |    4 -
+ drivers/staging/lustre/lustre/obdclass/Makefile    |    2 +-
+ .../staging/lustre/lustre/obdclass/llog_ioctl.c    |  418 --------------------
+ 3 files changed, 1 insertion(+), 423 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/llog_ioctl.c
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_sec.h b/drivers/staging/lustre/lustre/include/lustre_sec.h
-index c4669e2..dff70a5 100644
---- a/drivers/staging/lustre/lustre/include/lustre_sec.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_sec.h
-@@ -347,9 +347,6 @@ void sptlrpc_conf_log_stop(const char *logname);
- void sptlrpc_conf_log_update_begin(const char *logname);
- void sptlrpc_conf_log_update_end(const char *logname);
- void sptlrpc_conf_client_adapt(struct obd_device *obd);
--int  sptlrpc_conf_target_get_rules(struct obd_device *obd,
--				   struct sptlrpc_rule_set *rset,
--				   int initial);
- void sptlrpc_target_choose_flavor(struct sptlrpc_rule_set *rset,
- 				  enum lustre_sec_part from,
- 				  lnet_nid_t nid,
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec_config.c b/drivers/staging/lustre/lustre/ptlrpc/sec_config.c
-index c9e9da7..56ba9e4 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/sec_config.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/sec_config.c
-@@ -41,13 +41,8 @@
- #include <linux/key.h>
+diff --git a/drivers/staging/lustre/lustre/include/lustre_log.h b/drivers/staging/lustre/lustre/include/lustre_log.h
+index c10029c..2187fb6 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_log.h
++++ b/drivers/staging/lustre/lustre/include/lustre_log.h
+@@ -206,10 +206,6 @@ int llog_sync(struct llog_ctxt *ctxt, struct obd_export *exp, int flags);
+ int llog_cancel(const struct lu_env *env, struct llog_ctxt *ctxt,
+ 		struct llog_cookie *cookies, int flags);
  
- #include "../include/obd.h"
+-/* llog_ioctl.c */
+-int llog_ioctl(const struct lu_env *env, struct llog_ctxt *ctxt, int cmd,
+-	       struct obd_ioctl_data *data);
+-
+ /* llog_net.c */
+ int llog_initiator_connect(struct llog_ctxt *ctxt);
+ 
+diff --git a/drivers/staging/lustre/lustre/obdclass/Makefile b/drivers/staging/lustre/lustre/obdclass/Makefile
+index c8c95e1..77fd94c 100644
+--- a/drivers/staging/lustre/lustre/obdclass/Makefile
++++ b/drivers/staging/lustre/lustre/obdclass/Makefile
+@@ -2,7 +2,7 @@ obj-$(CONFIG_LUSTRE_FS) += obdclass.o
+ 
+ obdclass-y := linux/linux-module.o linux/linux-obdo.o linux/linux-sysctl.o \
+ 	      llog.o llog_cat.o llog_obd.o llog_swab.o class_obd.o debug.o \
+-	      genops.o uuid.o llog_ioctl.o lprocfs_status.o		   \
++	      genops.o uuid.o lprocfs_status.o \
+ 	      lustre_handles.o lustre_peer.o \
+ 	      local_storage.o statfs_pack.o obdo.o obd_config.o obd_mount.o\
+ 	      lu_object.o dt_object.o capa.o cl_object.o   \
+diff --git a/drivers/staging/lustre/lustre/obdclass/llog_ioctl.c b/drivers/staging/lustre/lustre/obdclass/llog_ioctl.c
+deleted file mode 100644
+index 9b7fa1d..0000000
+--- a/drivers/staging/lustre/lustre/obdclass/llog_ioctl.c
++++ /dev/null
+@@ -1,418 +0,0 @@
+-/*
+- * GPL HEADER START
+- *
+- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 only,
+- * as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License version 2 for more details (a copy is included
+- * in the LICENSE file that accompanied this code).
+- *
+- * You should have received a copy of the GNU General Public License
+- * version 2 along with this program; If not, see
+- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
+- *
+- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
+- * CA 95054 USA or visit www.sun.com if you need additional information or
+- * have any questions.
+- *
+- * GPL HEADER END
+- */
+-/*
+- * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
+- * Use is subject to license terms.
+- *
+- * Copyright (c) 2011, 2012, Intel Corporation.
+- */
+-/*
+- * This file is part of Lustre, http://www.lustre.org/
+- * Lustre is a trademark of Sun Microsystems, Inc.
+- */
+-
+-#define DEBUG_SUBSYSTEM S_LOG
+-
 -#include "../include/obd_class.h"
- #include "../include/obd_support.h"
--#include "../include/lustre_net.h"
- #include "../include/lustre_import.h"
 -#include "../include/lustre_log.h"
--#include "../include/lustre_disk.h"
--#include "../include/lustre_dlm.h"
- #include "../include/lustre_param.h"
- #include "../include/lustre_sec.h"
- 
-@@ -450,46 +445,6 @@ void sptlrpc_rule_set_dump(struct sptlrpc_rule_set *rset)
- }
- EXPORT_SYMBOL(sptlrpc_rule_set_dump);
- 
--static int sptlrpc_rule_set_extract(struct sptlrpc_rule_set *gen,
--				    struct sptlrpc_rule_set *tgt,
--				    enum lustre_sec_part from,
--				    enum lustre_sec_part to,
--				    struct sptlrpc_rule_set *rset)
+-#include "llog_internal.h"
+-
+-static int str2logid(struct llog_logid *logid, char *str, int len)
 -{
--	struct sptlrpc_rule_set *src[2] = { gen, tgt };
--	struct sptlrpc_rule     *rule;
--	int		      i, n, rc;
+-	char *start, *end, *endp;
+-	__u64 id, seq;
 -
--	might_sleep();
+-	start = str;
+-	if (*start != '#')
+-		return -EINVAL;
 -
--	/* merge general rules firstly, then target-specific rules */
--	for (i = 0; i < 2; i++) {
--		if (src[i] == NULL)
--			continue;
+-	start++;
+-	if (start - str >= len - 1)
+-		return -EINVAL;
+-	end = strchr(start, '#');
+-	if (end == NULL || end == start)
+-		return -EINVAL;
 -
--		for (n = 0; n < src[i]->srs_nrule; n++) {
--			rule = &src[i]->srs_rules[n];
+-	*end = '\0';
+-	id = simple_strtoull(start, &endp, 0);
+-	if (endp != end)
+-		return -EINVAL;
 -
--			if (from != LUSTRE_SP_ANY &&
--			    rule->sr_from != LUSTRE_SP_ANY &&
--			    rule->sr_from != from)
--				continue;
--			if (to != LUSTRE_SP_ANY &&
--			    rule->sr_to != LUSTRE_SP_ANY &&
--			    rule->sr_to != to)
--				continue;
+-	start = ++end;
+-	if (start - str >= len - 1)
+-		return -EINVAL;
+-	end = strchr(start, '#');
+-	if (end == NULL || end == start)
+-		return -EINVAL;
 -
--			rc = sptlrpc_rule_set_merge(rset, rule);
--			if (rc) {
--				CERROR("can't merge: %d\n", rc);
--				return rc;
--			}
+-	*end = '\0';
+-	seq = simple_strtoull(start, &endp, 0);
+-	if (endp != end)
+-		return -EINVAL;
+-
+-	ostid_set_seq(&logid->lgl_oi, seq);
+-	ostid_set_id(&logid->lgl_oi, id);
+-
+-	start = ++end;
+-	if (start - str >= len - 1)
+-		return -EINVAL;
+-	logid->lgl_ogen = simple_strtoul(start, &endp, 16);
+-	if (*endp != '\0')
+-		return -EINVAL;
+-
+-	return 0;
+-}
+-
+-static int llog_check_cb(const struct lu_env *env, struct llog_handle *handle,
+-			 struct llog_rec_hdr *rec, void *data)
+-{
+-	struct obd_ioctl_data *ioc_data = (struct obd_ioctl_data *)data;
+-	static int l, remains, from, to;
+-	static char *out;
+-	char *endp;
+-	int cur_index, rc = 0;
+-
+-	if (ioc_data && ioc_data->ioc_inllen1 > 0) {
+-		l = 0;
+-		remains = ioc_data->ioc_inllen4 +
+-			cfs_size_round(ioc_data->ioc_inllen1) +
+-			cfs_size_round(ioc_data->ioc_inllen2) +
+-			cfs_size_round(ioc_data->ioc_inllen3);
+-		from = simple_strtol(ioc_data->ioc_inlbuf2, &endp, 0);
+-		if (*endp != '\0')
+-			return -EINVAL;
+-		to = simple_strtol(ioc_data->ioc_inlbuf3, &endp, 0);
+-		if (*endp != '\0')
+-			return -EINVAL;
+-		ioc_data->ioc_inllen1 = 0;
+-		out = ioc_data->ioc_bulk;
+-	}
+-
+-	cur_index = rec->lrh_index;
+-	if (cur_index < from)
+-		return 0;
+-	if (to > 0 && cur_index > to)
+-		return -LLOG_EEMPTY;
+-
+-	if (handle->lgh_hdr->llh_flags & LLOG_F_IS_CAT) {
+-		struct llog_logid_rec	*lir = (struct llog_logid_rec *)rec;
+-		struct llog_handle	*loghandle;
+-
+-		if (rec->lrh_type != LLOG_LOGID_MAGIC) {
+-			l = snprintf(out, remains, "[index]: %05d  [type]: "
+-				     "%02x  [len]: %04d failed\n",
+-				     cur_index, rec->lrh_type,
+-				     rec->lrh_len);
+-		}
+-		if (handle->lgh_ctxt == NULL)
+-			return -EOPNOTSUPP;
+-		rc = llog_cat_id2handle(env, handle, &loghandle, &lir->lid_id);
+-		if (rc) {
+-			CDEBUG(D_IOCTL, "cannot find log #"DOSTID"#%08x\n",
+-			       POSTID(&lir->lid_id.lgl_oi),
+-			       lir->lid_id.lgl_ogen);
+-			return rc;
+-		}
+-		rc = llog_process(env, loghandle, llog_check_cb, NULL, NULL);
+-		llog_handle_put(loghandle);
+-	} else {
+-		bool ok;
+-
+-		switch (rec->lrh_type) {
+-		case OST_SZ_REC:
+-		case MDS_UNLINK_REC:
+-		case MDS_UNLINK64_REC:
+-		case MDS_SETATTR64_REC:
+-		case OBD_CFG_REC:
+-		case LLOG_GEN_REC:
+-		case LLOG_HDR_MAGIC:
+-			ok = true;
+-			break;
+-		default:
+-			ok = false;
+-		}
+-
+-		l = snprintf(out, remains, "[index]: %05d  [type]: "
+-			     "%02x  [len]: %04d %s\n",
+-			     cur_index, rec->lrh_type, rec->lrh_len,
+-			     ok ? "ok" : "failed");
+-		out += l;
+-		remains -= l;
+-		if (remains <= 0) {
+-			CERROR("%s: no space to print log records\n",
+-			       handle->lgh_ctxt->loc_obd->obd_name);
+-			return -LLOG_EEMPTY;
 -		}
 -	}
--
--	return 0;
--}
--
- /**********************************
-  * sptlrpc configuration support  *
-  **********************************/
-@@ -927,288 +882,6 @@ void sptlrpc_conf_client_adapt(struct obd_device *obd)
- }
- EXPORT_SYMBOL(sptlrpc_conf_client_adapt);
- 
--
--static void rule2string(struct sptlrpc_rule *r, char *buf, int buflen)
--{
--	char    dirbuf[8];
--	char   *net;
--	char   *ptr = buf;
--
--	if (r->sr_netid == LNET_NIDNET(LNET_NID_ANY))
--		net = "default";
--	else
--		net = libcfs_net2str(r->sr_netid);
--
--	if (r->sr_from == LUSTRE_SP_ANY && r->sr_to == LUSTRE_SP_ANY)
--		dirbuf[0] = '\0';
--	else
--		snprintf(dirbuf, sizeof(dirbuf), ".%s2%s",
--			 sptlrpc_part2name(r->sr_from),
--			 sptlrpc_part2name(r->sr_to));
--
--	ptr += snprintf(buf, buflen, "srpc.flavor.%s%s=", net, dirbuf);
--
--	sptlrpc_flavor2name(&r->sr_flvr, ptr, buflen - (ptr - buf));
--	buf[buflen - 1] = '\0';
--}
--
--static int sptlrpc_record_rule_set(struct llog_handle *llh,
--				   char *target,
--				   struct sptlrpc_rule_set *rset)
--{
--	struct lustre_cfg_bufs  bufs;
--	struct lustre_cfg      *lcfg;
--	struct llog_rec_hdr     rec;
--	int		     buflen;
--	char		    param[48];
--	int		     i, rc;
--
--	for (i = 0; i < rset->srs_nrule; i++) {
--		rule2string(&rset->srs_rules[i], param, sizeof(param));
--
--		lustre_cfg_bufs_reset(&bufs, NULL);
--		lustre_cfg_bufs_set_string(&bufs, 1, target);
--		lustre_cfg_bufs_set_string(&bufs, 2, param);
--		lcfg = lustre_cfg_new(LCFG_SPTLRPC_CONF, &bufs);
--		LASSERT(lcfg);
--
--		buflen = lustre_cfg_len(lcfg->lcfg_bufcount,
--					lcfg->lcfg_buflens);
--		rec.lrh_len = llog_data_len(buflen);
--		rec.lrh_type = OBD_CFG_REC;
--		rc = llog_write(NULL, llh, &rec, NULL, 0, (void *)lcfg, -1);
--		if (rc)
--			CERROR("failed to write a rec: rc = %d\n", rc);
--		lustre_cfg_free(lcfg);
--	}
--	return 0;
--}
--
--static int sptlrpc_record_rules(struct llog_handle *llh,
--				struct sptlrpc_conf *conf)
--{
--	struct sptlrpc_conf_tgt *conf_tgt;
--
--	sptlrpc_record_rule_set(llh, conf->sc_fsname, &conf->sc_rset);
--
--	list_for_each_entry(conf_tgt, &conf->sc_tgts, sct_list) {
--		sptlrpc_record_rule_set(llh, conf_tgt->sct_name,
--					&conf_tgt->sct_rset);
--	}
--	return 0;
--}
--
--#define LOG_SPTLRPC_TMP "sptlrpc.tmp"
--#define LOG_SPTLRPC     "sptlrpc"
--
--static
--int sptlrpc_target_local_copy_conf(struct obd_device *obd,
--				   struct sptlrpc_conf *conf)
--{
--	struct llog_handle   *llh = NULL;
--	struct llog_ctxt     *ctxt;
--	struct lvfs_run_ctxt  saved;
--	struct dentry	*dentry;
--	int		   rc;
--
--	ctxt = llog_get_context(obd, LLOG_CONFIG_ORIG_CTXT);
--	if (ctxt == NULL)
--		return -EINVAL;
--
--	push_ctxt(&saved, &obd->obd_lvfs_ctxt, NULL);
--
--	dentry = ll_lookup_one_len(MOUNT_CONFIGS_DIR, cfs_fs_pwd(current->fs),
--				   strlen(MOUNT_CONFIGS_DIR));
--	if (IS_ERR(dentry)) {
--		rc = PTR_ERR(dentry);
--		CERROR("cannot lookup %s directory: rc = %d\n",
--		       MOUNT_CONFIGS_DIR, rc);
--		GOTO(out_ctx, rc);
--	}
--
--	/* erase the old tmp log */
--	rc = llog_erase(NULL, ctxt, NULL, LOG_SPTLRPC_TMP);
--	if (rc < 0 && rc != -ENOENT) {
--		CERROR("%s: cannot erase temporary sptlrpc log: rc = %d\n",
--		       obd->obd_name, rc);
--		GOTO(out_dput, rc);
--	}
--
--	/* write temporary log */
--	rc = llog_open_create(NULL, ctxt, &llh, NULL, LOG_SPTLRPC_TMP);
--	if (rc)
--		GOTO(out_dput, rc);
--	rc = llog_init_handle(NULL, llh, LLOG_F_IS_PLAIN, NULL);
--	if (rc)
--		GOTO(out_close, rc);
--
--	rc = sptlrpc_record_rules(llh, conf);
--
--out_close:
--	llog_close(NULL, llh);
--	if (rc == 0)
--		rc = lustre_rename(dentry, obd->obd_lvfs_ctxt.pwdmnt,
--				   LOG_SPTLRPC_TMP, LOG_SPTLRPC);
--out_dput:
--	l_dput(dentry);
--out_ctx:
--	pop_ctxt(&saved, &obd->obd_lvfs_ctxt, NULL);
--	llog_ctxt_put(ctxt);
--	CDEBUG(D_SEC, "target %s: write local sptlrpc conf: rc = %d\n",
--	       obd->obd_name, rc);
 -	return rc;
 -}
 -
--static int local_read_handler(const struct lu_env *env,
--			      struct llog_handle *llh,
--			      struct llog_rec_hdr *rec, void *data)
+-static int llog_print_cb(const struct lu_env *env, struct llog_handle *handle,
+-			 struct llog_rec_hdr *rec, void *data)
 -{
--	struct sptlrpc_conf  *conf = (struct sptlrpc_conf *) data;
--	struct lustre_cfg    *lcfg = (struct lustre_cfg *)(rec + 1);
--	int		   cfg_len, rc;
+-	struct obd_ioctl_data *ioc_data = (struct obd_ioctl_data *)data;
+-	static int l, remains, from, to;
+-	static char *out;
+-	char *endp;
+-	int cur_index;
 -
--	if (rec->lrh_type != OBD_CFG_REC) {
--		CERROR("unhandled lrh_type: %#x\n", rec->lrh_type);
--		return -EINVAL;
+-	if (ioc_data != NULL && ioc_data->ioc_inllen1 > 0) {
+-		l = 0;
+-		remains = ioc_data->ioc_inllen4 +
+-			cfs_size_round(ioc_data->ioc_inllen1) +
+-			cfs_size_round(ioc_data->ioc_inllen2) +
+-			cfs_size_round(ioc_data->ioc_inllen3);
+-		from = simple_strtol(ioc_data->ioc_inlbuf2, &endp, 0);
+-		if (*endp != '\0')
+-			return -EINVAL;
+-		to = simple_strtol(ioc_data->ioc_inlbuf3, &endp, 0);
+-		if (*endp != '\0')
+-			return -EINVAL;
+-		out = ioc_data->ioc_bulk;
+-		ioc_data->ioc_inllen1 = 0;
 -	}
 -
--	cfg_len = rec->lrh_len - sizeof(struct llog_rec_hdr) -
--		  sizeof(struct llog_rec_tail);
+-	cur_index = rec->lrh_index;
+-	if (cur_index < from)
+-		return 0;
+-	if (to > 0 && cur_index > to)
+-		return -LLOG_EEMPTY;
 -
--	rc = lustre_cfg_sanity_check(lcfg, cfg_len);
+-	if (handle->lgh_hdr->llh_flags & LLOG_F_IS_CAT) {
+-		struct llog_logid_rec *lir = (struct llog_logid_rec *)rec;
+-
+-		if (rec->lrh_type != LLOG_LOGID_MAGIC) {
+-			CERROR("invalid record in catalog\n");
+-			return -EINVAL;
+-		}
+-
+-		l = snprintf(out, remains,
+-			     "[index]: %05d  [logid]: #"DOSTID"#%08x\n",
+-			     cur_index, POSTID(&lir->lid_id.lgl_oi),
+-			     lir->lid_id.lgl_ogen);
+-	} else if (rec->lrh_type == OBD_CFG_REC) {
+-		int rc;
+-
+-		rc = class_config_parse_rec(rec, out, remains);
+-		if (rc < 0)
+-			return rc;
+-		l = rc;
+-	} else {
+-		l = snprintf(out, remains,
+-			     "[index]: %05d  [type]: %02x  [len]: %04d\n",
+-			     cur_index, rec->lrh_type, rec->lrh_len);
+-	}
+-	out += l;
+-	remains -= l;
+-	if (remains <= 0) {
+-		CERROR("not enough space for print log records\n");
+-		return -LLOG_EEMPTY;
+-	}
+-
+-	return 0;
+-}
+-static int llog_remove_log(const struct lu_env *env, struct llog_handle *cat,
+-			   struct llog_logid *logid)
+-{
+-	struct llog_handle	*log;
+-	int			 rc;
+-
+-	rc = llog_cat_id2handle(env, cat, &log, logid);
 -	if (rc) {
--		CERROR("Insane cfg\n");
--		return rc;
+-		CDEBUG(D_IOCTL, "cannot find log #"DOSTID"#%08x\n",
+-		       POSTID(&logid->lgl_oi), logid->lgl_ogen);
+-		return -ENOENT;
 -	}
 -
--	if (lcfg->lcfg_command != LCFG_SPTLRPC_CONF) {
--		CERROR("invalid command (%x)\n", lcfg->lcfg_command);
--		return -EINVAL;
--	}
--
--	return __sptlrpc_process_config(lcfg, conf);
--}
--
--static
--int sptlrpc_target_local_read_conf(struct obd_device *obd,
--				   struct sptlrpc_conf *conf)
--{
--	struct llog_handle    *llh = NULL;
--	struct llog_ctxt      *ctxt;
--	struct lvfs_run_ctxt   saved;
--	int		    rc;
--
--	LASSERT(conf->sc_updated == 0 && conf->sc_local == 0);
--
--	ctxt = llog_get_context(obd, LLOG_CONFIG_ORIG_CTXT);
--	if (ctxt == NULL) {
--		CERROR("missing llog context\n");
--		return -EINVAL;
--	}
--
--	push_ctxt(&saved, &obd->obd_lvfs_ctxt, NULL);
--
--	rc = llog_open(NULL, ctxt, &llh, NULL, LOG_SPTLRPC, LLOG_OPEN_EXISTS);
--	if (rc < 0) {
--		if (rc == -ENOENT)
--			rc = 0;
--		GOTO(out_pop, rc);
--	}
--
--	rc = llog_init_handle(NULL, llh, LLOG_F_IS_PLAIN, NULL);
--	if (rc)
--		GOTO(out_close, rc);
--
--	if (llog_get_size(llh) <= 1) {
--		CDEBUG(D_SEC, "no local sptlrpc copy found\n");
--		GOTO(out_close, rc = 0);
--	}
--
--	rc = llog_process(NULL, llh, local_read_handler, (void *)conf, NULL);
--
--	if (rc == 0) {
--		conf->sc_local = 1;
--	} else {
--		sptlrpc_conf_free_rsets(conf);
--	}
--
--out_close:
--	llog_close(NULL, llh);
--out_pop:
--	pop_ctxt(&saved, &obd->obd_lvfs_ctxt, NULL);
--	llog_ctxt_put(ctxt);
--	CDEBUG(D_SEC, "target %s: read local sptlrpc conf: rc = %d\n",
--	       obd->obd_name, rc);
--	return rc;
--}
--
--
--/**
-- * called by target devices, extract sptlrpc rules which applies to
-- * this target, to be used for future rpc flavor checking.
-- */
--int sptlrpc_conf_target_get_rules(struct obd_device *obd,
--				  struct sptlrpc_rule_set *rset,
--				  int initial)
--{
--	struct sptlrpc_conf      *conf;
--	struct sptlrpc_conf_tgt  *conf_tgt;
--	enum lustre_sec_part      sp_dst;
--	char		      fsname[MTI_NAME_MAXLEN];
--	int		       rc = 0;
--
--	if (strcmp(obd->obd_type->typ_name, LUSTRE_MDT_NAME) == 0) {
--		sp_dst = LUSTRE_SP_MDT;
--	} else if (strcmp(obd->obd_type->typ_name, LUSTRE_OST_NAME) == 0) {
--		sp_dst = LUSTRE_SP_OST;
--	} else {
--		CERROR("unexpected obd type %s\n", obd->obd_type->typ_name);
--		return -EINVAL;
--	}
--	CDEBUG(D_SEC, "get rules for target %s\n", obd->obd_uuid.uuid);
--
--	target2fsname(obd->obd_uuid.uuid, fsname, sizeof(fsname));
--
--	mutex_lock(&sptlrpc_conf_lock);
--
--	conf = sptlrpc_conf_get(fsname, 0);
--	if (conf == NULL) {
--		CERROR("missing sptlrpc config log\n");
+-	rc = llog_destroy(env, log);
+-	if (rc) {
+-		CDEBUG(D_IOCTL, "cannot destroy log\n");
 -		GOTO(out, rc);
 -	}
--
--	if (conf->sc_updated  == 0) {
--		/*
--		 * always read from local copy. here another option is
--		 * if we already have a local copy (read from another
--		 * target device hosted on the same node) we simply use that.
--		 */
--		if (conf->sc_local)
--			sptlrpc_conf_free_rsets(conf);
--
--		sptlrpc_target_local_read_conf(obd, conf);
--	} else {
--		LASSERT(conf->sc_local == 0);
--
--		/* write a local copy */
--		if (initial || conf->sc_modified)
--			sptlrpc_target_local_copy_conf(obd, conf);
--		else
--			CDEBUG(D_SEC, "unchanged, skip updating local copy\n");
--	}
--
--	/* extract rule set for this target */
--	conf_tgt = sptlrpc_conf_get_tgt(conf, obd->obd_name, 0);
--
--	rc = sptlrpc_rule_set_extract(&conf->sc_rset,
--				      conf_tgt ? &conf_tgt->sct_rset : NULL,
--				      LUSTRE_SP_ANY, sp_dst, rset);
+-	llog_cat_cleanup(env, cat, log, log->u.phd.phd_cookie.lgc_index);
 -out:
--	mutex_unlock(&sptlrpc_conf_lock);
+-	llog_handle_put(log);
+-	return rc;
+-
+-}
+-
+-static int llog_delete_cb(const struct lu_env *env, struct llog_handle *handle,
+-			  struct llog_rec_hdr *rec, void *data)
+-{
+-	struct llog_logid_rec	*lir = (struct llog_logid_rec *)rec;
+-	int			 rc;
+-
+-	if (rec->lrh_type != LLOG_LOGID_MAGIC)
+-		return -EINVAL;
+-	rc = llog_remove_log(env, handle, &lir->lid_id);
+-
 -	return rc;
 -}
--EXPORT_SYMBOL(sptlrpc_conf_target_get_rules);
 -
- int  sptlrpc_conf_init(void)
- {
- 	mutex_init(&sptlrpc_conf_lock);
+-
+-int llog_ioctl(const struct lu_env *env, struct llog_ctxt *ctxt, int cmd,
+-	       struct obd_ioctl_data *data)
+-{
+-	struct llog_logid	 logid;
+-	int			 rc = 0;
+-	struct llog_handle	*handle = NULL;
+-
+-	if (*data->ioc_inlbuf1 == '#') {
+-		rc = str2logid(&logid, data->ioc_inlbuf1, data->ioc_inllen1);
+-		if (rc)
+-			return rc;
+-		rc = llog_open(env, ctxt, &handle, &logid, NULL,
+-			       LLOG_OPEN_EXISTS);
+-		if (rc)
+-			return rc;
+-	} else if (*data->ioc_inlbuf1 == '$') {
+-		char *name = data->ioc_inlbuf1 + 1;
+-
+-		rc = llog_open(env, ctxt, &handle, NULL, name,
+-			       LLOG_OPEN_EXISTS);
+-		if (rc)
+-			return rc;
+-	} else {
+-		return -EINVAL;
+-	}
+-
+-	rc = llog_init_handle(env, handle, 0, NULL);
+-	if (rc)
+-		GOTO(out_close, rc = -ENOENT);
+-
+-	switch (cmd) {
+-	case OBD_IOC_LLOG_INFO: {
+-		int	 l;
+-		int	 remains = data->ioc_inllen2 +
+-				   cfs_size_round(data->ioc_inllen1);
+-		char	*out = data->ioc_bulk;
+-
+-		l = snprintf(out, remains,
+-			     "logid:	    #"DOSTID"#%08x\n"
+-			     "flags:	    %x (%s)\n"
+-			     "records count:    %d\n"
+-			     "last index:       %d\n",
+-			     POSTID(&handle->lgh_id.lgl_oi),
+-			     handle->lgh_id.lgl_ogen,
+-			     handle->lgh_hdr->llh_flags,
+-			     handle->lgh_hdr->llh_flags &
+-			     LLOG_F_IS_CAT ? "cat" : "plain",
+-			     handle->lgh_hdr->llh_count,
+-			     handle->lgh_last_idx);
+-		out += l;
+-		remains -= l;
+-		if (remains <= 0) {
+-			CERROR("%s: not enough space for log header info\n",
+-			       ctxt->loc_obd->obd_name);
+-			rc = -ENOSPC;
+-		}
+-		break;
+-	}
+-	case OBD_IOC_LLOG_CHECK:
+-		LASSERT(data->ioc_inllen1 > 0);
+-		rc = llog_process(env, handle, llog_check_cb, data, NULL);
+-		if (rc == -LLOG_EEMPTY)
+-			rc = 0;
+-		else if (rc)
+-			GOTO(out_close, rc);
+-		break;
+-	case OBD_IOC_LLOG_PRINT:
+-		LASSERT(data->ioc_inllen1 > 0);
+-		rc = llog_process(env, handle, llog_print_cb, data, NULL);
+-		if (rc == -LLOG_EEMPTY)
+-			rc = 0;
+-		else if (rc)
+-			GOTO(out_close, rc);
+-		break;
+-	case OBD_IOC_LLOG_CANCEL: {
+-		struct llog_cookie cookie;
+-		struct llog_logid plain;
+-		char *endp;
+-
+-		cookie.lgc_index = simple_strtoul(data->ioc_inlbuf3, &endp, 0);
+-		if (*endp != '\0')
+-			GOTO(out_close, rc = -EINVAL);
+-
+-		if (handle->lgh_hdr->llh_flags & LLOG_F_IS_PLAIN) {
+-			rc = llog_cancel_rec(NULL, handle, cookie.lgc_index);
+-			GOTO(out_close, rc);
+-		} else if (!(handle->lgh_hdr->llh_flags & LLOG_F_IS_CAT)) {
+-			GOTO(out_close, rc = -EINVAL);
+-		}
+-
+-		if (data->ioc_inlbuf2 == NULL) /* catalog but no logid */
+-			GOTO(out_close, rc = -ENOTTY);
+-
+-		rc = str2logid(&plain, data->ioc_inlbuf2, data->ioc_inllen2);
+-		if (rc)
+-			GOTO(out_close, rc);
+-		cookie.lgc_lgl = plain;
+-		rc = llog_cat_cancel_records(env, handle, 1, &cookie);
+-		if (rc)
+-			GOTO(out_close, rc);
+-		break;
+-	}
+-	case OBD_IOC_LLOG_REMOVE: {
+-		struct llog_logid plain;
+-
+-		if (handle->lgh_hdr->llh_flags & LLOG_F_IS_PLAIN) {
+-			rc = llog_destroy(env, handle);
+-			GOTO(out_close, rc);
+-		} else if (!(handle->lgh_hdr->llh_flags & LLOG_F_IS_CAT)) {
+-			GOTO(out_close, rc = -EINVAL);
+-		}
+-
+-		if (data->ioc_inllen2 > 0) {
+-			/* remove indicate log from the catalog */
+-			rc = str2logid(&plain, data->ioc_inlbuf2,
+-				       data->ioc_inllen2);
+-			if (rc)
+-				GOTO(out_close, rc);
+-			rc = llog_remove_log(env, handle, &plain);
+-		} else {
+-			/* remove all the log of the catalog */
+-			rc = llog_process(env, handle, llog_delete_cb, NULL,
+-					  NULL);
+-			if (rc)
+-				GOTO(out_close, rc);
+-		}
+-		break;
+-	}
+-	default:
+-		CERROR("%s: Unknown ioctl cmd %#x\n",
+-		       ctxt->loc_obd->obd_name, cmd);
+-		GOTO(out_close, rc = -ENOTTY);
+-	}
+-
+-out_close:
+-	if (handle->lgh_hdr &&
+-	    handle->lgh_hdr->llh_flags & LLOG_F_IS_CAT)
+-		llog_cat_close(env, handle);
+-	else
+-		llog_close(env, handle);
+-	return rc;
+-}
+-EXPORT_SYMBOL(llog_ioctl);
 -- 
 1.7.9.5
 
