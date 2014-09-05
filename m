@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812AbaIEAYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 20:24:10 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:38020 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184AbaIEAYI (ORCPT
+	id S1755343AbaIEA3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:29:31 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:55032 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaIEA33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 20:24:08 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
-References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
-	<CABPqkBRdbp6nDBFsz0gdp+qpNu+H6C4pyPTAC-EKYFoca2z+sQ@mail.gmail.com>
-Date: Fri, 05 Sep 2014 09:23:56 +0900
-In-Reply-To: <CABPqkBRdbp6nDBFsz0gdp+qpNu+H6C4pyPTAC-EKYFoca2z+sQ@mail.gmail.com>
-	(Stephane Eranian's message of "Thu, 4 Sep 2014 16:37:51 +0200")
-Message-ID: <8761h2ap9f.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 4 Sep 2014 20:29:29 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Thu, 4 Sep 2014 20:29:26 -0400
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 05/17] locks: generic_delete_lease doesn't need a
+ file_lock at all
+Message-ID: <20140904202926.74c76ee2@tlielax.poochiereds.net>
+In-Reply-To: <20140904201424.GB26054@infradead.org>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+	<1409834323-7171-6-git-send-email-jlayton@primarydata.com>
+	<20140904201424.GB26054@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane,
+On Thu, 4 Sep 2014 13:14:24 -0700
+Christoph Hellwig <hch@infradead.org> wrote:
 
-On Thu, 4 Sep 2014 16:37:51 +0200, Stephane Eranian wrote:
-> On Tue, Aug 26, 2014 at 8:38 AM, Namhyung Kim <namhyung@kernel.org> wrote:
->>
->> There's a problem on finding correct kernel symbols when perf report
->> runs on a different kernel.  Although a part of the problem was solved
->> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
->> version when finding vmlinux"), there's a remaining problem still.
->>
->> When perf records samples, it synthesizes the kernel map using
->> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
->> You can easily see it using 'perf report -D' command.
->>
->> After finishing record, it goes through the recorded events to find
->> maps/dsos actually used.  And then record build-id info of them.
->>
->> During this process, it needs to load symbols in a dso and it'd call
->> dso__load_vmlinux() since the default value of the symbol_conf.try_
->> vmlinux_path is true.  However it changes dso->long_name to a real
->> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
->> if one is running on a custom kernel.
->>
->> It resulted in that perf report reads the build-id of the vmlinux, but
->> cannot use it since it only knows about the [kernel.kallsyms] map.  It
->> then falls back to possible vmlinux paths by using the recorded kernel
->> version (in case of a recent version) or a running kernel silently
->> (which might break the result).  I think it's worth going to the
->> stable tree.
->>
->> I can think of a couple of ways to fix it.  In this patch, I changed
->> to use the name of "[kernel.kallsyms]" for the kernel build-id event
->> instead of not trying vmlinux paths.  This way we can provide maximum
->> info (like annotation) with minimum change IMHO.
->>
->> Before:
->>
->>   $ perf record -a usleep 1
->>
->>   $ perf buildid-list
->>   00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
->>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->>
->>   $ perf buildid-list -H
->>   0000000000000000000000000000000000000000 [kernel.kallsyms]
->>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
->>
-> There is something I don't understand in your example above.  The -H
-> option shows only DSO with samples. So why do you get the buildid
-> without -H and you get no buildid with -H? In other words, I don't
-> connect the dots between what -H does on the buildid change for the
-> kernel. Looks like you have the buildid in the perf.data file.
+> On Thu, Sep 04, 2014 at 08:38:31AM -0400, Jeff Layton wrote:
+> > Ensure that it's OK to pass in a NULL file_lock double pointer on
+> > a F_UNLCK request and convert the vfs_setlease F_UNLCK callers to
+> > do just that.
+> > 
+> > Finally, turn the BUG_ON in generic_setlease into a WARN_ON_ONCE
+> > with an error return. That's a problem we can handle without
+> > crashing the box if it occurs.
+> 
+> Can we just make generic_delete_lease (maye renamed to vfs_delete_lease)
+> the interface for deleting leases instead of going through a useless
+> multiplex and file operation?
+> 
 
-Without -H, it just prints all DSOs found in build-id table (rebuilt
-during read perf data file header) and skips processing events.  But
-with -H, it'd process the event records and so set kernel map to
-'[kernel.kallsyms]' - since the kernel mmap event always has the name -
-and mark it as hit.  Thus the actual vmlinux can't be marked and then
-cannot be printed.
+I'm not sure that change really makes sense to me at this point.
 
-Hmm.. now I'm curious that why the -H option is needed at all.. the perf
-record already wrote build-ids that are actually hits..
+Suppose we have an exportable filesystem with a ->setlease
+implementation [1]. We end up calling into it to set up a lease and it
+calls generic_add_lease. If we make the change you're suggesting, then
+we'll have no parallel to a ->setlease op when removing that lease.
 
-Thanks,
-Namhyung
+We could of course make a ->dellease op or something, but I'd rather
+not introduce that change until I've had a chance to do some other
+cleanup to the file locking infrastructure.
+
+So...I'm not opposed to doing what you suggest, but I'd rather not do it
+just yet until I've gotten a little farther with some other cleanup of
+how we deal with locks in general. I think it'll be easier to do that
+once some other changes have gone in.
+
+I'll post a draft patchset based on those changes "real soon now" as an
+RFC. Hopefully at that point my rationale will make a bit more sense...
+
+[1]: of course, only cifs has a non-trivial one for now and it's pretty
+half-assed...
+
+-- 
+Jeff Layton <jlayton@primarydata.com>
