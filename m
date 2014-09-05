@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187AbaIEHZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:25:12 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:7609 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751711AbaIEHZK (ORCPT
+	id S1755983AbaIEH1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:27:31 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:58191 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaIEH1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:25:10 -0400
-X-IronPort-AV: E=Sophos;i="5.04,471,1406563200"; 
-   d="scan'208";a="35556630"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH 0/3] ns,	procfs: pid conversion between ns and
- showing pidns hierarchy
-Thread-Topic: [RFC PATCH 0/3] ns,	procfs: pid conversion between ns and
- showing pidns hierarchy
-Thread-Index: AQHPx2H9DvwO+a+cxEefAjIMouBVhZvxwfCA
-Date: Fri, 5 Sep 2014 05:21:47 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E59172F@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-In-Reply-To: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Fri, 5 Sep 2014 03:27:30 -0400
+X-Original-SENDERIP: 10.177.222.131
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
+        Pekka Enberg <penberg@kernel.org>, Vegard Nossum <vegardno@ifi.uio.no>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCH -mmotm] mm: fix kmemcheck.c build errors
+Date: Fri,  5 Sep 2014 16:28:06 +0900
+Message-Id: <1409902086-32311-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s857PIKf015327
 
-Hi,
+mm-slab_common-move-kmem_cache-definition-to-internal-header.patch
+in mmotm makes following build failure.
 
-> -----Original Message-----
-> Quoting Chen Hanxiao (chenhanxiao@cn.fujitsu.com):
-> > This series will expose pid inside containers
-> > via procfs.
-> > Also show the hierarchy of pid namespcae.
-> > Then we could know how pid looks inside a container
-> > and their ns relationships.
-> > 
-> > Chen Hanxiao (3):
-> >   procfs: check uniq proc_dir_entry subdir name
-> >   procfs: show hierarchy of pid namespace
-> >   /proc/pid/status: show all sets of pid according to ns
-> > 
-> >  fs/proc/Kconfig           |   6 ++
-> >  fs/proc/Makefile          |   1 +
-> >  fs/proc/array.c           |  17 +++++
-> >  fs/proc/generic.c         |  15 +++++
-> >  fs/proc/pidns_hierarchy.c | 161 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/proc_fs.h   |   3 +
-> >  6 files changed, 203 insertions(+)
-> >  create mode 100644 fs/proc/pidns_hierarchy.c
-> 
->Thanks, Chen.  I'm sorry I won't have a chance to review this week, but
->hope to do next week.
->
+../mm/kmemcheck.c:70:7: error: dereferencing pointer to incomplete type
+../mm/kmemcheck.c:83:15: error: dereferencing pointer to incomplete type
+../mm/kmemcheck.c:95:8: error: dereferencing pointer to incomplete type
+../mm/kmemcheck.c:95:21: error: dereferencing pointer to incomplete type
 
-Thanks for your time and kindly help.
+../mm/slab.h: In function 'cache_from_obj':
+../mm/slab.h:283:2: error: implicit declaration of function
+'memcg_kmem_enabled' [-Werror=implicit-function-declaration]
 
--Chen
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Add header files to fix kmemcheck.c build errors.
+
+[iamjoonsoo.kim@lge.com] move up memcontrol.h header
+to fix build failure if CONFIG_MEMCG_KMEM=y too.
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/kmemcheck.c |    1 +
+ mm/slab.h      |    2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/mm/kmemcheck.c b/mm/kmemcheck.c
+index fd814fd..cab58bb 100644
+--- a/mm/kmemcheck.c
++++ b/mm/kmemcheck.c
+@@ -2,6 +2,7 @@
+ #include <linux/mm_types.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
++#include "slab.h"
+ #include <linux/kmemcheck.h>
+ 
+ void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
+diff --git a/mm/slab.h b/mm/slab.h
+index 13845d0..963a3f8 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -37,6 +37,8 @@ struct kmem_cache {
+ #include <linux/slub_def.h>
+ #endif
+ 
++#include <linux/memcontrol.h>
++
+ /*
+  * State of the slab allocator.
+  *
+-- 
+1.7.9.5
+
