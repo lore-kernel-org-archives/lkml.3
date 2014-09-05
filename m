@@ -1,254 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366AbaIEMmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:42:00 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52505 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083AbaIEMl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:41:58 -0400
-Message-ID: <5409AF8E.7020506@hitachi.com>
-Date: Fri, 05 Sep 2014 21:41:50 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "Frank Ch. Eigler" <fche@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/2] x86: extend insn decoder to understand xop and evex
- prefixes
-References: <1409835276-6783-1-git-send-email-dvlasenk@redhat.com> <1409835276-6783-2-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1409835276-6783-2-git-send-email-dvlasenk@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S932261AbaIEMoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:44:11 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60103 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756903AbaIEMoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 08:44:09 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Hansen <dave@sr71.net>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: revert use of root_mem_cgroup res_counter
+Date: Fri,  5 Sep 2014 08:43:57 -0400
+Message-Id: <1409921037-21405-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Denys,
+Dave Hansen reports a massive scalability regression in an uncontained
+page fault benchmark with more than 30 concurrent threads, which he
+bisected down to 05b843012335 ("mm: memcontrol: use root_mem_cgroup
+res_counter") and pin-pointed on res_counter spinlock contention.
 
-(2014/09/04 21:54), Denys Vlasenko wrote:
-> Since xop and evex prefixes are extensions of vex mechanism,
-> they have similar bit layouts, and they can never be combined
-> (an instruction can have only one of them),
-> (ab)use insn->vex_prefix to store data of xop and evex too.
-> 
-> Users will need to conditionalize on insn->vex_prefix.bytes[0]
-> instead of insn->vex_prefix.nbytes if they want to determine
-> which of vex(-like) prefixes are there.
+That change relied on the per-cpu charge caches to mostly swallow the
+res_counter costs, but it's apparent that the caches don't scale yet.
 
-Hmm, this is just a basic support of AVX512, since this doesn't
-recognize the instructions which do not support evex prefixes.
-We'd better to check Intel's new SDM and clarify which instructions
-do really support it or not.
+Revert memcg back to bypassing res_counters on the root level in order
+to restore performance for uncontained workloads.
 
-Thank you,
+Reported-by: Dave Hansen <dave@sr71.net>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Tested-by: Dave Hansen <dave.hansen@intel.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c | 103 ++++++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 78 insertions(+), 25 deletions(-)
 
-> 
-> v2: on Masami's request, retained use of inattr bits
-> for determining prefixes.
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Frank Ch. Eigler <fche@redhat.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/include/asm/inat.h          | 26 +++++++++++++----
->  arch/x86/lib/insn.c                  | 54 ++++++++++++++++++++++++------------
->  arch/x86/lib/x86-opcode-map.txt      |  4 +--
->  arch/x86/tools/gen-insn-attr-x86.awk |  2 ++
->  4 files changed, 62 insertions(+), 24 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/inat.h b/arch/x86/include/asm/inat.h
-> index 74a2e31..2c7b4cc 100644
-> --- a/arch/x86/include/asm/inat.h
-> +++ b/arch/x86/include/asm/inat.h
-> @@ -48,6 +48,8 @@
->  /* AVX VEX prefixes */
->  #define INAT_PFX_VEX2	13	/* 2-bytes VEX prefix */
->  #define INAT_PFX_VEX3	14	/* 3-bytes VEX prefix */
-> +#define INAT_PFX_XOP    15      /* 3-bytes XOP prefix */
-> +#define INAT_PFX_EVEX   16      /* 4-bytes EVEX prefix */
->  
->  #define INAT_LSTPFX_MAX	3
->  #define INAT_LGCPFX_MAX	11
-> @@ -63,7 +65,7 @@
->  
->  /* Legacy prefix */
->  #define INAT_PFX_OFFS	0
-> -#define INAT_PFX_BITS	4
-> +#define INAT_PFX_BITS	5
->  #define INAT_PFX_MAX    ((1 << INAT_PFX_BITS) - 1)
->  #define INAT_PFX_MASK	(INAT_PFX_MAX << INAT_PFX_OFFS)
->  /* Escape opcodes */
-> @@ -138,15 +140,29 @@ static inline int inat_last_prefix_id(insn_attr_t attr)
->  		return attr & INAT_PFX_MASK;
->  }
->  
-> +static inline int inat_is_vex3_prefix(insn_attr_t attr)
-> +{
-> +	return attr & INAT_PFX_VEX3;
-> +}
-> +
-> +static inline int inat_is_vex2_prefix(insn_attr_t attr)
-> +{
-> +	return attr & INAT_PFX_VEX2;
-> +}
-> +
-> +static inline int inat_is_xop_prefix(insn_attr_t attr)
-> +{
-> +	return attr & INAT_PFX_XOP;
-> +}
-> +
->  static inline int inat_is_vex_prefix(insn_attr_t attr)
->  {
-> -	attr &= INAT_PFX_MASK;
-> -	return attr == INAT_PFX_VEX2 || attr == INAT_PFX_VEX3;
-> +	return attr & (INAT_PFX_VEX2 | INAT_PFX_VEX3);
->  }
->  
-> -static inline int inat_is_vex3_prefix(insn_attr_t attr)
-> +static inline int inat_is_vex_like_prefix(insn_attr_t attr)
->  {
-> -	return (attr & INAT_PFX_MASK) == INAT_PFX_VEX3;
-> +	return attr & (INAT_PFX_VEX2 | INAT_PFX_VEX3 | INAT_PFX_XOP | INAT_PFX_EVEX);
->  }
->  
->  static inline int inat_is_escape(insn_attr_t attr)
-> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-> index 829ca4c..def44c8 100644
-> --- a/arch/x86/lib/insn.c
-> +++ b/arch/x86/lib/insn.c
-> @@ -138,40 +138,60 @@ found:
->  	}
->  	insn->rex_prefix.got = 1;
->  
-> -	/* Decode VEX prefix */
-> +	/* Decode VEX prefixes et al. Layouts are:
-> +	 * vex2:     c5    rvvvvLpp
-> +	 * vex3/xop: c4/8f rxbmmmmm wvvvvLpp
-> +	 * evex:     62    rxbR00mm wvvvv1pp zllBVaaa
-> +	 */
->  	b = peek_next(insn_byte_t, insn);
->  	attr = inat_get_opcode_attribute(b);
-> -	if (inat_is_vex_prefix(attr)) {
-> -		insn_byte_t b2 = peek_nbyte_next(insn_byte_t, insn, 1);
-> -		if (!insn->x86_64) {
-> +	if (inat_is_vex_like_prefix(attr)) {
-> +		insn_byte_t b2;
-> +
-> +		b2 = peek_nbyte_next(insn_byte_t, insn, 1);
-> +		if (inat_is_xop_prefix(attr)) {
->  			/*
-> -			 * In 32-bits mode, if the [7:6] bits (mod bits of
-> -			 * ModRM) on the second byte are not 11b, it is
-> -			 * LDS or LES.
-> +			 * XOP: If modrm.reg bits are 000, it's POP reg/mem.
-> +			 */
-> +			if (X86_MODRM_REG(b2) == 0)
-> +				goto vex_end;
-> +		}
-> +		else if (!insn->x86_64) {
-> +			/*
-> +			 * [E]VEX: In 32-bits mode, if modrm.mod bits
-> +			 * are not 11b, it is LDS, LES or BOUND.
->  			 */
->  			if (X86_MODRM_MOD(b2) != 3)
->  				goto vex_end;
->  		}
->  		insn->vex_prefix.bytes[0] = b;
->  		insn->vex_prefix.bytes[1] = b2;
-> -		if (inat_is_vex3_prefix(attr)) {
-> -			b2 = peek_nbyte_next(insn_byte_t, insn, 2);
-> -			insn->vex_prefix.bytes[2] = b2;
-> -			insn->vex_prefix.nbytes = 3;
-> -			insn->next_byte += 3;
-> -			if (insn->x86_64 && X86_VEX_W(b2))
-> -				/* VEX.W overrides opnd_size */
-> -				insn->opnd_bytes = 8;
-> -		} else {
-> +		if (inat_is_vex2_prefix(attr)) {
->  			/*
->  			 * For VEX2, fake VEX3-like byte#2.
->  			 * Makes it easier to decode vex.W, vex.vvvv,
-> -			 * vex.L and vex.pp. Masking with 0x7f sets vex.W == 0.
-> +			 * vex.L and vex.pp. Masking with 0x7f sets vex.W = 0.
->  			 */
->  			insn->vex_prefix.bytes[2] = b2 & 0x7f;
->  			insn->vex_prefix.nbytes = 2;
->  			insn->next_byte += 2;
-> +			goto vex_end;
-> +		}
-> +		b2 = peek_nbyte_next(insn_byte_t, insn, 2);
-> +		insn->vex_prefix.bytes[2] = b2;
-> +		if (insn->x86_64 && X86_VEX_W(b2)) {
-> +			/* VEX.W overrides opnd_size */
-> +			insn->opnd_bytes = 8;
-> +		}
-> +		if (inat_is_vex3_prefix(attr) || inat_is_xop_prefix(attr)) {
-> +			insn->vex_prefix.nbytes = 3;
-> +			insn->next_byte += 3;
-> +			goto vex_end;
->  		}
-> +		b2 = peek_nbyte_next(insn_byte_t, insn, 3);
-> +		insn->vex_prefix.bytes[3] = b2;
-> +		insn->vex_prefix.nbytes = 4;
-> +		insn->next_byte += 4;
->  	}
->  vex_end:
->  	insn->vex_prefix.got = 1;
-> diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-> index 1a2be7c..9d8a964 100644
-> --- a/arch/x86/lib/x86-opcode-map.txt
-> +++ b/arch/x86/lib/x86-opcode-map.txt
-> @@ -137,7 +137,7 @@ AVXcode:
->  # 0x60 - 0x6f
->  60: PUSHA/PUSHAD (i64)
->  61: POPA/POPAD (i64)
-> -62: BOUND Gv,Ma (i64)
-> +62: BOUND Gv,Ma (i64) | EVEX+3byte (Prefix)
->  63: ARPL Ew,Gw (i64) | MOVSXD Gv,Ev (o64)
->  64: SEG=FS (Prefix)
->  65: SEG=GS (Prefix)
-> @@ -184,7 +184,7 @@ AVXcode:
->  8c: MOV Ev,Sw
->  8d: LEA Gv,M
->  8e: MOV Sw,Ew
-> -8f: Grp1A (1A) | POP Ev (d64)
-> +8f: Grp1A (1A) | POP Ev (d64) | XOP+2byte (Prefix)
->  # 0x90 - 0x9f
->  90: NOP | PAUSE (F3) | XCHG r8,rAX
->  91: XCHG rCX/r9,rAX
-> diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
-> index 093a892..d288754 100644
-> --- a/arch/x86/tools/gen-insn-attr-x86.awk
-> +++ b/arch/x86/tools/gen-insn-attr-x86.awk
-> @@ -95,6 +95,8 @@ BEGIN {
->  	prefix_num["Address-Size"] = "INAT_PFX_ADDRSZ"
->  	prefix_num["VEX+1byte"] = "INAT_PFX_VEX2"
->  	prefix_num["VEX+2byte"] = "INAT_PFX_VEX3"
-> +	prefix_num["XOP+2byte"] = "INAT_PFX_XOP"
-> +	prefix_num["EVEX+3byte"] = "INAT_PFX_EVEX"
->  
->  	clear_vars()
->  }
-> 
-
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ec4dcf1b9562..085dc6d2f876 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2534,6 +2534,8 @@ static int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	unsigned long long size;
+ 	int ret = 0;
+ 
++	if (mem_cgroup_is_root(memcg))
++		goto done;
+ retry:
+ 	if (consume_stock(memcg, nr_pages))
+ 		goto done;
+@@ -2611,9 +2613,7 @@ nomem:
+ 	if (!(gfp_mask & __GFP_NOFAIL))
+ 		return -ENOMEM;
+ bypass:
+-	memcg = root_mem_cgroup;
+-	ret = -EINTR;
+-	goto retry;
++	return -EINTR;
+ 
+ done_restock:
+ 	if (batch > nr_pages)
+@@ -2626,6 +2626,9 @@ static void cancel_charge(struct mem_cgroup *memcg, unsigned int nr_pages)
+ {
+ 	unsigned long bytes = nr_pages * PAGE_SIZE;
+ 
++	if (mem_cgroup_is_root(memcg))
++		return;
++
+ 	res_counter_uncharge(&memcg->res, bytes);
+ 	if (do_swap_account)
+ 		res_counter_uncharge(&memcg->memsw, bytes);
+@@ -2640,6 +2643,9 @@ static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
+ {
+ 	unsigned long bytes = nr_pages * PAGE_SIZE;
+ 
++	if (mem_cgroup_is_root(memcg))
++		return;
++
+ 	res_counter_uncharge_until(&memcg->res, memcg->res.parent, bytes);
+ 	if (do_swap_account)
+ 		res_counter_uncharge_until(&memcg->memsw,
+@@ -4093,6 +4099,46 @@ out:
+ 	return retval;
+ }
+ 
++static unsigned long mem_cgroup_recursive_stat(struct mem_cgroup *memcg,
++					       enum mem_cgroup_stat_index idx)
++{
++	struct mem_cgroup *iter;
++	long val = 0;
++
++	/* Per-cpu values can be negative, use a signed accumulator */
++	for_each_mem_cgroup_tree(iter, memcg)
++		val += mem_cgroup_read_stat(iter, idx);
++
++	if (val < 0) /* race ? */
++		val = 0;
++	return val;
++}
++
++static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
++{
++	u64 val;
++
++	if (!mem_cgroup_is_root(memcg)) {
++		if (!swap)
++			return res_counter_read_u64(&memcg->res, RES_USAGE);
++		else
++			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
++	}
++
++	/*
++	 * Transparent hugepages are still accounted for in MEM_CGROUP_STAT_RSS
++	 * as well as in MEM_CGROUP_STAT_RSS_HUGE.
++	 */
++	val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
++	val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS);
++
++	if (swap)
++		val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_SWAP);
++
++	return val << PAGE_SHIFT;
++}
++
++
+ static u64 mem_cgroup_read_u64(struct cgroup_subsys_state *css,
+ 			       struct cftype *cft)
+ {
+@@ -4102,8 +4148,12 @@ static u64 mem_cgroup_read_u64(struct cgroup_subsys_state *css,
+ 
+ 	switch (type) {
+ 	case _MEM:
++		if (name == RES_USAGE)
++			return mem_cgroup_usage(memcg, false);
+ 		return res_counter_read_u64(&memcg->res, name);
+ 	case _MEMSWAP:
++		if (name == RES_USAGE)
++			return mem_cgroup_usage(memcg, true);
+ 		return res_counter_read_u64(&memcg->memsw, name);
+ 	case _KMEM:
+ 		return res_counter_read_u64(&memcg->kmem, name);
+@@ -4572,10 +4622,7 @@ static void __mem_cgroup_threshold(struct mem_cgroup *memcg, bool swap)
+ 	if (!t)
+ 		goto unlock;
+ 
+-	if (!swap)
+-		usage = res_counter_read_u64(&memcg->res, RES_USAGE);
+-	else
+-		usage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
++	usage = mem_cgroup_usage(memcg, swap);
+ 
+ 	/*
+ 	 * current_threshold points to threshold just below or equal to usage.
+@@ -4673,10 +4720,10 @@ static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
+ 
+ 	if (type == _MEM) {
+ 		thresholds = &memcg->thresholds;
+-		usage = res_counter_read_u64(&memcg->res, RES_USAGE);
++		usage = mem_cgroup_usage(memcg, false);
+ 	} else if (type == _MEMSWAP) {
+ 		thresholds = &memcg->memsw_thresholds;
+-		usage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
++		usage = mem_cgroup_usage(memcg, true);
+ 	} else
+ 		BUG();
+ 
+@@ -4762,10 +4809,10 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
+ 
+ 	if (type == _MEM) {
+ 		thresholds = &memcg->thresholds;
+-		usage = res_counter_read_u64(&memcg->res, RES_USAGE);
++		usage = mem_cgroup_usage(memcg, false);
+ 	} else if (type == _MEMSWAP) {
+ 		thresholds = &memcg->memsw_thresholds;
+-		usage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
++		usage = mem_cgroup_usage(memcg, true);
+ 	} else
+ 		BUG();
+ 
+@@ -5525,9 +5572,9 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 		 * core guarantees its existence.
+ 		 */
+ 	} else {
+-		res_counter_init(&memcg->res, &root_mem_cgroup->res);
+-		res_counter_init(&memcg->memsw, &root_mem_cgroup->memsw);
+-		res_counter_init(&memcg->kmem, &root_mem_cgroup->kmem);
++		res_counter_init(&memcg->res, NULL);
++		res_counter_init(&memcg->memsw, NULL);
++		res_counter_init(&memcg->kmem, NULL);
+ 		/*
+ 		 * Deeper hierachy with use_hierarchy == false doesn't make
+ 		 * much sense so let cgroup subsystem know about this
+@@ -5969,8 +6016,9 @@ static void __mem_cgroup_clear_mc(void)
+ 	/* we must fixup refcnts and charges */
+ 	if (mc.moved_swap) {
+ 		/* uncharge swap account from the old cgroup */
+-		res_counter_uncharge(&mc.from->memsw,
+-				     PAGE_SIZE * mc.moved_swap);
++		if (!mem_cgroup_is_root(mc.from))
++			res_counter_uncharge(&mc.from->memsw,
++					     PAGE_SIZE * mc.moved_swap);
+ 
+ 		for (i = 0; i < mc.moved_swap; i++)
+ 			css_put(&mc.from->css);
+@@ -5979,8 +6027,9 @@ static void __mem_cgroup_clear_mc(void)
+ 		 * we charged both to->res and to->memsw, so we should
+ 		 * uncharge to->res.
+ 		 */
+-		res_counter_uncharge(&mc.to->res,
+-				     PAGE_SIZE * mc.moved_swap);
++		if (!mem_cgroup_is_root(mc.to))
++			res_counter_uncharge(&mc.to->res,
++					     PAGE_SIZE * mc.moved_swap);
+ 		/* we've already done css_get(mc.to) */
+ 		mc.moved_swap = 0;
+ 	}
+@@ -6345,7 +6394,8 @@ void mem_cgroup_uncharge_swap(swp_entry_t entry)
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_lookup(id);
+ 	if (memcg) {
+-		res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
++		if (!mem_cgroup_is_root(memcg))
++			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+ 		mem_cgroup_swap_statistics(memcg, false);
+ 		css_put(&memcg->css);
+ 	}
+@@ -6509,12 +6559,15 @@ static void uncharge_batch(struct mem_cgroup *memcg, unsigned long pgpgout,
+ {
+ 	unsigned long flags;
+ 
+-	if (nr_mem)
+-		res_counter_uncharge(&memcg->res, nr_mem * PAGE_SIZE);
+-	if (nr_memsw)
+-		res_counter_uncharge(&memcg->memsw, nr_memsw * PAGE_SIZE);
+-
+-	memcg_oom_recover(memcg);
++	if (!mem_cgroup_is_root(memcg)) {
++		if (nr_mem)
++			res_counter_uncharge(&memcg->res,
++					     nr_mem * PAGE_SIZE);
++		if (nr_memsw)
++			res_counter_uncharge(&memcg->memsw,
++					     nr_memsw * PAGE_SIZE);
++		memcg_oom_recover(memcg);
++	}
+ 
+ 	local_irq_save(flags);
+ 	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS], nr_anon);
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+2.0.4
 
