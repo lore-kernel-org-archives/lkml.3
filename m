@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523AbaIENql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:46:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44150 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932298AbaIENqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:46:39 -0400
-Date: Fri, 5 Sep 2014 14:45:42 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sebastian Reichel <sre@debian.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Pavel Machek <pavel@ucw.cz>, Fabio Estevam <festevam@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Message-ID: <20140905134542.GD20164@leverpostej>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201409051338.40988@pali>
+	id S932460AbaIENqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:46:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932411AbaIENqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 09:46:20 -0400
+Date: Fri, 5 Sep 2014 15:43:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Suresh Siddha <sbsiddha@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/5] x86, fpu: irq_fpu_usable: always return true if
+	use_eager_fpu()
+Message-ID: <20140905134347.GA14252@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201409051338.40988@pali>
-Thread-Topic: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140905134325.GA14228@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 12:38:40PM +0100, Pali Rohár wrote:
-> On Wednesday 18 June 2014 18:54:24 Pali Rohár wrote:
-> > Machine name from board description is some generic name on DT
-> > kernel. DT provides machine name property which is specific
-> > for board, so use it instead generic one when possible.
-> > 
-> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > ---
-> >  arch/arm/kernel/setup.c |    7 +++++--
-> >  1 file changed, 5 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> > index 8a16ee5..fbc7b4f 100644
-> > --- a/arch/arm/kernel/setup.c
-> > +++ b/arch/arm/kernel/setup.c
-> > @@ -875,10 +875,13 @@ void __init setup_arch(char **cmdline_p)
-> > 
-> >  	setup_processor();
-> >  	mdesc = setup_machine_fdt(__atags_pointer);
-> > -	if (!mdesc)
-> > +	if (mdesc)
-> > +		machine_name = of_flat_dt_get_machine_name();
-> > +	else
-> >  		mdesc = setup_machine_tags(__atags_pointer,
-> > __machine_arch_type); machine_desc = mdesc;
-> > -	machine_name = mdesc->name;
-> > +	if (!machine_name)
-> > +		machine_name = mdesc->name;
-> > 
-> >  	if (mdesc->reboot_mode != REBOOT_HARD)
-> >  		reboot_mode = mdesc->reboot_mode;
-> 
-> So, do you really want to break userspace which reading file 
-> /proc/cpuinfo (after migration from boardcode --> DT)?
+According to the comment and the changelog in 5187b28f "x86: Allow FPU
+to be used at interrupt time even with eagerfpu", the __thread_has_fpu()
+check was added to avoid the nested kernel_fpu_begin(). Now that we have
+in_kernel_fpu we can remove this check and always return true.
 
-You have no guarantee model name in the DT == the name in a board file
-anyhow, and trying to force that is wrong. So further to Russell's
-reply, I must NAK this from a DT perspective.
+__thread_has_fpu() can be false even if use_eager_fpu(), but this case
+doesn't differ from !use_eager_fpu() case except we should not worry
+about X86_CR0_TS, __kernel_fpu_begin/end will not touch this bit. And I
+still think that "use_eager_fpu && (!__thread_has_fpu || !used_math)"
+special cases should die, but this is off-topic right now.
 
-Realistically your userspace is already broken if relying on such
-things. You built something that only ever worked for a particular
-arbitrary string. So it was already broken for every other board, and
-there was never any guarantee that new boards where your userspace could
-have worked would share the same name.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/i387.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-You're trying to fix the wrong side of the equation.
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 19dd36d..7bc8236 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -30,8 +30,8 @@ static DEFINE_PER_CPU(bool, in_kernel_fpu);
+  * be set (so that the clts/stts pair does nothing that is
+  * visible in the interrupted kernel thread).
+  *
+- * Except for the eagerfpu case when we return 1 unless we've already
+- * been eager and saved the state in kernel_fpu_begin().
++ * Except for the eagerfpu case when we return true; in the likely case
++ * the thread has FPU but we are not going to set/clear TS.
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
+@@ -39,7 +39,7 @@ static inline bool interrupted_kernel_fpu_idle(void)
+ 		return false;
+ 
+ 	if (use_eager_fpu())
+-		return __thread_has_fpu(current);
++		return true;
+ 
+ 	return !__thread_has_fpu(current) &&
+ 		(read_cr0() & X86_CR0_TS);
+-- 
+1.5.5.1
 
-Mark.
