@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032AbaIEGiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:38:09 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34724 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909AbaIEGiG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:38:06 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
-        tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, hare@suse.com,
-        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
-        joseph.salisbury@canonical.com, bpoirier@suse.de, santosh@chelsio.com,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, linux-ide@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, patrakov@gmail.com
-Subject: [RFC v2 6/6] pata_marvell: use async probe
-Date: Thu,  4 Sep 2014 23:37:27 -0700
-Message-Id: <1409899047-13045-7-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1756044AbaIEGig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:38:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2654 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736AbaIEGie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 02:38:34 -0400
+Message-ID: <54095A5B.4030606@redhat.com>
+Date: Fri, 05 Sep 2014 08:38:19 +0200
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Anders Darander <anders@chargestorm.se>, Yinghai Lu <yinghai@kernel.org>,
+        Matt Fleming <matt@console-pimps.org>
+CC: =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
+References: <1409806207-3992-1-git-send-email-yinghai@kernel.org> <20140904100137.GK3001@console-pimps.org> <5408D299.5000300@zytor.com> <20140904212925.GL3001@console-pimps.org> <CAE9FiQUDLoARj-Z3ipPTf2sZgGn71SxrxM+FqLE1Cyb-OEoP+A@mail.gmail.com> <20140905054749.GA4498@ad.chargestorm.se>
+In-Reply-To: <20140905054749.GA4498@ad.chargestorm.se>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 09/05/14 07:47, Anders Darander wrote:
+> * Yinghai Lu <yinghai@kernel.org> [140905 03:19]:
+> 
+> 
+>> On Thu, Sep 4, 2014 at 2:29 PM, Matt Fleming <matt@console-pimps.org> wrote:
+>>> On Thu, 04 Sep, at 01:59:05PM, H. Peter Anvin wrote:
+> 
+>>>> I am fine with this patch, but at the same time I do want to note that
+>>>> there is an alternative to double-buffer the patch and/or (if that
+>>>> applies to the buggy BIOS) round up the size of the target buffer.
+> 
+>>> I'm not sure that rounding up the size of the target buffer will
+>>> workaround this issue correctly.
+> 
+>>> As far as I know, the only thing that Mantas tried was rounding up the
+>>> size of the source file, by padding it.
+> 
+>> Can you try attached patch on top of linus tree?
+> 
+> I took the liberty to test the patch on my Dell XPS13 9333, and
+> unfortunately I got the old hang back. 
+> 
+> This was tested on the current Linus' tree.
 
-Alexander reported that on his Sony VAIO VPCZ23A4R laptop
-experiences long delays on boot when connected to its dock
-station on pre 3.9 kernels but anything after 3.9 will cause
-the device to not be detected at all ending with:
+Assuming that the UEFI implementation on Mantas's and Anders's machines
+use edk2's FatPkg to read the file from an EFI System Partition:
 
-[   38.065673] pata_marvell 0000:1a:00.0: no available native port
-[   38.065769] pata_acpi 0000:1a:00.0: no available native port
+this kernel patch will have no effect, because FatPkg (the ESP
+filesystem driver) checks the buffer size against the remainder of the
+file, and clips the input buffer if it would overshoot the file size.
 
-This laptop has a Marvell 88SE6121 SATA II Controller [11ab:6121]
-and a BluRay writer attached. The reason for the delays are
-caused by SRST errors and the link being slow to respond.
-The pata_marvell driver is a simple libata wrapper so the
-real required changes need to be made on libata however not
-many folks are around and available anymore with intimate
-knowledge and experience with these devices. Alexander notes
-that it may be that *any* ATA BMDMA controller that fails to
-respond to an identify command until a reset or other device
-poking might suffer from similar fate, this needs to be
-investigated further. Using async probe the issue caused
-by systemd killing the driver after taking over 30 seconds
-on probe.
+In other words, the rounding up of the kernel will be undone in a
+"somewhat higher level" driver in the firmware, and the request size
+that reaches DiskIo (the "lowel level driver") remains the same.
 
-[0] https://bugzilla.kernel.org/show_bug.cgi?id=59581
+https://github.com/tianocore/edk2-FatPkg/blob/master/EnhancedFatDxe/ReadWrite.c#L306
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Benjamin Poirier <bpoirier@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: patrakov@gmail.com
-Reported-by: "Alexander E. Patrakov" <patrakov@gmail.com>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- drivers/ata/pata_marvell.c | 1 +
- 1 file changed, 1 insertion(+)
+    } else {
+      //
+      // Access a file
+      //
+      EndPosition = IFile->Position + *BufferSize;
+      if (EndPosition > OFile->FileSize) {
+        //
+        // The position goes beyond the end of file
+        //
+        if (IoMode == READ_DATA) {
+          //
+          // Adjust the actual size read
+          //
+          *BufferSize -= (UINTN) EndPosition - OFile->FileSize;
 
-diff --git a/drivers/ata/pata_marvell.c b/drivers/ata/pata_marvell.c
-index ae9feb1..6a543b9 100644
---- a/drivers/ata/pata_marvell.c
-+++ b/drivers/ata/pata_marvell.c
-@@ -175,6 +175,7 @@ static struct pci_driver marvell_pci_driver = {
- 	.suspend		= ata_pci_device_suspend,
- 	.resume			= ata_pci_device_resume,
- #endif
-+	.driver.async_probe = true,
- };
- 
- module_pci_driver(marvell_pci_driver);
--- 
-2.0.3
-
+Thanks
+Laszlo
