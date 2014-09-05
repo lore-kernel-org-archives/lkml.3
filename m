@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296AbaIENkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:40:47 -0400
-Received: from exprod7og121.obsmtp.com ([64.18.2.20]:41812 "EHLO
-	exprod7og121.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649AbaIENkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:40:46 -0400
+	id S932377AbaIENqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:46:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37348 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754050AbaIENp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 09:45:59 -0400
+Date: Fri, 5 Sep 2014 15:43:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Suresh Siddha <sbsiddha@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/5] x86, fpu: kernel_fpu_begin/end fixes/cleanups
+Message-ID: <20140905134325.GA14228@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140905094747.GE30401@n2100.arm.linux.org.uk>
-References: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com>
-	<1409576021-24828-2-git-send-email-anders.berg@avagotech.com>
-	<20140905094747.GE30401@n2100.arm.linux.org.uk>
-Date: Fri, 5 Sep 2014 15:40:44 +0200
-Message-ID: <CAE0=X_1CZkSjmde4o1707scjJtdzZdXokaS--3VjEuE4XTac-Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: Add driver for AXM55xx SSP chip selects
-From: Anders Berg <anders.berg@avagotech.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 11:47 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Sep 01, 2014 at 02:53:40PM +0200, Anders Berg wrote:
->> The AXM55xx device has a ARM PL022 SSP controller with an extension that
->> enables the control of up to five chip select signals. This driver implements
->> the logic to control these signals and exports them as GPIOs.
->>
->> Signed-off-by: Anders Berg <anders.berg@avagotech.com>
->
-> So, what happens if the GPIO driver binds first, followed by the SSP
-> device?  Please test that scenario out before this patch gets merged.
->
+Hello,
 
-Both scenarios work.
-/Anders
+Suresh, please review when you have time. FYI, I will be travelling
+till Sep 10 and I won't be able to reply.
+
+Not for inclusion yet, just for review.
+
+v2:
+
+	1-3: No changes except the minor updates in the changelogs
+	     and comments
+
+	4-5: New. 5/5 is purely cosmetic.
+
+Oleg.
+
+ arch/x86/include/asm/fpu-internal.h |   15 ++++++++---
+ arch/x86/include/asm/i387.h         |    6 ++++-
+ arch/x86/kernel/i387.c              |   45 +++++++++++++++++++++-------------
+ arch/x86/kernel/traps.c             |   16 ++++-------
+ 4 files changed, 50 insertions(+), 32 deletions(-)
+
