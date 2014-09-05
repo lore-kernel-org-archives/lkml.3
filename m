@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660AbaIENyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:54:44 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:45480 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323AbaIENyn (ORCPT
+	id S932678AbaIENz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:55:29 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:52510 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443AbaIENz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:54:43 -0400
-Date: Fri, 5 Sep 2014 15:54:38 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Catalin Iacob <iacobcatalin@gmail.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 3/9] irq_work: Force raised irq work to run on irq
- work interrupt
-Message-ID: <20140905135436.GA1715@lerouge>
-References: <1408632777-3348-1-git-send-email-fweisbec@gmail.com>
- <1408632777-3348-4-git-send-email-fweisbec@gmail.com>
- <20140904061137.GB3190@worktop.ger.corp.intel.com>
- <20140904133337.GA1771@lerouge>
- <20140904154020.GF346@worktop.programming.kicks-ass.net>
+	Fri, 5 Sep 2014 09:55:26 -0400
+Date: Fri, 5 Sep 2014 17:55:07 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@sr71.net>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] mm: memcontrol: revert use of root_mem_cgroup res_counter
+Message-ID: <20140905135507.GE25641@esperanza>
+References: <1409921037-21405-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140904154020.GF346@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1409921037-21405-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 05:40:20PM +0200, Peter Zijlstra wrote:
-> On Thu, Sep 04, 2014 at 03:33:40PM +0200, Frederic Weisbecker wrote:
-> > > Why not something like the below; then it becomes a compile time matter.
-> > 
-> > Problem is that some archs only have that information at runtime.
-> > See x86 for example which tests cpu_has_apic.
+On Fri, Sep 05, 2014 at 08:43:57AM -0400, Johannes Weiner wrote:
+> Dave Hansen reports a massive scalability regression in an uncontained
+> page fault benchmark with more than 30 concurrent threads, which he
+> bisected down to 05b843012335 ("mm: memcontrol: use root_mem_cgroup
+> res_counter") and pin-pointed on res_counter spinlock contention.
 > 
-> So the other archs can still benefit, no? Also, on x86 cpu features can
-> be used with asm_goto/jump_labels, your approach wrecks that too by
-> copying it into some static variable, see static_cpu_has().
+> That change relied on the per-cpu charge caches to mostly swallow the
+> res_counter costs, but it's apparent that the caches don't scale yet.
+> 
+> Revert memcg back to bypassing res_counters on the root level in order
+> to restore performance for uncontained workloads.
+> 
+> Reported-by: Dave Hansen <dave@sr71.net>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Tested-by: Dave Hansen <dave.hansen@intel.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Ah I didn't know about that static_cpu_has().
-I'm going to try the way you suggest then.
+It's a pity we have to revert this nice cleanup, but seems we can't do
+anything better right now. FWIW,
 
-Thanks.
+Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
