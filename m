@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709AbaIETG6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:06:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54823 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaIETDL (ORCPT
+	id S1751749AbaIETJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:09:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33782 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaIETJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:03:11 -0400
-Date: Fri, 05 Sep 2014 12:03:09 -0700 (PDT)
-Message-Id: <20140905.120309.442605076285121829.davem@davemloft.net>
-To: hannes@stressinduktion.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spender@grsecurity.net, dborkman@redhat.com, ast@plumgrid.com,
-        keescook@chromium.org
-Subject: Re: [PATCH net-next v2] net: bpf: make eBPF interpreter images
- read-only
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
-References: <aa5126f747594d768e0c518189a13e8674ad8ee5.1409690486.git.hannes@stressinduktion.org>
-	<2bf2e54282097642db88e2b596b06a9ac3742883.1409690849.git.hannes@stressinduktion.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Sep 2014 12:03:11 -0700 (PDT)
+	Fri, 5 Sep 2014 15:09:07 -0400
+Date: Fri, 5 Sep 2014 21:08:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Bresticker <abrestic@chromium.org>
+cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 15/16] MIPS: GIC: Use local interrupts for timer
+In-Reply-To: <1409938218-9026-16-git-send-email-abrestic@chromium.org>
+Message-ID: <alpine.DEB.2.10.1409052108090.5472@nanos>
+References: <1409938218-9026-1-git-send-email-abrestic@chromium.org> <1409938218-9026-16-git-send-email-abrestic@chromium.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Date: Tue,  2 Sep 2014 22:53:44 +0200
+On Fri, 5 Sep 2014, Andrew Bresticker wrote:
 
-> From: Daniel Borkmann <dborkman@redhat.com>
+> Instead of using GIC interrupt 0 for the timer (which was not even
+> handled correctly by the GIC irqchip code and could conflict with an
+> actual external interrupt), use the designated local interrupt for
+> the GIC timer.
 > 
-> With eBPF getting more extended and exposure to user space is on it's way,
-> hardening the memory range the interpreter uses to steer its command flow
-> seems appropriate.  This patch moves the to be interpreted bytecode to
-> read-only pages.
+> Also, since the timer is a per-CPU interrupt, initialize it with
+> setup_percpu_irq() and enable it with enable_percpu_irq() instead
+> of using direct register writes.
 > 
-> In case we execute a corrupted BPF interpreter image for some reason e.g.
-> caused by an attacker which got past a verifier stage, it would not only
-> provide arbitrary read/write memory access but arbitrary function calls
-> as well. After setting up the BPF interpreter image, its contents do not
-> change until destruction time, thus we can setup the image on immutable
-> made pages in order to mitigate modifications to that code. The idea
-> is derived from commit 314beb9bcabf ("x86: bpf_jit_comp: secure bpf jit
-> against spraying attacks").
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+> No changes from v1.
+> ---
+>  arch/mips/kernel/cevt-gic.c | 16 +++++++---------
+>  1 file changed, 7 insertions(+), 9 deletions(-)
 > 
-> This is possible because bpf_prog is not part of sk_filter anymore.
-> After setup bpf_prog cannot be altered during its life-time. This prevents
-> any modifications to the entire bpf_prog structure (incl. function/JIT
-> image pointer).
-> 
-> Every eBPF program (including classic BPF that are migrated) have to call
-> bpf_prog_select_runtime() to select either interpreter or a JIT image
-> as a last setup step, and they all are being freed via bpf_prog_free(),
-> including non-JIT. Therefore, we can easily integrate this into the
-> eBPF life-time, plus since we directly allocate a bpf_prog, we have no
-> performance penalty.
-> 
-> Tested with seccomp and test_bpf testsuite in JIT/non-JIT mode and manual
-> inspection of kernel_page_tables.  Brad Spengler proposed the same idea
-> via Twitter during development of this patch.
-> 
-> Joint work with Hannes Frederic Sowa.
-> 
-> Suggested-by: Brad Spengler <spender@grsecurity.net>
-> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-> Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> diff --git a/arch/mips/kernel/cevt-gic.c b/arch/mips/kernel/cevt-gic.c
+> index 6093716..cae72a4 100644
+> --- a/arch/mips/kernel/cevt-gic.c
+> +++ b/arch/mips/kernel/cevt-gic.c
+> @@ -68,7 +68,7 @@ int gic_clockevent_init(void)
+>  	if (!cpu_has_counter || !gic_frequency)
+>  		return -ENXIO;
+>  
+> -	irq = MIPS_GIC_IRQ_BASE;
+> +	irq = MIPS_GIC_LOCAL_IRQ_BASE + GIC_LOCAL_INTR_COMPARE;
+>  
+>  	cd = &per_cpu(gic_clockevent_device, cpu);
+>  
+> @@ -91,15 +91,13 @@ int gic_clockevent_init(void)
+>  
+>  	clockevents_register_device(cd);
+>  
+> -	GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_COMPARE_MAP), 0x80000002);
+> -	GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_SMASK), GIC_VPE_SMASK_CMP_MSK);
+> +	if (!gic_timer_irq_installed) {
+> +		setup_percpu_irq(irq, &gic_compare_irqaction);
+> +		irq_set_handler(irq, handle_percpu_irq);
+> +		gic_timer_irq_installed = 1;
+> +	}
+>  
+> -	if (gic_timer_irq_installed)
+> -		return 0;
+> +	enable_percpu_irq(irq, 0);
 
-Applied, thanks.
+Please use a proper IRQ_TYPE constant instead of 0
+
+Thanks,
+
+	tglx
