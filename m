@@ -1,186 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834AbaIEOMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:12:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44763 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932201AbaIEOMN (ORCPT
+	id S932849AbaIEOM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:12:56 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:46650 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201AbaIEOMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:12:13 -0400
-Message-ID: <5409C490.6020009@arm.com>
-Date: Fri, 05 Sep 2014 15:11:28 +0100
-From: Andre Przywara <andre.przywara@arm.com>
-Organization: ARM Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
+	Fri, 5 Sep 2014 10:12:54 -0400
+Date: Fri, 5 Sep 2014 23:12:41 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC PATCH 1/1] drivers: introduce ARM SBSA generic UART driver
-References: <1409328803-1953-1-git-send-email-andre.przywara@arm.com> <8453809.d9xRztN9Sq@wuerfel> <5401086F.1050601@arm.com> <3427461.cOVRFPXkyG@wuerfel>
-In-Reply-To: <3427461.cOVRFPXkyG@wuerfel>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140905141241.GC10455@mtj.dyndns.org>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <1409899047-13045-4-git-send-email-mcgrof@do-not-panic.com>
+ <20140905071925.GC9323@mtj.dyndns.org>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On 02/09/14 20:51, Arnd Bergmann wrote:
-> On Saturday 30 August 2014 00:10:39 Andre Przywara wrote:
->> On 08/29/2014 07:59 PM, Arnd Bergmann wrote:
->>> On Friday 29 August 2014 17:13:23 Andre Przywara wrote:
->>>> The ARM Server Base System Architecture (SBSA) describes a generic
->>>> UART which all compliant level 1 systems should implement. This is
->>>> actually a PL011 subset, so a full PL011 implementation will satisfy
->>>> this requirement.
->>>> However if a system does not have a PL011, a very stripped down
->>>> implementation complying to the SBSA defined specification will
->>>> suffice. The Linux PL011 driver is not guaranteed to drive this
->>>> limited device (and indeed the fast model implentation hangs the
->>>> kernel if driven by the PL011 driver).
->>>> So introduce a new driver just implementing the part specified by the
->>>> SBSA (which lacks DMA, the modem control signals and many of the
->>>> registers including baud rate control). This driver has been derived
->>>> by the actual PL011 one, removing all unnecessary code.
->>>>
->>>> Signed-off-by: Andre Przywara <andre.przywara@arm.com>
->>>
->>>
->>> Hi Andre,
->>>
->>> Thanks for getting this driver ready. There is one high-level comment
->>> I have: As mentioned in the discussion in
->>> https://lkml.org/lkml/2014/7/28/386 , I think this should really be
->>> a tty driver using tty_port, not a serial driver using uart_port.
->>>
->>> What is the reason you chose to do a uart_port driver?
->>
->> Mainly because the SBSA is more of an UART than I originally
->> anticipated. It's intention may be more for debugging only, but it's
->> implementation is that of a real UART.
->> So the goldfish driver for instance seems to be tailored for a virtual
->> device, where TX/RX actually does not cost much. Also it supports
->> transmitting large chunks of data at once, an UART cannot do that. I
->> didn't find an obvious or easy way of implementing IRQ based
->> transmission. So if someone throws 10 KB at the driver, it will hog the
->> CPU for a second :-(
+On Fri, Sep 05, 2014 at 12:47:16AM -0700, Luis R. Rodriguez wrote:
+> Ah -- well without it the way we "find" drivers that need this new
+> "async feature" is by a bug report and folks saying their system can't
+> boot, or they say their device doesn't come up. That's all. Tracing
+> this to systemd and a timeout was one of the most ugliest things ever.
+> There two insane bug reports you can go check:
 > 
-> I think the driver is supposed to just return '0' from its tty->write
-> function when there is no room for more data, and then call
-> tty_wakeup() from the interrupt handler once some buffer space has
-> been freed up.
+> mptsas was the first:
 > 
-> Note that this is actually much simpler to do than the circ_buf
-> handling in uart_port.
+> http://article.gmane.org/gmane.linux.kernel/1669550
+> https://bugs.launchpad.net/ubuntu/+source/systemd/+bug/1297248
 > 
->> Also there is this console line ending issue. The UART layer takes care
->> about changing LF into CR/LF, but in a pure TTY driver this needs to be
->> done explicitly. Hooking this into the code was a real nightmare.
+> Then cxgb4:
 > 
-> It should not do that. Did you forget to set tty_std_termios?
+> https://bugzilla.novell.com/show_bug.cgi?id=877622
 > 
->> Also the error conditions the UART supports (frame error, break) are
->> hard to model in a pure TTY driver.
+> I only had Cc'd you on the newest gem pata_marvell :
 > 
-> The register subset doesn't even support flow control, so what's the
-> point in trying to support get_icount?
-
-Thanks for those hints. I didn't dive too deep into this whole TTY layer
-stuff, so I just took what goldfish used.
-This looks like I could give this approach a try again then - it should
-solve my problems - BUT the ttyxxx naming thing still stands.
-
-And it seems like this is a show-stopper.
-Introducing yet another serial prefix seems to be the wrong direction.
-Actually one should rather rework the whole serial subsystem to allow a
-single prefix naming regardless of the driver(s) used. And NO, I am not
-volunteering - I already have a job for the next year ;-)
-
->> So after having coded it based on goldfish I decided to go for a real
->> UART driver instead, and the result is much better.
+> https://bugzilla.kernel.org/show_bug.cgi?id=59581
 > 
->>> A few more details below:
->>>
->>>> +}
->>>> +EARLYCON_DECLARE(pl011, sbsa_uart_early_console_setup);
->>>> +OF_EARLYCON_DECLARE(pl011, "arm,sbsa-uart", sbsa_uart_early_console_setup);
->>>
->>> Stray 'pl011' left from copying the code?
->>
->> Actually left in deliberately (to reuse existing kernel command lines),
->> but I know see that this was silly.
->> The earlycon routines of PL011 are actually the same as for the SBSA
->> UART, so both can use one implementation. And registering them twice
->> under the same name triggers a warning during boot.
->> I have to check how this can be shared if only one driver is compiled in.
->>
->>>> +static struct uart_driver sbsa_uart_reg = {
->>>> +	.owner			= THIS_MODULE,
->>>> +	.driver_name		= "sbsa_uart",
->>>> +	.dev_name		= "ttyAMA",
->>>> +	.nr			= UART_NR,
->>>> +	.cons			= SBSA_UART_CONSOLE,
->>>> +};
->>>
->>> I don't think we should overload the ttyAMA name.
->>
->> That triggered a lot of discussion here. Actually most people don't want
->> to introduce yet another serial prefix. Also since the both devices are
->> so similar and this driver can drive a full PL011 also, I decided to
->> reuse it.
->> This still has issues if both drivers are active, but I consider this
->> saner for the user this way.
-> 
-> I'm not convinced. It sounds absolutely possible that someone makes a
-> system that needs both drivers simultaneously, sbsa_uart for the console
-> (with the settings in place from the boot loader and no registers to
-> change them) and a proper uart for talking to other devices. If the
-> earlycon line or the device names are conflicting, you get into
-> trouble.
+> We can't seriously expect to be doing all this work for every driver.
+> a WARN_ONCE() would enable us to find the drivers that need this new
+> async probe "feature".
 
-I agree - and looking more closely I see a suspicious boot message when
-I tried a setup similar to your one (on the model).
-So this earlycon things needs to be addressed separately. I think the
-smartest solution is to integrate the driver in the PL011 one.
-In fact I was working on this lately, coming pretty far without being
-too ugly. It includes some refactoring of PL011 (which makes the code
-even more readable, IMO) and introducing a second set of struct uart_ops
-plus an AMBA-less probe routine (which could be used by ACPI later, too).
-I will post it as soon as I have found a smart solution for this one
-remaining issue (accessing CR to enable the UART in the console code).
+This whole approach of trying to mark specific drivers as needing
+"async probing" is completely broken for the problem at hand.  It
+can't address the problem adequately while breaking backward
+compatibility.  I don't think this makes much sense.
 
->>>> +#ifdef CONFIG_OF
->>>> +
->>>> +static int dt_probe_serial_alias(int index, struct device *dev)
->>>> +{
->>>> +	struct device_node *np;
->>>> +	static bool seen_dev_with_alias;
->>>> +	static bool seen_dev_without_alias;
->>>> +	int ret = index;
->>>> +
->>>> +	if (!IS_ENABLED(CONFIG_OF))
->>>> +		return ret;
->>>
->>> The #ifdef should go away since you already have the if
->>> (!IS_ENABLED(CONFIG_OF)) logic here.
->>
->> Right, this is redundant, but I'd rather remove the IS_ENABLED() line,
->> since I provide a non-DT implementation of that routine below.
-> 
-> That would mean you don't get any build-time coverage if CONFIG_OF
-> is disabled. Please just remove all the #ifdefs you can so that the
-> compiler gets to see the code and discard all unused parts of it.
+Nacked-by: Tejun Heo <tj@kernel.org>
 
-Good point. Will try this (in the reworked PL011 driver).
+Thanks.
 
-Thanks for looking more closely at the code and for good hints.
-
-Grüße,
-Andre.
+-- 
+tejun
