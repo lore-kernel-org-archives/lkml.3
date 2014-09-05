@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaIEWrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:47:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43522 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701AbaIEWrj (ORCPT
+	id S1754495AbaIEWt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:49:26 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:60810 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082AbaIEWtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:47:39 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH v2 01/15] clk: mux: Add unregistration API
-Date: Fri,  5 Sep 2014 15:47:20 -0700
-Message-Id: <1409957256-23729-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
-In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
-References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 5 Sep 2014 18:49:21 -0400
+Date: Fri, 5 Sep 2014 15:49:17 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140905224917.GB35667@core.coreip.homeip.net>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org>
+ <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org>
+ <20140905181003.GA29003@core.coreip.homeip.net>
+ <20140905222956.GA15723@mtj.dyndns.org>
+ <20140905223139.GB15723@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905223139.GB15723@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers want to remove clocks they register with
-clk_unregister(). Unfortunately, calling clk_unregister()
-directly on the clock returned by clk_register_mux() would result
-in a memory leak of the clk_mux struct. Add an API to free that
-allocation and unregister the clock.
+On Sat, Sep 06, 2014 at 07:31:39AM +0900, Tejun Heo wrote:
+> On Sat, Sep 06, 2014 at 07:29:56AM +0900, Tejun Heo wrote:
+> > It is for storage devices which always have guaranteed synchronous
+> > probing on module load and well-defined probing order.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/clk-mux.c        | 15 +++++++++++++++
- include/linux/clk-provider.h |  2 ++
- 2 files changed, 17 insertions(+)
+Agree about probing order (IIRC that is why we had to revert the
+wholesale asynchronous probing a few years back) but totally disagree
+about synchronous module loading.
 
-diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
-index 4f96ff3ba728..c0cf9db9effa 100644
---- a/drivers/clk/clk-mux.c
-+++ b/drivers/clk/clk-mux.c
-@@ -177,3 +177,18 @@ struct clk *clk_register_mux(struct device *dev, const char *name,
- 				      NULL, lock);
- }
- EXPORT_SYMBOL_GPL(clk_register_mux);
-+
-+void clk_unregister_mux(struct clk *clk)
-+{
-+	struct clk_hw *hw;
-+	struct clk_mux *mux;
-+
-+	hw = __clk_get_hw(clk);
-+	if (!hw)
-+		return;
-+
-+	mux = to_clk_mux(hw);
-+	clk_unregister(clk);
-+	kfree(mux);
-+}
-+EXPORT_SYMBOL_GPL(clk_unregister_mux);
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 411dd7eb2653..f0744b8de50a 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -401,6 +401,8 @@ struct clk *clk_register_mux_table(struct device *dev, const char *name,
- 		void __iomem *reg, u8 shift, u32 mask,
- 		u8 clk_mux_flags, u32 *table, spinlock_t *lock);
- 
-+void clk_unregister_mux(struct clk *clk);
-+
- void of_fixed_factor_clk_setup(struct device_node *node);
- 
- /**
+Anyway, I just posted a patch that I think preserves module loading
+behavior and solves my issue with built-in modules. It does not help
+Luis' issue though (but then I think the main problem is with systemd
+being stupid there).
+
+> > Sure, modern
+> > setups are a lot more dynamic but I'm quite certain that there are
+> > setups in the wild which depend on storage driver loading being
+> > synchronous.  We can't simply declare one day that such behavior is
+> > broken and break, most likely, their boots.
+> 
+> To add a bit, if the argument here is that dependency on such behavior
+> shouldn't exist and module loading and device probing should always be
+> asynchronous, the right approach is implementing "synchronous_probing"
+> flag not the other way around.  I actually wouldn't hate to see that
+> change happening but whoever submits and routes such a change should
+> be ready for a major shitstorm, I'm afraid.
+
+I think we already had this storm and that is why here we have opt-in
+behavior for the drivers.
+
+Thanks.
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Dmitry
