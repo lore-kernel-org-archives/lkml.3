@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaIEVJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:09:30 -0400
-Received: from smtprelay0077.hostedemail.com ([216.40.44.77]:45266 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752378AbaIEVJ3 (ORCPT
+	id S1752693AbaIEVMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:12:31 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:55920 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaIEVMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:09:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3874:4321:5007:6119:6120:7652:7808:7901:7903:10004:10400:10848:11026:11232:11473:11658:11914:12438:12517:12519:12740:13018:13019:13069:13137:13146:13150:13161:13229:13230:13231:13255:13311:13357:14039:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: worm38_354ac18c2822f
-X-Filterd-Recvd-Size: 2218
-Message-ID: <1409951364.2618.28.camel@joe-AO725>
-Subject: Re: [PATCH] gcc: clamp gcc version to most highest specific header
- version available
-From: Joe Perches <joe@perches.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sasha Levin <sasha.levin@oracle.com>, akpm@linuxfoundation.org,
-        mingo@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-Date: Fri, 05 Sep 2014 14:09:24 -0700
-In-Reply-To: <8bf23840962ec5a33b1bfae7fdf8b0a0f94c4227.1409949573.git.hannes@stressinduktion.org>
-References: <5409CC39.3060608@oracle.com>
-	 <8bf23840962ec5a33b1bfae7fdf8b0a0f94c4227.1409949573.git.hannes@stressinduktion.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Sep 2014 17:12:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Murali Karicheri <m-karicheri2@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] PCI: keystone: update to support multiple pci ports
+Date: Fri, 05 Sep 2014 23:11:47 +0200
+Message-ID: <5769746.NkKjYOOUiv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540A1F05.80706@ti.com>
+References: <1409938782-31460-1-git-send-email-m-karicheri2@ti.com> <3654923.JrIGV2dJ70@wuerfel> <540A1F05.80706@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QijqIZ23EaS08FZS8CFNWpZzPCbixK0y4m4st15dBiG
+ qGevmm0uYCxtsYrlOEFqilXUJyqyEyvh6ahjqD1czcgZL53QFY
+ NYUsaEpMh4jn/w5HNTHUd5GMdXEsupfuH++oL8rppVFZRQ88sJ
+ GQzHxBAKUCwc4P/srZUUGHrqeqjTLdNsG27mP4BsqNdije1kY5
+ n0g0dMP5hYjhmDIWzK9DfDIg5VskZqRUUwNND3ux9mcjQcRA+L
+ dERkbVQFggjiZOPI2tv4gCKDuAeJfe0Zyyketp0+jeDIB6/alz
+ Ao3hujeBvsbACOxitqhQ1gfa7gkLOqUBtUeV0H5YDyMRXurfbY
+ Dky072yy9+wX/o1XRwi4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-05 at 22:39 +0200, Hannes Frederic Sowa wrote:
-> As announced in [1] gcc will increase its major number yearly but we don't
-> need to include gcc version specific quirks for every version normally.
+On Friday 05 September 2014 16:37:25 Murali Karicheri wrote:
+> On 09/05/2014 03:00 PM, Arnd Bergmann wrote:
+> > On Friday 05 September 2014 14:33:54 Murali Karicheri wrote:
+> >>> This looks like it's a shared register of some sort that doesn't
+> >>> really belong into the registers of a particular port. Could it
+> >>> be that it's actually for the PHY?
+> >>>
+> >> This a shared device configuration register between the two ports the
+> >> desciption states it is bootstrap configuration of the PCIe module as
+> >> Endpoint or Root complex and Not Phy. Hope below text will help.
+> >
+> > Ok. Why do you want to have this user-selectable though? Can't it
+> > just be set by the boot loader before starting Linux?
 > 
-> This patch allows to compile every kernel with all new versions of gcc
-> without adding a specific compiler-gccX.h header. We do so by clamping
-> the __GNUC__ version to the most specific version dependent header file.
+> Arnd,
 > 
-> If someone adds a new gccX.h file __GCC_CLAMP_VERSION_HEADER also needs
-> to be modified.
-> 
-> The decision if chained including of header files (e.g. gcc5.h includes
-> gcc4.h) is necessary or should be avoided can be postponed until more
-> experience in using the official gcc release is gained.
+> As the driver is responsible for configuring the device to support the 
+> device functionality, it make sense to do this in the device driver. The 
+> driver enables clock to the IP and this is an addition thing to be 
+> configured so that when the device is powered up, it should function as 
+> RC. The IP can be configured to work as Root Complex or Endpoint. So not 
+> sure why you want to me to move this functionality to boot loader.
 
-I think the churn rate in the gcc compiler specific
-#include headers will be low enough that a single
-combined file should be acceptable.
+But the driver can only do root complex mode, and we would probably
+want a completely different driver if we were to start supporting
+endpoint mode.
 
-Keeping all the gcc #defines together seems more
-readable to me.
+This also implies that the firmware has to pass a different DT for
+endpoint mode, so it should be responsible for setting up the hardware
+to match the DT.
 
-The trivial integration I did eliminated one
-duplicate #define as well as that hack for
-#include gcc_header(__GNUC__)
-
-
-
-
+	Arnd
