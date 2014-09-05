@@ -1,108 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236AbaIEFO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 01:14:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43190 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715AbaIEFO5 (ORCPT
+	id S1751886AbaIEFRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 01:17:39 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:37899 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaIEFRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 01:14:57 -0400
-Message-ID: <54094697.8010008@oracle.com>
-Date: Fri, 05 Sep 2014 13:13:59 +0800
-From: Junxiao Bi <junxiao.bi@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: akpm@linux-foundation.org, xuejiufei@huawei.com, ming.lei@canonical.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com> <20140904092329.GN20473@dastard> <540920DB.9000200@oracle.com>
-In-Reply-To: <540920DB.9000200@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 5 Sep 2014 01:17:37 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v10 net-next 0/2] load imm64 insn and uapi/linux/bpf.h
+Date: Thu,  4 Sep 2014 22:17:16 -0700
+Message-Id: <1409894238-9055-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 10:32 AM, Junxiao Bi wrote:
-> On 09/04/2014 05:23 PM, Dave Chinner wrote:
->> On Wed, Sep 03, 2014 at 01:54:54PM +0800, Junxiao Bi wrote:
->>> commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
->>> introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
->>> when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
->>> run into I/O, like in superblock shrinker.
->>>
->>> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
->>> Cc: joyce.xue <xuejiufei@huawei.com>
->>> Cc: Ming Lei <ming.lei@canonical.com>
->>> ---
->>>  include/linux/sched.h |    6 ++++--
->>>  1 file changed, 4 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/include/linux/sched.h b/include/linux/sched.h
->>> index 5c2c885..2fb2c47 100644
->>> --- a/include/linux/sched.h
->>> +++ b/include/linux/sched.h
->>> @@ -1936,11 +1936,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
->>>  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
->>>  #define used_math() tsk_used_math(current)
->>>  
->>> -/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
->>> +/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
->>> + * __GFP_FS is also cleared as it implies __GFP_IO.
->>> + */
->>>  static inline gfp_t memalloc_noio_flags(gfp_t flags)
->>>  {
->>>  	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
->>> -		flags &= ~__GFP_IO;
->>> +		flags &= ~(__GFP_IO | __GFP_FS);
->>>  	return flags;
->>>  }
->>
->> You also need to mask all the shrink_control->gfp_mask
->> initialisations in mm/vmscan.c. The current code only masks the page
->> reclaim gfp_mask, not those that are passed to the shrinkers.
-> Yes, there are some shrink_control->gfp_mask not masked in vmscan.c in
-> the following functions. Beside this, all seemed be masked from direct
-> reclaim path by memalloc_noio_flags().
-> 
-> -reclaim_clean_pages_from_list()
-> used by alloc_contig_range(), this function is invoked in hugetlb and
-> cma, for hugetlb, it should be safe as only userspace use it. I am not
-> sure about the cma.
-> David & Andrew, may you share your idea about whether cma is affected?
-> 
-Look at CMA, it's used for device which doesn't support scatter/gather
-dma and mainly used for embedded device like camera, this should not be
-the case of the block device. So i think this gfp_mask doesn't need be
-masked.
+Hi,
 
-Thanks,
-Junxiao.
-> -mem_cgroup_shrink_node_zone()
-> -try_to_free_mem_cgroup_pages()
-> These two are used by mem cgroup, as no kernel thread can be assigned
-> into such cgroup, so i think, no need mask.
-> 
-> -balance_pgdat()
-> used by kswapd, no need mask.
-> 
-> -shrink_all_memory()
-> used by hibernate, should be safe with GFP_FS/IO.
-> 
-> Thanks,
-> Junxiao.
->>
->> Cheers,
->>
->> Dave.
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+V9->V10
+- no changes, added Daniel's ack
+
+Note they're on top of Hannes's patch in the same area [1]
+
+V8 thread with 'why' reasoning and end goal [2]
+
+Original set [3] of ~28 patches I'm planning to present in 4 stages:
+
+  I. this 2 patches to fork off llvm upstreaming
+ II. bpf syscall with manpage and map implementation
+III. bpf program load/unload with verifier testsuite (1st user of
+     instruction macros from bpf.h and 1st user of load imm64 insn)
+ IV. tracing, etc
+
+[1] http://patchwork.ozlabs.org/patch/385266/
+[2] https://lkml.org/lkml/2014/8/27/628
+[3] https://lkml.org/lkml/2014/8/26/859
 
