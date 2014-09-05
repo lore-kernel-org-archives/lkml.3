@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbaIEXV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:21:58 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35081 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaIEXV4 (ORCPT
+	id S1754176AbaIEXWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:22:49 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:64485 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540AbaIEXWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:21:56 -0400
-From: behanw@converseincode.com
-To: catalin.marinas@arm.com, jays.lee@samsung.com, will.deacon@arm.com
-Cc: kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, steve.capper@linaro.org,
-        sungjinn.chung@samsung.com, Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] arm64: LLVMLinux: Add missing abort() for AARCH64
-Date: Fri,  5 Sep 2014 16:21:42 -0700
-Message-Id: <1409959302-13976-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 5 Sep 2014 19:22:46 -0400
+Date: Fri, 5 Sep 2014 16:22:42 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140905232242.GE35667@core.coreip.homeip.net>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org>
+ <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org>
+ <20140905181003.GA29003@core.coreip.homeip.net>
+ <20140905222956.GA15723@mtj.dyndns.org>
+ <20140905223139.GB15723@mtj.dyndns.org>
+ <20140905224917.GB35667@core.coreip.homeip.net>
+ <20140905225533.GE15723@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905225533.GE15723@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+Hi Tejun,
 
-Add missing abort for arch aarch64.
+On Sat, Sep 06, 2014 at 07:55:33AM +0900, Tejun Heo wrote:
+> Hello, Dmitry.
+> 
+> On Fri, Sep 05, 2014 at 03:49:17PM -0700, Dmitry Torokhov wrote:
+> > On Sat, Sep 06, 2014 at 07:31:39AM +0900, Tejun Heo wrote:
+> > > On Sat, Sep 06, 2014 at 07:29:56AM +0900, Tejun Heo wrote:
+> > > > It is for storage devices which always have guaranteed synchronous
+> > > > probing on module load and well-defined probing order.
+> > 
+> > Agree about probing order (IIRC that is why we had to revert the
+> > wholesale asynchronous probing a few years back) but totally disagree
+> > about synchronous module loading.
+> 
+> I don't get it.  This is a behavior userland already depends on for
+> boots.  What's there to agree or disagree?  This is just a fact that
+> we can't do this w/o disturbing some userlands in a major way.
 
-This patch makes the aarch64 kernel able to compile with gcc or clang.
+I am just expressing my disbelief that somebody relies on module loading
+being synchronous with probing. Out of curiosity, do you have any
+pointers?
 
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- arch/arm64/kernel/traps.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+> 
+> > Anyway, I just posted a patch that I think preserves module loading
+> > behavior and solves my issue with built-in modules. It does not help
+> > Luis' issue though (but then I think the main problem is with systemd
+> > being stupid there).
+> 
+> This sure can be worked around from userland side too by not imposing
+> any timeout on module loading but that said for the same reasons that
+> you've been arguing until now, I actually do think that it's kinda
+> silly to make device probing synchronous to module loading at this
+> time and age.  What we disagree on is not that we want to separate
+> those waits.  It is about how to achieve it.
 
-diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-index 02cd3f0..123cd6e 100644
---- a/arch/arm64/kernel/traps.c
-+++ b/arch/arm64/kernel/traps.c
-@@ -349,6 +349,15 @@ void __pgd_error(const char *file, int line, unsigned long val)
- 	pr_crit("%s:%d: bad pgd %016lx.\n", file, line, val);
- }
- 
-+void abort(void)
-+{
-+	BUG();
-+
-+	/* if that doesn't kill us, halt */
-+	panic("Oops failed to kill thread");
-+}
-+EXPORT_SYMBOL(abort);
-+
- void __init trap_init(void)
- {
- 	return;
+Well, there are separate things we want to solve. My main issue is not
+with modules, but rather compiled-in drivers that stall kernel boot,
+and these particular drivers are just fine if they are probed out of
+bound.
+
+> 
+> > > To add a bit, if the argument here is that dependency on such behavior
+> > > shouldn't exist and module loading and device probing should always be
+> > > asynchronous, the right approach is implementing "synchronous_probing"
+> > > flag not the other way around.  I actually wouldn't hate to see that
+> > > change happening but whoever submits and routes such a change should
+> > > be ready for a major shitstorm, I'm afraid.
+> > 
+> > I think we already had this storm and that is why here we have opt-in
+> > behavior for the drivers.
+> 
+> It's a different shitstorm where we actively break bootings on some
+> userlands.  Trust me.  That's gonna be a lot worse.
+
+That did break bootings and that's why we reverted the wholesale async
+probing.
+
+Thanks.
+
 -- 
-1.9.1
-
+Dmitry
