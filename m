@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266AbaIEHrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:47:42 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:32793 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756000AbaIEHri (ORCPT
+	id S1756337AbaIEHsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:48:24 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:63012 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940AbaIEHrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:47:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140905071925.GC9323@mtj.dyndns.org>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
- <1409899047-13045-4-git-send-email-mcgrof@do-not-panic.com> <20140905071925.GC9323@mtj.dyndns.org>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 5 Sep 2014 00:47:16 -0700
-X-Google-Sender-Auth: UdtGBzP27mC3d6nBA_H1uxCI6ck
-Message-ID: <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-To: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Sep 2014 03:47:06 -0400
+From: Robert Richter <rric@kernel.org>
+To: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>
+Subject: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
+Date: Fri,  5 Sep 2014 09:46:42 +0200
+Message-Id: <1409903205-2762-2-git-send-email-rric@kernel.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1409903205-2762-1-git-send-email-rric@kernel.org>
+References: <1409903205-2762-1-git-send-email-rric@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 12:19 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Sep 04, 2014 at 11:37:24PM -0700, Luis R. Rodriguez wrote:
-> ...
->> +             /*
->> +              * I got SIGKILL, but wait for 60 more seconds for completion
->> +              * unless chosen by the OOM killer. This delay is there as a
->> +              * workaround for boot failure caused by SIGKILL upon device
->> +              * driver initialization timeout.
->> +              *
->> +              * N.B. this will actually let the thread complete regularly,
->> +              * wait_for_completion() will be used eventually, the 60 second
->> +              * try here is just to check for the OOM over that time.
->> +              */
->> +             WARN_ONCE(!test_thread_flag(TIF_MEMDIE),
->> +                       "Got SIGKILL but not from OOM, if this issue is on probe use .driver.async_probe\n");
->> +             for (i = 0; i < 60 && !test_thread_flag(TIF_MEMDIE); i++)
->> +                     if (wait_for_completion_timeout(&done, HZ))
->> +                             goto wait_done;
->> +
->
-> Ugh... Jesus, this is way too hacky, so now we fail on 90s timeout
-> instead of 30?
+From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
 
-Nope! I fell into the same trap and only with tons of patience by part
-of Tetsuo with me was I able to grok that the 60 seconds here are not
-for increasing the timeout, this is just time spent checking to ensure
-that the OOM wasn't the one who triggered the SIGKILL. Even if the
-drivers took eons it should be fine now, I tried it :D
+Increase maximum numbers of cpus to 32. This relates to current
+maximal possible cpu number. Increasing this to 64 cpus will be a
+separate patch not part of this enablement patches.
 
->  Why do we even need this with the proposed async
-> probing changes?
+Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+Signed-off-by: Robert Richter <rrichter@cavium.com>
+---
+ arch/arm64/Kconfig | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Ah -- well without it the way we "find" drivers that need this new
-"async feature" is by a bug report and folks saying their system can't
-boot, or they say their device doesn't come up. That's all. Tracing
-this to systemd and a timeout was one of the most ugliest things ever.
-There two insane bug reports you can go check:
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index fd4e81a4e1ce..77fb82b0f684 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -134,6 +134,11 @@ source "kernel/Kconfig.freezer"
+ 
+ menu "Platform selection"
+ 
++config ARCH_THUNDER
++	bool "Cavium Inc. Thunder SoC Family"
++	help
++	  This enables support for Cavium's Thunder Family of SoCs.
++
+ config ARCH_VEXPRESS
+ 	bool "ARMv8 software model (Versatile Express)"
+ 	select ARCH_REQUIRE_GPIOLIB
+@@ -256,6 +261,7 @@ config NR_CPUS
+ 	range 2 32
+ 	depends on SMP
+ 	# These have to remain sorted largest to smallest
++	default "32" if ARCH_THUNDER
+ 	default "8"
+ 
+ config HOTPLUG_CPU
+-- 
+2.0.1
 
-mptsas was the first:
-
-http://article.gmane.org/gmane.linux.kernel/1669550
-https://bugs.launchpad.net/ubuntu/+source/systemd/+bug/1297248
-
-Then cxgb4:
-
-https://bugzilla.novell.com/show_bug.cgi?id=877622
-
-I only had Cc'd you on the newest gem pata_marvell :
-
-https://bugzilla.kernel.org/show_bug.cgi?id=59581
-
-We can't seriously expect to be doing all this work for every driver.
-a WARN_ONCE() would enable us to find the drivers that need this new
-async probe "feature".
-
-  Luis
