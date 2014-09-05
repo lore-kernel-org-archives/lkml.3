@@ -1,136 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaIEXnX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:43:23 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:60792 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaIEXnV (ORCPT
+	id S1752547AbaIEXol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:44:41 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:34205 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaIEXoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:43:21 -0400
+	Fri, 5 Sep 2014 19:44:39 -0400
+X-IronPort-AV: E=Sophos;i="5.04,476,1406617200"; 
+   d="scan'208";a="44808749"
+Subject: Re: [PATCH net v6 4/4] tg3: Fix tx_pending checks for tg3_tso_bug
+From: Prashant Sreedharan <prashant@broadcom.com>
+To: Benjamin Poirier <bpoirier@suse.de>
+CC: Michael Chan <mchan@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <1409880647-14887-5-git-send-email-bpoirier@suse.de>
+References: <1409880647-14887-1-git-send-email-bpoirier@suse.de>
+	 <1409880647-14887-5-git-send-email-bpoirier@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 5 Sep 2014 16:35:35 -0700
+Message-ID: <1409960135.18724.33.camel@prashant>
 MIME-Version: 1.0
-In-Reply-To: <20140905234152.GM8080@google.com>
-References: <cover.1408051536.git.luto@amacapital.net> <9b0cfe601627a19901d40053daadbaea025a9a70.1408051536.git.luto@amacapital.net>
- <20140905234152.GM8080@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 5 Sep 2014 16:42:59 -0700
-Message-ID: <CALCETrXM5X=wMAVP7bnc15adyN_muFLn4bbJMJ0g8vCO7RzXdA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Move Intel SNB device ids from sb_edac to pci_ids.h
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Borislav Petkov <bp@alien8.de>, linux-edac@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rui Wang <ruiv.wang@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 4:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Thu, Aug 14, 2014 at 02:45:40PM -0700, Andy Lutomirski wrote:
->> The i2c_imc driver will use two of them, and moving only part of
->> the list seems messier.
->>
->> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
->> Cc: Rui Wang <ruiv.wang@gmail.com>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->
-> Will these IDs actually be used by two drivers by time you're done?  It
-> looks like maybe you're removing them from sb_edac.c and adding them to
-> i2c_imc.c, which would still only be one place.
->
-> But if they will end up being used in more than one place,
->
 
-They will.  Both drivers will need to poke at (different)
-configuration space registers on the same devices.  There's one shared
-register, but that one is read-only.
+>  static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
+>  		       struct netdev_queue *txq, struct sk_buff *skb)
+>  {
+> -	struct sk_buff *segs, *nskb;
+> -	u32 frag_cnt_est = skb_shinfo(skb)->gso_segs * 3;
+> +	unsigned int segs_remaining = skb_shinfo(skb)->gso_segs;
+>  
+> -	/* Estimate the number of fragments in the worst case */
+> -	tg3_maybe_stop_txq(tnapi, txq, frag_cnt_est, frag_cnt_est);
+> -	if (netif_tx_queue_stopped(txq))
+> -		return NETDEV_TX_BUSY;
+> +	if (unlikely(tg3_tx_avail(tnapi) <= segs_remaining)) {
+> +		if (!skb_is_nonlinear(skb) || skb_linearize(skb))
+> +			goto tg3_tso_bug_drop;
+> +		tg3_start_xmit(skb, tp->dev);
 
---Andy
+fyi.. Initially the driver was doing a skb_copy()
+(tigon3_dma_hwbug_workaround()) for LSO skb that met HW bug conditions
+but users started reporting page allocation failures due to copying of
+large LSO skbs. To avoid this Commit 4caab52eb102f1 (tg3: Prevent page
+allocation failure during TSO workaround) changed the driver logic to do
+skb_gso_segment() for LSO skbs that met the HW bug conditions. With
+skb_linearize() we might end up again with memory allocation failures
+for large LSO skbs though at a much less frequent level (ie when TX
+queue is almost full). 
 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
->
->> ---
->>  drivers/edac/sb_edac.c  | 30 ------------------------------
->>  include/linux/pci_ids.h | 15 +++++++++++++++
->>  2 files changed, 15 insertions(+), 30 deletions(-)
->>
->> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
->> index deea0dc9999b..a2597e9313c6 100644
->> --- a/drivers/edac/sb_edac.c
->> +++ b/drivers/edac/sb_edac.c
->> @@ -52,36 +52,6 @@ static int probed;
->>  #define GET_BITFIELD(v, lo, hi)      \
->>       (((v) & GENMASK_ULL(hi, lo)) >> (lo))
->>
->> -/*
->> - * sbridge Memory Controller Registers
->> - */
->> -
->> -/*
->> - * FIXME: For now, let's order by device function, as it makes
->> - * easier for driver's development process. This table should be
->> - * moved to pci_id.h when submitted upstream
->> - */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD0     0x3cf4  /* 12.6 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD1     0x3cf6  /* 12.7 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_BR               0x3cf5  /* 13.6 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0  0x3ca0  /* 14.0 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA   0x3ca8  /* 15.0 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_RAS  0x3c71  /* 15.1 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD0 0x3caa  /* 15.2 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD1 0x3cab  /* 15.3 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD2 0x3cac  /* 15.4 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD3 0x3cad  /* 15.5 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_DDRIO        0x3cb8  /* 17.0 */
->> -
->> -     /*
->> -      * Currently, unused, but will be needed in the future
->> -      * implementations, as they hold the error counters
->> -      */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR0 0x3c72  /* 16.2 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR1 0x3c73  /* 16.3 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR2 0x3c76  /* 16.6 */
->> -#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR3 0x3c77  /* 16.7 */
->> -
->>  /* Devices 12 Function 6, Offsets 0x80 to 0xcc */
->>  static const u32 sbridge_dram_rule[] = {
->>       0x80, 0x88, 0x90, 0x98, 0xa0,
->> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
->> index 7fa31731c854..e0e6801c3d80 100644
->> --- a/include/linux/pci_ids.h
->> +++ b/include/linux/pci_ids.h
->> @@ -2816,7 +2816,22 @@
->>  #define PCI_DEVICE_ID_INTEL_UNC_R2PCIE       0x3c43
->>  #define PCI_DEVICE_ID_INTEL_UNC_R3QPI0       0x3c44
->>  #define PCI_DEVICE_ID_INTEL_UNC_R3QPI1       0x3c45
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_RAS  0x3c71  /* 15.1 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR0 0x3c72  /* 16.2 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR1 0x3c73  /* 16.3 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR2 0x3c76  /* 16.6 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR3 0x3c77  /* 16.7 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0  0x3ca0  /* 14.0 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA   0x3ca8  /* 15.0 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD0 0x3caa  /* 15.2 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD1 0x3cab  /* 15.3 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD2 0x3cac  /* 15.4 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD3 0x3cad  /* 15.5 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_DDRIO        0x3cb8  /* 17.0 */
->>  #define PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX    0x3ce0
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD0     0x3cf4  /* 12.6 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_BR               0x3cf5  /* 13.6 */
->> +#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD1     0x3cf6  /* 12.7 */
->>  #define PCI_DEVICE_ID_INTEL_IOAT_SNB 0x402f
->>  #define PCI_DEVICE_ID_INTEL_5100_16  0x65f0
->>  #define PCI_DEVICE_ID_INTEL_5100_19  0x65f3
->> --
->> 1.9.3
->>
+Also some of the tg3 supported chips like 5719, 57766 have dma_limits of
+4k, 2k respectively so if the LSO skb that gets linearized has size more
+than dma_limit then tg3_tx_frag_set() will consume more descriptors and
+if budget becomes 0 in tg3_tx_frag_set() we end up calling tg3_tso_bug()
+again and eventually dropping the skb, if descriptors do not get freed
+still. Instead the skb can be dropped when we know we do not have enough
+descriptors to handle skb for these chip versions.
+
+> +	} else {
+> +		struct sk_buff *segs, *nskb;
+>  
+> -	segs = skb_gso_segment(skb, tp->dev->features &
+> -				    ~(NETIF_F_TSO | NETIF_F_TSO6));
+> -	if (IS_ERR(segs) || !segs)
+> -		goto tg3_tso_bug_end;
+> +		segs = skb_gso_segment(skb, tp->dev->features &
+> +				       ~(NETIF_F_TSO | NETIF_F_TSO6 |
+> +					 NETIF_F_SG));
+> +		if (IS_ERR(segs) || !segs)
+> +			goto tg3_tso_bug_drop;
+>  
+> -	do {
+> -		nskb = segs;
+> -		segs = segs->next;
+> -		nskb->next = NULL;
+> -		tg3_start_xmit(nskb, tp->dev);
+> -	} while (segs);
+> +		do {
+> +			nskb = segs;
+> +			segs = segs->next;
+> +			nskb->next = NULL;
+> +			if (--segs_remaining)
+> +				__tg3_start_xmit(nskb, tp->dev, segs_remaining);
+> +			else
+> +				tg3_start_xmit(nskb, tp->dev);
+> +		} while (segs);
+>  
+> -tg3_tso_bug_end:
+> +		dev_kfree_skb_any(skb);
+> +	}
+> +
+> +	return NETDEV_TX_OK;
+> +
+> +tg3_tso_bug_drop:
+> +	tp->tx_dropped++;
+>  	dev_kfree_skb_any(skb);
+>  
+>  	return NETDEV_TX_OK;
+> @@ -7895,6 +7908,12 @@ tg3_tso_bug_end:
+>  /* hard_start_xmit for all devices */
+>  static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  {
+> +	return __tg3_start_xmit(skb, dev, MAX_SKB_FRAGS + 1);
+> +}
+> +
+> +static netdev_tx_t __tg3_start_xmit(struct sk_buff *skb,
+> +				    struct net_device *dev, u32 stop_thresh)
+> +{
+>  	struct tg3 *tp = netdev_priv(dev);
+>  	u32 len, entry, base_flags, mss, vlan = 0;
+>  	u32 budget;
+> @@ -8102,7 +8121,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  	tw32_tx_mbox(tnapi->prodmbox, entry);
+>  
+>  	tnapi->tx_prod = entry;
+> -	tg3_maybe_stop_txq(tnapi, txq, MAX_SKB_FRAGS + 1,
+> +	tg3_maybe_stop_txq(tnapi, txq, stop_thresh,
+>  			   TG3_TX_WAKEUP_THRESH(tnapi));
+>  
+>  	mmiowb();
+> @@ -12336,9 +12355,7 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+>  	if ((ering->rx_pending > tp->rx_std_ring_mask) ||
+>  	    (ering->rx_jumbo_pending > tp->rx_jmb_ring_mask) ||
+>  	    (ering->tx_pending > TG3_TX_RING_SIZE - 1) ||
+> -	    (ering->tx_pending <= MAX_SKB_FRAGS + 1) ||
+> -	    (tg3_flag(tp, TSO_BUG) &&
+> -	     (ering->tx_pending <= (MAX_SKB_FRAGS * 3))))
+> +	    (ering->tx_pending <= MAX_SKB_FRAGS + 1))
+>  		return -EINVAL;
+>  
+>  	if (netif_running(dev)) {
 
 
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
