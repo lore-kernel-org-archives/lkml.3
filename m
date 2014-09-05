@@ -1,129 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490AbaIEEtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 00:49:14 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:35345 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750711AbaIEEtM (ORCPT
+	id S1751814AbaIEE7Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 00:59:24 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:38492 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaIEE7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 00:49:12 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <540940B0.5090000@smartplayin.com>
-Date: Fri, 05 Sep 2014 10:18:48 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com
-CC: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: Re: [PATCH] pinctrl: st: Add remove function and remove gpio_chip
- on failure
-References: <1409409935-8775-1-git-send-email-pramod.gurav@smartplayin.com> <5408AA8C.7040100@linaro.org>
-In-Reply-To: <5408AA8C.7040100@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Sep 2014 00:59:22 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Subject: [PATCH v2] perf tools: Fix build-id matching on vmlinux
+Date: Fri,  5 Sep 2014 13:59:17 +0900
+Message-Id: <1409893157-469-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srini,
+There's a problem on finding correct kernel symbols when perf report
+runs on a different kernel.  Although a part of the problem was solved
+by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
+version when finding vmlinux"), there's a remaining problem still.
 
-Thanks for review.
+When perf records samples, it synthesizes the kernel map using
+machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
+You can easily see it using 'perf report -D' command.
 
-On 04-09-2014 11:38 PM, Srinivas Kandagatla wrote:
-> Pramod,
-> sorry for delay in reply as I was travelling, still in Jet lag.
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->> ---
->>   drivers/pinctrl/pinctrl-st.c |   25 +++++++++++++++++++++++++
->>   1 files changed, 25 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
->> index 5475374..9296845 100644
->> --- a/drivers/pinctrl/pinctrl-st.c
->> +++ b/drivers/pinctrl/pinctrl-st.c
->> @@ -1517,6 +1517,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
->>   					   0, handle_simple_irq,
->>   					   IRQ_TYPE_LEVEL_LOW);
->>   		if (err) {
->> +			gpiochip_remove(&bank->gpio_chip);
-> This change-set looks good.
-> IMO, you can send a patch for this change set.
-Will resend just this.
+After finishing record, it goes through the recorded events to find
+maps/dsos actually used.  And then record build-id info of them.
 
-> 
->>   			dev_info(dev, "could not add irqchip\n");
->>   			return err;
->>   		}
->> @@ -1685,6 +1686,29 @@ static int st_pctl_probe(struct platform_device *pdev)
->>   	return 0;
->>   }
->>
-> 
->> +static int st_pctl_remove(struct platform_device *pdev)
->> +{
-> Ideally this driver will not be removed, as other drivers depend on 
-> this, even the serial.
-> 
-> so I see no big achievement in adding the remove functionality, as this 
-> is going to be a dead code and would never be tested.
-> 
->> +	struct st_pinctrl *info = platform_get_drvdata(pdev);
->> +	struct device_node *np = pdev->dev.of_node;
->> +	struct device_node *child;
->> +	struct gpio_chip gpio_chip;
->> +	int bank = 0;
->> +
-> 
->> +	if (info->nbanks) {
->> +		for_each_child_of_node(np, child) {
->> +			if (of_property_read_bool(child, "gpio-controller")) {
-> We should not re-parse the DT nodes once we are done with it in the probe.
-Thanks. :)
-> 
->> +				gpio_chip = info->banks[bank].gpio_chip;
->> +				gpiochip_remove(&gpio_chip);
->> +				bank++;
->> +			}
->> +		}
->> +	}
->> +
-> 
-> I think the logic is very simple:
-> 
-> 	while (nbanks--)
-> 		gpiochip_remove(&info->banks[bank++].gpio_chip))
-Thanks again. Remove is not needed hence will not do this. But good know.
-> 
-> 
-> thanks,
-> srini
->> +	pinctrl_unregister(info->pctl);
->> +
->> +	return 0;
->> +}
->> +
->>   static struct platform_driver st_pctl_driver = {
->>   	.driver = {
->>   		.name = "st-pinctrl",
->> @@ -1692,6 +1716,7 @@ static struct platform_driver st_pctl_driver = {
->>   		.of_match_table = st_pctl_of_match,
->>   	},
->>   	.probe = st_pctl_probe,
->> +	.remove = st_pctl_remove,
->>   };
->>
->>   static int __init st_pctl_init(void)
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+During this process, it needs to load symbols in a dso and it'd call
+dso__load_vmlinux() since the default value of the symbol_conf.try_
+vmlinux_path is true.  However it changes dso->long_name to a real
+path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
+if one is running on a custom kernel.
+
+It resulted in that perf report reads the build-id of the vmlinux, but
+cannot use it since it only knows about the [kernel.kallsyms] map.  It
+then falls back to possible vmlinux paths by using the recorded kernel
+version (in case of a recent version) or a running kernel silently.
+
+Even with the recent tools, this still has a possibility of breaking
+the result.  As the build directory is a symbolic link, if one built a
+new kernel in the same directory with different source/config, the old
+link to vmlinux will point the new file.  So it's absolutely needed to
+use build-id when finding a kernel image.
+
+In this patch, it's now changed to try to search a kernel dso using
+"vmlinux" shortname (which always has a build-id) and, if not found,
+search "[kernel.kallsyms]".
+
+Before:
+
+  $ perf report
+  # Children      Self  Command  Shared Object      Symbol
+  # ........  ........  .......  .................  ...............................
+  #
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] set_curr_task_rt
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] native_calibrate_tsc
+      72.15%     0.00%  swapper  [kernel.kallsyms]  [k] tsc_refine_calibration_work
+      71.87%    71.87%  swapper  [kernel.kallsyms]  [k] module_finalize
+   ...
+
+After (for the same perf.data):
+
+      72.15%     0.00%  swapper  vmlinux  [k] cpu_startup_entry
+      72.15%     0.00%  swapper  vmlinux  [k] arch_cpu_idle
+      72.15%     0.00%  swapper  vmlinux  [k] default_idle
+      71.87%    71.87%  swapper  vmlinux  [k] native_safe_halt
+   ...
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/machine.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index b2ec38bf211e..d9f828f3b54f 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 				strlen(kmmap_prefix));
+ 		/*
+ 		 * Should be there already, from the build-id table in
+-		 * the header.
++		 * the header (but maybe with a different name: "vmlinux").
+ 		 */
+-		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+-						     kmmap_prefix);
++		struct dso *kernel = dsos__find(&machine->kernel_dsos,
++						"vmlinux", true);
++
++		if (kernel == NULL)
++			kernel = __dsos__findnew(&machine->kernel_dsos,
++						 kmmap_prefix);
+ 		if (kernel == NULL)
+ 			goto out_problem;
+ 
+-- 
+2.1.0
+
