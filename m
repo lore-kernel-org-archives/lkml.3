@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539AbaIEB6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 21:58:17 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:41577 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaIEB6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 21:58:15 -0400
-Date: Thu, 4 Sep 2014 20:58:10 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] blk-mq: Cleanup blk_mq_tag_busy() and
- blk_mq_tag_idle()
-Message-ID: <20140904205810.3daf3a87@as>
-In-Reply-To: <5409122A.7020703@kernel.dk>
-References: <cover.1409775956.git.agordeev@redhat.com>
-	<1860c570e5efa8ece323a7ba20f3597bd5e99d25.1409775956.git.agordeev@redhat.com>
-	<54077B91.5040408@kernel.dk>
-	<20140904202654.27f1d9e0@as>
-	<5409122A.7020703@kernel.dk>
+	id S1753080AbaIECJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 22:09:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40864 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961AbaIECJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 22:09:18 -0400
+Message-ID: <54091B30.2090509@zytor.com>
+Date: Thu, 04 Sep 2014 19:08:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>
+CC: Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com>	 <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>	 <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com> <54090AF4.7060406@hurleysoftware.com>
+In-Reply-To: <54090AF4.7060406@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Sep 2014 19:30:18 -0600
-Jens Axboe <axboe@kernel.dk> wrote:
+On 09/04/2014 05:59 PM, Peter Hurley wrote:
+> I have no idea how prevalent the ev56 is compared to the ev5.
+> Still we're talking about a chip that came out in 1996.
 
-> On 09/04/2014 07:26 PM, Chuck Ebbert wrote:
-> > On Wed, 03 Sep 2014 14:35:29 -0600
-> > Jens Axboe <axboe@kernel.dk> wrote:
-> > 
-> >> On 09/03/2014 02:33 PM, Alexander Gordeev wrote:
-> > <snip>
-> >>> diff --git a/block/blk-mq-tag.h b/block/blk-mq-tag.h
-> >>> index 6206ed1..795ec3f 100644
-> >>> --- a/block/blk-mq-tag.h
-> >>> +++ b/block/blk-mq-tag.h
-> >>> @@ -66,23 +66,22 @@ enum {
-> >>>  	BLK_MQ_TAG_MAX		= BLK_MQ_TAG_FAIL - 1,
-> >>>  };
-> >>>  
-> >>> -extern bool __blk_mq_tag_busy(struct blk_mq_hw_ctx *);
-> >>> +extern void __blk_mq_tag_busy(struct blk_mq_hw_ctx *);
-> >>>  extern void __blk_mq_tag_idle(struct blk_mq_hw_ctx *);
-> >>>  
-> >>>  static inline bool blk_mq_tag_busy(struct blk_mq_hw_ctx *hctx)
-> >>>  {
-> >>> -	if (!(hctx->flags & BLK_MQ_F_TAG_SHARED))
-> >>> -		return false;
-> >>> -
-> >>> -	return __blk_mq_tag_busy(hctx);
-> >>> +	if (hctx->flags & BLK_MQ_F_TAG_SHARED) {
-> >>> +		__blk_mq_tag_busy(hctx);
-> >>> +		return true;
-> >>> +	}
-> >>> +	return false;
-> >>>  }
-> >>
-> >> The normal/fast path here is the flag NOT being set, which is why
-> >> it was coded that way to put the fast path inline.
-> >>
-> >>>  
-> >>>  static inline void blk_mq_tag_idle(struct blk_mq_hw_ctx *hctx)
-> >>>  {
-> >>> -	if (!(hctx->flags & BLK_MQ_F_TAG_SHARED))
-> >>> -		return;
-> >>> -
-> >>> -	__blk_mq_tag_idle(hctx);
-> >>> +	if (hctx->flags & BLK_MQ_F_TAG_SHARED)
-> >>> +		__blk_mq_tag_idle(hctx);
-> >>>  }
-> >>
-> >> Ditto
-> > 
-> > Shouldn't it just add unlikely() then? That way it's obvious what
-> > the common case is, instead of relying on convoluted code.
-> 
-> It's a common construct. Besides, if you find a flag-not-set check
-> convoluted, then I hope you are not programming anything I use.
-> That's a bit of a straw man, imho.
-> 
+Ah yes, I stand corrected.  According to Wikipedia, the affected CPUs
+were all the 2106x CPUs (EV4, EV45, LCA4, LCA45) plus the 21164 with no
+suffix (EV5).  However, we're still talking about museum pieces here.
 
-Sure, it's a common construct. But there's nothing there to prevent the
-optimizer from rearranging things any way it pleases. Nor is there
-anything keeping a human from doing the same. ;)
+I wonder what the one I have in my garage is... I'm sure I could emulate
+it faster, though.
+
+	-hpa
+
+
