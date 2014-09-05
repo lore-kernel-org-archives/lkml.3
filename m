@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280AbaIEFrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 01:47:37 -0400
-Received: from ozlabs.org ([103.22.144.67]:49470 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaIEFrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 01:47:35 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ming Lei <ming.lei@canonical.com>, Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        Kick In <pierre-andre.morey@canonical.com>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
-In-Reply-To: <20140903121902.7a9f5a5a@tom-ThinkPad-T410>
-References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com> <20140902162146.GA28741@infradead.org> <5405EF38.60007@kernel.dk> <20140903121902.7a9f5a5a@tom-ThinkPad-T410>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 05 Sep 2014 15:13:49 +0930
-Message-ID: <87bnquk4fe.fsf@rustcorp.com.au>
+	id S1752147AbaIEFsd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 01:48:33 -0400
+Received: from [83.145.59.144] ([83.145.59.144]:58585 "EHLO
+	stoexhub03.domain01.net" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717AbaIEFsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 01:48:31 -0400
+Date: Fri, 5 Sep 2014 07:47:49 +0200
+From: Anders Darander <anders@chargestorm.se>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Matt Fleming <matt@console-pimps.org>,
+        Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Laszlo Ersek <lersek@redhat.com>
+Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
+Message-ID: <20140905054749.GA4498@ad.chargestorm.se>
+References: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
+ <20140904100137.GK3001@console-pimps.org>
+ <5408D299.5000300@zytor.com>
+ <20140904212925.GL3001@console-pimps.org>
+ <CAE9FiQUDLoARj-Z3ipPTf2sZgGn71SxrxM+FqLE1Cyb-OEoP+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUDLoARj-Z3ipPTf2sZgGn71SxrxM+FqLE1Cyb-OEoP+A@mail.gmail.com>
+X-Accept-Language: sv, en, de
+X-GPG-Fingerprint: 5AF0 B2E9 78FE 9D75 D110  6F8F 3E31 84D7 920E 938C
+X-GPG-Key-Id: 0x920E938C
+X-GPG-Keyserver: hkp://keys.gnupg.net
+Organization: ChargeStorm AB
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-GFI-SMTP-Submission: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei <ming.lei@canonical.com> writes:
-> On Tue, 02 Sep 2014 10:24:24 -0600
-> Jens Axboe <axboe@kernel.dk> wrote:
->
->> On 09/02/2014 10:21 AM, Christoph Hellwig wrote:
->> > Btw, one thing we should reconsider is where we set
->> > QUEUE_FLAG_NO_SG_MERGE.  At least for virtio-blk it seems to me that
->> > doing the S/G merge should be a lot cheaper than fanning out into the
->> > indirect descriptors.
->
-> Indirect is always considered first no matter SG merge is off or on,
-> at least from current virtio-blk implementation.
->
-> But it is a good idea to try direct descriptor first, the below simple
-> change can improve randread(libaio, O_DIRECT, multi-queue) 7% in my test,
-> and 77% transfer starts to use direct descriptor, and almost all transfer
-> uses indirect descriptor only in current upstream implementation.
+* Yinghai Lu <yinghai@kernel.org> [140905 03:19]:
 
-Hi Ming!
 
-        In general, we want to use direct descriptors of we have plenty
-of descriptors, and indirect if the ring is going to fill up.  I was
-thinking about this just yesterday, in fact.
+> On Thu, Sep 4, 2014 at 2:29 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> > On Thu, 04 Sep, at 01:59:05PM, H. Peter Anvin wrote:
 
-I've been trying to use EWMA to figure out how full the ring gets, but
-so far it's not working well.  I'm still hacking on a solution though,
-and your thoughts would be welcome.
+> >> I am fine with this patch, but at the same time I do want to note that
+> >> there is an alternative to double-buffer the patch and/or (if that
+> >> applies to the buggy BIOS) round up the size of the target buffer.
+
+> > I'm not sure that rounding up the size of the target buffer will
+> > workaround this issue correctly.
+
+> > As far as I know, the only thing that Mantas tried was rounding up the
+> > size of the source file, by padding it.
+
+> Can you try attached patch on top of linus tree?
+
+I took the liberty to test the patch on my Dell XPS13 9333, and
+unfortunately I got the old hang back. 
+
+This was tested on the current Linus' tree.
 
 Cheers,
-Rusty.
+Anders Darander
+
+> -					chunksize = size;
+> +					chunksize = round_up(size, EFI_PAGE_SIZE);
+
+
+
+-- 
+It usually takes more than three weeks to prepare a good impromptu speech.
+		-- Mark Twain
