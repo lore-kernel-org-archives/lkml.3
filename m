@@ -1,202 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357AbaIEMsy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:48:54 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:40679 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094AbaIEMsv (ORCPT
+	id S932356AbaIEMw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:52:58 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:48461 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932172AbaIEMw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:48:51 -0400
+	Fri, 5 Sep 2014 08:52:56 -0400
+Message-ID: <5409B20B.30105@linaro.org>
+Date: Fri, 05 Sep 2014 14:52:27 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1409899692-1455-3-git-send-email-rric@kernel.org>
-References: <1409899692-1455-1-git-send-email-rric@kernel.org> <1409899692-1455-3-git-send-email-rric@kernel.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 5 Sep 2014 07:48:30 -0500
-Message-ID: <CAL_Jsq+NYU9c0Jw8DX_iH6G5_9tom9DGcP548q4tKQsdkb-s0A@mail.gmail.com>
-Subject: Re: [PATCH 2/6] dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
-To: Robert Richter <rric@kernel.org>
-Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
+        paulus@samba.org, gleb@kernel.org, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com
+Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
+References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org> <1409691941.3804.133.camel@ul30vt.home>
+In-Reply-To: <1409691941.3804.133.camel@ul30vt.home>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 1:48 AM, Robert Richter <rric@kernel.org> wrote:
-> From: Robert Richter <rrichter@cavium.com>
->
-> Move dtbs install rules to Makefile.dtbinst. This change is needed to
-> implement support for dts vendor subdirs. The change makes Makefiles
-> easier and smaller as no longer the dtbs_install rule needs to be
-> defined. Another advantage is that install goals are not encoded in
-> targets anymore (%.dtb_dtbinst_).
->
-> Signed-off-by: Robert Richter <rrichter@cavium.com>
-> ---
->  arch/arm/Makefile            |  6 +++++-
->  arch/arm/boot/dts/Makefile   |  2 --
->  arch/arm64/Makefile          |  6 +++++-
->  arch/arm64/boot/dts/Makefile |  2 --
->  scripts/Kbuild.include       |  6 ++++++
->  scripts/Makefile.dtbinst     | 38 ++++++++++++++++++++++++++++++++++++++
->  scripts/Makefile.lib         | 12 ------------
->  7 files changed, 54 insertions(+), 18 deletions(-)
->  create mode 100644 scripts/Makefile.dtbinst
->
-> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> index 0ce9d0f71f2a..1963d9a9a2c4 100644
-> --- a/arch/arm/Makefile
-> +++ b/arch/arm/Makefile
-> @@ -313,9 +313,13 @@ $(BOOT_TARGETS): vmlinux
->         $(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
->
->  PHONY += dtbs dtbs_install
-> -dtbs dtbs_install: prepare scripts
-> +
-> +dtbs: prepare scripts
->         $(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
->
-> +dtbs_install:
-> +       $(Q)$(MAKE) $(dtbinst)=$(boot)/dts MACHINE=$(MACHINE)
+On 09/02/2014 11:05 PM, Alex Williamson wrote:
+> On Mon, 2014-09-01 at 14:52 +0200, Eric Auger wrote:
+>> This RFC proposes an integration of "ARM: Forwarding physical
+>> interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
+>> KVM.
+>>
+>> It enables to transform a VFIO platform driver IRQ into a forwarded
+>> IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
+>> switch can be avoided on guest virtual IRQ completion. Before this
+>> patch, a maintenance IRQ was triggered on the virtual IRQ completion.
+>>
+>> When the IRQ is forwarded, the VFIO platform driver does not need to
+>> disable the IRQ anymore. Indeed when returning from the IRQ handler
+>> the IRQ is not deactivated. Only its priority is lowered. This means
+>> the same IRQ cannot hit before the guest completes the virtual IRQ
+>> and the GIC automatically deactivates the corresponding physical IRQ.
+>>
+>> Besides, the injection still is based on irqfd triggering. The only
+>> impact on irqfd process is resamplefd is not called anymore on
+>> virtual IRQ completion since this latter becomes "transparent".
+>>
+>> The current integration is based on an extension of the KVM-VFIO
+>> device, previously used by KVM to interact with VFIO groups. The
+>> patch serie now enables KVM to directly interact with a VFIO
+>> platform device. The VFIO external API was extended for that purpose.
+>>
+>> Th KVM-VFIO device can get/put the vfio platform device, check its
+>> integrity and type, get the IRQ number associated to an IRQ index.
+>>
+>> The IRQ forward programming is architecture specific (virtual interrupt
+>> controller programming basically). However the whole infrastructure is
+>> kept generic.
+>>
+>> from a user point of view, the functionality is provided through new
+>> KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
+>> and the capability can be checked with KVM_HAS_DEVICE_ATTR.
+>> Assignment can only be changed when the physical IRQ is not active.
+>> It is the responsability of the user to do this check.
+>>
+>> This patch serie has the following dependencies:
+>> - "ARM: Forwarding physical interrupts to a guest VM"
+>>   (http://lwn.net/Articles/603514/) in
+>> - [PATCH v3] irqfd for ARM
+>> - and obviously the VFIO platform driver serie:
+>>   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
+>>   https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
+>>
+>> Integrated pieces can be found at
+>> ssh://git.linaro.org/people/eric.auger/linux.git
+>> on branch 3.17rc3_irqfd_forward_integ_v2
+>>
+>> This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
+>>
+>> v1 -> v2:
+>> - forward control is moved from architecture specific file into generic
+>>   vfio.c module.
+>>   only kvm_arch_set_fwd_state remains architecture specific
+>> - integrate Kim's patch which enables KVM-VFIO for ARM
+>> - fix vgic state bypass in vgic_queue_hwirq
+>> - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
+>>   to include/uapi/linux/kvm.h
+>>   also irq_index renamed into index and guest_irq renamed into gsi
+>> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
+>> - vfio_external_get_base_device renamed into vfio_external_base_device
+>> - vfio_external_get_type removed
+>> - kvm_vfio_external_get_base_device renamed into kvm_vfio_external_base_device
+>> - __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
+>>
+>> Eric Auger (8):
+>>   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
+>>     IRQ
+>>   KVM: ARM: VGIC: add forwarded irq rbtree lock
+>>   VFIO: platform: handler tests whether the IRQ is forwarded
+>>   KVM: KVM-VFIO: update user API to program forwarded IRQ
+>>   VFIO: Extend external user API
+>>   KVM: KVM-VFIO: add new VFIO external API hooks
+>>   KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ forwarding
+>>     control
+>>   KVM: KVM-VFIO: ARM forwarding control
+>>
+>> Kim Phillips (1):
+>>   ARM: KVM: Enable the KVM-VFIO device
+>>
+>>  Documentation/virtual/kvm/devices/vfio.txt |  26 ++
+>>  arch/arm/include/asm/kvm_host.h            |   7 +
+>>  arch/arm/kvm/Kconfig                       |   1 +
+>>  arch/arm/kvm/Makefile                      |   4 +-
+>>  arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
+>>  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
+>>  drivers/vfio/vfio.c                        |  24 ++
+>>  include/kvm/arm_vgic.h                     |   1 +
+>>  include/linux/kvm_host.h                   |  27 ++
+>>  include/linux/vfio.h                       |   3 +
+>>  include/uapi/linux/kvm.h                   |   9 +
+>>  virt/kvm/arm/vgic.c                        |  59 +++-
+>>  virt/kvm/vfio.c                            | 497 ++++++++++++++++++++++++++++-
+>>  13 files changed, 733 insertions(+), 17 deletions(-)
+>>  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
+>>
+> 
+> Have we ventured too far in the other direction?  I suppose what I was
+> hoping to see was something more like:
+> 
+> 	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:{
+> 
+> 		/* get vfio_device */
+> 
+> 		/* get mutex */
+> 
+> 		/* verify device+irq isn't already forwarded */
+> 
+> 		/* allocate device/forwarded irq */
+> 
+> 		/* get struct device */
+> 
+> 		/* callout to arch code passing struct device, gsi, ... */
+> 
+> 		/* if success, add to kv, else free and error */
+> 
+> 		/* mutex unlock */
+> 	}
+> 
+> Exposing the internal mutex out to arch code, as in v1, was an
+> indication that we were pushing too much out to arch code, but including
+> platform_device.h into virt/kvm/vfio.c tells me we're still not
+> abstracting at the right point.  Thanks,
+Hi Alex,
 
-Can't you get rid of MACHINE here, too?
+Yes it makes sense. I will rework the patch in this direction.
 
-Rob
+Thanks
 
-> +
->  # We use MRPROPER_FILES and CLEAN_FILES now
->  archclean:
->         $(Q)$(MAKE) $(clean)=$(boot)
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index b8c5cd3ddeb9..ab40afb87fb2 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -502,5 +502,3 @@ dtbs: $(addprefix $(obj)/, $(dtb-y))
->         $(Q)rm -f $(obj)/../*.dtb
->
->  clean-files := *.dtb
-> -
-> -dtbs_install: $(addsuffix _dtbinst_, $(dtb-y))
-> diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-> index e0a8292bc832..1627861e9bbd 100644
-> --- a/arch/arm64/Makefile
-> +++ b/arch/arm64/Makefile
-> @@ -72,9 +72,13 @@ zinstall install: vmlinux
->         $(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
->
->  PHONY += dtbs dtbs_install
-> -dtbs dtbs_install: prepare scripts
-> +
-> +dtbs: prepare scripts
->         $(Q)$(MAKE) $(build)=$(boot)/dts $@
->
-> +dtbs_install:
-> +       $(Q)$(MAKE) $(dtbinst)=$(boot)/dts
-> +
->  PHONY += vdso_install
->  vdso_install:
->         $(Q)$(MAKE) $(build)=arch/arm64/kernel/vdso $@
-> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-> index 82e1c4cf8780..0a14c3828301 100644
-> --- a/arch/arm64/boot/dts/Makefile
-> +++ b/arch/arm64/boot/dts/Makefile
-> @@ -7,5 +7,3 @@ targets += $(dtb-y)
->  dtbs: $(addprefix $(obj)/, $(dtb-y))
->
->  clean-files := *.dtb
-> -
-> -dtbs_install: $(addsuffix _dtbinst_, $(dtb-y))
-> diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-> index 8a9a4e1c7eab..861f5b4d48a2 100644
-> --- a/scripts/Kbuild.include
-> +++ b/scripts/Kbuild.include
-> @@ -179,6 +179,12 @@ build := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.build obj
->  # $(Q)$(MAKE) $(modbuiltin)=dir
->  modbuiltin := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.modbuiltin obj
->
-> +###
-> +# Shorthand for $(Q)$(MAKE) -f scripts/Makefile.dtbinst obj=
-> +# Usage:
-> +# $(Q)$(MAKE) $(dtbinst)=dir
-> +dtbinst := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.dtbinst obj
-> +
->  # Prefix -I with $(srctree) if it is not an absolute path.
->  # skip if -I has no parameter
->  addtree = $(if $(patsubst -I%,%,$(1)), \
-> diff --git a/scripts/Makefile.dtbinst b/scripts/Makefile.dtbinst
-> new file mode 100644
-> index 000000000000..54286cccc289
-> --- /dev/null
-> +++ b/scripts/Makefile.dtbinst
-> @@ -0,0 +1,38 @@
-> +# ==========================================================================
-> +# Installing dtb files
-> +#
-> +# Installs all dtb files listed in $(dtb-y) either in the
-> +# INSTALL_DTBS_PATH directory or the default location:
-> +#
-> +#   $INSTALL_PATH/dtbs/$KERNELRELEASE
-> +#
-> +# ==========================================================================
-> +
-> +src := $(obj)
-> +
-> +PHONY := __dtbs_install
-> +__dtbs_install:
-> +
-> +include include/config/auto.conf
-> +include scripts/Kbuild.include
-> +include $(srctree)/$(obj)/Makefile
-> +
-> +PHONY += __dtbs_install_prep
-> +__dtbs_install_prep:
-> +       $(Q)if [ -d $(INSTALL_DTBS_PATH).old ]; then rm -rf $(INSTALL_DTBS_PATH).old; fi
-> +       $(Q)if [ -d $(INSTALL_DTBS_PATH) ]; then mv $(INSTALL_DTBS_PATH) $(INSTALL_DTBS_PATH).old; fi
-> +       $(Q)mkdir -p $(INSTALL_DTBS_PATH)
-> +
-> +dtbinst-files  := $(dtb-y)
-> +
-> +# Helper targets for Installing DTBs into the boot directory
-> +quiet_cmd_dtb_install =        INSTALL $<
-> +      cmd_dtb_install =        cp $< $(2)
-> +
-> +$(dtbinst-files): %.dtb: $(obj)/%.dtb | __dtbs_install_prep
-> +       $(call cmd,dtb_install,$(INSTALL_DTBS_PATH))
-> +
-> +PHONY += $(dtbinst-files)
-> +__dtbs_install: $(dtbinst-files)
-> +
-> +.PHONY: $(PHONY)
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 260bf8acfce9..83a453794266 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -274,18 +274,6 @@ $(obj)/%.dtb: $(src)/%.dts FORCE
->
->  dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
->
-> -# Helper targets for Installing DTBs into the boot directory
-> -quiet_cmd_dtb_install =        INSTALL $<
-> -      cmd_dtb_install =        cp $< $(2)
-> -
-> -_dtbinst_pre_:
-> -       $(Q)if [ -d $(INSTALL_DTBS_PATH).old ]; then rm -rf $(INSTALL_DTBS_PATH).old; fi
-> -       $(Q)if [ -d $(INSTALL_DTBS_PATH) ]; then mv $(INSTALL_DTBS_PATH) $(INSTALL_DTBS_PATH).old; fi
-> -       $(Q)mkdir -p $(INSTALL_DTBS_PATH)
-> -
-> -%.dtb_dtbinst_: $(obj)/%.dtb _dtbinst_pre_
-> -       $(call cmd,dtb_install,$(INSTALL_DTBS_PATH))
-> -
->  # Bzip2
->  # ---------------------------------------------------------------------------
->
-> --
-> 2.0.1
->
+Eric
+> 
+> Alex
+> 
+
