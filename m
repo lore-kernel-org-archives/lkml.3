@@ -1,94 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaIEQAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:00:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52549 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaIEQAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:00:37 -0400
-Message-ID: <5409DE22.3070506@suse.de>
-Date: Fri, 05 Sep 2014 18:00:34 +0200
-From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752465AbaIEQAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:00:48 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:58986 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaIEQAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 12:00:45 -0400
+Date: Fri, 5 Sep 2014 20:00:29 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+Message-ID: <20140905160029.GF25641@esperanza>
+References: <20140904143055.GA20099@esperanza>
+ <5408E1CD.3090004@jp.fujitsu.com>
+ <20140905082846.GA25641@esperanza>
+ <5409C6BB.7060009@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Georgi Djakov <gdjakov@mm-sol.com>, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, iivanov@mm-sol.com
-Subject: Re: [PATCH v3] ARM: dts: qcom: Add initial IFC6540 board device tree
-References: <1409763031-16873-1-git-send-email-gdjakov@mm-sol.com> <5409C803.8060007@suse.de> <070D3E01-139E-4EC2-928F-31B8CA5E1BD7@codeaurora.org>
-In-Reply-To: <070D3E01-139E-4EC2-928F-31B8CA5E1BD7@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5409C6BB.7060009@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.09.2014 17:20, schrieb Kumar Gala:
-> On Sep 5, 2014, at 9:26 AM, Andreas Färber <afaerber@suse.de> wrote:
->> Am 03.09.2014 18:50, schrieb Georgi Djakov:
->>> diff --git a/arch/arm/boot/dts/qcom-apq8084.dtsi b/arch/arm/boot/dts/qcom-apq8084.dtsi
->>> index 21d01e5..1f130bc 100644
->>> --- a/arch/arm/boot/dts/qcom-apq8084.dtsi
->>> +++ b/arch/arm/boot/dts/qcom-apq8084.dtsi
->>> @@ -3,6 +3,7 @@
->>> #include "skeleton.dtsi"
->>>
->>> #include <dt-bindings/clock/qcom,gcc-apq8084.h>
->>> +#include <dt-bindings/gpio/gpio.h>
->>>
->>> / {
->>> 	model = "Qualcomm APQ 8084";
->>> @@ -203,5 +204,27 @@
->>> 			clock-names = "core", "iface";
->>> 			status = "disabled";
->>> 		};
->>> +
->>> +		sdhci@f9824900 {
->>> +			compatible = "qcom,sdhci-msm-v4";
->>> +			reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
->>> +			reg-names = "hc_mem", "core_mem";
->>> +			interrupts = <0 123 0>, <0 138 0>;
->>
->> I see that you've used GPIO_ACTIVE_* above. Is the trailing zero here
->> possibly IRQ_TYPE_NONE?
->>
->>> +			interrupt-names = "hc_irq", "pwr_irq";
->>> +			clocks = <&gcc GCC_SDCC1_APPS_CLK>, <&gcc GCC_SDCC1_AHB_CLK>;
->>> +			clock-names = "core", "iface";
->>> +			status = "disabled";
->>> +		};
->>> +
->>> +		sdhci@f98a4900 {
->>> +			compatible = "qcom,sdhci-msm-v4";
->>> +			reg = <0xf98a4900 0x11c>, <0xf98a4000 0x800>;
->>> +			reg-names = "hc_mem", "core_mem";
->>> +			interrupts = <0 125 0>, <0 221 0>;
->>> +			interrupt-names = "hc_irq", "pwr_irq";
->>> +			clocks = <&gcc GCC_SDCC2_APPS_CLK>, <&gcc GCC_SDCC2_AHB_CLK>;
->>> +			clock-names = "core", "iface";
->>> +			status = "disabled";
->>> +		};
->>
->> If you assign labels to these two nodes, you can reference them in the
->> .dts as &labelname {...};. Same for the uart node. That avoids
->> duplicating the hierarchy, detects spelling mistakes at compile time and
->> reduces indentation. Cf. the recent ifc6410 patch.
+On Fri, Sep 05, 2014 at 11:20:43PM +0900, Kamezawa Hiroyuki wrote:
+> Basically, I don't like OOM Kill. Anyone don't like it, I think.
 > 
-> Got no issues with introducing the labels, but I’d like to keep the hierarchy in the .dts file.
+> In recent container use, application may be build as "stateless" and
+> kill-and-respawn may not be problematic, but I think killing "a" process
+> by oom-kill is too naive.
+> 
+> If your proposal is triggering notification to user space at hitting
+> anon+swap limit, it may be useful.
+> ...Some container-cluster management software can handle it.
+> For example, container may be restarted.
+> 
+> Memcg has threshold notifier and vmpressure notifier.
+> I think you can enhance it.
+[...]
+> My point is that "killing a process" tend not to be able to fix the situation.
+> For example, fork-bomb by "make -j" cannot be handled by it.
+> 
+> So, I don't want to think about enhancing OOM-Kill. Please think of better
+> way to survive. With the help of countainer-management-softwares, I think
+> we can have several choices.
+> 
+> Restart contantainer (killall) may be the best if container app is stateless.
+> Or container-management can provide some failover.
 
-Any explanation why? The Samsung guys have been very strict to adopt
-this new style, with inherited nodes sorted alphabetically after / {};,
-and the ifc6540 is a new .dts we could apply the new pattern to.
+The problem I'm trying to set out is not about OOM actually (sorry if
+the way I explain is confusing). We could probably configure OOM to kill
+a whole cgroup (not just a process) and/or improve user-notification so
+that the userspace could react somehow. I'm sure it must and will be
+discussed one day.
 
-But if you don't reference the node anywhere, there's no real benefit to
-adding a label in the first place. It can still be done once needed.
+The problem is that *before* invoking OOM on *global* pressure we're
+trying to reclaim containers' memory and if there's progress we won't
+invoke OOM. This can result in a huge slow down of the whole system (due
+to swap out).
 
-Andreas
+And if we want to fully make use of soft limits, we currently have no
+means to limit anon memory at all. It's just impossible, because
+memsw.limit must be > soft limit, otherwise it makes no sense. So we
+will be trying to swap out under global pressure until we finally
+realize there's no point in it and call OOM. If we don't, we'll be
+suffering until the load goes away by itself.
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+> The 1st reason we added memsw.limit was for avoiding that the whole swap
+> is used up by a cgroup where memory-leak of forkbomb running and not for
+> some intellegent controls.
+> 
+> From your opinion, I feel what you want is avoiding charging against page-caches.
+> But thiking docker at el, page-cache is not shared between containers any more.
+> I think "including cache" makes sense.
+
+Not exactly. It's not about sharing caches among containers. The point
+is (1) it's difficult to estimate the size of file caches that will max
+out the performance of a container, and (2) a typical workload will
+perform better and put less pressure on disk if it has more caches.
+
+Now imagine a big host running a small number of containers and
+therefore having a lot of free memory most of time, but still
+experiencing load spikes once an hour/day/whatever when memory usage
+raises up drastically. It'd be unwise to set hard limits for those
+containers that are running regularly, because they'd probably perform
+much better if they had more file caches. So the admin decides to use
+soft limits instead. He is forced to use memsw.limit > the soft limit,
+but this is unsafe, because the container may eat anon memory up to
+memsw.limit then, and anon memory isn't easy to get rid of when it comes
+to the global pressure. If the admin had a mean to limit swappable
+memory, he could avoid it. This is what I was trying to illustrate by
+the example in the first e-mail of this thread.
+
+Note if there were no soft limits, the current setup would be just fine,
+otherwise it fails. And soft limits are proved to be useful AFAIK.
+
+Thanks,
+Vladimir
