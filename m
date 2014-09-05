@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871AbaIEPXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:23:53 -0400
-Received: from smtp-out-239.synserver.de ([212.40.185.239]:1063 "EHLO
-	smtp-out-239.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804AbaIEPXv (ORCPT
+	id S932815AbaIEPZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:25:13 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:34024 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289AbaIEPZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:23:51 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 27007
-Message-ID: <5409D585.1040302@metafoo.de>
-Date: Fri, 05 Sep 2014 17:23:49 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	Fri, 5 Sep 2014 11:25:11 -0400
+Message-ID: <5409D5D0.8060801@acm.org>
+Date: Fri, 05 Sep 2014 17:25:04 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [RFC PATCH] dma: pl330: add Power Management support
-References: <1409929562-29583-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1409929562-29583-1-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: dgilbert@interlog.com, Christoph Hellwig <hch@infradead.org>
+CC: SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Milan Broz <gmazyland@gmail.com>
+Subject: Re: [PATCH] scsi_debug: deadlock between completions and surprise
+ module removal
+References: <5403AB47.3040706@interlog.com> <20140905052402.GA27094@infradead.org> <5409C116.5060702@interlog.com>
+In-Reply-To: <5409C116.5060702@interlog.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 05:06 PM, Krzysztof Kozlowski wrote:
-[...]
-> @@ -2168,11 +2199,23 @@ static void pl330_issue_pending(struct dma_chan *chan)
->   {
->   	struct dma_pl330_chan *pch = to_pchan(chan);
->   	unsigned long flags;
-> +	bool power_up;
+On 09/05/14 15:56, Douglas Gilbert wrote:
+> With scsi-mq I think many LLDs probably have a new
+> race possibility between a surprise rmmod of the LLD
+> and another thread presenting a new command at about
+> the same time (or another thread's command completing
+> around that time). Does anything above the LLD stop
+> this happening?
 >
->   	spin_lock_irqsave(&pch->lock, flags);
-> +	power_up = list_empty(&pch->work_list);
->   	list_splice_tail_init(&pch->submitted_list, &pch->work_list);
->   	spin_unlock_irqrestore(&pch->lock, flags);
+> Looking at mpt3sas and hpsa module exit calls, they don't
+> seem to guard against this possibility.
 >
-> +	if (power_up) {
-> +		/*
-> +		 * Warn on nothing pending. This may break our pm_runtime
-> +		 * usage counter as it is updated on work_list emptiness
-> +		 * status.
-> +		 */
-> +		WARN_ON(list_empty(&pch->work_list));
-> +		pm_runtime_get_sync(pch->dmac->ddma.dev);
+> The test is pretty easy: build the LLD as a module, load
+> it and fire up a multi-thread, libaio fio test on one or
+> more devices (SSDs would probably be good) on that LLD.
+> While the test is running, do 'rmmod LLD'.
 
-Unfortunately this does not work. pm_runtime_get_sync() may sleep, where as 
-the issue_pending callback needs to be able to run from contexts in which 
-sleeping is not possible.
+An LLD must call scsi_remove_host() directly or indirectly from the 
+module cleanup path. scsi_remove_host() triggers a call to 
+blk_cleanup_queue(). That last function sets the flag QUEUE_FLAG_DYING 
+which prevents that new I/O is queued and waits until previously queued 
+requests have finished before returning.
 
-> +	}
-> +
->   	pl330_tasklet((unsigned long)pch);
->   }
->
-[...]
+Bart.
+
