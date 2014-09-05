@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634AbaIEQRa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:17:30 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37671 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750775AbaIEQR0 (ORCPT
+	id S1751770AbaIEQTU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:19:20 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:50111 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaIEQTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:17:26 -0400
-Message-ID: <5409E20C.3050004@hurleysoftware.com>
-Date: Fri, 05 Sep 2014 12:17:16 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 5 Sep 2014 12:19:19 -0400
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>,
-        "'paulmck@linux.vnet.ibm.com'" <paulmck@linux.vnet.ibm.com>
-CC: Jakub Jelinek <jakub@redhat.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>,
-        "linux-arm@vger.kernel.org" <linux-arm@vger.kernel.org>
-Subject: Re: bit fields && data tearing
-References: <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <21512.10628.412205.873477@gargle.gargle.HOWL> <20140904090952.GW17454@tucnak.redhat.com> <540859EC.5000407@hurleysoftware.com> <20140904175044.4697aee4@alan.etchedpixels.co.uk> <5408C0AB.6050801@hurleysoftware.com> <20140905001751.GL5001@linux.vnet.ibm.com> <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com> <20140905040645.GO5001@linux.vnet.ibm.com> <063D6719AE5E284EB5DD2968C1650D6D17487F66@AcuExch.aculab.com> <5409AD0A.5090305@hurleysoftware.com> <063D6719AE5E284EB5DD2968C1650D6D17488265@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17488265@AcuExch.aculab.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+In-Reply-To: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
+Date: Fri, 5 Sep 2014 09:19:17 -0700
+Message-ID: <CAMEtUuwx12Df79KV6kG+5eGJ=zH4XQ8+rpnst9WKT1oueYZTkQ@mail.gmail.com>
+Subject: Re: [PATCH] bpf: fix a false positive kmemcheck warning
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 08:37 AM, David Laight wrote:
-> From: Peter Hurley
->> On 09/05/2014 04:30 AM, David Laight wrote:
->>> I've seen gcc generate 32bit accesses for 16bit structure members on arm.
->>> It does this because of the more limited range of the offsets for the 16bit access.
->>> OTOH I don't know if it ever did this for writes - so it may be moot.
->>
->> Can you recall the particulars, like what ARM config or what code?
->>
->> I tried an overly-simple test to see if gcc would bump up to the word load for
->> the 12-bit offset mode, but it stuck with register offset rather than immediate
->> offset. [I used the compiler options for allmodconfig and a 4.8 cross-compiler.]
->>
->> Maybe the test doesn't generate enough register pressure on the compiler?
-> 
-> Dunno, I would have been using a much older version of the compiler.
-> It is possible that it doesn't do it any more.
-> It might only have done it for loads.
-> 
-> The compiler used to use misaligned 32bit loads for structure
-> members on large 4n+2 byte boundaries as well.
-> I'm pretty sure it doesn't do that either.
-> 
-> There have been a lot of compiler versions since I was compiling
-> anything for arm.
+On Fri, Sep 5, 2014 at 9:01 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> This patch fixes false positive kmemcheck warning in bpf.
+>
+> When we try to write the variable len, the compiler generates a code that
+> reads the 32-bit word, modifies the bits belonging to "len" and writes the
+> 32-bit word back. The reading of the word results in kmemcheck warning due
+> to reading uninitialized memory. This patch fixes it by avoiding using bit
+> fields when kmemcheck is enabled.
 
-Yeah, it seems gcc for ARM no longer uses the larger operand size as a
-substitute for 12-bit immediate offset addressing mode, even for reads.
+It will conflict with pending Hannes's patch.
+Once it's in, I can rebase and actually make it unconditional.
+These bit savings probably not worth it, since bpf_prog is
+dominated by program anyway.
 
-While this test:
+JITs would need to be updated as well, since they're now do
+->jited = 1;
+I can fix this all up.
+Do you mind sharing the kmemcheck warning you see?
 
-struct x {
-	short b[12];
-};
+> Index: linux-2.6/include/linux/filter.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/filter.h       2014-09-04 23:04:26.000000000 +0200
+> +++ linux-2.6/include/linux/filter.h    2014-09-04 23:43:05.000000000 +0200
 
-short load_b(struct x *p) {
-	return p->b[8];
-}
+why diff says 2.6 ? Kinda odd.
 
-generates the 8-bit immediate offset form,
-
-short load_b(struct x *p) {
-   0:	e1d001f0 	ldrsh	r0, [r0, #16]
-   4:	e12fff1e 	bx	lr
-
-
-pushing the offset out past 256:
-
-struct x {
-	long unused[64];
-	short b[12];
-};
-
-short load_b(struct x *p) {
-	return p->b[8];
-}
-
-generates the register offset addressing mode instead of 12-bit immediate:
-
-short load_b(struct x *p) {
-   0:	e3a03e11 	mov	r3, #272	; 0x110
-   4:	e19000f3 	ldrsh	r0, [r0, r3]
-   8:	e12fff1e 	bx	lr
-
-Regards,
-Peter Hurley
-
-[Note: I compiled without the frame pointer to simplify the code generation]
+> @@ -325,8 +325,13 @@ struct sock;
+>  struct seccomp_data;
+>
+>  struct bpf_prog {
+> +#ifdef CONFIG_KMEMCHECK
+> +       bool                    jited;
+> +       u32                     len;
+> +#else
+>         u32                     jited:1,        /* Is our filter JIT'ed? */
+>                                 len:31;         /* Number of filter blocks */
+> +#endif
+>         struct sock_fprog_kern  *orig_prog;     /* Original BPF program */
+>         unsigned int            (*bpf_func)(const struct sk_buff *skb,
+>                                             const struct bpf_insn *filter);
