@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734AbaIEOiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:38:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45389 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757144AbaIEOiG (ORCPT
+	id S932789AbaIEOjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:39:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50635 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932708AbaIEOjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:38:06 -0400
-Message-ID: <5409CA9E.2060807@arm.com>
-Date: Fri, 05 Sep 2014 15:37:18 +0100
-From: Andre Przywara <andre.przywara@arm.com>
-Organization: ARM Ltd.
+	Fri, 5 Sep 2014 10:39:08 -0400
+Message-ID: <5409CAFD.90206@oracle.com>
+Date: Fri, 05 Sep 2014 10:38:53 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC PATCH 1/1] drivers: introduce ARM SBSA generic UART driver
-References: <1409328803-1953-1-git-send-email-andre.przywara@arm.com> <540596A6.8000608@arm.com> <CAL_Jsq+Rs5MXC7s7EeWAEAPxxqaShAVGt=cdQxud5Us+-Zp6jw@mail.gmail.com> <3749748.k4a1nSHDdj@wuerfel> <CAL_JsqKGbSd5BymnFhT8KBjbBCPO8wsrHhG9Qn20c7mrrxTDDA@mail.gmail.com>
-In-Reply-To: <CAL_JsqKGbSd5BymnFhT8KBjbBCPO8wsrHhG9Qn20c7mrrxTDDA@mail.gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: mm: invalid memory deref in page_get_anon_vma
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+Hi all,
 
-On 02/09/14 18:38, Rob Herring wrote:
-> On Tue, Sep 2, 2014 at 8:48 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Tuesday 02 September 2014 08:20:53 Rob Herring wrote:
->>>>>
->>>>> This alone is not okay. There is no such implementation of hardware.
->>>>
->>>> But the SBSA explicitly allows this. I don't know of any vendor who just
->>>> implements the subset, but I've been told that this has been asked for.
->>>
->>> To use baudrate as an example, that must be configurable somehow
->>> either with pl011 registers or in a vendor specific way. I suppose you
->>> could do an actual implementation with all those things hardcoded in
->>> the design, but that seems unlikely.
->>
->> Why does the baudrate need to be configurable? I think it's completely
->> reasonable to specify a console port that has a fixed (as in the
->> OS must not care) rate, and that can be implemented either as a UART
->> with a programmable rate or as a set of registers that directly talks
->> to a remote system management device over whatever hardware protocol
->> they choose.
-> 
-> Sure. It is also completely reasonable that baudrate is configurable
-> and vendors can implement it however they choose since the SBSA does
-> not specify it.
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel, I've stumbled on the following spew:
 
-But this would be a different driver for a different hardware then and
-not covered by the SBSA version - so to some degree not our problem ;-)
-I don't see how we could really cover this problem for every possibly
-upcoming implementation.
+[12191.987737] BUG: unable to handle kernel paging request at ffff88035615eca8
+[12191.988865] IP: page_get_anon_vma (./arch/x86/include/asm/atomic.h:27 ./arch/x86/include/asm/atomic.h:197 include/linux/atomic.h:17 mm/rmap.c:417)
+[12191.990071] PGD 2ed4b067 PUD 9753bd067 PMD 97530c067 PTE 800000035615e060
+[12191.991578] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[12191.991578] Dumping ftrace buffer:
+[12191.991578]    (ftrace buffer empty)
+[12191.991578] Modules linked in:
+[12191.991578] CPU: 5 PID: 3079 Comm: khugepaged Not tainted 3.17.0-rc3-next-20140903-sasha-00034-g33e7ae9 #1108
+[12191.991578] task: ffff8802729f3000 ti: ffff880272b0c000 task.ti: ffff880272b0c000
+[12191.991578] RIP: page_get_anon_vma (./arch/x86/include/asm/atomic.h:27 ./arch/x86/include/asm/atomic.h:197 include/linux/atomic.h:17 mm/rmap.c:417)
+[12191.991578] RSP: 0018:ffff880272b0f7b8  EFLAGS: 00010246
+[12191.991578] RAX: 0000000000000000 RBX: ffff88035615ec00 RCX: 0000000000000001
+[12191.991578] RDX: ffff88035615ec01 RSI: ffffffffa72e2182 RDI: ffffffffa71ebfd4
+[12191.991578] RBP: ffff880272b0f7d8 R08: 0000000000000001 R09: 0000000000000000
+[12191.991578] R10: 0000000000000000 R11: 0000000000000000 R12: ffffea000a72aa40
+[12191.991578] R13: ffff880272b0f8f8 R14: ffffea000a72aa40 R15: 000000000029cc00
+[12191.991578] FS:  0000000000000000(0000) GS:ffff8804c9e00000(0000) knlGS:0000000000000000
+[12192.020146] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[12192.020146] CR2: ffff88035615eca8 CR3: 000000002c032000 CR4: 00000000000006a0
+[12192.020146] Stack:
+[12192.020146]  ffffffffa72e2135 ffff880272b0f8f8 ffffea000a72aa60 ffffea000d2b7780
+[12192.020146]  ffff880272b0f888 ffffffffa730d27a ffff880272b0f7f8 000000008b880a00
+[12192.020146]  ffff8804c5e00340 ffff8802729f3000 0000000100000000 0000000000000000
+[12192.020146] Call Trace:
+[12192.020146] ? page_get_anon_vma (mm/rmap.c:405)
+[12192.020146] migrate_pages (mm/migrate.c:853 mm/migrate.c:941 mm/migrate.c:1122)
+[12192.020146] ? __reset_isolation_suitable (mm/compaction.c:947)
+[12192.020146] ? isolate_freepages_block (mm/compaction.c:918)
+[12192.020146] compact_zone (mm/compaction.c:1209)
+[12192.020146] compact_zone_order (mm/compaction.c:1258)
+[12192.020146] try_to_compact_pages (mm/compaction.c:1323)
+[12192.020146] __alloc_pages_direct_compact (mm/page_alloc.c:2313)
+[12192.020146] __alloc_pages_slowpath (mm/page_alloc.c:2760)
+[12192.020146] __alloc_pages_nodemask (mm/page_alloc.c:2838)
+[12192.020146] ? collapse_huge_page.isra.31 (mm/huge_memory.c:766 mm/huge_memory.c:2336 mm/huge_memory.c:2435)
+[12192.020146] collapse_huge_page.isra.31 (mm/huge_memory.c:2336 mm/huge_memory.c:2435)
+[12192.020146] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+[12192.020146] ? put_lock_stats.isra.12 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+[12192.020146] ? khugepaged_scan_mm_slot (include/linux/spinlock.h:349 mm/huge_memory.c:2604 mm/huge_memory.c:2700)
+[12192.020146] ? preempt_count_sub (kernel/sched/core.c:2626)
+[12192.020146] khugepaged_scan_mm_slot (mm/huge_memory.c:2704)
+[12192.020146] khugepaged (include/linux/spinlock.h:349 mm/huge_memory.c:2784 mm/huge_memory.c:2817)
+[12192.020146] ? bit_waitqueue (kernel/sched/wait.c:291)
+[12192.020146] ? khugepaged_scan_mm_slot (mm/huge_memory.c:2810)
+[12192.020146] kthread (kernel/kthread.c:210)
+[12192.020146] ? kthread_create_on_node (kernel/kthread.c:176)
+[12192.020146] ret_from_fork (arch/x86/kernel/entry_64.S:348)
+[12192.020146] ? kthread_create_on_node (kernel/kthread.c:176)
+[12192.020146] Code: ee ff 0f 1f 00 49 8b 54 24 08 48 89 d0 83 e0 03 48 83 f8 01 0f 85 cb 00 00 00 41 8b 44 24 18 85 c0 0f 88 be 00 00 00 48 8d 5a ff <8b> 8b a8 00 00 00 85 c9 0f 84 ac 00 00 00 8d 71 01 89 c8 48 8d
+All code
+========
+   0:	ee                   	out    %al,(%dx)
+   1:	ff 0f                	decl   (%rdi)
+   3:	1f                   	(bad)
+   4:	00 49 8b             	add    %cl,-0x75(%rcx)
+   7:	54                   	push   %rsp
+   8:	24 08                	and    $0x8,%al
+   a:	48 89 d0             	mov    %rdx,%rax
+   d:	83 e0 03             	and    $0x3,%eax
+  10:	48 83 f8 01          	cmp    $0x1,%rax
+  14:	0f 85 cb 00 00 00    	jne    0xe5
+  1a:	41 8b 44 24 18       	mov    0x18(%r12),%eax
+  1f:	85 c0                	test   %eax,%eax
+  21:	0f 88 be 00 00 00    	js     0xe5
+  27:	48 8d 5a ff          	lea    -0x1(%rdx),%rbx
+  2b:*	8b 8b a8 00 00 00    	mov    0xa8(%rbx),%ecx		<-- trapping instruction
+  31:	85 c9                	test   %ecx,%ecx
+  33:	0f 84 ac 00 00 00    	je     0xe5
+  39:	8d 71 01             	lea    0x1(%rcx),%esi
+  3c:	89 c8                	mov    %ecx,%eax
+  3e:	48 8d 00             	lea    (%rax),%rax
 
-If I got the spec correctly, then exposing the baudrate setting for SBSA
-hardware is not meaningful in the sense of the spec.
-If you want to go with a configurable UART complying to the spec, you'd
-probably use a full featured PL011.
+Code starting with the faulting instruction
+===========================================
+   0:	8b 8b a8 00 00 00    	mov    0xa8(%rbx),%ecx
+   6:	85 c9                	test   %ecx,%ecx
+   8:	0f 84 ac 00 00 00    	je     0xba
+   e:	8d 71 01             	lea    0x1(%rcx),%esi
+  11:	89 c8                	mov    %ecx,%eax
+  13:	48 8d 00             	lea    (%rax),%rax
+[12192.070370] RIP page_get_anon_vma (./arch/x86/include/asm/atomic.h:27 ./arch/x86/include/asm/atomic.h:197 include/linux/atomic.h:17 mm/rmap.c:417)
+[12192.070370]  RSP <ffff880272b0f7b8>
+[12192.070370] CR2: ffff88035615eca8
 
-> IIRC, the enabling and disabling bits are not
-> specified either.
 
-Correct, also the FIFO is always on and the word format is fixed to 8n1.
-
-Regards,
-Andre.
-
-> 
-> Not having configurability is simply one variation on possible implementations.
-> 
-> Rob
-> 
+Thanks,
+Sasha
