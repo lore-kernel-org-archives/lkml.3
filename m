@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103AbaIEXG6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:06:58 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51119 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaIEXG4 (ORCPT
+	id S1752075AbaIEXMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:12:44 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59158 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751187AbaIEXMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:06:56 -0400
-From: behanw@converseincode.com
-To: davem@davemloft.net, herbert@gondor.apana.org.au
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu
-Subject: [PATCH v2] crypto: LLVMLinux: Remove VLAIS usage from crypto/testmgr.c
-Date: Fri,  5 Sep 2014 16:06:47 -0700
-Message-Id: <1409958407-9173-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 5 Sep 2014 19:12:43 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Date: Sat, 06 Sep 2014 01:32:04 +0200
+Message-ID: <8615268.1yl5ssmHZO@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140905224554.GD15723@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <CAM_iQpUbGTxrbJZ_ztf+QUvFowsivQ-jvPCSi7kmth7nstPvaA@mail.gmail.com> <20140905224554.GD15723@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On Saturday, September 06, 2014 07:45:54 AM Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Sep 05, 2014 at 11:12:24AM -0700, Cong Wang wrote:
+> > > Rafael, can you please help?
+> > 
+> > Rafael is known not responsive at least for this topic. :)
+> 
+> :(
 
-The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This patch instead allocates the appropriate amount of memory
-using an char array.
+Well, am I?
 
-struct shash_desc contains a flexible array member member ctx declared with
-CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
-of the array declared after struct shash_desc with long long.
+I haven't commented patches in this thread so far, mostly because other
+people have.
 
-No trailing padding is required because it is not a struct type that can
-be used in an array.
+How can I help actually?
 
-The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
-as would be the case for a struct containing a member with
-CRYPTO_MINALIGN_ATTR.
+> > > Shouldn't the primary goal of the comment be explaining why we need
+> > > TIF_MEMDIE check there at all anyway?  The deadlock possiblity is not
+> > > very obvious.
+> > 
+> > The changelog is not long enough?? ;-) I hate to copy+paste changelog
+> > into comments, changelog is essentially necessary for people to understand
+> > kernel code (at least networking) , so I don't think we have to move it
+> > into comments in this case.
+> 
+> It doesn't have to be the same text but the current comment is
+> basically content-less.  e.g. it can just say "OOM killer may get
+> stuck trying to kill a cgroup frozen task" and actualy provide
+> information on what condition the conditional tries to address.
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Cc: pageexec@freemail.hu
----
- crypto/testmgr.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+Or something like "We need to check X to prevent Y from happening".
 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index ac2b631..34f5a32 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -1714,16 +1714,16 @@ static int alg_test_crc32c(const struct alg_test_desc *desc,
- 	}
- 
- 	do {
--		struct {
--			struct shash_desc shash;
--			char ctx[crypto_shash_descsize(tfm)];
--		} sdesc;
-+		char sdesc[sizeof(struct shash_desc) +
-+			crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
-+		struct shash_desc *shash = (struct shash_desc *)sdesc;
-+		u32 *ctx = (u32 *)shash_desc_ctx(shash);
- 
--		sdesc.shash.tfm = tfm;
--		sdesc.shash.flags = 0;
-+		shash->tfm = tfm;
-+		shash->flags = 0;
- 
--		*(u32 *)sdesc.ctx = le32_to_cpu(420553207);
--		err = crypto_shash_final(&sdesc.shash, (u8 *)&val);
-+		*ctx = le32_to_cpu(420553207);
-+		err = crypto_shash_final(shash, (u8 *)&val);
- 		if (err) {
- 			printk(KERN_ERR "alg: crc32c: Operation failed for "
- 			       "%s: %d\n", driver, err);
--- 
-1.9.1
+Rafael
 
