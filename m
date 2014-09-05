@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaIET0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:26:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33911 "EHLO
+	id S1752569AbaIET1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:27:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33921 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaIET0h (ORCPT
+	with ESMTP id S1752512AbaIET1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:26:37 -0400
+	Fri, 5 Sep 2014 15:27:01 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 12/18] tty: serial: 8250_dma: optimize the xmit path due to UART_BUG_DMA_TX
-Date: Fri,  5 Sep 2014 21:02:47 +0200
-Message-Id: <1409943773-7874-13-git-send-email-bigeasy@linutronix.de>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        vinod.koul@intel.com
+Subject: [PATCH 13/18] tty: serial: 8250_dma: keep own book keeping about RX transfers
+Date: Fri,  5 Sep 2014 21:02:48 +0200
+Message-Id: <1409943773-7874-14-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
 References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,48 +30,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to UART_BUG_DMA_TX the am335x has to put the first one byte into the
-TX FIFO to get things going. If we get to serial8250_tx_dma() via
-__dma_tx_complete() then the DMA engine just finished and the FIFO is
-full and we can't put the first byte into the TX FIFO as kick start so
-we leave with THRI enabled.
-The result is that we end up manually filling the FIFO. We could be a
-little better at this and try DMA once again. If it works, it works and
-if not we do it manually.
+After dmaengine_terminate_all() has been invoked then both DMA drivers
+(edma and omap-dma) do not invoke dma_cookie_complete() to mark the
+transfer as complete. This dma_cookie_complete() is performed by the
+Synopsys DesignWare driver which is probably the only one that is used
+by omap8250-dma and hence don't see following problem…
+…which is that once a RX transfer has been terminated then following
+query of channel status reports DMA_IN_PROGRESS (again: the actual
+transfer has been canceled, there is nothing going on anymore).
 
+This means that serial8250_rx_dma() never enqueues another DMA transfer
+because it (wrongly) assumes that there is a transer already pending.
+
+Vinod Koul refuses to accept a patch which adds this
+dma_cookie_complete() to both drivers and so dmaengine_tx_status() would
+report DMA_COMPLETE instead (and behave like the Synopsys DesignWare
+driver already does). He argues that I am not allowed to use the cookie
+to query the status and that the driver already cleaned everything up after
+the invokation of dmaengine_terminate_all().
+
+To end this I add a bookkeeping whether or not a RX-transfer has been
+started to the 8250-dma code. It has already been done for the TX side.
+*Now* we learn about the RX status based on our bookkeeping and don't
+need dmaengine_tx_status() for this anymore.
+
+Cc: vinod.koul@intel.com
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/tty/serial/8250/8250_core.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/tty/serial/8250/8250.h     |  1 +
+ drivers/tty/serial/8250/8250_dma.c | 14 ++++++++------
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 079048db8c81..7111b22de000 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1597,9 +1597,21 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
- 	serial8250_modem_status(up);
- 	if ((!up->dma || (up->dma && up->dma->tx_err)) &&
- 			(status & UART_LSR_THRE)) {
--		serial8250_tx_chars(up);
--	}
-+		if (!up->dma) {
-+			serial8250_tx_chars(up);
-+		} else {
-+			if (uart_tx_stopped(&up->port) ||
-+				uart_circ_empty(&up->port.state->xmit)) {
-+				serial8250_tx_chars(up);
+diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
+index 09489b391568..a7581b37f264 100644
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -42,6 +42,7 @@ struct uart_8250_dma {
  
-+			} else  {
-+				/* try again due to UART_BUG_DMA_TX+full fifo */
-+				dma_err = serial8250_tx_dma(up);
-+				if (dma_err)
-+					serial8250_tx_chars(up);
-+			}
+ 	unsigned char		tx_running:1;
+ 	unsigned char		tx_err: 1;
++	unsigned char		rx_running:1;
+ };
+ 
+ struct old_serial_port {
+diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
+index 48dc57aad0dd..6cd8a4db609a 100644
+--- a/drivers/tty/serial/8250/8250_dma.c
++++ b/drivers/tty/serial/8250/8250_dma.c
+@@ -60,6 +60,7 @@ static void __dma_rx_do_complete(struct uart_8250_port *p, bool error)
+ 	dma_sync_single_for_cpu(dma->rxchan->device->dev, dma->rx_addr,
+ 				dma->rx_size, DMA_FROM_DEVICE);
+ 
++	dma->rx_running = 0;
+ 	dmaengine_tx_status(dma->rxchan, dma->rx_cookie, &state);
+ 	dmaengine_terminate_all(dma->rxchan);
+ 
+@@ -162,21 +163,21 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
+ {
+ 	struct uart_8250_dma		*dma = p->dma;
+ 	struct dma_async_tx_descriptor	*desc;
+-	struct dma_tx_state		state;
+-	int				dma_status;
+-
+-	dma_status = dmaengine_tx_status(dma->rxchan, dma->rx_cookie, &state);
+ 
+ 	switch (iir & 0x3f) {
+ 	case UART_IIR_RLSI:
+ 		/* 8250_core handles errors and break interrupts */
++		if (dma->rx_running) {
++			dmaengine_pause(dma->rxchan);
++			__dma_rx_do_complete(p, true);
 +		}
-+	}
- 	spin_unlock_irqrestore(&port->lock, flags);
- 	return 1;
- }
+ 		return -EIO;
+ 	case UART_IIR_RX_TIMEOUT:
+ 		/*
+ 		 * If RCVR FIFO trigger level was not reached, complete the
+ 		 * transfer and let 8250_core copy the remaining data.
+ 		 */
+-		if (dma_status == DMA_IN_PROGRESS) {
++		if (dma->rx_running) {
+ 			dmaengine_pause(dma->rxchan);
+ 			__dma_rx_do_complete(p, true);
+ 		}
+@@ -185,7 +186,7 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
+ 		break;
+ 	}
+ 
+-	if (dma_status)
++	if (dma->rx_running)
+ 		return 0;
+ 
+ 	desc = dmaengine_prep_slave_single(dma->rxchan, dma->rx_addr,
+@@ -194,6 +195,7 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
+ 	if (!desc)
+ 		return -EBUSY;
+ 
++	dma->rx_running = 1;
+ 	desc->callback = __dma_rx_complete;
+ 	desc->callback_param = p;
+ 
 -- 
 2.1.0
 
