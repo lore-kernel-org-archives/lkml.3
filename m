@@ -1,288 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555AbaIEQsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:48:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44283 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaIEQsn (ORCPT
+	id S1751848AbaIEQtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:49:24 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:37002 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaIEQtX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:48:43 -0400
-Date: Fri, 5 Sep 2014 16:48:11 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] fuse: Add support for mounts from user namespaces
-Message-ID: <20140905164811.GH16450@ubuntumail>
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
- <1409672696-15847-4-git-send-email-seth.forshee@canonical.com>
+	Fri, 5 Sep 2014 12:49:23 -0400
+From: Mikael Pettersson <mikpelinux@gmail.com>
+X-Google-Original-From: "Mikael Pettersson" <mikpe@cascade>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409672696-15847-4-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <21513.59790.188508.307463@gargle.gargle.HOWL>
+Date: Fri, 5 Sep 2014 18:49:18 +0200
+To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Mikael Pettersson <mikpelinux@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [BISECTED] 3.17-rc1 radeon screen corruption due to "Always flush
+ the HDP cache before submitting a CS to the GPU"
+In-Reply-To: <540572EC.4070909@daenzer.net>
+References: <21505.55482.547592.906934@gargle.gargle.HOWL>
+	<540572EC.4070909@daenzer.net>
+X-Mailer: VM 8.1.2 under 24.3.1 (x86_64-redhat-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Seth Forshee (seth.forshee@canonical.com):
-> Update fuse to support mounts from within user namespaces. This
-> is mostly a matter of translating uids and gids into the
-> namespace of the process reading requests before handing the
-> requests off to userspace.
-> 
-> Due to security concerns the namespace used should be fixed,
-> otherwise a user might be able to pass the fuse fd to
-> init_user_ns and inject suid files owned by a user outside the
-> namespace in order to gain elevated privileges. For fuse we
-> stash current_user_ns() when a filesystem is first mounted and
-> abort the mount if this namespace is different than the one used
-> to open the fd passed in the mount options.
-> 
-> The allow_others options could also be a problem, as a userns
-> mount could bypass system policy for this option and thus open
-> the possiblity of DoS attacks. This is prevented by restricting
-> the scope of allow_other to apply only to that superblock's
-> userns and its children, giving the expected behavior within the
-> userns while preventing DoS attacks on more privileged contexts.
-> 
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Michel Dänzer writes:
+ > On 30.08.2014 22:59, Mikael Pettersson wrote:
+ > > Since 3.17-rc1 my radeon card (RV370 / X1050 card) causes screen corruption
+ > > after a while in X + firefox.  This still occurs with yesterday's HEAD
+ > > of Linus' repo.  3.16 and ealier kernels are fine.
+ > > 
+ > > I ran a bisect, which identified:
+ > > 
+ > > commit 72a9987edcedb89db988079a03c9b9c65b6ec9ac
+ > > Author: Michel DÃ¤nzer <michel.daenzer@amd.com>
+ > > Date:   Thu Jul 31 18:43:49 2014 +0900
+ > > 
+ > >      drm/radeon: Always flush the HDP cache before submitting a CS to the GPU
+ > > 
+ > > as the cause of my screen corruption.  Reverting this from 3.17-rc2
+ > > (which requires manual intervention due to subsequent changes in
+ > > radeon_ring_commit()) eliminates the screen corruption.
+ > 
+ > Does the patch below help?
 
-Thanks, Seth, just two little questions below.
+Tested, sorry no joy.  I first reconfirmed the screen corruption with 3.17-rc3.
+I then applied this and rebuilt/rebooted, and after a few minutes X had a hickup
+(screen went black, came back after a few seconds, but then no cursor or
+reaction to mouse events), but I was able to kill it via my Terminate_Server
+key binding.  The kernel log showed:
 
-> ---
->  fs/fuse/dev.c    |  4 ++--
->  fs/fuse/dir.c    | 46 +++++++++++++++++++++++++++++++++-------------
->  fs/fuse/fuse_i.h |  4 ++++
->  fs/fuse/inode.c  | 28 ++++++++++++++++++++--------
->  4 files changed, 59 insertions(+), 23 deletions(-)
-> 
-> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> index 839caebd34f1..03c8785ed731 100644
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -127,8 +127,8 @@ static void __fuse_put_request(struct fuse_req *req)
->  
->  static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
->  {
-> -	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
-> -	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
-> +	req->in.h.uid = from_kuid_munged(fc->user_ns, current_fsuid());
-> +	req->in.h.gid = from_kgid_munged(fc->user_ns, current_fsgid());
->  	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
->  }
->  
-> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> index de1d84af9f7c..c0b9968db6a1 100644
-> --- a/fs/fuse/dir.c
-> +++ b/fs/fuse/dir.c
-> @@ -905,8 +905,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
->  	stat->ino = attr->ino;
->  	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
->  	stat->nlink = attr->nlink;
-> -	stat->uid = make_kuid(&init_user_ns, attr->uid);
-> -	stat->gid = make_kgid(&init_user_ns, attr->gid);
-> +	stat->uid = make_kuid(fc->user_ns, attr->uid);
-> +	stat->gid = make_kgid(fc->user_ns, attr->gid);
->  	stat->rdev = inode->i_rdev;
->  	stat->atime.tv_sec = attr->atime;
->  	stat->atime.tv_nsec = attr->atimensec;
-> @@ -1085,12 +1085,20 @@ int fuse_reverse_inval_entry(struct super_block *sb, u64 parent_nodeid,
->   */
->  int fuse_allow_current_process(struct fuse_conn *fc)
->  {
-> -	const struct cred *cred;
-> +	const struct cred *cred = current_cred();
->  
-> -	if (fc->flags & FUSE_ALLOW_OTHER)
-> -		return 1;
-> +	if (fc->flags & FUSE_ALLOW_OTHER) {
-> +		if (kuid_has_mapping(fc->user_ns, cred->euid) &&
-> +		    kuid_has_mapping(fc->user_ns, cred->suid) &&
-> +		    kuid_has_mapping(fc->user_ns, cred->uid) &&
-> +		    kgid_has_mapping(fc->user_ns, cred->egid) &&
-> +		    kgid_has_mapping(fc->user_ns, cred->sgid) &&
-> +		    kgid_has_mapping(fc->user_ns, cred->gid))
+[ 1641.247760] radeon 0000:01:00.0: ring 0 stalled for more than 10000msec
+[ 1641.247765] radeon 0000:01:00.0: GPU lockup (waiting for 0x0000000000006241 last fence id 0x0000000000006240 on ring 0)
+[ 1641.247768] radeon 0000:01:00.0: failed to get a new IB (-35)
+[ 1641.247770] [drm:radeon_cs_ib_fill] *ERROR* Failed to get ib !
+[ 1641.404052] Failed to wait GUI idle while programming pipes. Bad things might happen.
+[ 1641.405075] radeon 0000:01:00.0: Saved 859 dwords of commands on ring 0.
+[ 1641.405084] radeon 0000:01:00.0: (r300_asic_reset:394) RBBM_STATUS=0x80010140
+[ 1641.910649] radeon 0000:01:00.0: (r300_asic_reset:413) RBBM_STATUS=0x80010140
+[ 1642.412182] radeon 0000:01:00.0: (r300_asic_reset:425) RBBM_STATUS=0x00000140
+[ 1642.412218] radeon 0000:01:00.0: GPU reset succeed
+[ 1642.412220] radeon 0000:01:00.0: GPU reset succeeded, trying to resume
+[ 1642.412224] radeon 0000:01:00.0: ffff88060274f800 unpin not necessary
+[ 1642.626303] [drm] radeon: 1 quad pipes, 1 Z pipes initialized.
+[ 1642.626325] [drm] PCIE GART of 512M enabled (table at 0x00000000E0040000).
+[ 1642.626328] radeon 0000:01:00.0: WB enabled
+[ 1642.626331] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x00000000c0000000 and cpu addr 0xffff8800d9b9f000
+[ 1642.626375] [drm] radeon: ring at 0x00000000C0001000
+[ 1642.783220] [drm:r100_ring_test] *ERROR* radeon: ring test failed (scratch(0x15E8)=0xCAFEDEAD)
+[ 1642.783222] [drm:r100_cp_init] *ERROR* radeon: cp isn't working (-22).
+[ 1642.783224] radeon 0000:01:00.0: failed initializing CP (-22).
 
-Should fsuid be checked here?
+With a revert of the HDP flush patch things are stable.
 
-> +			return 1;
-> +
-> +		return 0;
-> +	}
->  
-> -	cred = current_cred();
->  	if (uid_eq(cred->euid, fc->user_id) &&
->  	    uid_eq(cred->suid, fc->user_id) &&
->  	    uid_eq(cred->uid,  fc->user_id) &&
-> @@ -1556,17 +1564,25 @@ static bool update_mtime(unsigned ivalid, bool trust_local_mtime)
->  	return true;
->  }
->  
-> -static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
-> -			   bool trust_local_cmtime)
-> +static int iattr_to_fattr(struct fuse_conn *fc, struct iattr *iattr,
-> +			   struct fuse_setattr_in *arg, bool trust_local_cmtime)
->  {
->  	unsigned ivalid = iattr->ia_valid;
->  
->  	if (ivalid & ATTR_MODE)
->  		arg->valid |= FATTR_MODE,   arg->mode = iattr->ia_mode;
-> -	if (ivalid & ATTR_UID)
-> -		arg->valid |= FATTR_UID,    arg->uid = from_kuid(&init_user_ns, iattr->ia_uid);
-> -	if (ivalid & ATTR_GID)
-> -		arg->valid |= FATTR_GID,    arg->gid = from_kgid(&init_user_ns, iattr->ia_gid);
-> +	if (ivalid & ATTR_UID) {
-> +		arg->uid = from_kuid(fc->user_ns, iattr->ia_uid);
-> +		if (arg->uid == (uid_t)-1)
+/Mikael
 
-Any reason not to use uid_valid() here (and gid_valid() below)?
+ > 
+ > diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+ > index 4c5ec44..3ff9c53 100644
+ > --- a/drivers/gpu/drm/radeon/r100.c
+ > +++ b/drivers/gpu/drm/radeon/r100.c
+ > @@ -1070,6 +1070,20 @@ void r100_ring_hdp_flush(struct radeon_device *rdev, struct radeon_ring *ring)
+ >  	radeon_ring_write(ring, rdev->config.r100.hdp_cntl);
+ >  }
+ >  
+ > +/**
+ > + * r100_mmio_hdp_flush - flush Host Data Path via MMIO
+ > + * rdev: radeon device structure
+ > + */
+ > +void r100_mmio_hdp_flush(struct radeon_device *rdev)
+ > +{
+ > +	WREG32(RADEON_HOST_PATH_CNTL,
+ > +	       rdev->config.r100.hdp_cntl | RADEON_HDP_READ_BUFFER_INVALIDATE);
+ > +	(void)RREG32(RADEON_HOST_PATH_CNTL);
+ > +	WREG32(RADEON_HOST_PATH_CNTL,
+ > +	       rdev->config.r100.hdp_cntl);
+ > +	(void)RREG32(RADEON_HOST_PATH_CNTL);
+ > +}
+ > +
+ >  static void r100_cp_load_microcode(struct radeon_device *rdev)
+ >  {
+ >  	const __be32 *fw_data;
+ > diff --git a/drivers/gpu/drm/radeon/radeon_asic.c b/drivers/gpu/drm/radeon/radeon_asic.c
+ > index eeeeabe..c23a123 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_asic.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_asic.c
+ > @@ -408,7 +408,7 @@ static struct radeon_asic r300_asic_pcie = {
+ >  	.resume = &r300_resume,
+ >  	.vga_set_state = &r100_vga_set_state,
+ >  	.asic_reset = &r300_asic_reset,
+ > -	.mmio_hdp_flush = NULL,
+ > +	.mmio_hdp_flush = r100_mmio_hdp_flush,
+ >  	.gui_idle = &r100_gui_idle,
+ >  	.mc_wait_for_idle = &r300_mc_wait_for_idle,
+ >  	.gart = {
+ > diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
+ > index 275a5dc..e9b1c35 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_asic.h
+ > +++ b/drivers/gpu/drm/radeon/radeon_asic.h
+ > @@ -150,6 +150,8 @@ void r100_gfx_set_wptr(struct radeon_device *rdev,
+ >  		       struct radeon_ring *ring);
+ >  void r100_ring_hdp_flush(struct radeon_device *rdev,
+ >  			 struct radeon_ring *ring);
+ > +void r100_mmio_hdp_flush(struct radeon_device *rdev);
+ > +
+ >  /*
+ >   * r200,rv250,rs300,rv280
+ >   */
+ > diff --git a/drivers/gpu/drm/radeon/radeon_gem.c b/drivers/gpu/drm/radeon/radeon_gem.c
+ > index bfd7e1b..3d0f564 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_gem.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_gem.c
+ > @@ -368,6 +368,7 @@ int radeon_gem_wait_idle_ioctl(struct drm_device *dev, void *data,
+ >  	r = radeon_bo_wait(robj, &cur_placement, false);
+ >  	/* Flush HDP cache via MMIO if necessary */
+ >  	if (rdev->asic->mmio_hdp_flush &&
+ > +	    !rdev->asic->ring[RADEON_RING_TYPE_GFX_INDEX]->hdp_flush &&
+ >  	    radeon_mem_type_to_domain(cur_placement) == RADEON_GEM_DOMAIN_VRAM)
+ >  		robj->rdev->asic->mmio_hdp_flush(rdev);
+ >  	drm_gem_object_unreference_unlocked(gobj);
+ > diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
+ > index d656079..b82843b 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_ring.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_ring.c
+ > @@ -188,7 +188,8 @@ void radeon_ring_commit(struct radeon_device *rdev, struct radeon_ring *ring,
+ >  	/* If we are emitting the HDP flush via the ring buffer, we need to
+ >  	 * do it before padding.
+ >  	 */
+ > -	if (hdp_flush && rdev->asic->ring[ring->idx]->hdp_flush)
+ > +	if (hdp_flush && rdev->asic->ring[ring->idx]->hdp_flush &&
+ > +	    !rdev->asic->mmio_hdp_flush)
+ >  		rdev->asic->ring[ring->idx]->hdp_flush(rdev, ring);
+ >  	/* We pad to match fetch size */
+ >  	while (ring->wptr & ring->align_mask) {
+ > 
+ > 
+ > 
+ > -- 
+ > Earthling Michel Dänzer            |                  http://www.amd.com
+ > Libre software enthusiast          |                Mesa and X developer
 
-> +			return -EINVAL;
-> +		arg->valid |= FATTR_UID;
-> +	}
-> +	if (ivalid & ATTR_GID) {
-> +		arg->gid = from_kgid(fc->user_ns, iattr->ia_gid);
-> +		if (arg->gid == (gid_t)-1)
-> +			return -EINVAL;
-> +		arg->valid |= FATTR_GID;
-> +	}
->  	if (ivalid & ATTR_SIZE)
->  		arg->valid |= FATTR_SIZE,   arg->size = iattr->ia_size;
->  	if (ivalid & ATTR_ATIME) {
-> @@ -1588,6 +1604,8 @@ static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
->  		arg->ctime = iattr->ia_ctime.tv_sec;
->  		arg->ctimensec = iattr->ia_ctime.tv_nsec;
->  	}
-> +
-> +	return 0;
->  }
->  
->  /*
-> @@ -1741,7 +1759,9 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
->  
->  	memset(&inarg, 0, sizeof(inarg));
->  	memset(&outarg, 0, sizeof(outarg));
-> -	iattr_to_fattr(attr, &inarg, trust_local_cmtime);
-> +	err = iattr_to_fattr(fc, attr, &inarg, trust_local_cmtime);
-> +	if (err)
-> +		goto error;
->  	if (file) {
->  		struct fuse_file *ff = file->private_data;
->  		inarg.valid |= FATTR_FH;
-> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-> index a3ded071e2c6..2cfd0ca3407a 100644
-> --- a/fs/fuse/fuse_i.h
-> +++ b/fs/fuse/fuse_i.h
-> @@ -22,6 +22,7 @@
->  #include <linux/rbtree.h>
->  #include <linux/poll.h>
->  #include <linux/workqueue.h>
-> +#include <linux/user_namespace.h>
->  #include <linux/pid_namespace.h>
->  
->  /** Max number of pages that can be used in a single read request */
-> @@ -387,6 +388,9 @@ struct fuse_conn {
->  	/** The group id for this mount */
->  	kgid_t group_id;
->  
-> +	/** The user namespace for this mount */
-> +	struct user_namespace *user_ns;
-> +
->  	/** The pid namespace for this mount */
->  	struct pid_namespace *pid_ns;
->  
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index c6d8473b1a80..f3a3ded82f85 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -167,8 +167,8 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
->  	inode->i_ino     = fuse_squash_ino(attr->ino);
->  	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
->  	set_nlink(inode, attr->nlink);
-> -	inode->i_uid     = make_kuid(&init_user_ns, attr->uid);
-> -	inode->i_gid     = make_kgid(&init_user_ns, attr->gid);
-> +	inode->i_uid     = make_kuid(fc->user_ns, attr->uid);
-> +	inode->i_gid     = make_kgid(fc->user_ns, attr->gid);
->  	inode->i_blocks  = attr->blocks;
->  	inode->i_atime.tv_sec   = attr->atime;
->  	inode->i_atime.tv_nsec  = attr->atimensec;
-> @@ -496,6 +496,8 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
->  	memset(d, 0, sizeof(struct fuse_mount_data));
->  	d->max_read = ~0;
->  	d->blksize = FUSE_DEFAULT_BLKSIZE;
-> +	d->user_id = make_kuid(current_user_ns(), 0);
-> +	d->group_id = make_kgid(current_user_ns(), 0);
->  
->  	while ((p = strsep(&opt, ",")) != NULL) {
->  		int token;
-> @@ -578,8 +580,10 @@ static int fuse_show_options(struct seq_file *m, struct dentry *root)
->  	struct super_block *sb = root->d_sb;
->  	struct fuse_conn *fc = get_fuse_conn_super(sb);
->  
-> -	seq_printf(m, ",user_id=%u", from_kuid_munged(&init_user_ns, fc->user_id));
-> -	seq_printf(m, ",group_id=%u", from_kgid_munged(&init_user_ns, fc->group_id));
-> +	seq_printf(m, ",user_id=%u",
-> +		   from_kuid_munged(fc->user_ns, fc->user_id));
-> +	seq_printf(m, ",group_id=%u",
-> +		   from_kgid_munged(fc->user_ns, fc->group_id));
->  	if (fc->flags & FUSE_DEFAULT_PERMISSIONS)
->  		seq_puts(m, ",default_permissions");
->  	if (fc->flags & FUSE_ALLOW_OTHER)
-> @@ -618,6 +622,7 @@ void fuse_conn_init(struct fuse_conn *fc)
->  	fc->attr_version = 1;
->  	get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
->  	fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
-> +	fc->user_ns = get_user_ns(current_user_ns());
->  }
->  EXPORT_SYMBOL_GPL(fuse_conn_init);
->  
-> @@ -956,6 +961,7 @@ static void fuse_send_init(struct fuse_conn *fc, struct fuse_req *req)
->  static void fuse_free_conn(struct fuse_conn *fc)
->  {
->  	put_pid_ns(fc->pid_ns);
-> +	put_user_ns(fc->user_ns);
->  	kfree_rcu(fc, rcu);
->  }
->  
-> @@ -1042,8 +1048,14 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
->  	if (!file)
->  		goto err;
->  
-> -	if ((file->f_op != &fuse_dev_operations) ||
-> -	    (file->f_cred->user_ns != &init_user_ns))
-> +	/*
-> +	 * Require mount to happen from the same user namespace which
-> +	 * opened /dev/fuse, otherwise users might be able to
-> +	 * elevate privileges by opening in init_user_ns then
-> +	 * mounting from a different namespace without MNT_NOSUID.
-> +	 */
-> +	if (file->f_op != &fuse_dev_operations ||
-> +	    file->f_cred->user_ns != current_user_ns())
->  		goto err_fput;
->  
->  	fc = kmalloc(sizeof(*fc), GFP_KERNEL);
-> @@ -1157,7 +1169,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
->  static struct file_system_type fuse_fs_type = {
->  	.owner		= THIS_MODULE,
->  	.name		= "fuse",
-> -	.fs_flags	= FS_HAS_SUBTYPE,
-> +	.fs_flags	= FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
->  	.mount		= fuse_mount,
->  	.kill_sb	= fuse_kill_sb_anon,
->  };
-> @@ -1189,7 +1201,7 @@ static struct file_system_type fuseblk_fs_type = {
->  	.name		= "fuseblk",
->  	.mount		= fuse_mount_blk,
->  	.kill_sb	= fuse_kill_sb_blk,
-> -	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
-> +	.fs_flags	= FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
->  };
->  MODULE_ALIAS_FS("fuseblk");
->  
-> -- 
-> 1.9.1
-> 
+-- 
