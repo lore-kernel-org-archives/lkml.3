@@ -1,110 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaIEUTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:19:14 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41521 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaIEUTM (ORCPT
+	id S1751624AbaIEU1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:27:50 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40126 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaIEU1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:19:12 -0400
-Date: Fri, 5 Sep 2014 13:19:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Michael Cree <mcree@orcon.net.nz>,
+	Fri, 5 Sep 2014 16:27:47 -0400
+Date: Fri, 5 Sep 2014 21:27:44 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Michael Brown <mbrown@fensystems.co.uk>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ulf Winkelvos <ulf@winkelvos.de>,
+        Matt Fleming <matt.fleming@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140905201906.GY5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
- <1409824374.4246.62.camel@pasglop>
- <5408E458.3@zytor.com>
- <54090AF4.7060406@hurleysoftware.com>
- <54091B30.2090509@zytor.com>
- <20140905081648.GB5281@omega>
- <20140905180950.GU5001@linux.vnet.ibm.com>
- <20140905183109.GA5497@linux.vnet.ibm.com>
- <20140905195234.GT4783@worktop.ger.corp.intel.com>
- <540A169F.40906@hurleysoftware.com>
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [REGRESSION] "efi: efistub: Convert into static library" and
+ preparation patches
+Message-ID: <20140905202744.GO3001@console-pimps.org>
+References: <CAKv+Gu8OD3p+GSwB+SPRf3pKwZB2R1t6x1zK7czGCXj1QhB7_g@mail.gmail.com>
+ <54073409.6030004@canonical.com>
+ <CAKv+Gu9q1qTh6DZXsCG2tGVBn-uwuQKQa_6FEMmchDVFi5vJtw@mail.gmail.com>
+ <20140903175948.GH3001@console-pimps.org>
+ <CAKv+Gu9tejixb3Kb3YM_7sLcpKNuRHN+Dn+twFyCAXx99wYRCw@mail.gmail.com>
+ <54084376.8090002@canonical.com>
+ <540860F1.6060801@fensystems.co.uk>
+ <CAKv+Gu8wALTqtNQK_855A7M5f2a+EB1JyLxo=j6G0T1cf8ZFog@mail.gmail.com>
+ <CAKv+Gu_sLmkBHF-9GyPUgfAbLYirQTD4vk63o6HzdZhm6s_e0g@mail.gmail.com>
+ <20140904213753.GM3001@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <540A169F.40906@hurleysoftware.com>
+In-Reply-To: <20140904213753.GM3001@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090520-8236-0000-0000-0000052BBE73
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 04:01:35PM -0400, Peter Hurley wrote:
-> On 09/05/2014 03:52 PM, Peter Zijlstra wrote:
-> > On Fri, Sep 05, 2014 at 11:31:09AM -0700, Paul E. McKenney wrote:
-> >> compiler: Allow 1- and 2-byte smp_load_acquire() and smp_store_release()
-> >>
-> >> CPUs without single-byte and double-byte loads and stores place some
-> >> "interesting" requirements on concurrent code.  For example (adapted
-> >> from Peter Hurley's test code), suppose we have the following structure:
-> >>     
-> >>     	struct foo {
-> >>     		spinlock_t lock1;
-> >>     		spinlock_t lock2;
-> >>     		char a; /* Protected by lock1. */
-> >>     		char b; /* Protected by lock2. */
-> >>     	};
-> >>     	struct foo *foop;
-> >>     
-> >> Of course, it is common (and good) practice to place data protected
-> >> by different locks in separate cache lines.  However, if the locks are
-> >> rarely acquired (for example, only in rare error cases), and there are
-> >> a great many instances of the data structure, then memory footprint can
-> >> trump false-sharing concerns, so that it can be better to place them in
-> >> the same cache cache line as above.
-> >>
-> >> But if the CPU does not support single-byte loads and stores, a store
-> >> to foop->a will do a non-atomic read-modify-write operation on foop->b,
-> >> which will come as a nasty surprise to someone holding foop->lock2.  So we
-> >> now require CPUs to support single-byte and double-byte loads and stores.
-> >> Therefore, this commit adjusts the definition of __native_word() to allow
-> >> these sizes to be used by smp_load_acquire() and smp_store_release().
-> > 
-> > So does this patch depends on a patch that removes pre EV56 alpha
-> > support? I'm all for removing that, but I need to see the patch merged
-> > before we can do this.
+On Thu, 04 Sep, at 10:37:53PM, Matt Fleming wrote:
 > 
-> I'm working on that but Alpha's Kconfig is not quite straightforward.
-> 
-> 
-> ... and I'm wondering if I should _remove_ pre-EV56 configurations or
-> move the default choice and produce a warning about unsupported Alpha
-> CPUs instead?
+> Thanks Ard, I'll take a look in the morning.
 
-I suspect that either would work, given that the Alpha community is
-pretty close-knit.  Just setting the appropriate flag to make the
-compiler generate one-byte and two-byte loads and stores would
-probably suffice.  ;-)
+Maarten, could you try out this patch?
 
-							Thanx, Paul
+---
 
-> Regards,
-> Peter Hurley
-> 
-> [ How does one do a red popup in kbuild?
->   The 'comment' approach is too subtle.
-> ]
-> 
-> 
-> 
+>From a058d81d9687671813560af72f34d63da3cc16bc Mon Sep 17 00:00:00 2001
+From: Matt Fleming <matt.fleming@intel.com>
+Date: Fri, 5 Sep 2014 14:52:26 +0100
+Subject: [PATCH] x86/efi: Fixup GOT in all boot code paths
 
+Maarten reported that his Macbook pro 8.2 stopped booting after commit
+f23cf8bd5c1f49 ("efi/x86: efistub: Move shared dependencies to
+<asm/efi.h>"), the main feature of which is changing the visibility of
+symbol 'efi_early' from local to global.
+
+By making 'efi_early' global we end up requiring an entry in the Global
+Offset Table. Unfortunately, while we do include code to fixup GOT
+entries in the early boot code, it's only called after we've executed
+the EFI boot stub.
+
+What this amounts to is that references to 'efi_early' in the EFI boot
+stub don't point to the correct place.
+
+Since we've got multiple boot entry points we need to be prepared to
+fixup the GOT in multiple places, while ensuring that we never do it
+more than once, otherwise the GOT entries will still point to the wrong
+place.
+
+Reported-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/boot/compressed/head_32.S | 54 ++++++++++++++++++++++++++----------
+ arch/x86/boot/compressed/head_64.S | 56 ++++++++++++++++++++++++++++----------
+ 2 files changed, 81 insertions(+), 29 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index cbed1407a5cd..d6b8aa4c986c 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -30,6 +30,33 @@
+ #include <asm/boot.h>
+ #include <asm/asm-offsets.h>
+ 
++/*
++ * Adjust our own GOT
++ *
++ * The relocation base must be in %ebx
++ *
++ * It is safe to call this macro more than once, because in some of the
++ * code paths multiple invocations are inevitable, e.g. via the efi*
++ * entry points.
++ *
++ * Relocation is only performed the first time.
++ */
++.macro FIXUP_GOT
++	cmpb	$1, got_fixed(%ebx)
++	je	2f
++
++	leal	_got(%ebx), %edx
++	leal	_egot(%ebx), %ecx
++1:
++	cmpl	%ecx, %edx
++	jae	2f
++	addl	%ebx, (%edx)
++	addl	$4, %edx
++	jmp	1b
++2:
++	movb	$1, got_fixed(%ebx)
++.endm
++
+ 	__HEAD
+ ENTRY(startup_32)
+ #ifdef CONFIG_EFI_STUB
+@@ -56,6 +83,9 @@ ENTRY(efi_pe_entry)
+ 	add	%esi, 88(%eax)
+ 	pushl	%eax
+ 
++	movl	%esi, %ebx
++	FIXUP_GOT
++
+ 	call	make_boot_params
+ 	cmpl	$0, %eax
+ 	je	fail
+@@ -81,6 +111,10 @@ ENTRY(efi32_stub_entry)
+ 	leal	efi32_config(%esi), %eax
+ 	add	%esi, 88(%eax)
+ 	pushl	%eax
++
++	movl	%esi, %ebx
++	FIXUP_GOT
++
+ 2:
+ 	call	efi_main
+ 	cmpl	$0, %eax
+@@ -190,19 +224,7 @@ relocated:
+ 	shrl	$2, %ecx
+ 	rep	stosl
+ 
+-/*
+- * Adjust our own GOT
+- */
+-	leal	_got(%ebx), %edx
+-	leal	_egot(%ebx), %ecx
+-1:
+-	cmpl	%ecx, %edx
+-	jae	2f
+-	addl	%ebx, (%edx)
+-	addl	$4, %edx
+-	jmp	1b
+-2:
+-
++	FIXUP_GOT
+ /*
+  * Do the decompression, and jump to the new kernel..
+  */
+@@ -225,8 +247,12 @@ relocated:
+ 	xorl	%ebx, %ebx
+ 	jmp	*%eax
+ 
+-#ifdef CONFIG_EFI_STUB
+ 	.data
++/* Have we relocated the GOT? */
++got_fixed:
++	.byte 0
++
++#ifdef CONFIG_EFI_STUB
+ efi32_config:
+ 	.fill 11,8,0
+ 	.long efi_call_phys
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 2884e0c3e8a5..50f69c7eaaf4 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -32,6 +32,33 @@
+ #include <asm/processor-flags.h>
+ #include <asm/asm-offsets.h>
+ 
++/*
++ * Adjust our own GOT
++ *
++ * The relocation base must be in %rbx
++ *
++ * It is safe to call this macro more than once, because in some of the
++ * code paths multiple invocations are inevitable, e.g. via the efi*
++ * entry points.
++ *
++ * Relocation is only performed the first time.
++ */
++.macro FIXUP_GOT
++	cmpb	$1, got_fixed(%rip)
++	je	2f
++
++	leaq	_got(%rip), %rdx
++	leaq	_egot(%rip), %rcx
++1:
++	cmpq	%rcx, %rdx
++	jae	2f
++	addq	%rbx, (%rdx)
++	addq	$8, %rdx
++	jmp	1b
++2:
++	movb	$1, got_fixed(%rip)
++.endm
++
+ 	__HEAD
+ 	.code32
+ ENTRY(startup_32)
+@@ -252,10 +279,13 @@ ENTRY(efi_pe_entry)
+ 	subq	$1b, %rbp
+ 
+ 	/*
+-	 * Relocate efi_config->call().
++	 * Relocate efi_config->call() and the GOT entries.
+ 	 */
+ 	addq	%rbp, efi64_config+88(%rip)
+ 
++	movq	%rbp, %rbx
++	FIXUP_GOT
++
+ 	movq	%rax, %rdi
+ 	call	make_boot_params
+ 	cmpq	$0,%rax
+@@ -271,10 +301,13 @@ handover_entry:
+ 	subq	$1b, %rbp
+ 
+ 	/*
+-	 * Relocate efi_config->call().
++	 * Relocate efi_config->call() and the GOT entries.
+ 	 */
+ 	movq	efi_config(%rip), %rax
+ 	addq	%rbp, 88(%rax)
++
++	movq	%rbp, %rbx
++	FIXUP_GOT
+ 2:
+ 	movq	efi_config(%rip), %rdi
+ 	call	efi_main
+@@ -385,19 +418,8 @@ relocated:
+ 	shrq	$3, %rcx
+ 	rep	stosq
+ 
+-/*
+- * Adjust our own GOT
+- */
+-	leaq	_got(%rip), %rdx
+-	leaq	_egot(%rip), %rcx
+-1:
+-	cmpq	%rcx, %rdx
+-	jae	2f
+-	addq	%rbx, (%rdx)
+-	addq	$8, %rdx
+-	jmp	1b
+-2:
+-	
++	FIXUP_GOT
++
+ /*
+  * Do the decompression, and jump to the new kernel..
+  */
+@@ -437,6 +459,10 @@ gdt:
+ 	.quad   0x0000000000000000	/* TS continued */
+ gdt_end:
+ 
++/* Have we relocated the GOT? */
++got_fixed:
++	.byte	0
++
+ #ifdef CONFIG_EFI_STUB
+ efi_config:
+ 	.quad	0
+-- 
+1.9.3
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
