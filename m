@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbaIEG0x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:26:53 -0400
-Received: from mail-bn1bon0137.outbound.protection.outlook.com ([157.56.111.137]:58000
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752283AbaIEG0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752751AbaIEG0s (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Sep 2014 02:26:48 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv2 3/4] Clocksource: Flextimer: Set cpumask to cpu_possible_mask
-Date: Fri, 5 Sep 2014 13:02:19 +0800
-Message-ID: <1409893340-30027-4-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1409893340-30027-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1409893340-30027-1-git-send-email-Li.Xiubo@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019016)(6009001)(189002)(199003)(105606002)(104166001)(26826002)(95666004)(81542001)(46102001)(81342001)(229853001)(64706001)(47776003)(50986999)(74502001)(76176999)(68736004)(74662001)(87286001)(80022001)(20776003)(104016003)(102836001)(36756003)(48376002)(83322001)(97736001)(84676001)(107046002)(44976005)(19580405001)(99396002)(50226001)(6806004)(92726001)(4396001)(85852003)(106466001)(83072002)(93916002)(575784001)(86362001)(89996001)(77982001)(92566001)(62966002)(79102001)(50466002)(31966008)(77156001)(85306004)(88136002)(76482001)(19580395003)(90102001)(21056001)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0622;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:62148 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaIEG0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 02:26:46 -0400
+Message-ID: <54095835.7000207@gmail.com>
+Date: Fri, 05 Sep 2014 08:29:09 +0200
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0325F6C77B
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Brian Norris <computersforpeace@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: stable@vger.kernel.org, linux-pm@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3.10.y+] PM / sleep: Use valid_state() for platform-dependent
+ sleep states only
+References: <1849024.CHOUso6H2K@vostro.rjw.lan> <1409865665-5375-1-git-send-email-computersforpeace@gmail.com>
+In-Reply-To: <1409865665-5375-1-git-send-email-computersforpeace@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Flextimer is not tied to CPU0, make it usable on any CPU.
-For Vybrid there is only one CPU, while for LS1+ there are more
-than one.
+Hello,
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/clocksource/fsl_ftm_timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 09/04/2014 11:21 PM, Brian Norris wrote:
+> From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> 
+> [Upstream commit 43e8317b0bba1d6eb85f38a4a233d82d7c20d732]
+> 
+> Use the observation that, for platform-dependent sleep states
+> (PM_SUSPEND_STANDBY, PM_SUSPEND_MEM), a given state is either
+> always supported or always unsupported and store that information
+> in pm_states[] instead of calling valid_state() every time we
+> need to check it.
+> 
+> Also do not use valid_state() for PM_SUSPEND_FREEZE, which is always
+> valid, and move the pm_test_level validity check for PM_SUSPEND_FREEZE
+> directly into enter_state().
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Cc: <stable@vger.kernel.org> # 3.10+: 27ddcc6596e5: PM / sleep: Add state field to pm_states[] entries
+> Cc: <stable@vger.kernel.org> # 3.10+
+> ---
+> This is a backport request for these two commits upstream:
+> 
+>     27ddcc6596e5 PM / sleep: Add state field to pm_states[] entries
+>     43e8317b0bba PM / sleep: Use valid_state() for platform-dependent sleep states only
+> 
 
-diff --git a/drivers/clocksource/fsl_ftm_timer.c b/drivers/clocksource/fsl_ftm_timer.c
-index ccb8c32..c0ce603 100644
---- a/drivers/clocksource/fsl_ftm_timer.c
-+++ b/drivers/clocksource/fsl_ftm_timer.c
-@@ -214,7 +214,7 @@ static int __init ftm_clockevent_init(unsigned long freq, int irq)
- 		return err;
- 	}
- 
--	ftm_clockevent.cpumask = cpumask_of(0);
-+	ftm_clockevent.cpumask = cpu_all_mask;
- 	ftm_clockevent.irq = irq;
- 
- 	clockevents_config_and_register(&ftm_clockevent,
--- 
-2.1.0.27.g96db324
+Wouldn't it be cleaner to have 2 separate backports then ?
+
+Thanks for the backport anyways.
 
