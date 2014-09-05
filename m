@@ -1,159 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375AbaIEN0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:26:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43246 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199AbaIEN0Q (ORCPT
+	id S932399AbaIENdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:33:35 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:64343 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756950AbaIENdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:26:16 -0400
-From: Colin King <colin.king@canonical.com>
-To: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] mISDN: remove DSP_NEVER_DEFINED and adjust code identation
-Date: Fri,  5 Sep 2014 14:26:11 +0100
-Message-Id: <1409923571-28627-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 5 Sep 2014 09:33:33 -0400
+Message-ID: <5409BBA8.8080202@cogentembedded.com>
+Date: Fri, 05 Sep 2014 17:33:28 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Pavel Kiryukhin <vksavl@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH] clk-rcar-gen2: RCAN clock support
+References: <201407310023.43605.sergei.shtylyov@cogentembedded.com>	<540772A1.8080101@cogentembedded.com> <CAMuHMdU0GJyYiP8NkELZia00gzKMmVRQ+1YwWCrFRLQytJ6YPw@mail.gmail.com>
+In-Reply-To: <CAMuHMdU0GJyYiP8NkELZia00gzKMmVRQ+1YwWCrFRLQytJ6YPw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+Hello.
 
-The DSP_NEVER_DEFINED #ifdef is confusing, it slips in an
-extra } which is not required because the previous code is
-indented incorrectly.  Correct the identation and remove the
-extraneous DSP_NEVER_DEFINED
+On 09/05/2014 01:03 PM, Geert Uytterhoeven wrote:
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/isdn/mISDN/dsp_cmx.c | 109 +++++++++++++++++++++----------------------
- 1 file changed, 53 insertions(+), 56 deletions(-)
+>>> Add RCAN clock support to the R-Car generation 2 CPG driver. This clock
+>>> gets
+>>> derived from the USB_EXTAL clock by dividing it by 6. The layout of
+>>> RCANCKCR
+>>> register is close to those of the clocks supported by the 'clk-div6'
+>>> driver
+>>> but has no divider field, and so can't be supported by that driver...
 
-diff --git a/drivers/isdn/mISDN/dsp_cmx.c b/drivers/isdn/mISDN/dsp_cmx.c
-index a4f05c5..87f7dff 100644
---- a/drivers/isdn/mISDN/dsp_cmx.c
-+++ b/drivers/isdn/mISDN/dsp_cmx.c
-@@ -1454,66 +1454,63 @@ dsp_cmx_send_member(struct dsp *dsp, int len, s32 *c, int members)
- #ifdef CMX_CONF_DEBUG
- 	if (0) {
- #else
--		if (members == 2) {
-+	if (members == 2) {
- #endif
--			/* "other" becomes other party */
--			other = (list_entry(conf->mlist.next,
--					    struct dsp_conf_member, list))->dsp;
--			if (other == member)
--				other = (list_entry(conf->mlist.prev,
--						    struct dsp_conf_member, list))->dsp;
--			o_q = other->rx_buff; /* received data */
--			o_rr = (other->rx_R + len) & CMX_BUFF_MASK;
--			/* end of rx-pointer */
--			o_r = (o_rr - rr + r) & CMX_BUFF_MASK;
--			/* start rx-pointer at current read position*/
--			/* -> if echo is NOT enabled */
--			if (!dsp->echo.software) {
--				/*
--				 * -> copy other member's rx-data,
--				 * if tx-data is available, mix
--				 */
--				while (o_r != o_rr && t != tt) {
--					*d++ = dsp_audio_mix_law[(p[t] << 8) | o_q[o_r]];
--					t = (t + 1) & CMX_BUFF_MASK;
--					o_r = (o_r + 1) & CMX_BUFF_MASK;
--				}
--				while (o_r != o_rr) {
--					*d++ = o_q[o_r];
--					o_r = (o_r + 1) & CMX_BUFF_MASK;
--				}
--				/* -> if echo is enabled */
--			} else {
--				/*
--				 * -> mix other member's rx-data with echo,
--				 * if tx-data is available, mix
--				 */
--				while (r != rr && t != tt) {
--					sample = dsp_audio_law_to_s32[p[t]] +
--						dsp_audio_law_to_s32[q[r]] +
--						dsp_audio_law_to_s32[o_q[o_r]];
--					if (sample < -32768)
--						sample = -32768;
--					else if (sample > 32767)
--						sample = 32767;
--					*d++ = dsp_audio_s16_to_law[sample & 0xffff];
--					/* tx-data + rx_data + echo */
--					t = (t + 1) & CMX_BUFF_MASK;
--					r = (r + 1) & CMX_BUFF_MASK;
--					o_r = (o_r + 1) & CMX_BUFF_MASK;
--				}
--				while (r != rr) {
--					*d++ = dsp_audio_mix_law[(q[r] << 8) | o_q[o_r]];
--					r = (r + 1) & CMX_BUFF_MASK;
--					o_r = (o_r + 1) & CMX_BUFF_MASK;
--				}
-+		/* "other" becomes other party */
-+		other = (list_entry(conf->mlist.next,
-+				    struct dsp_conf_member, list))->dsp;
-+		if (other == member)
-+			other = (list_entry(conf->mlist.prev,
-+				    struct dsp_conf_member, list))->dsp;
-+		o_q = other->rx_buff; /* received data */
-+		o_rr = (other->rx_R + len) & CMX_BUFF_MASK;
-+		/* end of rx-pointer */
-+		o_r = (o_rr - rr + r) & CMX_BUFF_MASK;
-+		/* start rx-pointer at current read position*/
-+		/* -> if echo is NOT enabled */
-+		if (!dsp->echo.software) {
-+			/*
-+			 * -> copy other member's rx-data,
-+			 * if tx-data is available, mix
-+			 */
-+			while (o_r != o_rr && t != tt) {
-+				*d++ = dsp_audio_mix_law[(p[t] << 8) | o_q[o_r]];
-+				t = (t + 1) & CMX_BUFF_MASK;
-+				o_r = (o_r + 1) & CMX_BUFF_MASK;
-+			}
-+			while (o_r != o_rr) {
-+				*d++ = o_q[o_r];
-+				o_r = (o_r + 1) & CMX_BUFF_MASK;
-+			}
-+			/* -> if echo is enabled */
-+		} else {
-+			/*
-+			 * -> mix other member's rx-data with echo,
-+			 * if tx-data is available, mix
-+			 */
-+			while (r != rr && t != tt) {
-+				sample = dsp_audio_law_to_s32[p[t]] +
-+					dsp_audio_law_to_s32[q[r]] +
-+					dsp_audio_law_to_s32[o_q[o_r]];
-+				if (sample < -32768)
-+					sample = -32768;
-+				else if (sample > 32767)
-+					sample = 32767;
-+				*d++ = dsp_audio_s16_to_law[sample & 0xffff];
-+				/* tx-data + rx_data + echo */
-+				t = (t + 1) & CMX_BUFF_MASK;
-+				r = (r + 1) & CMX_BUFF_MASK;
-+				o_r = (o_r + 1) & CMX_BUFF_MASK;
-+			}
-+			while (r != rr) {
-+				*d++ = dsp_audio_mix_law[(q[r] << 8) | o_q[o_r]];
-+				r = (r + 1) & CMX_BUFF_MASK;
-+				o_r = (o_r + 1) & CMX_BUFF_MASK;
- 			}
--			dsp->tx_R = t;
--			goto send_packet;
- 		}
--#ifdef DSP_NEVER_DEFINED
-+		dsp->tx_R = t;
-+		goto send_packet;
- 	}
--#endif
- 	/* PROCESS DATA (three or more members) */
- 	/* -> if echo is NOT enabled */
- 	if (!dsp->echo.software) {
--- 
-2.1.0
+>>> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+
+>>> ---
+>>> The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git'
+>>> repo.
+
+>>>    drivers/clk/shmobile/clk-rcar-gen2.c |   99
+>>> +++++++++++++++++++++++++++++++++++
+>>>    1 file changed, 99 insertions(+)
+
+>>     More than a months has passed, there hasn't been any feedback, patch
+>> hasn't been applied... what's wrong with it?
+
+> Sorry for missing this, it went under my radar.
+
+> I'm not a clock expert (pulling in Laurent), but it looks fine to me.
+> I'm just wondering whether you can simplify the code by using clk-gate?
+
+    The gated clocks inherit their clock rate from the parent, while the RCAN 
+clock has a fixed divisor (6). I'm gonna look into composite clocks instead.
+
+> Gr{oetje,eeting}s,
+>                          Geert
+
+WBR, Sergei
 
