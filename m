@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764AbaIECJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 22:09:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40865 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982AbaIECJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 22:09:20 -0400
-Message-ID: <54091B30.7080100@zytor.com>
-Date: Thu, 04 Sep 2014 19:08:48 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755861AbaIECL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 22:11:26 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62826 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaIECLY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 22:11:24 -0400
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>
-CC: Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <20140712181328.GA8738@redhat.com>	 <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>	 <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com> <54090AF4.7060406@hurleysoftware.com>
-In-Reply-To: <54090AF4.7060406@hurleysoftware.com>
+In-Reply-To: <20140904175450.GB18411@ld-irv-0074>
+References: <1409788535-28264-1-git-send-email-computersforpeace@gmail.com>
+	<20140904071412.GA29832@amd>
+	<20140904175450.GB18411@ld-irv-0074>
+Date: Thu, 4 Sep 2014 19:11:23 -0700
+X-Google-Sender-Auth: jOmPODd2FH5fRf3AnC2F29gXJsk
+Message-ID: <CAJFHJroY_uBdRPVBPgCggchpAQ1n+jb=QjzNvy0cP-WLmsAPNA@mail.gmail.com>
+Subject: Re: [PATCH] PM / sleep: add configurable delay for pm_test
+From: Chirantan Ekbote <chirantan@chromium.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 05:59 PM, Peter Hurley wrote:
-> I have no idea how prevalent the ev56 is compared to the ev5.
-> Still we're talking about a chip that came out in 1996.
+On Thu, Sep 4, 2014 at 10:54 AM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> On Thu, Sep 04, 2014 at 09:14:12AM +0200, Pavel Machek wrote:
+>> > When CONFIG_PM_DEBUG=y, we provide a sysfs file (/sys/power/pm_test) for
+>> > selecting one of a few suspend test modes, where rather than entering a
+>> > full suspend state, the kernel will perform some subset of suspend
+>> > steps, wait 5 seconds, and then resume back to normal operation.
+>> >
+>> > This mode is useful for (among other things) observing the state of the
+>> > system just before entering a sleep mode, for debugging or analysis
+>> > purposes. However, a constant 5 second wait is not sufficient for some
+>> > sorts of analysis; for example, on an SoC, one might want to use
+>> > external tools to probe the power states of various on-chip controllers
+>> > or clocks.
+>>
+>> When you are doing this kind of analysis, perhaps directly modifying
+>> kernel source is the way to go ...?
+>
+> That's what I've been doing for now, but I have a few engineers who need
+> to do this sort of testing and aren't kernel developers. I could
+> continue to maintain my own patch for this, but I just thought I'd see
+> what others thought.
+>
+> Is there a good reason this can't be in mainline? These features are
+> hidden behind a Kconfig symbol called PM_DEBUG anyway, and I think this
+> classifies as a pretty simple extension to the limited existing PM
+> debugging options.
+>
 
-Ah yes, I stand corrected.  According to Wikipedia, the affected CPUs
-were all the 2106x CPUs (EV4, EV45, LCA4, LCA45) plus the 21164 with no
-suffix (EV5).  However, we're still talking about museum pieces here.
+We're currently carrying a similar patch in the chrome os kernel tree.
+I would also like to see this go into mainline.
 
-I wonder what the one I have in my garage is... I'm sure I could emulate
-it faster, though.
+-Chirantan
 
-	-hpa
-
-
+> Regards,
+> Brian
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
