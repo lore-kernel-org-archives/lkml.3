@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaIEGJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:09:44 -0400
-Received: from mail-bn1bbn0109.outbound.protection.outlook.com ([157.56.111.109]:3777
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1754566AbaIEGNT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:13:19 -0400
+Received: from mx12.pku.edu.cn ([162.105.129.175]:47912 "EHLO mail.pku.edu.cn"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751999AbaIEGJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:09:36 -0400
-X-Greylist: delayed 940 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Sep 2014 02:09:36 EDT
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv2 4/4] Clocksource: Flextimer: Fix counter clock prescaler calculation.
-Date: Fri, 5 Sep 2014 13:02:20 +0800
-Message-ID: <1409893340-30027-5-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1409893340-30027-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1409893340-30027-1-git-send-email-Li.Xiubo@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019016)(6009001)(189002)(199003)(36756003)(50986999)(93916002)(104016003)(90102001)(84676001)(83322001)(97736001)(62966002)(81342001)(575784001)(48376002)(86362001)(76176999)(21056001)(81542001)(80022001)(92726001)(92566001)(4396001)(20776003)(79102001)(19580405001)(47776003)(83072002)(31966008)(87936001)(44976005)(6806004)(104166001)(107046002)(74502001)(50226001)(95666004)(85852003)(50466002)(64706001)(85306004)(99396002)(68736004)(105606002)(102836001)(77156001)(88136002)(74662001)(89996001)(229853001)(76482001)(19580395003)(46102001)(87286001)(77982001)(26826002)(106466001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0610;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1751112AbaIEGNS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 02:13:18 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -307.264
+Date: Fri, 5 Sep 2014 14:13:00 +0800 (CST)
+From: =?gbk?B?WHVldGFvIEd1YW4g?= <gxt@pku.edu.cn>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <501661250.62198.1409897580592.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <54094FA7.6000809@roeck-us.net>
+Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_=E5=9B=9E?=
+ =?utf-8?Q?=E5=A4=8D=EF=BC=9A_Re:_=E5=9B=9E=E5=A4=8D=EF=BC=9A?=
+ =?utf-8?Q?_Re:_=E5=9B=9E=E5=A4=8D=EF=BC=9A_Status_of_'?=
+ =?utf-8?Q?unicore32'_architecture_in_Linux_kernel?=
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0325F6C77B
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.136]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old code will use the uncorrect clock prescaler after the
-loop and the 'ps' must minus one after the loop.
 
-This patch will use new style of this loop and will fix this bug
-at the same time.
+----- Guenter Roeck <linux@roeck-us.net> 写道：
+> On 09/03/2014 01:32 AM, Xuetao Guan  wrote:
+> >
+> [ ... ]
+> 
+> >> Please try the following patch. That seems to do it.
+> >> I am sure it can be improved, but it is a start.
+> >>
+> >> Thanks,
+> >> Guenter
+> >
+> > Thanks. I'll test it.
+> > BTW, Qemu codestyle is different, and tab should be replaced with blanks.
+> >
+> 
+> Here is where I am. User space code (busybox) was compiled
+> using the unicore toolchain available on the web.
+> 
+> ...
+> serio: i8042 KBD port at 0x6eb00060,0x6eb00064 irq 22
+> mousedev: PS/2 mouse device common for all mice
+> Enable UniCore-F64 support.
+> Warning: unable to open an initial console.
+> Freeing unused kernel memory: 1156K (c0408000 - c0529000)
+> 
+> Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+> 
+> ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+> 
+> The kernel tries to execute the init program, which fails with SIGSEGV.
+> I confirmed that the init program is loaded and starts to execute.
+> 
+> Any idea what might cause such a problem ?
+> 
+> Thanks,
+> Guenter
+> 
+'slink /init             /bin/busybox 777 0 0' should be inserted in initramfs config
+Also, I recommend compile busybox statically for initramfs.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/clocksource/fsl_ftm_timer.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+I need more information, including full kmsg and initramfs configs
 
-diff --git a/drivers/clocksource/fsl_ftm_timer.c b/drivers/clocksource/fsl_ftm_timer.c
-index c0ce603..2b0983d 100644
---- a/drivers/clocksource/fsl_ftm_timer.c
-+++ b/drivers/clocksource/fsl_ftm_timer.c
-@@ -300,16 +300,15 @@ static unsigned long __init ftm_clk_init(struct device_node *np)
- 
- static int __init ftm_calc_closest_round_cyc(unsigned long freq)
- {
--	priv->ps = 0;
-+	int div;
- 
- 	/* The counter register is only using the lower 16 bits, and
- 	 * if the 'freq' value is to big here, then the periodic_cyc
- 	 * may exceed 0xFFFF.
- 	 */
--	do {
--		priv->periodic_cyc = DIV_ROUND_CLOSEST(freq,
--						HZ * (1 << priv->ps++));
--	} while (priv->periodic_cyc > 0xFFFF);
-+	for (priv->ps = 0, priv->periodic_cyc = ~0UL, div = HZ;
-+	     priv->periodic_cyc > 0xffff; priv->ps++, div *= 2)
-+		priv->periodic_cyc = DIV_ROUND_CLOSEST(freq, div);
- 
- 	if (priv->ps > FTM_PS_MAX) {
- 		pr_err("ftm: the prescaler is %lu > %d\n",
--- 
-2.1.0.27.g96db324
+My qemu commands as following. Maybe useful.
+
+qemu-new:
+        @test -d $(DIR_WORKING)/qemu-unicore32 ||               \
+                mkdir -p $(DIR_WORKING)/qemu-unicore32
+        @echo "Remove old qemu repo ..."
+        @rm -fr $(DIR_WORKING)/qemu
+        @cd $(DIR_WORKING); git clone $(QEMU_GITREPO)
+        @cd $(DIR_WORKING)/qemu;                                \
+                git br unicore32 origin/unicore32;              \
+                git co unicore32
+
+qemu-make:
+        @echo "Configure qemu ..."
+        @cd $(DIR_WORKING)/qemu; ./configure                    \
+                --enable-trace-backend=stderr                   \
+                --target-list=$(QEMU_TARGETS)                   \
+                --enable-debug                                  \
+                --disable-sdl                                   \
+                --interp-prefix=$(DIR_GNU_UC)                   \
+                --prefix=$(DIR_WORKING)/qemu-unicore32          \
+                >> $(QEMU_BUILDLOG) 2>&1
+        @echo "Make qemu and make install ..."
+        @make -C $(DIR_WORKING)/qemu -j4 >> $(QEMU_BUILDLOG) 2>&1
+        @make -C $(DIR_WORKING)/qemu install >> $(QEMU_BUILDLOG) 2>&1
+
+qemu-run:
+        @echo "Remove old log file"
+        @rm -fr $(QEMU_TRACELOG)
+        @echo "Running QEMU in this tty ..."
+        @$(DIR_WORKING)/qemu-unicore32/bin/qemu-system-unicore32\
+                -curses                                         \
+                -M puv3                                         \
+                -m 512                                          \
+                -icount 0                                       \
+                -kernel $(DIR_WORKING)/zImage                   \
+                -net nic                                        \
+                -net tap,ifname=tap_$(USER),script=no,downscript=no     \
+                -append "root=/dev/nfs nfsroot=192.168.200.161:/export/guestroot/,tcp rw ip=192.168.122.4"    \
+                2> $(QEMU_TRACELOG)
 
