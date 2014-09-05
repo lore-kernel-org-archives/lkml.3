@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044AbaIELld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 07:41:33 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:45953 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911AbaIELlb (ORCPT
+	id S932132AbaIELsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 07:48:32 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37414 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068AbaIELsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 07:41:31 -0400
-X-Auth-Info: M1K06XzPv+0WXbHD0SR3+vds+5APQ/pM6mjHuDvI0z0=
-From: Marek Vasut <marex@denx.de>
-To: Yao Yuan <yao.yuan@freescale.com>
-Subject: Re: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c driver
-Date: Fri, 5 Sep 2014 12:40:44 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "LW@karo-electronics.de" <LW@karo-electronics.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "fugang.duan@freescale.com" <fugang.duan@freescale.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-References: <1407923215-3749-1-git-send-email-yao.yuan@freescale.com> <201409041638.45537.marex@denx.de> <c10c1960255e4dbca2a281b995290c6d@BL2PR03MB338.namprd03.prod.outlook.com>
-In-Reply-To: <c10c1960255e4dbca2a281b995290c6d@BL2PR03MB338.namprd03.prod.outlook.com>
+	Fri, 5 Sep 2014 07:48:30 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Fri, 5 Sep 2014 07:48:27 -0400
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Jeff Layton <jeff.layton@primarydata.com>,
+        Devel FS Linux <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        cluster-devel <cluster-devel@redhat.com>,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v2 01/17] locks: consolidate "nolease" routines
+Message-ID: <20140905074827.62a5048a@tlielax.poochiereds.net>
+In-Reply-To: <20140904201200.GA26054@infradead.org>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+	<1409834323-7171-2-git-send-email-jlayton@primarydata.com>
+	<CAHQdGtTqG8aW-cte2PW6pVw+OeCXATgr1BZwdhponuWMjzNg8g@mail.gmail.com>
+	<20140904084938.2664bf0a@tlielax.poochiereds.net>
+	<CAABAsM6v3-f_7cco8f_F5Wpy7PWJOUywQHH7A=mZ-LyHRASZ7Q@mail.gmail.com>
+	<20140904201200.GA26054@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201409051240.44469.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 05, 2014 at 12:32:40 PM, Yao Yuan wrote:
-[...]
-> > > +static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
-> > > +					struct i2c_msg *msgs)
-> > > +{
-> > > +	int result;
-> > > +	unsigned int temp = 0;
-> > > +	unsigned long orig_jiffies = jiffies;
-> > > +	struct imx_i2c_dma *dma = i2c_imx->dma;
-> > > +	struct device *dev = &i2c_imx->adapter.dev;
-> > > +
-> > > +	dev_dbg(dev, "<%s> write slave address: addr=0x%x\n",
-> > > +		__func__, msgs->addr << 1);
-> > > +
-> > > +	reinit_completion(&i2c_imx->dma->cmd_complete);
-> > > +	dma->chan_using = dma->chan_tx;
-> > > +	dma->dma_transfer_dir = DMA_MEM_TO_DEV;
-> > > +	dma->dma_data_dir = DMA_TO_DEVICE;
-> > > +	dma->dma_len = msgs->len - 1;
-> > > +	result = i2c_imx_dma_xfer(i2c_imx, msgs);
-> > > +	if (result)
-> > > +		return result;
-> > > +
-> > > +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-> > > +	temp |= I2CR_DMAEN;
-> > > +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-> > > +
-> > > +	/*
-> > > +	 * Write slave address.
-> > > +	 * The first byte muse be transmitted by the CPU.
-> > > +	 */
-> > > +	imx_i2c_write_reg(msgs->addr << 1, i2c_imx, IMX_I2C_I2DR);
-> > > +	result = wait_for_completion_interruptible_timeout(
-> > > +				&i2c_imx->dma->cmd_complete,
-> > > +				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
-> > > +	if (result <= 0) {
-> > > +		dmaengine_terminate_all(dma->chan_using);
-> > > +		if (result)
-> > > +			return result;
-> > > +		else
-> > > +			return -ETIMEDOUT;
-> > 
-> > Shouldn't you force-disable the DMA here somehow (like unsetting
-> > I2CR_DMAEN bit), if it failed or timed out?
+On Thu, 4 Sep 2014 13:12:00 -0700
+Christoph Hellwig <hch@infradead.org> wrote:
+
+> On Thu, Sep 04, 2014 at 02:25:35PM -0400, Trond Myklebust wrote:
+> > Actually, it looks as if when you compile with !CONFIG_FILE_LOCKING,
+> > then fcntl_setlease() returns the value '0' (which would be
+> > "success!"). The word "confusing" only begins to describe it all.
 > 
-> [Yuan Yao] Yes, I put the code for force-disable DMA in i2c_imx_start().
-> In order to make sure any DMA error will not effect the I2C.
-> It seems almost the same as put the code here, how about your think?
+> That's incorrect for sure, we should agree on a single sensible code
+> for:
+> 
+>  1) !CONFIG_FILE_LOCKING
+>  2) !lease_enable
+>  3) filesystem doesn't support leases.
+> 
 
-Would that mean that the "crashed" DMA would be running until the next 
-transmission is scheduled ?
+Agreed. I think -ENOLCK is really better than -EINVAL.
 
-[...]
+I usually take -EINVAL to mean "you sent me something bogus". Whereas
+-ENOLCK just says "locking doesn't work". -ENOLCK seems closer to the
+situation in all 3 cases above.
+
+That said, this is a user-visible change. The main userland consumer of
+leases (AFAIK) is samba, so I'll take a peek at that code and run it by
+them before merging anything.
+
+-- 
+Jeff Layton <jlayton@primarydata.com>
