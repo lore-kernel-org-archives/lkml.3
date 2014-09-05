@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005AbaIEKx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:53:26 -0400
-Received: from 8bytes.org ([81.169.241.247]:37800 "EHLO theia.8bytes.org"
+	id S1756988AbaIEKxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:53:25 -0400
+Received: from 8bytes.org ([81.169.241.247]:37799 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756899AbaIEKxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756898AbaIEKxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 06:53:13 -0400
 From: Joerg Roedel <joro@8bytes.org>
 To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 09/12] kvm: iommu: Convert to use new iommu_capable() API function
-Date: Fri,  5 Sep 2014 12:53:01 +0200
-Message-Id: <1409914384-21191-10-git-send-email-joro@8bytes.org>
+Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 07/12] iommu/msm: Convert to iommu_capable() API function
+Date: Fri,  5 Sep 2014 12:52:59 +0200
+Message-Id: <1409914384-21191-8-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409914384-21191-1-git-send-email-joro@8bytes.org>
 References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
@@ -22,37 +21,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <jroedel@suse.de>
 
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Joerg Roedel <jroedel@suse.de>
 ---
- virt/kvm/iommu.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/iommu/msm_iommu.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 714b949..45ee080 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -191,8 +191,7 @@ int kvm_assign_device(struct kvm *kvm,
- 		return r;
- 	}
+diff --git a/drivers/iommu/msm_iommu.c b/drivers/iommu/msm_iommu.c
+index 49f41d6..6e3dcc28 100644
+--- a/drivers/iommu/msm_iommu.c
++++ b/drivers/iommu/msm_iommu.c
+@@ -603,10 +603,9 @@ fail:
+ 	return ret;
+ }
  
--	noncoherent = !iommu_domain_has_cap(kvm->arch.iommu_domain,
--					    IOMMU_CAP_CACHE_COHERENCY);
-+	noncoherent = !iommu_capable(&pci_bus_type, IOMMU_CAP_CACHE_COHERENCY);
+-static int msm_iommu_domain_has_cap(struct iommu_domain *domain,
+-				    unsigned long cap)
++static bool msm_iommu_capable(enum iommu_cap cap)
+ {
+-	return 0;
++	return false;
+ }
  
- 	/* Check if need to update IOMMU page table for guest memory */
- 	if (noncoherent != kvm->arch.iommu_noncoherent) {
-@@ -254,8 +253,7 @@ int kvm_iommu_map_guest(struct kvm *kvm)
- 	}
+ static void print_ctx_regs(void __iomem *base, int ctx)
+@@ -675,6 +674,7 @@ fail:
+ }
  
- 	if (!allow_unsafe_assigned_interrupts &&
--	    !iommu_domain_has_cap(kvm->arch.iommu_domain,
--				  IOMMU_CAP_INTR_REMAP)) {
-+	    !iommu_capable(&pci_bus_type, IOMMU_CAP_INTR_REMAP)) {
- 		printk(KERN_WARNING "%s: No interrupt remapping support,"
- 		       " disallowing device assignment."
- 		       " Re-enble with \"allow_unsafe_assigned_interrupts=1\""
+ static const struct iommu_ops msm_iommu_ops = {
++	.capable = msm_iommu_capable,
+ 	.domain_init = msm_iommu_domain_init,
+ 	.domain_destroy = msm_iommu_domain_destroy,
+ 	.attach_dev = msm_iommu_attach_dev,
+@@ -682,7 +682,6 @@ static const struct iommu_ops msm_iommu_ops = {
+ 	.map = msm_iommu_map,
+ 	.unmap = msm_iommu_unmap,
+ 	.iova_to_phys = msm_iommu_iova_to_phys,
+-	.domain_has_cap = msm_iommu_domain_has_cap,
+ 	.pgsize_bitmap = MSM_IOMMU_PGSIZES,
+ };
+ 
 -- 
 1.9.1
 
