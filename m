@@ -1,48 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918AbaIEF2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 01:28:52 -0400
-Received: from ozlabs.org ([103.22.144.67]:40824 "EHLO ozlabs.org"
+	id S1753343AbaIEF2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 01:28:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21932 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752566AbaIEF2t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752576AbaIEF2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 01:28:49 -0400
-Message-ID: <1409894927.11359.26.camel@ale.ozlabs.ibm.com>
-Subject: deb-pkg: Add support for powerpc little endian
-From: Michael Neuling <mikey@neuling.org>
-To: Michal Marek <mmarek@suse.cz>, Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kbuild@vger.kernel.org, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>
-Date: Fri, 05 Sep 2014 15:28:47 +1000
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+Date: Fri, 5 Sep 2014 01:28:39 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 4/6] mm/hugetlb: add migration entry check in
+ hugetlb_change_protection
+Message-ID: <20140905052839.GC6883@nhori.redhat.com>
+References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1409276340-7054-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.LSU.2.11.1409031752510.11238@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1409031752510.11238@eggly.anvils>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Debian powerpc little endian architecture is called ppc64le.  This
-is the default architecture used by Ubuntu for powerpc.
+On Wed, Sep 03, 2014 at 06:06:34PM -0700, Hugh Dickins wrote:
+> On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
+> 
+> > There is a race condition between hugepage migration and change_protection(),
+> > where hugetlb_change_protection() doesn't care about migration entries and
+> > wrongly overwrites them. That causes unexpected results like kernel crash.
+> > 
+> > This patch adds is_hugetlb_entry_(migration|hwpoisoned) check in this
+> > function to do proper actions.
+> > 
+> > ChangeLog v3:
+> > - handle migration entry correctly (instead of just skipping)
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Cc: <stable@vger.kernel.org> # [2.6.36+]
+> 
+> 2.6.36+?  For the hwpoisoned part of it, I suppose.
+> Then you'd better mentioned the hwpoisoned case in the comment above.
 
-The below checks the kernel config to see if we are compiling little
-endian and sets the Debian arch appropriately.
+OK, I'll update the description and the subject.
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > ---
+> >  mm/hugetlb.c | 21 ++++++++++++++++++++-
+> >  1 file changed, 20 insertions(+), 1 deletion(-)
+> > 
+> > diff --git mmotm-2014-08-25-16-52.orig/mm/hugetlb.c mmotm-2014-08-25-16-52/mm/hugetlb.c
+> > index 2aafe073cb06..1ed9df6def54 100644
+> > --- mmotm-2014-08-25-16-52.orig/mm/hugetlb.c
+> > +++ mmotm-2014-08-25-16-52/mm/hugetlb.c
+> > @@ -3362,7 +3362,26 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+> >  			spin_unlock(ptl);
+> >  			continue;
+> >  		}
+> > -		if (!huge_pte_none(huge_ptep_get(ptep))) {
+> > +		pte = huge_ptep_get(ptep);
+> > +		if (unlikely(is_hugetlb_entry_hwpoisoned(pte))) {
+> > +			spin_unlock(ptl);
+> > +			continue;
+> > +		}
+> > +		if (unlikely(is_hugetlb_entry_migration(pte))) {
+> > +			swp_entry_t entry = pte_to_swp_entry(pte);
+> > +
+> > +			if (is_write_migration_entry(entry)) {
+> > +				pte_t newpte;
+> > +
+> > +				make_migration_entry_read(&entry);
+> > +				newpte = swp_entry_to_pte(entry);
+> > +				set_pte_at(mm, address, ptep, newpte);
+> 
+> set_huge_pte_at.
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 35d5a58..6f4a1af 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -37,7 +37,7 @@ create_package() {
- 	s390*)
- 		debarch=s390$(grep -q CONFIG_64BIT=y $KCONFIG_CONFIG && echo x || true) ;;
- 	ppc*)
--		debarch=powerpc ;;
-+		debarch=$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo ppc64el || echo powerpc) ;;
- 	parisc*)
- 		debarch=hppa ;;
- 	mips*)
+Fixed, thanks.
 
+> 
+> (As usual, I can't bear to see these is_hugetlb_entry_hwpoisoned and
+> is_hugetlb_entry_migration examples go past without bleating about
+> wanting to streamline them a little; but agreed last time to leave
+> that to some later cleanup once all the stable backports are stable.)
+
+Yes, these two check routines need cleanup.
+I'll do it in separate work later.
+
+> > +				pages++;
+> > +			}
+> > +			spin_unlock(ptl);
+> > +			continue;
+> > +		}
+> > +		if (!huge_pte_none(pte)) {
+> >  			pte = huge_ptep_get_and_clear(mm, address, ptep);
+> >  			pte = pte_mkhuge(huge_pte_modify(pte, newprot));
+> >  			pte = arch_make_huge_pte(pte, vma, NULL, 0);
+> > -- 
+> > 1.9.3
+> 
