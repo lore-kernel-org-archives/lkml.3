@@ -1,161 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaIET0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:26:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44968 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaIETZb (ORCPT
+	id S1752350AbaIET0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:26:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33911 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293AbaIET0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:25:31 -0400
-Date: Fri, 5 Sep 2014 19:25:07 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] fuse: Add support for mounts from user namespaces
-Message-ID: <20140905192507.GS16450@ubuntumail>
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
- <1409672696-15847-4-git-send-email-seth.forshee@canonical.com>
- <20140905164811.GH16450@ubuntumail>
- <20140905173605.GA84919@ubuntu-hedt>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905173605.GA84919@ubuntu-hedt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Sep 2014 15:26:37 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 12/18] tty: serial: 8250_dma: optimize the xmit path due to UART_BUG_DMA_TX
+Date: Fri,  5 Sep 2014 21:02:47 +0200
+Message-Id: <1409943773-7874-13-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Seth Forshee (seth.forshee@canonical.com):
-> On Fri, Sep 05, 2014 at 04:48:11PM +0000, Serge Hallyn wrote:
-> > Quoting Seth Forshee (seth.forshee@canonical.com):
-> > > Update fuse to support mounts from within user namespaces. This
-> > > is mostly a matter of translating uids and gids into the
-> > > namespace of the process reading requests before handing the
-> > > requests off to userspace.
-> > > 
-> > > Due to security concerns the namespace used should be fixed,
-> > > otherwise a user might be able to pass the fuse fd to
-> > > init_user_ns and inject suid files owned by a user outside the
-> > > namespace in order to gain elevated privileges. For fuse we
-> > > stash current_user_ns() when a filesystem is first mounted and
-> > > abort the mount if this namespace is different than the one used
-> > > to open the fd passed in the mount options.
-> > > 
-> > > The allow_others options could also be a problem, as a userns
-> > > mount could bypass system policy for this option and thus open
-> > > the possiblity of DoS attacks. This is prevented by restricting
-> > > the scope of allow_other to apply only to that superblock's
-> > > userns and its children, giving the expected behavior within the
-> > > userns while preventing DoS attacks on more privileged contexts.
-> > > 
-> > > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Due to UART_BUG_DMA_TX the am335x has to put the first one byte into the
+TX FIFO to get things going. If we get to serial8250_tx_dma() via
+__dma_tx_complete() then the DMA engine just finished and the FIFO is
+full and we can't put the first byte into the TX FIFO as kick start so
+we leave with THRI enabled.
+The result is that we end up manually filling the FIFO. We could be a
+little better at this and try DMA once again. If it works, it works and
+if not we do it manually.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/serial/8250/8250_core.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-> > 
-> > Thanks, Seth, just two little questions below.
-> > 
-> > > ---
-> > >  fs/fuse/dev.c    |  4 ++--
-> > >  fs/fuse/dir.c    | 46 +++++++++++++++++++++++++++++++++-------------
-> > >  fs/fuse/fuse_i.h |  4 ++++
-> > >  fs/fuse/inode.c  | 28 ++++++++++++++++++++--------
-> > >  4 files changed, 59 insertions(+), 23 deletions(-)
-> > > 
-> > > diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> > > index 839caebd34f1..03c8785ed731 100644
-> > > --- a/fs/fuse/dev.c
-> > > +++ b/fs/fuse/dev.c
-> > > @@ -127,8 +127,8 @@ static void __fuse_put_request(struct fuse_req *req)
-> > >  
-> > >  static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
-> > >  {
-> > > -	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
-> > > -	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
-> > > +	req->in.h.uid = from_kuid_munged(fc->user_ns, current_fsuid());
-> > > +	req->in.h.gid = from_kgid_munged(fc->user_ns, current_fsgid());
-> > >  	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
-> > >  }
-> > >  
-> > > diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> > > index de1d84af9f7c..c0b9968db6a1 100644
-> > > --- a/fs/fuse/dir.c
-> > > +++ b/fs/fuse/dir.c
-> > > @@ -905,8 +905,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
-> > >  	stat->ino = attr->ino;
-> > >  	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
-> > >  	stat->nlink = attr->nlink;
-> > > -	stat->uid = make_kuid(&init_user_ns, attr->uid);
-> > > -	stat->gid = make_kgid(&init_user_ns, attr->gid);
-> > > +	stat->uid = make_kuid(fc->user_ns, attr->uid);
-> > > +	stat->gid = make_kgid(fc->user_ns, attr->gid);
-> > >  	stat->rdev = inode->i_rdev;
-> > >  	stat->atime.tv_sec = attr->atime;
-> > >  	stat->atime.tv_nsec = attr->atimensec;
-> > > @@ -1085,12 +1085,20 @@ int fuse_reverse_inval_entry(struct super_block *sb, u64 parent_nodeid,
-> > >   */
-> > >  int fuse_allow_current_process(struct fuse_conn *fc)
-> > >  {
-> > > -	const struct cred *cred;
-> > > +	const struct cred *cred = current_cred();
-> > >  
-> > > -	if (fc->flags & FUSE_ALLOW_OTHER)
-> > > -		return 1;
-> > > +	if (fc->flags & FUSE_ALLOW_OTHER) {
-> > > +		if (kuid_has_mapping(fc->user_ns, cred->euid) &&
-> > > +		    kuid_has_mapping(fc->user_ns, cred->suid) &&
-> > > +		    kuid_has_mapping(fc->user_ns, cred->uid) &&
-> > > +		    kgid_has_mapping(fc->user_ns, cred->egid) &&
-> > > +		    kgid_has_mapping(fc->user_ns, cred->sgid) &&
-> > > +		    kgid_has_mapping(fc->user_ns, cred->gid))
-> > 
-> > Should fsuid be checked here?
-> 
-> The point of restricting access here is to prevent a DoS type of attack
-> on a more privileged context by making a filesystem operation block
-> indefinitely. Coming from that perspective I was thinking that these
-> checks ought to be sufficient, but I could be wrong.
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 079048db8c81..7111b22de000 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1597,9 +1597,21 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
+ 	serial8250_modem_status(up);
+ 	if ((!up->dma || (up->dma && up->dma->tx_err)) &&
+ 			(status & UART_LSR_THRE)) {
+-		serial8250_tx_chars(up);
+-	}
++		if (!up->dma) {
++			serial8250_tx_chars(up);
++		} else {
++			if (uart_tx_stopped(&up->port) ||
++				uart_circ_empty(&up->port.state->xmit)) {
++				serial8250_tx_chars(up);
+ 
++			} else  {
++				/* try again due to UART_BUG_DMA_TX+full fifo */
++				dma_err = serial8250_tx_dma(up);
++				if (dma_err)
++					serial8250_tx_chars(up);
++			}
++		}
++	}
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ 	return 1;
+ }
+-- 
+2.1.0
 
-I supose it would, as euid 0 would already not be mapped.
-
-> > > +			return 1;
-> > > +
-> > > +		return 0;
-> > > +	}
-> > >  
-> > > -	cred = current_cred();
-> > >  	if (uid_eq(cred->euid, fc->user_id) &&
-> > >  	    uid_eq(cred->suid, fc->user_id) &&
-> > >  	    uid_eq(cred->uid,  fc->user_id) &&
-> > > @@ -1556,17 +1564,25 @@ static bool update_mtime(unsigned ivalid, bool trust_local_mtime)
-> > >  	return true;
-> > >  }
-> > >  
-> > > -static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
-> > > -			   bool trust_local_cmtime)
-> > > +static int iattr_to_fattr(struct fuse_conn *fc, struct iattr *iattr,
-> > > +			   struct fuse_setattr_in *arg, bool trust_local_cmtime)
-> > >  {
-> > >  	unsigned ivalid = iattr->ia_valid;
-> > >  
-> > >  	if (ivalid & ATTR_MODE)
-> > >  		arg->valid |= FATTR_MODE,   arg->mode = iattr->ia_mode;
-> > > -	if (ivalid & ATTR_UID)
-> > > -		arg->valid |= FATTR_UID,    arg->uid = from_kuid(&init_user_ns, iattr->ia_uid);
-> > > -	if (ivalid & ATTR_GID)
-> > > -		arg->valid |= FATTR_GID,    arg->gid = from_kgid(&init_user_ns, iattr->ia_gid);
-> > > +	if (ivalid & ATTR_UID) {
-> > > +		arg->uid = from_kuid(fc->user_ns, iattr->ia_uid);
-> > > +		if (arg->uid == (uid_t)-1)
-> > 
-> > Any reason not to use uid_valid() here (and gid_valid() below)?
-> 
-> Yes. arg->uid is a uid_t and not a kuid_t, so it wouldn't be valid to
-> pass that to uid_valid(). And from_kuid() can return -1 for values other
-> than INVALID_UID.
-
-D'oh.  Right.
