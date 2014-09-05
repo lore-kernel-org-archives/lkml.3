@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215AbaIEM0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:26:25 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:58534 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaIEM0X (ORCPT
+	id S932260AbaIEM2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:28:04 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:39939 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaIEM2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:26:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Fugang Duan <B38611@freescale.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
-        Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-Date: Fri, 05 Sep 2014 14:26:14 +0200
-Message-ID: <3495079.hWGRuSPgx7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409919274-13419-2-git-send-email-svarbanov@mm-sol.com>
-References: <1409919274-13419-1-git-send-email-svarbanov@mm-sol.com> <1409919274-13419-2-git-send-email-svarbanov@mm-sol.com>
+	Fri, 5 Sep 2014 08:28:02 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:UCf8tqoPfnkyQ4mcJt99npQMwrotR1FJ2s4HcbZa08o
- zlYns/w8bCVN7xrrWjdSZJ2M2JWwiRp8qcUn/luaREeTGLPGc3
- odP//uGzhXtOImrK9XxCVbcVHAMIqGQ4j5jBWC6/EfvWZTfBDT
- eYV3Z5oOecL5KObtCQDlA1pOAmxRY9zPD9SZx5g/grWvJYIZ35
- 06TRLezkJkK7fTsB72zyHLJ3+v915UTIYJ+L+bEFLBsU2qAS0C
- 2iVwsf22a94s0gmTCwla6MswJP6PTvztTIdPVZJLYoA8WtwMKo
- oyC6+bORLGqohkwdVI/h7p6/Bzz/+UAcNJwH+D/In2D7/aTode
- PXRIUKUc0UWE/O7qHbfs=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <5409AA64.2010700@linux.vnet.ibm.com>
+References: <540707D9.4040208@linux.vnet.ibm.com> <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com>
+ <5409AA64.2010700@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 5 Sep 2014 14:27:36 +0200
+Message-ID: <CAKfTPtDYXeCnYgR0yU2Ed-XBP9ezfk-j1gCgEyiReyQjD5hC6Q@mail.gmail.com>
+Subject: Re: [QUERY] Confusing usage of rq->nr_running in load balancing
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 September 2014 15:14:33 Stanimir Varbanov wrote:
-> +       VADC_CHAN(LR_MUX1_BAT_THERM, 0)                 /* 0x30 */
-> +       VADC_CHAN(LR_MUX2_BAT_ID, 0)
-> +       VADC_CHAN(LR_MUX3_XO_THERM, 0)
-> +       VADC_CHAN(LR_MUX4_AMUX_THM1, 0)
-> +       VADC_CHAN(LR_MUX5_AMUX_THM2, 0)
-> +       VADC_CHAN(LR_MUX6_AMUX_THM3, 0)
-> +       VADC_CHAN(LR_MUX7_HW_ID, 0)
-> +       VADC_CHAN(LR_MUX8_AMUX_THM4, 0)
-> +       VADC_CHAN(LR_MUX9_AMUX_THM5, 0)
-> +       VADC_CHAN(AMUX_PU1, 0)
-> +       VADC_CHAN(AMUX_PU2, 0)
-> +       VADC_CHAN(LR_MUX3_BUF_XO_THERM_BUF, 0)          /* 0x3c */
-> +
-> +       VADC_CHAN(LR_MUX1_PU1_BAT_THERM, 0)             /* 0x70 */
-> +       VADC_CHAN(LR_MUX2_PU1_BAT_ID, 0)
-> +       VADC_CHAN(LR_MUX3_PU1_XO_THERM, 0)
-> +       VADC_CHAN(LR_MUX4_PU1_AMUX_THM1, 0)
-> +       VADC_CHAN(LR_MUX5_PU1_AMUX_THM2, 0)
-> +       VADC_CHAN(LR_MUX6_PU1_AMUX_THM3, 0)
-> +       VADC_CHAN(LR_MUX7_PU1_AMUX_HW_ID, 0)
-> +       VADC_CHAN(LR_MUX8_PU1_AMUX_THM4, 0)
-> +       VADC_CHAN(LR_MUX9_PU1_AMUX_THM5, 0)
-> +       VADC_CHAN(LR_MUX10_PU1_AMUX_USB_ID, 0)          /* 0x79 */
-> +       VADC_CHAN(LR_MUX3_BUF_PU1_XO_THERM_BUF, 0)      /* 0x7c */
-> 
+On 5 September 2014 14:19, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> Hi Vincent,
+>
+> On 09/03/2014 10:28 PM, Vincent Guittot wrote:
+>> On 3 September 2014 14:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>>> Hi,
+>>
+>> Hi Preeti,
+>>
+>>>
+>>> There are places in kernel/sched/fair.c in the load balancing part where
+>>> rq->nr_running is used as against cfs_rq->nr_running. At least I could
+>>> not make out why the former was used in the following scenarios.
+>>> It looks to me that it can very well lead to incorrect load balancing.
+>>> Also I did not pay attention to the numa balancing part of the code
+>>> while skimming through this file to catch this scenario. There are a
+>>> couple of places there too which need to be scrutinized.
+>>>
+>>> 1. load_balance(): The check (busiest->nr_running > 1)
+>>> The load balancing would be futile if there are tasks of other
+>>> scheduling classes, wouldn't it?
+>>
+>> agree with you
+>>
+>>>
+>>> 2. active_load_balance_cpu_stop(): A similar check and a similar
+>>> consequence as 1 here.
+>>
+>> agree with you
+>>
+>>>
+>>> 3. nohz_kick_needed() : We check for more than one task on the runqueue
+>>> and hence trigger load balancing even if there are rt-tasks.
+>>
+>> I can see one potentiel reason why rq->nr_running is interesting that
+>> is the group capacity might have changed because of non cfs tasks
+>> since last load balance. So we need to monitor the change of the
+>> groups' capacity to ensure that the average load of each group is
+>> still in the same level
+>>
+>>>
+>>> 4. cpu_avg_load_per_task(): This stands out among the rest as an
+>>> incorrect usage of rq->nr_running in place of cfs_rq->nr_running. We
+>>> divide the load associated with the cfs_rq by the number of tasks on the
+>>> rq. This will make the cfs_rq load look smaller.
+>>
+>> This one is solved in the consolidation of cpu_capacity patchset
+>
+> Sorry, but I don't see where in your patchset you have addressed this
+> issue. Can you please point out the patch?
 
-These numbers all look hardware specific, so why put macros into the
-device tree rather than using them directly?
+In [PATCH v5 03/12] sched: fix avg_load computation:
 
-If you want to make up your own macro namespace, I would suggest
-using consecutive numbers and turning the above into
+static unsigned long cpu_avg_load_per_task(int cpu)
+ {
+        struct rq *rq = cpu_rq(cpu);
+-       unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
++       unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
+        unsigned long load_avg = rq->cfs.runnable_load_avg;
 
-	...
-	[LR_MUX3_BUF_XO_THERM_BUF] = VADC_CHAN(0x3c, 0),
-	[LR_MUX1_PU1_BAT_THERM]    = VADC_CHAN(0x70, 0),
-	[LR_MUX1_PU1_BAT_ID]       = VADC_CHAN(0x71, 0),
-	...
+Are you referring to another problem than the one above ?
 
-but I don't see that really improving the DT, since you then
-need to look up the values in the header rather than the data sheet.
+Regards
+Vincent
 
-	Arnd
+>
+> Regards
+> Preeti U Murthy
+>
