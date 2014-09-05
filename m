@@ -1,104 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610AbaIEKaU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:30:20 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51378 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756478AbaIEKaT (ORCPT
+	id S1756694AbaIEKad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:30:33 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:37488 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756478AbaIEKab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:30:19 -0400
-Date: Fri, 5 Sep 2014 11:30:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140905103001.GB29327@sirena.org.uk>
+	Fri, 5 Sep 2014 06:30:31 -0400
+X-IronPort-AV: E=Sophos;i="5.04,471,1406563200"; 
+   d="scan'208";a="35569468"
+Message-ID: <54098D9E.3070400@cn.fujitsu.com>
+Date: Fri, 5 Sep 2014 18:17:02 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zF+zMOaY3GLhGz1l"
-Content-Disposition: inline
-X-Cookie: Simulated picture.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regulator fixes for v3.17
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Chao Yu <chao2.yu@samsung.com>
+CC: <jaegeuk@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-f2fs-devel@lists.sourceforge.net>
+Subject: Re: [f2fs-dev] [PATCH] f2fs: use lock-less list(llist) to simplify
+ the flush cmd management
+References: <1409735782-7831-1-git-send-email-guz.fnst@cn.fujitsu.com> <002101cfc8d8$1963b650$4c2b22f0$@samsung.com>
+In-Reply-To: <002101cfc8d8$1963b650$4c2b22f0$@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yu,
 
---zF+zMOaY3GLhGz1l
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/05/2014 03:07 PM, Chao Yu wrote:
 
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+> Hi Gu,
+> 
+>> -----Original Message-----
+>> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
+>> Sent: Wednesday, September 03, 2014 5:16 PM
+>> To: jaegeuk@kernel.org
+>> Cc: Gu Zheng; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+>> Subject: [f2fs-dev] [PATCH] f2fs: use lock-less list(llist) to simplify the flush cmd management
+>>
+>> We use flush cmd control to collect many flush cmds, and flush them
+>> together. In this case, we use two list to manage the flush cmds
+>> (collect and dispatch), and one spin lock is used to protect this.
+>> In fact, the lock-less list(llist) is very suitable to this case,
+>> and we use simplify this routine.
+> 
+> Good catch for finding this scenario with llist!
+> 
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>>  fs/f2fs/f2fs.h    |    7 +++----
+>>  fs/f2fs/segment.c |   31 +++++++++----------------------
+>>  2 files changed, 12 insertions(+), 26 deletions(-)
+>>
+>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>> index e921242..1dd861c 100644
+>> --- a/fs/f2fs/f2fs.h
+>> +++ b/fs/f2fs/f2fs.h
+>> @@ -334,16 +334,15 @@ enum {
+>>  struct flush_cmd {
+>>  	struct flush_cmd *next;
+> 
+> No needed here, we can remove it.
+> 
+>>  	struct completion wait;
+>> +	struct llist_node llnode;
+>>  	int ret;
+>>  };
+>>
+>>  struct flush_cmd_control {
+>>  	struct task_struct *f2fs_issue_flush;	/* flush thread */
+>>  	wait_queue_head_t flush_wait_queue;	/* waiting queue for wake-up */
+>> -	struct flush_cmd *issue_list;		/* list for command issue */
+>> -	struct flush_cmd *dispatch_list;	/* list for command dispatch */
+>> -	spinlock_t issue_lock;			/* for issue list lock */
+>> -	struct flush_cmd *issue_tail;		/* list tail of issue list */
+>> +	struct llist_head issue_list;		/* list for command issue */
+>> +	struct llist_node *dispatch_list;	/* list for command dispatch */
+>>  };
+>>
+>>  struct f2fs_sm_info {
+>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>> index 0aa337c..2db1f95 100644
+>> --- a/fs/f2fs/segment.c
+>> +++ b/fs/f2fs/segment.c
+>> @@ -205,24 +205,19 @@ repeat:
+>>  	if (kthread_should_stop())
+>>  		return 0;
+>>
+>> -	spin_lock(&fcc->issue_lock);
+>> -	if (fcc->issue_list) {
+>> -		fcc->dispatch_list = fcc->issue_list;
+>> -		fcc->issue_list = fcc->issue_tail = NULL;
+>> -	}
+>> -	spin_unlock(&fcc->issue_lock);
+>> -
+>> -	if (fcc->dispatch_list) {
+>> +	if (!llist_empty(&fcc->issue_list)) {
+>>  		struct bio *bio = bio_alloc(GFP_NOIO, 0);
+>> -		struct flush_cmd *cmd, *next;
+>> +		struct flush_cmd *cmd;
+>>  		int ret;
+>>
+>> +		fcc->dispatch_list = llist_del_all(&fcc->issue_list);
+>> +		fcc->dispatch_list = llist_reverse_order(fcc->dispatch_list);
+>> +
+>>  		bio->bi_bdev = sbi->sb->s_bdev;
+>>  		ret = submit_bio_wait(WRITE_FLUSH, bio);
+>>
+>> -		for (cmd = fcc->dispatch_list; cmd; cmd = next) {
+>> +		llist_for_each_entry(cmd, fcc->dispatch_list, llnode) {
+> 
+> Please use llist_for_each_entry_safe, Otherwise we might encounter oops as below:
+> 
+> [18727.381582] Call Trace:
+> [18727.381613]  [<c107c0bf>] __wake_up_locked+0x1f/0x30
+> [18727.381626]  [<c107c886>] complete+0x36/0x50
+> [18727.381645]  [<f0a01313>] issue_flush_thread+0x93/0x140 [f2fs]
+> [18727.381658]  [<c107c530>] ? add_wait_queue+0x50/0x50
+> [18727.381672]  [<f0a01280>] ? add_sit_entry+0xc0/0xc0 [f2fs]
+> [18727.381687]  [<c105fabb>] kthread+0x9b/0xb0
+> [18727.381701]  [<c159ad81>] ret_from_kernel_thread+0x21/0x30
+> [18727.381714]  [<c105fa20>] ? flush_kthread_worker+0x80/0x80
 
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+Thanks very much. Fixed all in the new version.
 
-are available in the git repository at:
+Regards,
+Gu
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/=
-regulator-v3.17-rc3
+> 
+> Thanks,
+> Yu
+> 
+>>  			cmd->ret = ret;
+>> -			next = cmd->next;
+>>  			complete(&cmd->wait);
+>>  		}
+>>  		bio_put(bio);
+>> @@ -230,7 +225,7 @@ repeat:
+>>  	}
+>>
+>>  	wait_event_interruptible(*q,
+>> -			kthread_should_stop() || fcc->issue_list);
+>> +		kthread_should_stop() || !llist_empty(&fcc->issue_list));
+>>  	goto repeat;
+>>  }
+>>
+>> @@ -249,17 +244,10 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi)
+>>  		return blkdev_issue_flush(sbi->sb->s_bdev, GFP_KERNEL, NULL);
+>>
+>>  	init_completion(&cmd.wait);
+>> -	cmd.next = NULL;
+>>
+>> -	spin_lock(&fcc->issue_lock);
+>> -	if (fcc->issue_list)
+>> -		fcc->issue_tail->next = &cmd;
+>> -	else
+>> -		fcc->issue_list = &cmd;
+>> -	fcc->issue_tail = &cmd;
+>> -	spin_unlock(&fcc->issue_lock);
+>> +	llist_add(&cmd.llnode, &fcc->issue_list);
+>>
+>> -	if (!fcc->dispatch_list)
+>> +	if (fcc->dispatch_list == NULL)
+>>  		wake_up(&fcc->flush_wait_queue);
+>>
+>>  	wait_for_completion(&cmd.wait);
+>> @@ -276,7 +264,6 @@ int create_flush_cmd_control(struct f2fs_sb_info *sbi)
+>>  	fcc = kzalloc(sizeof(struct flush_cmd_control), GFP_KERNEL);
+>>  	if (!fcc)
+>>  		return -ENOMEM;
+>> -	spin_lock_init(&fcc->issue_lock);
+>>  	init_waitqueue_head(&fcc->flush_wait_queue);
+>>  	SM_I(sbi)->cmd_control_info = fcc;
+>>  	fcc->f2fs_issue_flush = kthread_run(issue_flush_thread, sbi,
+>> --
+>> 1.7.7
+>>
+>>
+>> ------------------------------------------------------------------------------
+>> Slashdot TV.
+>> Video for Nerds.  Stuff that matters.
+>> http://tv.slashdot.org/
+>> _______________________________________________
+>> Linux-f2fs-devel mailing list
+>> Linux-f2fs-devel@lists.sourceforge.net
+>> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+> 
+> .
+> 
 
-for you to fetch changes up to a65c86630632c534e9dd3cf76c1c5a5c98970873:
 
-  Merge remote-tracking branches 'regulator/fix/doc' and 'regulator/fix/tps=
-65090' into regulator-linus (2014-09-05 10:53:18 +0100)
-
-----------------------------------------------------------------
-regulator: Documentation fixes for v3.17
-
-All the fixes people have found for the regulator API have been
-documentation fixes, avoiding warnings while building the kerneldoc,
-fixing some errors in one of the DT bindings documents and fixing some
-typos in the header.
-
-----------------------------------------------------------------
-Andreas F=E4rber (1):
-      regulator: tps65090: Fix tps65090 typos in example
-
-Geert Uytterhoeven (1):
-      regulator: Proofread documentation
-
-Mark Brown (1):
-      Merge remote-tracking branches 'regulator/fix/doc' and 'regulator/fix=
-/tps65090' into regulator-linus
-
-Randy Dunlap (1):
-      regulator: fix kernel-doc warnings in header files
-
- Documentation/devicetree/bindings/regulator/tps65090.txt | 4 ++--
- Documentation/power/regulator/consumer.txt               | 7 ++++---
- Documentation/power/regulator/design.txt                 | 8 ++++----
- Documentation/power/regulator/machine.txt                | 4 ++--
- Documentation/power/regulator/overview.txt               | 6 +++---
- Documentation/power/regulator/regulator.txt              | 6 +++---
- include/linux/regulator/driver.h                         | 2 ++
- include/linux/regulator/machine.h                        | 1 +
- 8 files changed, 21 insertions(+), 17 deletions(-)
-
---zF+zMOaY3GLhGz1l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUCZCmAAoJELSic+t+oim9l+oQAIS5Bfoj5P3oN34YnJhVO/i6
-O0SjOxPg4iW5gdXqKznqqTs9XUbxAggZ1RJtQ/jABmuGxvCbDHQJJ+NdSP8FzwrO
-PVa7+QbPWptgHNGx7RPDpKFc7Y9U6JetAzxPiuwj9Twb8TjSKwzUWM2rpifIYx3o
-zVwef8JBuDWDDby+x6jqB7gzLy9ksrwXZ+TWZpxyPZ5moYoJxk3BUvy5AcZ+JwcW
-P7XsUtOyVlSFerqtSL+E9ffU1BqPiqQr1RvL49nIJaTbxae+DlZmxoWOfAFjAyZF
-/ATINodClfLFWyujn+itf8EREtW5DqVXsdWqv0gm/eZ9nxtbQ4z+THuxI91e91RR
-Omqnug2T39WWY5xqBDPcEi35JohoOhrGQqxqrZVA9M9LYii2/ia367iDdG1eK07l
-9A5iiFcbm5LfDi+woYXto4y9LnqZLnzts16SHVnWp/VLQO8LGcgcy68AE7dmv6xO
-wxu0hzObKPhpm3ylnaev68nh/FN6kzuRY5Ojg8BPj1xAeh6aOLgnmF0mVSr/Hmdc
-gwm0Ftqxby8XHqMynYwDfd1Z73EtRAt/3gNSQ4/BI4HBsxVRrWU/gxDoD26ZFD3u
-Py7J4VU5cRFLBOPsurZveLunlItUfimjTQE3pA45MIKrigSg7gYO0pubyJbfOtXd
-gw7FKgRLArlpYEjMhKKD
-=prTW
------END PGP SIGNATURE-----
-
---zF+zMOaY3GLhGz1l--
