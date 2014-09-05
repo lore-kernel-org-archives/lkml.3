@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaIESUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 14:20:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34160 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750908AbaIESUr (ORCPT
+	id S1752288AbaIESVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 14:21:45 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:65185 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaIESVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 14:20:47 -0400
-Date: Fri, 5 Sep 2014 20:20:44 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Jason Cooper <jason@lakedaemon.net>, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: mvebu: Fix uninitialized variable in
- mvebu_get_tgt_attr()
-Message-ID: <20140905202044.4c166a43@free-electrons.com>
-In-Reply-To: <20140905174122.GD8080@google.com>
-References: <1407512045-26969-1-git-send-email-geert+renesas@glider.be>
-	<20140905174122.GD8080@google.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 5 Sep 2014 14:21:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140904213821.GB356@kroah.com>
+References: <20140817114336.GA24984@ada>
+	<20140830204246.GA16563@kroah.com>
+	<CALDM6bpomcGJk1Ut2hb8qO0gYeKkHruJZ0duBwAaonFf6HbZwA@mail.gmail.com>
+	<20140904213821.GB356@kroah.com>
+Date: Fri, 5 Sep 2014 21:21:42 +0300
+Message-ID: <CALDM6bpwtfdnhjdsSMz_yq9kqk-BtVRJEVnPzzWaciXXBTh8_w@mail.gmail.com>
+Subject: Re: [PATCH] rtl8188eu: Replace rcu_dereference() with rcu_access_pointer()
+From: Andreea Bernat <bernat.ada@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Larry.Finger@lwfinger.net, Elena Oat <oat.elena@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Bjorn Helgaas,
+2014-09-05 0:38 GMT+03:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Thu, Sep 04, 2014 at 11:58:36PM +0300, Andreea Bernat wrote:
+>> Hello,
+>>
+>> I cloned this:
+>> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+>>
+>> and after moved to staging-next branch, but in both cases, in
+>> those files I don't find any use of rcu_dereference() call (the call
+>> which I am looking for to modify).
+>
+> Then there's nothing left to be done here, right?  :)
 
-On Fri, 5 Sep 2014 11:41:22 -0600, Bjorn Helgaas wrote:
+Yes :-)
 
-> This fix looks right to me.  I added a stable tag as follows.  Thomas
-> and/or Jason, and you ack this?
+Thank you,
+Andreea
 
-Hum, I think I would actually prefer something like:
-
-                if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_IO)
-                        rtype = IORESOURCE_IO;
-                else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
-                        rtype = IORESOURCE_MEM;
-+		else
-+			continue;
-
-So that we're explicit with the fact that we only care about I/O and
-MEM32 resource types.
-
-Thanks,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+>
+> thanks,
+>
+> greg k-h
