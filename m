@@ -1,89 +1,467 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaIEPx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:53:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44091 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaIEPx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:53:57 -0400
-Date: Fri, 5 Sep 2014 10:53:21 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <maxime.coquelin@st.com>, <patrice.chotard@st.com>,
-        <srinivas.kandagatla@gmail.com>, <lee.jones@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v6 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
- HC
-Message-ID: <20140905155321.GF24449@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409931392-22340-1-git-send-email-peter.griffin@linaro.org>
- <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
- <20140905154700.GE24449@saruman.home>
+	id S1751298AbaIEP6S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:58:18 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:51955 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaIEP6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 11:58:16 -0400
+Date: Fri, 5 Sep 2014 08:58:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
+        David Paris <david.paris@st.com>
+Subject: Re: [PATCH 4/4] watchdog: st_wdt: Add new driver for ST's LPC
+ Watchdog
+Message-ID: <20140905155811.GA12374@roeck-us.net>
+References: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
+ <1409841592-18890-6-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y1L3PTX8QE8cb2T+"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140905154700.GE24449@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1409841592-18890-6-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Y1L3PTX8QE8cb2T+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 04, 2014 at 03:39:52PM +0100, Lee Jones wrote:
 
-On Fri, Sep 05, 2014 at 10:47:01AM -0500, Felipe Balbi wrote:
-> Hi,
->=20
-> On Fri, Sep 05, 2014 at 04:36:30PM +0100, Peter Griffin wrote:
-> > +static int st_dwc3_remove_child(struct device *dev, void *c)
-> > +{
-> > +	struct platform_device *pdev =3D to_platform_device(dev);
-> > +
-> > +	of_device_unregister(pdev);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int st_dwc3_remove(struct platform_device *pdev)
-> > +{
-> > +	struct st_dwc3 *dwc3_data =3D platform_get_drvdata(pdev);
-> > +
-> > +	device_for_each_child(&pdev->dev, NULL, st_dwc3_remove_child);
->=20
-> same as before, of_platform_depopulate(). I can fix this one myself this
-> time.
+Some text may be useful here.
 
-it's in my testign/next branch, please make sure it looks alright.
+> Signed-off-by: David Paris <david.paris@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/watchdog/Kconfig  |  16 +++
+>  drivers/watchdog/Makefile |   1 +
+>  drivers/watchdog/st_wdt.c | 314 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 331 insertions(+)
+>  create mode 100644 drivers/watchdog/st_wdt.c
+> 
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index f57312f..c8abf57 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -432,6 +432,22 @@ config SIRFSOC_WATCHDOG
+>  	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
+>  	  the watchdog triggers the system will be reset.
+>  
+> +config ST_WATCHDOG
+> +       tristate "STMicroelectronics LPC Watchdog"
+> +       depends on ARCH_STI && OF
+> +       depends on !RTC_DRV_ST_LPC
+> +       select WATCHDOG_CORE
+> +       help
+> +	 Say Y here to include Watchdog timer support for the watchdog
+> +	 existing in the LPC of STMicroelectronics SOCs.
+> +	 !!! BE CARREFUL !!!
+> +	 This driver shares hardware resources with RTC Alarm part of the
+> +	 LPC. Both LPC Watchdog driver and LPC RTC driver cannot be
+> +	 used together.
+> +
+Is this mandatory or an implementation choice ?
+Or, in other words, could the resources be shared among drivers ?
 
---=20
-balbi
+> +	 To compile this driver as a module, choose M here: the
+> +	 module will be called st-wdt.
+> +
+>  config TEGRA_WATCHDOG
+>  	tristate "Tegra watchdog"
+>  	depends on ARCH_TEGRA || COMPILE_TEST
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 468c320..eb19937 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -57,6 +57,7 @@ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+>  obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+>  obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+>  obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
+> +obj-$(CONFIG_ST_WATCHDOG) += st_wdt.o
+>  obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+>  obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
+>  
+> diff --git a/drivers/watchdog/st_wdt.c b/drivers/watchdog/st_wdt.c
+> new file mode 100644
+> index 0000000..b5dbc7d
+> --- /dev/null
+> +++ b/drivers/watchdog/st_wdt.c
+> @@ -0,0 +1,314 @@
+> +/*
+> + * st-wdt.c -- ST's LPC Watchdog
+> + *
+> + * Copyright (C) 2014 STMicroelectronics -- All Rights Reserved
+> + *
+> + * Author: David Paris <david.paris@st.com> for STMicroelectronics
+> + * Contributor: Lee Jones <lee.jones@linaro.org> for STMicroelectronics
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public Licence
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the Licence, or (at your option) any later version.
 
---Y1L3PTX8QE8cb2T+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+MODULE_LICENSE says GPL v2 explicitly. No idea if that is relevant, though.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +#include <linux/watchdog.h>
+> +
+> +/* Low Power Alarm */
+> +#define LPC_LPA_LSB_OFF			0x410
+> +#define LPC_LPA_START_OFF		0x418
+> +
+> +/* LPC as WDT */
+> +#define LPC_WDT_OFF			0x510
+> +
+> +#define WATCHDOG_MIN			1
+> +#define WATCHDOG_MAX32			4294967 /* 32bit resolution */
 
-iQIcBAEBAgAGBQJUCdxxAAoJEIaOsuA1yqRETUsP/0a6P2X0Emj5opvf9JPRjxHN
-ADZyrZuaGJWaPZtElplAdVYmpWzqPJ/XsO+V6WRhOSQO0BqW2zJPQ02Ao8N4rw3s
-7ar7+T5TkOnNmctfTg+rA7a9snXuuK/IJWm+4URGgeaQJmqai6/rMnFOdiBd71ft
-grE5mhbjIM+TrwEfzW3prctNdYbhakB5yDSczxa7NPK0IDt9Ic0N6BkieBhcTWqj
-JU5FteTeKfZgweJLqRdfwFgmEEwoeF/EZF73oCIMjV/9FHYz79MmhV8DYV/deeBc
-CGGKWVCglUhAfUAoQiLadSnBcvB7mTklRYnEkysje2Q3zPwXyt7wEzVsW7blQFk1
-7bxHTslyH8D6HBkcY//jydDyVzVHCT/fWHt86ZFSy9x+O9a7f6q6DsI7cqqVQXSC
-qDplebSC1AiXFKdwCDiLGgyKg5sl4z05JQPGEvLfK5xlTA91mZM5kSDh/sZtcpXM
-r273ejeHFyX8dTfVt8CdZ+Xc0VCVOvirBNGxTceaT4Z1bZpwgpDVGtjaWpIDFwx/
-VCEWEs7A2KByahYNlIYTBpxZJdph5YmTAGvgihQVEJTZLK/0+07KX+dTiGuAIXR6
-gVzBK21M7tUFAc99l7kzliueRA4odfJQwNDjP+IVlUz6ahFZwEghL9RAOJZmL4cW
-M8aLD07H8U9Uaj10g1mb
-=b7D2
------END PGP SIGNATURE-----
+Nitpick, but the '32' is really unnecessary here since you don't
+have a separate define for a different resolution.
 
---Y1L3PTX8QE8cb2T+--
+> +
+> +#define WDT_ENABLE			1
+> +#define WDT_DISABLE			0
+> +
+> +struct st_wdog_syscfg {
+> +	struct regmap *regmap;
+> +	unsigned int type_reg;
+> +	unsigned int type_mask;
+> +	unsigned int enable_reg;
+> +	unsigned int enable_mask;
+
+Wondering ... why do you have regmap, type_reg, and enable_reg here
+and not in the st_wdog structure ?
+
+Logically all values in this structure could (should) be const,
+and it doesn't really make sense to allocate static memory for it.
+I can see the argument of having 'nice' looking code and retrieve,
+say, enable_reg and enable_mask from the same structure, but that
+doesn't really make much sense from a practical perspective. 
+If you want that you could as well copy type_mask and enable_mask
+into st_wdog.
+
+> +};
+> +
+> +struct st_wdog {
+> +	void __iomem *base;
+> +	struct st_wdog_syscfg *syscfg;
+> +	struct clk *clk;
+> +	int warm_reset;
+
+unsigned int ? Also see below.
+
+> +};
+> +
+> +static struct st_wdog_syscfg stid127_syscfg = {
+> +	.type_mask	= BIT(2),
+> +	.enable_mask	= BIT(2),
+> +};
+> +
+> +static struct st_wdog_syscfg stih415_syscfg = {
+> +	.type_mask	= BIT(6),
+> +	.enable_mask	= BIT(7),
+> +};
+> +
+> +static struct st_wdog_syscfg stih416_syscfg = {
+> +	.type_mask	= BIT(6),
+> +	.enable_mask	= BIT(7),
+> +};
+> +
+> +static struct st_wdog_syscfg stih407_syscfg = {
+> +	.enable_mask	= BIT(19),
+> +};
+> +
+> +static struct of_device_id st_wdog_match[] = {
+> +	{
+> +		.compatible = "st,stih407-watchdog",
+> +		.data = (void *)&stih407_syscfg,
+> +	},
+> +	{
+> +		.compatible = "st,stih416-watchdog",
+> +		.data = (void *)&stih416_syscfg,
+> +	},
+> +	{
+> +		.compatible = "st,stih415-watchdog",
+> +		.data = (void *)&stih415_syscfg,
+> +	},
+> +	{
+> +		.compatible = "st,stid127-watchdog",
+> +		.data = (void *)&stid127_syscfg,
+> +	},
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, st_wdog_match);
+> +
+> +static void st_wdog_setup(struct st_wdog *st_wdog, bool enable)
+> +{
+> +	/* Type of watchdog reset - 0: Cold 1: Warm */
+> +	if (st_wdog->syscfg->type_reg)
+> +		regmap_update_bits(st_wdog->syscfg->regmap,
+> +				   st_wdog->syscfg->type_reg,
+> +				   st_wdog->syscfg->type_mask,
+> +				   st_wdog->warm_reset);
+> +
+> +	/* Mask/unmask watchdog reset */
+> +	regmap_update_bits(st_wdog->syscfg->regmap,
+> +			   st_wdog->syscfg->enable_reg,
+> +			   st_wdog->syscfg->enable_mask,
+> +			   !enable);
+
+enable is a bool, but is supposed to provide the value to be put into the
+register, masked with enable_mask. Unless I am missing something, the value
+is not shifted in regmap_update_bits. So I don't think this can work, but
+effectively always writes zero into the mask unless the mask happens to be
+at bit position 0 - which never happens.
+
+Same is true for warm_reset above, which also has values 0 or 1.
+
+I know it does not really matter in C (at least when it comes to handling
+0 and 1), but I would suggest to avoid mixing booleans with bit masks.
+
+> +}
+> +
+> +static void st_wdog_load_timer(struct st_wdog *st_wdog, unsigned int timeout)
+> +{
+> +	timeout *= clk_get_rate(st_wdog->clk);
+> +
+> +	/* Write only LSB as timeout in Watchdog framework is 32bits only */
+
+I don't entirely understand the logic here. timeout may be 32 bit,
+but that doesn't mean that timeout * clk_get_rate(st_wdog->clk)
+has to be 32 bit.
+
+Also, what happens if MSB happens to be set to a nonzero value ?
+Is that guaranteed to never happen ?
+
+> +	writel_relaxed(timeout, st_wdog->base + LPC_LPA_LSB_OFF);
+> +	writel_relaxed(1, st_wdog->base + LPC_LPA_START_OFF);
+> +}
+> +
+> +static int st_wdog_start(struct watchdog_device *wdd)
+> +{
+> +	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
+> +
+> +	writel_relaxed(1, st_wdog->base + LPC_WDT_OFF);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_wdog_stop(struct watchdog_device *wdd)
+> +{
+> +	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
+> +
+> +	writel_relaxed(0, st_wdog->base + LPC_WDT_OFF);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_wdog_set_timeout(struct watchdog_device *wdd,
+> +			       unsigned int timeout)
+> +{
+> +	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
+> +
+> +	wdd->timeout = timeout;
+> +	st_wdog_load_timer(st_wdog, timeout);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_wdog_keepalive(struct watchdog_device *wdd)
+> +{
+> +	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
+> +
+> +	st_wdog_load_timer(st_wdog, wdd->timeout);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct watchdog_info st_wdog_info = {
+> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
+> +	.identity = "ST LPC WDT",
+> +};
+> +
+> +static const struct watchdog_ops st_wdog_ops = {
+> +	.owner		= THIS_MODULE,
+> +	.start		= st_wdog_start,
+> +	.stop		= st_wdog_stop,
+> +	.ping		= st_wdog_keepalive,
+> +	.set_timeout	= st_wdog_set_timeout,
+> +};
+> +
+> +static struct watchdog_device st_wdog_dev = {
+> +	.info		= &st_wdog_info,
+> +	.ops		= &st_wdog_ops,
+> +	.min_timeout	= WATCHDOG_MIN,
+> +	.max_timeout	= WATCHDOG_MAX32,
+> +};
+> +
+> +static int st_wdog_probe(struct platform_device *pdev)
+> +{
+> +	const struct of_device_id *match;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct st_wdog *st_wdog;
+> +	struct regmap *regmap;
+> +	struct resource *res;
+> +	struct clk *clk;
+> +	void __iomem *base;
+> +	int ret;
+> +
+> +	st_wdog = devm_kzalloc(&pdev->dev, sizeof(*st_wdog), GFP_KERNEL);
+> +	if (!st_wdog)
+> +		return -ENOMEM;
+> +
+> +	match = of_match_device(st_wdog_match, &pdev->dev);
+> +	if (!match) {
+> +		dev_err(&pdev->dev, "Couldn't match device\n");
+> +		return -ENODEV;
+> +	}
+> +	st_wdog->syscfg	= (struct st_wdog_syscfg *)match->data;
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "base");
+> +	base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(base)) {
+> +		dev_err(&pdev->dev, "Failed to ioremap base\n");
+
+devm_ioremap_resource already creates an error message, so this should be
+unnecessary.
+
+> +		return PTR_ERR(base);
+> +	}
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "syscfg-en");
+> +	if (!res) {
+> +		dev_err(&pdev->dev, "Failed to get enable register address\n");
+> +		return -EINVAL;
+> +	}
+> +	st_wdog->syscfg->enable_reg = res->start;
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "syscfg-type");
+> +	if (res)
+> +		st_wdog->syscfg->type_reg = res->start;
+> +
+> +	regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
+> +	if (IS_ERR(regmap)) {
+> +		dev_err(&pdev->dev, "No syscfg phandle specified\n");
+> +		return PTR_ERR(regmap);
+> +	}
+> +
+> +	clk = of_clk_get_by_name(np, "st_wdog");
+> +	if (IS_ERR(clk)) {
+> +		dev_err(&pdev->dev, "Unable to request clock\n");
+> +		return PTR_ERR(clk);
+> +	}
+> +	clk_prepare_enable(st_wdog->clk);
+> +
+> +	st_wdog->base 		= base;
+> +	st_wdog->clk		= clk;
+> +	st_wdog->warm_reset 	= of_property_read_bool(np, "st,warm_reset");
+> +	st_wdog->syscfg->regmap = regmap;
+> +
+> +	watchdog_set_drvdata(&st_wdog_dev, st_wdog);
+> +	watchdog_set_nowayout(&st_wdog_dev, WATCHDOG_NOWAYOUT);
+> +
+> +	ret = watchdog_register_device(&st_wdog_dev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Unable to register watchdog\n");
+> +		clk_disable_unprepare(clk);
+> +		return ret;
+> +	}
+> +
+> +	/* Init Watchdog timeout with value in DT */
+> +	ret = watchdog_init_timeout(&st_wdog_dev, 0, &pdev->dev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Unable to initialise watchdog timeout\n");
+
+No clk_disable_unprepare here ?
+
+> +		return ret;
+> +	}
+> +
+> +	st_wdog_setup(st_wdog, WDT_ENABLE);
+> +
+> +	dev_info(&pdev->dev, "LPC Watchdog driver registered, reset type is %s",
+> +		 st_wdog->warm_reset ? "warm" : "cold");
+> +
+> +	return ret;
+> +}
+> +
+> +static int st_wdog_remove(struct platform_device *pdev)
+> +{
+> +	struct st_wdog *st_wdog = watchdog_get_drvdata(&st_wdog_dev);
+> +
+> +	if (watchdog_active(&st_wdog_dev))
+> +		st_wdog_stop(&st_wdog_dev);
+> +
+> +	st_wdog_setup(st_wdog, WDT_DISABLE);
+> +
+> +	watchdog_unregister_device(&st_wdog_dev);
+> +
+No clk_disable_unprepare ?
+
+Maye it is not necessary, but then I wonder why you have it above.
+
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int st_wdog_suspend(struct device *dev)
+> +{
+> +	if (watchdog_active(&st_wdog_dev))
+> +		st_wdog_stop(&st_wdog_dev);
+> +
+
+Is any clock activity necessary here ? Just asking, I don't really have an idea.
+
+> +	return 0;
+> +}
+> +
+> +static int st_wdog_resume(struct device *dev)
+> +{
+> +	struct st_wdog *st_wdog = watchdog_get_drvdata(&st_wdog_dev);
+> +
+> +	if (watchdog_active(&st_wdog_dev)) {
+> +		st_wdog_load_timer(st_wdog, st_wdog_dev.timeout);
+> +		st_wdog_start(&st_wdog_dev);
+> +	}
+> +
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(st_wdog_pm_ops,
+> +			 st_wdog_suspend,
+> +			 st_wdog_resume);
+> +
+> +static struct platform_driver st_wdog_driver = {
+> +	.driver	= {
+> +		.name = "st-wdt",
+> +		.pm = &st_wdog_pm_ops,
+> +		.of_match_table = st_wdog_match,
+> +	},
+> +	.probe = st_wdog_probe,
+> +	.remove = st_wdog_remove,
+> +};
+> +module_platform_driver(st_wdog_driver);
+> +
+> +MODULE_AUTHOR("David PARIS <david.paris@st.com>");
+> +MODULE_DESCRIPTION("ST LPC Watchdog Driver");
+> +MODULE_LICENSE("GPL v2");
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
