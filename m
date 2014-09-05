@@ -1,87 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341AbaIENFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:05:31 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:62964 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083AbaIENF3 (ORCPT
+	id S932375AbaIEN0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:26:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43246 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199AbaIEN0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:05:29 -0400
-From: John Sung <penmount.touch@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: penmount.touch@gmail.com
-Subject: [PATCH] Input: serport: Add compat_ioctl routine to support 32bit inputtattach in 64bit systems
-Date: Fri,  5 Sep 2014 21:04:37 +0800
-Message-Id: <1409922277-4497-1-git-send-email-penmount.touch@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 5 Sep 2014 09:26:16 -0400
+From: Colin King <colin.king@canonical.com>
+To: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] mISDN: remove DSP_NEVER_DEFINED and adjust code identation
+Date: Fri,  5 Sep 2014 14:26:11 +0100
+Message-Id: <1409923571-28627-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running a 32-bit inputattach utility in a 64-bit system, there will be error code "inputattach: can't set device type". This is caused by the serport device driver not supporting compat_ioctl, so that SPIOCSTYPE ioctl fails.
+From: Colin Ian King <colin.king@canonical.com>
 
-Signed-off-by: John Sung <penmount.touch@gmail.com>
+The DSP_NEVER_DEFINED #ifdef is confusing, it slips in an
+extra } which is not required because the previous code is
+indented incorrectly.  Correct the identation and remove the
+extraneous DSP_NEVER_DEFINED
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
 ---
- drivers/input/serio/serport.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/isdn/mISDN/dsp_cmx.c | 109 +++++++++++++++++++++----------------------
+ 1 file changed, 53 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
-index 0cb7ef5..4b68c29 100644
---- a/drivers/input/serio/serport.c
-+++ b/drivers/input/serio/serport.c
-@@ -22,6 +22,8 @@
- #include <linux/serio.h>
- #include <linux/tty.h>
- 
-+#include <asm/compat.h>
-+
- MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
- MODULE_DESCRIPTION("Input device TTY line discipline");
- MODULE_LICENSE("GPL");
-@@ -31,6 +33,8 @@ MODULE_ALIAS_LDISC(N_MOUSE);
- #define SERPORT_ACTIVE	2
- #define SERPORT_DEAD	3
- 
-+#define SPIOCSTYPE32 (_IOW('q', 0x01, compat_ulong_t))
-+
- struct serport {
- 	struct tty_struct *tty;
- 	wait_queue_head_t wait;
-@@ -221,6 +225,25 @@ static int serport_ldisc_ioctl(struct tty_struct * tty, struct file * file, unsi
- 	return -EINVAL;
- }
- 
-+static long serport_ldisc_compat_ioctl(struct tty_struct *tty, struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct serport *serport = (struct serport*) tty->disc_data;
-+	unsigned long type;
-+
-+	if (cmd == SPIOCSTYPE32) {
-+		if (get_user(type, (unsigned long __user *) arg))
-+			return -EFAULT;
-+
-+		serport->id.proto = type & 0x000000ff;
-+		serport->id.id	  = (type & 0x0000ff00) >> 8;
-+		serport->id.extra = (type & 0x00ff0000) >> 16;
-+
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
- static void serport_ldisc_write_wakeup(struct tty_struct * tty)
- {
- 	struct serport *serport = (struct serport *) tty->disc_data;
-@@ -243,6 +266,7 @@ static struct tty_ldisc_ops serport_ldisc = {
- 	.close =	serport_ldisc_close,
- 	.read =		serport_ldisc_read,
- 	.ioctl =	serport_ldisc_ioctl,
-+	.compat_ioctl =	serport_ldisc_compat_ioctl,
- 	.receive_buf =	serport_ldisc_receive,
- 	.write_wakeup =	serport_ldisc_write_wakeup
- };
+diff --git a/drivers/isdn/mISDN/dsp_cmx.c b/drivers/isdn/mISDN/dsp_cmx.c
+index a4f05c5..87f7dff 100644
+--- a/drivers/isdn/mISDN/dsp_cmx.c
++++ b/drivers/isdn/mISDN/dsp_cmx.c
+@@ -1454,66 +1454,63 @@ dsp_cmx_send_member(struct dsp *dsp, int len, s32 *c, int members)
+ #ifdef CMX_CONF_DEBUG
+ 	if (0) {
+ #else
+-		if (members == 2) {
++	if (members == 2) {
+ #endif
+-			/* "other" becomes other party */
+-			other = (list_entry(conf->mlist.next,
+-					    struct dsp_conf_member, list))->dsp;
+-			if (other == member)
+-				other = (list_entry(conf->mlist.prev,
+-						    struct dsp_conf_member, list))->dsp;
+-			o_q = other->rx_buff; /* received data */
+-			o_rr = (other->rx_R + len) & CMX_BUFF_MASK;
+-			/* end of rx-pointer */
+-			o_r = (o_rr - rr + r) & CMX_BUFF_MASK;
+-			/* start rx-pointer at current read position*/
+-			/* -> if echo is NOT enabled */
+-			if (!dsp->echo.software) {
+-				/*
+-				 * -> copy other member's rx-data,
+-				 * if tx-data is available, mix
+-				 */
+-				while (o_r != o_rr && t != tt) {
+-					*d++ = dsp_audio_mix_law[(p[t] << 8) | o_q[o_r]];
+-					t = (t + 1) & CMX_BUFF_MASK;
+-					o_r = (o_r + 1) & CMX_BUFF_MASK;
+-				}
+-				while (o_r != o_rr) {
+-					*d++ = o_q[o_r];
+-					o_r = (o_r + 1) & CMX_BUFF_MASK;
+-				}
+-				/* -> if echo is enabled */
+-			} else {
+-				/*
+-				 * -> mix other member's rx-data with echo,
+-				 * if tx-data is available, mix
+-				 */
+-				while (r != rr && t != tt) {
+-					sample = dsp_audio_law_to_s32[p[t]] +
+-						dsp_audio_law_to_s32[q[r]] +
+-						dsp_audio_law_to_s32[o_q[o_r]];
+-					if (sample < -32768)
+-						sample = -32768;
+-					else if (sample > 32767)
+-						sample = 32767;
+-					*d++ = dsp_audio_s16_to_law[sample & 0xffff];
+-					/* tx-data + rx_data + echo */
+-					t = (t + 1) & CMX_BUFF_MASK;
+-					r = (r + 1) & CMX_BUFF_MASK;
+-					o_r = (o_r + 1) & CMX_BUFF_MASK;
+-				}
+-				while (r != rr) {
+-					*d++ = dsp_audio_mix_law[(q[r] << 8) | o_q[o_r]];
+-					r = (r + 1) & CMX_BUFF_MASK;
+-					o_r = (o_r + 1) & CMX_BUFF_MASK;
+-				}
++		/* "other" becomes other party */
++		other = (list_entry(conf->mlist.next,
++				    struct dsp_conf_member, list))->dsp;
++		if (other == member)
++			other = (list_entry(conf->mlist.prev,
++				    struct dsp_conf_member, list))->dsp;
++		o_q = other->rx_buff; /* received data */
++		o_rr = (other->rx_R + len) & CMX_BUFF_MASK;
++		/* end of rx-pointer */
++		o_r = (o_rr - rr + r) & CMX_BUFF_MASK;
++		/* start rx-pointer at current read position*/
++		/* -> if echo is NOT enabled */
++		if (!dsp->echo.software) {
++			/*
++			 * -> copy other member's rx-data,
++			 * if tx-data is available, mix
++			 */
++			while (o_r != o_rr && t != tt) {
++				*d++ = dsp_audio_mix_law[(p[t] << 8) | o_q[o_r]];
++				t = (t + 1) & CMX_BUFF_MASK;
++				o_r = (o_r + 1) & CMX_BUFF_MASK;
++			}
++			while (o_r != o_rr) {
++				*d++ = o_q[o_r];
++				o_r = (o_r + 1) & CMX_BUFF_MASK;
++			}
++			/* -> if echo is enabled */
++		} else {
++			/*
++			 * -> mix other member's rx-data with echo,
++			 * if tx-data is available, mix
++			 */
++			while (r != rr && t != tt) {
++				sample = dsp_audio_law_to_s32[p[t]] +
++					dsp_audio_law_to_s32[q[r]] +
++					dsp_audio_law_to_s32[o_q[o_r]];
++				if (sample < -32768)
++					sample = -32768;
++				else if (sample > 32767)
++					sample = 32767;
++				*d++ = dsp_audio_s16_to_law[sample & 0xffff];
++				/* tx-data + rx_data + echo */
++				t = (t + 1) & CMX_BUFF_MASK;
++				r = (r + 1) & CMX_BUFF_MASK;
++				o_r = (o_r + 1) & CMX_BUFF_MASK;
++			}
++			while (r != rr) {
++				*d++ = dsp_audio_mix_law[(q[r] << 8) | o_q[o_r]];
++				r = (r + 1) & CMX_BUFF_MASK;
++				o_r = (o_r + 1) & CMX_BUFF_MASK;
+ 			}
+-			dsp->tx_R = t;
+-			goto send_packet;
+ 		}
+-#ifdef DSP_NEVER_DEFINED
++		dsp->tx_R = t;
++		goto send_packet;
+ 	}
+-#endif
+ 	/* PROCESS DATA (three or more members) */
+ 	/* -> if echo is NOT enabled */
+ 	if (!dsp->echo.software) {
 -- 
-1.7.9.5
+2.1.0
 
