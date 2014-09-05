@@ -1,119 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaIET6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:58:12 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44290 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaIET6K (ORCPT
+	id S1752087AbaIET6z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:58:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41864 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977AbaIET6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:58:10 -0400
-Message-ID: <540A15AA.4000805@gmail.com>
-Date: Fri, 05 Sep 2014 12:57:30 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 5 Sep 2014 15:58:54 -0400
+Date: Fri, 5 Sep 2014 12:58:53 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: linux-kernel@vger.kernel.org, lmctlx@gmail.com,
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14-stable] usb: gadget: f_fs: drop duplicate
+ usb_functionfs_descs_head declaration
+Message-ID: <20140905195853.GA26296@kroah.com>
+References: <1409943884-13823-1-git-send-email-k.lewandowsk@samsung.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Mark Rutland <mark.rutland@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Documentation: bcm7120-l2: Add Broadcom BCM7120-style
- L2 binding
-References: <1409265326-7579-1-git-send-email-f.fainelli@gmail.com> <1409265326-7579-3-git-send-email-f.fainelli@gmail.com> <alpine.DEB.2.10.1409031410580.3333@nanos> <20140903124317.GB3127@leverpostej> <5407490E.7060505@gmail.com> <20140905090528.GG2172@leverpostej> <5409FA82.6000703@gmail.com> <alpine.DEB.2.10.1409052113210.5472@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409052113210.5472@nanos>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409943884-13823-1-git-send-email-k.lewandowsk@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 12:21 PM, Thomas Gleixner wrote:
-> On Fri, 5 Sep 2014, Florian Fainelli wrote:
->> On 09/05/2014 02:05 AM, Mark Rutland wrote:
->>>>>>> +- brcm,irq-can-wake: if present, this means the L2 controller can be used as a
->>>>>>> +  wakeup source for system suspend/resume.
->>>>>
->>>>> How variable is this?
->>>>
->>>> There's two instances of this interrupt controller on most SoCs, one
->>>> that can wake up the system, one that cannot, see below.
->>>>
->>>>>
->>>>> I realise have properties like this elsewhere, but it seems to be
->>>>> hacking around the lack of a decent power domain interface for figuring
->>>>> this out.
->>>>
->>>> Humm, I kind of see your point here with the power domains, I don't see
->>>> a big problem with specifying that property though, at most this becomes
->>>> redundant when we have a power domain representation (which will be very
->>>> simple: always-on and everything else).
->>>
->>> Sure, we seem to have done that elsewhere.
->>>
->>>>>>> +- brcm,int-fwd-mask: if present, a 32-bits bit mask describing the interrupts
->>>>>>> +  which need to be enabled in this controller to flow to the higher level
->>>>>>> +  interrupt controller. This is typically needed for the UARTs interrupts to
->>>>>>> +  flow through the top-level interrupt controller (e.g: ARM GIC on ARM-based
->>>>>>> +  platforms).
->>>>>>> +
->>>>>
->>>>> I don't follow why this property is needed at all. Is this a mechanism
->>>>> to bypass this controller entirely? Why should this be described as a
->>>>> fixed HW property?
->>>>
->>>> This interrupt controller has traditionally (not necessarily for good
->>>> reasons) been the placeholder for special bits that control whether our
->>>> UARTs level 1 interrupts (wired to the ARM GIC) will flow to the L1
->>>> interrupt.
->>>
->>> So basically setting these bits unmasks some irq lines inpout to the
->>> GIC?
->>
->> Right, this is what happens. We prefer to use the GIC interrupts because
->> that provides more flexibility.
->>
->>>
->>>> We discussed initially with Arnd Bergman about how to best approach
->>>> this, and he was happy with a bitmask since:
->>>>
->>>> a) that is a one-time initialization thing that can happen anywhere in
->>>> the kernel before UART interrupts get used (so before user-space gets
->>>> scheduled)
->>>
->>> That feels a little dodgy to me, but perhaps that's ok.
->>
->> The other approach was to use the "interrupt-extended" property for the
->> UART nodes and have them reference both their GIC interrupt, and the
->> BCM7120-L2 interrupt, but that also requires UART driver/platform
->> modifications to account for that extra "interrupt", on which we are
->> only ever going to call enable_irq() and nothing more.
->>
->> So, in the end, this turned out to be simpler to just read the
->> "brcm,irq-fwd-mask" property and apply it to the relevant register.
+On Fri, Sep 05, 2014 at 09:04:44PM +0200, Karol Lewandowski wrote:
+> Applicable for 3.14-stable only.
 > 
-> So if I understand correctly what you have is:
+> This commit drops duplicate declaration of struct usb_functionfs_descs_head
+> erronousely added in commit 28c5980b54 ("usb: gadget: f_fs: resurect
+> usb_functionfs_descs_head structure").
 > 
->                           /- GIC------------->   
->  Device-irq ---- [routing]
->                           \- BC irq chip ---->
+> Fix from 28c5980b54 is applicable only for v3.15-rc1 and newer kernels.
 > 
-> and you implement it as
+> This fixes error in uapi:
 > 
->  Device-irq ---- [BC irq chip] ---- [GIC] --->
->                             |
->                             ----------------->
+>   /src/linux$ make -C tools usb
 > 
-> And the fwd mask is to tell the BC chip to use the GIC and which irq
-> of the GIC, so it can fiddle with the GIC under the hood, right?
+>   make: Entering directory '/src/linux/tools'
+>     DESCEND  usb
+>   make[1]: Entering directory '/src/linux/tools/usb'
+>   gcc -Wall -Wextra -g -I../include -o testusb testusb.c -lpthread
+>   gcc -Wall -Wextra -g -I../include -o ffs-test ffs-test.c -lpthread
+>   In file included from ffs-test.c:41:0:
+>   ../../include/uapi/linux/usb/functionfs.h:42:8: error: redefinition of ‘struct usb_functionfs_descs_head’
+>    struct usb_functionfs_descs_head {
+>           ^
+>   ../../include/uapi/linux/usb/functionfs.h:31:8: note: originally defined here
+>    struct usb_functionfs_descs_head {
+>           ^
+> 
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+> ---
+>  include/uapi/linux/usb/functionfs.h | 10 ++--------
+>  1 file changed, 2 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
+> index 29e9c7a..f279394 100644
+> --- a/include/uapi/linux/usb/functionfs.h
+> +++ b/include/uapi/linux/usb/functionfs.h
+> @@ -27,24 +27,18 @@ struct usb_endpoint_descriptor_no_audio {
+>  	__u8  bInterval;
+>  } __attribute__((packed));
+>  
+> -/* Legacy format, deprecated as of 3.14. */
+> -struct usb_functionfs_descs_head {
+> -	__le32 magic;
+> -	__le32 length;
+> -	__le32 fs_count;
+> -	__le32 hs_count;
+> -} __attribute__((packed, deprecated));
+>  
+>  /*
+>   * All numbers must be in little endian order.
+>   */
+>  
+> +/* Legacy format, deprecated as of 3.14. */
+>  struct usb_functionfs_descs_head {
+>  	__le32 magic;
+>  	__le32 length;
+>  	__le32 fs_count;
+>  	__le32 hs_count;
+> -} __attribute__((packed));
+> +} __attribute__((packed, deprecated));
+>  
+>  /*
+>   * Descriptors format:
+> -- 
+> 2.0.1
 
-The forward mask really is to tell the BCM7120 l2 interrupt controller:
-bypass me, and output the UART interrupts directly at the GIC level, so
-I think this does match your understanding.
+Ah, well, instead I should just revert
+28c5980b5494b8163d6cba5a5007b6ec7e63de66 as it shouldn't have gone to
+3.14-stable, right?  I'll do that for the next round of stable releases
+after this one.
 
-Not setting the forward mask means you would get the UART interrupts at
-the BCM7120 l2 interrupt controller level, and have to handle them here.
+thanks,
 
-Hope this helps clarify what this funky piece of hardware does.
---
-Florian
-
+greg k-h
