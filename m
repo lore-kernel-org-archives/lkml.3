@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaIEUwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:52:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54096 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaIEUwf (ORCPT
+	id S1752760AbaIEU4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:56:03 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:38114 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646AbaIEUz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:52:35 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Keerthy <j-keerthy@ti.com>, Mark Brown <broonie@linaro.org>,
-        Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        <linux-omap@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH V2 0/3] mfd: palmas: add optional wakeup irq
-Date: Fri, 5 Sep 2014 15:51:48 -0500
-Message-ID: <1409950311-25236-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 5 Sep 2014 16:55:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <540A17A6.1000802@zytor.com>
+References: <1409826307-23075-1-git-send-email-kraxel@redhat.com>
+	<540A17A6.1000802@zytor.com>
+Date: Fri, 5 Sep 2014 13:55:56 -0700
+Message-ID: <CAP6exY+ehqwpt0tC_Xa=ZP4jbjnzWii+=qc-=rqxC5rK5mG3Dg@mail.gmail.com>
+Subject: Re: [coreboot] [PATCH] x86: add coreboot framebuffer support
+From: ron minnich <rminnich@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Gerd Hoffmann <kraxel@redhat.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        coreboot <coreboot@coreboot.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Sep 5, 2014 at 1:05 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 
-V2 of the series based on review conclusion in
-https://patchwork.kernel.org/patch/4743321/
+> I'm not a fan of Coreboot having invented its own nonstandard hacks, but
+> I guess it is pretty much unavoidable.
 
-based on v3.17-rc1
+I suspect this should not be architecture-dependent, since coreboot
+tables work across 3 coreboot architectures at present with more on
+the way.
 
-Wakeup irq is a interrupt path which is provided by the pinctrl
-hardware of certain SoCs such as TI's OMAP family of processors that
-generates an interrupt for waking up from deep power saving modes.
+Sometimes, something that spans more than an x86 can look like a
+non-standard hack. At other times, it might look portable. Depends on
+ones perspective I guess.
 
-Nishanth Menon (3):
-  Documentation: dt-bindings: mfd: palmas: Fix example style of i2c
-    peripheral
-  Documentation: dt-bindings: mfd: palmas: document optional wakeup IRQ
-  mfd: palmas: Add support for optional wakeup
+Gerd, I'll get back to you offline to show you what we did in Akaros.
 
- Documentation/devicetree/bindings/mfd/palmas.txt |   22 +++++++-
- drivers/mfd/palmas.c                             |   59 ++++++++++++++++++++++
- include/linux/mfd/palmas.h                       |    2 +
- 3 files changed, 82 insertions(+), 1 deletion(-)
-
-Regards,
-	Nishanth Menon
--- 
-1.7.9.5
-
+ron
