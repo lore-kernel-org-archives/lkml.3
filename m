@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaIEPcP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:32:15 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42942 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751271AbaIEPcM (ORCPT
+	id S1753982AbaIEPdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:33:13 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:59718 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaIEPdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:32:12 -0400
-Message-ID: <5409D76D.2070203@hurleysoftware.com>
-Date: Fri, 05 Sep 2014 11:31:57 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 5 Sep 2014 11:33:12 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <20140712181328.GA8738@redhat.com>	 <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>	 <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com> <54090AF4.7060406@hurleysoftware.com> <54091B30.7080100@zytor.com>
-In-Reply-To: <54091B30.7080100@zytor.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+In-Reply-To: <5409C3C6.90204@linux.vnet.ibm.com>
+References: <1409908577-10648-1-git-send-email-bharata.rao@gmail.com>
+	<5409C3C6.90204@linux.vnet.ibm.com>
+Date: Fri, 5 Sep 2014 21:03:11 +0530
+Message-ID: <CAGZKiBpFoB2UrCPsEMHS-cJ-ffn1D7zcfznfp+P_gOGsigCPyg@mail.gmail.com>
+Subject: Re: [PATCH] pseries: Make CPU hotplug path endian safe
+From: Bharata B Rao <bharata.rao@gmail.com>
+To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 10:08 PM, H. Peter Anvin wrote:
-> On 09/04/2014 05:59 PM, Peter Hurley wrote:
->> I have no idea how prevalent the ev56 is compared to the ev5.
->> Still we're talking about a chip that came out in 1996.
-> 
-> Ah yes, I stand corrected.  According to Wikipedia, the affected CPUs
-> were all the 2106x CPUs (EV4, EV45, LCA4, LCA45) plus the 21164 with no
-> suffix (EV5).  However, we're still talking about museum pieces here.
-> 
-> I wonder what the one I have in my garage is... I'm sure I could emulate
-> it faster, though.
+On Fri, Sep 5, 2014 at 7:38 PM, Nathan Fontenot
+<nfont@linux.vnet.ibm.com> wrote:
+> On 09/05/2014 04:16 AM, bharata.rao@gmail.com wrote:
+>> From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+>>
+>> - ibm,rtas-configure-connector should treat the RTAS data as big endian.
+>> - Treat ibm,ppc-interrupt-server#s as big-endian when setting
+>>   smp_processor_id during hotplug.
+>>
+>> Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+>> ---
+>>  arch/powerpc/platforms/pseries/dlpar.c       | 10 +++++-----
+>>  arch/powerpc/platforms/pseries/hotplug-cpu.c |  4 ++--
+>>  2 files changed, 7 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/powerpc/platforms/pseries/dlpar.c b/arch/powerpc/platforms/pseries/dlpar.c
+>> index 2d0b4d6..dc55f9c 100644
+>> --- a/arch/powerpc/platforms/pseries/dlpar.c
+>> +++ b/arch/powerpc/platforms/pseries/dlpar.c
+>> @@ -48,11 +48,11 @@ static struct property *dlpar_parse_cc_property(struct cc_workarea *ccwa)
+>>       if (!prop)
+>>               return NULL;
+>>
+>> -     name = (char *)ccwa + ccwa->name_offset;
+>> +     name = (char *)ccwa + be32_to_cpu(ccwa->name_offset);
+>>       prop->name = kstrdup(name, GFP_KERNEL);
+>>
+>> -     prop->length = ccwa->prop_length;
+>> -     value = (char *)ccwa + ccwa->prop_offset;
+>> +     prop->length = be32_to_cpu(ccwa->prop_length);
+>> +     value = (char *)ccwa + be32_to_cpu(ccwa->prop_offset);
+>>       prop->value = kmemdup(value, prop->length, GFP_KERNEL);
+>>       if (!prop->value) {
+>>               dlpar_free_cc_property(prop);
+>> @@ -78,7 +78,7 @@ static struct device_node *dlpar_parse_cc_node(struct cc_workarea *ccwa,
+>>       if (!dn)
+>>               return NULL;
+>>
+>> -     name = (char *)ccwa + ccwa->name_offset;
+>> +     name = (char *)ccwa + be32_to_cpu(ccwa->name_offset);
+>>       dn->full_name = kasprintf(GFP_KERNEL, "%s/%s", path, name);
+>>       if (!dn->full_name) {
+>>               kfree(dn);
+>> @@ -148,7 +148,7 @@ struct device_node *dlpar_configure_connector(u32 drc_index,
+>>               return NULL;
+>>
+>>       ccwa = (struct cc_workarea *)&data_buf[0];
+>> -     ccwa->drc_index = drc_index;
+>> +     ccwa->drc_index = cpu_to_be32(drc_index);
+>
+> I need to look at this some more but I think this may cause an issue for
+> partition migration. If I am following the code correctly, starting in
+> pseries_devicetree_update(), the drc_index value passed to
+> dlpar_configure_connector is pulled directly out of a buffer we get from
+> firmware. This would mean the drc_index value is already in BE format.
 
-Which is a bit ironic because I remember when Digital had a team
-working on emulating native x86 apps on Alpha/NT.
+Yes I see that now.
 
+>
+> Whereas for cpu hotplug the drc_index value is passed in from userspace
+> via the cpu probe interface in sysfs. I assume that you are seeing the
+> drc_index value getting passed in in LE format.
+
+Yes I am seeing drc_index in LE format for an LE guest during CPU
+hotplug operation.
+
+Regards,
+Bharata.
