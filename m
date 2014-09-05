@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757AbaIEPQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:16:56 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:54980 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932211AbaIEPQy (ORCPT
+	id S932825AbaIEPRv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:17:51 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:58554 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932211AbaIEPRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:16:54 -0400
-Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
-In-Reply-To: <20140905141123.GE30520@kernel.org>
-References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
-	 <540964C0.1050702@intel.com>  <20140905141123.GE30520@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 06 Sep 2014 00:16:40 +0900
-Message-ID: <1409930200.1662.16.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 5 Sep 2014 11:17:50 -0400
+From: Nix <nix@esperi.org.uk>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [3.16.1 REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
+References: <878um4tg09.fsf@spindle.srvr.nix>
+	<1409569752.24385.12.camel@linux-fkkt.site>
+	<874mwnosz1.fsf@spindle.srvr.nix>
+	<1409903983.9532.0.camel@linux-fkkt.site>
+Emacs: where editing text is like playing Paganini on a glass harmonica.
+Date: Fri, 05 Sep 2014 16:17:47 +0100
+In-Reply-To: <1409903983.9532.0.camel@linux-fkkt.site> (Oliver Neukum's
+	message of "Fri, 05 Sep 2014 09:59:43 +0200")
+Message-ID: <8761h2nlk4.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-INFN-TO-Metrics: spindle 1233; Body=2 Fuz1=2 Fuz2=2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Adrian and Arnaldo,
+On 5 Sep 2014, Oliver Neukum verbalised:
 
-2014-09-05 (금), 11:11 -0300, Arnaldo Carvalho de Melo:
-> Em Fri, Sep 05, 2014 at 10:22:40AM +0300, Adrian Hunter escreveu:
-> > On 09/05/2014 07:59 AM, Namhyung Kim wrote:
-> > > +++ b/tools/perf/util/machine.c
-> > > @@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
-> > >  				strlen(kmmap_prefix));
-> > >  		/*
-> > >  		 * Should be there already, from the build-id table in
-> > > -		 * the header.
-> > > +		 * the header (but maybe with a different name: "vmlinux").
-> > >  		 */
-> > > -		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
-> > > -						     kmmap_prefix);
-> > > +		struct dso *kernel = dsos__find(&machine->kernel_dsos,
-> > > +						"vmlinux", true);
->  
-> > Isn't "vmlinux" just the basename of the original file name, so if it had a
-> > different name this wouldn't work e.g. if the filename had been
-> > /boot/vmlinuz-3.11.0-26-generic then you would need
-> > "vmlinuz-3.11.0-26-generic" for this to work?
-> 
-> Yeah, looking for well known pathnames to then check if the build-id
-> matches the one we're looking for, be it because we obtained it from
-> /sys/kernel/notes (for the running kernel), or from the perf.data file
-> build-id table is ok, as we don't know where it is.
-> 
-> Plain sticking "vmlinux" there is not.
+> On Fri, 2014-09-05 at 00:40 +0100, Nix wrote:
+>> I'm working around this confusing morass by rebooting into each test
+>> kernel, unplugging and replugging the entropy key if it was fubared,
+>> then rebooting into the same kernel again and seeing if it was still
+>> fubared. But this is not terribly fast, particularly not on a headless
+>> compact-flash-based Geode box which doesn't even complete booting
+>> without the entropy source which this bug cuts off :) so it'll be
+>> sometime tomorrow before I can get this bisection done, I'm afraid.
+>
+> Ugh. My sympathies. I cannot suggest a better method, I am afraid.
 
-I don't get it.  AFAIK when perf record runs, it uses [kernel.kallsyms]
-name for kernel map.  But it can be changed only if it found a "vmlinux"
-file in the vmlinux_path[].  So short name will always be "vmlinux" -
-okay, it might be vmlinux-$(uname -r) too; I can add it.
+Well, that method doesn't work. I've found pairs of kernels (e.g.
+59a3d4c3631e553357b7305dc09db1990aa6757c and
+b05d59dfceaea72565b1648af929b037b0f96d7f) where each kernel works on its
+own (rebooting from that kernel into the same kernel keeps a working
+key, so I would normally assume that each kernel is OK) but rebooting
+from the first into the second yields a broken one if it was working
+before (so one of them must, in fact, be broken, but I have no clue
+which one).
 
-As you know, the vmlinux file is a ELF image that created during kernel
-build process so I guess its name is fixed.  It's different from the
-vmlinu"z" which resides in /boot directory.
+So I can't figure out how to bisect this.
 
-Am I missing something?
+Any suggestions as to what failure-test I might use, or what other
+methods I might use to figure out what's going wrong? Not knowing
+anything about USB doesn't help here. I don't know for sure that this is
+a cdc-acm problem -- bisecting just the cdc-acm driver was fruitless --
+so it might be something more generally USBish.
 
-Thanks,
-Namhyung
-
-
+-- 
+NULL && (void)
