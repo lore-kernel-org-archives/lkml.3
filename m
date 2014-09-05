@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaIECaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 22:30:24 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:58016 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaIECaW (ORCPT
+	id S1754463AbaIECcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 22:32:52 -0400
+Received: from regular1.263xmail.com ([211.150.99.133]:51584 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860AbaIECcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 22:30:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAM9d7ch9JscoJjrSRYpO3i7WzPtD2qDnJnwyEYHHLGdypDqW=Q@mail.gmail.com>
-References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
- <20140904141845.GD2997@kernel.org> <87a96f9bci.fsf@sejong.aot.lge.com>
- <20140905011804.GC30520@kernel.org> <CAM9d7ch9JscoJjrSRYpO3i7WzPtD2qDnJnwyEYHHLGdypDqW=Q@mail.gmail.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 5 Sep 2014 11:30:01 +0900
-X-Google-Sender-Auth: DRLiQpcNu3EwMNST2JKJERVSBDI
-Message-ID: <CAM9d7cgKrcAh0RkpU_3C_UAeO5=RU5UAwCJa8kMyV7aGcoGVRw@mail.gmail.com>
-Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Sep 2014 22:32:50 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: wsa@the-dreams.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <b5a5338daca14308bae14a280e93809b>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
+        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
+        Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH] i2c: rk3x: fix divisor calculation for SCL frequency
+Date: Fri,  5 Sep 2014 10:32:13 +0800
+Message-Id: <1409884333-3544-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 10:42 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> On Fri, Sep 5, 2014 at 10:18 AM, Arnaldo Carvalho de Melo
-> <acme@kernel.org> wrote:
->> Em Fri, Sep 05, 2014 at 09:09:49AM +0900, Namhyung Kim escreveu:
->>> The perf report rebuilds machine states from the event records only.  In
->>> this case, the kernel map was recorded in the name of [kernel.kallsyms]
->>> so it couldn't find the build-id from the table.
->>
->> Ok, but then we can special case this one, no?
->>
->> Somehow mark in the buildid table that that entry is the one for the
->> kernel and hook it up to the synthesized event that has the
->> [kernel.kallsyms].ref_reloc_sym entry.
->
-> Maybe we can search vmlinux in machine->kernel_dsos first when
-> processing kernel mmap event.  And in this case do you want replace
-> the name of mapping to a fullname of vmlinux?
+I2C_CLKDIV register descripted in the previous version of
+RK3x chip manual is incorrect. Plus 1 is required.
 
-Ah.. the name of mapping is not used at all after finding a matching
-dso.  Ok then, I'll post a new patch to search vmlinux before
-kallsyms.
+The correct formula:
+- T(SCL_HIGH) = T(PCLK) * (CLKDIVH + 1) * 8
+- T(SCL_LOW) = T(PCLK) * (CLKDIVL + 1) * 8
+- (SCL Divsor) = 8 * ((CLKDIVL + 1) + (CLKDIVH + 1))
+- SCL = PCLK / (CLK Divsor)
 
-Thanks
-Namhyung
+It will be updated to the latest version of chip manual.
+
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+ drivers/i2c/busses/i2c-rk3x.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+index e637c32..76b6604 100644
+--- a/drivers/i2c/busses/i2c-rk3x.c
++++ b/drivers/i2c/busses/i2c-rk3x.c
+@@ -433,8 +433,8 @@ static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
+ 	unsigned long i2c_rate = clk_get_rate(i2c->clk);
+ 	unsigned int div;
+ 
+-	/* SCL rate = (clk rate) / (8 * DIV) */
+-	div = DIV_ROUND_UP(i2c_rate, scl_rate * 8);
++	/* SCL rate = (clk rate) / (8 * (DIV + 2)) */
++	div = DIV_ROUND_UP(i2c_rate, scl_rate * 8) - 2;
+ 
+ 	/* The lower and upper half of the CLKDIV reg describe the length of
+ 	 * SCL low & high periods. */
+-- 
+1.8.3.2
+
+
