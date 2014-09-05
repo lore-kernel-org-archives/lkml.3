@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219AbaIELtr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 07:49:47 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:44127 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147AbaIELtE (ORCPT
+	id S932241AbaIELuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 07:50:14 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15509 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137AbaIELtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 07:49:04 -0400
-X-AuditID: cbfee68f-f797f6d000001173-a7-5409a32ba288
+	Fri, 5 Sep 2014 07:49:02 -0400
+X-AuditID: cbfee691-f79546d0000011a1-69-5409a32b9ecc
 From: Jaewon Kim <jaewon02.kim@samsung.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH v3 2/4] Input: misc: Add haptic driver on max77693
-Date: Fri, 05 Sep 2014 20:48:20 +0900
-Message-id: <1409917702-17009-3-git-send-email-jaewon02.kim@samsung.com>
+Subject: [PATCH v3 1/4] mfd: max77693: Initialize haptic register map
+Date: Fri, 05 Sep 2014 20:48:19 +0900
+Message-id: <1409917702-17009-2-git-send-email-jaewon02.kim@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1409917702-17009-1-git-send-email-jaewon02.kim@samsung.com>
 References: <1409917702-17009-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsWyRsSkWFd7MWeIweeH1hbXvzxntTi86AWj
-	xY6GI6wW978eZbS4+ekbq8XlXXPYLE53szqwe+ycdZfd4861PWwe804GevRtWcXo8XmTXABr
-	FJdNSmpOZllqkb5dAlfG04V3WArOR1UsWzWXuYHxg3cXIyeHhICJxMxrz1khbDGJC/fWs3Ux
-	cnEICSxllDj0pZcNpuji4leMEInpjBJ9vZfYIZw2JonFB3aBVbEJaEt8X78YbJSIQKVEf/cL
-	VpAiZoEeRonv7auZQRLCAk4S62ZcAGtgEVCVmHb2JAuIzSvgIdG7dBqQzQG0TkFiziQbkDCn
-	gKfErsOP2EDCQkAlz+5JQBw0nV1ixqpqiCkCEt8mH4LqlJXYdIAZokRS4uCKGywTGIUXMDKs
-	YhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAgM8NP/nvXvYLx7wPoQowAHoxIP74LPHCFCrIll
-	xZW5hxhNgTZMZJYSTc4HxlFeSbyhsZmRhamJqbGRuaWZkjjvQqmfwUIC6YklqdmpqQWpRfFF
-	pTmpxYcYmTg4pRoYFdK2y6p8jL2szGPCx+t2pXX/j4q3HIe+nt17v+5JV2/Gm/v3Z8ye8O9z
-	mPc/+yd2VXzcm3ft0siM6Nr7zsHzya+s34brCt/ydwXd+ekSuuDY0aBHG2pfNG7Kz6wQ+31J
-	3dqFSzzn1OnTB+wO7fqgIBUhFf3LaIekrsLTQ1GWnRePKAloZ+ppKLEUZyQaajEXFScCAFFR
-	W99rAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t9jQV3txZwhBsf/GVpc//Kc1eLwoheM
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsWyRsSkRFd7MWeIQcMMc4vrX56zWhxe9ILR
+	YkfDEVaL+1+PMlrc/PSN1eLyrjlsFqe7WR3YPXbOusvucefaHjaPeScDPfq2rGL0+LxJLoA1
+	issmJTUnsyy1SN8ugSvjRs8N5oLpwhUnZx5hbWD8z9/FyMkhIWAi0XXrOROELSZx4d56ti5G
+	Lg4hgaWMEr/X7GSGKTre+ZMdIjGdUaJn8WmoqjYmicUHdrGBVLEJaEt8X7+YFcQWEaiU6O9+
+	wQpSxCzQwyjxvX012ChhAVeJ72+Pgu1jEVCVOL1yLVgzr4CHxL4p/1i6GDmA1ilIzJlkAxLm
+	FPCU2HX4ERtIWAio5Nk9CZCREgLT2SW+XpjKBjFGQOLb5ENQrbISmw5AHS0pcXDFDZYJjMIL
+	GBlWMYqmFiQXFCelF5nqFSfmFpfmpesl5+duYgSG+Ol/zybuYLx/wPoQowAHoxIP74+vHCFC
+	rIllxZW5hxhNgTZMZJYSTc4HRlJeSbyhsZmRhamJqbGRuaWZkjivjvTPYCGB9MSS1OzU1ILU
+	ovii0pzU4kOMTBycUg2MaW4urr+FDCz0Di4wVuhPCj+68Ffg7lnZ+haeFlJBxgpPch9cWVqz
+	clrE7EyWBOXyKZOdJ9XKLy2VDrWpfDzL/uK23u17Jsp55EiK5FjntM9xjNl93XpHd+mN61zz
+	94vLSXO+cUwxKV5R/d5AIey81cKsOUtYIzuza2/rz+hqF3ibl/Ts/1ElluKMREMt5qLiRABu
+	1lLTbAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t9jQV3txZwhBpv36Vtc//Kc1eLwoheM
 	FjsajrBa3P96lNHi5qdvrBaXd81hszjdzerA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx+dNcgGs
 	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
-	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM54uvMNScD6qYtmqucwNjB+8
-	uxg5OSQETCQuLn7FCGGLSVy4t56ti5GLQ0hgOqNEX+8ldginjUli8YFdbCBVbALaEt/XL2YF
-	sUUEKiX6u1+wghQxC/QwSnxvX80MkhAWcJJYN+MCWAOLgKrEtLMnWUBsXgEPid6l04BsDqB1
-	ChJzJtmAhDkFPCV2HX7EBhIWAip5dk9iAiPvAkaGVYyiqQXJBcVJ6bmGesWJucWleel6yfm5
-	mxjBEfRMagfjygaLQ4wCHIxKPLwLPnOECLEmlhVX5h5ilOBgVhLhdZ/CGSLEm5JYWZValB9f
-	VJqTWnyI0RToponMUqLJ+cDoziuJNzQ2MTOyNDI3tDAyNlcS5z3Qah0oJJCeWJKanZpakFoE
-	08fEwSnVwLhAYGtRQc+M6R0z1y7f7ZQeELe6IviwQHSttH31G80XW/MaJT+1KXk8K189ZTnn
-	4v8xSz+807YQPJDRteefs7byzYKCcIF/1XkmWYE6ARM6X0xY1+ffN093aW3lP7VVIVnK2f+e
-	8/nd5ri+1Tv3+wWNs/LK/AtWispFNjfmlMStqi/y2+P4U4mlOCPRUIu5qDgRAKIaP4W2AgAA
+	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM2703GAumC5ccXLmEdYGxv/8
+	XYycHBICJhLHO3+yQ9hiEhfurWfrYuTiEBKYzijRs/g0lNPGJLH4wC42kCo2AW2J7+sXs4LY
+	IgKVEv3dL1hBipgFehglvrevZgZJCAu4Snx/e5QJxGYRUJU4vXItWDOvgIfEvin/WLoYOYDW
+	KUjMmWQDEuYU8JTYdfgRG0hYCKjk2T2JCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefn
+	bmIER9AzqR2MKxssDjEKcDAq8fAu+MwRIsSaWFZcmXuIUYKDWUmE130KZ4gQb0piZVVqUX58
+	UWlOavEhRlOgmyYyS4km5wOjO68k3tDYxMzI0sjc0MLI2FxJnPdAq3WgkEB6YklqdmpqQWoR
+	TB8TB6dUA+OyIJ9XLjfFRI64xdnvMnhTt0sg5pCXnoHD1Cb7eRGiz1Y/lQjtusm88DRbT3BK
+	cqfGBqMgzbtR1frrl5hG90eecz9u9lvrZXLHg7zA858Sf88ui9skXH+9c/nXZ2VuT6zncS11
+	Oeh0b35VgGWsdtUthU4z9ocenhNidxRw3WF8Fs3cFLkzQImlOCPRUIu5qDgRAM29woy2AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,404 +51,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add max77693-haptic device driver to support the haptic controller
-on MAX77693. The MAX77693 is a Multifunction device with PMIC, CHARGER, LED,
-MUIC, HAPTIC and the patch is haptic device driver in the MAX77693. This driver
-support external pwm and LRA(Linear Resonant Actuator) motor. User can control
-the haptic driver by using force feedback framework.
+This patch add regmap_haptic initialization to use haptic register map
+in haptic device driver.
 
 Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
 Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/input/misc/Kconfig           |   12 ++
- drivers/input/misc/Makefile          |    1 +
- drivers/input/misc/max77693-haptic.c |  321 ++++++++++++++++++++++++++++++++++
- include/linux/mfd/max77693-private.h |    9 +
- 4 files changed, 343 insertions(+)
- create mode 100644 drivers/input/misc/max77693-haptic.c
+ drivers/mfd/max77693.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 2ff4425..c597c52 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -144,6 +144,18 @@ config INPUT_M68K_BEEP
- 	tristate "M68k Beeper support"
- 	depends on M68K
- 
-+config INPUT_MAX77693_HAPTIC
-+	tristate "MAXIM MAX77693 haptic controller support"
-+	depends on MFD_MAX77693 && PWM
-+	select INPUT_FF_MEMLESS
-+	help
-+	  This option enables device driver support for the haptic controller
-+	  on MAXIM MAX77693 chip. This driver supports ff-memless interface
-+	  from input framework.
-+
-+	  To compile this driver as module, choose M here: the
-+	  module will be called max77693-haptic.
-+
- config INPUT_MAX8925_ONKEY
- 	tristate "MAX8925 ONKEY support"
- 	depends on MFD_MAX8925
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 4955ad3..b28570c 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
- obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
- obj-$(CONFIG_INPUT_KXTJ9)		+= kxtj9.o
- obj-$(CONFIG_INPUT_M68K_BEEP)		+= m68kspkr.o
-+obj-$(CONFIG_INPUT_MAX77693_HAPTIC)	+= max77693-haptic.o
- obj-$(CONFIG_INPUT_MAX8925_ONKEY)	+= max8925_onkey.o
- obj-$(CONFIG_INPUT_MAX8997_HAPTIC)	+= max8997_haptic.o
- obj-$(CONFIG_INPUT_MC13783_PWRBUTTON)	+= mc13783-pwrbutton.o
-diff --git a/drivers/input/misc/max77693-haptic.c b/drivers/input/misc/max77693-haptic.c
-new file mode 100644
-index 0000000..d06026b
---- /dev/null
-+++ b/drivers/input/misc/max77693-haptic.c
-@@ -0,0 +1,321 @@
-+/*
-+ * max77693-haptic.c - MAXIM MAX77693 Haptic device driver
-+ *
-+ * Copyright (C) 2014 Samsung Electronics
-+ * Jaewon Kim <jaewon02.kim@samsung.com>
-+ *
-+ * This program is not provided / owned by Maxim Integrated Products.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/i2c.h>
-+#include <linux/regmap.h>
-+#include <linux/input.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+#include <linux/workqueue.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/mfd/max77693.h>
-+#include <linux/mfd/max77693-private.h>
-+
-+#define MAX_MAGNITUDE_SHIFT	16
-+
-+enum max77693_haptic_motor_type {
-+	MAX77693_HAPTIC_ERM = 0,
-+	MAX77693_HAPTIC_LRA,
-+};
-+
-+enum max77693_haptic_pulse_mode {
-+	MAX77693_HAPTIC_EXTERNAL_MODE = 0,
-+	MAX77693_HAPTIC_INTERNAL_MODE,
-+};
-+
-+enum max77693_haptic_pwm_divisor {
-+	MAX77693_HAPTIC_PWM_DIVISOR_32 = 0,
-+	MAX77693_HAPTIC_PWM_DIVISOR_64,
-+	MAX77693_HAPTIC_PWM_DIVISOR_128,
-+	MAX77693_HAPTIC_PWM_DIVISOR_256,
-+};
-+
-+struct max77693_haptic {
-+	struct regmap *regmap_pmic;
-+	struct regmap *regmap_haptic;
-+	struct device *dev;
-+	struct input_dev *input_dev;
-+	struct pwm_device *pwm_dev;
-+	struct regulator *motor_reg;
-+
-+	bool enabled;
-+	unsigned int magnitude;
-+	unsigned int pwm_duty;
-+	enum max77693_haptic_motor_type type;
-+	enum max77693_haptic_pulse_mode mode;
-+	enum max77693_haptic_pwm_divisor pwm_divisor;
-+
-+	struct work_struct work;
-+};
-+
-+static int max77693_haptic_set_duty_cycle(struct max77693_haptic *haptic)
-+{
-+	int ret;
-+	int delta = (haptic->pwm_dev->period + haptic->pwm_duty)/2;
-+
-+	ret = pwm_config(haptic->pwm_dev, delta, haptic->pwm_dev->period);
-+	if (ret) {
-+		dev_err(haptic->dev, "cannot configuration pwm\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int max77693_haptic_configure(struct max77693_haptic *haptic,
-+						unsigned int enable)
-+{
-+	int ret;
-+	unsigned int value = 0;
-+
-+	value = ((haptic->type << MAX77693_CONFIG2_MODE) |
-+		(enable << MAX77693_CONFIG2_MEN) |
-+		(haptic->mode << MAX77693_CONFIG2_HTYP) |
-+		(haptic->pwm_divisor));
-+
-+	ret = regmap_write(haptic->regmap_haptic,
-+				MAX77693_HAPTIC_REG_CONFIG2, value);
-+	if (ret) {
-+		dev_err(haptic->dev, "cannot write haptic regmap\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int max77693_haptic_lowsys(struct max77693_haptic *haptic,
-+						unsigned int enable)
-+{
-+	int ret;
-+
-+	ret = regmap_update_bits(haptic->regmap_pmic,
-+			MAX77693_PMIC_REG_LSCNFG,
-+			MAX77693_PMIC_LOW_SYS_MASK,
-+			enable << MAX77693_PMIC_LOW_SYS_SHIFT);
-+	if (ret) {
-+		dev_err(haptic->dev, "cannot update pmic regmap\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static void max77693_haptic_enable(struct max77693_haptic *haptic)
-+{
-+	int ret;
-+
-+	if (haptic->enabled)
-+		return;
-+
-+	ret = pwm_enable(haptic->pwm_dev);
-+	if (ret) {
-+		dev_err(haptic->dev, "cannot enable haptic pwm device");
-+		return;
-+	}
-+
-+	ret = max77693_haptic_lowsys(haptic, 1);
-+	if (ret)
-+		goto err_enable_lowsys;
-+
-+	ret = max77693_haptic_configure(haptic, 1);
-+	if (ret)
-+		goto err_enable_config;
-+
-+	haptic->enabled = true;
-+
-+	return;
-+
-+err_enable_config:
-+	max77693_haptic_lowsys(haptic, 0);
-+err_enable_lowsys:
-+	pwm_disable(haptic->pwm_dev);
-+}
-+
-+static void max77693_haptic_disable(struct max77693_haptic *haptic)
-+{
-+	int ret;
-+
-+	if (!haptic->enabled)
-+		return;
-+
-+	ret = max77693_haptic_configure(haptic, 0);
-+	if (ret)
-+		return;
-+
-+	ret = max77693_haptic_lowsys(haptic, 0);
-+	if (ret)
-+		goto err_disable_lowsys;
-+
-+	pwm_disable(haptic->pwm_dev);
-+	haptic->enabled = false;
-+
-+	return;
-+
-+err_disable_lowsys:
-+	max77693_haptic_configure(haptic, 1);
-+}
-+
-+static void max77693_haptic_play_work(struct work_struct *work)
-+{
-+	struct max77693_haptic *haptic =
-+			container_of(work, struct max77693_haptic, work);
-+	int ret;
-+
-+	ret = max77693_haptic_set_duty_cycle(haptic);
-+	if (ret) {
-+		dev_err(haptic->dev, "cannot set duty cycle\n");
-+		return;
-+	}
-+
-+	if (haptic->magnitude)
-+		max77693_haptic_enable(haptic);
-+	else
-+		max77693_haptic_disable(haptic);
-+}
-+
-+static int max77693_haptic_play_effect(struct input_dev *dev, void *data,
-+				struct ff_effect *effect)
-+{
-+	struct max77693_haptic *haptic = input_get_drvdata(dev);
-+	uint64_t period_mag_multi;
-+
-+	haptic->magnitude = effect->u.rumble.strong_magnitude;
-+	if (!haptic->magnitude)
-+		haptic->magnitude = effect->u.rumble.weak_magnitude;
-+
-+	/*
-+	 * The magnitude comes from force-feedback interface.
-+	 * The formula convert magnitude to pwm_duty as following:
-+	 * - pwm_duty = (magnitude * pwm_period) / MAX_MAGNITUDE(0xFFFF)
-+	 */
-+	period_mag_multi = (int64_t)(haptic->pwm_dev->period *
-+						haptic->magnitude);
-+	haptic->pwm_duty = (unsigned int)(period_mag_multi >>
-+						MAX_MAGNITUDE_SHIFT);
-+
-+	schedule_work(&haptic->work);
-+
-+	return 0;
-+}
-+
-+static void max77693_haptic_close(struct input_dev *dev)
-+{
-+	struct max77693_haptic *haptic = input_get_drvdata(dev);
-+
-+	cancel_work_sync(&haptic->work);
-+	max77693_haptic_disable(haptic);
-+}
-+
-+static int max77693_haptic_probe(struct platform_device *pdev)
-+{
-+	struct max77693_dev *max77693 = dev_get_drvdata(pdev->dev.parent);
-+	struct max77693_haptic *haptic;
-+	int ret = 0;
-+
-+	haptic = devm_kzalloc(&pdev->dev, sizeof(*haptic), GFP_KERNEL);
-+	if (!haptic)
-+		return -ENOMEM;
-+
-+	haptic->regmap_pmic = max77693->regmap;
-+	haptic->regmap_haptic = max77693->regmap_haptic;
-+	haptic->dev = &pdev->dev;
-+	haptic->type = MAX77693_HAPTIC_LRA;
-+	haptic->mode = MAX77693_HAPTIC_EXTERNAL_MODE;
-+	haptic->pwm_divisor = MAX77693_HAPTIC_PWM_DIVISOR_128;
-+
-+	/* Get pwm and regulatot for haptic device */
-+	haptic->pwm_dev = devm_pwm_get(&pdev->dev, NULL);
-+	if (IS_ERR(haptic->pwm_dev)) {
-+		dev_err(&pdev->dev, "failed to get pwm device\n");
-+		return PTR_ERR(haptic->pwm_dev);
-+	}
-+
-+	haptic->motor_reg = devm_regulator_get(&pdev->dev, "haptic");
-+	if (IS_ERR(haptic->motor_reg)) {
-+		dev_err(&pdev->dev, "failed to get regulator\n");
-+		return PTR_ERR(haptic->motor_reg);
-+	}
-+
-+	ret = regulator_enable(haptic->motor_reg);
-+	if (ret) {
-+		dev_err(haptic->dev, "failed to enable regulator\n");
-+		return ret;
-+	}
-+
-+	/* Initialize input device for haptic device */
-+	haptic->input_dev = devm_input_allocate_device(&pdev->dev);
-+	if (!haptic->input_dev) {
-+		dev_err(&pdev->dev, "failed to allocate input device\n");
-+		return -ENOMEM;
-+	}
-+
-+	haptic->input_dev->name = "max77693-haptic";
-+	haptic->input_dev->id.version = 1;
-+	haptic->input_dev->dev.parent = &pdev->dev;
-+	haptic->input_dev->close = max77693_haptic_close;
-+	input_set_drvdata(haptic->input_dev, haptic);
-+	input_set_capability(haptic->input_dev, EV_FF, FF_RUMBLE);
-+
-+	ret = input_ff_create_memless(haptic->input_dev, NULL,
-+				max77693_haptic_play_effect);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to create force-feedback\n");
-+		return ret;
-+	}
-+
-+	ret = input_register_device(haptic->input_dev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register input device\n");
-+		return ret;
-+	}
-+
-+	INIT_WORK(&haptic->work, max77693_haptic_play_work);
-+
-+	platform_set_drvdata(pdev, haptic);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int max77693_haptic_suspend(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct max77693_haptic *haptic = platform_get_drvdata(pdev);
-+
-+	max77693_haptic_disable(haptic);
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(max77693_haptic_pm_ops, max77693_haptic_suspend, NULL);
-+
-+static struct platform_driver max77693_haptic_driver = {
-+	.driver		= {
-+		.name	= "max77693-haptic",
-+		.owner	= THIS_MODULE,
-+		.pm	= &max77693_haptic_pm_ops,
-+	},
-+	.probe		= max77693_haptic_probe,
-+};
-+module_platform_driver(max77693_haptic_driver);
-+
-+MODULE_AUTHOR("Jaewon Kim <jaewon02.kim@samsung.com>");
-+MODULE_DESCRIPTION("MAXIM MAX77693 Haptic driver");
-+MODULE_ALIAS("platform:max77693-haptic");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-index c466ff3..d0e578f 100644
---- a/include/linux/mfd/max77693-private.h
-+++ b/include/linux/mfd/max77693-private.h
-@@ -251,6 +251,15 @@ enum max77693_haptic_reg {
- 	MAX77693_HAPTIC_REG_END,
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index 249c139..fbfed56 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
+ 	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
  };
  
-+/* max77693-pmic LSCNFG configuraton register */
-+#define MAX77693_PMIC_LOW_SYS_MASK      0x80
-+#define MAX77693_PMIC_LOW_SYS_SHIFT     7
++static const struct regmap_config max77693_regmap_haptic_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = MAX77693_HAPTIC_REG_END,
++};
 +
-+/* max77693-haptic configuration register */
-+#define MAX77693_CONFIG2_MODE           7
-+#define MAX77693_CONFIG2_MEN            6
-+#define MAX77693_CONFIG2_HTYP           5
+ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+ {
+@@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 	}
+ 	i2c_set_clientdata(max77693->haptic, max77693);
+ 
++	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
++					&max77693_regmap_haptic_config);
++	if (IS_ERR(max77693->regmap_haptic)) {
++		ret = PTR_ERR(max77693->regmap_haptic);
++		dev_err(max77693->dev,
++			"failed to initialize haptic register map: %d\n", ret);
++		goto err_regmap;
++	}
 +
- enum max77693_irq_source {
- 	LED_INT = 0,
- 	TOPSYS_INT,
+ 	/*
+ 	 * Initialize register map for MUIC device because use regmap-muic
+ 	 * instance of MUIC device when irq of max77693 is initialized
+@@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 		ret = PTR_ERR(max77693->regmap_muic);
+ 		dev_err(max77693->dev,
+ 			"failed to allocate register map: %d\n", ret);
+-		goto err_regmap_muic;
++		goto err_regmap;
+ 	}
+ 
+ 	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+@@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 				&max77693->irq_data_led);
+ 	if (ret) {
+ 		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
+-		goto err_regmap_muic;
++		goto err_regmap;
+ 	}
+ 
+ 	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+@@ -265,7 +280,7 @@ err_irq_charger:
+ 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
+ err_irq_topsys:
+ 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
+-err_regmap_muic:
++err_regmap:
+ 	i2c_unregister_device(max77693->haptic);
+ err_i2c_haptic:
+ 	i2c_unregister_device(max77693->muic);
 -- 
 1.7.9.5
 
