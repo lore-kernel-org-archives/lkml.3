@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857AbaIETSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:18:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54991 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaIETSG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:18:06 -0400
-Date: Fri, 05 Sep 2014 12:18:05 -0700 (PDT)
-Message-Id: <20140905.121805.2149838652698517913.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v3 0/2] r8152: random MAC address
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-32-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-26-Taiwan-albertk@realtek.com>
-	<1394712342-15778-32-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752690AbaIETUm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:20:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751971AbaIETUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 15:20:40 -0400
+Message-ID: <540A0CF9.6060606@redhat.com>
+Date: Fri, 05 Sep 2014 21:20:25 +0200
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Anders Darander <anders@chargestorm.se>,
+        Matt Fleming <matt@console-pimps.org>,
+        =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
+References: <1409806207-3992-1-git-send-email-yinghai@kernel.org>	<20140904100137.GK3001@console-pimps.org>	<5408D299.5000300@zytor.com>	<20140904212925.GL3001@console-pimps.org>	<CAE9FiQUDLoARj-Z3ipPTf2sZgGn71SxrxM+FqLE1Cyb-OEoP+A@mail.gmail.com>	<20140905054749.GA4498@ad.chargestorm.se>	<54095A5B.4030606@redhat.com> <CAE9FiQV7XLwKsYWprmKAkZGGyuFeK=o_b1_ABMbEGVZzZxtp2w@mail.gmail.com>
+In-Reply-To: <CAE9FiQV7XLwKsYWprmKAkZGGyuFeK=o_b1_ABMbEGVZzZxtp2w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Sep 2014 12:18:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Thu, 4 Sep 2014 16:15:40 +0800
-
-> If the interface has invalid MAC address, it couldn't
-> be used. In order to let it work normally, give a
-> random one.
+On 09/05/14 19:03, Yinghai Lu wrote:
+> On Thu, Sep 4, 2014 at 11:38 PM, Laszlo Ersek <lersek@redhat.com> wrote:
+>> On 09/05/14 07:47, Anders Darander wrote:
+>> In other words, the rounding up of the kernel will be undone in a
+>> "somewhat higher level" driver in the firmware, and the request size
+>> that reaches DiskIo (the "lowel level driver") remains the same.
 > 
-> v3:
->   Remove
-> 	ether_addr_copy(dev->perm_addr, dev->dev_addr);
+> Thanks for explanation.
 > 
-> v2:
->   Use "%pM" format specifier for printing a MAC address.
+> Is there any way to check if EFI firmware have your fix from some calling?
 
-Series applied, thanks.
+I can't think of any, alas.
+
+It might make sense to contact Mantas's and Anders's UEFI vendors; after
+all a reliable reproducer is available.
+
+Thanks,
+Laszlo
+
