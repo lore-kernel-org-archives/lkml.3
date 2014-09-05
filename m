@@ -1,43 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470AbaIETMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:12:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41539 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaIETMD (ORCPT
+	id S1753052AbaIETND (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:13:03 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59898 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751775AbaIETNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:12:03 -0400
-Date: Fri, 5 Sep 2014 12:12:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Steven Honeyman <stevenhoneyman@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i8k: Add support for Dell Latitude E6540
-Message-ID: <20140905191203.GB24879@kroah.com>
-References: <1409936622-5241-1-git-send-email-stevenhoneyman@gmail.com>
- <20140905185926.GA26476@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905185926.GA26476@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 5 Sep 2014 15:13:00 -0400
+X-Sasl-enc: 65o0/gzLN20mhL26a7wVrkY64m6psTVCirO+poc1ILRK 1409944378
+Message-ID: <1409944376.5306.9.camel@localhost>
+Subject: Re: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for anycast
+ and multicast
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Cong Wang <cwang@twopensource.com>
+Cc: David Miller <davem@davemloft.net>, Sabrina Dubroca <sd@queasysnail.net>,
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        trinity@vger.kernel.org, Dave Jones <davej@redhat.com>
+Date: Fri, 05 Sep 2014 21:12:56 +0200
+In-Reply-To: <CAHA+R7M1qd5g1ta=YFqefgXDf1EfF2_VsJGUvH6Dd+ttnHc_VQ@mail.gmail.com>
+References: <20140901210520.GB25543@kria>
+	 <1409610378.21965.52.camel@localhost> <20140902082929.GA8483@kria>
+	 <20140905.115305.809714259412705649.davem@davemloft.net>
+	 <CAHA+R7M1qd5g1ta=YFqefgXDf1EfF2_VsJGUvH6Dd+ttnHc_VQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 11:59:26AM -0700, Guenter Roeck wrote:
-> On Fri, Sep 05, 2014 at 06:03:42PM +0100, Steven Honeyman wrote:
-> > Add support for the Dell Latitude E6540 which needs a different fan speed multiplier.
-> > 
-> > Signed-off-by: Steven Honeyman <stevenhoneyman@gmail.com>
+On Fr, 2014-09-05 at 11:58 -0700, Cong Wang wrote:
+> On Fri, Sep 5, 2014 at 11:53 AM, David Miller <davem@davemloft.net> wrote:
+> > From: Sabrina Dubroca <sd@queasysnail.net>
+> > Date: Tue, 2 Sep 2014 10:29:29 +0200
+> >
+> >> Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
+> >> triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
+> >>
+> >> ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
+> >> take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
+> >> ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
+> >> calling ipv6_dev_mc_inc/dec.
+> >>
+> >> This patch moves ASSERT_RTNL() up a level in the call stack.
+> >>
+> >> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> >> Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+> >> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+> >
+> > Applied and queued up for -stable, thanks.
 > 
-> Looks good.
+> I believe you applied a wrong version, at least the following
+> is not correct:
 > 
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> +       if (!dev)
+> +               return -ENODEV;
 > 
-> Greg / Arnd, can you pick this up directly, or should I send
-> a pull request ?
+> Sabrina took that from my draft patch, but they all don't
+> realize this is wrong.
+> 
+> (I did provide a correct version which is just ignored by you.)
 
-I can take it, thanks.
+What games are you playing? You know how patches are processed by David
+and I even let him the choice by pointing out a problem in your patch so
+that you could an update and send v2.
 
-greg k-h
+I really feel miffed about your behavior!
+
+Anyway, I saw the hunk adding the return -ENODEV and didn't see any
+problems with it. Sure it might be better if it would gone into a
+separate patch. Can you elaborate what problems you see?
+
+Thanks,
+Hannes
+
+
