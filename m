@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaIETAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:00:52 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:35680 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733AbaIETAv (ORCPT
+	id S1753155AbaIETBF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:01:05 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:56025 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaIETBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:00:51 -0400
+	Fri, 5 Sep 2014 15:01:01 -0400
+Date: Fri, 5 Sep 2014 14:00:53 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, seth.forshee@canonical.com
+Subject: Re: [PATCH v2 1/3] vfs: Check for invalid i_uid in may_follow_link()
+Message-ID: <20140905190053.GB84919@ubuntu-hedt>
+Mail-Followup-To: Serge Hallyn <serge.hallyn@ubuntu.com>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+ <1409672696-15847-2-git-send-email-seth.forshee@canonical.com>
+ <20140905170509.GI16450@ubuntumail>
 MIME-Version: 1.0
-In-Reply-To: <5898856.RmRf87KNto@wuerfel>
-References: <1407512045-26969-1-git-send-email-geert+renesas@glider.be>
- <20140905174122.GD8080@google.com> <20140905202044.4c166a43@free-electrons.com>
- <5898856.RmRf87KNto@wuerfel>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 5 Sep 2014 13:00:29 -0600
-Message-ID: <CAErSpo4sEQN6T9knuh4U2x9BCUODJheaAf3S8+W4U4oC-C7mMA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905170509.GI16450@ubuntumail>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 12:34 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 05 September 2014 20:20:44 Thomas Petazzoni wrote:
->> Hum, I think I would actually prefer something like:
->>
->>                 if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_IO)
->>                         rtype = IORESOURCE_IO;
->>                 else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
->>                         rtype = IORESOURCE_MEM;
->> +               else
->> +                       continue;
->>
->> So that we're explicit with the fact that we only care about I/O and
->> MEM32 resource types.
->
-> Agreed, that looks better than my patch as well.
+On Fri, Sep 05, 2014 at 05:05:09PM +0000, Serge Hallyn wrote:
+> Quoting Seth Forshee (seth.forshee@canonical.com):
+> > Filesystem uids which don't map into a user namespace may result
+> > in inode->i_uid being INVALID_UID. A symlink and its parent
+> > could have different owners in the filesystem can both get
+> > mapped to INVALID_UID, which may result in following a symlink
+> > when this would not have otherwise been permitted. Prevent this
+> > by adding a check that the uid is valid before the comparison.
+> > 
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> 
+> I'm a bit uncomfortable about this, but I can't put my finger
+> on why.  Wonder if it could mess up root looking into
+> a malicious user's task by looking under /proc/self/root.
+> I suppose not, as this should only be the case (with root in
+> init_user_ns) for fuse?
+> 
+> Anyway it seems needed for keeping root from falling into a trap.
 
-I like it better, too, but we still need the "range += rangesz" part,
-so I don't think it will work.  I suppose that could be moved to the
-update expression of the "for" loop.  Or, since we don't use "i" in
-the loop at all, maybe we could do something like this:
+This shouldn't mess up looking into /proc/self/root or anything else
+where the symlink isn't under control of the malicious user. Plus this
+restriction only applies to world-writable directories with the sticky
+bit set.
 
-    for (; range < rend; range += rangesz)
+> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+> 
+> > ---
+> >  fs/namei.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index a996bb48dfab..193da09e903e 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -741,7 +741,7 @@ static inline int may_follow_link(struct path *link, struct nameidata *nd)
+> >  		return 0;
+> >  
+> >  	/* Allowed if parent directory and link owner match. */
+> > -	if (uid_eq(parent->i_uid, inode->i_uid))
+> > +	if (uid_valid(inode->i_uid) && uid_eq(parent->i_uid, inode->i_uid))
+> >  		return 0;
+> >  
+> >  	audit_log_link_denied("follow_link", link);
+> > -- 
+> > 1.9.1
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
