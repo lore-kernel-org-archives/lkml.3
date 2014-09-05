@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaIERYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:24:09 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:65396 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaIERYG (ORCPT
+	id S1754014AbaIERY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:24:26 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:55762 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020AbaIERYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:24:06 -0400
+	Fri, 5 Sep 2014 13:24:08 -0400
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
@@ -14,9 +14,9 @@ To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         patrice.chotard@st.com, arnd@arndb.de
 Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-usb@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: [PATCH RESEND v5 4/5] usb: host: ohci-st: Add ohci-st devicetree bindings documentation
-Date: Fri,  5 Sep 2014 18:23:48 +0100
-Message-Id: <1409937829-23708-5-git-send-email-peter.griffin@linaro.org>
+Subject: [PATCH RESEND v5 5/5] MAINTAINERS: Add ehci-st.c and ohci-st.c to ARCH/STI architecture
+Date: Fri,  5 Sep 2014 18:23:49 +0100
+Message-Id: <1409937829-23708-6-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409937829-23708-1-git-send-email-peter.griffin@linaro.org>
 References: <1409937829-23708-1-git-send-email-peter.griffin@linaro.org>
@@ -24,58 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch documents the device tree bindings required for
-the ohci on-chip controller found in ST consumer electronics SoC's.
+This patch adds the ehci-st.c and ohci-st.c files for the usb 2.0
+& usb1.1 host controller drivers found on stih41x and stih4xx STMicroelectronics
+SoC's into the STI arch section of the maintainers file.
 
 Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 ---
- Documentation/devicetree/bindings/usb/ohci-st.txt | 37 +++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/ohci-st.txt
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/usb/ohci-st.txt b/Documentation/devicetree/bindings/usb/ohci-st.txt
-new file mode 100644
-index 0000000..6d83937
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/ohci-st.txt
-@@ -0,0 +1,37 @@
-+ST USB OHCI controller
-+
-+Required properties:
-+
-+ - compatible		: must be "st,st-ohci-300x"
-+ - reg			: physical base addresses of the controller and length of memory mapped
-+			  region
-+ - interrupts		: one OHCI controller interrupt should be described here
-+ - clocks		: phandle list of usb clocks
-+ - clock-names		: should be "ic" for interconnect clock and "clk48"
-+See: Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+ - phys			: phandle for the PHY device
-+ - phy-names		: should be "usb"
-+
-+ - resets		: phandle to the powerdown and reset controller for the USB IP
-+ - reset-names		: should be "power" and "softreset".
-+See: Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
-+See: Documentation/devicetree/bindings/reset/reset.txt
-+
-+Example:
-+
-+	ohci0: usb@0xfe1ffc00 {
-+		compatible = "st,st-ohci-300x";
-+		reg = <0xfe1ffc00 0x100>;
-+		interrupts = <GIC_SPI 149 IRQ_TYPE_NONE>;
-+		clocks = <&clk_s_a1_ls 0>,
-+			 <&clockgen_b0 0>;
-+		clock-names = "ic", "clk48";
-+		phys = <&usb2_phy>;
-+		phy-names = "usb";
-+		status = "okay";
-+
-+		resets = <&powerdown STIH416_USB0_POWERDOWN>,
-+			 <&softreset STIH416_USB0_SOFTRESET>;
-+		reset-names = "power", "softreset";
-+	};
+diff --git a/MAINTAINERS b/MAINTAINERS
+index cf24bb5..5abd281 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1398,6 +1398,8 @@ F:	drivers/media/rc/st_rc.c
+ F:	drivers/i2c/busses/i2c-st.c
+ F:	drivers/tty/serial/st-asc.c
+ F:	drivers/mmc/host/sdhci-st.c
++F:	drivers/usb/host/ehci-st.c
++F:	drivers/usb/host/ohci-st.c
+ 
+ ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
 -- 
 1.9.1
 
