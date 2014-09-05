@@ -1,80 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbaIEJ2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 05:28:48 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:56428 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756183AbaIEJ2p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932082AbaIEJ2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 05:28:47 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:44698 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756179AbaIEJ2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 05:28:45 -0400
-Date: Fri, 5 Sep 2014 11:28:41 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Dave Hansen <dave@sr71.net>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-Message-ID: <20140905092841.GD26243@dhcp22.suse.cz>
-References: <54061505.8020500@sr71.net>
- <5406262F.4050705@intel.com>
- <54062F32.5070504@sr71.net>
- <20140904142721.GB14548@dhcp22.suse.cz>
- <5408CB2E.3080101@sr71.net>
- <5408ED7A.5010908@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5408ED7A.5010908@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+From: Mikko Perttunen <cyndis@kapsi.fi>
+To: wsa@the-dreams.de, ldewangan@nvidia.com, swarren@wwwdotorg.org,
+        thierry.reding@gmail.com
+Cc: linux-i2c@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH v2] i2c: i2c-tegra: Move clk_prepare/clk_set_rate to probe
+Date: Fri,  5 Sep 2014 12:28:18 +0300
+Message-Id: <1409909298-11361-1-git-send-email-cyndis@kapsi.fi>
+X-Mailer: git-send-email 2.1.0
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: cyndis@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-09-14 15:53:46, Dave Hansen wrote:
-> On 09/04/2014 01:27 PM, Dave Hansen wrote:
-> > On 09/04/2014 07:27 AM, Michal Hocko wrote:
-> >> Ouch. free_pages_and_swap_cache completely kills the uncharge batching
-> >> because it reduces it to PAGEVEC_SIZE batches.
-> >>
-> >> I think we really do not need PAGEVEC_SIZE batching anymore. We are
-> >> already batching on tlb_gather layer. That one is limited so I think
-> >> the below should be safe but I have to think about this some more. There
-> >> is a risk of prolonged lru_lock wait times but the number of pages is
-> >> limited to 10k and the heavy work is done outside of the lock. If this
-> >> is really a problem then we can tear LRU part and the actual
-> >> freeing/uncharging into a separate functions in this path.
-> >>
-> >> Could you test with this half baked patch, please? I didn't get to test
-> >> it myself unfortunately.
-> > 
-> > 3.16 settled out at about 11.5M faults/sec before the regression.  This
-> > patch gets it back up to about 10.5M, which is good.  The top spinlock
-> > contention in the kernel is still from the resource counter code via
-> > mem_cgroup_commit_charge(), though.
-> > 
-> > I'm running Johannes' patch now.
-> 
-> This looks pretty good.  The area where it plateaus (above 80 threads
-> where hyperthreading kicks in) might be a bit slower than it was in
-> 3.16, but that could easily be from other things.
+From: Mikko Perttunen <mperttunen@nvidia.com>
 
-Good news indeed. But I think it would be safer to apply Johannes'
-revert for now. Both changes are still worth having anyway because they
-have potential to improve memcg case.
+Currently the i2c-tegra bus driver prepares, enables
+and set_rates its clocks separately for each transfer.
+This causes locking problems when doing I2C transfers
+from clock notifiers; see
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/268653.html
 
-> > https://www.sr71.net/~dave/intel/bb.html?1=3.16.0-rc4-g67b9d76/&2=3.17.0-rc3-g57b252f
-> 
-> Feel free to add my Tested-by:
+This patch moves clk_prepare/unprepare and clk_set_rate calls to
+the probe function, leaving only clk_enable/disable to be
+done on each transfer. This solves the locking issue.
 
-Thanks a lot! I have posted another patch which reduces the batching for
-LRU handling because this would be too risky. So I haven't added your
-Tested-by yet.
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+---
+v2: move set_rate before prepare
+
+ drivers/i2c/busses/i2c-tegra.c | 57 +++++++++++++++++++++++++++++++++---------
+ 1 file changed, 45 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 87d0371..efba1eb 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -380,34 +380,33 @@ static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
+ {
+ 	int ret;
+ 	if (!i2c_dev->hw->has_single_clk_source) {
+-		ret = clk_prepare_enable(i2c_dev->fast_clk);
++		ret = clk_enable(i2c_dev->fast_clk);
+ 		if (ret < 0) {
+ 			dev_err(i2c_dev->dev,
+ 				"Enabling fast clk failed, err %d\n", ret);
+ 			return ret;
+ 		}
+ 	}
+-	ret = clk_prepare_enable(i2c_dev->div_clk);
++	ret = clk_enable(i2c_dev->div_clk);
+ 	if (ret < 0) {
+ 		dev_err(i2c_dev->dev,
+ 			"Enabling div clk failed, err %d\n", ret);
+-		clk_disable_unprepare(i2c_dev->fast_clk);
++		clk_disable(i2c_dev->fast_clk);
+ 	}
+ 	return ret;
+ }
  
-
+ static inline void tegra_i2c_clock_disable(struct tegra_i2c_dev *i2c_dev)
+ {
+-	clk_disable_unprepare(i2c_dev->div_clk);
++	clk_disable(i2c_dev->div_clk);
+ 	if (!i2c_dev->hw->has_single_clk_source)
+-		clk_disable_unprepare(i2c_dev->fast_clk);
++		clk_disable(i2c_dev->fast_clk);
+ }
+ 
+ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ {
+ 	u32 val;
+ 	int err = 0;
+-	int clk_multiplier = I2C_CLK_MULTIPLIER_STD_FAST_MODE;
+ 	u32 clk_divisor;
+ 
+ 	err = tegra_i2c_clock_enable(i2c_dev);
+@@ -428,9 +427,6 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ 	i2c_writel(i2c_dev, val, I2C_CNFG);
+ 	i2c_writel(i2c_dev, 0, I2C_INT_MASK);
+ 
+-	clk_multiplier *= (i2c_dev->hw->clk_divisor_std_fast_mode + 1);
+-	clk_set_rate(i2c_dev->div_clk, i2c_dev->bus_clk_rate * clk_multiplier);
+-
+ 	/* Make sure clock divisor programmed correctly */
+ 	clk_divisor = i2c_dev->hw->clk_divisor_hs_mode;
+ 	clk_divisor |= i2c_dev->hw->clk_divisor_std_fast_mode <<
+@@ -712,6 +708,7 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+ 	void __iomem *base;
+ 	int irq;
+ 	int ret = 0;
++	int clk_multiplier = I2C_CLK_MULTIPLIER_STD_FAST_MODE;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	base = devm_ioremap_resource(&pdev->dev, res);
+@@ -777,17 +774,39 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, i2c_dev);
+ 
++	if (!i2c_dev->hw->has_single_clk_source) {
++		ret = clk_prepare(i2c_dev->fast_clk);
++		if (ret < 0) {
++			dev_err(i2c_dev->dev, "Clock prepare failed %d\n", ret);
++			return ret;
++		}
++	}
++
++	clk_multiplier *= (i2c_dev->hw->clk_divisor_std_fast_mode + 1);
++	ret = clk_set_rate(i2c_dev->div_clk,
++			   i2c_dev->bus_clk_rate * clk_multiplier);
++	if (ret) {
++		dev_err(i2c_dev->dev, "Clock rate change failed %d\n", ret);
++		goto unprepare_fast_clk;
++	}
++
++	ret = clk_prepare(i2c_dev->div_clk);
++	if (ret < 0) {
++		dev_err(i2c_dev->dev, "Clock prepare failed %d\n", ret);
++		goto unprepare_fast_clk;
++	}
++
+ 	ret = tegra_i2c_init(i2c_dev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to initialize i2c controller");
+-		return ret;
++		goto unprepare_div_clk;
+ 	}
+ 
+ 	ret = devm_request_irq(&pdev->dev, i2c_dev->irq,
+ 			tegra_i2c_isr, 0, dev_name(&pdev->dev), i2c_dev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to request irq %i\n", i2c_dev->irq);
+-		return ret;
++		goto unprepare_div_clk;
+ 	}
+ 
+ 	i2c_set_adapdata(&i2c_dev->adapter, i2c_dev);
+@@ -803,16 +822,30 @@ static int tegra_i2c_probe(struct platform_device *pdev)
+ 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to add I2C adapter\n");
+-		return ret;
++		goto unprepare_div_clk;
+ 	}
+ 
+ 	return 0;
++
++unprepare_div_clk:
++	clk_unprepare(i2c_dev->div_clk);
++
++unprepare_fast_clk:
++	if (!i2c_dev->hw->has_single_clk_source)
++		clk_unprepare(i2c_dev->fast_clk);
++
++	return ret;
+ }
+ 
+ static int tegra_i2c_remove(struct platform_device *pdev)
+ {
+ 	struct tegra_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+ 	i2c_del_adapter(&i2c_dev->adapter);
++
++	clk_unprepare(i2c_dev->div_clk);
++	if (!i2c_dev->hw->has_single_clk_source)
++		clk_unprepare(i2c_dev->fast_clk);
++
+ 	return 0;
+ }
+ 
 -- 
-Michal Hocko
-SUSE Labs
+2.1.0
+
