@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453AbaIEAwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 20:52:18 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:34130 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaIEAwR (ORCPT
+	id S1755515AbaIEA7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:59:43 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:49035 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751272AbaIEA7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 20:52:17 -0400
+	Thu, 4 Sep 2014 20:59:41 -0400
+Message-ID: <54090AF4.7060406@hurleysoftware.com>
+Date: Thu, 04 Sep 2014 20:59:32 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1409876991.28990.172.camel@misato.fc.hp.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
- <1409855739-8985-2-git-send-email-toshi.kani@hp.com> <20140904201123.GA9116@khazad-dum.debian.net>
- <5408C9C4.1010705@zytor.com> <20140904231923.GA15320@khazad-dum.debian.net>
- <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com> <1409876991.28990.172.camel@misato.fc.hp.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 4 Sep 2014 17:51:55 -0700
-Message-ID: <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, akpm@linuxfoundation.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>
+CC: Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com>	 <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>	 <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com>
+In-Reply-To: <5408E458.3@zytor.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 5:29 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Thu, 2014-09-04 at 16:34 -0700, Andy Lutomirski wrote:
->> On Thu, Sep 4, 2014 at 4:19 PM, Henrique de Moraes Holschuh
->> <hmh@hmh.eng.br> wrote:
->> > On Thu, 04 Sep 2014, H. Peter Anvin wrote:
->> >> On 09/04/2014 01:11 PM, Henrique de Moraes Holschuh wrote:
->> >> > I am worried of uncharted territory, here.  I'd actually advocate for not
->> >> > enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
->> >> > is using them as well.  Is this a real concern, or am I being overly
->> >> > cautious?
->> >>
->> >> It is extremely unlikely that we'd have PAT issues in 32-bit mode and
->> >> not in 64-bit mode on the same CPU.
->> >
->> > Sure, but is it really a good idea to enable this on the *old* non-64-bit
->> > capable processors (note: I don't mean x86-64 processors operating in 32-bit
->> > mode) ?
->> >
->> >> As far as I know, the current blacklist rule is very conservative due to
->> >> lack of testing more than anything else.
->> >
->> > I was told that much in 2009 when I asked why cpuid 0x6d8 was blacklisted
->> > from using PAT :-)
+[ +cc linux-alpha ]
+
+On 09/04/2014 06:14 PM, H. Peter Anvin wrote:
+> On 09/04/2014 02:52 AM, Benjamin Herrenschmidt wrote:
 >>
->> At the very least, anyone who plugs an NV-DIMM into a 32-bit machine
->> is nuts, and not just because I'd be somewhat amazed if it even
->> physically fits into the slot. :)
->
-> According to the spec, the upper four entries bug was fixed in Pentium 4
-> model 0x1.  So, the remaining Intel 32-bit processors that may enable
-> the upper four entries are Pentium 4 model 0x1-4.  Should we disable it
-> for all Pentium 4 models?
+>> Yeah correct, alpha and bytes right ? Is there any other ? That's why I
+>> suggested int.
+>>
+> 
+> Even for Alpha it is only the 21064 AFAIK.
 
-Assuming that this is Pentium 4 erratum N46, then there may be another
-option: use slot 7 instead of slot 4 for WT.  Then, even if somehow
-the blacklist screws up, the worst that happens is that a WT page gets
-interpreted as UC.  I suppose this could cause aliasing issues, but
-can't cause problems for people who don't use the high entries in the
-first place.
+For -mcpu=ev5 (21164) and the following test
 
---Andy
+struct x {
+	long a;
+	char b;
+	char c;
+	char d;
+	char e;
+};
 
->
-> Thanks,
-> -Toshi
->
+void store_b(struct x *p) {
+	p->b = 1;
+}
 
+gcc generates:
 
+void store_b(struct x *p) {
+   0:	08 00 30 a0 	ldl	t0,8(a0)
+   4:	01 f1 3f 44 	andnot	t0,0xff,t0
+   8:	01 34 20 44 	or	t0,0x1,t0
+   c:	08 00 30 b0 	stl	t0,8(a0)
+  10:	01 80 fa 6b 	ret
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+IOW, rmw on 3 adjacent bytes, which is bad :)
+For -mcpu=ev56 (21164A), the generated code is:
+
+void store_b(struct x *p) {
+   0:	01 00 3f 20 	lda	t0,1
+   4:	08 00 30 38 	stb	t0,8(a0)
+   8:	01 80 fa 6b 	ret
+
+which is ok.
+I have no idea how prevalent the ev56 is compared to the ev5.
+Still we're talking about a chip that came out in 1996.
+
+I still hate split caches though.
+
+Regards,
+Peter Hurley
+
