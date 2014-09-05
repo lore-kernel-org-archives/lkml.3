@@ -1,148 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaIET1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:27:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33944 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663AbaIET1v (ORCPT
+	id S1752798AbaIET15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:27:57 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:63068 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663AbaIET1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:27:51 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 11/18] tty: serial: 8250_dma: Add a TX trigger workaround for AM33xx
-Date: Fri,  5 Sep 2014 21:02:46 +0200
-Message-Id: <1409943773-7874-12-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
-References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+	Fri, 5 Sep 2014 15:27:54 -0400
+Date: Fri, 5 Sep 2014 15:27:51 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Christoph Lameter <cl@linux.com>
+cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>, Tejun Heo <tj@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+In-Reply-To: <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+Message-ID: <alpine.LFD.2.11.1409051525440.16533@knanqh.ubzr>
+References: <20140901230728.GM29327@sirena.org.uk> <1627064.QhxvejlWdk@amdc1032> <alpine.DEB.2.11.1409020857110.9201@gentwo.org> <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At least on AM335x the following problem exists: Even if the TX FIFO is
-empty and a TX transfer is programmed (and started) the UART does not
-trigger the DMA transfer.
-After $TRESHOLD number of bytes have been written to the FIFO manually the
-UART reevaluates the whole situation and decides that now there is enough
-room in the FIFO and so the transfer begins.
-This problem has not been seen on DRA7 or beaglebone (OMAP3). I am not
-sure if this is UART-IP core specific or DMA engine.
+On Tue, 2 Sep 2014, Christoph Lameter wrote:
 
-The workaround is to use a threshold of one byte, program the DMA
-transfer minus one byte and then to put the first byte into the FIFO to
-kick start the transfer.
+> On Tue, 2 Sep 2014, Christoph Lameter wrote:
+> 
+> > Oww.. This is double indirection deal there. A percpu offset pointing to
+> > a pointer?
+> >
+> > Generally the following is true (definition from
+> > include/asm-generic/percpu.h that is used for ARM for raw_cpu_read):
+> >
+> > #define raw_cpu_read_4(pcp)             (*raw_cpu_ptr(&(pcp)))
+> 
+> I think what the issue is that we dropped the fetch of the percpu offset
+> in the patch. Instead we are using the address of the variable that
+> contains the offset. Does this patch fix it?
+> 
+> 
+> Subject: irqchip: Properly fetch the per cpu offset
+> 
+> The raw_cpu_read() conversion dropped the fetch of the offset
+> from base->percpu_base in gic_get_percpu_base.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/drivers/irqchip/irq-gic.c
+> ===================================================================
+> --- linux.orig/drivers/irqchip/irq-gic.c
+> +++ linux/drivers/irqchip/irq-gic.c
+> @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+>  #ifdef CONFIG_GIC_NON_BANKED
+>  static void __iomem *gic_get_percpu_base(union gic_base *base)
+>  {
+> -	return raw_cpu_read(base->percpu_base);
+> +	return raw_cpu_read(*base->percpu_base);
 
-v7…v8:
-	- fix the problem when get invoked and the FIFO is full.
+Isn't the pointer dereference supposed to be performed _outside_ the per 
+CPU accessor?
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/tty/serial/8250/8250.h     |  3 +++
- drivers/tty/serial/8250/8250_dma.c | 39 +++++++++++++++++++++++++++++++++++---
- include/uapi/linux/serial_reg.h    |  1 +
- 3 files changed, 40 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-index fbed1636e9c4..09489b391568 100644
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -82,6 +82,9 @@ struct serial8250_config {
- #define UART_BUG_PARITY	(1 << 4)	/* UART mishandles parity if FIFO enabled */
- #define UART_BUG_DMA_RX	(1 << 5)	/* UART needs DMA RX req before there is
- 					   data in FIFO */
-+#define UART_BUG_DMA_TX	(1 << 6)	/* UART needs one byte in FIFO for
-+					   kickstart */
-+
- #define PROBE_RSA	(1 << 0)
- #define PROBE_ANY	(~0)
- 
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index 3674900a1f14..48dc57aad0dd 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -83,6 +83,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 	struct uart_8250_dma		*dma = p->dma;
- 	struct circ_buf			*xmit = &p->port.state->xmit;
- 	struct dma_async_tx_descriptor	*desc;
-+	unsigned int			skip_byte = 0;
- 	int ret;
- 
- 	if (uart_tx_stopped(&p->port) || dma->tx_running ||
-@@ -91,10 +92,40 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 
- 	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
- 
-+	if (p->bugs & UART_BUG_DMA_TX) {
-+		u8 tx_lvl;
-+
-+		/*
-+		 * We need to put the first byte into the FIFO in order to start
-+		 * the DMA transfer. For transfers smaller than four bytes we
-+		 * don't bother doing DMA at all. It seem not matter if there
-+		 * are still bytes in the FIFO from the last transfer (in case
-+		 * we got here directly from __dma_tx_complete()). Bytes leaving
-+		 * the FIFO seem not to trigger the DMA transfer. It is really
-+		 * the byte that we put into the FIFO.
-+		 * If the FIFO is already full then we most likely got here from
-+		 * __dma_tx_complete(). And this means the DMA engine just
-+		 * completed its work. We don't have to wait the complete 86us
-+		 * at 115200,8n1 but around 60us (not to mention lower
-+		 * baudrates). So in that case we take the interrupt and try
-+		 * again with an empty FIFO.
-+		 */
-+		tx_lvl = serial_in(p, UART_OMAP_TX_LVL);
-+		if (tx_lvl == p->tx_loadsz) {
-+			ret = -EBUSY;
-+			goto err;
-+		}
-+		if (dma->tx_size < 4) {
-+			ret = -EINVAL;
-+			goto err;
-+		}
-+		skip_byte = 1;
-+	}
-+
- 	desc = dmaengine_prep_slave_single(dma->txchan,
--					   dma->tx_addr + xmit->tail,
--					   dma->tx_size, DMA_MEM_TO_DEV,
--					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+			dma->tx_addr + xmit->tail + skip_byte,
-+			dma->tx_size - skip_byte, DMA_MEM_TO_DEV,
-+			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		ret = -EBUSY;
- 		goto err;
-@@ -118,6 +149,8 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 			serial_out(p, UART_IER, p->ier);
- 		}
- 	}
-+	if (skip_byte)
-+		serial_out(p, UART_TX, xmit->buf[xmit->tail]);
- 	return 0;
- err:
- 	dma->tx_err = 1;
-diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
-index df6c9ab6b0cd..53af3b790129 100644
---- a/include/uapi/linux/serial_reg.h
-+++ b/include/uapi/linux/serial_reg.h
-@@ -359,6 +359,7 @@
- #define UART_OMAP_SYSC		0x15	/* System configuration register */
- #define UART_OMAP_SYSS		0x16	/* System status register */
- #define UART_OMAP_WER		0x17	/* Wake-up enable register */
-+#define UART_OMAP_TX_LVL	0x1a	/* TX FIFO level register */
- 
- /*
-  * These are the definitions for the MDR1 register
--- 
-2.1.0
-
+Nicolas
