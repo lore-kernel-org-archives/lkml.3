@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbaIEPdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:33:25 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:2372 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212AbaIEPdX (ORCPT
+	id S1753676AbaIEPdm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:33:42 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:60382 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968AbaIEPdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:33:23 -0400
-Message-ID: <1409930574.28990.192.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-From: Toshi Kani <toshi.kani@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 05 Sep 2014 09:22:54 -0600
-In-Reply-To: <5409D197.2060900@zytor.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
-		 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
-		 <20140904201123.GA9116@khazad-dum.debian.net> <5408C9C4.1010705@zytor.com>
-		 <20140904231923.GA15320@khazad-dum.debian.net>
-		 <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
-		 <1409876991.28990.172.camel@misato.fc.hp.com>
-		 <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>
-	 <1409925614.28990.184.camel@misato.fc.hp.com> <5409D197.2060900@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Sep 2014 11:33:40 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [PATCH v2 0/5] arm: Implement arch_trigger_all_cpu_backtrace
+Date: Fri,  5 Sep 2014 16:33:13 +0100
+Message-Id: <1409931198-22600-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1409846620-14542-1-git-send-email-daniel.thompson@linaro.org>
+References: <1409846620-14542-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-05 at 08:07 -0700, H. Peter Anvin wrote:
-> On 09/05/2014 07:00 AM, Toshi Kani wrote:
-> > 
-> > That's a fine idea, but as Ingo also suggested, I am going to disable
-> > this feature on all Pentium 4 models.  That should give us a safety
-> > margin.  Using slot 4 has a benefit that it keeps the PAT setup
-> > consistent with Xen.      
-> > 
-> 
-> Slot 4 is also the maximally problematic one, because it is the one that
-> might be incorrectly invoked for the page tables themselves.
+This patchset implements arch_trigger_all_cpu_backtrace for arm.
 
-Good point.  I wonder if Xen folks feel strongly about keeping the PAT
-setup consistent with the kernel.  If not, we may choose to use slot 6
-(or 7).
+Non-maskable signalling relies on the kernel being able to access FIQ
+and therefore, for devices that implement TrustZone, it will work only on
+systems that boot the kernel in secure mode.
 
-Thanks,
--Toshi
+Tested on Freescale iMX.6 (both via SysRq-l and by deliberately locking
+up the kernel with CONFIG_DEBUG_SPINLOCK=y).
+
+Changes since v1:
+
+* Restructured to sit nicely on a similar FYI patchset from Russell
+  King. It now effectively replaces the work in progress final patch
+  with something much more complete.
+
+* Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
+  (review of Nicolas Pitre)
+
+* Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
+  being acknowledged by the IRQ handler does still exist but should be
+  harmless because the IRQ handler will still wind up calling
+  ipi_cpu_backtrace().
+
+* Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
+  becomes a platform feature (although the use of non-maskable
+  interrupts to implement it is best effort rather than guaranteed).
+
+* Better comments highlighting usage of RAZ/WI registers (and parts of
+  registers) in the GIC code.
+
+Changes *before* v1:
+
+* This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
+  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
+  the new structure. For historic details see:
+        https://lkml.org/lkml/2014/9/2/227
+
+* Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
+  In fixing this we also remove the useless indirection previously
+  found in the fiq_handler macro.
+
+* Make default fiq handler "always on" by migrating from fiq.c to
+  traps.c and replace do_unexp_fiq with the new handler (review
+  of Russell King).
+
+* Add arm64 version of fiq.h (review of Russell King)
+
+* Removed conditional branching and code from irq-gic.c, this is
+  replaced by much simpler code that relies on the GIC specification's
+  heavy use of read-as-zero/write-ignored (review of Russell King)
+
+
+Daniel Thompson (3):
+  arm: fiq: Replace default FIQ handler
+  arm64: Introduce dummy version of asm/fiq.h
+  irqchip: gic: Add support for IPI FIQ
+
+Russell King (2):
+  ARM: remove unused do_unexp_fiq() function
+  ARM: add basic support for on-demand backtrace of other CPUs
+
+ arch/arm/include/asm/irq.h      |   5 ++
+ arch/arm/include/asm/smp.h      |   3 +
+ arch/arm/kernel/entry-armv.S    | 137 ++++++++++++++++++++++++++++++---
+ arch/arm/kernel/setup.c         |   8 +-
+ arch/arm/kernel/smp.c           |  64 ++++++++++++++++
+ arch/arm/kernel/traps.c         |  32 +++++++-
+ arch/arm64/include/asm/fiq.h    |  18 +++++
+ drivers/irqchip/irq-gic.c       | 165 +++++++++++++++++++++++++++++++++++++---
+ include/linux/irqchip/arm-gic.h |   3 +
+ 9 files changed, 412 insertions(+), 23 deletions(-)
+ create mode 100644 arch/arm64/include/asm/fiq.h
+
+--
+1.9.3
 
