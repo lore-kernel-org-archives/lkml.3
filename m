@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaIEWnZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:43:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35081 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaIEWnY (ORCPT
+	id S1753534AbaIEWpQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:45:16 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:53824 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaIEWpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:43:24 -0400
-Date: Sat, 6 Sep 2014 00:43:17 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Paolo Bonzini <pbonzini@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [GIT PULL] KVM changes for 3.17-rc4
-In-Reply-To: <540A2F15.5070603@redhat.com>
-Message-ID: <alpine.DEB.2.10.1409060042020.5472@nanos>
-References: <1409912186-22968-1-git-send-email-pbonzini@redhat.com> <CA+55aFxum+O9j4ohV=BwJR_+q+hMAZ2QLp0SpgZzYFWs9F=EUg@mail.gmail.com> <alpine.DEB.2.10.1409052254450.5472@nanos> <540A267E.1070002@redhat.com> <alpine.DEB.2.10.1409052314330.5472@nanos>
- <540A2F15.5070603@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 5 Sep 2014 18:45:13 -0400
+Date: Fri, 5 Sep 2014 15:45:09 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Francis Moreau <francis.moro@gmail.com>, stable@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3.10.y+] PM / sleep: Use valid_state() for
+ platform-dependent sleep states only
+Message-ID: <20140905224509.GF18411@ld-irv-0074>
+References: <1849024.CHOUso6H2K@vostro.rjw.lan>
+ <1409865665-5375-1-git-send-email-computersforpeace@gmail.com>
+ <54095835.7000207@gmail.com>
+ <20140905074512.GA12218@brian-ubuntu>
+ <20140905214758.GC30221@kroah.com>
+ <20140905220828.GE18411@ld-irv-0074>
+ <20140905223626.GA2376@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905223626.GA2376@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014, Paolo Bonzini wrote:
-
-> Il 05/09/2014 23:24, Thomas Gleixner ha scritto:
+On Fri, Sep 05, 2014 at 03:36:26PM -0700, Greg Kroah-Hartman wrote:
+> > > If they apply cleanly, then just list the git commit ids, and I can take
+> > > care of the rest.
 > > 
-> >> > that besides acting as a workaround, I find the patched code easier to
-> >> > understand, and I clearly stated the same in the tag message.
-> > Well, we might have different opinions about easier to understand. I
-> > did go a great length to distangle the monotonic boot time on which
-> > you are interested from xtime, because the latter does not make any
-> > sense outside of the core timekeeping code. Aside of that I optimized
-> > the whole thing to avoid conversions, loops and hoops. So you just add
-> > another multiply and add to make it more understandable. 
+> > OK. Is this a policy that should be documented? AIUI, we have a few
+> > options:
+> > 
+> >   1. Include 'Cc: stable@vger.kernel.org' in the original commit that
+> >   gets to Linus
+> > 
+> >   2. Send an email to stable@vger.kernel.org that just contains the
+> >   commit IDs, after they've made it to Linus
+> > 
+> >   3. Send patches to stable@vger.kernel.org, if backporting is not
+> >   trivial
+> > 
+> > #1 is most common, and #2 seems like it would handle most of what misses
+> > #1. #3 seems inferior, whenever #2 would suffice. But #2 is not in
+> > stable_kernel_rules.txt.
 > 
-> Fair enough, I've dropped the patch.
+> I always gladly take patches to that .txt file if you wish to make it
+> clearer.
 
-Though I agree that the struct member name choice is not the most
-brilliant one, so feel free to fix that.
- 
-> Thanks for helping out with the core timekeeping fix.
+I was interested in whether I had my facts straight before trying to
+document them. I'll take your response to mean I'm not far off base, so
+I'll take a stab at patching the file.
 
-I'm still banging my head against the wall....
+Thanks,
+Brian
