@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821AbaIEKf5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:35:57 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:59506 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688AbaIEKfx (ORCPT
+	id S1756727AbaIEKjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:39:44 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31884 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756489AbaIEKjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:35:53 -0400
-Message-ID: <54099218.9030108@linaro.org>
-Date: Fri, 05 Sep 2014 12:36:08 +0200
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 5 Sep 2014 06:39:42 -0400
+Message-ID: <540992EA.6020209@arm.com>
+Date: Fri, 05 Sep 2014 11:39:38 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linaro-acpi@lists.linaro.org
-CC: Marc Zyngier <marc.zyngier@arm.com>,
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
         Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
         Rob Herring <robh@kernel.org>,
@@ -33,15 +33,14 @@ Subject: Re: [Linaro-acpi] [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific
  ACPI boot support
 References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <4895927.Zp4WL2AZAF@wuerfel> <540986B2.7000901@arm.com> <3400229.hn32yHbVD2@wuerfel>
 In-Reply-To: <3400229.hn32yHbVD2@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 05.09.2014 12:13, Arnd Bergmann wrote:
+On 05/09/14 11:13, Arnd Bergmann wrote:
 > On Friday 05 September 2014 10:47:30 Marc Zyngier wrote:
 >>>
 >>> I still prefer being explicit here for the same reason I mentioned earlier:
@@ -55,9 +54,9 @@ On 05.09.2014 12:13, Arnd Bergmann wrote:
 >> shouldn't make the maintenance burden heavier, and the code nothing
 >> short of disgusting. Using our current infrastructure doesn't mean we're
 >> going to support GIcv2.37.
->
+> 
 > Ok
->
+> 
 >>> In particular, the ACPI tables describing the irqchip have no way to
 >>> identify the GIC at all, if I read the spec correctly, you have to
 >>> parse the tables, ioremap the registers and then read the ID to know
@@ -68,16 +67,19 @@ On 05.09.2014 12:13, Arnd Bergmann wrote:
 >> Structure) tells you if you have a CPU interface (GICv1/v2) or a
 >> redistributor (GICv3/v4). That's enough to know whether or not you
 >> should carry on probing a particular controller.
->
+> 
 > Ah, good. I missed that.
->
+> 
 >> The various GIC versions don't really have a unified memory map anyway
 >> (well, none that you can rely on), and you really have to rely on ACPI
 >> to tell you what you have.
->
+> 
 > So we are back to needing to support two different irqchip drivers
 > (v1/v2/v2m and v3/v4), instead of five or more, right?
->
+
+As long as we make sure that the variants are directly probed from the
+"canonical" driver (v2m from v2, ITS and v4 from v3), then we're OK.
+
 >>> It does seem wrong to parse the tables in the irq-gic.c file though:
 >>> that part can well be common across the various gic versions and then
 >>> call into either irq-gic.c or irq-gic-v3.c for the version specific
@@ -88,10 +90,10 @@ On 05.09.2014 12:13, Arnd Bergmann wrote:
 >> I don't think so you can make that common code very easily. The
 >> information required by both drivers is organized differently.
 >> If it was, I'd have done that for the DT binding.
->
+> 
 > I see, and that's also what Tomasz just explained. So can we just
 > have one an irqchip_init() function doing this:?
->
+> 
 > if (dt)
 > 	of_irq_init(__irqchip_of_table);
 > else if (acpi) {
@@ -101,24 +103,13 @@ On 05.09.2014 12:13, Arnd Bergmann wrote:
 > 	else if(redistributor)
 > 		gic_v3_acpi_init(table)
 > }
->
 
-It is pretty much the same as:
-if (dt)
-	of_irq_init(__irqchip_of_table);
-else if (acpi) {
-	err = gic_v3_acpi_init(table) {
-		read redistributor address from acpi tables
-		[...]
-	}
-	if (err) {
-		err = gic_v2_acpi_init(table) {
-		read cpu-interface address from acpi tables
-		[...]
-		}
-	}
-}
-What basically is my current implementation (well, without GICv3 support 
-but that will be next step).
+That'd be better, but that only considers the basic architecture. GICv2m
+and GICv3's ITS bring additional complexity (and their own table
+parsing). At that stage, I'm not sure how much commonality we're left with.
 
-Tomasz
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
