@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748AbaIEJlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 05:41:36 -0400
-Received: from arrakis.dune.hu ([78.24.191.176]:57735 "EHLO arrakis.dune.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756557AbaIEJle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 05:41:34 -0400
+	id S1756656AbaIEJnl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 05:43:41 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:39652 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999AbaIEJnk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 05:43:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <1409907054-17596-1-git-send-email-johannes@sipsolutions.net>
-References: <1409907054-17596-1-git-send-email-johannes@sipsolutions.net>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Fri, 5 Sep 2014 11:40:50 +0200
-Message-ID: <CAOiHx=nGHGEHSLABnR9NL9ZEXYJN_TvJnyGud8mxseL2089fwg@mail.gmail.com>
-Subject: Re: [RFC v2] device coredump: add new device coredump class
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Luciano Coelho <luca@coelho.fi>, Kalle Valo <kvalo@adurom.com>,
-        dri-devel@lists.freedesktop.org,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1409909940.5546.154.camel@x220>
+References: <1392153676.14317.8.camel@x220>
+	<1397550407.1985.12.camel@x220>
+	<534CFB45.9070704@st.com>
+	<1402919387.30599.4.camel@x220>
+	<1409909229.5546.146.camel@x220>
+	<1409909940.5546.154.camel@x220>
+Date: Fri, 5 Sep 2014 15:13:39 +0530
+X-Google-Sender-Auth: VhM3WBSvyiWlvDqpd4cigun5DWQ
+Message-ID: <CAOh2x=koqY0SyOuP+Xk7Zd3Ue_7HPFAxUn+V3M4ehgCv-8i02A@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: spear: Remove references to PLAT_SPEAR_SINGLE
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Martin Walch <walch.martin@web.de>,
+        Richard Weinberger <richard@nod.at>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 10:50 AM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
+On Fri, Sep 5, 2014 at 3:09 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> Ditto for v3.17-rc3 and next-20140904. Could someone please pix this up?
 
-Can't you just send from the correct address? ;p
+You need to send it to arm@kernel.org..
 
-(snip)
+> And now Rajeev's address bounces. Has Rajeev left ST?
 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 4e7f0ff83ae7..134f763d90fd 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -165,6 +165,27 @@ config FW_LOADER_USER_HELPER_FALLBACK
->
->           If you are unsure about this, say N here.
->
-> +config WANT_DEV_COREDUMP
-> +       bool
-> +       help
-> +         Drivers should "select" this option if they desire to use the
-> +         device coredump mechanism.
-> +
-> +config DISABLE_DEV_COREDUMP
-> +       bool "Disable device coredump" if EXPERT
-> +       help
-> +         Disable the device coredump mechanism despite drivers wanting to
-> +         use it; this allows for more sensitive systems or systems that
-> +         don't want to ever access the information to not have the code,
-> +         nor keep any data.
-> +
-> +         If unsure, say N.
-> +
-> +config DEV_COREDUMP
-> +       bool
-> +       default y if WANT_DEV_COREDUMP
-> +       depends on !DISABLE_DEV_COREDUMP
+Yeah both Shiraz/Rajeev and myself have left ST :)
 
-How about the following to avoid negative options:
+You can add
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-config DEV_COREDUMP
-       bool "Enable device coredump" if EXPERT
-       default y if WANT_DEV_COREDUMP
-       help
-         Enable the device coredump mechanism for drivers wanting to
-         use it. Disabling allows for more sensitive systems or systems that
-         don't want to ever access the information to not have the code,
-         nor keep any data.
-
-         If unsure, say Y.
-
-
-
-Jonas
+--
+viresh
