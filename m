@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700AbaIEKO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:14:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45834 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755939AbaIEKOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:14:55 -0400
-Date: Fri, 5 Sep 2014 11:14:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH] mm: page_alloc: Fix setting of ZONE_FAIR_DEPLETED on UP
-Message-ID: <20140905101451.GF17501@suse.de>
-References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
- <1404893588-21371-7-git-send-email-mgorman@suse.de>
- <53E4EC53.1050904@suse.cz>
- <20140811121241.GD7970@suse.de>
- <53E8B83D.1070004@suse.cz>
- <20140902140116.GD29501@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140902140116.GD29501@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756742AbaIEKPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:15:22 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:13217 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756520AbaIEKPU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 06:15:20 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-56-54098d35e0cb
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RESEND] mfd: max14577: Don't pass IRQ domain to mfd_add_devices
+Date: Fri, 05 Sep 2014 12:15:10 +0200
+Message-id: <1409912110-18120-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKJMWRmVeSWpSXmKPExsVy+t/xK7qmvZwhBrNOq1m8fmFocf/rUUaL
+	y7vmsFmc7mZ1YPG4c20Pm8e8k4EefVtWMXp83iQXwBLFZZOSmpNZllqkb5fAlfGkv6TgGmvF
+	+rd7GBsYr7B0MXJySAiYSBzsPs8EYYtJXLi3nq2LkYtDSGApo0Tv+6eMEE4fk8SyG32sIFVs
+	AsYSm5cvYQOxRQSyJH5MWw02iVnAUOLnuz/sILawgKfE9x/7wKayCKhKPO/4A2RzcPAKuEsc
+	/8QNsUxO4uSxyawTGLkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAjx+tcdjEuPWR1i
+	FOBgVOLh7dDkDBFiTSwrrsw9xCjBwawkwvuvHijEm5JYWZValB9fVJqTWnyIkYmDU6qBMdb8
+	zoV93Sfba+b9UVxkNVNwxfWCmudf48XuRLvw1Ii8/zSj9YXKh4qn3i8PBd+1Mwry/HHi70qe
+	fFHZyhXmSvmLT9xd8KTLPpP1QFVqRVQ1U0zNf6t/v+e8e3Q2liv/172bEuu8Ats1tszw4H2q
+	aOS9OCRnc/XmCuWplcwNP10yT5Uosd1TUWIpzkg01GIuKk4EAE6xCiHYAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4ffeaf35 (mm: page_alloc: reduce cost of the fair zone allocation policy)
-broke the fair zone allocation policy on UP with these hunks.
+The max14577 MFD cells do not have any resources so the IRQ domain
+passed to mfd_add_devices is not used.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e5e8f7..fb99081 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1612,6 +1612,9 @@ again:
-        }
-
-        __mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-+       if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
-+           !zone_is_fair_depleted(zone))
-+               zone_set_flag(zone, ZONE_FAIR_DEPLETED);
-
-        __count_zone_vm_events(PGALLOC, zone, 1 << order);
-        zone_statistics(preferred_zone, zone, gfp_flags);
-@@ -1966,8 +1985,10 @@ zonelist_scan:
-                if (alloc_flags & ALLOC_FAIR) {
-                        if (!zone_local(preferred_zone, zone))
-                                break;
--                       if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-+                       if (zone_is_fair_depleted(zone)) {
-+                               nr_fair_skipped++;
-                                continue;
-+                       }
-                }
-
-The problem is that a <= check was replaced with a ==. On SMP it doesn't
-matter because negative values are returned as zero due to per-CPU drift
-which is not possible in the UP case. Vlastimil Babka correctly pointed
-out that this can be negative due to high-order allocations. This patch
-fixes the problem.
-
-Reported-by: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/max14577.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 18cee0d..cd4c05c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1612,7 +1612,7 @@ again:
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index 4a5e885383f8..ba2ac9c10b12 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -372,8 +372,7 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
  	}
  
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
--	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
-+	if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0 &&
- 	    !zone_is_fair_depleted(zone))
- 		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
+ 	ret = mfd_add_devices(max14577->dev, -1, mfd_devs,
+-			mfd_devs_size, NULL, 0,
+-			regmap_irq_get_domain(max14577->irq_data));
++			mfd_devs_size, NULL, 0, NULL);
+ 	if (ret < 0)
+ 		goto err_mfd;
  
+-- 
+1.9.1
+
