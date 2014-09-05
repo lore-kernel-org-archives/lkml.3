@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaIETem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:34:42 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:35833 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaIETek (ORCPT
+	id S1751993AbaIEThr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:37:47 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:59467 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750776AbaIEThp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:34:40 -0400
+	Fri, 5 Sep 2014 15:37:45 -0400
+Date: Fri, 5 Sep 2014 21:37:36 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Weike Chen <alvin.chen@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>
+Subject: Re: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Message-ID: <20140905193736.GA7981@breakpoint.cc>
+References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+ <1409928798-31895-2-git-send-email-alvin.chen@intel.com>
+ <3465722.Gc9y01nQRe@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <20140905.122539.670916286627732128.davem@davemloft.net>
-References: <CAHA+R7M1qd5g1ta=YFqefgXDf1EfF2_VsJGUvH6Dd+ttnHc_VQ@mail.gmail.com>
-	<1409944376.5306.9.camel@localhost>
-	<CAHA+R7NSu=wjGsmLapjM4Mbk_oeZ07P+yN0b982otvjoW2jodA@mail.gmail.com>
-	<20140905.122539.670916286627732128.davem@davemloft.net>
-Date: Fri, 5 Sep 2014 12:34:38 -0700
-Message-ID: <CAHA+R7MbsZhxB8uo3xvVsS6JWjRV4p2BcgCBVWtVaJ6Tr4ONYA@mail.gmail.com>
-Subject: Re: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for anycast
- and multicast
-From: Cong Wang <cwang@twopensource.com>
-To: David Miller <davem@davemloft.net>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        trinity@vger.kernel.org, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3465722.Gc9y01nQRe@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 12:25 PM, David Miller <davem@davemloft.net> wrote:
->
-> I thought the retention of RCU locking was reasonable, and that your
-> feedback was something I disagreed with.
->
-> This is different from ignoring your feedback.
+On 2014-09-05 13:50:06 [+0200], Arnd Bergmann wrote:
+> On Friday 05 September 2014 07:53:16 Weike Chen wrote:
+> >  
+> > -	irq_set_chained_handler(irq, dwapb_irq_handler);
+> > -	irq_set_handler_data(irq, gpio);
+> > +	if (!pp->irq_shared) {
+> > +		irq_set_chained_handler(pp->irq, dwapb_irq_handler);
+> > +		irq_set_handler_data(pp->irq, gpio);
+> > +	} else {
+> > +		/*
+> > +		 * Request a shared IRQ since where MFD would have devices
+> > +		 * using the same irq pin
+> > +		 */
+> > +		err = devm_request_irq(gpio->dev, pp->irq,
+> > +				       dwapb_irq_handler_mfd,
+> > +				       IRQF_SHARED, "gpio-dwapb-mfd", gpio);
+> > +		if (err) {
+> > +			dev_err(gpio->dev, "error requesting IRQ\n");
+> > +			irq_domain_remove(gpio->domain);
+> > +			gpio->domain = NULL;
+> > +			return;
+> > +		}
+> > +	}
+> >
+> 
+> I think this need some better documentation. Why is it safe to use
+> devm_request_irq rather than irq_set_chained_handler here?
 
-The point is we don't need to backport the patch that far, as I already
-mentioned, up to  commit c15b1ccadb323ea
-("ipv6: move DAD and addrconf_verify processing to workqueue"),
-simply because no one reports any bug.
+Usually it is preferred to use irq_set_chained_handler() for the chained
+handler so the handler does not show up in /proc/interrupts.
+This requires an exclusive non-shared handler which is not the case on
+the intel platform. So they have to use devm_request_irq() instead.
 
-So we don't have to adjust the patch just for stable in this case.
+Sebastian
