@@ -1,83 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaIEWw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:52:57 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:43314 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002AbaIEWww (ORCPT
+	id S1754244AbaIEWxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:53:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43566 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894AbaIEWrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:52:52 -0400
-Date: Fri, 5 Sep 2014 15:52:48 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Tejun Heo <tj@kernel.org>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-Message-ID: <20140905225248.GC35667@core.coreip.homeip.net>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
- <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
- <20140905141241.GC10455@mtj.dyndns.org>
- <20140905164405.GA28964@core.coreip.homeip.net>
- <20140905174925.GA12991@mtj.dyndns.org>
- <20140905181003.GA29003@core.coreip.homeip.net>
- <20140905222956.GA15723@mtj.dyndns.org>
- <540A3CF4.5070508@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540A3CF4.5070508@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Sep 2014 18:47:42 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: [PATCH v2 07/15] clk: qcom: Add support for High-Frequency PLLs (HFPLLs)
+Date: Fri,  5 Sep 2014 15:47:27 -0700
+Message-Id: <1409957256-23729-9-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
+In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
+References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 03:45:08PM -0700, Arjan van de Ven wrote:
-> On 9/5/2014 3:29 PM, Tejun Heo wrote:
-> >Hello, Dmitry.
-> >
-> >On Fri, Sep 05, 2014 at 11:10:03AM -0700, Dmitry Torokhov wrote:
-> >>I do not agree that it is actually user-visible change: generally speaking you
-> >>do not really know if device is there or not. They come and go. Like I said,
-> >>consider all permutations, with hot-pluggable buses, deferred probing, etc,
-> >
-> >It is for storage devices which always have guaranteed synchronous
-> >probing on module load and well-defined probing order.  Sure, modern
-> >setups are a lot more dynamic but I'm quite certain that there are
-> >setups in the wild which depend on storage driver loading being
-> >synchronous.  We can't simply declare one day that such behavior is
-> >broken and break, most likely, their boots.
-> 
-> we even depend on this in the mount-by-label cases
-> 
-> many setups assume that the internal storage prevails over the USB stick in the case of conflicts.
-> it's a security issue; you don't want the built in secure bootloader that has a kernel root argument
-> by label/uuid.
-> the security there tends to assume that built-in wins over USB
+HFPLLs are the main frequency source for Krait CPU clocks. Add
+support for changing the rate of these PLLs.
 
-Ahem... and they sure it works reliably with large storage arrays? With
-SCSI doing probing asynchronously already?
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/qcom/Makefile    |   1 +
+ drivers/clk/qcom/clk-hfpll.c | 253 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/qcom/clk-hfpll.h |  54 +++++++++
+ 3 files changed, 308 insertions(+)
+ create mode 100644 drivers/clk/qcom/clk-hfpll.c
+ create mode 100644 drivers/clk/qcom/clk-hfpll.h
 
-Thanks.
-
+diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
+index 783cfb24faa4..f1e54065e4dc 100644
+--- a/drivers/clk/qcom/Makefile
++++ b/drivers/clk/qcom/Makefile
+@@ -6,6 +6,7 @@ clk-qcom-y += clk-pll.o
+ clk-qcom-y += clk-rcg.o
+ clk-qcom-y += clk-rcg2.o
+ clk-qcom-y += clk-branch.o
++clk-qcom-y += clk-hfpll.o
+ clk-qcom-y += reset.o
+ 
+ obj-$(CONFIG_APQ_GCC_8084) += gcc-apq8084.o
+diff --git a/drivers/clk/qcom/clk-hfpll.c b/drivers/clk/qcom/clk-hfpll.c
+new file mode 100644
+index 000000000000..367eb95f1477
+--- /dev/null
++++ b/drivers/clk/qcom/clk-hfpll.c
+@@ -0,0 +1,253 @@
++/*
++ * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/kernel.h>
++#include <linux/export.h>
++#include <linux/regmap.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/clk-provider.h>
++#include <linux/spinlock.h>
++
++#include "clk-regmap.h"
++#include "clk-hfpll.h"
++
++#define PLL_OUTCTRL	BIT(0)
++#define PLL_BYPASSNL	BIT(1)
++#define PLL_RESET_N	BIT(2)
++
++/* Initialize a HFPLL at a given rate and enable it. */
++static void __clk_hfpll_init_once(struct clk_hw *hw)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++
++	if (likely(h->init_done))
++		return;
++
++	/* Configure PLL parameters for integer mode. */
++	if (hd->config_val)
++		regmap_write(regmap, hd->config_reg, hd->config_val);
++	regmap_write(regmap, hd->m_reg, 0);
++	regmap_write(regmap, hd->n_reg, 1);
++
++	if (hd->user_reg) {
++		u32 regval = hd->user_val;
++		unsigned long rate;
++
++		rate = __clk_get_rate(hw->clk);
++
++		/* Pick the right VCO. */
++		if (hd->user_vco_mask && rate > hd->low_vco_max_rate)
++			regval |= hd->user_vco_mask;
++		regmap_write(regmap, hd->user_reg, regval);
++	}
++
++	if (hd->droop_reg)
++		regmap_write(regmap, hd->droop_reg, hd->droop_val);
++
++	h->init_done = true;
++}
++
++static void __clk_hfpll_enable(struct clk_hw *hw)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++	u32 val;
++
++	__clk_hfpll_init_once(hw);
++
++	/* Disable PLL bypass mode. */
++	regmap_update_bits(regmap, hd->mode_reg, PLL_BYPASSNL, PLL_BYPASSNL);
++
++	/*
++	 * H/W requires a 5us delay between disabling the bypass and
++	 * de-asserting the reset. Delay 10us just to be safe.
++	 */
++	udelay(10);
++
++	/* De-assert active-low PLL reset. */
++	regmap_update_bits(regmap, hd->mode_reg, PLL_RESET_N, PLL_RESET_N);
++
++	/* Wait for PLL to lock. */
++	if (hd->status_reg) {
++		do {
++			regmap_read(regmap, hd->status_reg, &val);
++		} while (!(val & BIT(hd->lock_bit)));
++	} else {
++		udelay(60);
++	}
++
++	/* Enable PLL output. */
++	regmap_update_bits(regmap, hd->mode_reg, PLL_OUTCTRL, PLL_OUTCTRL);
++}
++
++/* Enable an already-configured HFPLL. */
++static int clk_hfpll_enable(struct clk_hw *hw)
++{
++	unsigned long flags;
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++	u32 mode;
++
++	spin_lock_irqsave(&h->lock, flags);
++	regmap_read(regmap, hd->mode_reg, &mode);
++	if (!(mode & (PLL_BYPASSNL | PLL_RESET_N | PLL_OUTCTRL)))
++		__clk_hfpll_enable(hw);
++	spin_unlock_irqrestore(&h->lock, flags);
++
++	return 0;
++}
++
++static void __clk_hfpll_disable(struct clk_hfpll *h)
++{
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++
++	/*
++	 * Disable the PLL output, disable test mode, enable the bypass mode,
++	 * and assert the reset.
++	 */
++	regmap_update_bits(regmap, hd->mode_reg,
++			PLL_BYPASSNL | PLL_RESET_N | PLL_OUTCTRL, 0);
++}
++
++static void clk_hfpll_disable(struct clk_hw *hw)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	unsigned long flags;
++
++	spin_lock_irqsave(&h->lock, flags);
++	__clk_hfpll_disable(h);
++	spin_unlock_irqrestore(&h->lock, flags);
++}
++
++static long clk_hfpll_round_rate(struct clk_hw *hw, unsigned long rate,
++				 unsigned long *parent_rate)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	unsigned long rrate;
++
++	rate = clamp(rate, hd->min_rate, hd->max_rate);
++
++	rrate = DIV_ROUND_UP(rate, *parent_rate) * *parent_rate;
++	if (rrate > hd->max_rate)
++		rrate -= *parent_rate;
++
++	return rrate;
++}
++
++/*
++ * For optimization reasons, assumes no downstream clocks are actively using
++ * it.
++ */
++static int clk_hfpll_set_rate(struct clk_hw *hw, unsigned long rate,
++			      unsigned long parent_rate)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++	unsigned long flags;
++	u32 l_val, val;
++	bool enabled;
++
++	l_val = rate / parent_rate;
++
++	spin_lock_irqsave(&h->lock, flags);
++
++	enabled = __clk_is_enabled(hw->clk);
++	if (enabled)
++		__clk_hfpll_disable(h);
++
++	/* Pick the right VCO. */
++	if (hd->user_reg && hd->user_vco_mask) {
++		regmap_read(regmap, hd->user_reg, &val);
++		if (rate <= hd->low_vco_max_rate)
++			val &= ~hd->user_vco_mask;
++		else
++			val |= hd->user_vco_mask;
++		regmap_write(regmap, hd->user_reg, val);
++	}
++
++	regmap_write(regmap, hd->l_reg, l_val);
++
++	if (enabled)
++		__clk_hfpll_enable(hw);
++
++	spin_unlock_irqrestore(&h->lock, flags);
++
++	return 0;
++}
++
++static unsigned long clk_hfpll_recalc_rate(struct clk_hw *hw,
++					   unsigned long parent_rate)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++	u32 l_val;
++
++	regmap_read(regmap, hd->l_reg, &l_val);
++
++	return l_val * parent_rate;
++}
++
++static void clk_hfpll_init(struct clk_hw *hw)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++	u32 mode, status;
++
++	regmap_read(regmap, hd->mode_reg, &mode);
++	if (mode != (PLL_BYPASSNL | PLL_RESET_N | PLL_OUTCTRL)) {
++		__clk_hfpll_init_once(hw);
++		return;
++	}
++
++	if (hd->status_reg) {
++		regmap_read(regmap, hd->status_reg, &status);
++		if (!(status & BIT(hd->lock_bit))) {
++			WARN(1, "HFPLL %s is ON, but not locked!\n",
++					__clk_get_name(hw->clk));
++			clk_hfpll_disable(hw);
++			__clk_hfpll_init_once(hw);
++		}
++	}
++}
++
++static int hfpll_is_enabled(struct clk_hw *hw)
++{
++	struct clk_hfpll *h = to_clk_hfpll(hw);
++	struct hfpll_data const *hd = h->d;
++	struct regmap *regmap = h->clkr.regmap;
++	u32 mode;
++
++	regmap_read(regmap, hd->mode_reg, &mode);
++	mode &= 0x7;
++	return mode == (PLL_BYPASSNL | PLL_RESET_N | PLL_OUTCTRL);
++}
++
++const struct clk_ops clk_ops_hfpll = {
++	.enable = clk_hfpll_enable,
++	.disable = clk_hfpll_disable,
++	.is_enabled = hfpll_is_enabled,
++	.round_rate = clk_hfpll_round_rate,
++	.set_rate = clk_hfpll_set_rate,
++	.recalc_rate = clk_hfpll_recalc_rate,
++	.init = clk_hfpll_init,
++};
++EXPORT_SYMBOL_GPL(clk_ops_hfpll);
+diff --git a/drivers/clk/qcom/clk-hfpll.h b/drivers/clk/qcom/clk-hfpll.h
+new file mode 100644
+index 000000000000..48c18d664f4e
+--- /dev/null
++++ b/drivers/clk/qcom/clk-hfpll.h
+@@ -0,0 +1,54 @@
++/*
++ * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#ifndef __QCOM_CLK_HFPLL_H__
++#define __QCOM_CLK_HFPLL_H__
++
++#include <linux/clk-provider.h>
++#include <linux/spinlock.h>
++#include "clk-regmap.h"
++
++struct hfpll_data {
++	u32 mode_reg;
++	u32 l_reg;
++	u32 m_reg;
++	u32 n_reg;
++	u32 user_reg;
++	u32 droop_reg;
++	u32 config_reg;
++	u32 status_reg;
++	u8  lock_bit;
++
++	u32 droop_val;
++	u32 config_val;
++	u32 user_val;
++	u32 user_vco_mask;
++	unsigned long low_vco_max_rate;
++
++	unsigned long min_rate;
++	unsigned long max_rate;
++};
++
++struct clk_hfpll {
++	struct hfpll_data const *d;
++	int init_done;
++
++	struct clk_regmap clkr;
++	spinlock_t lock;
++};
++
++#define to_clk_hfpll(_hw) \
++	container_of(to_clk_regmap(_hw), struct clk_hfpll, clkr)
++
++extern const struct clk_ops clk_ops_hfpll;
++
++#endif
 -- 
-Dmitry
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
