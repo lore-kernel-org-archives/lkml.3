@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290AbaIEWry (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:47:54 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43552 "EHLO
+	id S1754250AbaIEWrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:47:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43545 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755AbaIEWrl (ORCPT
+	with ESMTP id S1752718AbaIEWrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:47:41 -0400
+	Fri, 5 Sep 2014 18:47:40 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
 Subject: [PATCH v2 04/15] clk: divider: Make generic for usage elsewhere
-Date: Fri,  5 Sep 2014 15:47:24 -0700
-Message-Id: <1409957256-23729-6-git-send-email-sboyd@codeaurora.org>
+Date: Fri,  5 Sep 2014 15:47:23 -0700
+Message-Id: <1409957256-23729-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
 References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
@@ -397,7 +397,7 @@ index 18a9de29df0e..78ecd8af8740 100644
  	val |= value << divider->shift;
  	clk_writel(val, divider->reg);
 diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 92a00b61370a..5058fb98dbfb 100644
+index ba97e25c1115..32d39613d217 100644
 --- a/include/linux/clk-provider.h
 +++ b/include/linux/clk-provider.h
 @@ -342,6 +342,17 @@ struct clk_divider {
