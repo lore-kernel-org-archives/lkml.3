@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaIET0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:26:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33898 "EHLO
+	id S1752244AbaIET0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:26:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33903 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaIETZ5 (ORCPT
+	with ESMTP id S1751552AbaIET0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:25:57 -0400
+	Fri, 5 Sep 2014 15:26:15 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        devicetree@vger.kernel.org
-Subject: [PATCH 16/18] arm: dts: am33xx: add DMA properties for UART
-Date: Fri,  5 Sep 2014 21:02:51 +0200
-Message-Id: <1409943773-7874-17-git-send-email-bigeasy@linutronix.de>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 15/18] tty: serial: 8250_dma: add pm runtime
+Date: Fri,  5 Sep 2014 21:02:50 +0200
+Message-Id: <1409943773-7874-16-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
 References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
@@ -27,43 +26,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: devicetree@vger.kernel.org
+There is nothing to do for RPM in the RX path. If the HW goes off then it
+won't assert the DMA line and the transfer won't happen. So we hope that
+the HW does not go off for RX to work (DMA or PIO makes no difference
+here).
+
+For TX the situation is slightly different. RPM is enabled on
+start_tx(). We can't disable RPM on DMA complete callback because there
+is still data in the FIFO which is being sent. We have to wait until
+the FIFO is empty before we disable it.
+For this to happen we fake a TX sent error and enable THRI. Once the
+FIFO is empty we receive an interrupt and since the TTY-buffer is still
+empty we "put RPM" via __stop_tx(). Should it been filed then in the
+start_tx() path we should program the DMA transfer and remove the error
+flag and the THRI bit.
+
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- arch/arm/boot/dts/am33xx.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/tty/serial/8250/8250_dma.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 3a0a161342ba..078a760a4a21 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -200,6 +200,8 @@
- 			reg = <0x44e09000 0x2000>;
- 			interrupts = <72>;
- 			status = "disabled";
-+			dmas = <&edma 26>, <&edma 27>;
-+			dma-names = "tx", "rx";
- 		};
+diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
+index f0fce8236279..1b4a8e02e844 100644
+--- a/drivers/tty/serial/8250/8250_dma.c
++++ b/drivers/tty/serial/8250/8250_dma.c
+@@ -21,6 +21,7 @@ static void __dma_tx_complete(void *param)
+ 	struct uart_8250_dma	*dma = p->dma;
+ 	struct circ_buf		*xmit = &p->port.state->xmit;
+ 	unsigned long	flags;
++	bool en_thri = false;
  
- 		uart1: serial@48022000 {
-@@ -209,6 +211,8 @@
- 			reg = <0x48022000 0x2000>;
- 			interrupts = <73>;
- 			status = "disabled";
-+			dmas = <&edma 28>, <&edma 29>;
-+			dma-names = "tx", "rx";
- 		};
+ 	dma_sync_single_for_cpu(dma->txchan->device->dev, dma->tx_addr,
+ 				UART_XMIT_SIZE, DMA_TO_DEVICE);
+@@ -40,11 +41,16 @@ static void __dma_tx_complete(void *param)
+ 		int ret;
  
- 		uart2: serial@48024000 {
-@@ -218,6 +222,8 @@
- 			reg = <0x48024000 0x2000>;
- 			interrupts = <74>;
- 			status = "disabled";
-+			dmas = <&edma 30>, <&edma 31>;
-+			dma-names = "tx", "rx";
- 		};
+ 		ret = serial8250_tx_dma(p);
+-		if (ret) {
+-			dma->tx_err = 1;
+-			p->ier |= UART_IER_THRI;
+-			serial_port_out(&p->port, UART_IER, p->ier);
+-		}
++		if (ret)
++			en_thri = true;
++
++	} else if (p->capabilities & UART_CAP_RPM)
++		en_thri = true;
++
++	if (en_thri) {
++		dma->tx_err = 1;
++		p->ier |= UART_IER_THRI;
++		serial_port_out(&p->port, UART_IER, p->ier);
+ 	}
  
- 		uart3: serial@481a6000 {
+ 	spin_unlock_irqrestore(&p->port.lock, flags);
 -- 
 2.1.0
 
