@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaIET2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:28:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33962 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144AbaIET2f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:28:35 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 14/18] tty: serial: 8250_dma: handle the when UART response while DMA remains idle
-Date: Fri,  5 Sep 2014 21:02:49 +0200
-Message-Id: <1409943773-7874-15-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
-References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752161AbaIET3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:29:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750885AbaIET33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 15:29:29 -0400
+From: Seth Jennings <sjenning@redhat.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Aristeu Rozanski <aris@redhat.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sb_edac: avoid INTERNAL ERROR message in EDAC with unspecified channel
+Date: Fri,  5 Sep 2014 14:28:47 -0500
+Message-Id: <1409945327-17989-1-git-send-email-sjenning@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes the OMAP UART does not signal the DMA engine to unload the FIFO.
-Usually this happens when we have >threshold bytes in the FIFO
-and start the DMA transfer. It seems that in those cases the UART won't
-trigger the transfer once the requested threshold is reached. In some
-rare cases the UART does not trigger the DMA transfer even if programmed
-while the FIFO was empty.
-In those cases the UART drops an RDI event and we have to empty the FIFO
-manually. If we ignore it because the DMA transfer is programmed then we
-will enter the function a few times until we receive the RX_TIMEOUT
-event. At that point the FIFO is usually full and we risk to overflow
-the FIFO.
+Intel IA32 SDM Table 15-14 defines channel 0xf as 'not specified', but
+EDAC doesn't know about this and returns and INTERNAL ERROR when the
+channel is greater than NUM_CHANNELS:
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+kernel: [ 1538.886456] CPU 0: Machine Check Exception: 0 Bank 1: 940000000000009f
+kernel: [ 1538.886669] TSC 2bc68b22e7e812 ADDR 46dae7000 MISC 0 PROCESSOR 0:306e4 TIME 1390414572 SOCKET 0 APIC 0
+kernel: [ 1538.971948] EDAC MC1: INTERNAL ERROR: channel value is out of range (15 >= 4)
+kernel: [ 1538.972203] EDAC MC1: 0 CE memory read error on unknown memory (slot:0 page:0x46dae7 offset:0x0 grain:0 syndrome:0x0 -  area:DRAM err_code:0000:009f socket:1 channel_mask:1 rank:0)
+
+This commit changes sb_edac to forward a channel of -1 to EDAC if the
+channel is not specified.  edac_mc_handle_error() sets the channel to -1
+internally after the error message anyway, so this commit should have no
+effect other than avoiding the INTERNAL ERROR message when the channel
+is not specified.
+
+Signed-off-by: Seth Jennings <sjenning@redhat.com>
+Cc: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-edac@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/tty/serial/8250/8250_dma.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/edac/sb_edac.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index 6cd8a4db609a..f0fce8236279 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -182,6 +182,24 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
- 			__dma_rx_do_complete(p, true);
- 		}
- 		return -ETIMEDOUT;
-+	case UART_IIR_RDI:
-+		if (p->bugs & UART_BUG_DMA_RX)
-+			break;
-+		/*
-+		 * The OMAP UART is a special BEAST. If we receive RDI we _have_
-+		 * a DMA transfer programmed but it didn't worked. One reason is
-+		 * that we were too slow and there were too many bytes in the
-+		 * FIFO, the UART counted wrong and never kicked the DMA engine
-+		 * to do anything. That means once we receive RDI on OMAP than
-+		 * the DMA won't do anything soon so we have to cancel the DMA
-+		 * transfer and purge the FIFO manually.
-+		 */
-+		if (dma->rx_running) {
-+			dmaengine_pause(dma->rxchan);
-+			__dma_rx_do_complete(p, true);
-+		}
-+		return -ETIMEDOUT;
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index 0034c48..07efed4 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -283,8 +283,9 @@ static const u32 correrrthrsld[] = {
+  * sbridge structs
+  */
+ 
+-#define NUM_CHANNELS	4
+-#define MAX_DIMMS	3		/* Max DIMMS per channel */
++#define NUM_CHANNELS		4
++#define MAX_DIMMS		3	/* Max DIMMS per channel */
++#define CHANNEL_UNSPECIFIED	0xf	/* Intel IA32 SDM 15-14 */
+ 
+ enum type {
+ 	SANDY_BRIDGE,
+@@ -1991,6 +1992,9 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
+ 
+ 	/* FIXME: need support for channel mask */
+ 
++	if (channel == CHANNEL_UNSPECIFIED)
++		channel = -1;
 +
- 	default:
- 		break;
- 	}
+ 	/* Call the helper to output message */
+ 	edac_mc_handle_error(tp_event, mci, core_err_cnt,
+ 			     m->addr >> PAGE_SHIFT, m->addr & ~PAGE_MASK, 0,
 -- 
-2.1.0
+1.9.3
 
