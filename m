@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926AbaIEJrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 05:47:49 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:35879 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756421AbaIEJrr (ORCPT
+	id S1756944AbaIEJsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 05:48:08 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43754 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756600AbaIEJsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 05:47:47 -0400
-Date: Fri, 5 Sep 2014 15:17:27 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "open list:STAGING - INDUSTR..." <linux-iio@vger.kernel.org>,
-        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: iio: adc: mxs-lradc.c: sparse warning of
- incorrect type
-Message-ID: <20140905094727.GA23333@sudip-PC>
-References: <1409849142-12185-1-git-send-email-sudipm.mukherjee@gmail.com>
- <20140905093413.GJ6600@mwanda>
+	Fri, 5 Sep 2014 05:48:02 -0400
+Date: Fri, 5 Sep 2014 10:47:47 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Anders Berg <anders.berg@avagotech.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-gpio@vger.kernel.org
+Subject: Re: [PATCH 1/2] gpio: Add driver for AXM55xx SSP chip selects
+Message-ID: <20140905094747.GE30401@n2100.arm.linux.org.uk>
+References: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com> <1409576021-24828-2-git-send-email-anders.berg@avagotech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140905093413.GJ6600@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409576021-24828-2-git-send-email-anders.berg@avagotech.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 12:34:13PM +0300, Dan Carpenter wrote:
-> On Thu, Sep 04, 2014 at 10:15:42PM +0530, Sudip Mukherjee wrote:
-> > fixed sparse warning : incorrect type in argument 1 
-> > 		       (different address spaces)
-> > 
+On Mon, Sep 01, 2014 at 02:53:40PM +0200, Anders Berg wrote:
+> The AXM55xx device has a ARM PL022 SSP controller with an extension that
+> enables the control of up to five chip select signals. This driver implements
+> the logic to control these signals and exports them as GPIOs.
 > 
-> The change log is not clear.  It's the IS_ERR() which is the problem?
-> This is a false positive which is fixed in a later version of Sparse.
-> 
-> regards,
-> dan carpenter
-> 
-> 
-yes , problem with sparse. ubuntu repo was not having the latest version , 
-    and i did not check what is the latest . 
-    sorry for it.
+> Signed-off-by: Anders Berg <anders.berg@avagotech.com>
 
-thanks
-sudip
+So, what happens if the GPIO driver binds first, followed by the SSP
+device?  Please test that scenario out before this patch gets merged.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
