@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735AbaIEDq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 23:46:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53137 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230AbaIEDq5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 23:46:57 -0400
-Message-ID: <5409322F.8020805@infradead.org>
-Date: Thu, 04 Sep 2014 20:46:55 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755830AbaIEDw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 23:52:58 -0400
+Received: from imap.thunk.org ([74.207.234.97]:39200 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653AbaIEDw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Sep 2014 23:52:56 -0400
+Date: Thu, 4 Sep 2014 23:17:35 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
+        jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, paulmck@linux.vnet.ibm.com,
+        peterz@infradead.org, adilger.kernel@dilger.ca, minchan@kernel.org,
+        gunho.lee@lge.com
+Subject: Re: [PATCHv4 0/3] new APIs to allocate buffer-cache with user
+ specific flag
+Message-ID: <20140905031735.GD1971@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Joonsoo Kim <iamjoonsoo.kim@lge.com>, Gioh Kim <gioh.kim@lge.com>,
+	Andrew Morton <akpm@linux-foundation.org>, jack@suse.cz,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+	paulmck@linux.vnet.ibm.com, peterz@infradead.org,
+	adilger.kernel@dilger.ca, minchan@kernel.org, gunho.lee@lge.com
+References: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
+ <20140904151612.7bf5b813069ff78973e01571@linux-foundation.org>
+ <540905B1.1050200@lge.com>
+ <20140905011419.GE4364@thunk.org>
+ <20140905014808.GA26070@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org
-CC: mm-commits@vger.kernel.org
-Subject: Re: + mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
- added to -mm tree
-References: <54076ec4.SXX1dzKOV7x8UJki%akpm@linux-foundation.org> <20140905004455.GA23894@js1304-P5Q-DELUXE>
-In-Reply-To: <20140905004455.GA23894@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905014808.GA26070@js1304-P5Q-DELUXE>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/14 17:44, Joonsoo Kim wrote:
-> On Wed, Sep 03, 2014 at 12:40:52PM -0700, akpm@linux-foundation.org wrote:
->>
->> The patch titled
->>      Subject: mm: fix kmemcheck.c build errors
->> has been added to the -mm tree.  Its filename is
->>      mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
->>
->> This patch should soon appear at
->>     http://ozlabs.org/~akpm/mmots/broken-out/mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
->> and later at
->>     http://ozlabs.org/~akpm/mmotm/broken-out/mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2.patch
->>
->> Before you just go and hit "reply", please:
->>    a) Consider who else should be cc'ed
->>    b) Prefer to cc a suitable mailing list as well
->>    c) Ideally: find the original patch on the mailing list and do a
->>       reply-to-all to that, adding suitable additional cc's
->>
->> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->>
->> The -mm tree is included into linux-next and is updated
->> there every 3-4 working days
->>
->> ------------------------------------------------------
->> From: Randy Dunlap <rdunlap@infradead.org>
->> Subject: mm: fix kmemcheck.c build errors
->>
->> Add header files to fix kmemcheck.c build errors:
->>
->> ../mm/kmemcheck.c:70:7: error: dereferencing pointer to incomplete type
->> ../mm/kmemcheck.c:83:15: error: dereferencing pointer to incomplete type
->> ../mm/kmemcheck.c:95:8: error: dereferencing pointer to incomplete type
->> ../mm/kmemcheck.c:95:21: error: dereferencing pointer to incomplete type
->>
->> ../mm/slab.h: In function 'cache_from_obj':
->> ../mm/slab.h:283:2: error: implicit declaration of function 'memcg_kmem_enabled' [-Werror=implicit-function-declaration]
->>
->> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
->> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->> ---
->>
->>  mm/kmemcheck.c |    1 +
->>  mm/slab.h      |    2 ++
->>  2 files changed, 3 insertions(+)
->>
->> diff -puN mm/kmemcheck.c~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2 mm/kmemcheck.c
->> --- a/mm/kmemcheck.c~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2
->> +++ a/mm/kmemcheck.c
->> @@ -2,6 +2,7 @@
->>  #include <linux/mm_types.h>
->>  #include <linux/mm.h>
->>  #include <linux/slab.h>
->> +#include "slab.h"
->>  #include <linux/kmemcheck.h>
->>  
->>  void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
->> diff -puN mm/slab.h~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2 mm/slab.h
->> --- a/mm/slab.h~mm-slab_common-move-kmem_cache-definition-to-internal-header-fix-2
->> +++ a/mm/slab.h
->> @@ -268,6 +268,8 @@ static inline void memcg_uncharge_slab(s
->>  }
->>  #endif
->>  
->> +#include <linux/memcontrol.h>
->> +
->>  static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
->>  {
->>  	struct kmem_cache *cachep;
-> 
-> Hello, Andrew.
-> 
-> Could you take another fix instead of this?
-> This also make build failure if CONFIG_MEMCG_KMEM=y.
-> Please see following patch I sent.
-> 
-> https://lkml.org/lkml/2014/8/31/148
-> 
-> The only difference is position of memcontrol.h header.
-> 
-> Thanks.
+Joonson,
 
-Ack that.  Thanks.
+Thanks for the update.  I've applied Gioh's patches to the ext4 tree,
+but I'd appreciate a further clarification.  My understanding with the
+problem you were trying to address is that with the current CMA
+implementation, kswapd was getting activiated too early, yes?
 
--- 
-~Randy
+But it would still be a good idea to try to use non-moveable memory in
+preference in favor of CMA memory; even if the page migration can move
+the contents of the page elsewhere, wouldn't be better to avoid
+needing to do the page migation in the first place.  Given that the
+ext4 file systems are getting mounted very early in the boot process,
+when there should be plenty of CMA and non-CMA elegible memory
+available, why was CMA memory getting selected for the buffer cache
+allocations when non-CMA memory available?
+
+In other words, even without Gioh's patch to force the use of non-CMA
+eligible memory, wouldn't it be better if the memory allocator used
+non-CMA preferentially if it were available.  This should be
+orthogonal to whether or not kswaped gets activiated, right?
+
+Regards,
+
+							- Ted
