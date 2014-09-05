@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044AbaIEGig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:38:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736AbaIEGie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:38:34 -0400
-Message-ID: <54095A5B.4030606@redhat.com>
-Date: Fri, 05 Sep 2014 08:38:19 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Anders Darander <anders@chargestorm.se>, Yinghai Lu <yinghai@kernel.org>,
-        Matt Fleming <matt@console-pimps.org>
-CC: =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
-References: <1409806207-3992-1-git-send-email-yinghai@kernel.org> <20140904100137.GK3001@console-pimps.org> <5408D299.5000300@zytor.com> <20140904212925.GL3001@console-pimps.org> <CAE9FiQUDLoARj-Z3ipPTf2sZgGn71SxrxM+FqLE1Cyb-OEoP+A@mail.gmail.com> <20140905054749.GA4498@ad.chargestorm.se>
-In-Reply-To: <20140905054749.GA4498@ad.chargestorm.se>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756074AbaIEGi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:38:57 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:61552 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaIEGiB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 02:38:01 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
+        tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, hare@suse.com,
+        akpm@linux-foundation.org, penguin-kernel@i-love.sakura.ne.jp,
+        joseph.salisbury@canonical.com, bpoirier@suse.de, santosh@chelsio.com,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>, MPT-FusionLinux.pdl@avagotech.com,
+        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
+Subject: [RFC v2 5/6] mptsas: use async probe
+Date: Thu,  4 Sep 2014 23:37:26 -0700
+Message-Id: <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/14 07:47, Anders Darander wrote:
-> * Yinghai Lu <yinghai@kernel.org> [140905 03:19]:
-> 
-> 
->> On Thu, Sep 4, 2014 at 2:29 PM, Matt Fleming <matt@console-pimps.org> wrote:
->>> On Thu, 04 Sep, at 01:59:05PM, H. Peter Anvin wrote:
-> 
->>>> I am fine with this patch, but at the same time I do want to note that
->>>> there is an alternative to double-buffer the patch and/or (if that
->>>> applies to the buggy BIOS) round up the size of the target buffer.
-> 
->>> I'm not sure that rounding up the size of the target buffer will
->>> workaround this issue correctly.
-> 
->>> As far as I know, the only thing that Mantas tried was rounding up the
->>> size of the source file, by padding it.
-> 
->> Can you try attached patch on top of linus tree?
-> 
-> I took the liberty to test the patch on my Dell XPS13 9333, and
-> unfortunately I got the old hang back. 
-> 
-> This was tested on the current Linus' tree.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Assuming that the UEFI implementation on Mantas's and Anders's machines
-use edk2's FatPkg to read the file from an EFI System Partition:
+Its reported that mptsas can at times take over 30 seconds
+to recognize SCSI storage devices [0], this is done on the
+driver's probe path. Use the the new asynch probe to
+circumvent systemd from killing this driver.
 
-this kernel patch will have no effect, because FatPkg (the ESP
-filesystem driver) checks the buffer size against the remainder of the
-file, and clips the input buffer if it would overshoot the file size.
+[0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
 
-In other words, the rounding up of the kernel will be undone in a
-"somewhat higher level" driver in the firmware, and the request size
-that reaches DiskIo (the "lowel level driver") remains the same.
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Tim Gardner <tim.gardner@canonical.com>
+Cc: Pierre Fersing <pierre-fersing@pierref.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Benjamin Poirier <bpoirier@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
+Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
+Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
+Cc: Hariprasad S <hariprasad@chelsio.com>
+Cc: Santosh Rastapur <santosh@chelsio.com>
+Cc: Casey Leedom <leedom@chelsio.com>
+Cc: MPT-FusionLinux.pdl@avagotech.com
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ drivers/message/fusion/mptsas.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-https://github.com/tianocore/edk2-FatPkg/blob/master/EnhancedFatDxe/ReadWrite.c#L306
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 0707fa2..6dfee95 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -5385,6 +5385,7 @@ static struct pci_driver mptsas_driver = {
+ 	.suspend	= mptscsih_suspend,
+ 	.resume		= mptscsih_resume,
+ #endif
++	.driver.async_probe = true,
+ };
+ 
+ static int __init
+-- 
+2.0.3
 
-    } else {
-      //
-      // Access a file
-      //
-      EndPosition = IFile->Position + *BufferSize;
-      if (EndPosition > OFile->FileSize) {
-        //
-        // The position goes beyond the end of file
-        //
-        if (IoMode == READ_DATA) {
-          //
-          // Adjust the actual size read
-          //
-          *BufferSize -= (UINTN) EndPosition - OFile->FileSize;
-
-Thanks
-Laszlo
