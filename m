@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaIEVko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:40:44 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:58691 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144AbaIEVkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:40:43 -0400
-Message-ID: <540A2DD1.1040002@gmail.com>
-Date: Sat, 06 Sep 2014 00:40:33 +0300
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1752522AbaIEVlE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:41:04 -0400
+Received: from fieldses.org ([174.143.236.118]:41756 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752317AbaIEVlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 17:41:02 -0400
+Date: Fri, 5 Sep 2014 17:40:58 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/17] nfsd: don't keep a pointer to the lease in
+ nfs4_file
+Message-ID: <20140905214058.GA5443@fieldses.org>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+ <1409834323-7171-8-git-send-email-jlayton@primarydata.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, ron minnich <rminnich@gmail.com>
-CC: Gerd Hoffmann <kraxel@redhat.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        coreboot <coreboot@coreboot.org>
-Subject: Re: [coreboot] [PATCH] x86: add coreboot framebuffer support
-References: <1409826307-23075-1-git-send-email-kraxel@redhat.com>	<540A17A6.1000802@zytor.com>	<540A266F.80503@gmail.com> <CAP6exYJj8Fupa1uTLRP5uGoWNjvwKo7bAAPvYmzUYB=AOqOq8g@mail.gmail.com> <540A29E6.2080405@gmail.com> <540A2B9A.1070707@zytor.com>
-In-Reply-To: <540A2B9A.1070707@zytor.com>
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="tX4xTpULJtHKD6nCvtf708uFBIEofL5nG"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409834323-7171-8-git-send-email-jlayton@primarydata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---tX4xTpULJtHKD6nCvtf708uFBIEofL5nG
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 04, 2014 at 08:38:33AM -0400, Jeff Layton wrote:
+> Now that we don't need to pass in an actual lease pointer to
+> vfs_setlease on unlock, we can stop tracking a pointer to the lease in
+> the nfs4_file.
+> 
+> Switch all of the places that check the fi_lease to check fi_deleg_file
+> instead. We always set that at the same time so it will have the same
+> semantics.
+> 
+> Cc: J. Bruce Fields <bfields@fieldses.org>
+> Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+> Reviewed-by: Christoph Hellwig <hch@lst.de>
+> ---
+>  fs/nfsd/nfs4state.c | 10 ++++------
+>  fs/nfsd/state.h     |  1 -
+>  2 files changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index 0cd252916e1a..d0a6e8e022a2 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -680,11 +680,10 @@ static void nfs4_put_deleg_lease(struct nfs4_file *fp)
+>  {
+>  	lockdep_assert_held(&state_lock);
+>  
+> -	if (!fp->fi_lease)
+> +	if (!fp->fi_deleg_file)
+>  		return;
+>  	if (atomic_dec_and_test(&fp->fi_delegees)) {
+>  		vfs_setlease(fp->fi_deleg_file, F_UNLCK, NULL);
+> -		fp->fi_lease = NULL;
+>  		fput(fp->fi_deleg_file);
+>  		fp->fi_deleg_file = NULL;
+>  	}
 
-On 06.09.2014 00:31, H. Peter Anvin wrote:
-> On 09/05/2014 02:23 PM, Vladimir '=CF=86-coder/phcoder' Serbinenko wrot=
-e:
->> On 06.09.2014 00:18, ron minnich wrote:
->>> Vladimir can you point me to that patch? This sounds
->>> interesting.
->>>
->> https://lkml.org/lkml/2010/8/25/190
->>
->=20
-> I believe *most* of this patch has already gotten merged as we now use
-> simplefb on x86 as well.  So all we need is probably the ID.
->
-Yes, efifb has the same semantics. We just need some ID with clear
-documentation saying sth like "implies framebuffer without anything
-else" so that noone will get an idea to plug e.g. vga hooks into it.
+Note the code in my for-3.18 branch is different here due to a couple
+patches I've already taken from you.
 
-> 	-hpa
->=20
->=20
+--b.
 
-
-
---tX4xTpULJtHKD6nCvtf708uFBIEofL5nG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iF4EAREKAAYFAlQKLdIACgkQmBXlbbo5nOsmCgEAoQgTTdrMy9PiFQcSVanKzQHb
-R6Avj5k5GVFjIsrd5q8BAKLAfl/tdUroQzASUWCvRaREidXeMCpEf5WJH8RBYpPV
-=p7VD
------END PGP SIGNATURE-----
-
---tX4xTpULJtHKD6nCvtf708uFBIEofL5nG--
+> @@ -3061,8 +3060,8 @@ static void nfsd4_init_file(struct nfs4_file *fp, struct knfsd_fh *fh)
+>  	INIT_LIST_HEAD(&fp->fi_stateids);
+>  	INIT_LIST_HEAD(&fp->fi_delegations);
+>  	fh_copy_shallow(&fp->fi_fhandle, fh);
+> +	fp->fi_deleg_file = NULL;
+>  	fp->fi_had_conflict = false;
+> -	fp->fi_lease = NULL;
+>  	fp->fi_share_deny = 0;
+>  	memset(fp->fi_fds, 0, sizeof(fp->fi_fds));
+>  	memset(fp->fi_access, 0, sizeof(fp->fi_access));
+> @@ -3803,13 +3802,12 @@ static int nfs4_setlease(struct nfs4_delegation *dp)
+>  	if (fp->fi_had_conflict)
+>  		goto out_unlock;
+>  	/* Race breaker */
+> -	if (fp->fi_lease) {
+> +	if (fp->fi_deleg_file) {
+>  		status = 0;
+>  		atomic_inc(&fp->fi_delegees);
+>  		hash_delegation_locked(dp, fp);
+>  		goto out_unlock;
+>  	}
+> -	fp->fi_lease = fl;
+>  	fp->fi_deleg_file = filp;
+>  	atomic_set(&fp->fi_delegees, 1);
+>  	hash_delegation_locked(dp, fp);
+> @@ -3842,7 +3840,7 @@ nfs4_set_delegation(struct nfs4_client *clp, struct svc_fh *fh,
+>  	spin_lock(&state_lock);
+>  	spin_lock(&fp->fi_lock);
+>  	dp->dl_stid.sc_file = fp;
+> -	if (!fp->fi_lease) {
+> +	if (!fp->fi_deleg_file) {
+>  		spin_unlock(&fp->fi_lock);
+>  		spin_unlock(&state_lock);
+>  		status = nfs4_setlease(dp);
+> diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+> index 4a89e00d7461..64f291a25a8c 100644
+> --- a/fs/nfsd/state.h
+> +++ b/fs/nfsd/state.h
+> @@ -477,7 +477,6 @@ struct nfs4_file {
+>  	atomic_t		fi_access[2];
+>  	u32			fi_share_deny;
+>  	struct file		*fi_deleg_file;
+> -	struct file_lock	*fi_lease;
+>  	atomic_t		fi_delegees;
+>  	struct knfsd_fh		fi_fhandle;
+>  	bool			fi_had_conflict;
+> -- 
+> 1.9.3
+> 
