@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaIEPmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:42:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48289 "EHLO mail.zytor.com"
+	id S1753457AbaIEPmY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:42:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48305 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108AbaIEPmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:42:09 -0400
-Message-ID: <5409D99C.10305@zytor.com>
-Date: Fri, 05 Sep 2014 08:41:16 -0700
+	id S1753058AbaIEPmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 11:42:22 -0400
+Message-ID: <5409D9C0.7030403@zytor.com>
+Date: Fri, 05 Sep 2014 08:41:52 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>		 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>		 <20140904201123.GA9116@khazad-dum.debian.net> <5408C9C4.1010705@zytor.com>		 <20140904231923.GA15320@khazad-dum.debian.net>		 <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>		 <1409876991.28990.172.camel@misato.fc.hp.com>		 <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>	 <1409925614.28990.184.camel@misato.fc.hp.com> <5409D197.2060900@zytor.com> <1409930574.28990.192.camel@misato.fc.hp.com>
-In-Reply-To: <1409930574.28990.192.camel@misato.fc.hp.com>
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com>	 <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>	 <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com> <54090AF4.7060406@hurleysoftware.com> <54091B30.7080100@zytor.com> <5409D76D.2070203@hurleysoftware.com>
+In-Reply-To: <5409D76D.2070203@hurleysoftware.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 08:22 AM, Toshi Kani wrote:
-> On Fri, 2014-09-05 at 08:07 -0700, H. Peter Anvin wrote:
->> On 09/05/2014 07:00 AM, Toshi Kani wrote:
->>>
->>> That's a fine idea, but as Ingo also suggested, I am going to disable
->>> this feature on all Pentium 4 models.  That should give us a safety
->>> margin.  Using slot 4 has a benefit that it keeps the PAT setup
->>> consistent with Xen.      
->>>
->>
->> Slot 4 is also the maximally problematic one, because it is the one that
->> might be incorrectly invoked for the page tables themselves.
+On 09/05/2014 08:31 AM, Peter Hurley wrote:
 > 
-> Good point.  I wonder if Xen folks feel strongly about keeping the PAT
-> setup consistent with the kernel.  If not, we may choose to use slot 6
-> (or 7).
+> Which is a bit ironic because I remember when Digital had a team
+> working on emulating native x86 apps on Alpha/NT.
 > 
 
-Who cares what the Xen folks "feel strongly about"?  If strong feelings
-were a design criterion Xen support would have been pulled from the
-kernel a long, long time ago.
-
-The important thing is how to design for the situation that we currently
-have to live with.
+Right, because the x86 architecture was obsolete and would never scale...
 
 	-hpa
-
 
