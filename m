@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaIEV2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:28:12 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:42714 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaIEV2L (ORCPT
+	id S1752628AbaIEVaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:30:22 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53904 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751920AbaIEVaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:28:11 -0400
+	Fri, 5 Sep 2014 17:30:20 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX189RwKVLsOHoUStRs1FnAyL
+Date: Fri, 5 Sep 2014 14:30:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>
+Subject: Re: [PATCH 07/10] ARM: OMAP5 / DRA7: Enable CPU RET on suspend
+Message-ID: <20140905213009.GB3238@atomide.com>
+References: <1408716154-26101-1-git-send-email-nm@ti.com>
+ <1408716154-26101-8-git-send-email-nm@ti.com>
+ <7hbnr5dake.fsf@paris.lan>
+ <53FE2BF2.3020006@ti.com>
+ <20140827194156.GE16006@atomide.com>
+ <53FE34D7.7040004@ti.com>
+ <53FE3551.2080806@ti.com>
+ <20140905211558.GA31011@kahuna>
 MIME-Version: 1.0
-In-Reply-To: <20140905212528.GG8080@google.com>
-References: <cover.1405160163.git.agordeev@redhat.com> <20140905212528.GG8080@google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 5 Sep 2014 15:27:49 -0600
-Message-ID: <CAErSpo4XN01hgTUpcca=i-=LFV_bM-Cok8614LJzrOfVbx8MAA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] PCI/MSI: Remove arch_msi_check_device()
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905211558.GA31011@kahuna>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 3:25 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Jul 12, 2014 at 01:21:06PM +0200, Alexander Gordeev wrote:
->> Hello,
->>
->> This is a cleanup effort to get rid of useless arch_msi_check_device().
->> I am not sure what were the reasons for its existence in the first place,
->> but at the moment it appears totally unnecessary.
->>
->> Thanks!
->>
->> Cc: linuxppc-dev@lists.ozlabs.org
->> Cc: linux-pci@vger.kernel.org
->>
->> Alexander Gordeev (2):
->>   PCI/MSI/PPC: Remove arch_msi_check_device()
->>   PCI/MSI: Remove arch_msi_check_device()
->
-> I applied these (with Michael's ack on the first, and v2 of the second) to
-> pci/msi for v3.18, thanks!
->>
->>  arch/powerpc/include/asm/machdep.h     |    2 -
->>  arch/powerpc/kernel/msi.c              |   12 +-------
->>  arch/powerpc/platforms/cell/axon_msi.c |    9 ------
->>  arch/powerpc/platforms/powernv/pci.c   |   19 +++---------
->>  arch/powerpc/platforms/pseries/msi.c   |   42
->>  ++++++++++----------------- arch/powerpc/sysdev/fsl_msi.c          |
->>  12 ++------ arch/powerpc/sysdev/mpic_pasemi_msi.c  |   11 +------
->>  arch/powerpc/sysdev/mpic_u3msi.c       |   28 +++++++-----------
->>  arch/powerpc/sysdev/ppc4xx_hsta_msi.c  |   18 ++++--------
->>  arch/powerpc/sysdev/ppc4xx_msi.c       |   19 ++++--------
->>  drivers/pci/msi.c                      |   49
->>  ++++++++----------------------- include/linux/msi.h                    |
->>  3 -- 12 files changed, 63 insertions(+), 161 deletions(-)
+* Nishanth Menon <nm@ti.com> [140905 14:16]:
+> On 14:45-20140827, Nishanth Menon wrote:
+> > On 08/27/2014 02:43 PM, Santosh Shilimkar wrote:
+> > > On Wednesday 27 August 2014 03:41 PM, Tony Lindgren wrote:
+> > >> * Nishanth Menon <nm@ti.com> [140827 12:05]:
+> > >>> On 08/27/2014 01:58 PM, Kevin Hilman wrote:
+> > >>>> Nishanth Menon <nm@ti.com> writes:
+> > >>>>
+> > >>>>> From: Rajendra Nayak <rnayak@ti.com>
+> > >>>>>
+> > >>>>> On OMAP5 / DRA7, prevent a CPU powerdomain OFF and resulting MPU OSWR
+> > >>>>> and instead attempt a CPU RET and side effect, MPU RET in suspend.
+> > >>>>>
+> > >>>>> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+> > >>>>> [nm@ti.com: update to do save_state only on DRA7]
+> > >>>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+> > >>>>> ---
+> > >>>>>  arch/arm/mach-omap2/omap-mpuss-lowpower.c |    4 ++++
+> > >>>>>  arch/arm/mach-omap2/omap-wakeupgen.c      |    2 +-
+> > >>>>>  arch/arm/mach-omap2/pm44xx.c              |    9 +++++++--
+> > >>>>>  3 files changed, 12 insertions(+), 3 deletions(-)
+> > >>>>>
+> > >>>>> diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+> > >>>>> index 207fce2..0d640eb 100644
+> > >>>>> --- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+> > >>>>> +++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+> > >>>>> @@ -242,6 +242,10 @@ int omap4_enter_lowpower(unsigned int cpu, unsigned int power_state)
+> > >>>>>  		save_state = 1;
+> > >>>>>  		break;
+> > >>>>>  	case PWRDM_POWER_RET:
+> > >>>>> +		if (soc_is_omap54xx() || soc_is_dra7xx()) {
+> > >>>>
+> > >>>> Aren't we trying to get away from these soc_* checks for anything other
+> > >>>> than init code?
+> > >>>
+> > >>> I would expect that to take place in stages as part of which the next
+> > >>> level of cleanup is to move PRM into drivers. Currently our wakeupgen,
+> > >>> prm code does have quiet a few needs of dealing with soc_is checks
+> > >>> primarily from having to re-architect code in two different directions
+> > >>> - we want to move into just one direction eventually - to prm drivers
+> > >>> and as less code in mach-omap2 which is already in the works.
+> > >>
+> > >> Why don't you just set some flag at init time based on the
+> > >> soc_is check and then test that here? That limits the use of
+> > >> soc_is to init code only which makes it easier to phase it
+> > >> out completely eventually.
+> > >>
+> > > Indeed. Infact the version of the code I tried posting last year was
+> > > using a flag which was initialised during init. Same can be
+> > > done her.
+> > 
+> > OK. will try something along that line in the next rev.
+> 
+> 
+> Hi,
+> 
+> Updated patch below:
 
-Oh, I forgot -- if you'd rather take the first one through the PPC
-tree, you can do that and I can merge the second one later.  Let me
-know if you want to do that.
+Looks OK to me thanks.
 
-Bjorn
+Tony
