@@ -1,88 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaIEWt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:49:26 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:60810 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082AbaIEWtV (ORCPT
+	id S1753934AbaIEWrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:47:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43527 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaIEWrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:49:21 -0400
-Date: Fri, 5 Sep 2014 15:49:17 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-Message-ID: <20140905224917.GB35667@core.coreip.homeip.net>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
- <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
- <20140905141241.GC10455@mtj.dyndns.org>
- <20140905164405.GA28964@core.coreip.homeip.net>
- <20140905174925.GA12991@mtj.dyndns.org>
- <20140905181003.GA29003@core.coreip.homeip.net>
- <20140905222956.GA15723@mtj.dyndns.org>
- <20140905223139.GB15723@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905223139.GB15723@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Sep 2014 18:47:39 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: [PATCH v2 00/15] Krait clocks + Krait CPUfreq
+Date: Fri,  5 Sep 2014 15:47:19 -0700
+Message-Id: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 06, 2014 at 07:31:39AM +0900, Tejun Heo wrote:
-> On Sat, Sep 06, 2014 at 07:29:56AM +0900, Tejun Heo wrote:
-> > It is for storage devices which always have guaranteed synchronous
-> > probing on module load and well-defined probing order.
+These patches provide cpufreq scaling on devices with Krait CPUs.
+In Krait CPU designs there's one PLL and two muxes per CPU, allowing
+us to switch CPU frequencies independently.
 
-Agree about probing order (IIRC that is why we had to revert the
-wholesale asynchronous probing a few years back) but totally disagree
-about synchronous module loading.
+				 secondary
+	 +-----+                    +
+	 | QSB |-------+------------|\
+	 +-----+       |            | |-+
+		       |    +-------|/  |
+		       |    |       +   |
+	 +-----+       |    |           |
+	 | PLL |----+-------+           |   primary
+	 +-----+    |  |                |     +
+		    |  |                +-----|\       +------+
+	 +-------+  |  |                      | \      |      |
+	 | HFPLL |----------+-----------------|  |-----| CPU0 |
+	 +-------+  |  |    |                 |  |     |      |
+		    |  |    | +-----+         | /      +------+
+		    |  |    +-| / 2 |---------|/
+		    |  |      +-----+         +
+		    |  |         secondary
+		    |  |            +
+		    |  +------------|\
+		    |               | |-+
+		    +---------------|/  |   primary
+				    +   |     +
+					+-----|\       +------+
+	 +-------+                            | \      |      |
+	 | HFPLL |----------------------------|  |-----| CPU1 |
+	 +-------+          |                 |  |     |      |
+			    | +-----+         | /      +------+
+			    +-| / 2 |---------|/
+			      +-----+         +
 
-Anyway, I just posted a patch that I think preserves module loading
-behavior and solves my issue with built-in modules. It does not help
-Luis' issue though (but then I think the main problem is with systemd
-being stupid there).
+To support this in the common clock framework we model the muxes,
+dividers, and PLLs as different clocks. CPUfreq only interacts
+with the primary mux (farthest right in the diagram). When CPUfreq
+sets a rate, the mux code finds the best parent that can provide the rate.
+Due to the design, QSB and the top PLL are always a fixed rate and thus
+only support one frequency each. These sources provide the lowest
+frequencies for the CPUs. The HFPLLs are where we can make the CPU go
+faster (GHz range). Sometimes we need to run the HFPLL twice as
+fast and divide it by two to get a particular frequency.
 
-> > Sure, modern
-> > setups are a lot more dynamic but I'm quite certain that there are
-> > setups in the wild which depend on storage driver loading being
-> > synchronous.  We can't simply declare one day that such behavior is
-> > broken and break, most likely, their boots.
-> 
-> To add a bit, if the argument here is that dependency on such behavior
-> shouldn't exist and module loading and device probing should always be
-> asynchronous, the right approach is implementing "synchronous_probing"
-> flag not the other way around.  I actually wouldn't hate to see that
-> change happening but whoever submits and routes such a change should
-> be ready for a major shitstorm, I'm afraid.
+When switching rates we can't leave the CPU clocked by the HFPLL because
+we need to turn off the output of the PLL when changing its frequency.
+This means we have to switch over to the secondary mux and use one of the
+fixed sources. This is why we need something like the safe parent patch.
 
-I think we already had this storm and that is why here we have opt-in
-behavior for the drivers.
+I plan to submit the DTS changes through arm-soc, but I've included everything
+here to make it easier to pick things up for testing, etc. Please note
+that these patches rely on the Krait L2 accessor patch I posted a while back
+in another series[1]. This also relies on the cpufreq-generic patchset from
+Viresh[2]. If anything can be picked up right now it would be better
+to reduce the churn over time as other pieces settle. The series gets
+progressively more controversial as it goes on, so I hope that things
+near the beggining will be picked up earlier.
 
-Thanks.
+Changes since v1:
+ * Added IPQ and APQ8064 support
+ * Switched to cpufreq-generic
+ * Added OPP parsing from DT (need to write binding though)
+ * New patches to make clk-generic.c go away
+  * Made mux and divider reusable for non-MMIO devices
+  * Added a mux_determine_rate_closest (not sure if this is really needed)
+  * Added unregistration of muxes
+ * New patch to avoid sending high frequencies down to devices using clocks
 
+TODO:
+ * Add Krait regulator voltage scaling (not strictly necessary)
+ * Document DT bindings
+ * Use a new efuse/eeprom API instead of hardcoding the location in the driver
+ * Add some thermal awareness
+
+
+Stephen Boyd (15):
+  clk: mux: Add unregistration API
+  clk: mux: Split out register accessors for reuse
+  clk: Add __clk_mux_determine_rate_closest
+  clk: divider: Make generic for usage elsewhere
+  clk: Add safe switch hook
+  clk: Avoid sending high rates to downstream clocks during set_rate
+  clk: qcom: Add support for High-Frequency PLLs (HFPLLs)
+  clk: qcom: Add HFPLL driver
+  clk: qcom: Add MSM8960/APQ8064's HFPLLs
+  clk: qcom: Add IPQ806X's HFPLLs
+  clk: qcom: Add support for Krait clocks
+  clk: qcom: Add KPSS ACC/GCC driver
+  clk: qcom: Add Krait clock controller driver
+  cpufreq: Add module to register cpufreq on Krait CPUs
+  ARM: dts: qcom: Add necessary DT data for Krait cpufreq
+
+ arch/arm/boot/dts/qcom-apq8064.dtsi          | 230 +++++++++++++++++
+ arch/arm/boot/dts/qcom-msm8960.dtsi          |  49 ++++
+ arch/arm/boot/dts/qcom-msm8974.dtsi          | 311 ++++++++++++++++++++++-
+ drivers/clk/clk-divider.c                    | 197 +++++++++------
+ drivers/clk/clk-mux.c                        |  91 ++++---
+ drivers/clk/clk.c                            | 133 +++++++---
+ drivers/clk/qcom/Kconfig                     |  28 +++
+ drivers/clk/qcom/Makefile                    |   5 +
+ drivers/clk/qcom/clk-hfpll.c                 | 253 +++++++++++++++++++
+ drivers/clk/qcom/clk-hfpll.h                 |  54 ++++
+ drivers/clk/qcom/clk-krait.c                 | 166 +++++++++++++
+ drivers/clk/qcom/clk-krait.h                 |  49 ++++
+ drivers/clk/qcom/gcc-ipq806x.c               |  83 +++++++
+ drivers/clk/qcom/gcc-msm8960.c               | 172 +++++++++++++
+ drivers/clk/qcom/hfpll.c                     | 110 +++++++++
+ drivers/clk/qcom/kpss-xcc.c                  |  94 +++++++
+ drivers/clk/qcom/krait-cc.c                  | 357 +++++++++++++++++++++++++++
+ drivers/cpufreq/Kconfig.arm                  |   9 +
+ drivers/cpufreq/Makefile                     |   1 +
+ drivers/cpufreq/qcom-cpufreq.c               | 199 +++++++++++++++
+ include/dt-bindings/clock/qcom,gcc-msm8960.h |   2 +
+ include/linux/clk-private.h                  |   2 +
+ include/linux/clk-provider.h                 |  32 ++-
+ 23 files changed, 2486 insertions(+), 141 deletions(-)
+ create mode 100644 drivers/clk/qcom/clk-hfpll.c
+ create mode 100644 drivers/clk/qcom/clk-hfpll.h
+ create mode 100644 drivers/clk/qcom/clk-krait.c
+ create mode 100644 drivers/clk/qcom/clk-krait.h
+ create mode 100644 drivers/clk/qcom/hfpll.c
+ create mode 100644 drivers/clk/qcom/kpss-xcc.c
+ create mode 100644 drivers/clk/qcom/krait-cc.c
+ create mode 100644 drivers/cpufreq/qcom-cpufreq.c
+
+[1] http://lkml.iu.edu/hypermail/linux/kernel/1404.0/02636.html
+[2] git://git.linaro.org/people/viresh.kumar/linux cpufreq/cpu0-krait-v3
 -- 
-Dmitry
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
