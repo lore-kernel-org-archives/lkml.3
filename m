@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaIEHAo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:00:44 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41673 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaIEHAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:00:42 -0400
-Subject: [PATCH 0/2] cpufreq/powernv: Set core pstate to a minimum just
- before hotplugging it out
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-To: viresh.kumar@linaro.org, rjw@rjwysocki.net
-Cc: linux-pm@vger.kernel.org, dirk.j.brandewie@intel.com,
-        shreyas@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        patrick.marlier@gmail.com, dirk.brandewie@gmail.com,
-        svaidy@linux.vnet.ibm.com
-Date: Fri, 05 Sep 2014 12:30:30 +0530
-Message-ID: <20140905065952.2831.66731.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090507-9332-0000-0000-000001E9A015
+	id S1756006AbaIEHBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:01:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15023 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753636AbaIEHBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 03:01:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,471,1406617200"; 
+   d="scan'208";a="586646500"
+From: Weike Chen <alvin.chen@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>,
+        Alvin Chen <alvin.chen@intel.com>
+Subject: [PATCH 0/3 v2] The Designware GPIO Supporting
+Date: Fri,  5 Sep 2014 07:53:15 -0700
+Message-Id: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today cpus go to winkle when they are offlined. Since it is the deepest
-idle state that we have, it is expected to save good amount of power as compared
-to online state, where cores can enter nap/fastsleep only which are
-shallower idle states.
-However we observed no powersavings with winkle as compared to nap/fastsleep
-and traced the problem to the pstate of the core being kept at a high even
-when the core is offline. This can keep the socket pstate high, thus burning
-power unnecessarily. This patchset fixes this issue.
+Hi,
+These patches are for Intel Quark X1000 designware GPIO supporting. The first
+patch enables the Synopsys DesignWare APB GPIO driver to support the MFD device.
+And the Quark designware GPIO controller is registered as MFD device,
+because Quark exports a single PCI device with both GPIO and I2C functions.
+It is about reviewing the GPIO changes in gpio-dwapb, and in near future,
+the Quark I2C driver and the MFD driver that binds these GPIO & I2C
+functions will be sent subsequently. The second patch enables the gpio
+'debounce' feature. And the third patch enables the power management.
 
 ---
+v2:
+ [PATCH 1/3]
+ * Fixed a bug to set the base gpio number to '-1' for the OF flow.
+ * Set device node for each gpio chip for the OF flow.
+ * Change the name of 'struct dwapb_gpio_platform_data' to
+   'struct dwapb_platform_data'.
+ * Change the name of 'struct dwapb_gpio_port_property' to
+   'struct dwapb_port_property'.
+ * Access pdata directly in 'probe' instead of accesing it
+   by 'struct dwapb_gpio'.
+ * Free 'pdata' at the end of 'probe' if it is OF case to save memory.
+ * Improve the interrupt handler.
+ * Move 'irq_set_handler_data' together with 'irq_set_chained_hanlder'.
+ * Remove unncessary comments.
+ [PATCH 2/3]
+ * Change all 'readl'&'writel' to 'dwapb_read'&'dwapb_write'.
+ [PATCH 3/3]
+ * Change the name for 'struct gpio_saved_regs' to 'struct dwapb_context'.
+ * Save the registers for all ports according to the port index.
+ * Change '#if defined' to '#ifdef'.
 
-Preeti U Murthy (2):
-      cpufreq: Allow stop CPU callback to be used by all cpufreq drivers
-      powernv/cpufreq: Set the pstate of the last hotplugged out cpu in policy->cpus to minimum
+Weike Chen (3):
+  GPIO: gpio-dwapb: Enable platform driver binding to MFD driver
+  GPIO: gpio-dwapb: Support Debounce
+  GPIO: gpio-dwapb: Suspend & Resume PM enabling
 
+ drivers/gpio/Kconfig                     |    1 -
+ drivers/gpio/gpio-dwapb.c                |  397 +++++++++++++++++++++++++-----
+ include/linux/platform_data/gpio-dwapb.h |   32 +++
+ 3 files changed, 365 insertions(+), 65 deletions(-)
+ create mode 100644 include/linux/platform_data/gpio-dwapb.h
 
- drivers/cpufreq/cpufreq.c         |    2 +-
- drivers/cpufreq/powernv-cpufreq.c |    9 +++++++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
-
---
+-- 
+1.7.9.5
 
