@@ -1,72 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaIEReV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:34:21 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:52117 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbaIERab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:30:31 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 03/16] MIPS: Export CPU IRQ domain
-Date: Fri,  5 Sep 2014 10:30:05 -0700
-Message-Id: <1409938218-9026-4-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
-References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
+	id S1754802AbaIERfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:35:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54865 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754100AbaIERfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:35:05 -0400
+Message-ID: <5409F43B.1050900@redhat.com>
+Date: Fri, 05 Sep 2014 19:34:51 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>,
+        Hannes Frederic Sowa <hannes@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH] bpf: fix a false positive kmemcheck warning
+References: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com> <5409E2C8.2080200@redhat.com> <1409936457.5306.2.camel@localhost> <5409EE70.9020304@redhat.com> <alpine.LRH.2.02.1409051313350.5269@file01.intranet.prod.int.rdu2.redhat.com> <5409F032.50101@redhat.com> <CAMEtUuyX8Oak48vS+EDLmHY6p0yjrYNr9YXLNEYJsS7HsuooRg@mail.gmail.com>
+In-Reply-To: <CAMEtUuyX8Oak48vS+EDLmHY6p0yjrYNr9YXLNEYJsS7HsuooRg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GIC driver will use it to create the GIC-to-CPU interrupt mappings.
+On 09/05/2014 07:21 PM, Alexei Starovoitov wrote:
+...
+> imo it's cleaner to convert to bool unconditionally instead
+> of annotating things everywhere.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-New for v2.
----
- arch/mips/include/asm/irq_cpu.h | 2 ++
- arch/mips/kernel/irq_cpu.c      | 2 +-
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/mips/include/asm/irq_cpu.h b/arch/mips/include/asm/irq_cpu.h
-index 3f11fdb..0dac19a 100644
---- a/arch/mips/include/asm/irq_cpu.h
-+++ b/arch/mips/include/asm/irq_cpu.h
-@@ -19,6 +19,8 @@ extern void rm9k_cpu_irq_init(void);
- 
- #ifdef CONFIG_IRQ_DOMAIN
- struct device_node;
-+struct irq_domain;
-+extern struct irq_domain *mips_intc_domain;
- extern int mips_cpu_intc_init(struct device_node *of_node,
- 			      struct device_node *parent);
- #endif
-diff --git a/arch/mips/kernel/irq_cpu.c b/arch/mips/kernel/irq_cpu.c
-index 33a4385..d206c49 100644
---- a/arch/mips/kernel/irq_cpu.c
-+++ b/arch/mips/kernel/irq_cpu.c
-@@ -117,7 +117,7 @@ void __init mips_cpu_irq_init(void)
- }
- 
- #ifdef CONFIG_IRQ_DOMAIN
--static struct irq_domain *mips_intc_domain;
-+struct irq_domain *mips_intc_domain;
- 
- asmlinkage void __weak plat_irq_dispatch(void)
- {
--- 
-2.1.0.rc2.206.gedb03e5
-
+Will do, fine as well.
