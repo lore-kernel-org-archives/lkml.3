@@ -1,168 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356AbaIEMw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:52:58 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:48461 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172AbaIEMw4 (ORCPT
+	id S932362AbaIEMzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:55:33 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42970 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932187AbaIEMzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:52:56 -0400
-Message-ID: <5409B20B.30105@linaro.org>
-Date: Fri, 05 Sep 2014 14:52:27 +0200
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 5 Sep 2014 08:55:32 -0400
+Date: Fri, 5 Sep 2014 13:51:47 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Robert Richter <robert.richter@caviumnetworks.com>,
+        Robert Richter <rric@kernel.org>, Will Deacon <Will.Deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium
+ Thunder SoC Family
+Message-ID: <20140905125147.GC20164@leverpostej>
+References: <1409903205-2762-1-git-send-email-rric@kernel.org>
+ <1409903205-2762-2-git-send-email-rric@kernel.org>
+ <20140905093239.GC30401@n2100.arm.linux.org.uk>
+ <20140905104547.GT4703@rric.localhost>
+ <20140905110552.GH30401@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: eric.auger@st.com, christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, joel.schopp@amd.com, kim.phillips@freescale.com,
-        paulus@samba.org, gleb@kernel.org, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
-        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        john.liuli@huawei.com
-Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
-References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org> <1409691941.3804.133.camel@ul30vt.home>
-In-Reply-To: <1409691941.3804.133.camel@ul30vt.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905110552.GH30401@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 11:05 PM, Alex Williamson wrote:
-> On Mon, 2014-09-01 at 14:52 +0200, Eric Auger wrote:
->> This RFC proposes an integration of "ARM: Forwarding physical
->> interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
->> KVM.
->>
->> It enables to transform a VFIO platform driver IRQ into a forwarded
->> IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
->> switch can be avoided on guest virtual IRQ completion. Before this
->> patch, a maintenance IRQ was triggered on the virtual IRQ completion.
->>
->> When the IRQ is forwarded, the VFIO platform driver does not need to
->> disable the IRQ anymore. Indeed when returning from the IRQ handler
->> the IRQ is not deactivated. Only its priority is lowered. This means
->> the same IRQ cannot hit before the guest completes the virtual IRQ
->> and the GIC automatically deactivates the corresponding physical IRQ.
->>
->> Besides, the injection still is based on irqfd triggering. The only
->> impact on irqfd process is resamplefd is not called anymore on
->> virtual IRQ completion since this latter becomes "transparent".
->>
->> The current integration is based on an extension of the KVM-VFIO
->> device, previously used by KVM to interact with VFIO groups. The
->> patch serie now enables KVM to directly interact with a VFIO
->> platform device. The VFIO external API was extended for that purpose.
->>
->> Th KVM-VFIO device can get/put the vfio platform device, check its
->> integrity and type, get the IRQ number associated to an IRQ index.
->>
->> The IRQ forward programming is architecture specific (virtual interrupt
->> controller programming basically). However the whole infrastructure is
->> kept generic.
->>
->> from a user point of view, the functionality is provided through new
->> KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
->> and the capability can be checked with KVM_HAS_DEVICE_ATTR.
->> Assignment can only be changed when the physical IRQ is not active.
->> It is the responsability of the user to do this check.
->>
->> This patch serie has the following dependencies:
->> - "ARM: Forwarding physical interrupts to a guest VM"
->>   (http://lwn.net/Articles/603514/) in
->> - [PATCH v3] irqfd for ARM
->> - and obviously the VFIO platform driver serie:
->>   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
->>   https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
->>
->> Integrated pieces can be found at
->> ssh://git.linaro.org/people/eric.auger/linux.git
->> on branch 3.17rc3_irqfd_forward_integ_v2
->>
->> This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
->>
->> v1 -> v2:
->> - forward control is moved from architecture specific file into generic
->>   vfio.c module.
->>   only kvm_arch_set_fwd_state remains architecture specific
->> - integrate Kim's patch which enables KVM-VFIO for ARM
->> - fix vgic state bypass in vgic_queue_hwirq
->> - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
->>   to include/uapi/linux/kvm.h
->>   also irq_index renamed into index and guest_irq renamed into gsi
->> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
->> - vfio_external_get_base_device renamed into vfio_external_base_device
->> - vfio_external_get_type removed
->> - kvm_vfio_external_get_base_device renamed into kvm_vfio_external_base_device
->> - __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
->>
->> Eric Auger (8):
->>   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
->>     IRQ
->>   KVM: ARM: VGIC: add forwarded irq rbtree lock
->>   VFIO: platform: handler tests whether the IRQ is forwarded
->>   KVM: KVM-VFIO: update user API to program forwarded IRQ
->>   VFIO: Extend external user API
->>   KVM: KVM-VFIO: add new VFIO external API hooks
->>   KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ forwarding
->>     control
->>   KVM: KVM-VFIO: ARM forwarding control
->>
->> Kim Phillips (1):
->>   ARM: KVM: Enable the KVM-VFIO device
->>
->>  Documentation/virtual/kvm/devices/vfio.txt |  26 ++
->>  arch/arm/include/asm/kvm_host.h            |   7 +
->>  arch/arm/kvm/Kconfig                       |   1 +
->>  arch/arm/kvm/Makefile                      |   4 +-
->>  arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
->>  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
->>  drivers/vfio/vfio.c                        |  24 ++
->>  include/kvm/arm_vgic.h                     |   1 +
->>  include/linux/kvm_host.h                   |  27 ++
->>  include/linux/vfio.h                       |   3 +
->>  include/uapi/linux/kvm.h                   |   9 +
->>  virt/kvm/arm/vgic.c                        |  59 +++-
->>  virt/kvm/vfio.c                            | 497 ++++++++++++++++++++++++++++-
->>  13 files changed, 733 insertions(+), 17 deletions(-)
->>  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
->>
+On Fri, Sep 05, 2014 at 12:05:52PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Sep 05, 2014 at 12:45:47PM +0200, Robert Richter wrote:
+> > On 05.09.14 10:32:40, Russell King - ARM Linux wrote:
+> > > On Fri, Sep 05, 2014 at 09:46:42AM +0200, Robert Richter wrote:
+> > > > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > > > 
+> > > > Increase maximum numbers of cpus to 32. This relates to current
+> > > > maximal possible cpu number. Increasing this to 64 cpus will be a
+> > > > separate patch not part of this enablement patches.
+> > > > 
+> > > > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > > > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > > > ---
+> > > >  arch/arm64/Kconfig | 6 ++++++
+> > > >  1 file changed, 6 insertions(+)
+> > > > 
+> > > > diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> > > > index fd4e81a4e1ce..77fb82b0f684 100644
+> > > > --- a/arch/arm64/Kconfig
+> > > > +++ b/arch/arm64/Kconfig
+> > > > @@ -134,6 +134,11 @@ source "kernel/Kconfig.freezer"
+> > > >  
+> > > >  menu "Platform selection"
+> > > >  
+> > > > +config ARCH_THUNDER
+> > > > +	bool "Cavium Inc. Thunder SoC Family"
+> > > > +	help
+> > > > +	  This enables support for Cavium's Thunder Family of SoCs.
+> > > > +
+> > > >  config ARCH_VEXPRESS
+> > > >  	bool "ARMv8 software model (Versatile Express)"
+> > > >  	select ARCH_REQUIRE_GPIOLIB
+> > > > @@ -256,6 +261,7 @@ config NR_CPUS
+> > > >  	range 2 32
+> > > >  	depends on SMP
+> > > >  	# These have to remain sorted largest to smallest
+> > > > +	default "32" if ARCH_THUNDER
+> > > >  	default "8"
+> > > 
+> > > Why do you need ARCH_THUNDER?  If it's just to change this default,
+> > 
+> > No, we need it just to enable all our drivers on the SoC. We want to
+> > enable the SoC by using defconfig + ARCH_THUNDER. As said in my other
+> > mail, I put it here to be able to base all other thunder driver patch
+> > sets on this initial base patch set. Otherwise this particular patch
+> > and also the dtb patch need to be shipped with all other driver patch
+> > sets. This might lead to duplicate submissions of the same patch.
+> > 
+> > With doing defconfig + ARCH_THUNDER we also want to enable the max
+> > number of cpus that is currently supported. I only enable 32 cpus
+> > since booting more cpus is untested. There might be problems at the 32
+> > cpu boundary. Just setting it to 64 does not mean a kernel will
+> > actually boot more than 32 cpus. But if it will be ack'ed, I would be
+> > fine to set NR_CPUS to 32 or 64 in general and independent from
+> > ARCH_THUNDER.
+> > 
+> > For simplicity I better drop setting NR_CPUS in this patch.
 > 
-> Have we ventured too far in the other direction?  I suppose what I was
-> hoping to see was something more like:
-> 
-> 	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:{
-> 
-> 		/* get vfio_device */
-> 
-> 		/* get mutex */
-> 
-> 		/* verify device+irq isn't already forwarded */
-> 
-> 		/* allocate device/forwarded irq */
-> 
-> 		/* get struct device */
-> 
-> 		/* callout to arch code passing struct device, gsi, ... */
-> 
-> 		/* if success, add to kv, else free and error */
-> 
-> 		/* mutex unlock */
-> 	}
-> 
-> Exposing the internal mutex out to arch code, as in v1, was an
-> indication that we were pushing too much out to arch code, but including
-> platform_device.h into virt/kvm/vfio.c tells me we're still not
-> abstracting at the right point.  Thanks,
-Hi Alex,
+> So, ARM64 will get a big long list of "config ARCH_foo" options just
+> to stuff lots of broken select statements into the configuration.  Yes,
+> this may have been the norm with ARM, but it's turned out to be more
+> of a problem than a solution, especially as it keeps causing Kconfig
+> warnings when things change in the rest of the kernel tree.
 
-Yes it makes sense. I will rework the patch in this direction.
+Agreed; this seems more pain than it is worth.
 
-Thanks
+> The same is true with defconfigs - Linus threatened to delete all ARM
+> defconfigs except one at one point.
 
-Eric
-> 
-> Alex
-> 
+IMO we should continue doing what we've done so far and make the ARM64
+defconfig work on everything it can by default, no ARCH_* necessary.
+That's what most people will build and test and we shouldn't get
+platform-specific code (well, drivers) breaking the single image.
 
+For the extreme configurations (really tiny or really big) custom
+configuration being necessary is fine. That doesn't have to involve
+ARCH_* config options.
+
+If you want to build a custom config then you should have an idea of
+what you need. ARCH_* options are only necessary if someone wants a
+kernel tuned for a specific SoC but doesn't know anything about that
+SoC.
+
+Mark.
