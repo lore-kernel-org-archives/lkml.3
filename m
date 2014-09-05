@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928AbaIEBTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 21:19:18 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:57373 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740AbaIEBTR (ORCPT
+	id S1755416AbaIEB1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 21:27:00 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:50245 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaIEB07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 21:19:17 -0400
+	Thu, 4 Sep 2014 21:26:59 -0400
+Date: Thu, 4 Sep 2014 20:26:54 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] blk-mq: Cleanup blk_mq_tag_busy() and
+ blk_mq_tag_idle()
+Message-ID: <20140904202654.27f1d9e0@as>
+In-Reply-To: <54077B91.5040408@kernel.dk>
+References: <cover.1409775956.git.agordeev@redhat.com>
+	<1860c570e5efa8ece323a7ba20f3597bd5e99d25.1409775956.git.agordeev@redhat.com>
+	<54077B91.5040408@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <20140904212925.GL3001@console-pimps.org>
-References: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
-	<20140904100137.GK3001@console-pimps.org>
-	<5408D299.5000300@zytor.com>
-	<20140904212925.GL3001@console-pimps.org>
-Date: Thu, 4 Sep 2014 18:19:16 -0700
-X-Google-Sender-Auth: EgquqP6F63Z8j53o6pbA1BGVvOg
-Message-ID: <CAE9FiQUDLoARj-Z3ipPTf2sZgGn71SxrxM+FqLE1Cyb-OEoP+A@mail.gmail.com>
-Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>,
-        =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt.fleming@intel.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Laszlo Ersek <lersek@redhat.com>
-Content-Type: multipart/mixed; boundary=001a11c3bf04f9218d0502474180
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c3bf04f9218d0502474180
-Content-Type: text/plain; charset=UTF-8
+On Wed, 03 Sep 2014 14:35:29 -0600
+Jens Axboe <axboe@kernel.dk> wrote:
 
-On Thu, Sep 4, 2014 at 2:29 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Thu, 04 Sep, at 01:59:05PM, H. Peter Anvin wrote:
->>
->> I am fine with this patch, but at the same time I do want to note that
->> there is an alternative to double-buffer the patch and/or (if that
->> applies to the buggy BIOS) round up the size of the target buffer.
->
-> I'm not sure that rounding up the size of the target buffer will
-> workaround this issue correctly.
->
-> As far as I know, the only thing that Mantas tried was rounding up the
-> size of the source file, by padding it.
+> On 09/03/2014 02:33 PM, Alexander Gordeev wrote:
+<snip>
+> > diff --git a/block/blk-mq-tag.h b/block/blk-mq-tag.h
+> > index 6206ed1..795ec3f 100644
+> > --- a/block/blk-mq-tag.h
+> > +++ b/block/blk-mq-tag.h
+> > @@ -66,23 +66,22 @@ enum {
+> >  	BLK_MQ_TAG_MAX		= BLK_MQ_TAG_FAIL - 1,
+> >  };
+> >  
+> > -extern bool __blk_mq_tag_busy(struct blk_mq_hw_ctx *);
+> > +extern void __blk_mq_tag_busy(struct blk_mq_hw_ctx *);
+> >  extern void __blk_mq_tag_idle(struct blk_mq_hw_ctx *);
+> >  
+> >  static inline bool blk_mq_tag_busy(struct blk_mq_hw_ctx *hctx)
+> >  {
+> > -	if (!(hctx->flags & BLK_MQ_F_TAG_SHARED))
+> > -		return false;
+> > -
+> > -	return __blk_mq_tag_busy(hctx);
+> > +	if (hctx->flags & BLK_MQ_F_TAG_SHARED) {
+> > +		__blk_mq_tag_busy(hctx);
+> > +		return true;
+> > +	}
+> > +	return false;
+> >  }
+> 
+> The normal/fast path here is the flag NOT being set, which is why it
+> was coded that way to put the fast path inline.
+> 
+> >  
+> >  static inline void blk_mq_tag_idle(struct blk_mq_hw_ctx *hctx)
+> >  {
+> > -	if (!(hctx->flags & BLK_MQ_F_TAG_SHARED))
+> > -		return;
+> > -
+> > -	__blk_mq_tag_idle(hctx);
+> > +	if (hctx->flags & BLK_MQ_F_TAG_SHARED)
+> > +		__blk_mq_tag_idle(hctx);
+> >  }
+> 
+> Ditto
 
-Hi Mantas,
-
-Can you try attached patch on top of linus tree?
-
-Thanks
-
-Yinghai
-
---001a11c3bf04f9218d0502474180
-Content-Type: text/x-patch; charset=US-ASCII; name="round_up_chunksize.patch"
-Content-Disposition: attachment; filename="round_up_chunksize.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hzou2nyd0
-
-LS0tCiBkcml2ZXJzL2Zpcm13YXJlL2VmaS9saWJzdHViL2VmaS1zdHViLWhlbHBlci5jIHwgICAg
-MiArLQogMSBmaWxlIGNoYW5nZWQsIDEgaW5zZXJ0aW9uKCspLCAxIGRlbGV0aW9uKC0pCgpJbmRl
-eDogbGludXgtMi42L2RyaXZlcnMvZmlybXdhcmUvZWZpL2xpYnN0dWIvZWZpLXN0dWItaGVscGVy
-LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9maXJtd2FyZS9lZmkvbGli
-c3R1Yi9lZmktc3R1Yi1oZWxwZXIuYworKysgbGludXgtMi42L2RyaXZlcnMvZmlybXdhcmUvZWZp
-L2xpYnN0dWIvZWZpLXN0dWItaGVscGVyLmMKQEAgLTQyNiw3ICs0MjYsNyBAQCBlZmlfc3RhdHVz
-X3QgaGFuZGxlX2NtZGxpbmVfZmlsZXMoZWZpX3N5CiAJCQkJaWYgKHNpemUgPiBFRklfUkVBRF9D
-SFVOS19TSVpFKQogCQkJCQljaHVua3NpemUgPSBFRklfUkVBRF9DSFVOS19TSVpFOwogCQkJCWVs
-c2UKLQkJCQkJY2h1bmtzaXplID0gc2l6ZTsKKwkJCQkJY2h1bmtzaXplID0gcm91bmRfdXAoc2l6
-ZSwgRUZJX1BBR0VfU0laRSk7CiAKIAkJCQlzdGF0dXMgPSBlZmlfZmlsZV9yZWFkKGZpbGVzW2pd
-LmhhbmRsZSwKIAkJCQkJCSAgICAgICAmY2h1bmtzaXplLAo=
---001a11c3bf04f9218d0502474180--
+Shouldn't it just add unlikely() then? That way it's obvious what the
+common case is, instead of relying on convoluted code.
