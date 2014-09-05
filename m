@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaIETBF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:01:05 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:56025 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaIETBB (ORCPT
+	id S1753451AbaIETB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:01:29 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:53200 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbaIETBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:01:01 -0400
-Date: Fri, 5 Sep 2014 14:00:53 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, seth.forshee@canonical.com
-Subject: Re: [PATCH v2 1/3] vfs: Check for invalid i_uid in may_follow_link()
-Message-ID: <20140905190053.GB84919@ubuntu-hedt>
-Mail-Followup-To: Serge Hallyn <serge.hallyn@ubuntu.com>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
- <1409672696-15847-2-git-send-email-seth.forshee@canonical.com>
- <20140905170509.GI16450@ubuntumail>
+	Fri, 5 Sep 2014 15:01:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] PCI: keystone: update to support multiple pci ports
+Date: Fri, 05 Sep 2014 21:00:19 +0200
+Message-ID: <3654923.JrIGV2dJ70@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540A0212.6060303@ti.com>
+References: <1409938782-31460-1-git-send-email-m-karicheri2@ti.com> <7260053.FoBVhTXVfj@wuerfel> <540A0212.6060303@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905170509.GI16450@ubuntumail>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:0c5CXRbB4UqVWdpsr7dWprTeRsDw9zcm+VOTa8b9+dx
+ Bf96srJF6c5l2eke0znpsi/W/p2Jc3rEWod/rL/DJuUAYatZmn
+ +2uX0uF/dEHHFq0cd2zLH3eMydBAeGpV4nL24GCPBLKEDvU5E/
+ QaTVbhaXGKyKJFWIh/qMhnR3cCo4q17W1QT2LejrAd8d7ZkpiD
+ PQDA8Yr/eWOLwMmB0XA1BT4I/mS0tQvXcwHFDlfeOLgJQrICKN
+ hFqnFOX+E8uu1pN/8aTx8/le8vQVqZS0/sEnIe85UL8lXfXwyp
+ jE3ZnUhHcPEfp46BZVkWGt0DqZH2kXRy4/frNN/IBW87tOc51H
+ qDiqjxmjsSTEitMTtTF8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 05:05:09PM +0000, Serge Hallyn wrote:
-> Quoting Seth Forshee (seth.forshee@canonical.com):
-> > Filesystem uids which don't map into a user namespace may result
-> > in inode->i_uid being INVALID_UID. A symlink and its parent
-> > could have different owners in the filesystem can both get
-> > mapped to INVALID_UID, which may result in following a symlink
-> > when this would not have otherwise been permitted. Prevent this
-> > by adding a check that the uid is valid before the comparison.
-> > 
-> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> 
-> I'm a bit uncomfortable about this, but I can't put my finger
-> on why.  Wonder if it could mess up root looking into
-> a malicious user's task by looking under /proc/self/root.
-> I suppose not, as this should only be the case (with root in
-> init_user_ns) for fuse?
-> 
-> Anyway it seems needed for keeping root from falling into a trap.
+On Friday 05 September 2014 14:33:54 Murali Karicheri wrote:
+> > This looks like it's a shared register of some sort that doesn't
+> > really belong into the registers of a particular port. Could it
+> > be that it's actually for the PHY?
+> >
+> This a shared device configuration register between the two ports the 
+> desciption states it is bootstrap configuration of the PCIe module as 
+> Endpoint or Root complex and Not Phy. Hope below text will help.
 
-This shouldn't mess up looking into /proc/self/root or anything else
-where the symlink isn't under control of the malicious user. Plus this
-restriction only applies to world-writable directories with the sticky
-bit set.
+Ok. Why do you want to have this user-selectable though? Can't it
+just be set by the boot loader before starting Linux?
 
-> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+	Arnd
+
+> Table 3-23 Device Configuration Register (DEVCFG)
 > 
-> > ---
-> >  fs/namei.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/fs/namei.c b/fs/namei.c
-> > index a996bb48dfab..193da09e903e 100644
-> > --- a/fs/namei.c
-> > +++ b/fs/namei.c
-> > @@ -741,7 +741,7 @@ static inline int may_follow_link(struct path *link, struct nameidata *nd)
-> >  		return 0;
-> >  
-> >  	/* Allowed if parent directory and link owner match. */
-> > -	if (uid_eq(parent->i_uid, inode->i_uid))
-> > +	if (uid_valid(inode->i_uid) && uid_eq(parent->i_uid, inode->i_uid))
-> >  		return 0;
-> >  
-> >  	audit_log_link_denied("follow_link", link);
-> > -- 
-> > 1.9.1
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> PCIESSMODE[1:0] 00b PCIESSMODE is used to control the
+> functionality of PCIESS module out of
+> reset. This MMR output is connected to
+> DEVTYPE input of PCIESS
+> (Changes from
+> Nysh) : Note that in Nysh this value came
+> from a bootstrap pin.
+> 00 : Endpoint
+> 01 : Legacy Endpoint
+> 10 : Rootcomplex
+> 11 : Reserved
+> PCIESS_1_MODE[1:0
+> ]
+> 00b PCIESSMODE is used to control the
+> functionality of PCIE_1 module out of
+> reset. This MMR output is connected to
+> DEVTYPE input of PCIE_1
+> 00 : Endpoint
+> 01 : Legacy Endpoint
+> 10 : Rootcomplex
+> 11 : Reserv
+> 
+
