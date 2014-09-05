@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaIEWuN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:50:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43598 "EHLO
+	id S1754588AbaIEWuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:50:12 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43571 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859AbaIEWro (ORCPT
+	with ESMTP id S1753865AbaIEWro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 18:47:44 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
@@ -13,8 +13,8 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
 Subject: [PATCH v2 14/15] cpufreq: Add module to register cpufreq on Krait CPUs
-Date: Fri,  5 Sep 2014 15:47:35 -0700
-Message-Id: <1409957256-23729-17-git-send-email-sboyd@codeaurora.org>
+Date: Fri,  5 Sep 2014 15:47:34 -0700
+Message-Id: <1409957256-23729-16-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
 References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
