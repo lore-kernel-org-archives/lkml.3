@@ -1,233 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113AbaIEL2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 07:28:06 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:56283 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756478AbaIEL2D (ORCPT
+	id S1756945AbaIELba (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 07:31:30 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47393 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622AbaIELb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 07:28:03 -0400
-Message-ID: <1409916481.7832.19.camel@x220>
-Subject: [PATCH] [next-20140904] staging: gs_fpgaboot: remove checks for
- CONFIG_B4860G100
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Fri, 05 Sep 2014 13:28:01 +0200
-In-Reply-To: <20140904232108.GD4030@kroah.com>
-References: <20140401184817.GA21855@kroah.com>
-	 <1396427043.18431.20.camel@x220> <20140402200428.GE26966@kroah.com>
-	 <7731bd53be4b49e2924a7002f74dc090@BY2PR07MB011.namprd07.prod.outlook.com>
-	 <20140402230837.GA24324@kroah.com> <1409872435.5546.135.camel@x220>
-	 <20140904232108.GD4030@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Sep 2014 11:28:01.0926 (UTC) FILETIME=[73ED0260:01CFC8FC]
-X-RcptDomain: vger.kernel.org
+	Fri, 5 Sep 2014 07:31:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+O0AbwhVMiZ6EEwGdEaG4Ti+V2Gnh0YR4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 9CF785D8CC8
+Date: Fri, 5 Sep 2014 07:31:14 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoph Lameter <cl@linux.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+Message-ID: <20140905113114.GS30467@titan.lakedaemon.net>
+References: <20140901230728.GM29327@sirena.org.uk>
+ <1627064.QhxvejlWdk@amdc1032>
+ <alpine.DEB.2.11.1409020857110.9201@gentwo.org>
+ <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+ <20140904171123.GD26364@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904171123.GD26364@mtj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two checks for CONFIG_B4860G100 in this driver. But there's no
-Kconfig symbol B4860G100. These checks will always evaluate to false.
-Remove them and the code they hide.
+Tejun, Christoph,
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Build tested only (by building just drivers/staging/gs_fpgaboot/io.o).
+On Fri, Sep 05, 2014 at 02:11:23AM +0900, Tejun Heo wrote:
+> On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
+> > Subject: irqchip: Properly fetch the per cpu offset
+> > 
+> > The raw_cpu_read() conversion dropped the fetch of the offset
+> > from base->percpu_base in gic_get_percpu_base.
+> > 
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > 
+> > Index: linux/drivers/irqchip/irq-gic.c
+> > ===================================================================
+> > --- linux.orig/drivers/irqchip/irq-gic.c
+> > +++ linux/drivers/irqchip/irq-gic.c
+> > @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+> >  #ifdef CONFIG_GIC_NON_BANKED
+> >  static void __iomem *gic_get_percpu_base(union gic_base *base)
+> >  {
+> > -	return raw_cpu_read(base->percpu_base);
+> > +	return raw_cpu_read(*base->percpu_base);
+> 
+> I suppose this should go through percpu/for-3.18-consistent-ops?  Can
+> we please cc irq folks and get acks?
 
-Perhaps this enables further cleanups. I didn't check.
+Could Thomas and I get a pointer to the original patch and thread that
+caused the error?
 
- drivers/staging/gs_fpgaboot/io.c | 163 ---------------------------------------
- 1 file changed, 163 deletions(-)
+thx,
 
-diff --git a/drivers/staging/gs_fpgaboot/io.c b/drivers/staging/gs_fpgaboot/io.c
-index 23c12f47c8f1..d0168bec40b9 100644
---- a/drivers/staging/gs_fpgaboot/io.c
-+++ b/drivers/staging/gs_fpgaboot/io.c
-@@ -31,10 +31,6 @@
- 
- #include "io.h"
- 
--#ifdef CONFIG_B4860G100
--static struct gpiobus gbus;
--#endif /* CONFIG_B4860G100 */
--
- static inline void byte0_out(unsigned char data);
- static inline void byte1_out(unsigned char data);
- static inline void xl_cclk_b(int32_t i);
-@@ -92,163 +88,6 @@ static inline unsigned char bitswap(unsigned char s)
- 	return d;
- }
- 
--#ifdef CONFIG_B4860G100
--/*
-- * ======================================================================
-- * board specific configuration
-- */
--
--static inline void mpc85xx_gpio_set_dir(
--			int32_t port,
--			uint32_t mask,
--			uint32_t dir)
--{
--	dir |= (in_be32(gbus.r[port]+GPDIR) & ~mask);
--	out_be32(gbus.r[port]+GPDIR, dir);
--}
--
--static inline void mpc85xx_gpio_set(int32_t port, uint32_t mask, uint32_t val)
--{
--	/* First mask off the unwanted parts of "dir" and "val" */
--	val &= mask;
--
--	/* Now read in the values we're supposed to preserve */
--	val |= (in_be32(gbus.r[port]+GPDAT) & ~mask);
--
--	out_be32(gbus.r[port]+GPDAT, val);
--}
--
--static inline uint32_t mpc85xx_gpio_get(int32_t port, uint32_t mask)
--{
--	/* Read the requested values */
--	return in_be32(gbus.r[port]+GPDAT) & mask;
--}
--
--static inline void mpc85xx_gpio_set_low(int32_t port, uint32_t gpios)
--{
--	mpc85xx_gpio_set(port, gpios, 0x00000000);
--}
--
--static inline void mpc85xx_gpio_set_high(int32_t port, uint32_t gpios)
--{
--	mpc85xx_gpio_set(port, gpios, 0xFFFFFFFF);
--}
--
--static inline void gpio_set_value(int32_t port, uint32_t gpio, uint32_t value)
--{
--	int32_t g;
--
--	g = 31 - gpio;
--	if (value)
--		mpc85xx_gpio_set_high(port, 1U << g);
--	else
--		mpc85xx_gpio_set_low(port, 1U << g);
--}
--
--static inline int gpio_get_value(int32_t port, uint32_t gpio)
--{
--	int32_t g;
--
--	g = 31 - gpio;
--	return !!mpc85xx_gpio_get(port, 1U << g);
--}
--
--static inline void xl_cclk_b(int32_t i)
--{
--	gpio_set_value(XL_CCLK_PORT, XL_CCLK_PIN, i);
--}
--
--void xl_program_b(int32_t i)
--{
--	gpio_set_value(XL_PROGN_PORT, XL_PROGN_PIN, i);
--}
--
--void xl_rdwr_b(int32_t i)
--{
--	gpio_set_value(XL_RDWRN_PORT, XL_RDWRN_PIN, i);
--}
--
--void xl_csi_b(int32_t i)
--{
--	gpio_set_value(XL_CSIN_PORT, XL_CSIN_PIN, i);
--}
--
--int xl_get_init_b(void)
--{
--	return gpio_get_value(XL_INITN_PORT, XL_INITN_PIN);
--}
--
--int xl_get_done_b(void)
--{
--	return gpio_get_value(XL_DONE_PORT, XL_DONE_PIN);
--}
--
--
--/* G100 specific bit swap and remmap (to gpio pins) for byte 0 */
--static inline uint32_t bit_remap_byte0(uint32_t s)
--{
--	uint32_t d;
--
--	d = (((s&0x80)>>7) | ((s&0x40)>>5) | ((s&0x20)>>3) | ((s&0x10)>>1) |
--		((s&0x08)<<1) | ((s&0x04)<<3) | ((s&0x02)<<6) | ((s&0x01)<<9));
--	return d;
--}
--
--/*
-- * G100 specific MSB, in this order [byte0 | byte1], out
-- */
--static inline void byte0_out(unsigned char data)
--{
--	uint32_t swap32;
--
--	swap32 =  bit_remap_byte0((uint32_t) data) << 8;
--
--	mpc85xx_gpio_set(0, 0x0002BF00, (uint32_t) swap32);
--}
--
--/*
-- * G100 specific LSB, in this order [byte0 | byte1], out
-- */
--static inline void byte1_out(unsigned char data)
--{
--	mpc85xx_gpio_set(0, 0x000000FF, (uint32_t) bitswap(data));
--}
--
--/*
-- * configurable per device type for different I/O config
-- */
--int xl_init_io(void)
--{
--	struct device_node *np;
--	const u32 *p_reg;
--	int reg, cnt;
--
--	cnt = 0;
--	memset(&gbus, 0, sizeof(struct gpiobus));
--	for_each_compatible_node(np, NULL, "fsl,qoriq-gpio") {
--		p_reg = of_get_property(np, "reg", NULL);
--		if (p_reg == NULL)
--			break;
--		reg = (int) *p_reg;
--		gbus.r[cnt] = of_iomap(np, 0);
--
--		if (!gbus.r[cnt]) {
--			pr_err("not findding gpio cell-index %d\n", cnt);
--			return -ENODEV;
--		}
--		cnt++;
--	}
--	mpc85xx_gpio_set_dir(0, 0x0002BFFF, 0x0002BFFF);
--	mpc85xx_gpio_set_dir(1, 0x00240060, 0x00240060);
--
--	gbus.ngpio = cnt;
--
--	return 0;
--}
--
--
--#else	/* placeholder for boards with different config */
--
- void xl_program_b(int32_t i)
- {
- 	return;
-@@ -296,5 +135,3 @@ int xl_init_io(void)
- {
- 	return -1;
- }
--
--#endif /* CONFIG_B4860G100 */
--- 
-1.9.3
-
+Jason.
