@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941AbaIEKxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:53:22 -0400
-Received: from 8bytes.org ([81.169.241.247]:37804 "EHLO theia.8bytes.org"
+	id S1757097AbaIEKyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:54:24 -0400
+Received: from 8bytes.org ([81.169.241.247]:37795 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756905AbaIEKxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:53:13 -0400
+	id S1756879AbaIEKxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 06:53:12 -0400
 From: Joerg Roedel <joro@8bytes.org>
 To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
-Subject: [PATCH 12/12] iommu: Remove iommu_domain_has_cap() API function
-Date: Fri,  5 Sep 2014 12:53:04 +0200
-Message-Id: <1409914384-21191-13-git-send-email-joro@8bytes.org>
+Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: [PATCH 08/12] iommu/tegra: Convert to iommu_capable() API function
+Date: Fri,  5 Sep 2014 12:53:00 +0200
+Message-Id: <1409914384-21191-9-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409914384-21191-1-git-send-email-joro@8bytes.org>
 References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
@@ -21,79 +22,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <jroedel@suse.de>
 
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>
 Signed-off-by: Joerg Roedel <jroedel@suse.de>
 ---
- drivers/iommu/iommu.c | 13 -------------
- include/linux/iommu.h | 11 -----------
- 2 files changed, 24 deletions(-)
+ drivers/iommu/tegra-gart.c | 7 +++----
+ drivers/iommu/tegra-smmu.c | 7 +++----
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 319d40e..41c6a7d 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -954,19 +954,6 @@ phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain, dma_addr_t iova)
- }
- EXPORT_SYMBOL_GPL(iommu_iova_to_phys);
- 
--int iommu_domain_has_cap(struct iommu_domain *domain,
--			 enum iommu_cap cap)
--{
--	if (domain->ops->domain_has_cap != NULL)
--		return domain->ops->domain_has_cap(domain, cap);
--
--	if (domain->ops->capable != NULL)
--		return domain->ops->capable(cap);
--
--	return 0;
--}
--EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
--
- static size_t iommu_pgsize(struct iommu_domain *domain,
- 			   unsigned long addr_merge, size_t size)
- {
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index d5534d5..379a617 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -97,7 +97,6 @@ enum iommu_attr {
-  * @map: map a physically contiguous memory region to an iommu domain
-  * @unmap: unmap a physically contiguous memory region from an iommu domain
-  * @iova_to_phys: translate iova to physical address
-- * @domain_has_cap: domain capabilities query
-  * @add_device: add device to iommu grouping
-  * @remove_device: remove device from iommu grouping
-  * @domain_get_attr: Query domain attributes
-@@ -115,8 +114,6 @@ struct iommu_ops {
- 	size_t (*unmap)(struct iommu_domain *domain, unsigned long iova,
- 		     size_t size);
- 	phys_addr_t (*iova_to_phys)(struct iommu_domain *domain, dma_addr_t iova);
--	int (*domain_has_cap)(struct iommu_domain *domain,
--			      unsigned long cap);
- 	int (*add_device)(struct device *dev);
- 	void (*remove_device)(struct device *dev);
- 	int (*device_group)(struct device *dev, unsigned int *groupid);
-@@ -159,8 +156,6 @@ extern int iommu_map(struct iommu_domain *domain, unsigned long iova,
- extern size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova,
- 		       size_t size);
- extern phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain, dma_addr_t iova);
--extern int iommu_domain_has_cap(struct iommu_domain *domain,
--				enum iommu_cap cap);
- extern void iommu_set_fault_handler(struct iommu_domain *domain,
- 			iommu_fault_handler_t handler, void *token);
- 
-@@ -314,12 +309,6 @@ static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain, dma_ad
- 	return 0;
+diff --git a/drivers/iommu/tegra-gart.c b/drivers/iommu/tegra-gart.c
+index b10a8ec..6f44ebb 100644
+--- a/drivers/iommu/tegra-gart.c
++++ b/drivers/iommu/tegra-gart.c
+@@ -303,13 +303,13 @@ static phys_addr_t gart_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	return pa;
  }
  
--static inline int iommu_domain_has_cap(struct iommu_domain *domain,
--				       enum iommu_cap cap)
--{
--	return 0;
--}
--
- static inline void iommu_set_fault_handler(struct iommu_domain *domain,
- 				iommu_fault_handler_t handler, void *token)
+-static int gart_iommu_domain_has_cap(struct iommu_domain *domain,
+-				     unsigned long cap)
++static bool gart_iommu_capable(enum iommu_cap cap)
  {
+-	return 0;
++	return false;
+ }
+ 
+ static const struct iommu_ops gart_iommu_ops = {
++	.capable	= gart_iommu_capable,
+ 	.domain_init	= gart_iommu_domain_init,
+ 	.domain_destroy	= gart_iommu_domain_destroy,
+ 	.attach_dev	= gart_iommu_attach_dev,
+@@ -317,7 +317,6 @@ static const struct iommu_ops gart_iommu_ops = {
+ 	.map		= gart_iommu_map,
+ 	.unmap		= gart_iommu_unmap,
+ 	.iova_to_phys	= gart_iommu_iova_to_phys,
+-	.domain_has_cap	= gart_iommu_domain_has_cap,
+ 	.pgsize_bitmap	= GART_IOMMU_PGSIZES,
+ };
+ 
+diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+index 3ded389..05d14e1 100644
+--- a/drivers/iommu/tegra-smmu.c
++++ b/drivers/iommu/tegra-smmu.c
+@@ -780,10 +780,9 @@ static phys_addr_t smmu_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	return PFN_PHYS(pfn);
+ }
+ 
+-static int smmu_iommu_domain_has_cap(struct iommu_domain *domain,
+-				     unsigned long cap)
++static bool smmu_iommu_capable(enum iommu_cap cap)
+ {
+-	return 0;
++	return false;
+ }
+ 
+ static int smmu_iommu_attach_dev(struct iommu_domain *domain,
+@@ -949,6 +948,7 @@ static void smmu_iommu_domain_destroy(struct iommu_domain *domain)
+ }
+ 
+ static const struct iommu_ops smmu_iommu_ops = {
++	.capable	= smmu_iommu_capable,
+ 	.domain_init	= smmu_iommu_domain_init,
+ 	.domain_destroy	= smmu_iommu_domain_destroy,
+ 	.attach_dev	= smmu_iommu_attach_dev,
+@@ -956,7 +956,6 @@ static const struct iommu_ops smmu_iommu_ops = {
+ 	.map		= smmu_iommu_map,
+ 	.unmap		= smmu_iommu_unmap,
+ 	.iova_to_phys	= smmu_iommu_iova_to_phys,
+-	.domain_has_cap	= smmu_iommu_domain_has_cap,
+ 	.pgsize_bitmap	= SMMU_IOMMU_PGSIZES,
+ };
+ 
 -- 
 1.9.1
 
