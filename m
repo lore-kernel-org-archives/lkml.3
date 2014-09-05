@@ -1,136 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571AbaIEN4v (ORCPT <rfc822;w@1wt.eu>);
+	id S932693AbaIEN4y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:56:54 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:56463 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169AbaIEN4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 09:56:51 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:40457 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932169AbaIEN4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:56:49 -0400
-Message-ID: <5409C116.5060702@interlog.com>
-Date: Fri, 05 Sep 2014 09:56:38 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: SCSI development list <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Milan Broz <gmazyland@gmail.com>
-Subject: Re: [PATCH] scsi_debug: deadlock between completions and surprise
- module removal
-References: <5403AB47.3040706@interlog.com> <20140905052402.GA27094@infradead.org>
-In-Reply-To: <20140905052402.GA27094@infradead.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Guenter Roeck <linux@roeck-us.net>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        Paul Bolle <pebolle@tiscali.nl>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] score: Remove GENERIC_HAS_IOMAP
+Date: Fri,  5 Sep 2014 06:56:18 -0700
+Message-Id: <1409925378-8343-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With scsi-mq I think many LLDs probably have a new
-race possibility between a surprise rmmod of the LLD
-and another thread presenting a new command at about
-the same time (or another thread's command completing
-around that time). Does anything above the LLD stop
-this happening?
+From: Richard Weinberger <richard@nod.at>
 
-Looking at mpt3sas and hpsa module exit calls, they don't
-seem to guard against this possibility.
+The symbol is an orphan, get rid of it.
 
-The test is pretty easy: build the LLD as a module, load
-it and fire up a multi-thread, libaio fio test on one or
-more devices (SSDs would probably be good) on that LLD.
-While the test is running, do 'rmmod LLD'.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Lennox Wu <lennox.wu@gmail.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>
+[Guenter Roeck: Merge with 3.17-rc3; update headline]
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+Jiri, can you please take this through trivial ?
 
-Doug Gilbert
+Thanks,
+Guenter
 
+ arch/score/Kconfig | 3 ---
+ 1 file changed, 3 deletions(-)
 
-On 14-09-05 01:24 AM, Christoph Hellwig wrote:
-> Can I get another review for this one?
->
-> On Sun, Aug 31, 2014 at 07:09:59PM -0400, Douglas Gilbert wrote:
->> A deadlock has been reported when the completion
->> of SCSI commands (simulated by a timer) was surprised
->> by a module removal. This patch removes one half of
->> the offending locks around timer deletions. This fix
->> is applied both to stop_all_queued() which is were
->> the deadlock was discovered and stop_queued_cmnd()
->> which has very similar logic.
->>
->> This patch should be applied both to the lk 3.17 tree
->> and Christoph's drivers-for-3.18 tree.
->>
->> Tested-and-reported-by: Milan Broz <gmazyland@gmail.com>
->> Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
->
->> --- a/drivers/scsi/scsi_debug.c	2014-08-26 13:24:51.646948507 -0400
->> +++ b/drivers/scsi/scsi_debug.c	2014-08-30 18:04:54.589226679 -0400
->> @@ -2743,6 +2743,13 @@ static int stop_queued_cmnd(struct scsi_
->>   		if (test_bit(k, queued_in_use_bm)) {
->>   			sqcp = &queued_arr[k];
->>   			if (cmnd == sqcp->a_cmnd) {
->> +				devip = (struct sdebug_dev_info *)
->> +					cmnd->device->hostdata;
->> +				if (devip)
->> +					atomic_dec(&devip->num_in_q);
->> +				sqcp->a_cmnd = NULL;
->> +				spin_unlock_irqrestore(&queued_arr_lock,
->> +						       iflags);
->>   				if (scsi_debug_ndelay > 0) {
->>   					if (sqcp->sd_hrtp)
->>   						hrtimer_cancel(
->> @@ -2755,18 +2762,13 @@ static int stop_queued_cmnd(struct scsi_
->>   					if (sqcp->tletp)
->>   						tasklet_kill(sqcp->tletp);
->>   				}
->> -				__clear_bit(k, queued_in_use_bm);
->> -				devip = (struct sdebug_dev_info *)
->> -					cmnd->device->hostdata;
->> -				if (devip)
->> -					atomic_dec(&devip->num_in_q);
->> -				sqcp->a_cmnd = NULL;
->> -				break;
->> +				clear_bit(k, queued_in_use_bm);
->> +				return 1;
->>   			}
->>   		}
->>   	}
->>   	spin_unlock_irqrestore(&queued_arr_lock, iflags);
->> -	return (k < qmax) ? 1 : 0;
->> +	return 0;
->>   }
->>
->>   /* Deletes (stops) timers or tasklets of all queued commands */
->> @@ -2782,6 +2784,13 @@ static void stop_all_queued(void)
->>   		if (test_bit(k, queued_in_use_bm)) {
->>   			sqcp = &queued_arr[k];
->>   			if (sqcp->a_cmnd) {
->> +				devip = (struct sdebug_dev_info *)
->> +					sqcp->a_cmnd->device->hostdata;
->> +				if (devip)
->> +					atomic_dec(&devip->num_in_q);
->> +				sqcp->a_cmnd = NULL;
->> +				spin_unlock_irqrestore(&queued_arr_lock,
->> +						       iflags);
->>   				if (scsi_debug_ndelay > 0) {
->>   					if (sqcp->sd_hrtp)
->>   						hrtimer_cancel(
->> @@ -2794,12 +2803,8 @@ static void stop_all_queued(void)
->>   					if (sqcp->tletp)
->>   						tasklet_kill(sqcp->tletp);
->>   				}
->> -				__clear_bit(k, queued_in_use_bm);
->> -				devip = (struct sdebug_dev_info *)
->> -					sqcp->a_cmnd->device->hostdata;
->> -				if (devip)
->> -					atomic_dec(&devip->num_in_q);
->> -				sqcp->a_cmnd = NULL;
->> +				clear_bit(k, queued_in_use_bm);
->> +				spin_lock_irqsave(&queued_arr_lock, iflags);
->>   			}
->>   		}
->>   	}
->
-> ---end quoted text---
->
+diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+index 4ac8cae..366e1b5 100644
+--- a/arch/score/Kconfig
++++ b/arch/score/Kconfig
+@@ -22,17 +22,14 @@ choice
+ config ARCH_SCORE7
+ 	bool "SCORE7 processor"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+-	select GENERIC_HAS_IOMAP
+ 
+ config MACH_SPCT6600
+ 	bool "SPCT6600 series based machines"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+-	select GENERIC_HAS_IOMAP
+ 
+ config SCORE_SIM
+ 	bool "Score simulator"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+-	select GENERIC_HAS_IOMAP
+ endchoice
+ 
+ endmenu
+-- 
+1.9.1
 
