@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaIEXsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:48:41 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:41311 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804AbaIEXsj (ORCPT
+	id S1752144AbaIEXwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:52:09 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:53214 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaIEXwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:48:39 -0400
-Date: Sat, 6 Sep 2014 08:48:33 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: linux-next: Tree for Sep 1
-Message-ID: <20140905234833.GJ15723@mtj.dyndns.org>
-References: <20140901230728.GM29327@sirena.org.uk>
- <1627064.QhxvejlWdk@amdc1032>
- <alpine.DEB.2.11.1409020857110.9201@gentwo.org>
- <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
- <20140904171123.GD26364@mtj.dyndns.org>
- <20140905113114.GS30467@titan.lakedaemon.net>
+	Fri, 5 Sep 2014 19:52:05 -0400
+Date: Fri, 5 Sep 2014 16:52:01 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [GIT PULL] MTD fixes for 3.17-rc4
+Message-ID: <20140905235201.GG18411@ld-irv-0074>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140905113114.GS30467@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 07:31:14AM -0400, Jason Cooper wrote:
-> Tejun, Christoph,
-> 
-> On Fri, Sep 05, 2014 at 02:11:23AM +0900, Tejun Heo wrote:
-> > On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
-> > > Subject: irqchip: Properly fetch the per cpu offset
-> > > 
-> > > The raw_cpu_read() conversion dropped the fetch of the offset
-> > > from base->percpu_base in gic_get_percpu_base.
-> > > 
-> > > Signed-off-by: Christoph Lameter <cl@linux.com>
-> > > 
-> > > Index: linux/drivers/irqchip/irq-gic.c
-> > > ===================================================================
-> > > --- linux.orig/drivers/irqchip/irq-gic.c
-> > > +++ linux/drivers/irqchip/irq-gic.c
-> > > @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
-> > >  #ifdef CONFIG_GIC_NON_BANKED
-> > >  static void __iomem *gic_get_percpu_base(union gic_base *base)
-> > >  {
-> > > -	return raw_cpu_read(base->percpu_base);
-> > > +	return raw_cpu_read(*base->percpu_base);
-> > 
-> > I suppose this should go through percpu/for-3.18-consistent-ops?  Can
-> > we please cc irq folks and get acks?
-> 
-> Could Thomas and I get a pointer to the original patch and thread that
-> caused the error?
+Hi Linus,
 
-http://thread.gmane.org/gmane.linux.kernel/1769201/focus=1769204
-http://thread.gmane.org/gmane.linux.kernel.next/32601/focus=32606
+The following changes since commit 2a500afe1e0e84c7a126df693dbd01353756dcfa:
 
-Thanks.
+  mtd: gpmi: make blockmark swapping optional (2014-07-27 22:06:31 -0700)
 
--- 
-tejun
+are available in the git repository at:
+
+  git://git.infradead.org/linux-mtd.git tags/for-linus-20140905
+
+for you to fetch changes up to b25046b1e5e3f1423434da77ccc859f2f779d1ce:
+
+  mtd: nand: fix DocBook warnings on nand_sdr_timings doc (2014-08-19 11:55:38 -0700)
+
+----------------------------------------------------------------
+Two trivial MTD updates for 3.17-rc4:
+
+ * A tiny comment tweak, to kill a bunch of DocBook warnings added during the
+   merge window
+
+ * A small fixup to the OTP routines' error handling
+
+----------------------------------------------------------------
+Boris BREZILLON (1):
+      mtd: nand: fix DocBook warnings on nand_sdr_timings doc
+
+Brian Norris (1):
+      mtd: cfi_cmdset_0002: check return code for get_chip()
+
+ drivers/mtd/chips/cfi_cmdset_0002.c | 4 ++++
+ include/linux/mtd/nand.h            | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
