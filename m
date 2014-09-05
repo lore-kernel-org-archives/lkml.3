@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaIEKzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:55:41 -0400
-Received: from 8bytes.org ([81.169.241.247]:37761 "EHLO theia.8bytes.org"
+	id S932109AbaIEKzm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:55:42 -0400
+Received: from 8bytes.org ([81.169.241.247]:37758 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756839AbaIEKxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756872AbaIEKxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 06:53:10 -0400
 From: Joerg Roedel <joro@8bytes.org>
 To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 04/12] iommu/arm-smmu: Convert to iommu_capable() API function
-Date: Fri,  5 Sep 2014 12:52:56 +0200
-Message-Id: <1409914384-21191-5-git-send-email-joro@8bytes.org>
+Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 01/12] iommu: Introduce iommu_capable API function
+Date: Fri,  5 Sep 2014 12:52:53 +0200
+Message-Id: <1409914384-21191-2-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409914384-21191-1-git-send-email-joro@8bytes.org>
 References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
@@ -22,78 +21,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <jroedel@suse.de>
 
-Cc: Will Deacon <will.deacon@arm.com>
+This function will replace the current iommu_domain_has_cap
+function and clean up the interface while at it.
+
 Signed-off-by: Joerg Roedel <jroedel@suse.de>
 ---
- drivers/iommu/arm-smmu.c | 35 ++++++++++++++++++++++++++---------
- 1 file changed, 26 insertions(+), 9 deletions(-)
+ drivers/iommu/iommu.c | 18 +++++++++++++++---
+ include/linux/iommu.h |  7 +++++++
+ 2 files changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-index ca18d6d..47c2cb6 100644
---- a/drivers/iommu/arm-smmu.c
-+++ b/drivers/iommu/arm-smmu.c
-@@ -1515,20 +1515,37 @@ static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
- 	return __pfn_to_phys(pte_pfn(pte)) | (iova & ~PAGE_MASK);
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index ac4adb3..1bc882e 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -815,6 +815,15 @@ bool iommu_present(struct bus_type *bus)
  }
+ EXPORT_SYMBOL_GPL(iommu_present);
  
--static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
--				   unsigned long cap)
-+static bool arm_smmu_capable(enum iommu_cap cap)
- {
--	struct arm_smmu_domain *smmu_domain = domain->priv;
--	struct arm_smmu_device *smmu = smmu_domain->smmu;
--	u32 features = smmu ? smmu->features : 0;
-+	struct arm_smmu_device *smmu;
-+	bool ret = false;
- 
- 	switch (cap) {
- 	case IOMMU_CAP_CACHE_COHERENCY:
--		return features & ARM_SMMU_FEAT_COHERENT_WALK;
-+		/*
-+		 * Use ARM_SMMU_FEAT_COHERENT_WALK as an indicator on whether
-+		 * the SMMU can force coherency on the DMA transaction. If it
-+		 * supports COHERENT_WALK it must be behind a coherent
-+		 * interconnect.
-+		 * A domain can be attached to any SMMU, so to reliably support
-+		 * IOMMU_CAP_CACHE_COHERENCY all SMMUs in the system need to be
-+		 * behind a coherent interconnect.
-+		 */
-+		spin_lock(&arm_smmu_devices_lock);
-+		list_for_each_entry(smmu, &arm_smmu_devices, list) {
-+			if (smmu->features & ARM_SMMU_FEAT_COHERENT_WALK) {
-+				ret = true;
-+			} else {
-+				ret = false;
-+				break;
-+			}
-+		}
-+		spin_unlock(&arm_smmu_devices_lock);
-+		return ret;
- 	case IOMMU_CAP_INTR_REMAP:
--		return 1; /* MSIs are just memory writes */
-+		return true; /* MSIs are just memory writes */
- 	default:
--		return 0;
++bool iommu_capable(struct bus_type *bus, enum iommu_cap cap)
++{
++	if (!bus->iommu_ops || !bus->iommu_ops->capable)
 +		return false;
- 	}
++
++	return bus->iommu_ops->capable(cap);
++}
++EXPORT_SYMBOL_GPL(iommu_capable);
++
+ /**
+  * iommu_set_fault_handler() - set a fault handler for an iommu domain
+  * @domain: iommu domain
+@@ -948,10 +957,13 @@ EXPORT_SYMBOL_GPL(iommu_iova_to_phys);
+ int iommu_domain_has_cap(struct iommu_domain *domain,
+ 			 unsigned long cap)
+ {
+-	if (unlikely(domain->ops->domain_has_cap == NULL))
+-		return 0;
++	if (domain->ops->domain_has_cap != NULL)
++		return domain->ops->domain_has_cap(domain, cap);
++
++	if (domain->ops->capable != NULL)
++		return domain->ops->capable(cap);
+ 
+-	return domain->ops->domain_has_cap(domain, cap);
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
+ 
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 20f9a52..d43146a 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -102,6 +102,7 @@ enum iommu_attr {
+  * @pgsize_bitmap: bitmap of supported page sizes
+  */
+ struct iommu_ops {
++	bool (*capable)(enum iommu_cap);
+ 	int (*domain_init)(struct iommu_domain *domain);
+ 	void (*domain_destroy)(struct iommu_domain *domain);
+ 	int (*attach_dev)(struct iommu_domain *domain, struct device *dev);
+@@ -142,6 +143,7 @@ struct iommu_ops {
+ 
+ extern int bus_set_iommu(struct bus_type *bus, const struct iommu_ops *ops);
+ extern bool iommu_present(struct bus_type *bus);
++extern bool iommu_capable(struct bus_type *bus, enum iommu_cap cap);
+ extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
+ extern struct iommu_group *iommu_group_get_by_id(int id);
+ extern void iommu_domain_free(struct iommu_domain *domain);
+@@ -250,6 +252,11 @@ static inline bool iommu_present(struct bus_type *bus)
+ 	return false;
  }
  
-@@ -1598,6 +1615,7 @@ static void arm_smmu_remove_device(struct device *dev)
- }
- 
- static const struct iommu_ops arm_smmu_ops = {
-+	.capable	= arm_smmu_capable,
- 	.domain_init	= arm_smmu_domain_init,
- 	.domain_destroy	= arm_smmu_domain_destroy,
- 	.attach_dev	= arm_smmu_attach_dev,
-@@ -1605,7 +1623,6 @@ static const struct iommu_ops arm_smmu_ops = {
- 	.map		= arm_smmu_map,
- 	.unmap		= arm_smmu_unmap,
- 	.iova_to_phys	= arm_smmu_iova_to_phys,
--	.domain_has_cap	= arm_smmu_domain_has_cap,
- 	.add_device	= arm_smmu_add_device,
- 	.remove_device	= arm_smmu_remove_device,
- 	.pgsize_bitmap	= (SECTION_SIZE |
++static inline bool iommu_capable(struct bus_type *bus, enum iommu_cap cap)
++{
++	return false;
++}
++
+ static inline struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
+ {
+ 	return NULL;
 -- 
 1.9.1
 
