@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607AbaIENwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:52:36 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:35537 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932559AbaIENwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:52:33 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-0c-5409c01f94e6
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        b.zolnierkie@samsung.com
-Subject: [PATCH v6 4/5] ARM: EXYNOS: PM: fix register setup for AFTR mode code
-Date: Fri, 05 Sep 2014 15:51:27 +0200
-Message-id: <1409925088-4705-5-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1409925088-4705-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1409925088-4705-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t9jAV35A5whBqt/W1psnLGe1WLeZ1mL
-	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PFxq8eDjwe
-	d67tYfPYvKTe4/a/x8weW662s3j0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxqIJuQXHeSuu
-	rfrE3sC4jruLkYNDQsBEov1nYRcjJ5ApJnHh3no2EFtIYBGjxJSnVl2MXEB2F5PElK1TWEES
-	bAJWEhPbVzGC2CICahI9i7cyghQxC8xmlnj18AELyFBhAT+JtZPkQGpYBFQlJhx5zgRi8wq4
-	S/R03GCGWKYo0f1sAtgyTgEPiSkPvjBDLHaX2Nl9k2UCI+8CRoZVjKKpBckFxUnpuUZ6xYm5
-	xaV56XrJ+bmbGMFh+Ex6B+OqBotDjAIcjEo8vAs+c4QIsSaWFVfmHmKU4GBWEuG13c0ZIsSb
-	klhZlVqUH19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoGxWklz15b4pAlm
-	3uyC7P9M7UL2SpRl7d30Iaip/lShssh62RunvXc4FDFZPVgvefrH0/RkrdC2Wxal9yuyt/ye
-	0N5x7Wd22NLfVxoD/hioVIUbvXnXe+NwZ4hr1S+/mSwrGV9PZk1S7jglelXra9quvRNyPv94
-	Xn1q6x6D+wvY3j2u2DInQuSNEktxRqKhFnNRcSIA/jgjeT8CAAA=
+	id S932636AbaIENx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:53:26 -0400
+Received: from 8bytes.org ([81.169.241.247]:38903 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932415AbaIENxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 09:53:24 -0400
+Date: Fri, 5 Sep 2014 15:53:20 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "Su, Friendy" <Friendy.Su@sony.com.cn>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/1] iommu/amd: set iommu for early mapped ioapic/hpet
+Message-ID: <20140905135320.GP28786@8bytes.org>
+References: <053191AD6E9023439BF3970DE870051856D1EF3AC5@APSHAXMS02.ap.sony.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <053191AD6E9023439BF3970DE870051856D1EF3AC5@APSHAXMS02.ap.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add S5P_CENTRAL_SEQ_OPTION register setup to cpuidle AFTR mode code
-by moving the relevant code from exynos_pm_suspend() (used only by
-suspend) to exynos_pm_central_suspend() (used by both suspend and
-AFTR).  Without this setup AFTR mode doesn't show any benefit over
-WFI one (at least on Exynos4412 SoC).  When this setup is applied
-AFTR mode reduces power consumption by ~12% (as measured on Trats2
-board).
+On Fri, Sep 05, 2014 at 07:25:14PM +0800, Su, Friendy wrote:
+> This issue is found on a mother board whose BIOS reports wrong
+> IOAPIC devid in IVHD table. Without this fix, the early mapped
+> does not really override IVHD. So that the wrong reported IOAPIC
+> does not work.
 
-This change is a preparation for adding secure firmware support to
-EXYNOS cpuidle driver.
+The problem you describe here should also be fixed by this (simpler)
+patch. Can you test this please?
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-v6:
-- no changes
+Thanks,
 
- arch/arm/mach-exynos/pm.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+	Joerg
 
-diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index e0b6885..3cee123 100644
---- a/arch/arm/mach-exynos/pm.c
-+++ b/arch/arm/mach-exynos/pm.c
-@@ -169,6 +169,10 @@ static void exynos_pm_central_suspend(void)
- 	tmp = pmu_raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
- 	tmp &= ~S5P_CENTRAL_LOWPWR_CFG;
- 	pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
-+
-+	/* Setting SEQ_OPTION register */
-+	pmu_raw_writel(S5P_USE_STANDBY_WFI0 | S5P_USE_STANDBY_WFE0,
-+		       S5P_CENTRAL_SEQ_OPTION);
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 3783e0b..b0522f1 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -712,7 +712,7 @@ static void __init set_dev_entry_from_acpi(struct amd_iommu *iommu,
+ 	set_iommu_for_device(iommu, devid);
  }
  
- static int exynos_pm_central_resume(void)
-@@ -291,15 +295,8 @@ static void exynos_pm_prepare(void)
- 
- static int exynos_pm_suspend(void)
+-static int __init add_special_device(u8 type, u8 id, u16 devid, bool cmd_line)
++static int __init add_special_device(u8 type, u8 id, u16 *devid, bool cmd_line)
  {
--	unsigned long tmp;
--
- 	exynos_pm_central_suspend();
+ 	struct devid_map *entry;
+ 	struct list_head *list;
+@@ -731,6 +731,8 @@ static int __init add_special_device(u8 type, u8 id, u16 devid, bool cmd_line)
+ 		pr_info("AMD-Vi: Command-line override present for %s id %d - ignoring\n",
+ 			type == IVHD_SPECIAL_IOAPIC ? "IOAPIC" : "HPET", id);
  
--	/* Setting SEQ_OPTION register */
--
--	tmp = (S5P_USE_STANDBY_WFI0 | S5P_USE_STANDBY_WFE0);
--	pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_OPTION);
--
- 	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
- 		exynos_cpu_save_register();
++		*devid = entry->devid;
++
+ 		return 0;
+ 	}
  
--- 
-1.8.2.3
-
+@@ -739,7 +741,7 @@ static int __init add_special_device(u8 type, u8 id, u16 devid, bool cmd_line)
+ 		return -ENOMEM;
+ 
+ 	entry->id	= id;
+-	entry->devid	= devid;
++	entry->devid	= *devid;
+ 	entry->cmd_line	= cmd_line;
+ 
+ 	list_add_tail(&entry->list, list);
+@@ -754,7 +756,7 @@ static int __init add_early_maps(void)
+ 	for (i = 0; i < early_ioapic_map_size; ++i) {
+ 		ret = add_special_device(IVHD_SPECIAL_IOAPIC,
+ 					 early_ioapic_map[i].id,
+-					 early_ioapic_map[i].devid,
++					 &early_ioapic_map[i].devid,
+ 					 early_ioapic_map[i].cmd_line);
+ 		if (ret)
+ 			return ret;
+@@ -763,7 +765,7 @@ static int __init add_early_maps(void)
+ 	for (i = 0; i < early_hpet_map_size; ++i) {
+ 		ret = add_special_device(IVHD_SPECIAL_HPET,
+ 					 early_hpet_map[i].id,
+-					 early_hpet_map[i].devid,
++					 &early_hpet_map[i].devid,
+ 					 early_hpet_map[i].cmd_line);
+ 		if (ret)
+ 			return ret;
+@@ -978,10 +980,17 @@ static int __init init_iommu_from_acpi(struct amd_iommu *iommu,
+ 				    PCI_SLOT(devid),
+ 				    PCI_FUNC(devid));
+ 
+-			set_dev_entry_from_acpi(iommu, devid, e->flags, 0);
+-			ret = add_special_device(type, handle, devid, false);
++			ret = add_special_device(type, handle, &devid, false);
+ 			if (ret)
+ 				return ret;
++
++			/*
++			 * add_special_device might update the devid in case a
++			 * command-line override is present. So call
++			 * set_dev_entry_from_acpi after add_special_device.
++			 */
++			set_dev_entry_from_acpi(iommu, devid, e->flags, 0);
++
+ 			break;
+ 		}
+ 		default:
