@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083AbaIEGuD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:50:03 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39371 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821AbaIEGs4 (ORCPT
+	id S1756098AbaIEGui (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:50:38 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:46052 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaIEGsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:48:56 -0400
+	Fri, 5 Sep 2014 02:48:55 -0400
 From: Robert Richter <rric@kernel.org>
 To: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
         Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
@@ -14,9 +14,9 @@ To: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
 Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         Robert Richter <rrichter@cavium.com>
-Subject: [PATCH 3/6] dts, arm/arm64: Remove dtbs build rules in sub-makes
-Date: Fri,  5 Sep 2014 08:48:09 +0200
-Message-Id: <1409899692-1455-4-git-send-email-rric@kernel.org>
+Subject: [PATCH 2/6] dts, kbuild: Factor out dtbs install rules to Makefile.dtbinst
+Date: Fri,  5 Sep 2014 08:48:08 +0200
+Message-Id: <1409899692-1455-3-git-send-email-rric@kernel.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1409899692-1455-1-git-send-email-rric@kernel.org>
 References: <1409899692-1455-1-git-send-email-rric@kernel.org>
@@ -26,80 +26,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <rrichter@cavium.com>
 
-Add dtb files to build targets and let kbuild handle them. Thus,
-special dtbs rules can be removed. This eases Makefiles and the
-implementation of the support of vendor dtb subdirectories.
+Move dtbs install rules to Makefile.dtbinst. This change is needed to
+implement support for dts vendor subdirs. The change makes Makefiles
+easier and smaller as no longer the dtbs_install rule needs to be
+defined. Another advantage is that install goals are not encoded in
+targets anymore (%.dtb_dtbinst_).
 
 Signed-off-by: Robert Richter <rrichter@cavium.com>
 ---
- arch/arm/Makefile            |  2 +-
- arch/arm/boot/dts/Makefile   | 10 ++--------
- arch/arm64/Makefile          |  2 +-
- arch/arm64/boot/dts/Makefile |  8 ++------
- 4 files changed, 6 insertions(+), 16 deletions(-)
+ arch/arm/Makefile            |  6 +++++-
+ arch/arm/boot/dts/Makefile   |  2 --
+ arch/arm64/Makefile          |  6 +++++-
+ arch/arm64/boot/dts/Makefile |  2 --
+ scripts/Kbuild.include       |  6 ++++++
+ scripts/Makefile.dtbinst     | 38 ++++++++++++++++++++++++++++++++++++++
+ scripts/Makefile.lib         | 12 ------------
+ 7 files changed, 54 insertions(+), 18 deletions(-)
+ create mode 100644 scripts/Makefile.dtbinst
 
 diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 1963d9a9a2c4..4d13c6d0a0cc 100644
+index 0ce9d0f71f2a..1963d9a9a2c4 100644
 --- a/arch/arm/Makefile
 +++ b/arch/arm/Makefile
-@@ -315,7 +315,7 @@ $(BOOT_TARGETS): vmlinux
+@@ -313,9 +313,13 @@ $(BOOT_TARGETS): vmlinux
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
+ 
  PHONY += dtbs dtbs_install
+-dtbs dtbs_install: prepare scripts
++
++dtbs: prepare scripts
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
  
- dtbs: prepare scripts
--	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
-+	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE)
- 
- dtbs_install:
- 	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts MACHINE=$(MACHINE)
++dtbs_install:
++	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts MACHINE=$(MACHINE)
++
+ # We use MRPROPER_FILES and CLEAN_FILES now
+ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
 diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index ab40afb87fb2..cb63c515247c 100644
+index b8c5cd3ddeb9..ab40afb87fb2 100644
 --- a/arch/arm/boot/dts/Makefile
 +++ b/arch/arm/boot/dts/Makefile
-@@ -492,13 +492,7 @@ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
- 	dove-d3plug.dtb \
- 	dove-dove-db.dtb
+@@ -502,5 +502,3 @@ dtbs: $(addprefix $(obj)/, $(dtb-y))
+ 	$(Q)rm -f $(obj)/../*.dtb
  
--targets += dtbs dtbs_install
--targets += $(dtb-y)
- endif
- 
--# *.dtb used to be generated in the directory above. Clean out the
--# old build results so people don't accidentally use them.
--dtbs: $(addprefix $(obj)/, $(dtb-y))
--	$(Q)rm -f $(obj)/../*.dtb
+ clean-files := *.dtb
 -
--clean-files := *.dtb
-+always		:= $(dtb-y)
-+clean-files	:= *.dtb
+-dtbs_install: $(addsuffix _dtbinst_, $(dtb-y))
 diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-index 1627861e9bbd..c21b21d6e72d 100644
+index e0a8292bc832..1627861e9bbd 100644
 --- a/arch/arm64/Makefile
 +++ b/arch/arm64/Makefile
-@@ -74,7 +74,7 @@ zinstall install: vmlinux
+@@ -72,9 +72,13 @@ zinstall install: vmlinux
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
+ 
  PHONY += dtbs dtbs_install
+-dtbs dtbs_install: prepare scripts
++
++dtbs: prepare scripts
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts $@
  
- dtbs: prepare scripts
--	$(Q)$(MAKE) $(build)=$(boot)/dts $@
-+	$(Q)$(MAKE) $(build)=$(boot)/dts
- 
- dtbs_install:
- 	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts
++dtbs_install:
++	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts
++
+ PHONY += vdso_install
+ vdso_install:
+ 	$(Q)$(MAKE) $(build)=arch/arm64/kernel/vdso $@
 diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-index 0a14c3828301..d116da5f2f20 100644
+index 82e1c4cf8780..0a14c3828301 100644
 --- a/arch/arm64/boot/dts/Makefile
 +++ b/arch/arm64/boot/dts/Makefile
-@@ -1,9 +1,5 @@
- dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
- dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+@@ -7,5 +7,3 @@ targets += $(dtb-y)
+ dtbs: $(addprefix $(obj)/, $(dtb-y))
  
--targets += dtbs dtbs_install
--targets += $(dtb-y)
+ clean-files := *.dtb
 -
--dtbs: $(addprefix $(obj)/, $(dtb-y))
+-dtbs_install: $(addsuffix _dtbinst_, $(dtb-y))
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 8a9a4e1c7eab..861f5b4d48a2 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -179,6 +179,12 @@ build := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.build obj
+ # $(Q)$(MAKE) $(modbuiltin)=dir
+ modbuiltin := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.modbuiltin obj
+ 
++###
++# Shorthand for $(Q)$(MAKE) -f scripts/Makefile.dtbinst obj=
++# Usage:
++# $(Q)$(MAKE) $(dtbinst)=dir
++dtbinst := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.dtbinst obj
++
+ # Prefix -I with $(srctree) if it is not an absolute path.
+ # skip if -I has no parameter
+ addtree = $(if $(patsubst -I%,%,$(1)), \
+diff --git a/scripts/Makefile.dtbinst b/scripts/Makefile.dtbinst
+new file mode 100644
+index 000000000000..54286cccc289
+--- /dev/null
++++ b/scripts/Makefile.dtbinst
+@@ -0,0 +1,38 @@
++# ==========================================================================
++# Installing dtb files
++#
++# Installs all dtb files listed in $(dtb-y) either in the
++# INSTALL_DTBS_PATH directory or the default location:
++#
++#   $INSTALL_PATH/dtbs/$KERNELRELEASE
++#
++# ==========================================================================
++
++src := $(obj)
++
++PHONY := __dtbs_install
++__dtbs_install:
++
++include include/config/auto.conf
++include scripts/Kbuild.include
++include $(srctree)/$(obj)/Makefile
++
++PHONY += __dtbs_install_prep
++__dtbs_install_prep:
++	$(Q)if [ -d $(INSTALL_DTBS_PATH).old ]; then rm -rf $(INSTALL_DTBS_PATH).old; fi
++	$(Q)if [ -d $(INSTALL_DTBS_PATH) ]; then mv $(INSTALL_DTBS_PATH) $(INSTALL_DTBS_PATH).old; fi
++	$(Q)mkdir -p $(INSTALL_DTBS_PATH)
++
++dtbinst-files	:= $(dtb-y)
++
++# Helper targets for Installing DTBs into the boot directory
++quiet_cmd_dtb_install =	INSTALL $<
++      cmd_dtb_install =	cp $< $(2)
++
++$(dtbinst-files): %.dtb: $(obj)/%.dtb | __dtbs_install_prep
++	$(call cmd,dtb_install,$(INSTALL_DTBS_PATH))
++
++PHONY += $(dtbinst-files)
++__dtbs_install: $(dtbinst-files)
++
++.PHONY: $(PHONY)
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 260bf8acfce9..83a453794266 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -274,18 +274,6 @@ $(obj)/%.dtb: $(src)/%.dts FORCE
+ 
+ dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
+ 
+-# Helper targets for Installing DTBs into the boot directory
+-quiet_cmd_dtb_install =	INSTALL $<
+-      cmd_dtb_install =	cp $< $(2)
 -
--clean-files := *.dtb
-+always		:= $(dtb-y)
-+clean-files	:= *.dtb
+-_dtbinst_pre_:
+-	$(Q)if [ -d $(INSTALL_DTBS_PATH).old ]; then rm -rf $(INSTALL_DTBS_PATH).old; fi
+-	$(Q)if [ -d $(INSTALL_DTBS_PATH) ]; then mv $(INSTALL_DTBS_PATH) $(INSTALL_DTBS_PATH).old; fi
+-	$(Q)mkdir -p $(INSTALL_DTBS_PATH)
+-
+-%.dtb_dtbinst_: $(obj)/%.dtb _dtbinst_pre_
+-	$(call cmd,dtb_install,$(INSTALL_DTBS_PATH))
+-
+ # Bzip2
+ # ---------------------------------------------------------------------------
+ 
 -- 
 2.0.1
 
