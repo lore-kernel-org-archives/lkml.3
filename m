@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145AbaIEUBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:01:51 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37453 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751346AbaIEUBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:01:48 -0400
-Message-ID: <540A169F.40906@hurleysoftware.com>
-Date: Fri, 05 Sep 2014 16:01:35 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751733AbaIEUI0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:08:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50969 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869AbaIEUIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 16:08:24 -0400
+Message-ID: <540A1800.3000005@zytor.com>
+Date: Fri, 05 Sep 2014 13:07:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Michael Cree <mcree@orcon.net.nz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
+To: Andy Lutomirski <luto@amacapital.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com> <54090AF4.7060406@hurleysoftware.com> <54091B30.2090509@zytor.com> <20140905081648.GB5281@omega> <20140905180950.GU5001@linux.vnet.ibm.com> <20140905183109.GA5497@linux.vnet.ibm.com> <20140905195234.GT4783@worktop.ger.corp.intel.com>
-In-Reply-To: <20140905195234.GT4783@worktop.ger.corp.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>
+CC: Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: Post-merge-window ping (Re: [PATCH v4 0/5] x86: two-phase syscall
+ tracing and seccomp fastpath)
+References: <CALCETrUaZ8w92g96SmFEZDE0Jr+0Moeo+S24-TyW8crrK5reSg@mail.gmail.com>
+In-Reply-To: <CALCETrUaZ8w92g96SmFEZDE0Jr+0Moeo+S24-TyW8crrK5reSg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 03:52 PM, Peter Zijlstra wrote:
-> On Fri, Sep 05, 2014 at 11:31:09AM -0700, Paul E. McKenney wrote:
->> compiler: Allow 1- and 2-byte smp_load_acquire() and smp_store_release()
+On 08/26/2014 06:32 PM, Andy Lutomirski wrote:
+> On Mon, Jul 28, 2014 at 8:38 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> This applies to:
+>> git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git seccomp-fastpath
 >>
->> CPUs without single-byte and double-byte loads and stores place some
->> "interesting" requirements on concurrent code.  For example (adapted
->> from Peter Hurley's test code), suppose we have the following structure:
->>     
->>     	struct foo {
->>     		spinlock_t lock1;
->>     		spinlock_t lock2;
->>     		char a; /* Protected by lock1. */
->>     		char b; /* Protected by lock2. */
->>     	};
->>     	struct foo *foop;
->>     
->> Of course, it is common (and good) practice to place data protected
->> by different locks in separate cache lines.  However, if the locks are
->> rarely acquired (for example, only in rare error cases), and there are
->> a great many instances of the data structure, then memory footprint can
->> trump false-sharing concerns, so that it can be better to place them in
->> the same cache cache line as above.
->>
->> But if the CPU does not support single-byte loads and stores, a store
->> to foop->a will do a non-atomic read-modify-write operation on foop->b,
->> which will come as a nasty surprise to someone holding foop->lock2.  So we
->> now require CPUs to support single-byte and double-byte loads and stores.
->> Therefore, this commit adjusts the definition of __native_word() to allow
->> these sizes to be used by smp_load_acquire() and smp_store_release().
+>> Gitweb:
+>> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/fastpath
 > 
-> So does this patch depends on a patch that removes pre EV56 alpha
-> support? I'm all for removing that, but I need to see the patch merged
-> before we can do this.
+> Hi all-
+> 
+> AFAIK the only thing that's changed since I submitted it is that the
+> 3.17 merge window is closed.  Kees rebased the tree this applies to,
+> but I think the patches all still apply.  What, if anything, do I need
+> to do to help this along for 3.18?
+> 
 
-I'm working on that but Alpha's Kconfig is not quite straightforward.
+Just put this stuff in a branch and running through my personal test
+battery now.
 
-
-... and I'm wondering if I should _remove_ pre-EV56 configurations or
-move the default choice and produce a warning about unsupported Alpha
-CPUs instead?
-
-Regards,
-Peter Hurley
-
-[ How does one do a red popup in kbuild?
-  The 'comment' approach is too subtle.
-]
-
-
+	-hpa
 
