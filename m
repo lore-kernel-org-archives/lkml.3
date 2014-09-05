@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaIEGz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:55:26 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:55844 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaIEGzY (ORCPT
+	id S1755799AbaIEG4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:56:25 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:47647 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaIEG4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:55:24 -0400
-Date: Fri, 5 Sep 2014 08:55:19 +0200
-From: Robert Richter <rric@kernel.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Robert Richter <rrichter@cavium.com>, Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] arm64, dts: Add dtbs_install make target
-Message-ID: <20140905065519.GQ4703@rric.localhost>
-References: <1406732794-20920-1-git-send-email-rric@kernel.org>
- <1406732794-20920-3-git-send-email-rric@kernel.org>
- <CAOesGMh9KkdKB_ytJ7CCbkPW7dHTX91NdfDMsMNfbmOBVOJ8PQ@mail.gmail.com>
- <20140828161556.GN4703@rric.localhost>
- <20140828162549.GP14650@leverpostej>
- <CAOesGMjtjcgUNV8WLp6_Zbok-0zq5afg_KS8QJYp=kDVabrQvg@mail.gmail.com>
- <20140828181429.GO4703@rric.localhost>
- <CAOesGMh3TEKZkyPjopfSm07C2ydw5=2VrzY0xQ=9jkhoA-Z_kQ@mail.gmail.com>
- <20140829121023.GW13038@rric.localhost>
- <20140829134942.GP4703@rric.localhost>
+	Fri, 5 Sep 2014 02:56:24 -0400
+Message-ID: <54095E79.9010306@huawei.com>
+Date: Fri, 5 Sep 2014 14:55:53 +0800
+From: hujianyang <hujianyang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140829134942.GP4703@rric.localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <viro@zeniv.linux.org.uk>, <eparis@redhat.com>, <jlayton@primarydata.com>,
+        <jlayton@redhat.com>, <hujyang@gmail.com>
+Subject: [PATCH] audit: vfs: fix audit records error when write to a file
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.68.144]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof,
+commit 33e2208acfc1
 
-On 29.08.14 15:49:42, Robert Richter wrote:
-> On 29.08.14 14:10:23, Robert Richter wrote:
-> > On 28.08.14 16:01:08, Olof Johansson wrote:
-> > > Thinking about it a bit more, the even more obvious solution that I
-> > > for some reason didn't think of at the time, is to have the
-> > > dtbs_install target create the appropriate subdirectories on the
-> > > install side, so that the structure is preserved.
-> > > 
-> > > That comes a bit closer to how modules are handled as well.
-> > 
-> > Yes, dtbs_install target would be useful.
-> > 
-> > Will come with a solution for this too.
-> 
-> below is a patch that adds the dtbs_install target to arm64. Taken
-> from arm where this was already implemented.
+audit: vfs: fix audit_inode call in O_CREAT case of do_last
 
-please note that I sent a separate patch set with a complete
-implementation of this with the title:
+fix a regression in auditing of open(..., O_CREAT) syscalls but
+import a new problem which lead the records of write operation
+confusion.
 
- [PATCH 0/6] dts, kbuild: Implement support for dtb vendor subdirs
+This error can be reproduced by these steps:
 
-this patch is included there too.
+	touch /etc/test
+	echo "-w /etc/test" >>/etc/audit/audit.rules
+	/etc/init.d/auditd restart
 
--Robert
+	echo "abc" >> /etc/test
+
+audit_name records are:
+
+type=PATH msg=audit(1409764556.196:67): item=0 name="/etc/" inode=5097 dev=00:01 mode=040755 ouid=0 ogid=0 rdev=00:00 nametype=PARENT
+type=PATH msg=audit(1409764556.196:67): item=1 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+type=PATH msg=audit(1409764556.196:67): item=2 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+
+but if we revert commit 33e2208acfc1, records are correct:
+
+type=PATH msg=audit(1409763058.192:219): item=0 name="/etc/test" inode=1275 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+
+We shouldn't leave audit_inode(.., LOOKUP_PARENT) in O_CREAT case
+of do_last() because this branch don't really know if vfs need to
+create a new file. There is no need to do vfs_create() if we open
+an existing file with O_CREAT flag and write to it. But this
+audit_inode() in O_CREAT case will record a msg as we create a new
+file and confuse the records of write.
+
+This patch moves the audit for create operation to where a file
+really need to be created, the O_CREAT case in lookup_open().
+We have to add the pointer of struct filename as a parameter of
+lookup_open(). By doing this, the records of both create and write
+are correct.
+
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+---
+ fs/namei.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index a996bb4..0bc7734 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2808,7 +2808,8 @@ looked_up:
+ static int lookup_open(struct nameidata *nd, struct path *path,
+ 			struct file *file,
+ 			const struct open_flags *op,
+-			bool got_write, int *opened)
++			bool got_write, int *opened,
++			struct filename *name)
+ {
+ 	struct dentry *dir = nd->path.dentry;
+ 	struct inode *dir_inode = dir->d_inode;
+@@ -2854,6 +2855,9 @@ static int lookup_open(struct nameidata *nd, struct path *path,
+ 			error = -EROFS;
+ 			goto out_dput;
+ 		}
++
++		audit_inode(name, dir, LOOKUP_PARENT);
++
+ 		*opened |= FILE_CREATED;
+ 		error = security_path_mknod(&nd->path, dentry, mode, 0);
+ 		if (error)
+@@ -2926,7 +2930,6 @@ static int do_last(struct nameidata *nd, struct path *path,
+ 		if (error)
+ 			return error;
+
+-		audit_inode(name, dir, LOOKUP_PARENT);
+ 		error = -EISDIR;
+ 		/* trailing slashes? */
+ 		if (nd->last.name[nd->last.len])
+@@ -2945,7 +2948,7 @@ retry_lookup:
+ 		 */
+ 	}
+ 	mutex_lock(&dir->d_inode->i_mutex);
+-	error = lookup_open(nd, path, file, op, got_write, opened);
++	error = lookup_open(nd, path, file, op, got_write, opened, name);
+ 	mutex_unlock(&dir->d_inode->i_mutex);
+
+ 	if (error <= 0) {
+-- 
+1.8.5.5
+
