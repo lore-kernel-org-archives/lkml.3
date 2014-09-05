@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006AbaIEHBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:01:22 -0400
+	id S1756040AbaIEHB2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:01:28 -0400
 Received: from mga01.intel.com ([192.55.52.88]:15023 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636AbaIEHBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:01:20 -0400
+	id S1755959AbaIEHBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 03:01:22 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,471,1406617200"; 
-   d="scan'208";a="586646500"
+   d="scan'208";a="586646536"
 From: Weike Chen <alvin.chen@intel.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
@@ -22,57 +22,157 @@ Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mika Westerberg <mika.westerberg@intel.com>,
         Andriy Shevchenko <andriy.shevchenko@intel.com>,
         Alvin Chen <alvin.chen@intel.com>
-Subject: [PATCH 0/3 v2] The Designware GPIO Supporting
-Date: Fri,  5 Sep 2014 07:53:15 -0700
-Message-Id: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+Subject: [PATCH 3/3 v2] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Date: Fri,  5 Sep 2014 07:53:18 -0700
+Message-Id: <1409928798-31895-4-git-send-email-alvin.chen@intel.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-These patches are for Intel Quark X1000 designware GPIO supporting. The first
-patch enables the Synopsys DesignWare APB GPIO driver to support the MFD device.
-And the Quark designware GPIO controller is registered as MFD device,
-because Quark exports a single PCI device with both GPIO and I2C functions.
-It is about reviewing the GPIO changes in gpio-dwapb, and in near future,
-the Quark I2C driver and the MFD driver that binds these GPIO & I2C
-functions will be sent subsequently. The second patch enables the gpio
-'debounce' feature. And the third patch enables the power management.
+This patch enables suspend and resume mode for the power management, and
+it is based on Josef Ahmad's previous work.
 
+Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
+Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
+Signed-off-by: Weike Chen <alvin.chen@intel.com>
 ---
-v2:
- [PATCH 1/3]
- * Fixed a bug to set the base gpio number to '-1' for the OF flow.
- * Set device node for each gpio chip for the OF flow.
- * Change the name of 'struct dwapb_gpio_platform_data' to
-   'struct dwapb_platform_data'.
- * Change the name of 'struct dwapb_gpio_port_property' to
-   'struct dwapb_port_property'.
- * Access pdata directly in 'probe' instead of accesing it
-   by 'struct dwapb_gpio'.
- * Free 'pdata' at the end of 'probe' if it is OF case to save memory.
- * Improve the interrupt handler.
- * Move 'irq_set_handler_data' together with 'irq_set_chained_hanlder'.
- * Remove unncessary comments.
- [PATCH 2/3]
- * Change all 'readl'&'writel' to 'dwapb_read'&'dwapb_write'.
- [PATCH 3/3]
- * Change the name for 'struct gpio_saved_regs' to 'struct dwapb_context'.
- * Save the registers for all ports according to the port index.
- * Change '#if defined' to '#ifdef'.
+ drivers/gpio/gpio-dwapb.c |  102 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 102 insertions(+)
 
-Weike Chen (3):
-  GPIO: gpio-dwapb: Enable platform driver binding to MFD driver
-  GPIO: gpio-dwapb: Support Debounce
-  GPIO: gpio-dwapb: Suspend & Resume PM enabling
-
- drivers/gpio/Kconfig                     |    1 -
- drivers/gpio/gpio-dwapb.c                |  397 +++++++++++++++++++++++++-----
- include/linux/platform_data/gpio-dwapb.h |   32 +++
- 3 files changed, 365 insertions(+), 65 deletions(-)
- create mode 100644 include/linux/platform_data/gpio-dwapb.h
-
+diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+index 6db7501..a103def 100644
+--- a/drivers/gpio/gpio-dwapb.c
++++ b/drivers/gpio/gpio-dwapb.c
+@@ -54,6 +54,7 @@ struct dwapb_gpio_port {
+ 	struct bgpio_chip	bgc;
+ 	bool			is_registered;
+ 	struct dwapb_gpio	*gpio;
++	unsigned int		idx;
+ };
+ 
+ struct dwapb_gpio {
+@@ -376,6 +377,7 @@ static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
+ 
+ 	port = &gpio->ports[offs];
+ 	port->gpio = gpio;
++	port->idx = pp->idx;
+ 
+ 	dat = gpio->regs + GPIO_EXT_PORTA + (pp->idx * GPIO_EXT_PORT_SIZE);
+ 	set = gpio->regs + GPIO_SWPORTA_DR + (pp->idx * GPIO_SWPORT_DR_SIZE);
+@@ -594,10 +596,110 @@ static const struct of_device_id dwapb_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, dwapb_of_match);
+ 
++#ifdef CONFIG_PM_SLEEP
++/* Store GPIO context across system-wide suspend/resume transitions */
++static struct dwapb_context {
++	u32 data[DWAPB_MAX_PORTS];
++	u32 dir[DWAPB_MAX_PORTS];
++	u32 ext[DWAPB_MAX_PORTS];
++	u32 int_en;
++	u32 int_mask;
++	u32 int_type;
++	u32 int_pol;
++	u32 int_deb;
++} dwapb_context;
++
++static int dwapb_gpio_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
++	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
++	unsigned long flags;
++	int i;
++
++	spin_lock_irqsave(&bgc->lock, flags);
++	for (i = 0; i < gpio->nr_ports; i++) {
++		unsigned int offset;
++		unsigned int idx = gpio->ports[i].idx;
++
++		offset = GPIO_SWPORTA_DDR + (idx * GPIO_SWPORT_DDR_SIZE);
++		dwapb_context.dir[i]	= dwapb_read(gpio, offset);
++
++		offset = GPIO_SWPORTA_DR + (idx * GPIO_SWPORT_DR_SIZE);
++		dwapb_context.data[i]	= dwapb_read(gpio, offset);
++
++		offset = GPIO_EXT_PORTA + (idx * GPIO_EXT_PORT_SIZE);
++		dwapb_context.ext[i]	= dwapb_read(gpio, offset);
++
++		if (idx == 0) {
++			dwapb_context.int_mask = dwapb_read(gpio, GPIO_INTMASK);
++			dwapb_context.int_en = dwapb_read(gpio, GPIO_INTEN);
++			dwapb_context.int_pol =
++					dwapb_read(gpio, GPIO_INT_POLARITY);
++			dwapb_context.int_type =
++					dwapb_read(gpio, GPIO_INTTYPE_LEVEL);
++			dwapb_context.int_deb =
++					dwapb_read(gpio, GPIO_PORTA_DEBOUNCE);
++
++			/* Mask out interrupts */
++			dwapb_write(gpio, GPIO_INTMASK, 0xffffffff);
++		}
++	}
++	spin_unlock_irqrestore(&bgc->lock, flags);
++
++	return 0;
++}
++
++static int dwapb_gpio_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
++	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
++	unsigned long flags;
++	int i;
++
++	spin_lock_irqsave(&bgc->lock, flags);
++	for (i = 0; i < gpio->nr_ports; i++) {
++		unsigned int offset;
++		unsigned int idx = gpio->ports[i].idx;
++
++		offset = GPIO_SWPORTA_DR + (idx * GPIO_SWPORT_DR_SIZE);
++		dwapb_write(gpio, offset, dwapb_context.data[i]);
++
++		offset = GPIO_SWPORTA_DDR + (idx * GPIO_SWPORT_DDR_SIZE);
++		dwapb_write(gpio, offset, dwapb_context.dir[i]);
++
++		offset = GPIO_EXT_PORTA + (idx * GPIO_EXT_PORT_SIZE);
++		dwapb_write(gpio, offset, dwapb_context.ext[i]);
++
++		if (idx == 0) {
++			dwapb_write(gpio, GPIO_INTTYPE_LEVEL,
++				    dwapb_context.int_type);
++			dwapb_write(gpio, GPIO_INT_POLARITY,
++				    dwapb_context.int_pol);
++			dwapb_write(gpio, GPIO_PORTA_DEBOUNCE,
++				    dwapb_context.int_deb);
++			dwapb_write(gpio, GPIO_INTEN, dwapb_context.int_en);
++			dwapb_write(gpio, GPIO_INTMASK, dwapb_context.int_mask);
++
++			/* Clear out spurious interrupts */
++			dwapb_write(gpio, GPIO_PORTA_EOI, 0xffffffff);
++		}
++	}
++	spin_unlock_irqrestore(&bgc->lock, flags);
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(dwapb_gpio_pm_ops, dwapb_gpio_suspend,
++			 dwapb_gpio_resume);
++
+ static struct platform_driver dwapb_gpio_driver = {
+ 	.driver		= {
+ 		.name	= "gpio-dwapb",
+ 		.owner	= THIS_MODULE,
++		.pm	= &dwapb_gpio_pm_ops,
+ 		.of_match_table = of_match_ptr(dwapb_of_match),
+ 	},
+ 	.probe		= dwapb_gpio_probe,
 -- 
 1.7.9.5
 
