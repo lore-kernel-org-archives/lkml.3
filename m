@@ -1,48 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844AbaIEOYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:24:47 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:42716 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932473AbaIEOYp (ORCPT
+	id S1757007AbaIEOZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:25:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31375 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775AbaIEOZK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:24:45 -0400
+	Fri, 5 Sep 2014 10:25:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="381934976"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>
+CC: "mingo@kernel.org" <mingo@kernel.org>,
+        "acme@infradead.org" <acme@infradead.org>,
+        "eranian@google.com" <eranian@google.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v5 00/16] perf, x86: Haswell LBR call stack support
+Thread-Topic: [PATCH v5 00/16] perf, x86: Haswell LBR call stack support
+Thread-Index: AQHPmazO39W4ArLHAUWgI+oTwE4bwZvy9QOg
+Date: Fri, 5 Sep 2014 14:25:06 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077015A8C0A@SHSMSX103.ccr.corp.intel.com>
+References: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com>
+In-Reply-To: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <5409C19C.4030901@roeck-us.net>
-References: <20140826230858.GA29970@kroah.com>
-	<20140827045938.GA28282@roeck-us.net>
-	<540813A5.7020704@huawei.com>
-	<20140904183953.GA28599@roeck-us.net>
-	<54096C8D.8000008@huawei.com>
-	<5409C19C.4030901@roeck-us.net>
-Date: Fri, 5 Sep 2014 08:24:44 -0600
-Message-ID: <CAKocOOOFkeV7-XExOtE1itchbO6hPrOXPgNtGa-BtdFU=aaSWA@mail.gmail.com>
-Subject: Re: [kernel.org PATCH] Li Zefan is now the 3.4 stable maintainer
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Li Zefan <lizefan@huawei.com>, stable <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 7:58 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+Hi Peter and all,
 
->>
->> Yeah, I've fixed it. I'll run dos2unix for every patch file.
->>
->
-> Yes, it now works. Wonder how it comes that the patch in Greg's patch tree
-> didn't have the problem. Any idea ?
->
+Did you get a chance to review these patches?
+Zheng is away. Should I re-send the patches?  
 
-I am interested in the answer to your question. I used git am and then
-ran checkpatch
-on the patched file to make sure, there are no warnings. I didn't see
-any warnings on
-the files I patched with git am. Hope that means it is good.
+Thanks,
+Kan
 
-Maybe I should start using dos2unix to be safe.
-
--- Shuah
+> 
+> For many profiling tasks we need the callgraph. For example we often need
+> to see the caller of a lock or the caller of a memcpy or other library function
+> to actually tune the program. Frame pointer unwinding is efficient and works
+> well. But frame pointers are off by default on 64bit code (and on modern
+> 32bit gccs), so there are many binaries around that do not use frame pointers.
+> Profiling unchanged production code is very useful in practice. On some CPUs
+> frame pointer also has a high cost. Dwarf2 unwinding also does not always
+> work and is extremely slow (upto 20% overhead).
+> 
+> Haswell has a new feature that utilizes the existing Last Branch Record facility
+> to record call chains. When the feature is enabled, function call will be
+> collected as normal, but as return instructions are executed the last captured
+> branch record is popped from the on-chip LBR registers. The LBR call stack
+> facility provides an alternative to get callgraph. It has some limitations too,
+> but should work in most cases and is significantly faster than dwarf. Frame
+> pointer unwinding is still the best default, but LBR call stack is a good
+> alternative when nothing else works.
+> 
+> When profiling bc(1) on Fedora 19:
+>  echo 'scale=2000; 4*a(1)' > cmd; perf record -g fp bc -l < cmd
+> 
+> If this feature is enabled, perf report output looks like:
+>     50.36%       bc  bc                 [.] bc_divide
+>                  |
+>                  --- bc_divide
+>                      execute
+>                      run_code
+>                      yyparse
+>                      main
+>                      __libc_start_main
+>                      _start
+> 
+>     33.66%       bc  bc                 [.] _one_mult
+>                  |
+>                  --- _one_mult
+>                      bc_divide
+>                      execute
+>                      run_code
+>                      yyparse
+>                      main
+>                      __libc_start_main
+>                      _start
+> 
+>      7.62%       bc  bc                 [.] _bc_do_add
+>                  |
+>                  --- _bc_do_add
+>                     |
+>                     |--99.89%-- 0x2000186a8
+>                      --0.11%-- [...]
+> 
+>      6.83%       bc  bc                 [.] _bc_do_sub
+>                  |
+>                  --- _bc_do_sub
+>                     |
+>                     |--99.94%-- bc_add
+>                     |          execute
+>                     |          run_code
+>                     |          yyparse
+>                     |          main
+>                     |          __libc_start_main
+>                     |          _start
+>                      --0.06%-- [...]
+> 
+>      0.46%       bc  libc-2.17.so       [.] __memset_sse2
+>                  |
+>                  --- __memset_sse2
+>                     |
+>                     |--54.13%-- bc_new_num
+>                     |          |
+>                     |          |--51.00%-- bc_divide
+>                     |          |          execute
+>                     |          |          run_code
+>                     |          |          yyparse
+>                     |          |          main
+>                     |          |          __libc_start_main
+>                     |          |          _start
+>                     |          |
+>                     |          |--30.46%-- _bc_do_sub
+>                     |          |          bc_add
+>                     |          |          execute
+>                     |          |          run_code
+>                     |          |          yyparse
+>                     |          |          main
+>                     |          |          __libc_start_main
+>                     |          |          _start
+>                     |          |
+>                     |           --18.55%-- _bc_do_add
+>                     |                     bc_add
+>                     |                     execute
+>                     |                     run_code
+>                     |                     yyparse
+>                     |                     main
+>                     |                     __libc_start_main
+>                     |                     _start
+>                     |
+>                      --45.87%-- bc_divide
+>                                execute
+>                                run_code
+>                                yyparse
+>                                main
+>                                __libc_start_main
+>                                _start
+> 
+> If this feature is disabled, perf report output looks like:
+>     50.49%       bc  bc                 [.] bc_divide
+>                  |
+>                  --- bc_divide
+> 
+>     33.57%       bc  bc                 [.] _one_mult
+>                  |
+>                  --- _one_mult
+> 
+>      7.61%       bc  bc                 [.] _bc_do_add
+>                  |
+>                  --- _bc_do_add
+>                      0x2000186a8
+> 
+>      6.88%       bc  bc                 [.] _bc_do_sub
+>                  |
+>                  --- _bc_do_sub
+> 
+>      0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+>                  |
+>                  --- __memcpy_ssse3_back
+> 
+> The LBR call stack has following known limitations
+>  - Zero length calls are not filtered out by hardware
+>  - Exception handing such as setjmp/longjmp will have calls/returns not
+>    match
+>  - Pushing different return address onto the stack will have calls/returns
+>    not match
+>  - If callstack is deeper than the LBR, only the last entries are captured
+> 
+> Changes since v1
+>  - split change into more patches
+>  - introduce context switch callback and use it to flush LBR
+>  - use the context switch callback to save/restore LBR
+>  - dynamic allocate memory area for storing LBR stack, always switch the
+>    memory area during context switch
+>  - disable this feature by default
+>  - more description in change logs
+> 
+> Changes since v2
+>  - don't use xchg to switch PMU specific data
+>  - remove nr_branch_stack from struct perf_event_context
+>  - simplify the save/restore LBR stack logical
+>  - remove unnecessary 'has_branch_stack -> needs_branch_stack'
+>    conversion
+>  - more description in change logs
+> 
+> Changes since v3
+>  - remove sysfs attribute file that disable this feature
+> 
+> Changes since v4
+>  - re-organize code that save/resotre LBR stack
+>  - allocate pmu specific data when it's needed
+>  - update code comments
+> 
+> These patches are also available at:
+> 
+> These patches are also available at:
+>  https://github.com/ukernel/linux.git perf-lbr-callstack
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
