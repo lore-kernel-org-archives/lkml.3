@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110AbaIEHkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:40:36 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:61739 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943AbaIEHkX (ORCPT
+	id S1756160AbaIEHkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:40:45 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47164 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117AbaIEHkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:40:23 -0400
+	Fri, 5 Sep 2014 03:40:43 -0400
+Subject: [PATCH V2 2/2] powernv/cpufreq: Set the pstate of the last
+ hotplugged out cpu in policy->cpus to minimum
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: viresh.kumar@linaro.org, rjw@rjwysocki.net
+Cc: linux-pm@vger.kernel.org, dirk.j.brandewie@intel.com,
+        shreyas@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        patrick.marlier@gmail.com, linuxppc-dev@ozlabs.org,
+        dirk.brandewie@gmail.com, svaidy@linux.vnet.ibm.com
+Date: Fri, 05 Sep 2014 13:10:33 +0530
+Message-ID: <20140905074023.3629.88028.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140905073812.3629.29175.stgit@preeti.in.ibm.com>
+References: <20140905073812.3629.29175.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <20140902145435.GF16872@saruman.home>
-References: <1409658558-12318-1-git-send-email-kiran.kumar@linaro.org>
-	<20140902145435.GF16872@saruman.home>
-Date: Fri, 5 Sep 2014 00:40:22 -0700
-Message-ID: <CAAW3YpZJ0JrYL4OxJ18Vq1kVWVWN+XFRBkTbgDS5SFUQ6HUJqg@mail.gmail.com>
-Subject: Re: [RFC v2 2/2] usb: phy: Temporarily hold wakeupsource on charger
- connect and disconnect events
-From: Todd Poynor <toddpoynor@google.com>
-To: balbi@ti.com
-Cc: Kiran Kumar Raparthy <kiran.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Badhri Jagan Sridharan <badhri@google.com>,
-        Ruchi Kandoi <kandoiruchi@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090507-9332-0000-0000-000001E9ADD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 7:54 AM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Tue, Sep 02, 2014 at 05:19:18PM +0530, Kiran Kumar Raparthy wrote:
-...
->> diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wakeupsource.c
->> index fca2010..70fa05e 100644
->> --- a/drivers/usb/phy/otg-wakeupsource.c
->> +++ b/drivers/usb/phy/otg-wakeupsource.c
->> @@ -48,7 +48,7 @@ static void otgws_handle_event(struct usb_phy *otgws_xceiv, unsigned long event)
->>       case USB_EVENT_NONE:
->>       case USB_EVENT_ID:
->>       case USB_EVENT_CHARGER:
->> -             usb_drop_wsource(otgws_xceiv);
->> +             usb_temporary_hold_wsource(otgws_xceiv);
->
-> looks like this won't work. You're holding the lock even on
-> USB_EVEN_NONE. Why ?
+Its possible today that the pstate of a core is held at a high even after the
+entire core is hotplugged out if a load had just run on  the hotplugged cpu. This is
+fair, since it is assumed that the pstate does not matter to a cpu in a deep idle
+state, which is the expected state of a hotplugged core on powerpc. However on powerpc,
+the pstate at a socket level is held at the maximum of the pstates of each core. Even
+if the pstates of the active cores on that socket is low, the socket pstate is held
+high due to the pstate of the hotplugged core in the above mentioned scenario. This
+can cost significant amount of power loss for no good.
 
-It temporarily holds a timed wakeup source on USB disconnect events,
-to allow the rest of the system time to react to the USB disconnection
-(dropping host sessions, updating charger status, etc.) prior to
-re-allowing suspend.
+Besides, since it is a non active core, nothing can be done from the kernel's end
+to set the frequency of the core right. Hence make use of the stop_cpu callback
+to explicitly set the pstate of the core to a minimum when the last cpu of the
+core gets hotplugged out.
 
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
 
-Todd
+ drivers/cpufreq/powernv-cpufreq.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
+index 379c083..5a628f1 100644
+--- a/drivers/cpufreq/powernv-cpufreq.c
++++ b/drivers/cpufreq/powernv-cpufreq.c
+@@ -317,6 +317,14 @@ static int powernv_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	return cpufreq_table_validate_and_show(policy, powernv_freqs);
+ }
+ 
++static void powernv_cpufreq_stop_cpu(struct cpufreq_policy *policy)
++{
++	struct powernv_smp_call_data freq_data;
++
++	freq_data.pstate_id = powernv_pstate_info.min;
++	smp_call_function_single(policy->cpu, set_pstate, &freq_data, 1);
++}
++
+ static struct cpufreq_driver powernv_cpufreq_driver = {
+ 	.name		= "powernv-cpufreq",
+ 	.flags		= CPUFREQ_CONST_LOOPS,
+@@ -324,6 +332,7 @@ static struct cpufreq_driver powernv_cpufreq_driver = {
+ 	.verify		= cpufreq_generic_frequency_table_verify,
+ 	.target_index	= powernv_cpufreq_target_index,
+ 	.get		= powernv_cpufreq_get,
++	.stop_cpu	= powernv_cpufreq_stop_cpu,
+ 	.attr		= powernv_cpu_freq_attr,
+ };
+ 
+
