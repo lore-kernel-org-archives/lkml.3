@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaIERAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:00:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47425 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751074AbaIERAs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:00:48 -0400
-Date: Fri, 5 Sep 2014 17:59:56 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yan Zheng <zheng.z.yan@intel.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
-Message-ID: <20140905165956.GA28623@leverpostej>
-References: <20140901181808.GA6427@leverpostej>
- <20140901190534.GC5806@worktop.ger.corp.intel.com>
- <20140902185807.GA7434@leverpostej>
- <20140903115013.GA3127@leverpostej>
- <20140904104402.GS4783@worktop.ger.corp.intel.com>
- <20140904110740.GB32228@leverpostej>
- <20140905151640.GN19379@twins.programming.kicks-ass.net>
- <CA+55aFwhKyjNHuSThuPOejq1uLTXoqHwAtG8cfcx-Sqp83RKSg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwhKyjNHuSThuPOejq1uLTXoqHwAtG8cfcx-Sqp83RKSg@mail.gmail.com>
-Thread-Topic: Possible race between CPU hotplug and perf_pmu_migrate_context
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753196AbaIERBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:01:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17622 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132AbaIERBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:01:08 -0400
+Message-ID: <1409936457.5306.2.camel@localhost>
+Subject: Re: [PATCH] bpf: fix a false positive kmemcheck warning
+From: Hannes Frederic Sowa <hannes@redhat.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Fri, 05 Sep 2014 19:00:57 +0200
+In-Reply-To: <5409E2C8.2080200@redhat.com>
+References: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
+	 <5409E2C8.2080200@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 04:41:43PM +0100, Linus Torvalds wrote:
-> On Fri, Sep 5, 2014 at 8:16 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+On Fr, 2014-09-05 at 18:20 +0200, Daniel Borkmann wrote:
+> Hi Mikulas,
+> 
+> On 09/05/2014 06:01 PM, Mikulas Patocka wrote:
+> > This patch fixes false positive kmemcheck warning in bpf.
 > >
-> > How horrible is the below patch (performance wise). It does pretty much
-> > the same thing except that percpu_rw_semaphore is a lot saner, its
-> > read side performance should be minimal in the absence of writes.
+> > When we try to write the variable len, the compiler generates a code that
+> > reads the 32-bit word, modifies the bits belonging to "len" and writes the
+> > 32-bit word back. The reading of the word results in kmemcheck warning due
+> > to reading uninitialized memory. This patch fixes it by avoiding using bit
+> > fields when kmemcheck is enabled.
+> >
+> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 > 
-> Ugh. Why do any locking at all (whether a new 'perf_rwsem' or using
-> 'get_online_cpus()').
+> You need to submit this patch to netdev (Cc'ed).
 > 
-> Wouldn't it be much nicer to just do what memory management routines
-> are *supposed* to do, and get a reference count to the context while
-> having a pointer to it?
+> > ---
+> >   include/linux/filter.h |    5 +++++
+> >   1 file changed, 5 insertions(+)
+> >
+> > Index: linux-2.6/include/linux/filter.h
+> > ===================================================================
+> > --- linux-2.6.orig/include/linux/filter.h	2014-09-04 23:04:26.000000000 +0200
+> > +++ linux-2.6/include/linux/filter.h	2014-09-04 23:43:05.000000000 +0200
+> > @@ -325,8 +325,13 @@ struct sock;
+> >   struct seccomp_data;
+> >
+> >   struct bpf_prog {
+> > +#ifdef CONFIG_KMEMCHECK
+> > +	bool			jited;
+> > +	u32			len;
+> > +#else
+> >   	u32			jited:1,	/* Is our filter JIT'ed? */
+> >   				len:31;		/* Number of filter blocks */
+> > +#endif
+> >   	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
+> >   	unsigned int		(*bpf_func)(const struct sk_buff *skb,
+> >   					    const struct bpf_insn *filter);
 > 
-> IOW, why doesn't put_event() just have a
+> I don't really like this if-def. If you really want to fix it, can't
+> you just use :
 > 
->    get_ctx(ctx);
->    ..
->    put_ctx(ctx);
-> 
-> around its use of the context pointer? So if the context ends up being
-> migrated during this time, it doesn't get freed.
+>    kmemcheck_bitfield_begin(bpf_anc_data)
+>    ...
+>    kmemcheck_bitfield_end(bpf_anc_data)
 
-For the duration of put_event, the event holds a ref on the context. That only
-gets decremented _after_ we're done dealing with event->ctx, at the very end of
-put_event. Follow the callchain:
+you also need to annotate the bitfield after allocation:
+struct bpf_prog *prog = kalloc(...);
+kmemcheck_annotate_bitfield(prog, bpf_anc_data);
 
-	put_event(event)
-	-> _free_event(event)
-	-> __free_event(event)
-	-> put_ctx(event->ctx).
+Bye,
+Hannes
 
-As you point out below, the race on event->ctx is the fundamental issue. That
-is what results in decrementing the refcount twice (once on a stale event->ctx
-pointer).
 
-> However, the more fundamental question is "what protects accesses to
-> 'events->ctx'". Why is "put_event()" so special that *it* gets locking
-> for the reading of "event->ctx", but none of the other cases of
-> reading the ctx pointer gets it or needs it?
-
-The key point is that it doesn't, which is precisely what this patch attempted
-to correct. 
-
-Regardless you're right that other uses of event->ctx are just as broken.  What
-perf_pmu_migrate_context failed to take into account was that it is possible to
-access an event without going via its owning context and holding ctx->mutex.
-
-> I'm getting the feeling that this race is bigger than just put_event().
-
-We certainly have at least one more race; for event groups perf_read can lock
-the stale context.
-
-Mark.
