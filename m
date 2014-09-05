@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaIETGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:06:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33732 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533AbaIETGD (ORCPT
+	id S1754604AbaIETGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:06:08 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:16827 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529AbaIETGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 15:06:03 -0400
-Date: Fri, 5 Sep 2014 21:05:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Bresticker <abrestic@chromium.org>
-cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 14/16] irqchip: mips-gic: Support local interrupts
-In-Reply-To: <1409938218-9026-15-git-send-email-abrestic@chromium.org>
-Message-ID: <alpine.DEB.2.10.1409052056400.5472@nanos>
-References: <1409938218-9026-1-git-send-email-abrestic@chromium.org> <1409938218-9026-15-git-send-email-abrestic@chromium.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61a-f79e46d00000134f-36-540a0998f1bb
+Content-transfer-encoding: 8BIT
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: lmctlx@gmail.com, Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Subject: [PATCH 3.14-stable] usb: gadget: f_fs: drop duplicate
+ usb_functionfs_descs_head declaration
+Date: Fri, 05 Sep 2014 21:04:44 +0200
+Message-id: <1409943884-13823-1-git-send-email-k.lewandowsk@samsung.com>
+X-Mailer: git-send-email 2.0.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t9jQd0ZnFwhBruWmFkcvF9v0bx4PZtF
+	46e5zBaXd81hs1h44BG7xYLjLawWCzY+YnRg99g56y67x/65a9g91v15xeTRt2UVo8fxG9uZ
+	PD5vkgtgi+KySUnNySxLLdK3S+DKOHRlJ1PBC4GKW9d+sDQwfuPtYuTkkBAwkbj46QIjhC0m
+	ceHeerYuRi4OIYHpjBKr9x5iAUnwCghK/Jh8D8jm4GAWkJc4cikbJMwsoC4xad4iZoj6DiaJ
+	iS/7wOrZBIwkvh3awAxiiwgoSGzufcYK0XCZUeLfWScQW1ggTWL1yn4mEJtFQFViTdNsdohd
+	HhKHm9axQBwkJ/Hz4nX2CYx8s5CcMQvhjFlIzljAyLyKUTS1ILmgOCk911CvODG3uDQvXS85
+	P3cTIzh0n0ntYFzZYHGIUYCDUYmHd8FnjhAh1sSy4srcQ4wSHMxKIrxpPzhDhHhTEiurUovy
+	44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBKNTCqvo/nfSI4n5HvVEW135lf
+	/+/YfHLJnnYlTWf16kzjtwyH2fezX0u9cmvCRkmtXqEbQs1rdPMSWcU+OabmxL15uPfEz/Ib
+	86cfc91lc+TDh30/Nn/6mfz5wMT1YfWGpYv7NAQOvLn02ceR55Jff/XSP0/eT3ngLa/94lLg
+	7D0RZy99tk9Z+jWwRomlOCPRUIu5qDgRAMSgzaxZAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014, Andrew Bresticker wrote:
->  static void gic_mask_irq(struct irq_data *d)
->  {
-> -	GIC_CLR_INTR_MASK(d->irq - gic_irq_base);
-> +	unsigned int irq = d->irq - gic_irq_base;
-> +
-> +	if (gic_is_local_irq(irq)) {
-> +		GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_RMASK),
-> +			 1 << GIC_INTR_BIT(gic_hw_to_local_irq(irq)));
-> +	} else {
-> +		GIC_CLR_INTR_MASK(irq);
-> +	}
->  }
->  
->  static void gic_unmask_irq(struct irq_data *d)
->  {
-> -	GIC_SET_INTR_MASK(d->irq - gic_irq_base);
-> +	unsigned int irq = d->irq - gic_irq_base;
-> +
-> +	if (gic_is_local_irq(irq)) {
-> +		GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_SMASK),
-> +			 1 << GIC_INTR_BIT(gic_hw_to_local_irq(irq)));
-> +	} else {
-> +		GIC_SET_INTR_MASK(irq);
-> +	}
+Applicable for 3.14-stable only.
 
-Why are you adding a conditional in all these functions instead of
-having two interrupt chips with separate callbacks and irqdata?
+This commit drops duplicate declaration of struct usb_functionfs_descs_head
+erronousely added in commit 28c5980b54 ("usb: gadget: f_fs: resurect
+usb_functionfs_descs_head structure").
 
-And looking at GIC_SET_INTR_MASK(irq) makes me shudder even more. The
-whole thing can be replaced with the generic interrupt chip functions.
+Fix from 28c5980b54 is applicable only for v3.15-rc1 and newer kernels.
 
-If you set it up proper, then there is not a single conditional or
-runtime calculation of bitmasks, address offsets etc.
+This fixes error in uapi:
 
-Thanks,
+  /src/linux$ make -C tools usb
 
-	tglx
+  make: Entering directory '/src/linux/tools'
+    DESCEND  usb
+  make[1]: Entering directory '/src/linux/tools/usb'
+  gcc -Wall -Wextra -g -I../include -o testusb testusb.c -lpthread
+  gcc -Wall -Wextra -g -I../include -o ffs-test ffs-test.c -lpthread
+  In file included from ffs-test.c:41:0:
+  ../../include/uapi/linux/usb/functionfs.h:42:8: error: redefinition of ‘struct usb_functionfs_descs_head’
+   struct usb_functionfs_descs_head {
+          ^
+  ../../include/uapi/linux/usb/functionfs.h:31:8: note: originally defined here
+   struct usb_functionfs_descs_head {
+          ^
+
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+---
+ include/uapi/linux/usb/functionfs.h | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
+index 29e9c7a..f279394 100644
+--- a/include/uapi/linux/usb/functionfs.h
++++ b/include/uapi/linux/usb/functionfs.h
+@@ -27,24 +27,18 @@ struct usb_endpoint_descriptor_no_audio {
+ 	__u8  bInterval;
+ } __attribute__((packed));
+ 
+-/* Legacy format, deprecated as of 3.14. */
+-struct usb_functionfs_descs_head {
+-	__le32 magic;
+-	__le32 length;
+-	__le32 fs_count;
+-	__le32 hs_count;
+-} __attribute__((packed, deprecated));
+ 
+ /*
+  * All numbers must be in little endian order.
+  */
+ 
++/* Legacy format, deprecated as of 3.14. */
+ struct usb_functionfs_descs_head {
+ 	__le32 magic;
+ 	__le32 length;
+ 	__le32 fs_count;
+ 	__le32 hs_count;
+-} __attribute__((packed));
++} __attribute__((packed, deprecated));
+ 
+ /*
+  * Descriptors format:
+-- 
+2.0.1
+
