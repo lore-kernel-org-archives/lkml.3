@@ -1,40 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437AbaIEI0D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 04:26:03 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:35940 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756061AbaIEI0A (ORCPT
+	id S1756368AbaIEI3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 04:29:16 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:40232 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289AbaIEI3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 04:26:00 -0400
+	Fri, 5 Sep 2014 04:29:13 -0400
+Date: Fri, 5 Sep 2014 12:28:46 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "Greg Thelen" <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, "Tejun Heo" <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Pavel Emelianov" <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+Message-ID: <20140905082846.GA25641@esperanza>
+References: <20140904143055.GA20099@esperanza>
+ <5408E1CD.3090004@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1409484115-1974-5-git-send-email-pramod.gurav@smartplayin.com>
-References: <1409484115-1974-1-git-send-email-pramod.gurav@smartplayin.com>
-	<1409484115-1974-5-git-send-email-pramod.gurav@smartplayin.com>
-Date: Fri, 5 Sep 2014 10:26:00 +0200
-Message-ID: <CACRpkdbciY9uLfLps_-dtpKuEP+peX_7X=yt_rBG5sBgQeeDbg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] pinctrl: at91: Add remove function in platform_driver at91_gpio_driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5408E1CD.3090004@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 31, 2014 at 1:21 PM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
+Hi Kamezawa,
 
-> This adds remove function in at91_gpio_driver platform_driver so that
-> driver can be unloaded cleanly.
->
-> CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Thanks for reading this :-)
 
-Again, this driver is a bool so will never exercise the .remove()
-callback.
+On Fri, Sep 05, 2014 at 07:03:57AM +0900, Kamezawa Hiroyuki wrote:
+> (2014/09/04 23:30), Vladimir Davydov wrote:
+> >  - memory.limit - container can't use memory above this
+> >  - memory.memsw.limit - container can't use swappable memory above this
+> 
+> If one hits anon+swap limit, it just means OOM. Hitting limit means
+> process's death.
 
-Yours,
-Linus Walleij
+Basically yes. Hitting the memory.limit will result in swap out + cache
+reclaim no matter if it's an anon charge or a page cache one. Hitting
+the swappable memory limit (anon+swap) can only occur on anon charge and
+if it happens we have no choice rather than invoking OOM.
+
+Frankly, I don't see anything wrong in such a behavior. Why is it worse
+than the current behavior where we also kill processes if a cgroup
+reaches memsw.limit and we can't reclaim page caches?
+
+I admit I may be missing something. So I'd appreciate if you could
+provide me with a use case where we want *only* the current behavior and
+my proposal is a no-go.
+
+> Is it useful ?
+
+I think so, at least, if we want to use soft limits. The point is we
+will have to kill a process if it eats too much anon memory *anyway*
+when it comes to global memory pressure, but before finishing it we'll
+be torturing the culprit as well as *innocent* processes by issuing
+massive reclaim, as I tried to point out in the example above. IMO, this
+is no good.
+
+Besides, I believe such a distinction between swappable memory and
+caches would look more natural to users. Everyone got used to it
+actually. For example, when an admin or user or any userspace utility
+looks at the output of free(1), it primarily pays attention to free
+memory "-/+ buffers/caches", because almost all memory is usually full
+with file caches. And they know that caches easy come, easy go. IMO, for
+them it'd be more useful to limit this to avoid nasty surprises in the
+future, and only set some hints for page cache reclaim.
+
+The only exception is strict sand-boxing, but AFAIU we can sand-box apps
+perfectly well with this either, because we would still have a strict
+memory limit and a limit on maximal swap usage.
+
+Please sorry if the idea looks to you totally stupid (may be it is!),
+but let's just try to consider every possibility we have in mind.
+
+Thanks,
+Vladimir
