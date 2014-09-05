@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaIEUff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:35:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51259 "EHLO mail.zytor.com"
+	id S1752081AbaIEUhm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:37:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45205 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193AbaIEUfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:35:33 -0400
-Message-ID: <540A1E6C.2020005@zytor.com>
-Date: Fri, 05 Sep 2014 13:34:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751447AbaIEUhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 16:37:41 -0400
+Message-ID: <540A1F05.80706@ti.com>
+Date: Fri, 5 Sep 2014 16:37:25 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>, Marc Gauthier <marc@cadence.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-CC: Michael Cree <mcree@orcon.net.nz>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>
-Subject: Re: bit fields && data tearing
-References: <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com> <54090AF4.7060406@hurleysoftware.com> <54091B30.2090509@zytor.com> <20140905081648.GB5281@omega> <20140905180950.GU5001@linux.vnet.ibm.com> <540A05F7.1070202@hurleysoftware.com> <20140905190506.GV5001@linux.vnet.ibm.com> <8CA974F497CA064FA9926E10ABCC061F05F97E7B77@MAILSJ4.global.cadence.com> <540A19B8.4010907@hurleysoftware.com>
-In-Reply-To: <540A19B8.4010907@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] PCI: keystone: update to support multiple pci ports
+References: <1409938782-31460-1-git-send-email-m-karicheri2@ti.com> <7260053.FoBVhTXVfj@wuerfel> <540A0212.6060303@ti.com> <3654923.JrIGV2dJ70@wuerfel>
+In-Reply-To: <3654923.JrIGV2dJ70@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 01:14 PM, Peter Hurley wrote:
-> 
-> Here's how I read the two statements.
-> 
-> First, the commit message:
-> 
-> "It [this commit] documents that CPUs [supported by the Linux kernel]
-> _must provide_ atomic one-byte and two-byte naturally aligned loads and stores."
-> 
-> Second, in the body of the document:
-> 
-> "The Linux kernel no longer supports pre-EV56 Alpha CPUs, because these
-> older CPUs _do not provide_ atomic one-byte and two-byte loads and stores."
-> 
+On 09/05/2014 03:00 PM, Arnd Bergmann wrote:
+> On Friday 05 September 2014 14:33:54 Murali Karicheri wrote:
+>>> This looks like it's a shared register of some sort that doesn't
+>>> really belong into the registers of a particular port. Could it
+>>> be that it's actually for the PHY?
+>>>
+>> This a shared device configuration register between the two ports the
+>> desciption states it is bootstrap configuration of the PCIe module as
+>> Endpoint or Root complex and Not Phy. Hope below text will help.
+>
+> Ok. Why do you want to have this user-selectable though? Can't it
+> just be set by the boot loader before starting Linux?
 
-Does this apply in general or only to SMP configurations?  I guess
-non-SMP configurations would still have problems if interrupted in the
-wrong place...
+Arnd,
 
-	-hpa
+As the driver is responsible for configuring the device to support the 
+device functionality, it make sense to do this in the device driver. The 
+driver enables clock to the IP and this is an addition thing to be 
+configured so that when the device is powered up, it should function as 
+RC. The IP can be configured to work as Root Complex or Endpoint. So not 
+sure why you want to me to move this functionality to boot loader.
+
+Murali
+
+>
+> 	Arnd
+>
+>> Table 3-23 Device Configuration Register (DEVCFG)
+>>
+>>
+>> PCIESSMODE[1:0] 00b PCIESSMODE is used to control the
+>> functionality of PCIESS module out of
+>> reset. This MMR output is connected to
+>> DEVTYPE input of PCIESS
+>> (Changes from
+>> Nysh) : Note that in Nysh this value came
+>> from a bootstrap pin.
+>> 00 : Endpoint
+>> 01 : Legacy Endpoint
+>> 10 : Rootcomplex
+>> 11 : Reserved
+>> PCIESS_1_MODE[1:0
+>> ]
+>> 00b PCIESSMODE is used to control the
+>> functionality of PCIE_1 module out of
+>> reset. This MMR output is connected to
+>> DEVTYPE input of PCIE_1
+>> 00 : Endpoint
+>> 01 : Legacy Endpoint
+>> 10 : Rootcomplex
+>> 11 : Reserv
+>>
+>
 
