@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaIEPoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:44:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:49721 "EHLO mail.kernel.org"
+	id S1751616AbaIEPrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:47:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38742 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054AbaIEPoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:44:08 -0400
-Date: Fri, 5 Sep 2014 12:44:02 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
-Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
-Message-ID: <20140905154402.GF30520@kernel.org>
-References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
- <540964C0.1050702@intel.com>
- <20140905141123.GE30520@kernel.org>
- <1409930200.1662.16.camel@leonhard>
+	id S1750797AbaIEPrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 11:47:36 -0400
+Date: Fri, 5 Sep 2014 10:47:01 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Griffin <peter.griffin@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <maxime.coquelin@st.com>, <patrice.chotard@st.com>,
+        <srinivas.kandagatla@gmail.com>, <lee.jones@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <peppe.cavallaro@st.com>
+Subject: Re: [PATCH v6 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
+ HC
+Message-ID: <20140905154700.GE24449@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409931392-22340-1-git-send-email-peter.griffin@linaro.org>
+ <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VdOwlNaOFKGAtAAV"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409930200.1662.16.camel@leonhard>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Sep 06, 2014 at 12:16:40AM +0900, Namhyung Kim escreveu:
-> Hi Adrian and Arnaldo,
-> 
-> 2014-09-05 (금), 11:11 -0300, Arnaldo Carvalho de Melo:
-> > Em Fri, Sep 05, 2014 at 10:22:40AM +0300, Adrian Hunter escreveu:
-> > > On 09/05/2014 07:59 AM, Namhyung Kim wrote:
-> > > > +++ b/tools/perf/util/machine.c
-> > > > @@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
-> > > >  				strlen(kmmap_prefix));
-> > > >  		/*
-> > > >  		 * Should be there already, from the build-id table in
-> > > > -		 * the header.
-> > > > +		 * the header (but maybe with a different name: "vmlinux").
-> > > >  		 */
-> > > > -		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
-> > > > -						     kmmap_prefix);
-> > > > +		struct dso *kernel = dsos__find(&machine->kernel_dsos,
-> > > > +						"vmlinux", true);
-> >  
-> > > Isn't "vmlinux" just the basename of the original file name, so if it had a
-> > > different name this wouldn't work e.g. if the filename had been
-> > > /boot/vmlinuz-3.11.0-26-generic then you would need
-> > > "vmlinuz-3.11.0-26-generic" for this to work?
-> > 
-> > Yeah, looking for well known pathnames to then check if the build-id
-> > matches the one we're looking for, be it because we obtained it from
-> > /sys/kernel/notes (for the running kernel), or from the perf.data file
-> > build-id table is ok, as we don't know where it is.
-> > 
-> > Plain sticking "vmlinux" there is not.
-> 
-> I don't get it.  AFAIK when perf record runs, it uses [kernel.kallsyms]
-> name for kernel map.  But it can be changed only if it found a "vmlinux"
-> file in the vmlinux_path[].  So short name will always be "vmlinux" -
-> okay, it might be vmlinux-$(uname -r) too; I can add it.
-> 
-> As you know, the vmlinux file is a ELF image that created during kernel
-> build process so I guess its name is fixed.  It's different from the
-> vmlinu"z" which resides in /boot directory.
-> 
-> Am I missing something?
+--VdOwlNaOFKGAtAAV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[acme@zoo linux]$ perf report --help 2>&1 | grep vmlin
-       -k, --vmlinux=<file>
-           vmlinux pathname
-[acme@zoo linux]$
+Hi,
 
-Yes, it is using [kernel.kallsyms].ref_reloc_sym for the synthesized
-KERNEL mmap event, but it stores the full path in the build-id table.
+On Fri, Sep 05, 2014 at 04:36:30PM +0100, Peter Griffin wrote:
+> +static int st_dwc3_remove_child(struct device *dev, void *c)
+> +{
+> +	struct platform_device *pdev =3D to_platform_device(dev);
+> +
+> +	of_device_unregister(pdev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int st_dwc3_remove(struct platform_device *pdev)
+> +{
+> +	struct st_dwc3 *dwc3_data =3D platform_get_drvdata(pdev);
+> +
+> +	device_for_each_child(&pdev->dev, NULL, st_dwc3_remove_child);
 
-It seems we need a way to state that an entry in the build-id table is
-for the kernel, without looking at its file name. That or to put the
-build-id into the synthesized kernel mmap event. Which is better,
-because:
+same as before, of_platform_depopulate(). I can fix this one myself this
+time.
 
-That leads to another problem that needs to get solved eventually: We
-need to have the build-id into PERF_RECORD_MMAP, because we're now using
-just the mmap filename as the key, not the contents, and for long
-running sessions, DSOs can get updated, etc.
+--=20
+balbi
 
-- Arnaldo
+--VdOwlNaOFKGAtAAV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUCdr0AAoJEIaOsuA1yqREyvAP/2XzSmWXusr9Z4vccu9UKdEO
+HyN/HGFAcIzXevRVsh73xmi3LnZdyGWJJQoxHy3MiMJC18FaAJEb0HKblAfuYwld
+yVPZLkYa/xnnQ/ru6rf15hXSLVVIDNmoAvLwVPKCAfAG+yBwUcd2rbOM4QVZHR5+
+3iyP8aXJxb4shaGyopV3/k1ZrWrXJXizy8sDgI209xQi7yHmUObAHyN04DBhpO/2
+bzj3Dbn7e61Z2AHBUxxpbSd5ewpG7viKlIEaehyEnNHCXgs+adEdeFD/CEsx3T06
+uSzjwdBIJmzW03dMwAMzjxab18KxHh4JbDUAyo51SITNTTSqaXHKqhLqh/bx/THs
+7YECetoskIGH3jvg0ZK48JCSzEDatzab/i7+Zj59jgYP7stoE3+kvTYzDP+o/+DD
+Rwfn41WAUqwMYooa04rCjVjHqf2OO7zRteODJ7Vy5uSgFCRwxxFhxnY7y4B5DsXi
+t0HlzXUBjDeLasG+KTS7ygFGUPUMbkP6IKuNZyox2IXczznbygRiG6+jo37Jx/zJ
+l3CIxTzNBTXscY0Nn124bfOFxqsbOexHRFpA7Bur+umWXJUaBkC9RofZW9C+/eK6
+zCCZKhRwl+WUAbJuRT4wgpqRwwssR+vcVwF8GFGdK4tBr6FAfvFzW8vDz+cZTLdb
+juyyy070QMxMleRBr17k
+=1CKY
+-----END PGP SIGNATURE-----
+
+--VdOwlNaOFKGAtAAV--
