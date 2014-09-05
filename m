@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaIECkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 22:40:00 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:9598 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751132AbaIECj6 (ORCPT
+	id S1754184AbaIECrh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 22:47:37 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43245 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751016AbaIECre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 22:39:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApgKACMhCVSl5H4J/2dsb2JhbABag2BXAYUpwwqHSAICAYEfd4QDAQEEATo/EAsYCRUQDwFHGYg6CA29TwEXjmlkBxaENgWVbohZk0eDcysvgQaBSQEBAQ
-From: Alistair Popple <alistair@popple.id.au>
-To: benh@kernel.crashing.org
-Cc: Paul Bolle <pebolle@tiscali.nl>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH] IBM Akebono: Remove obsolete config select
-Date: Fri, 05 Sep 2014 12:39:42 +1000
-Message-ID: <2123312.7Ova8rjspK@mexican>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-17-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409869242.5546.119.camel@x220>
-References: <1398998002.2925.15.camel@pasglop> <1774195.a1B25gz7RT@mexican> <1409869242.5546.119.camel@x220>
+	Thu, 4 Sep 2014 22:47:34 -0400
+Message-ID: <5409243C.4080704@hurleysoftware.com>
+Date: Thu, 04 Sep 2014 22:47:24 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        paulmck@linux.vnet.ibm.com
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com>	 <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop>	 <21512.10628.412205.873477@gargle.gargle.HOWL>	 <20140904090952.GW17454@tucnak.redhat.com>	 <540859EC.5000407@hurleysoftware.com>	 <20140904175044.4697aee4@alan.etchedpixels.co.uk>	 <5408C0AB.6050801@hurleysoftware.com>	 <20140905001751.GL5001@linux.vnet.ibm.com> <1409883098.5078.14.camel@jarvis.lan>
+In-Reply-To: <1409883098.5078.14.camel@jarvis.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014 00:20:42 Paul Bolle wrote:
+Hi James,
 
-<snip>
+On 09/04/2014 10:11 PM, James Bottomley wrote:
+> On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
+>> +And there are anti-guarantees:
+>> +
+>> + (*) These guarantees do not apply to bitfields, because compilers often
+>> +     generate code to modify these using non-atomic read-modify-write
+>> +     sequences.  Do not attempt to use bitfields to synchronize parallel
+>> +     algorithms.
+>> +
+>> + (*) Even in cases where bitfields are protected by locks, all fields
+>> +     in a given bitfield must be protected by one lock.  If two fields
+>> +     in a given bitfield are protected by different locks, the compiler's
+>> +     non-atomic read-modify-write sequences can cause an update to one
+>> +     field to corrupt the value of an adjacent field.
+>> +
+>> + (*) These guarantees apply only to properly aligned and sized scalar
+>> +     variables.  "Properly sized" currently means "int" and "long",
+>> +     because some CPU families do not support loads and stores of
+>> +     other sizes.  ("Some CPU families" is currently believed to
+>> +     be only Alpha 21064.  If this is actually the case, a different
+>> +     non-guarantee is likely to be formulated.)
+> 
+> This is a bit unclear.  Presumably you're talking about definiteness of
+> the outcome (as in what's seen after multiple stores to the same
+> variable).
 
-> > On Fri, 13 Jun 2014 13:56:32 Paul Bolle wrote:
-> > > On Fri, 2014-05-02 at 18:06 +1000, Alistair Popple wrote:
-> > > > The original implementation of MMC support for Akebono introduced a
-> > > > new configuration symbol (MMC_SDHCI_OF_476GTR). This symbol has been
-> > > > dropped in favour of using the generic platform driver however the
-> > > > select for this symbol was mistakenly left in the platform
-> > > > configuration.
-> > > > 
-> > > > This patch removes the obsolete symbol selection.
-> > > > 
-> > > > Signed-off-by: Alistair Popple <alistair@popple.id.au>
-> > > 
-> > > This patch hasn't yet entered linux-next nor Linus' tree. Is it queued
-> > > somewhere? If not, would a
-> > > 
-> > >     Acked-by: Paul Bolle <pebolle@tiscali.nl>
-> > > 
-> > > help to get this trivial patch queued for either of those trees?
-> > > 
-> > > 
-> > > Paul Bolle
-> > > 
-> > > > ---
-> > > > 
-> > > >  arch/powerpc/platforms/44x/Kconfig | 1 -
-> > > >  1 file changed, 1 deletion(-)
-> > > > 
-> > > > diff --git a/arch/powerpc/platforms/44x/Kconfig
-> > > > b/arch/powerpc/platforms/44x/Kconfig index 8beec7d..908bf11 100644
-> > > > --- a/arch/powerpc/platforms/44x/Kconfig
-> > > > +++ b/arch/powerpc/platforms/44x/Kconfig
-> > > > @@ -220,7 +220,6 @@ config AKEBONO
-> > > > 
-> > > >  	select USB_EHCI_HCD_PLATFORM
-> > > >  	select MMC_SDHCI
-> > > >  	select MMC_SDHCI_PLTFM
-> > > > 
-> > > > -	select MMC_SDHCI_OF_476GTR
-> > > > 
-> > > >  	select ATA
-> > > >  	select SATA_AHCI_PLATFORM
-> > > >  	help
-> 
-> This trivial cleanup is still not in linux-next nor in Linus' tree.
-> Could someone else please have a look at it?
-> 
-> Thanks,
-> 
-> 
-> Paul Bolle
+No, the last conditions refers to adjacent byte stores from different
+cpu contexts (either interrupt or SMP).
 
-Ben,
+> The guarantees are only for natural width on Parisc as well,
+> so you would get a mess if you did byte stores to adjacent memory
+> locations.
 
-Any chance you could merge this? It's in patchwork (see 
-http://patchwork.ozlabs.org/patch/344894/).
+For a simple test like:
+
+struct x {
+	long a;
+	char b;
+	char c;
+	char d;
+	char e;
+};
+
+void store_bc(struct x *p) {
+	p->b = 1;
+	p->c = 2;
+}
+
+on parisc, gcc generates separate byte stores
+
+void store_bc(struct x *p) {
+   0:	34 1c 00 02 	ldi 1,ret0
+   4:	0f 5c 12 08 	stb ret0,4(r26)
+   8:	34 1c 00 04 	ldi 2,ret0
+   c:	e8 40 c0 00 	bv r0(rp)
+  10:	0f 5c 12 0a 	stb ret0,5(r26)
+
+which appears to confirm that on parisc adjacent byte data
+is safe from corruption by concurrent cpu updates; that is,
+
+CPU 0                | CPU 1
+                     |
+p->b = 1             | p->c = 2
+                     |
+
+will result in p->b == 1 && p->c == 2 (assume both values
+were 0 before the call to store_bc()).
 
 Regards,
+Peter Hurley
 
-Alistair
 
