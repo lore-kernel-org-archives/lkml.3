@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899AbaIEHpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:45:35 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:38895 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999AbaIEHpd (ORCPT
+	id S1756089AbaIEHrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:47:07 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:41335 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817AbaIEHrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:45:33 -0400
-Date: Fri, 5 Sep 2014 00:45:12 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3.10.y+] PM / sleep: Use valid_state() for
- platform-dependent sleep states only
-Message-ID: <20140905074512.GA12218@brian-ubuntu>
-References: <1849024.CHOUso6H2K@vostro.rjw.lan>
- <1409865665-5375-1-git-send-email-computersforpeace@gmail.com>
- <54095835.7000207@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54095835.7000207@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Sep 2014 03:47:05 -0400
+From: Robert Richter <rric@kernel.org>
+To: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>
+Subject: [PATCH v2 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
+Date: Fri,  5 Sep 2014 09:46:41 +0200
+Message-Id: <1409903205-2762-1-git-send-email-rric@kernel.org>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 08:29:09AM +0200, Francis Moreau wrote:
-> On 09/04/2014 11:21 PM, Brian Norris wrote:
-[...]
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Cc: <stable@vger.kernel.org> # 3.10+: 27ddcc6596e5: PM / sleep: Add state field to pm_states[] entries
-> > Cc: <stable@vger.kernel.org> # 3.10+
-> > ---
-> > This is a backport request for these two commits upstream:
-> > 
-> >     27ddcc6596e5 PM / sleep: Add state field to pm_states[] entries
-> >     43e8317b0bba PM / sleep: Use valid_state() for platform-dependent sleep states only
-> > 
-> 
-> Wouldn't it be cleaner to have 2 separate backports then ?
+From: Robert Richter <rrichter@cavium.com>
 
-The first is purely a dependency for the second. It has no value on its
-own. So I thought the above form made sense and followed the process
-mentioned in Documentation/stable_kernel_rules.txt.
+This initial patches enable Cavium Thunder SoC Family. The patches add
+Kconfig and devicetree support and then add Thunder to the defconfig.
 
-Admittedly, it's a little asymmetric. But I really don't know what the
-"best" option is, since I'd prefer not having to send around any patch
-text at all, unless the backport is not trivial (these apply cleanly).
+The Thunder system needs more enablement patches for subsystems and
+devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
+We will send separate patch sets for these. All of them base on this
+initial patches.
 
-Related: I don't feel like Documentation/stable_kernel_rules.txt is very
-clear under the "Procedure" section. It lists a series of
-non-sequential steps, some of which are mutually exclusive.
+I sent a separate patch set independently that introduces support for
+dts vendor subdirs. After both patch sets have been applied I will
+send a patch in addition that moves the dts file into a subdirectory.
 
-Any tips on making my post-merge -stable submissions better are
-appreciated. And recommendations on improving the text (or just my
-interpretation) of Documentation/stable_kernel_rules.txt are welcome
-too.
+Patches are available here:
 
-Brian
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
+
+v2 changes:
+* rebased to 3.17
+* placed commas between 32-bit portions of 64 bit addresses
+* removed #address-cells and size-cells in gic node
+* get rid of the clocks node
+* changed to gpl/x11 dual license
+* removed memreserve
+* moved gic to bus node
+
+Radha Mohan Chintakuntla (3):
+  arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
+  arm64, thunder: Add initial dts for Cavium Thunder SoC
+  arm64, thunder: Document devicetree bindings for Cavium Thunder SoC
+
+Robert Richter (1):
+  arm64, defconfig: Enable Cavium Thunder SoC in defconfig
+
+ .../devicetree/bindings/arm/cavium-thunder.txt     |  10 +
+ Documentation/devicetree/bindings/arm/cpus.txt     |   1 +
+ arch/arm64/Kconfig                                 |   6 +
+ arch/arm64/boot/dts/Makefile                       |   1 +
+ arch/arm64/boot/dts/thunder-88xx.dts               | 414 +++++++++++++++++++++
+ arch/arm64/configs/defconfig                       |   1 +
+ 6 files changed, 433 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
+ create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+
+-- 
+2.0.1
+
