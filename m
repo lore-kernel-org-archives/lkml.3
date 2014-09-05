@@ -1,120 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517AbaIERLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:11:13 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:37089 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaIERLM (ORCPT
+	id S1753558AbaIERLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:11:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44411 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaIERLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:11:12 -0400
+	Fri, 5 Sep 2014 13:11:21 -0400
+Date: Fri, 5 Sep 2014 17:10:45 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] fuse: Translate pids passed to userspace into pid
+ namespaces
+Message-ID: <20140905171045.GJ16450@ubuntumail>
+References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+ <1409672696-15847-3-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1409926097-2101-2-git-send-email-bhe@redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
-	<1409926097-2101-2-git-send-email-bhe@redhat.com>
-Date: Fri, 5 Sep 2014 10:11:11 -0700
-X-Google-Sender-Auth: xdnU8P6GwoRgneMWAdYRcQGY7G4
-Message-ID: <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
-Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle relocations
-From: Kees Cook <keescook@chromium.org>
-To: Baoquan He <bhe@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Deutschmann <whissi@whissi.de>,
-        Dave Young <dyoung@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409672696-15847-3-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 7:08 AM, Baoquan He <bhe@redhat.com> wrote:
-> kaslr's action is splitted into 2 parts. The 1st is getting available memory
-> slots and randomly choose the kernel relocation address. After decompression
-> of kernel to the chosen place, the 2nd part begin to check if kaslr has got
-> a relocation address, and will do the relocations handling if yes.
->
-> However in current implementation, in the 2nd part, it doesn't check user's
-> config, just compare decompression output address and the LOAD_PHYSICAL_ADDR
-> where kernel was compiled to run. If they are equal, it means a kaslr is
-> taking action, and need do the relocation handling. This truly works when
-> bootloader always load kernel to LOAD_PHYSICAL_ADDR. But this doesn't always
-> happens. Kexec/kdump kernel loading is exceptional. Kdump/kexec can load
-> kernel anywhere, this is not fixed. So in this case, it will do the relocation
-> handling though user clearly set nokaslr in cmdline. This is not correct.
->
-> So in this patch, check user's config too in the 2nd part, namely in
-> handle_relocations().
->
-> Signed-off-by: Baoquan He <bhe@redhat.com>
+Quoting Seth Forshee (seth.forshee@canonical.com):
+> If the process reading on the fuse fd is executing in a pid
+> namespace then giving it the global pid of the process making
+> a request doesn't make sense. Instead, capture the pid namespace
+> when the filesystem is first mounted and translate pids into this
+> namespace before passing them to userspace.
+> 
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+
 > ---
->  arch/x86/boot/compressed/aslr.c |  2 ++
->  arch/x86/boot/compressed/misc.c | 12 ++++++++++++
->  2 files changed, 14 insertions(+)
->
-> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-> index fc6091a..975b07b 100644
-> --- a/arch/x86/boot/compressed/aslr.c
-> +++ b/arch/x86/boot/compressed/aslr.c
-> @@ -292,11 +292,13 @@ unsigned char *choose_kernel_location(unsigned char *input,
->  #ifdef CONFIG_HIBERNATION
->         if (!cmdline_find_option_bool("kaslr")) {
->                 debug_putstr("KASLR disabled by default...\n");
-> +               debug_putstr("No need to choose kernel relocation...\n");
->                 goto out;
->         }
->  #else
->         if (cmdline_find_option_bool("nokaslr")) {
->                 debug_putstr("KASLR disabled by cmdline...\n");
-> +               debug_putstr("No need to choose kernel relocation...\n");
->                 goto out;
->         }
->  #endif
-
-NAK on this part -- the whole point is to report the results of the
-expected KASLR state based on build config, cmdline, etc.
-
-> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-> index 57ab74d..7780a5b 100644
-> --- a/arch/x86/boot/compressed/misc.c
-> +++ b/arch/x86/boot/compressed/misc.c
-> @@ -238,6 +238,18 @@ static void handle_relocations(void *output, unsigned long output_len)
->         unsigned long min_addr = (unsigned long)output;
->         unsigned long max_addr = min_addr + output_len;
->
-> +#ifdef CONFIG_HIBERNATION
-> +       if (!cmdline_find_option_bool("kaslr")) {
-> +               debug_putstr("No relocation needed... ");
-> +               return;
-> +       }
-> +#else
-> +       if (cmdline_find_option_bool("nokaslr")) {
-> +               debug_putstr("No relocation needed... ");
-> +               return;
-> +       }
-> +#endif
+>  fs/fuse/dev.c    | 9 +++++----
+>  fs/fuse/fuse_i.h | 4 ++++
+>  fs/fuse/inode.c  | 3 +++
+>  3 files changed, 12 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index ca887314aba9..839caebd34f1 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/swap.h>
+>  #include <linux/splice.h>
+>  #include <linux/aio.h>
+> +#include <linux/sched.h>
+>  
+>  MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+>  MODULE_ALIAS("devname:fuse");
+> @@ -124,11 +125,11 @@ static void __fuse_put_request(struct fuse_req *req)
+>  	atomic_dec(&req->count);
+>  }
+>  
+> -static void fuse_req_init_context(struct fuse_req *req)
+> +static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+>  {
+>  	req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+>  	req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+> -	req->in.h.pid = current->pid;
+> +	req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+>  }
+>  
+>  static bool fuse_block_alloc(struct fuse_conn *fc, bool for_background)
+> @@ -168,7 +169,7 @@ static struct fuse_req *__fuse_get_req(struct fuse_conn *fc, unsigned npages,
+>  		goto out;
+>  	}
+>  
+> -	fuse_req_init_context(req);
+> +	fuse_req_init_context(fc, req);
+>  	req->waiting = 1;
+>  	req->background = for_background;
+>  	return req;
+> @@ -257,7 +258,7 @@ struct fuse_req *fuse_get_req_nofail_nopages(struct fuse_conn *fc,
+>  	if (!req)
+>  		req = get_reserved_req(fc, file);
+>  
+> -	fuse_req_init_context(req);
+> +	fuse_req_init_context(fc, req);
+>  	req->waiting = 1;
+>  	req->background = 0;
+>  	return req;
+> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+> index e8e47a6ab518..a3ded071e2c6 100644
+> --- a/fs/fuse/fuse_i.h
+> +++ b/fs/fuse/fuse_i.h
+> @@ -22,6 +22,7 @@
+>  #include <linux/rbtree.h>
+>  #include <linux/poll.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/pid_namespace.h>
+>  
+>  /** Max number of pages that can be used in a single read request */
+>  #define FUSE_MAX_PAGES_PER_REQ 32
+> @@ -386,6 +387,9 @@ struct fuse_conn {
+>  	/** The group id for this mount */
+>  	kgid_t group_id;
+>  
+> +	/** The pid namespace for this mount */
+> +	struct pid_namespace *pid_ns;
 > +
-
-I don't think this is correct. If you look at a02150610776 ("x86,
-relocs: Move ELF relocation handling to C"), we always did relocations
-on 32-bit when CONFIG_RELOCATABLE was set, so I think this will fail
-badly on 32-bit. 64-bit only needs relocation when
-CONFIG_RANDOMIZE_BASE is set, so this is probably what needs to be
-tested here instead. I think a better option would be, in
-decompress_kernel(), to compare output before and after
-choose_kernel_location(). If it's the same on 64-bit,
-handle_relocations() can be skipped. (Perhaps pass the before/after to
-handle_relocations() and it can perform the logic.)
-
--Kees
-
->         /*
->          * Calculate the delta between where vmlinux was linked to load
->          * and where it was actually loaded.
-> --
-> 1.8.5.3
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+>  	/** The fuse mount flags for this mount */
+>  	unsigned flags;
+>  
+> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> index 03246cd9d47a..c6d8473b1a80 100644
+> --- a/fs/fuse/inode.c
+> +++ b/fs/fuse/inode.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/random.h>
+>  #include <linux/sched.h>
+>  #include <linux/exportfs.h>
+> +#include <linux/pid_namespace.h>
+>  
+>  MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+>  MODULE_DESCRIPTION("Filesystem in Userspace");
+> @@ -616,6 +617,7 @@ void fuse_conn_init(struct fuse_conn *fc)
+>  	fc->initialized = 0;
+>  	fc->attr_version = 1;
+>  	get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
+> +	fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
+>  }
+>  EXPORT_SYMBOL_GPL(fuse_conn_init);
+>  
+> @@ -953,6 +955,7 @@ static void fuse_send_init(struct fuse_conn *fc, struct fuse_req *req)
+>  
+>  static void fuse_free_conn(struct fuse_conn *fc)
+>  {
+> +	put_pid_ns(fc->pid_ns);
+>  	kfree_rcu(fc, rcu);
+>  }
+>  
+> -- 
+> 1.9.1
+> 
