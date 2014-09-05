@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaIESKK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 14:10:10 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:45517 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaIESKG (ORCPT
+	id S1751285AbaIESM0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 14:12:26 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:33225 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaIESMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 14:10:06 -0400
-Date: Fri, 5 Sep 2014 11:10:03 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-Message-ID: <20140905181003.GA29003@core.coreip.homeip.net>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
- <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
- <20140905141241.GC10455@mtj.dyndns.org>
- <20140905164405.GA28964@core.coreip.homeip.net>
- <20140905174925.GA12991@mtj.dyndns.org>
+	Fri, 5 Sep 2014 14:12:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905174925.GA12991@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140905180040.GC12991@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+	<20140905140815.GA10455@mtj.dyndns.org>
+	<CAM_iQpUJONZ7UWTzJoqsbYfHsp5HnRVR-mhpP_kvR3AUafELqQ@mail.gmail.com>
+	<20140905180040.GC12991@mtj.dyndns.org>
+Date: Fri, 5 Sep 2014 11:12:24 -0700
+Message-ID: <CAM_iQpUbGTxrbJZ_ztf+QUvFowsivQ-jvPCSi7kmth7nstPvaA@mail.gmail.com>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 06, 2014 at 02:49:25AM +0900, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Sep 05, 2014 at 09:44:05AM -0700, Dmitry Torokhov wrote:
-> > Which problem are we talking about here though? It does solve the slow device
-> > stalling the rest if the kernel booting (non-module case) for me.
-> 
-> The other one.  The one with timeout.  Neither cxgb4 or pata_marvell
-> has slow probing stalling boot problem.
-> 
-> > I also reject the notion that anyone should be relying on drivers to be fully
-> > bound on module loading. It is not nineties anymore. We have hot pluggable
-> > buses, deferred probing, and even for not hot-pluggable ones the module
-> > providing the device itself might not be yet loaded. Any scripts that expect to
-> > find device 100% ready after module loading are simply broken.
-> 
-> We've been treating loading + probing as a single operation when
-> loading drivers and the assumption has always been that the existing
-> devices at the time of loading finished probing by the time insmod
-> finishes.  We now need to split loading and probing and wait for each
-> of them differently.  The *only* thing we can do is somehow making the
-> issuer specify that it's gonna wait for probing separately.  I'm not
-> sure this can even be up for discussion.  We're talking about a major
-> userland visible behavior change.
+On Fri, Sep 5, 2014 at 11:00 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Fri, Sep 05, 2014 at 09:31:50AM -0700, Cong Wang wrote:
+>> On Fri, Sep 5, 2014 at 7:08 AM, Tejun Heo <tj@kernel.org> wrote:
+>> >> +     /* It might not be safe to check TIF_MEMDIE for pm freeze. */
+>> >
+>> > This is just another representation of the following code which isn't
+>> > particularly useful.  Wouldn't it be better if the comment actually
+>> > explains why this might not be safe?
+>>
+>> I don't know actually, I never understand pm code, just don't
+>> want to take the risk of breaking it as you told. :)
+>
+> Let's please try to understand and explain it properly.  Reading
+> intricate code like this w/ comment which doesn't really explain
+> anything can be very frustrating for other people reading the code.
 
-I do not agree that it is actually user-visible change: generally speaking you
-do not really know if device is there or not. They come and go. Like I said,
-consider all permutations, with hot-pluggable buses, deferred probing, etc,
-etc.
+That comment just explains why we need a cgroup_freezing() check,
+nothing else. If you don't think it helps, I can definitely remove it.
 
-Thanks.
+> Rafael, can you please help?
 
--- 
-Dmitry
+Rafael is known not responsive at least for this topic. :)
+
+>
+> Shouldn't the primary goal of the comment be explaining why we need
+> TIF_MEMDIE check there at all anyway?  The deadlock possiblity is not
+> very obvious.
+>
+
+The changelog is not long enough?? ;-) I hate to copy+paste changelog
+into comments, changelog is essentially necessary for people to understand
+kernel code (at least networking) , so I don't think we have to move it
+into comments in this case.
