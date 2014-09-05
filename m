@@ -1,63 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaIEXQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:16:58 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45075 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955AbaIEXQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:16:57 -0400
-From: behanw@converseincode.com
-To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] mm: Apply the section attribute to the variable, not its type
-Date: Fri,  5 Sep 2014 16:16:45 -0700
-Message-Id: <1409959005-11479-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753633AbaIEXSE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:18:04 -0400
+Received: from mail.pfak.org ([198.50.219.4]:44660 "EHLO mail.pfak.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470AbaIEXSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 19:18:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=kieser.ca; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type; q=dns; s=mail; b=cbDKcDjzHS3ttdtETruoNlwXyDppiDtK
+	flqwUVdyRnptrGpnA9o8Nq+ixWhEs7Q7a/YZxZ2dV/+Cl5ltFgC/3DbnZKhtfsl9
+	gWYt0wLw6xwA6zOfMPz9/EF9MsMjJU/SaINFHXUJEZCFMWJvRNT3g+BDeJNE/dC2
+	gniNFQP0sog=
+Message-ID: <540A44A3.5060502@kieser.ca>
+Date: Fri, 05 Sep 2014 16:17:55 -0700
+From: Peter Kieser <peter@kieser.ca>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Greg KH <greg@kroah.com>, Francis Moreau <francis.moro@gmail.com>
+CC: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        stable <stable@vger.kernel.org>
+Subject: Re: [GIT PULL] bcache changes for 3.17
+References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk> <53E7251B.3080305@kieser.ca> <540966BA.9030106@gmail.com> <20140905214532.GA30221@kroah.com>
+In-Reply-To: <20140905214532.GA30221@kroah.com>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms010005010302020608040102"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+This is a cryptographically signed message in MIME format.
 
-This fixes a compilation error in clang in that a linker section attribute
-can't be added to a type.
+--------------ms010005010302020608040102
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-arch/x86/mm/mmap.c:34:8: error: '__section__' attribute only applies to functions and global variables
-struct __read_mostly va_alignment va_align = {
-       ^
-arch/x86/include/asm/cache.h:10:38: note: expanded from macro '__read_mostly'
-#define __read_mostly __attribute__((__section__(".data..read_mostly")))
-                                     ^
-1 error generated.
 
-By moving the section attribute to the variable declaration, the desired effect
-is acheived.
+On 2014-09-05 2:45 PM, Greg KH wrote:
+> Just because a maintainer/developer doesn't want to do anything for the=
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- arch/x86/mm/mmap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> stable kernel releases does_NOT_  mean the code is
+> "unstable/expreimental" at all.
 
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 25e7e13..919b912 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -31,7 +31,7 @@
- #include <linux/sched.h>
- #include <asm/elf.h>
- 
--struct __read_mostly va_alignment va_align = {
-+struct va_alignment __read_mostly va_align = {
- 	.flags = -1,
- };
- 
--- 
-1.9.1
+These are more bcache-ate-my-data unstable bugs. It's standard practice=20
+to backport fixes that cause instability/data corruption to a 'stable'=20
+release (otherwise, why would it be named 'stable')?
 
+-Peter
+
+
+--------------ms010005010302020608040102
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMqzCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGbzCCBVegAwIBAgICUcswDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xNDA4MTcxMDM5MDla
+Fw0xNjA4MTcxMzU1MzFaMIGOMRkwFwYDVQQNExBKSHI4SWdkNjhlbUUweVF6MQswCQYDVQQG
+EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
+EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL/NmLSwzKyhFa8wVY4On4D2atW+jO4k
+qzGjt32GITxEhweeR2AeQFhmBXTwwAHGnAEWU+lQSXoIoV9Hdi8GhTeFz3A5LPTLl/wa6dmv
+8VCfYaREvoSxjEN4nsCtdU8P6NLUE4mqBe7ZiP9lDkqWgmd0fDEYjiOnJU3cdoLh5vDHOyu+
+9mmPDVEBELFgbbdQsyiINKQN5fwElQ/5hwip/5lFCrT8SYYVS7s2JwEPtvPmpl+JyOwRJakh
+VRv4Wd8Lyv/rchK4riwfMyHhuKwbbKRxs3HzSHjtsjGZ2tS1UzDEalL7ZRsHC4EvZmgBGg5E
+0l1Bz7cC4JcPIy+8G14OjZkCAwEAAaOCAtUwggLRMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
+MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUvDcOWQqoGGEK+KDc
+6opnV1iupIkwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
+cGV0ZXJAa2llc2VyLmNhMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASow
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsG
+AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
+aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
+bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
+bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
+IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9j
+cmwuc3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYB
+BQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBC
+BggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5j
+bGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAycbEJG6nvyfbv2X4npgq1ceU+y1qYmXczCBNvNRJ2yvVXc8ljjQs
+KRDzpr8JhTCg4SMZh3C3AIOBGxrYCsyaxRL3Ssfh/6Ptg3ExIfVNj6CobB1piTrusORaVDYS
+jEtZZRR4iYt9mDRo/mZRhh4QRManZYwCXPG4mrguqQ4NLYVdgTsHYgCTRymMbyrQ0+eIGdAO
+/szcirRovADyxroMclw+TTlB7nQrovIsTVteGqe0renKR0bzdWsexQEntKpBxJLy/HTSIHeQ
+HU5r7hwjk/v1aoKlimuaKbdGTJl10BYk8+pbU8JGEl1sm1cNn4MKYwhnWFRTBEPEiXP6VyNc
+PTGCA9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRk
+LjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UE
+AxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAlHL
+MAkGBSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkF
+MQ8XDTE0MDkwNTIzMTc1NVowIwYJKoZIhvcNAQkEMRYEFDGnYFj+SYnkBAs4J/ETepvqB1dM
+MGwGCSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0D
+BzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwIC
+ASgwgaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcx
+ODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50
+IENBAgJRyzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQK
+Ew1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBT
+aWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRl
+IENsaWVudCBDQQICUcswDQYJKoZIhvcNAQEBBQAEggEAG2e9vy8cFfLNfvLPswcpKA66czfC
+i1FZUDSJ+1Q1H7vftv4+nWyoqjbntQ0Ifoiq3NYcuVqmCfxA6prYuYKCKynasGUmtmclcnqO
+n8aY4enpXD2Nw5HQUsbmyBBHVLV0rHiL1QGpJqCssSN3Zqvsdha5xdcF0+d+CGnt2T8E21lQ
+ZtRIrQinhQiZ3q5gDq1KNfp8d1bwal4fRT/dBHLOZUq9Q6UY7cYbcnUtqaJhals9JQKGKSNA
+EwqmiYpDtWLQvAvoUCM8zdBAXXrk7RlNhrisHoB+cZzs7eQN4gRxRPYlNj9glE86xtrbIzKY
+b0skLHYLdnfof1H3YpUqKGtD3wAAAAAAAA==
+--------------ms010005010302020608040102--
