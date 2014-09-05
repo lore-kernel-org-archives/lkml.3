@@ -1,38 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925AbaIEHHm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:07:42 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:35799 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472AbaIEHHk (ORCPT
+	id S1756021AbaIEHHw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:07:52 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:46631 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901AbaIEHHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:07:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140905070134.2831.8175.stgit@preeti.in.ibm.com>
-References: <20140905065952.2831.66731.stgit@preeti.in.ibm.com>
-	<20140905070134.2831.8175.stgit@preeti.in.ibm.com>
-Date: Fri, 5 Sep 2014 12:37:40 +0530
-Message-ID: <CAKohpokThCn3ze7KZ0zZNN8zyVCxjdL=pGBhWcAvVr9T23RxSg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] powernv/cpufreq: Set the pstate of the last
- hotplugged out cpu in policy->cpus to minimum
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Shreyas Prabhu <shreyas@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Sep 2014 03:07:50 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-a0-540961444cba
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Gu Zheng'" <guz.fnst@cn.fujitsu.com>, jaegeuk@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+References: <1409735782-7831-1-git-send-email-guz.fnst@cn.fujitsu.com>
+In-reply-to: <1409735782-7831-1-git-send-email-guz.fnst@cn.fujitsu.com>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: use lock-less list(llist) to simplify the
+	flush cmd management
+Date: Fri, 05 Sep 2014 15:07:01 +0800
+Message-id: <002101cfc8d8$1963b650$4c2b22f0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKbH1gJnmSzm7GNocRYWJqgiZpbuppbZHGA
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t9jAV2XRM4Qg4vHhS2etx9gtniyfhaz
+	xaVF7haXd81hc2Dx+H9wErPHplWdbB67F3xm8vi8SS6AJYrLJiU1J7MstUjfLoEr4/fuHvaC
+	Xo2KwyefMzUwvlfoYuTgkBAwkfje4dTFyAlkiklcuLeeDcQWEljEKNHSGtHFyAVk/2CUuHzg
+	LgtIgk1ARWJ5x38mEFtEwEbi29xGNpA5zAIeEruOlUL0ukm8n34MrIRTwF3i44HP7CC2sECa
+	xOM578HmswioStx5vRrM5hWwlDh9+TMLhC0o8WPyPTCbWUBLYv3O40wQtrzE5jVvmSHuVJDY
+	cfY1I8QJRhLvt/5jhagRl9h45BbLBEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6hX
+	nJhbXJqXrpecn7uJERz+z6R2MK5ssDjEKMDBqMTDu+AzR4gQa2JZcWXuIUYJDmYlEd72CM4Q
+	Id6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NTC1KLYLJMHJxSDYzOtVrTrFQC
+	FQM6pl88vtzT9cP9XUrtLy88Y25oOdxl6SKzdicX++TCU85rPk/V8Z+3YckOFa0HE63Utoec
+	ajAzUtod8+3Z8s0cFzasmJdlfnUC79/Pc7o2/Fqslrz8tdDa7y2n+E0ypoU/snz9in/+weB0
+	k49Cknu6t+mscJ5ePVE9NuZT+I8LSizFGYmGWsxFxYkAuZdz33sCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 September 2014 12:31, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+Hi Gu,
 
-> +       smp_call_function_any(policy->cpus, set_pstate, &freq_data, 1);
+> -----Original Message-----
+> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
+> Sent: Wednesday, September 03, 2014 5:16 PM
+> To: jaegeuk@kernel.org
+> Cc: Gu Zheng; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: [f2fs-dev] [PATCH] f2fs: use lock-less list(llist) to simplify the flush cmd management
+> 
+> We use flush cmd control to collect many flush cmds, and flush them
+> together. In this case, we use two list to manage the flush cmds
+> (collect and dispatch), and one spin lock is used to protect this.
+> In fact, the lock-less list(llist) is very suitable to this case,
+> and we use simplify this routine.
 
-We will surely have a single CPU alive at this point, so should we call
-this function on policy->cpu directly ?
+Good catch for finding this scenario with llist!
+
+> 
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> ---
+>  fs/f2fs/f2fs.h    |    7 +++----
+>  fs/f2fs/segment.c |   31 +++++++++----------------------
+>  2 files changed, 12 insertions(+), 26 deletions(-)
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index e921242..1dd861c 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -334,16 +334,15 @@ enum {
+>  struct flush_cmd {
+>  	struct flush_cmd *next;
+
+No needed here, we can remove it.
+
+>  	struct completion wait;
+> +	struct llist_node llnode;
+>  	int ret;
+>  };
+> 
+>  struct flush_cmd_control {
+>  	struct task_struct *f2fs_issue_flush;	/* flush thread */
+>  	wait_queue_head_t flush_wait_queue;	/* waiting queue for wake-up */
+> -	struct flush_cmd *issue_list;		/* list for command issue */
+> -	struct flush_cmd *dispatch_list;	/* list for command dispatch */
+> -	spinlock_t issue_lock;			/* for issue list lock */
+> -	struct flush_cmd *issue_tail;		/* list tail of issue list */
+> +	struct llist_head issue_list;		/* list for command issue */
+> +	struct llist_node *dispatch_list;	/* list for command dispatch */
+>  };
+> 
+>  struct f2fs_sm_info {
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 0aa337c..2db1f95 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -205,24 +205,19 @@ repeat:
+>  	if (kthread_should_stop())
+>  		return 0;
+> 
+> -	spin_lock(&fcc->issue_lock);
+> -	if (fcc->issue_list) {
+> -		fcc->dispatch_list = fcc->issue_list;
+> -		fcc->issue_list = fcc->issue_tail = NULL;
+> -	}
+> -	spin_unlock(&fcc->issue_lock);
+> -
+> -	if (fcc->dispatch_list) {
+> +	if (!llist_empty(&fcc->issue_list)) {
+>  		struct bio *bio = bio_alloc(GFP_NOIO, 0);
+> -		struct flush_cmd *cmd, *next;
+> +		struct flush_cmd *cmd;
+>  		int ret;
+> 
+> +		fcc->dispatch_list = llist_del_all(&fcc->issue_list);
+> +		fcc->dispatch_list = llist_reverse_order(fcc->dispatch_list);
+> +
+>  		bio->bi_bdev = sbi->sb->s_bdev;
+>  		ret = submit_bio_wait(WRITE_FLUSH, bio);
+> 
+> -		for (cmd = fcc->dispatch_list; cmd; cmd = next) {
+> +		llist_for_each_entry(cmd, fcc->dispatch_list, llnode) {
+
+Please use llist_for_each_entry_safe, Otherwise we might encounter oops as below:
+
+[18727.381582] Call Trace:
+[18727.381613]  [<c107c0bf>] __wake_up_locked+0x1f/0x30
+[18727.381626]  [<c107c886>] complete+0x36/0x50
+[18727.381645]  [<f0a01313>] issue_flush_thread+0x93/0x140 [f2fs]
+[18727.381658]  [<c107c530>] ? add_wait_queue+0x50/0x50
+[18727.381672]  [<f0a01280>] ? add_sit_entry+0xc0/0xc0 [f2fs]
+[18727.381687]  [<c105fabb>] kthread+0x9b/0xb0
+[18727.381701]  [<c159ad81>] ret_from_kernel_thread+0x21/0x30
+[18727.381714]  [<c105fa20>] ? flush_kthread_worker+0x80/0x80
+
+Thanks,
+Yu
+
+>  			cmd->ret = ret;
+> -			next = cmd->next;
+>  			complete(&cmd->wait);
+>  		}
+>  		bio_put(bio);
+> @@ -230,7 +225,7 @@ repeat:
+>  	}
+> 
+>  	wait_event_interruptible(*q,
+> -			kthread_should_stop() || fcc->issue_list);
+> +		kthread_should_stop() || !llist_empty(&fcc->issue_list));
+>  	goto repeat;
+>  }
+> 
+> @@ -249,17 +244,10 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi)
+>  		return blkdev_issue_flush(sbi->sb->s_bdev, GFP_KERNEL, NULL);
+> 
+>  	init_completion(&cmd.wait);
+> -	cmd.next = NULL;
+> 
+> -	spin_lock(&fcc->issue_lock);
+> -	if (fcc->issue_list)
+> -		fcc->issue_tail->next = &cmd;
+> -	else
+> -		fcc->issue_list = &cmd;
+> -	fcc->issue_tail = &cmd;
+> -	spin_unlock(&fcc->issue_lock);
+> +	llist_add(&cmd.llnode, &fcc->issue_list);
+> 
+> -	if (!fcc->dispatch_list)
+> +	if (fcc->dispatch_list == NULL)
+>  		wake_up(&fcc->flush_wait_queue);
+> 
+>  	wait_for_completion(&cmd.wait);
+> @@ -276,7 +264,6 @@ int create_flush_cmd_control(struct f2fs_sb_info *sbi)
+>  	fcc = kzalloc(sizeof(struct flush_cmd_control), GFP_KERNEL);
+>  	if (!fcc)
+>  		return -ENOMEM;
+> -	spin_lock_init(&fcc->issue_lock);
+>  	init_waitqueue_head(&fcc->flush_wait_queue);
+>  	SM_I(sbi)->cmd_control_info = fcc;
+>  	fcc->f2fs_issue_flush = kthread_run(issue_flush_thread, sbi,
+> --
+> 1.7.7
+> 
+> 
+> ------------------------------------------------------------------------------
+> Slashdot TV.
+> Video for Nerds.  Stuff that matters.
+> http://tv.slashdot.org/
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+
