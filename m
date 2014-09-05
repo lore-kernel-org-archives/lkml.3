@@ -1,155 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaIETZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:25:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33886 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaIETZa (ORCPT
+	id S1752160AbaIETZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:25:42 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55077 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaIETZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:25:30 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 18/18] tty: serial: 8250: omap: add dma support
-Date: Fri,  5 Sep 2014 21:02:53 +0200
-Message-Id: <1409943773-7874-19-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
-References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 5 Sep 2014 15:25:40 -0400
+Date: Fri, 05 Sep 2014 12:25:39 -0700 (PDT)
+Message-Id: <20140905.122539.670916286627732128.davem@davemloft.net>
+To: cwang@twopensource.com
+Cc: hannes@stressinduktion.org, sd@queasysnail.net, tt.rantala@gmail.com,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trinity@vger.kernel.org, davej@redhat.com
+Subject: Re: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for
+ anycast and multicast
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAHA+R7NSu=wjGsmLapjM4Mbk_oeZ07P+yN0b982otvjoW2jodA@mail.gmail.com>
+References: <CAHA+R7M1qd5g1ta=YFqefgXDf1EfF2_VsJGUvH6Dd+ttnHc_VQ@mail.gmail.com>
+	<1409944376.5306.9.camel@localhost>
+	<CAHA+R7NSu=wjGsmLapjM4Mbk_oeZ07P+yN0b982otvjoW2jodA@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Sep 2014 12:25:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the required pieces to 8250-OMAP UART driver for DMA
-support. The TX burst size is set to 1 so we can send an arbitrary
-amount of bytes.
+From: Cong Wang <cwang@twopensource.com>
+Date: Fri, 5 Sep 2014 12:23:37 -0700
 
-The RX burst is currently set to 48 which means we receive an DMA
-interrupt every 48 bytes and have to reprogram everything. Less bytes in
-the RX-FIFO mean that no DMA transfer will happen and the UART will send a
-RX-timeout _or_ RDI event at which point the FIFO will be manually purged.
-There is a workaround for TX-DMA on AM33xx where we put the first byte
-into the FIFO to kick start the DMA process. Haven't seen this problem on
-AM375x (beagle bone) or DRA7xx.
+> On Fri, Sep 5, 2014 at 12:12 PM, Hannes Frederic Sowa
+> <hannes@stressinduktion.org> wrote:
+>>
+>> What games are you playing? You know how patches are processed by David
+>> and I even let him the choice by pointing out a problem in your patch so
+>> that you could an update and send v2.
+> 
+> I assume David goes over all the discussion before applying any patch.
+> So in the original discussion, obviously I disagree with your point on RCU,
+> and sent my own version.
 
-On AM375x there is "Usage Note 2.7: UART: Cannot Acknowledge Idle
-Requests in Smartidle Mode When Configured for DMA Operations" in the
-errata document. This problem persists even after disabling DMA in the
-UART and will be addressed in the HWMOD.
+I thought the retention of RCU locking was reasonable, and that your
+feedback was something I disagreed with.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/tty/serial/8250/8250_omap.c | 49 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
-
-diff --git a/drivers/tty/serial/8250/8250_omap.c b/drivers/tty/serial/8250/8250_omap.c
-index 4128bbc35089..7e98dd413203 100644
---- a/drivers/tty/serial/8250/8250_omap.c
-+++ b/drivers/tty/serial/8250/8250_omap.c
-@@ -360,6 +360,10 @@ static void omap_8250_set_termios(struct uart_port *port,
- 	priv->scr = OMAP_UART_SCR_RX_TRIG_GRANU1_MASK | OMAP_UART_SCR_TX_EMPTY |
- 		OMAP_UART_SCR_TX_TRIG_GRANU1_MASK;
- 
-+	if (up->dma)
-+		priv->scr |= OMAP_UART_SCR_DMAMODE_1 |
-+			OMAP_UART_SCR_DMAMODE_CTL;
-+
- 	priv->xon = termios->c_cc[VSTART];
- 	priv->xoff = termios->c_cc[VSTOP];
- 
-@@ -542,6 +546,11 @@ static int omap_8250_startup(struct uart_port *port)
- 		priv->wer |= OMAP_UART_TX_WAKEUP_EN;
- 	serial_out(up, UART_OMAP_WER, priv->wer);
- 
-+	if (up->dma) {
-+		serial8250_rx_dma(up, 0);
-+		priv->dma_active = true;
-+	}
-+
- 	pm_runtime_mark_last_busy(port->dev);
- 	pm_runtime_put_autosuspend(port->dev);
- 	return 0;
-@@ -560,6 +569,10 @@ static void omap_8250_shutdown(struct uart_port *port)
- 	struct omap8250_priv *priv = port->private_data;
- 
- 	flush_work(&priv->qos_work);
-+	if (up->dma) {
-+		serial8250_rx_dma(up, UART_IIR_RX_TIMEOUT);
-+		priv->dma_active = false;
-+	}
- 
- 	pm_runtime_get_sync(port->dev);
- 
-@@ -607,6 +620,13 @@ static void omap_8250_unthrottle(struct uart_port *port)
- 	pm_runtime_put_autosuspend(port->dev);
- }
- 
-+#ifdef CONFIG_SERIAL_8250_DMA
-+static bool the_no_dma_filter_fn(struct dma_chan *chan, void *param)
-+{
-+	return false;
-+}
-+#endif
-+
- static int omap8250_probe(struct platform_device *pdev)
- {
- 	struct resource *regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -706,6 +726,30 @@ static int omap8250_probe(struct platform_device *pdev)
- 	pm_runtime_get_sync(&pdev->dev);
- 
- 	omap_serial_fill_features_erratas(&up, priv);
-+#ifdef CONFIG_SERIAL_8250_DMA
-+	if (pdev->dev.of_node) {
-+		/*
-+		 * Oh DMA support. If there are no DMA properties in the DT then
-+		 * we will fall back to a generic DMA channel which does not
-+		 * really work here. To ensure that we do not get a generic DMA
-+		 * channel assigned, we have the the_no_dma_filter_fn() here.
-+		 * To avoid "failed to request DMA" messages we check for DMA
-+		 * properties in DT.
-+		 */
-+		ret = of_property_count_strings(pdev->dev.of_node, "dma-names");
-+		if (ret == 2) {
-+			up.dma = &priv->omap8250_dma;
-+			priv->omap8250_dma.fn = the_no_dma_filter_fn;
-+			priv->omap8250_dma.rx_size = RX_TRIGGER;
-+			priv->omap8250_dma.rxconf.src_maxburst = RX_TRIGGER;
-+			priv->omap8250_dma.txconf.dst_maxburst = TX_TRIGGER;
-+
-+			if (of_machine_is_compatible("ti,am33xx"))
-+				up.bugs |= UART_BUG_DMA_TX;
-+			up.bugs |= UART_BUG_DMA_RX;
-+		}
-+	}
-+#endif
- 	ret = serial8250_register_8250_port(&up);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "unable to register 8250 port\n");
-@@ -842,6 +886,8 @@ static int omap8250_runtime_suspend(struct device *dev)
- 	}
- 
- 	omap8250_enable_wakeup(priv, true);
-+	if (priv->dma_active)
-+		serial8250_rx_dma(up, UART_IIR_RX_TIMEOUT);
- 
- 	priv->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
- 	schedule_work(&priv->qos_work);
-@@ -866,6 +912,9 @@ static int omap8250_runtime_resume(struct device *dev)
- 	if (loss_cntx)
- 		omap8250_restore_regs(up);
- 
-+	if (priv->dma_active)
-+		serial8250_rx_dma(up, 0);
-+
- 	priv->latency = priv->calc_latency;
- 	schedule_work(&priv->qos_work);
- 	return 0;
--- 
-2.1.0
-
+This is different from ignoring your feedback.
