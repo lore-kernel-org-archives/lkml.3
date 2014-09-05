@@ -1,166 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaIESsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 14:48:47 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44921 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301AbaIESsp (ORCPT
+	id S1752597AbaIESut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 14:50:49 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59570 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751282AbaIESuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 14:48:45 -0400
-Message-ID: <540A0593.7000108@wwwdotorg.org>
-Date: Fri, 05 Sep 2014 12:48:51 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	Fri, 5 Sep 2014 14:50:46 -0400
+Message-ID: <540A05F7.1070202@hurleysoftware.com>
+Date: Fri, 05 Sep 2014 14:50:31 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, wni@nvidia.com
-Subject: Re: [PATCH v2 1/5] of: Add descriptions of thermtrip properties to
- Tegra PMC bindings
-References: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com> <1407933685-12404-2-git-send-email-mperttunen@nvidia.com> <53F50231.5010605@wwwdotorg.org> <20140821065853.GE4486@ulmo> <53F61275.9020508@wwwdotorg.org> <20140821165357.GC1172@ulmo> <53F6326F.2050600@wwwdotorg.org> <5409875E.2080607@kapsi.fi>
-In-Reply-To: <5409875E.2080607@kapsi.fi>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: paulmck@linux.vnet.ibm.com, Michael Cree <mcree@orcon.net.nz>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com> <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com> <1409824374.4246.62.camel@pasglop> <5408E458.3@zytor.com> <54090AF4.7060406@hurleysoftware.com> <54091B30.2090509@zytor.com> <20140905081648.GB5281@omega> <20140905180950.GU5001@linux.vnet.ibm.com>
+In-Reply-To: <20140905180950.GU5001@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 03:50 AM, Mikko Perttunen wrote:
-> Hi again!
->
-> I have fixed all other issues mentioned apart from this one. I can see
-> three ways ahead:
->
-> 1) Keep things as is. There is a slight possibility that in the future
-> we will have a hardware configuration with multiple bus addresses and
-> this will cause annoyance.
-> 2) Keep things otherwise as is, but read the bus address from the
-> thermtrip node. While at it, just have a reference to the the I2C bus
-> rather than the PMIC in the bindings.
-> 3) Create a new poweroff driver class with two operations: poweroff and
-> get_i2c_command. The AS3722 poweroff "driver" is already separated from
-> the MFD and would be relatively straightforward to port to a new driver
-> subsystem. However, other PMICs we have, such as Palmas, don't do this
-> and would require larger refactoring. TBH, this smells of
-> overengineering to me.
-> 4) Other ideas?
-
-I think the two possible solutions are:
-
-1) Put the following in the thermal node:
-
-* phandle to I2C bus
-* I2C address to write to (together with 7- or 10-bit indicator, if the 
-HW supports that)
-* Device register address to write to (together with byte count 
-indicator if the HW supports that)
-* Device register value (together with byte count indicator if the HW 
-supports that)
-
-This seems simplest; it's a very direct representation of the HW, and 
-requires not extra infra-structure to be written or maintained. The only 
-issue is that it encodes register values in the DT which has previously 
-been frowned upon, and the values duplicate a tiny tiny part of the PMIC 
-driver. Personally, I don't think that's a big deal though.
-
-or:
-
-2) Put the following in the thermal node:
-
-* phandle to I2C device of PMIC
-
-... and have the thermal node's driver call function(s) in the PMIC 
-driver to retrieve all the information I mentioned above.
-
-Any other option has too many holes or special cases that aren't covered.
-
->
-> What is your opinion?
->
-> Cheers,
-> Mikko
->
-> On 08/21/2014 08:54 PM, Stephen Warren wrote:
->> On 08/21/2014 10:53 AM, Thierry Reding wrote:
->>> On Thu, Aug 21, 2014 at 09:38:29AM -0600, Stephen Warren wrote:
->>>> On 08/21/2014 12:58 AM, Thierry Reding wrote:
->>>>> On Wed, Aug 20, 2014 at 02:16:49PM -0600, Stephen Warren wrote:
->>>>>> On 08/13/2014 06:41 AM, Mikko Perttunen wrote:
->>>>>>> Hardware-triggered thermal reset requires configuring the I2C
->>>>>>> reset procedure. This configuration is read from the device tree,
->>>>>>> so document the relevant properties in the binding documentation.
->>>>>>
->>>>>>> diff --git
->>>>>>> a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
->>>>>>> b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
->>
->>>>>>> +- nvidia,pmu : Phandle to power management unit / PMIC handling
->>>>>>> poweroff
->>>>>>> +- nvidia,reg-addr : I2C register address to write poweroff
->>>>>>> command to
->>>>>>> +- nvidia,reg-data : Poweroff command to write to PMU
->>>>>>
->>>>>> Why are both the PMU/PMIC phandle and the register address/data
->>>>>> required? I
->>>>>> thought the purpose of having the phandle was to allow the register
->>>>>> address
->>>>>> and data to be queried from the PMU/PMIC driver.
->>>>>>
->>>>>> To me, it seems much simpler to get rid of the phandle and just
->>>>>> hard-code
->>>>>> the I2C bus number, address, and data into this node, rather than
->>>>>> having to
->>>>>> go query it from the PMU/PMIC driver, then find the I2C controller,
->>>>>> then
->>>>>> query it for its ID (and hope that all HW modules that talk to I2C
->>>>>> controllers directly use the same numbering scheme...)
->>>>>
->>>>> I originally requested this to be changed. It seems wrong to duplicate
->>>>> information about the PMIC in both the PMIC device tree node and the
->>>>> i2c-thermtrip node if we can get the same information from the driver
->>>>> directly (via the phandle). It certainly requires a little more code,
->>>>> but at the advantage of not having to figure out the I2C controller
->>>>> hardware number and I2C slave addresses when writing the i2c-thermtrip
->>>>> node.
->>>>
->>>> I cant see that argument, but surely the PMIC driver can also supply
->>>> the
->>
->> Oops, that was meant to be can not cant.
->>
->>>> "reg-addr" and "reg-data" values too, if it's already being queried
->>>> for the
->>>> I2C device address and bus number? The binding above appears to
->>>> duplicate
->>>> part of the information, while requiring querying of the other part.
+On 09/05/2014 02:09 PM, Paul E. McKenney wrote:
+> On Fri, Sep 05, 2014 at 08:16:48PM +1200, Michael Cree wrote:
+>> On Thu, Sep 04, 2014 at 07:08:48PM -0700, H. Peter Anvin wrote:
+>>> On 09/04/2014 05:59 PM, Peter Hurley wrote:
+>>>> I have no idea how prevalent the ev56 is compared to the ev5.
+>>>> Still we're talking about a chip that came out in 1996.
 >>>
->>> I suppose that could be done. It would take a new function to do that,
->>> though, since I'm not aware of a generic mechanism to query this kind of
->>> information from a PMIC (there's no generic PMIC API, either, so perhaps
->>> it would be a good time to create one?). The I2C controller and I2C
->>> slave are generic I2C properties, whereas the register and data to power
->>> off the device are very device specific.
+>>> Ah yes, I stand corrected.  According to Wikipedia, the affected CPUs
+>>> were all the 2106x CPUs (EV4, EV45, LCA4, LCA45) plus the 21164 with no
+>>> suffix (EV5).  However, we're still talking about museum pieces here.
 >>
->> I don't think it's possible to generically query an I2C device for its
->> address from the struct i2c_device object; the code still needs to call
->> a function in the PMIC driver to obtain this.
+>> Yes, that is correct, EV56 is the first Alpha CPU to have the byte-word
+>> extension (BWX) CPU instructions.
 >>
->> That's because some I2C devices respond to multiple I2C addresses, and
->> there's no guarantee that the one I2C address in the DT (and hence the
->> struct i2c_device) is the address upon which the regulator function
->> exists.
+>> It would not worry me if the kernel decided to assume atomic aligned
+>> scalar accesses for all arches, thus terminating support for Alphas
+>> without BWX.
 >>
->> grep for i2c_new_dummy in drivers/mfd and you'll find quite a few
->> examples. The Atmel MXT touchpad/screen is another example.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+>> The X server, ever since the libpciaccess change, does not work on
+>> Alphas without BWX.
+>>
+>> Debian Alpha (pretty much up to date at Debian-Ports) is still compiled
+>> for all Alphas, i.e., without BWX.  The last attempt to start compiling
+>> Debian Alpha with BWX, about three years ago when Alpha was kicked out
+>> to Debian-Ports resulted in a couple or so complaints so got nowhere.
+>> It's frustrating supporting the lowest common demoninator as many of
+>> the bugs specific to Alpha can be resolved by recompiling with the BWX.
+>> The kernel no longer supporting Alphas without BWX might just be the
+>> incentive we need to switch Debian Alpha to compiling with BWX.
+> 
+> Very good, then I update my patch as follows.  Thoughts?
+> 
+> 							Thanx, Paul
+
+Minor [optional] edits.
+
+Thanks,
+Peter Hurley
+
+> ------------------------------------------------------------------------
+> 
+> documentation: Record limitations of bitfields and small variables
+> 
+> This commit documents the fact that it is not safe to use bitfields as
+> shared variables in synchronization algorithms.  It also documents that
+> CPUs must provide one-byte and two-byte load and store instructions
+                   ^
+                atomic
+> in order to be supported by the Linux kernel.  (Michael Cree
+> has agreed to the resulting non-support of pre-EV56 Alpha CPUs:
+> https://lkml.org/lkml/2014/9/5/143.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> index 87be0a8a78de..455df6b298f7 100644
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -269,6 +269,30 @@ And there are a number of things that _must_ or _must_not_ be assumed:
+>  	STORE *(A + 4) = Y; STORE *A = X;
+>  	STORE {*A, *(A + 4) } = {X, Y};
+>  
+> +And there are anti-guarantees:
+> +
+> + (*) These guarantees do not apply to bitfields, because compilers often
+> +     generate code to modify these using non-atomic read-modify-write
+> +     sequences.  Do not attempt to use bitfields to synchronize parallel
+> +     algorithms.
+> +
+> + (*) Even in cases where bitfields are protected by locks, all fields
+> +     in a given bitfield must be protected by one lock.  If two fields
+> +     in a given bitfield are protected by different locks, the compiler's
+> +     non-atomic read-modify-write sequences can cause an update to one
+> +     field to corrupt the value of an adjacent field.
+> +
+> + (*) These guarantees apply only to properly aligned and sized scalar
+> +     variables.  "Properly sized" currently means variables that are the
+> +     same size as "char", "short", "int" and "long".  "Properly aligned"
+> +     means the natural alignment, thus no constraints for "char",
+> +     two-byte alignment for "short", four-byte alignment for "int",
+> +     and either four-byte or eight-byte alignment for "long", on 32-bit
+> +     and 64-bit systems, respectively.  Note that this means that the
+> +     Linux kernel does not support pre-EV56 Alpha CPUs, because these
+> +     older CPUs do not provide one-byte and two-byte loads and stores.
+                                 ^
+                            non-atomic
+> +     Alpha EV56 and later Alpha CPUs are still supported.
+> +
+>  
+>  =========================
+>  WHAT ARE MEMORY BARRIERS?
+> 
 
