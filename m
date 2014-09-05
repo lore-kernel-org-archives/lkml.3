@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaIERzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:55:16 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:64225 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaIERzO (ORCPT
+	id S1752173AbaIER5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:57:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47479 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaIER5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:55:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Murali Karicheri <m-karicheri2@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] PCI: keystone: update to support multiple pci ports
-Date: Fri, 05 Sep 2014 19:54:58 +0200
-Message-ID: <7260053.FoBVhTXVfj@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1409938782-31460-1-git-send-email-m-karicheri2@ti.com>
-References: <1409938782-31460-1-git-send-email-m-karicheri2@ti.com>
+	Fri, 5 Sep 2014 13:57:30 -0400
+Date: Fri, 5 Sep 2014 12:56:51 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for
+ exynos5420/5800
+Message-ID: <20140905175651.GK24449@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409656338-20337-1-git-send-email-gautam.vivek@samsung.com>
+ <1409656338-20337-5-git-send-email-gautam.vivek@samsung.com>
+ <20140902143438.GB16872@saruman.home>
+ <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
+ <20140903144225.GD31855@saruman.home>
+ <CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:hZPDJP7/wBCDO4cuf5dTFAQiXf/8HkhazyIgRt7oX0G
- CP9QrFcAc8ZAKU1Loh4cElvgrjS8dUdg7VA4cFLwXUIM9+EJH5
- QFev8FgkTThr8qPU2gH9VP69n37j0PhzFND79EE2+117kAabap
- vQdQvuAFU7sPb0t5ggCbZ4wfidSPCakt3FbF7oPU+fZSbqV88e
- 1325IJdOu/KCrRT9/B6WF6TGgIXCSKzL9o79/SW36fYTuKK6ci
- lx+3nwfTJfHBxSmty+UC5cOkuVcdjJW+jy0lJsxFB9n8QCv4Qg
- cLM9fMxHS6Tb0iH9/MJ6MM+WjkJSI3TM2OcxWlBEKCP4Kd9soN
- aGvKAatxaR01Icpz2SY4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PEfPc/DjvCj+JzNg"
+Content-Disposition: inline
+In-Reply-To: <CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 September 2014 13:39:42 Murali Karicheri wrote:
-> +
->         /* enable RC mode in devcfg */
->         val = readl(reg_p);
-> -       val &= ~PCIE_MODE_MASK;
-> -       val |= PCIE_RC_MODE;
-> +       port_id <<= 1;
-> +       val &= ~(PCIE_MODE_MASK << port_id);
-> +       val |= (PCIE_RC_MODE << port_id);
->         writel(val, reg_p);
-> +       devm_iounmap(dev, reg_p);
-> +       devm_release_mem_region(dev, res->start, resource_size(res));
+--PEfPc/DjvCj+JzNg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This looks like it's a shared register of some sort that doesn't
-really belong into the registers of a particular port. Could it
-be that it's actually for the PHY?
+On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
+> > Don't we have phy_power_on()
+> > for that ? It looks like you could just as well do this from
+> > phy_power_on() ?
+>=20
+> No, unfortunately keeping these calibration settings in phy_power_on()
+> doesn't help, since we need to do this after XHCI reset has happened.
 
-	Arnd
+teach xHCI about PHYs ?
+
+--=20
+balbi
+
+--PEfPc/DjvCj+JzNg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUCfljAAoJEIaOsuA1yqREmEYQAICfR5n9uBT/iokNYNyKxgoW
+mX6DTm2pLA/KRBF2n7NzCYpzGmwPZ3sDNAZgQE8Pi8MkGaayTNm0Y8IjYufn/Tt6
+Hj97lCwfoFnCrNPWiSh/PFsFDEstfbynMZHn9Vo0MRu/rL3UUf9iuYlwBbU6Fyxp
+gzc5bN9pwyESIxf90GraZscQcsbnqX8g38s04q/arAyqWozaxVJPjxH5WLd0VR7R
+qFpeSbWs4R429T89nL8qZFri7yasWf9IRMRC+RNRb3k0HK6YLy0zTRqyAgDZtvJ/
+F4WWS4FL1MyGZr155M0tT0JhxZgCfhQ/alUwOMdn42qyHYnVreibHfjZiASl6A7b
+S3p5zTnHkbVi4BBfwOgTHTZA+KbotmWsDcZeOphBbEBdbdrqJkP8t9sM5WAmthan
+nHmwi8InPgFh96/BCVlKu5zCr4XZu9lnVUIBNNCqq4WAoyXJZnXWe2WLBliI2YkF
+1WDi560mToD3JU5jFTUKoB2N8ma0CJAccofgp7CzALsiQW3SyAj4Ubopult5egE0
+1lFoYHEBueXM+GnQ7d2iYTf1405gbxPFbfzwKpw8VPQslgMJrIq22c8eX0DjWd0b
+yBfYOs7HY605iA3vFH+TxgOcLzuDdn65fOW1ZRxQqr50z0sii3bFfiSQ9VZHvdQ5
+51GFCiEgiirjz9BVUgKV
+=0If6
+-----END PGP SIGNATURE-----
+
+--PEfPc/DjvCj+JzNg--
