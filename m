@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933AbaIELM5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 07:12:57 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:47659 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622AbaIELMz (ORCPT
+	id S932087AbaIELWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 07:22:30 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:54489 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478AbaIELW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 07:12:55 -0400
+	Fri, 5 Sep 2014 07:22:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Robert Richter <rric@kernel.org>
+Cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] arm64, thunder: Add initial dts for Cavium Thunder SoC
+Date: Fri, 05 Sep 2014 13:21:48 +0200
+Message-ID: <5017180.kZRPNE71Sv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1409903205-2762-3-git-send-email-rric@kernel.org>
+References: <1409903205-2762-1-git-send-email-rric@kernel.org> <1409903205-2762-3-git-send-email-rric@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1409911856.7832.9.camel@x220>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	<1391971686-9517-10-git-send-email-richard@nod.at>
-	<52F7D480.1050106@hauke-m.de>
-	<52F7DF21.70207@nod.at>
-	<CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
-	<52F8C373.9060108@rempel-privat.de>
-	<CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
-	<CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
-	<CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
-	<CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
-	<20140213201421.GJ22203@tuxdriver.com>
-	<1397581703.8212.5.camel@x220>
-	<CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
-	<1403087119.1984.93.camel@x220>
-	<CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
-	<1403091974.1984.102.camel@x220>
-	<1409911856.7832.9.camel@x220>
-Date: Fri, 5 Sep 2014 15:12:55 +0400
-Message-ID: <CAHNKnsRipRHicKOUW4dCutD1-sUG6qPnP2QuOveH_t1MFX9XgQ@mail.gmail.com>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Bither <jonbither@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
-        open@hauke-m.de, list@hauke-m.de, antonynpavlov@gmail.com,
-        openwrt-devel@lists.openwrt.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:1h2dZ5z6R+ZZxGrcEb2eiqFkeC6dMIoR2gQ702Lwx/N
+ I6wKuT9rhyUNCFJPWbossax9iSv0oSs6CQhIjwFyOxqmXZvGpj
+ YV5fcF0hlbR9eKZOeS2jiN0Jy77rL2EftsKYwAzu2Cho3FbOJC
+ Jd05g3jX4LTCy6saoLaiCXKuEmy+oQc5oO//Kb7GfCKUoZTpP5
+ yKRX9aPUUrO1CRMNQKvZDGMUVx6jRB5BGwnvTJcfQMC09dAxGy
+ HWCXl7fxlhk8k2rKmq2jykN3UuBx+KK0TxCYiLaA/3mb7/7JVz
+ l8Pn23kU7YNdtU/q1yGXe7TI+Q3j60AKYWpbuoaaRI6p1vMYyj
+ OC0/3+Xy4k4dgMmX1aRc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Paul,
+On Friday 05 September 2014 09:46:43 Robert Richter wrote:
+> diff --git a/arch/arm64/boot/dts/thunder-88xx.dts b/arch/arm64/boot/dts/thunder-88xx.dts
+> new file mode 100644
+> index 000000000000..4cc1d059d2d9
+> --- /dev/null
+> +++ b/arch/arm64/boot/dts/thunder-88xx.dts
 
-2014-09-05 14:10 GMT+04:00, Paul Bolle <pebolle@tiscali.nl>:
-> Jiri, Nick, Luis, John,
->
-> On Wed, 2014-06-18 at 13:46 +0200, Paul Bolle wrote:
->> Having this conversation every rc1 is getting a bit silly. Could Jiri
->> e.a. perhaps set some specific deadline for ATHEROS_AR231X to be
->> submitted?
->
-> I waited until rc3. Have you seen any activity on this front? If not,
-> should I resend the patch that removes the code in mainline that depends
-> on ATHEROS_AR231X (ie, AHB bus support)?
->
-Recent activity always could be found in [1]. Now I finish another one
-round of cleanups and have a plan to fix several things (you can
-always find something that you really want to improve). But if you
-insist I could immediately switch to "send upstream" mode. And seems
-that this would be better approach.
+Most people end up having a soc.dtsi file and a board.dsi file including
+the former and adding the machine-specific properties.
 
-1. https://dev.openwrt.org/log/trunk/target/linux/atheros
+It is likely that you will end up needing the same, so you might want to
+start that way.
 
--- 
-BR,
-Sergey
+> +/ {
+> +	model = "Cavium ThunderX CN88XX Family";
+> +	compatible = "cavium,thunder-88xx";
+
+As mentioned by Mark already, you should not include 'xx' in the
+compatible string, but instead use the real soc ID.
+
+Normally, each SoC has some slight differences anyway, so you would
+override these in the specialized dtsi file.
+
+The "model" property should go into the board specific file.
+
+> +	interrupt-parent = <&gic0>;
+> +	#address-cells = <2>;
+> +	#size-cells = <2>;
+> +
+> +	aliases {
+> +		serial0 = &uaa0;
+> +		serial1 = &uaa1;
+> +	};
+> +
+> +	psci {
+> +		compatible = "arm,psci-0.2";
+> +		method = "smc";
+> +	};
+
+The aliases node should go into the board file as well, since it's
+possible that e.g. the first uart is not connected and you need
+something like
+
+	aliases {
+		serial0 = &uaa1;
+	};
+
+The psci node (according to a discussion we just had for the freescale
+dts files) should ideally get filled out by the boot loader that
+implements the psci code, to ensure the version matches.
+
+> +
+> +	memory@00000000 {
+> +		device_type = "memory";
+> +		reg = <0x0 0x00000000 0x0 0x80000000>;
+> +	};
+
+memory should also go into the board specific file, or get filled by
+the boot loader if it is detected at boot time and user serviceable.
+
+I assume that your machines have NUMA properties, in that case it
+makes sense to split up the memory device nodes by topology. I think
+there are some standard properties to describe the topology further,
+but I don't remember how it's done at the moment.
+
+> +	soc {
+> +		compatible = "simple-bus";
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		ranges;
+> +
+> +		refclk50mhz: refclk50mhz {
+> +			compatible = "fixed-clock";
+> +			#clock-cells = <0>;
+> +			clock-frequency = <50000000>;
+> +			clock-output-names = "refclk50mhz";
+> +		};
+
+If the reference clock is generated outside of the SoC, I would put the device
+node for it on the top level.
+
+	Arnd
