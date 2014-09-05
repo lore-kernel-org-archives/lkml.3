@@ -1,159 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaIEWQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:16:21 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:57769 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428AbaIEWQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:16:19 -0400
-Date: Fri, 5 Sep 2014 23:16:16 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>,
-        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
-Message-ID: <20140905221616.GP3001@console-pimps.org>
-References: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
- <20140904100137.GK3001@console-pimps.org>
- <5408D299.5000300@zytor.com>
+	id S1753655AbaIEWRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:17:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54972 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751508AbaIEWRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 18:17:18 -0400
+Date: Sat, 6 Sep 2014 06:16:57 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Deutschmann <whissi@whissi.de>,
+        Dave Young <dyoung@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>
+Subject: Re: [PATCH 2/4] kaslr: check if the random addr is available
+Message-ID: <20140905221657.GA1675@dhcp-17-102.nay.redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+ <1409926097-2101-3-git-send-email-bhe@redhat.com>
+ <CAGXu5jJXvR9c3OvkX-gBMjhJEwXh5-wBdT+jjMwBFXDs8_-40Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5408D299.5000300@zytor.com>
+In-Reply-To: <CAGXu5jJXvR9c3OvkX-gBMjhJEwXh5-wBdT+jjMwBFXDs8_-40Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Sep, at 01:59:05PM, H. Peter Anvin wrote:
+On 09/05/14 at 10:16am, Kees Cook wrote:
+> On Fri, Sep 5, 2014 at 7:08 AM, Baoquan He <bhe@redhat.com> wrote:
+> > diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> > index 7780a5b..d2a0eaa 100644
+> > --- a/arch/x86/boot/compressed/misc.c
+> > +++ b/arch/x86/boot/compressed/misc.c
+> > @@ -250,6 +250,11 @@ static void handle_relocations(void *output, unsigned long output_len)
+> >         }
+> >  #endif
+> >
+> > +       if (max_addr > CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
+> > +                debug_putstr("Random addr is not allowed. No relocation needed... \n");
+> > +                return;
+> > +        }
+> > +
 > 
-> I am fine with this patch, but at the same time I do want to note that
-> there is an alternative to double-buffer the patch and/or (if that
-> applies to the buggy BIOS) round up the size of the target buffer.
+> It's not clear to me what this is fixing. In aslr.c,
+> process_e820_entry() should already make it impossible to select
+> max_addr > CONFIG_RANDOMIZE_BASE_MAX_OFFSET. If you're trying to
+> detect a non-kaslr boot, I think this is better handled in 1/4 where I
+> suggest examining the "output" location before/after
+> choose_kernel_location.
+> 
+> -Kees
 
-I took a whack at the double-buffer strategy, and I think the patch is
-conceptually pretty straight forward.
+Hi Kees,
 
-Could someone try out the following patch? It works around the problem
-on my ASUS machine.
+Yes, process_e820_entry() can make sure the choice+output_len <
+CONFIG_RANDOMIZE_BASE_MAX_OFFSET, but that can't stop other bootloaders
+to put kernel in region above CONFIG_RANDOMIZE_BASE_MAX_OFFSET.
 
----
+E.g in kdump, we can set crashkernel=256M@1024M in cmdline. Then the 1st
+kernel will reserve 256M memory just at 1024M place. So if load kdump
+kernel now, the output will be 1024M before choose_kernel_location().
+With this value, output won't be changed in choose_kernel_location(),
+then it will do decompress(), then call handle_relocations(). Then since
+1024 is not equal to LOAD_PHYSICAL_ADDR, it will start relocatoins
+handling. And this cause _text stamping into MODULES vaddr range. System
+will be exceptional.
 
->From 89e7fdaeb04f79d9834678e486215974986d4ac8 Mon Sep 17 00:00:00 2001
-From: Matt Fleming <matt.fleming@intel.com>
-Date: Fri, 5 Sep 2014 23:15:11 +0100
-Subject: [PATCH] x86/efi: Workaround firmware bug with double-buffer read
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
-loaded above 4G"), the kernel freezes at the earliest possible moment
-when trying to boot via UEFI on Asus laptop.
-
-The cause of the freeze appears to be a firmware bug when reading file
-data into buffers above 4GB, though the exact reason is unknown.  Mantas
-reports that the hang can be avoided if the file size is a multiple of
-512 bytes, but I've seen some ASUS firmware simply corrupting the file
-data rather than freezing.
-
-Since the bug has only been reported when reading into a buffer above
-4GB, we can workaround the problem by doing a double-buffer read, where
-we read a partial file chunk into a buffer < 4GB then copy it to the
-buffer (potentially) above 4GB.
-
-Laszlo fixed an issue in the upstream EDK2 DiskIO code in Aug 2013 which
-may possibly be related, commit 4e39b75e ("MdeModulePkg/DiskIoDxe: fix
-source/destination pointer of overrun transfer"). Whatever the cause,
-it's unlikely that a fix will be forthcoming from the vendor, hence the
-workaround.
-
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Laszlo Ersek <lersek@redhat.com>
-Reported-by: Mantas Mikulėnas <grawity@gmail.com>
-Reported-by: Harald Hoyer <harald@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- drivers/firmware/efi/libstub/efi-stub-helper.c | 28 ++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/firmware/efi/libstub/efi-stub-helper.c b/drivers/firmware/efi/libstub/efi-stub-helper.c
-index 32d5cca30f49..470793ce2617 100644
---- a/drivers/firmware/efi/libstub/efi-stub-helper.c
-+++ b/drivers/firmware/efi/libstub/efi-stub-helper.c
-@@ -297,6 +297,7 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- {
- 	struct file_info *files;
- 	unsigned long file_addr;
-+	unsigned long chunkbuf;
- 	u64 file_size_total;
- 	efi_file_handle_t *fh = NULL;
- 	efi_status_t status;
-@@ -416,6 +417,24 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 			goto free_file_total;
- 		}
- 
-+		/*
-+		 * Allocate a bounce buffer below 4GB.
-+		 *
-+		 * Some firmware implementations cannot perform file
-+		 * reads into buffers above 4G and at best corrupt the
-+		 * buffer, at worst they hang completely.
-+		 *
-+		 * Pass chunkbuf to the firmware to perform reads in
-+		 * chunksize bytes and copy them to the target buffer
-+		 * 'file_addr'.
-+		 */
-+		status = efi_high_alloc(sys_table_arg, EFI_READ_CHUNK_SIZE,
-+					0x1000, &chunkbuf, 0xffffffff);
-+		if (status != EFI_SUCCESS) {
-+			pr_efi_err(sys_table_arg, "Failed to alloc file chunk buffer\n");
-+			goto free_chunk;
-+		}
-+
- 		addr = file_addr;
- 		for (j = 0; j < nr_files; j++) {
- 			unsigned long size;
-@@ -430,11 +449,13 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 
- 				status = efi_file_read(files[j].handle,
- 						       &chunksize,
--						       (void *)addr);
-+						       (void *)chunkbuf);
- 				if (status != EFI_SUCCESS) {
- 					pr_efi_err(sys_table_arg, "Failed to read file\n");
--					goto free_file_total;
-+					goto free_chunk;
- 				}
-+
-+				memcpy((void *)addr, (void *)chunkbuf, chunksize);
- 				addr += chunksize;
- 				size -= chunksize;
- 			}
-@@ -442,6 +463,7 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 			efi_file_close(files[j].handle);
- 		}
- 
-+		efi_free(sys_table_arg, EFI_READ_CHUNK_SIZE, chunkbuf);
- 	}
- 
- 	efi_call_early(free_pool, files);
-@@ -451,6 +473,8 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 
- 	return status;
- 
-+free_chunk:
-+	efi_free(sys_table_arg, EFI_READ_CHUNK_SIZE, chunkbuf);
- free_file_total:
- 	efi_free(sys_table_arg, file_size_total, file_addr);
- 
--- 
-1.9.3
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Thanks
+Baoquan
+> 
+> >         /*
+> >          * Calculate the delta between where vmlinux was linked to load
+> >          * and where it was actually loaded.
+> > --
+> > 1.8.5.3
+> >
+> 
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
