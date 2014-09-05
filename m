@@ -1,94 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaIECdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 22:33:42 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38984 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577AbaIECdk (ORCPT
+	id S1755932AbaIECex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 22:34:53 -0400
+Received: from ozlabs.org ([103.22.144.67]:41603 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755867AbaIECev convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 22:33:40 -0400
-Message-ID: <540920DB.9000200@oracle.com>
-Date: Fri, 05 Sep 2014 10:32:59 +0800
-From: Junxiao Bi <junxiao.bi@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 4 Sep 2014 22:34:51 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Rustad\, Mark D" <mark.d.rustad@intel.com>
+Cc: "Kirsher\, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] moduleparam: Resolve missing-field-initializer warning
+In-Reply-To: <F8A4F5BF-C490-4099-9360-0C771451FF1D@intel.com>
+References: <1409317709-5005-1-git-send-email-jeffrey.t.kirsher@intel.com> <87ha0skvrj.fsf@rustcorp.com.au> <F8A4F5BF-C490-4099-9360-0C771451FF1D@intel.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 05 Sep 2014 11:22:57 +0930
+Message-ID: <87ppfakf46.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: akpm@linux-foundation.org, xuejiufei@huawei.com, ming.lei@canonical.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-References: <1409723694-16047-1-git-send-email-junxiao.bi@oracle.com> <20140904092329.GN20473@dastard>
-In-Reply-To: <20140904092329.GN20473@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 05:23 PM, Dave Chinner wrote:
-> On Wed, Sep 03, 2014 at 01:54:54PM +0800, Junxiao Bi wrote:
->> commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
->> introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
->> when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
->> run into I/O, like in superblock shrinker.
->>
->> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
->> Cc: joyce.xue <xuejiufei@huawei.com>
->> Cc: Ming Lei <ming.lei@canonical.com>
->> ---
->>  include/linux/sched.h |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/sched.h b/include/linux/sched.h
->> index 5c2c885..2fb2c47 100644
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -1936,11 +1936,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
->>  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
->>  #define used_math() tsk_used_math(current)
->>  
->> -/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
->> +/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
->> + * __GFP_FS is also cleared as it implies __GFP_IO.
->> + */
->>  static inline gfp_t memalloc_noio_flags(gfp_t flags)
->>  {
->>  	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
->> -		flags &= ~__GFP_IO;
->> +		flags &= ~(__GFP_IO | __GFP_FS);
->>  	return flags;
->>  }
-> 
-> You also need to mask all the shrink_control->gfp_mask
-> initialisations in mm/vmscan.c. The current code only masks the page
-> reclaim gfp_mask, not those that are passed to the shrinkers.
-Yes, there are some shrink_control->gfp_mask not masked in vmscan.c in
-the following functions. Beside this, all seemed be masked from direct
-reclaim path by memalloc_noio_flags().
+"Rustad, Mark D" <mark.d.rustad@intel.com> writes:
+> On Aug 31, 2014, at 5:52 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+>> Jeff Kirsher <jeffrey.t.kirsher@intel.com> writes:
+>>> From: Mark Rustad <mark.d.rustad@intel.com>
+>>> 
+>>> Resolve a missing-field-initializer warning, that is produced
+>>> by every reference to module_param_call, by using designated
+>>> initialization for the first field. That is enough to silence
+>>> the complaint.
+>>> 
+>>> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+>>> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>>> ---
+>>> include/linux/moduleparam.h | 2 +-
+>>> 1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> Strange, I haven't seen this warning.  Compiler version?  And it's good
+>> to quote the error message, so people can google it.
+>
+> The message is only seen when doing a W=2 build. I happened to be using gcc 4.8.3, but I think most versions would produce the warning when it is enabled. It can either be silenced by using even a single designated initializer as I did here, or providing values for all of the fields. Because of the number of references to the macro, this change silences many warnings in W=2 builds.
+>
+> One instance of the full warning message looks like this:
+>
+> /home/share/git/nn-mdr/include/linux/moduleparam.h:198:16: warning: missing initializer for field ‘free’ of ‘struct kernel_param_ops’ [-Wmissing-field-initializers]
+>   static struct kernel_param_ops __param_ops_##name =  \
+>                 ^
+> /home/share/git/nn-mdr/fs/fuse/inode.c:35:1: note: in expansion of macro ‘module_param_call’
+>  module_param_call(max_user_bgreq, set_global_limit, param_get_uint,
+>  ^
+> /home/share/git/nn-mdr/include/linux/moduleparam.h:56:9: note: ‘free’ declared here
+>   void (*free)(void *arg);
 
--reclaim_clean_pages_from_list()
-used by alloc_contig_range(), this function is invoked in hugetlb and
-cma, for hugetlb, it should be safe as only userspace use it. I am not
-sure about the cma.
-David & Andrew, may you share your idea about whether cma is affected?
+OK, I pasted this into your commit message, and applied it.  See below.
 
--mem_cgroup_shrink_node_zone()
--try_to_free_mem_cgroup_pages()
-These two are used by mem cgroup, as no kernel thread can be assigned
-into such cgroup, so i think, no need mask.
+Thanks!
+Rusty.
 
--balance_pgdat()
-used by kswapd, no need mask.
+From: Mark Rustad <mark.d.rustad@intel.com>
+Subject: moduleparam: Resolve missing-field-initializer warning
 
--shrink_all_memory()
-used by hibernate, should be safe with GFP_FS/IO.
+Resolve a missing-field-initializer warning, that is produced
+by every reference to module_param_call, by using designated
+initialization for the first field. That is enough to silence
+the complaint.
 
-Thanks,
-Junxiao.
-> 
-> Cheers,
-> 
-> Dave.
-> 
+The message is only seen when doing a W=2 build. I happened to be using gcc
+4.8.3, but I think most versions would produce the warning when it is
+enabled. It can either be silenced by using even a single designated
+initializer as I did here, or providing values for all of the fields. Because
+of the number of references to the macro, this change silences many warnings
+in W=2 builds.
 
+One instance of the full warning message looks like this:
+
+/home/share/git/nn-mdr/include/linux/moduleparam.h:198:16: warning: missing
+initializer for field ‘free’ of ‘struct kernel_param_ops’
+[-Wmissing-field-initializers]
+  static struct kernel_param_ops __param_ops_##name =  \
+		  ^
+/home/share/git/nn-mdr/fs/fuse/inode.c:35:1: note: in expansion of macro
+‘module_param_call’
+ module_param_call(max_user_bgreq, set_global_limit, param_get_uint,
+ ^
+/home/share/git/nn-mdr/include/linux/moduleparam.h:56:9: note: ‘free’
+declared here
+  void (*free)(void *arg);
+
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ include/linux/moduleparam.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index 593501996574..b43f4752304e 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -224,7 +224,7 @@ struct kparam_array
+ /* Obsolete - use module_param_cb() */
+ #define module_param_call(name, set, get, arg, perm)			\
+ 	static struct kernel_param_ops __param_ops_##name =		\
+-		{ 0, (void *)set, (void *)get };			\
++		{ .flags = 0, (void *)set, (void *)get };		\
+ 	__module_param_call(MODULE_PARAM_PREFIX,			\
+ 			    name, &__param_ops_##name, arg,		\
+ 			    (perm) + sizeof(__check_old_set_param(set))*0, -1, 0)
