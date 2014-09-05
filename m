@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536AbaIES6f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 14:58:35 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:59835 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaIES6d (ORCPT
+	id S1751866AbaIES7d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 14:59:33 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:49628 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaIES7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 14:58:33 -0400
+	Fri, 5 Sep 2014 14:59:32 -0400
+Date: Fri, 5 Sep 2014 11:59:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Steven Honeyman <stevenhoneyman@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i8k: Add support for Dell Latitude E6540
+Message-ID: <20140905185926.GA26476@roeck-us.net>
+References: <1409936622-5241-1-git-send-email-stevenhoneyman@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140905.115305.809714259412705649.davem@davemloft.net>
-References: <20140901210520.GB25543@kria>
-	<1409610378.21965.52.camel@localhost>
-	<20140902082929.GA8483@kria>
-	<20140905.115305.809714259412705649.davem@davemloft.net>
-Date: Fri, 5 Sep 2014 11:58:31 -0700
-Message-ID: <CAHA+R7M1qd5g1ta=YFqefgXDf1EfF2_VsJGUvH6Dd+ttnHc_VQ@mail.gmail.com>
-Subject: Re: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for anycast
- and multicast
-From: Cong Wang <cwang@twopensource.com>
-To: David Miller <davem@davemloft.net>
-Cc: Sabrina Dubroca <sd@queasysnail.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        trinity@vger.kernel.org, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409936622-5241-1-git-send-email-stevenhoneyman@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 11:53 AM, David Miller <davem@davemloft.net> wrote:
-> From: Sabrina Dubroca <sd@queasysnail.net>
-> Date: Tue, 2 Sep 2014 10:29:29 +0200
->
->> Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
->> triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
->>
->> ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
->> take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
->> ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
->> calling ipv6_dev_mc_inc/dec.
->>
->> This patch moves ASSERT_RTNL() up a level in the call stack.
->>
->> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
->> Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
->> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
->
-> Applied and queued up for -stable, thanks.
+On Fri, Sep 05, 2014 at 06:03:42PM +0100, Steven Honeyman wrote:
+> Add support for the Dell Latitude E6540 which needs a different fan speed multiplier.
+> 
+> Signed-off-by: Steven Honeyman <stevenhoneyman@gmail.com>
 
-I believe you applied a wrong version, at least the following
-is not correct:
+Looks good.
 
-+       if (!dev)
-+               return -ENODEV;
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Sabrina took that from my draft patch, but they all don't
-realize this is wrong.
+Greg / Arnd, can you pick this up directly, or should I send
+a pull request ?
 
-(I did provide a correct version which is just ignored by you.)
+Thanks,
+Guenter
