@@ -1,155 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaIETFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:05:18 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:42094 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407AbaIETFN (ORCPT
+	id S1754329AbaIETFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:05:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33620 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaIETDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:05:13 -0400
-Date: Fri, 5 Sep 2014 12:05:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Michael Cree <mcree@orcon.net.nz>, "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140905190506.GV5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <54079B70.4050200@hurleysoftware.com>
- <1409785893.30640.118.camel@pasglop>
- <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
- <1409824374.4246.62.camel@pasglop>
- <5408E458.3@zytor.com>
- <54090AF4.7060406@hurleysoftware.com>
- <54091B30.2090509@zytor.com>
- <20140905081648.GB5281@omega>
- <20140905180950.GU5001@linux.vnet.ibm.com>
- <540A05F7.1070202@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540A05F7.1070202@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090519-8236-0000-0000-0000052B48D2
+	Fri, 5 Sep 2014 15:03:12 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 05/18] tty: serial: 8250_core: read only RX if there is something in the FIFO
+Date: Fri,  5 Sep 2014 21:02:40 +0200
+Message-Id: <1409943773-7874-6-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 02:50:31PM -0400, Peter Hurley wrote:
-> On 09/05/2014 02:09 PM, Paul E. McKenney wrote:
-> > On Fri, Sep 05, 2014 at 08:16:48PM +1200, Michael Cree wrote:
-> >> On Thu, Sep 04, 2014 at 07:08:48PM -0700, H. Peter Anvin wrote:
-> >>> On 09/04/2014 05:59 PM, Peter Hurley wrote:
-> >>>> I have no idea how prevalent the ev56 is compared to the ev5.
-> >>>> Still we're talking about a chip that came out in 1996.
-> >>>
-> >>> Ah yes, I stand corrected.  According to Wikipedia, the affected CPUs
-> >>> were all the 2106x CPUs (EV4, EV45, LCA4, LCA45) plus the 21164 with no
-> >>> suffix (EV5).  However, we're still talking about museum pieces here.
-> >>
-> >> Yes, that is correct, EV56 is the first Alpha CPU to have the byte-word
-> >> extension (BWX) CPU instructions.
-> >>
-> >> It would not worry me if the kernel decided to assume atomic aligned
-> >> scalar accesses for all arches, thus terminating support for Alphas
-> >> without BWX.
-> >>
-> >> The X server, ever since the libpciaccess change, does not work on
-> >> Alphas without BWX.
-> >>
-> >> Debian Alpha (pretty much up to date at Debian-Ports) is still compiled
-> >> for all Alphas, i.e., without BWX.  The last attempt to start compiling
-> >> Debian Alpha with BWX, about three years ago when Alpha was kicked out
-> >> to Debian-Ports resulted in a couple or so complaints so got nowhere.
-> >> It's frustrating supporting the lowest common demoninator as many of
-> >> the bugs specific to Alpha can be resolved by recompiling with the BWX.
-> >> The kernel no longer supporting Alphas without BWX might just be the
-> >> incentive we need to switch Debian Alpha to compiling with BWX.
-> > 
-> > Very good, then I update my patch as follows.  Thoughts?
-> > 
-> > 							Thanx, Paul
-> 
-> Minor [optional] edits.
-> 
-> Thanks,
-> Peter Hurley
-> 
-> > ------------------------------------------------------------------------
-> > 
-> > documentation: Record limitations of bitfields and small variables
-> > 
-> > This commit documents the fact that it is not safe to use bitfields as
-> > shared variables in synchronization algorithms.  It also documents that
-> > CPUs must provide one-byte and two-byte load and store instructions
->                    ^
->                 atomic
+The serial8250_do_startup() function unconditionally clears the
+interrupts and for that it reads from the RX-FIFO without checking if
+there is a byte in the FIFO or not. This works fine on OMAP4+ HW like
+AM335x or DRA7.
+OMAP3630 ES1.1 (which means probably all OMAP3 and earlier) does not like
+this:
 
-Here you meant non-atomic?  My guess is that you are referring to the
-fact that you could emulate a one-byte store on pre-EV56 Alpha CPUs
-using the ll and sc atomic-read-modify-write instructions, correct?
+|Unhandled fault: external abort on non-linefetch (0x1028) at 0xfb020000
+|Internal error: : 1028 [#1] ARM
+|Modules linked in:
+|CPU: 0 PID: 1 Comm: swapper Not tainted 3.16.0-00022-g7edcb57-dirty #1213
+|task: de0572c0 ti: de058000 task.ti: de058000
+|PC is at mem32_serial_in+0xc/0x1c
+|LR is at serial8250_do_startup+0x220/0x85c
+|Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+|Control: 10c5387d  Table: 80004019  DAC: 00000015
+|[<c03051d4>] (mem32_serial_in) from [<c0307fe8>] (serial8250_do_startup+0x220/0x85c)
+|[<c0307fe8>] (serial8250_do_startup) from [<c0309e00>] (omap_8250_startup+0x5c/0xe0)
+|[<c0309e00>] (omap_8250_startup) from [<c030863c>] (serial8250_startup+0x18/0x2c)
+|[<c030863c>] (serial8250_startup) from [<c030394c>] (uart_startup+0x78/0x1d8)
+|[<c030394c>] (uart_startup) from [<c0304678>] (uart_open+0xe8/0x114)
+|[<c0304678>] (uart_open) from [<c02e9e10>] (tty_open+0x1a8/0x5a4)
 
-> > in order to be supported by the Linux kernel.  (Michael Cree
-> > has agreed to the resulting non-support of pre-EV56 Alpha CPUs:
-> > https://lkml.org/lkml/2014/9/5/143.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> > index 87be0a8a78de..455df6b298f7 100644
-> > --- a/Documentation/memory-barriers.txt
-> > +++ b/Documentation/memory-barriers.txt
-> > @@ -269,6 +269,30 @@ And there are a number of things that _must_ or _must_not_ be assumed:
-> >  	STORE *(A + 4) = Y; STORE *A = X;
-> >  	STORE {*A, *(A + 4) } = {X, Y};
-> >  
-> > +And there are anti-guarantees:
-> > +
-> > + (*) These guarantees do not apply to bitfields, because compilers often
-> > +     generate code to modify these using non-atomic read-modify-write
-> > +     sequences.  Do not attempt to use bitfields to synchronize parallel
-> > +     algorithms.
-> > +
-> > + (*) Even in cases where bitfields are protected by locks, all fields
-> > +     in a given bitfield must be protected by one lock.  If two fields
-> > +     in a given bitfield are protected by different locks, the compiler's
-> > +     non-atomic read-modify-write sequences can cause an update to one
-> > +     field to corrupt the value of an adjacent field.
-> > +
-> > + (*) These guarantees apply only to properly aligned and sized scalar
-> > +     variables.  "Properly sized" currently means variables that are the
-> > +     same size as "char", "short", "int" and "long".  "Properly aligned"
-> > +     means the natural alignment, thus no constraints for "char",
-> > +     two-byte alignment for "short", four-byte alignment for "int",
-> > +     and either four-byte or eight-byte alignment for "long", on 32-bit
-> > +     and 64-bit systems, respectively.  Note that this means that the
-> > +     Linux kernel does not support pre-EV56 Alpha CPUs, because these
-> > +     older CPUs do not provide one-byte and two-byte loads and stores.
->                                  ^
->                             non-atomic
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/serial/8250/8250_core.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-I took this, thank you!
-
-							Thanx, Paul
-
-> > +     Alpha EV56 and later Alpha CPUs are still supported.
-> > +
-> >  
-> >  =========================
-> >  WHAT ARE MEMORY BARRIERS?
-> > 
-> 
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index f9dd20ebab52..eaab8974a456 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2086,8 +2086,8 @@ int serial8250_do_startup(struct uart_port *port)
+ 	/*
+ 	 * Clear the interrupt registers.
+ 	 */
+-	serial_port_in(port, UART_LSR);
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial_port_in(port, UART_IIR);
+ 	serial_port_in(port, UART_MSR);
+ 
+@@ -2248,8 +2248,8 @@ int serial8250_do_startup(struct uart_port *port)
+ 	 * saved flags to avoid getting false values from polling
+ 	 * routines or the previous session.
+ 	 */
+-	serial_port_in(port, UART_LSR);
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial_port_in(port, UART_IIR);
+ 	serial_port_in(port, UART_MSR);
+ 	up->lsr_saved_flags = 0;
+@@ -2342,7 +2342,8 @@ void serial8250_do_shutdown(struct uart_port *port)
+ 	 * Read data port to reset things, and then unlink from
+ 	 * the IRQ chain.
+ 	 */
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial8250_rpm_put(up);
+ 
+ 	del_timer_sync(&up->timer);
+-- 
+2.1.0
 
