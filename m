@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220AbaIEQ0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:26:31 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:58401 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaIEQ03 (ORCPT
+	id S1751519AbaIEQ1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:27:24 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:33030 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaIEQ1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:26:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Robert Richter <rric@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        Olof Johansson <olof@lixom.net>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-Subject: Re: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
-Date: Fri, 05 Sep 2014 18:25:35 +0200
-Message-ID: <2952834.1P42roDKD9@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140905142245.GG20164@leverpostej>
-References: <1409903205-2762-1-git-send-email-rric@kernel.org> <7863371.EMkUuntQWU@wuerfel> <20140905142245.GG20164@leverpostej>
+	Fri, 5 Sep 2014 12:27:23 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:eAfxoXawJooWUFiqSRYp7hCztEFVCe23J4csNaYjMCa
- bhBny7xcWuZ7ZI3fqmW11EL6z8XlQkYqG+AHlsBTrPZPiAEQ/v
- Rcqr9R3PK7rW61cIgYvG1p0PMt1pwwS7FCz5sRPrY5I//xrNZC
- 1cXWsufp1b+QCKeOMHUZYxuknqOs+GGq2n1cMT9d/EDL9Ao3fA
- CJ2thaDrZAxjzmcbPGfMNnGCj/nPeIsEAt6wvejSP4BrYZpc2U
- KFNCCZnT0M9e+mYHMPv5XE/JT5QN8BmufLD3ZJQLMaetH0bTfu
- 3QeZLzAeaS5u6QlEEoK+tz9hR0t/w9qJJkqEAe1OOc8MYZ7t+2
- 0vIasfSg+RDmMHz3ufPQ=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20140905154829.GA22956@infradead.org>
+References: <CANP1eJGE=vQBdLnMBFPcTWrvh+dUA-UCK=ugO-tc2KN4LWLPSA@mail.gmail.com>
+	<20140905110927.GI17501@suse.de>
+	<20140905154829.GA22956@infradead.org>
+Date: Fri, 5 Sep 2014 12:27:21 -0400
+Message-ID: <CANP1eJEdH8Hk-i348N3YQ4FUoSGb-2Tp9g9ZJxnKO1zZskTKjg@mail.gmail.com>
+Subject: Re: read()/readv() only from page cache
+From: Milosz Tanski <milosz@adfin.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        linux-aio@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 September 2014 15:22:46 Mark Rutland wrote:
-> 
-> > A common pattern these days is to do dependencies like
-> > 
-> > arch/*/Kconfig:
-> >       config ARCH_FOO
-> >       bool "Enable support for Foo platform"
-> >       help
-> >         ...
-> > 
-> > 
-> > drivers/*/Kconfig
-> >       config SUBSYS_FOO
-> >       bool "SUBSYS driver for Foo"
-> >       depends on ARCH_FOO || COMPILE_TEST
-> >       depends on OF && REGULATOR && GENERIC_PHY # or whatever
-> 
-> Russell's comments w.r.t. Kconfig warnings when config names change
-> still holds regardless of select vs depends on.
+I would prefer a interface more like recv() where I can specify the
+flag if I want blocking behavior for this read or not. Let me explain
+why:
 
-Yes, that's what I wrote in my reply as well.
+In a VLDB like workload this would enable me to lower the latency of
+common fast requests and. By fast requests I mean ones that do not
+require much data, the data is cached, or there's a predictable read
+pattern (read-ahead). Obviously it would be at the expense of the
+latency of large/slow requests (they have to make 2 read calls, the
+first one always EWOULDBLOCK) ... but in that case it doesn't matter
+since the time to do actual IO would trump any kind of extra latency.
 
-> > That way we can enable everything in the defconfig, but someone
-> > who likes to build a more specialized kernel can disable the
-> > other platforms and won't get the drivers that are specific to
-> > those.
-> > 
-> > I personally think this is a bit more verbose than what we need, but
-> > I don't strongly object doing it that way.
-> 
-> You'd still be able to do this without ARCH_FOO, though you would need
-> to know which drivers are necessary for a particular SoC. That seems to
-> be the way things are handled on x86; I don't recall having to select
-> support for specific machines there, just the individual drivers.
+Essentially, it's using the kernel facilities (page cache) to help me
+perform better (in a more predictable fashion). I would implement this
+in our application tomorrow. It's frustrating that there is a similar
+interface (recv* family) that I cannot use.
 
-The main difference is that there are very few drivers on x86 that are
-specific to one of the two chip makers. Almost everything is a PCI
-device that can actually be plugged in anywhere.
+I know there's been a bunch of attempts at buffered AIO and none of
+them made it into the kernel. It would let me build a buffered AIO
+implementation in user-space using a threadpool. And cached data would
+not end up getting blocked behind other non-cached requests sitting in
+the queue. I know there's other sources of blocking (locking, metadata
+lookups) but direct AIO already suffers from these so I'm fine to
+paper over that for now.
 
-On ARM64 there is going to be a lot of stuff that really makes sense
-only for one of the 50 licensees.
 
-	Arnd
+On Fri, Sep 5, 2014 at 11:48 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Fri, Sep 05, 2014 at 12:09:27PM +0100, Mel Gorman wrote:
+>> I suggest you look at the recent fincore debate. It did not progress much
+>> the last time because the author wanted to push a lot of functionality in
+>> there where as reviewers felt it should start simple.  The simple case is
+>> likely a good fit for what you want. The primary downside is that it would
+>> be race-prone in memory pressure situations as the page could be reclaimed
+>> between the fincore check and the read but I expect that your application
+>> is already avoiding reclaim activity.
+>
+> I've actually experimentally hacked up O_NONBLOCK support for regular
+> files so that it only returns data from the page cache, and not
+> otherwise.  Volker promised to test it with Samba, but we never made
+> any progress on it, and just last week a customer told me they would
+> have liked to use it if it was available.
+>
+> Note that we might want to also avoid blocking on locks, and I have some
+> vague memory that we shouldn't actually implement O_NONBLOCK on regular
+> files due to compatibility options but would have to use a new flag
+> instead.
+>
+> Note that mincor/fincore would not help for the usual use case where you
+> have a non blocking event main loop and want to offload actual blocking
+> I/O to helper threads, as you it returns information that can be stale
+> any time.
+>
+> One further consideration would be to finally implement real buffered
+> I/O in kernel space by something like the above and offloading to
+> workqueues in kernelspace.  I think our workqueues now are way better
+> than any possible user thread pool, although we'd need to find a way to
+> temporarily tie the work threads to a user address space.
+
+
+
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
