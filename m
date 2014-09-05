@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaIEVZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:25:39 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:62912 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaIEVZh (ORCPT
+	id S1752800AbaIEV0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:26:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42299 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbaIEV0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:25:37 -0400
-Date: Fri, 5 Sep 2014 15:25:28 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 0/2] PCI/MSI: Remove arch_msi_check_device()
-Message-ID: <20140905212528.GG8080@google.com>
-References: <cover.1405160163.git.agordeev@redhat.com>
+	Fri, 5 Sep 2014 17:26:08 -0400
+Date: Fri, 5 Sep 2014 14:26:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Enable interrupt driven flow
+ control
+Message-ID: <20140905212607.GA29137@kroah.com>
+References: <1409941402-486-1-git-send-email-kys@microsoft.com>
+ <20140905191148.GA24879@kroah.com>
+ <af50b440e57a455e810242b83a2462ad@BY2PR0301MB0711.namprd03.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1405160163.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <af50b440e57a455e810242b83a2462ad@BY2PR0301MB0711.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 12, 2014 at 01:21:06PM +0200, Alexander Gordeev wrote:
-> Hello,
+On Fri, Sep 05, 2014 at 08:53:01PM +0000, KY Srinivasan wrote:
 > 
-> This is a cleanup effort to get rid of useless arch_msi_check_device().
-> I am not sure what were the reasons for its existence in the first place,
-> but at the moment it appears totally unnecessary.
 > 
-> Thanks!
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Friday, September 5, 2014 12:12 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Enable interrupt driven flow
+> > control
+> > 
+> > On Fri, Sep 05, 2014 at 11:23:22AM -0700, K. Y. Srinivasan wrote:
+> > > This is a win8 feature that has been implemented. Turn on the feature
+> > > bit to enable the feature.
+> > 
+> > What does those two sentances even mean?
+> Greg,
 > 
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: linux-pci@vger.kernel.org
-> 
-> Alexander Gordeev (2):
->   PCI/MSI/PPC: Remove arch_msi_check_device()
->   PCI/MSI: Remove arch_msi_check_device()
+> The feature has been implemented and has been in the tree for a while.
 
-I applied these (with Michael's ack on the first, and v2 of the second) to
-pci/msi for v3.18, thanks!
+What feature?  What is "This" in the first sentance?
+
+> However, the feature was not advertised to the host and this patch does just that.
+> > 
+> > > With this feature turned on,
+> > 
+> > What is "this"?
+> "this" refers to the feature bit.
+> > 
+> > > when the host is waiting
+> > > for space to become available on the ringbuffer (host to guest), the
+> > > guest will interrupt the host when space becomes available (as part of
+> > > draining the ring buffer).
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > ---
+> > >  drivers/hv/ring_buffer.c |    5 +++++
+> > >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c index
+> > > 15db66b..6361d12 100644
+> > > --- a/drivers/hv/ring_buffer.c
+> > > +++ b/drivers/hv/ring_buffer.c
+> > > @@ -361,6 +361,11 @@ int hv_ringbuffer_init(struct hv_ring_buffer_info
+> > *ring_info,
+> > >  	ring_info->ring_buffer->read_index =
+> > >  		ring_info->ring_buffer->write_index = 0;
+> > >
+> > > +	/*
+> > > +	 * Set the feature bit for enabling flow control.
+> > > +	 */
+> > > +	ring_info->ring_buffer->feature_bits.value = 1;
+> > 
+> > What happens if you are running on an old system that doesn't support this
+> > new "feature"?
+> The control structure for the ring buffer (where this feature bit is) has not changed and so, for
+> hosts that don't understand this, it does not matter.
 > 
->  arch/powerpc/include/asm/machdep.h     |    2 -
->  arch/powerpc/kernel/msi.c              |   12 +-------
->  arch/powerpc/platforms/cell/axon_msi.c |    9 ------
->  arch/powerpc/platforms/powernv/pci.c   |   19 +++---------
->  arch/powerpc/platforms/pseries/msi.c   |   42
->  ++++++++++----------------- arch/powerpc/sysdev/fsl_msi.c          |
->  12 ++------ arch/powerpc/sysdev/mpic_pasemi_msi.c  |   11 +------
->  arch/powerpc/sysdev/mpic_u3msi.c       |   28 +++++++-----------
->  arch/powerpc/sysdev/ppc4xx_hsta_msi.c  |   18 ++++--------
->  arch/powerpc/sysdev/ppc4xx_msi.c       |   19 ++++--------
->  drivers/pci/msi.c                      |   49
->  ++++++++----------------------- include/linux/msi.h                    |
->  3 -- 12 files changed, 63 insertions(+), 161 deletions(-)
-> 
-> -- 1.7.7.6
-> 
-> -- To unsubscribe from this list: send the line "unsubscribe linux-pci"
-> in the body of a message to majordomo@vger.kernel.org More majordomo info
-> at  http://vger.kernel.org/majordomo-info.html
+> Hope this helps. Let me know if you want me to rewrite comment and resend this patch.
+
+Please do, it's confusing :)
+
+thanks,
+
+greg k-h
