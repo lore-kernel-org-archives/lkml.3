@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaIEVuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:50:05 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:42355 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113AbaIEVuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:50:02 -0400
+	id S1752285AbaIEVvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:51:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51946 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750931AbaIEVvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 17:51:18 -0400
+Message-ID: <540A2FB4.6060605@zytor.com>
+Date: Fri, 05 Sep 2014 14:48:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1409052056400.5472@nanos>
-References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
-	<1409938218-9026-15-git-send-email-abrestic@chromium.org>
-	<alpine.DEB.2.10.1409052056400.5472@nanos>
-Date: Fri, 5 Sep 2014 14:50:02 -0700
-X-Google-Sender-Auth: cLF84FfuQD-FvMMBU9HsOpviWVg
-Message-ID: <CAL1qeaH5ZQA8Y=n3uVSy9e+vEweCi_RT2s-ZGRfyJTAcbguyoA@mail.gmail.com>
-Subject: Re: [PATCH v2 14/16] irqchip: mips-gic: Support local interrupts
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>,
+        ron minnich <rminnich@gmail.com>
+CC: Gerd Hoffmann <kraxel@redhat.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        coreboot <coreboot@coreboot.org>
+Subject: Re: [coreboot] [PATCH] x86: add coreboot framebuffer support
+References: <1409826307-23075-1-git-send-email-kraxel@redhat.com>	<540A17A6.1000802@zytor.com>	<540A266F.80503@gmail.com> <CAP6exYJj8Fupa1uTLRP5uGoWNjvwKo7bAAPvYmzUYB=AOqOq8g@mail.gmail.com> <540A29E6.2080405@gmail.com> <540A2B9A.1070707@zytor.com> <540A2DD1.1040002@gmail.com>
+In-Reply-To: <540A2DD1.1040002@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 12:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 5 Sep 2014, Andrew Bresticker wrote:
->>  static void gic_mask_irq(struct irq_data *d)
->>  {
->> -     GIC_CLR_INTR_MASK(d->irq - gic_irq_base);
->> +     unsigned int irq = d->irq - gic_irq_base;
->> +
->> +     if (gic_is_local_irq(irq)) {
->> +             GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_RMASK),
->> +                      1 << GIC_INTR_BIT(gic_hw_to_local_irq(irq)));
->> +     } else {
->> +             GIC_CLR_INTR_MASK(irq);
->> +     }
->>  }
->>
->>  static void gic_unmask_irq(struct irq_data *d)
->>  {
->> -     GIC_SET_INTR_MASK(d->irq - gic_irq_base);
->> +     unsigned int irq = d->irq - gic_irq_base;
->> +
->> +     if (gic_is_local_irq(irq)) {
->> +             GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_SMASK),
->> +                      1 << GIC_INTR_BIT(gic_hw_to_local_irq(irq)));
->> +     } else {
->> +             GIC_SET_INTR_MASK(irq);
->> +     }
->
-> Why are you adding a conditional in all these functions instead of
-> having two interrupt chips with separate callbacks and irqdata?
+On 09/05/2014 02:40 PM, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
+> On 06.09.2014 00:31, H. Peter Anvin wrote:
+>> On 09/05/2014 02:23 PM, Vladimir 'φ-coder/phcoder' Serbinenko
+>> wrote:
+>>> On 06.09.2014 00:18, ron minnich wrote:
+>>>> Vladimir can you point me to that patch? This sounds 
+>>>> interesting.
+>>>> 
+>>> https://lkml.org/lkml/2010/8/25/190
+>>> 
+>> 
+>> I believe *most* of this patch has already gotten merged as we
+>> now use simplefb on x86 as well.  So all we need is probably the
+>> ID.
+>> 
+> Yes, efifb has the same semantics. We just need some ID with clear 
+> documentation saying sth like "implies framebuffer without
+> anything else" so that noone will get an idea to plug e.g. vga
+> hooks into it.
+> 
 
-Ok, I'll use a separate irqchip.
+Want to make a patch?
 
-> And looking at GIC_SET_INTR_MASK(irq) makes me shudder even more. The
-> whole thing can be replaced with the generic interrupt chip functions.
->
-> If you set it up proper, then there is not a single conditional or
-> runtime calculation of bitmasks, address offsets etc.
+	-hpa
 
-Yes, I'd like to use the generic irqchip library here, but Malta and
-SEAD-3 will need to be converted over to using irq domains.  Perhaps
-I'll do that first - it should get rid of a lot of the other ugliness
-here as well.
+
