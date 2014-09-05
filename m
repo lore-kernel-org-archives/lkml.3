@@ -1,114 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799AbaIEG4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:56:25 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47647 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112AbaIEG4Y (ORCPT
+	id S1755921AbaIEG6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:58:14 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:59931 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaIEG6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:56:24 -0400
-Message-ID: <54095E79.9010306@huawei.com>
-Date: Fri, 5 Sep 2014 14:55:53 +0800
-From: hujianyang <hujianyang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 5 Sep 2014 02:58:12 -0400
+Date: Fri, 5 Sep 2014 08:58:09 +0200
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
+To: Imre Palik <imrep.amz@gmail.com>
+Cc: drbd-dev@lists.linbit.com, Philipp Reisner <philipp.reisner@linbit.com>,
+        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
+        Matt Wilson <msw@amazon.com>
+Subject: Re: [PATCH v2] drbd: fix throttling on newly created DM backing
+ devices
+Message-ID: <20140905065808.GM23497@soda.linbit>
+Mail-Followup-To: Imre Palik <imrep.amz@gmail.com>,
+	drbd-dev@lists.linbit.com,
+	Philipp Reisner <philipp.reisner@linbit.com>,
+	linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
+	Matt Wilson <msw@amazon.com>
+References: <1409860749-13458-1-git-send-email-imrep.amz@gmail.com>
 MIME-Version: 1.0
-To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <viro@zeniv.linux.org.uk>, <eparis@redhat.com>, <jlayton@primarydata.com>,
-        <jlayton@redhat.com>, <hujyang@gmail.com>
-Subject: [PATCH] audit: vfs: fix audit records error when write to a file
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.144]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409860749-13458-1-git-send-email-imrep.amz@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 33e2208acfc1
+On Thu, Sep 04, 2014 at 09:59:09PM +0200, Imre Palik wrote:
+> From: "Palik, Imre" <imrep@amazon.de>
+> 
+> If the drbd backing device is a new device mapper device (e.g., a
+> dm-linear mapping of an existing block device that contains data), the
+> counters are initially 0 even though the device contains useful
+> data. This causes throttling until something accesses the drbd device
+> or the backing device.
+> 
+> The patch disables throttling, as long as only resync is responsible
+> for disk activity on a freshly created device.
 
-audit: vfs: fix audit_inode call in O_CREAT case of do_last
+That does not change a thing, actually it makes matters worse,
+if for some reason "curr_events" becomes negative, which can easily
+happen... wrap arounds and all ... 
 
-fix a regression in auditing of open(..., O_CREAT) syscalls but
-import a new problem which lead the records of write operation
-confusion.
+> 
+> +	device->rs_last_events = -1;
 
-This error can be reproduced by these steps:
+>  	if (atomic_read(&device->ap_actlog_cnt)
+> -	    || !device->rs_last_events || curr_events - device->rs_last_events > 64) {
+> +		|| device->rs_last_events < 0
+> +		|| curr_events - device->rs_last_events > 64) {
+>  		unsigned long rs_left;
 
-	touch /etc/test
-	echo "-w /etc/test" >>/etc/audit/audit.rules
-	/etc/init.d/auditd restart
+No, what I meant is something more like this.
+I still need to review if the ->ldev->backing_bdev-> ... deref
+is always safe to do. But I think it is.
 
-	echo "abc" >> /etc/test
+commit c90cac67d6c12dcf3945f67a28718c40b644cc32
+Author: Lars Ellenberg <lars.ellenberg@linbit.com>
+Date:   Thu Sep 4 13:15:45 2014 +0200
 
-audit_name records are:
+    drbd: fix resync throttling initialization
+    
+    If for some reason DRBD resync was the only activity on a backend
+    device, drbd_rs_c_min_rate_throttle() would mistakenly decide that it is
+    still initialization time, and keep throttling the resync.
+    
+    This patch explicitly initializes ->rs_last_events to the current
+    backend event counters, and drops the rs_last_events == 0 from the
+    throttle condition.
+    
+    Reported-by: Mikhail Sugakov <msugakov@amazon.de>
 
-type=PATH msg=audit(1409764556.196:67): item=0 name="/etc/" inode=5097 dev=00:01 mode=040755 ouid=0 ogid=0 rdev=00:00 nametype=PARENT
-type=PATH msg=audit(1409764556.196:67): item=1 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
-type=PATH msg=audit(1409764556.196:67): item=2 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
-
-but if we revert commit 33e2208acfc1, records are correct:
-
-type=PATH msg=audit(1409763058.192:219): item=0 name="/etc/test" inode=1275 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
-
-We shouldn't leave audit_inode(.., LOOKUP_PARENT) in O_CREAT case
-of do_last() because this branch don't really know if vfs need to
-create a new file. There is no need to do vfs_create() if we open
-an existing file with O_CREAT flag and write to it. But this
-audit_inode() in O_CREAT case will record a msg as we create a new
-file and confuse the records of write.
-
-This patch moves the audit for create operation to where a file
-really need to be created, the O_CREAT case in lookup_open().
-We have to add the pointer of struct filename as a parameter of
-lookup_open(). By doing this, the records of both create and write
-are correct.
-
-Signed-off-by: hujianyang <hujianyang@huawei.com>
----
- fs/namei.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index a996bb4..0bc7734 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2808,7 +2808,8 @@ looked_up:
- static int lookup_open(struct nameidata *nd, struct path *path,
- 			struct file *file,
- 			const struct open_flags *op,
--			bool got_write, int *opened)
-+			bool got_write, int *opened,
-+			struct filename *name)
- {
- 	struct dentry *dir = nd->path.dentry;
- 	struct inode *dir_inode = dir->d_inode;
-@@ -2854,6 +2855,9 @@ static int lookup_open(struct nameidata *nd, struct path *path,
- 			error = -EROFS;
- 			goto out_dput;
- 		}
-+
-+		audit_inode(name, dir, LOOKUP_PARENT);
-+
- 		*opened |= FILE_CREATED;
- 		error = security_path_mknod(&nd->path, dentry, mode, 0);
- 		if (error)
-@@ -2926,7 +2930,6 @@ static int do_last(struct nameidata *nd, struct path *path,
- 		if (error)
- 			return error;
-
--		audit_inode(name, dir, LOOKUP_PARENT);
- 		error = -EISDIR;
- 		/* trailing slashes? */
- 		if (nd->last.name[nd->last.len])
-@@ -2945,7 +2948,7 @@ retry_lookup:
- 		 */
- 	}
- 	mutex_lock(&dir->d_inode->i_mutex);
--	error = lookup_open(nd, path, file, op, got_write, opened);
-+	error = lookup_open(nd, path, file, op, got_write, opened, name);
- 	mutex_unlock(&dir->d_inode->i_mutex);
-
- 	if (error <= 0) {
--- 
-1.8.5.5
-
+diff --git a/drbd/drbd_receiver.c b/drbd/drbd_receiver.c
+index 7376edd..6da9d25 100644
+--- a/drbd/drbd_receiver.c
++++ b/drbd/drbd_receiver.c
+@@ -2867,7 +2867,7 @@ bool drbd_rs_c_min_rate_throttle(struct drbd_device *device)
+ 		    - atomic_read(&device->rs_sect_ev);
+ 
+ 	if (atomic_read(&device->ap_actlog_cnt)
+-	|| !device->rs_last_events || curr_events - device->rs_last_events > 64) {
++	|| curr_events - device->rs_last_events > 64) {
+ 		unsigned long rs_left;
+ 		int i;
+ 
+diff --git a/drbd/drbd_state.c b/drbd/drbd_state.c
+index bdad488..1df1a63 100644
+--- a/drbd/drbd_state.c
++++ b/drbd/drbd_state.c
+@@ -1078,7 +1078,6 @@ __drbd_set_state(struct drbd_device *device, union drbd_state ns,
+ 
+ 		set_ov_position(device, ns.conn);
+ 		device->rs_start = now;
+-		device->rs_last_events = 0;
+ 		device->rs_last_sect_ev = 0;
+ 		device->ov_last_oos_size = 0;
+ 		device->ov_last_oos_start = 0;
+diff --git a/drbd/drbd_worker.c b/drbd/drbd_worker.c
+index 0f11292..43dd841 100644
+--- a/drbd/drbd_worker.c
++++ b/drbd/drbd_worker.c
+@@ -1630,6 +1630,7 @@ void drbd_rs_controller_reset(struct drbd_device *device)
+ 	atomic_set(&device->rs_sect_in, 0);
+ 	atomic_set(&device->rs_sect_ev, 0);
+ 	device->rs_in_flight = 0;
++	device->rs_last_events = drbd_backing_bdev_events(device->ldev->backing_bdev->bd_contains->bd_disk);
+ 
+ 	/* Updating the RCU protected object in place is necessary since
+ 	   this function gets called from atomic context.
+@@ -1776,7 +1777,6 @@ void drbd_start_resync(struct drbd_device *device, enum drbd_conns side)
+ 		device->rs_failed    = 0;
+ 		device->rs_paused    = 0;
+ 		device->rs_same_csum = 0;
+-		device->rs_last_events = 0;
+ 		device->rs_last_sect_ev = 0;
+ 		device->rs_total     = tw;
+ 		device->rs_start     = now;
