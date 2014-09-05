@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaIEVtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:49:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43591 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751508AbaIEVtb (ORCPT
+	id S1753350AbaIEVuF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:50:05 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:42355 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbaIEVuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:49:31 -0400
-X-Sasl-enc: iRMEBVNWLoATF+iS58riF+lmhevrAXIgMTvd4xgXmwQ2 1409953770
-Date: Fri, 5 Sep 2014 14:49:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Li Zefan <lizefan@huawei.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [kernel.org PATCH] Li Zefan is now the 3.4 stable maintainer
-Message-ID: <20140905214930.GD30221@kroah.com>
-References: <20140826230858.GA29970@kroah.com>
- <20140827045938.GA28282@roeck-us.net>
- <540813A5.7020704@huawei.com>
- <20140904183953.GA28599@roeck-us.net>
- <54096C8D.8000008@huawei.com>
- <5409C19C.4030901@roeck-us.net>
+	Fri, 5 Sep 2014 17:50:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5409C19C.4030901@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.10.1409052056400.5472@nanos>
+References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
+	<1409938218-9026-15-git-send-email-abrestic@chromium.org>
+	<alpine.DEB.2.10.1409052056400.5472@nanos>
+Date: Fri, 5 Sep 2014 14:50:02 -0700
+X-Google-Sender-Auth: cLF84FfuQD-FvMMBU9HsOpviWVg
+Message-ID: <CAL1qeaH5ZQA8Y=n3uVSy9e+vEweCi_RT2s-ZGRfyJTAcbguyoA@mail.gmail.com>
+Subject: Re: [PATCH v2 14/16] irqchip: mips-gic: Support local interrupts
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 06:58:52AM -0700, Guenter Roeck wrote:
-> On 09/05/2014 12:55 AM, Li Zefan wrote:
-> >>>>Li,
-> >>>>
-> >>>>it would be great if you can send me information about your -stable queue,
-> >>>>ie how you maintain it and where it is located. This will enable me to
-> >>>>continue testing the stable queue for the 3.4 kernel.
-> >>>>
-> >>>
-> >>>Thanks for testing LTS kernels!
-> >>>
-> >>>This is my 3.4.y git tree:
-> >>>
-> >>>https://git.kernel.org/cgit/linux/kernel/git/lizf/linux-3.4.y.git/
-> >>>
-> >>>And this is the patch queue:
-> >>>
-> >>>https://git.kernel.org/cgit/linux/kernel/git/lizf/linux-3.4.y-queue.git/
-> >>>
-> >>>I use quilt. When I've added some patches to 3.4.y, I'll update this
-> >>>queue. The patches and series file are under /patches. Currently there's
-> >>>already a patch in the queue.
-> >>>
-> >>>When I release a new version, I'll clean up the queue by removing all
-> >>>the files under /patches.
-> >>>
-> >>>Hope this is all the information you need. Please tell me if you need
-> >>>me to slightly adjust my workflow so it's easier for you.
-> >>
-> >>It almost works.
-> >>
-> >>Problem is that the pending patch got converted to use <cr><lf> instead of
-> >>just <lf> as common in Linux. When I try to apply it with "git quiltimport",
-> >>it bails out with "trailing whitespace" errors. "git am" with the individual
-> >>patch works fine for some reason, though.
-> >>
-> >>I can try to find a workaround, but it would be better to have the file in
-> >>linux file format to start with. Would that be possible ?
-> >>
-> >
-> >Yeah, I've fixed it. I'll run dos2unix for every patch file.
-> >
-> 
-> Yes, it now works. Wonder how it comes that the patch in Greg's patch tree
-> didn't have the problem. Any idea ?
+On Fri, Sep 5, 2014 at 12:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 5 Sep 2014, Andrew Bresticker wrote:
+>>  static void gic_mask_irq(struct irq_data *d)
+>>  {
+>> -     GIC_CLR_INTR_MASK(d->irq - gic_irq_base);
+>> +     unsigned int irq = d->irq - gic_irq_base;
+>> +
+>> +     if (gic_is_local_irq(irq)) {
+>> +             GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_RMASK),
+>> +                      1 << GIC_INTR_BIT(gic_hw_to_local_irq(irq)));
+>> +     } else {
+>> +             GIC_CLR_INTR_MASK(irq);
+>> +     }
+>>  }
+>>
+>>  static void gic_unmask_irq(struct irq_data *d)
+>>  {
+>> -     GIC_SET_INTR_MASK(d->irq - gic_irq_base);
+>> +     unsigned int irq = d->irq - gic_irq_base;
+>> +
+>> +     if (gic_is_local_irq(irq)) {
+>> +             GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_SMASK),
+>> +                      1 << GIC_INTR_BIT(gic_hw_to_local_irq(irq)));
+>> +     } else {
+>> +             GIC_SET_INTR_MASK(irq);
+>> +     }
+>
+> Why are you adding a conditional in all these functions instead of
+> having two interrupt chips with separate callbacks and irqdata?
 
-What patch in my tree has dos line endings?  None should...
+Ok, I'll use a separate irqchip.
 
-thanks,
+> And looking at GIC_SET_INTR_MASK(irq) makes me shudder even more. The
+> whole thing can be replaced with the generic interrupt chip functions.
+>
+> If you set it up proper, then there is not a single conditional or
+> runtime calculation of bitmasks, address offsets etc.
 
-greg k-h
+Yes, I'd like to use the generic irqchip library here, but Malta and
+SEAD-3 will need to be converted over to using irq domains.  Perhaps
+I'll do that first - it should get rid of a lot of the other ugliness
+here as well.
