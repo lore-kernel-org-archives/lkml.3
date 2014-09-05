@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538AbaIEBaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 21:30:18 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:58503 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaIEBaQ (ORCPT
+	id S1752341AbaIEBal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 21:30:41 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:56013 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaIEBaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 21:30:16 -0400
-Message-ID: <5409122A.7020703@kernel.dk>
-Date: Thu, 04 Sep 2014 19:30:18 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 4 Sep 2014 21:30:39 -0400
+Date: Fri, 5 Sep 2014 09:30:11 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Benjamin Henrion <zoobab@gmail.com>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, jhovold@gmail.com,
+        andi@lisas.de, dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140905013011.GA2133@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Benjamin Henrion <zoobab@gmail.com>, gregkh@linuxfoundation.org,
+	linus.walleij@linaro.org, jhovold@gmail.com, andi@lisas.de,
+	dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20140831153201.GA25632@udknight>
+ <CANjd3neT+NrsptLw3s7Bm76xv6LQMqm-BieN-0xLFuTx4apXxw@mail.gmail.com>
+ <CANjd3ndGiTujCORwZOXfWfHL2_YocK5ZUpxQJPLq+qTmkV0xnA@mail.gmail.com>
 MIME-Version: 1.0
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-CC: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] blk-mq: Cleanup blk_mq_tag_busy() and blk_mq_tag_idle()
-References: <cover.1409775956.git.agordeev@redhat.com>	<1860c570e5efa8ece323a7ba20f3597bd5e99d25.1409775956.git.agordeev@redhat.com>	<54077B91.5040408@kernel.dk> <20140904202654.27f1d9e0@as>
-In-Reply-To: <20140904202654.27f1d9e0@as>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANjd3ndGiTujCORwZOXfWfHL2_YocK5ZUpxQJPLq+qTmkV0xnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 07:26 PM, Chuck Ebbert wrote:
-> On Wed, 03 Sep 2014 14:35:29 -0600
-> Jens Axboe <axboe@kernel.dk> wrote:
+On Thu, Sep 04, 2014 at 06:44:31PM +0200, Benjamin Henrion wrote:
+> On Thu, Sep 4, 2014 at 6:14 PM, Benjamin Henrion <zoobab@gmail.com> wrote:
+> > I have subscribed to the lkml.
+> >
+> > Can you make me a favour, send me your email as you posted on the LKML
+> > in mbox format attached to an email?
+> >
+> > I am trying to reply to it, but I cannot find an mbox archive, outside
+> > of gmane which rewrites all the email addresses.
+> >
+> > Otherwise, I made a page here:
+> >
+> > http://www.zoobab.com/pl2303hxd-gpio
+> >
+> > I will also try with other adapters to see if the 2 GPIOs show up.
+> >
+> > Any idea how to test the GPIO sysfs speed?
 > 
->> On 09/03/2014 02:33 PM, Alexander Gordeev wrote:
-> <snip>
->>> diff --git a/block/blk-mq-tag.h b/block/blk-mq-tag.h
->>> index 6206ed1..795ec3f 100644
->>> --- a/block/blk-mq-tag.h
->>> +++ b/block/blk-mq-tag.h
->>> @@ -66,23 +66,22 @@ enum {
->>>  	BLK_MQ_TAG_MAX		= BLK_MQ_TAG_FAIL - 1,
->>>  };
->>>  
->>> -extern bool __blk_mq_tag_busy(struct blk_mq_hw_ctx *);
->>> +extern void __blk_mq_tag_busy(struct blk_mq_hw_ctx *);
->>>  extern void __blk_mq_tag_idle(struct blk_mq_hw_ctx *);
->>>  
->>>  static inline bool blk_mq_tag_busy(struct blk_mq_hw_ctx *hctx)
->>>  {
->>> -	if (!(hctx->flags & BLK_MQ_F_TAG_SHARED))
->>> -		return false;
->>> -
->>> -	return __blk_mq_tag_busy(hctx);
->>> +	if (hctx->flags & BLK_MQ_F_TAG_SHARED) {
->>> +		__blk_mq_tag_busy(hctx);
->>> +		return true;
->>> +	}
->>> +	return false;
->>>  }
->>
->> The normal/fast path here is the flag NOT being set, which is why it
->> was coded that way to put the fast path inline.
->>
->>>  
->>>  static inline void blk_mq_tag_idle(struct blk_mq_hw_ctx *hctx)
->>>  {
->>> -	if (!(hctx->flags & BLK_MQ_F_TAG_SHARED))
->>> -		return;
->>> -
->>> -	__blk_mq_tag_idle(hctx);
->>> +	if (hctx->flags & BLK_MQ_F_TAG_SHARED)
->>> +		__blk_mq_tag_idle(hctx);
->>>  }
->>
->> Ditto
+> Also tested with an HXA laying around, I could export the 2 GPIOS in
+> /sys/class/gpio, but I could not change the status of the pins via
+> echo.
 > 
-> Shouldn't it just add unlikely() then? That way it's obvious what the
-> common case is, instead of relying on convoluted code.
+> Any idea why?
 
-It's a common construct. Besides, if you find a flag-not-set check
-convoluted, then I hope you are not programming anything I use. That's a
-bit of a straw man, imho.
+It is strange, I have tested again with my two HXA adapters, they work well.
+How do you test? check cat value or check voltage change? I check cat value,
+and they work good.
 
--- 
-Jens Axboe
 
+> 
+> -- 
+> Benjamin Henrion <bhenrion at ffii.org>
+> FFII Brussels - +32-484-566109 - +32-2-4148403
+> "In July 2005, after several failed attempts to legalise software
+> patents in Europe, the patent establishment changed its strategy.
+> Instead of explicitly seeking to sanction the patentability of
+> software, they are now seeking to create a central European patent
+> court, which would establish and enforce patentability rules in their
+> favor, without any possibility of correction by competing courts or
+> democratically elected legislators."
