@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaIETJI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:09:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33782 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaIETJH (ORCPT
+	id S1751721AbaIETLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:11:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41535 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaIETLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:09:07 -0400
-Date: Fri, 5 Sep 2014 21:08:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Bresticker <abrestic@chromium.org>
-cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 15/16] MIPS: GIC: Use local interrupts for timer
-In-Reply-To: <1409938218-9026-16-git-send-email-abrestic@chromium.org>
-Message-ID: <alpine.DEB.2.10.1409052108090.5472@nanos>
-References: <1409938218-9026-1-git-send-email-abrestic@chromium.org> <1409938218-9026-16-git-send-email-abrestic@chromium.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 5 Sep 2014 15:11:49 -0400
+Date: Fri, 5 Sep 2014 12:11:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Enable interrupt driven flow
+ control
+Message-ID: <20140905191148.GA24879@kroah.com>
+References: <1409941402-486-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409941402-486-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014, Andrew Bresticker wrote:
+On Fri, Sep 05, 2014 at 11:23:22AM -0700, K. Y. Srinivasan wrote:
+> This is a win8 feature that has been implemented. Turn on the feature bit
+> to enable the feature.
 
-> Instead of using GIC interrupt 0 for the timer (which was not even
-> handled correctly by the GIC irqchip code and could conflict with an
-> actual external interrupt), use the designated local interrupt for
-> the GIC timer.
+What does those two sentances even mean?
+
+> With this feature turned on,
+
+What is "this"?
+
+> when the host is waiting
+> for space to become available on the ringbuffer (host to guest), the guest
+> will interrupt the host when space becomes available (as part of draining
+> the ring buffer).
 > 
-> Also, since the timer is a per-CPU interrupt, initialize it with
-> setup_percpu_irq() and enable it with enable_percpu_irq() instead
-> of using direct register writes.
-> 
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 > ---
-> No changes from v1.
-> ---
->  arch/mips/kernel/cevt-gic.c | 16 +++++++---------
->  1 file changed, 7 insertions(+), 9 deletions(-)
+>  drivers/hv/ring_buffer.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/mips/kernel/cevt-gic.c b/arch/mips/kernel/cevt-gic.c
-> index 6093716..cae72a4 100644
-> --- a/arch/mips/kernel/cevt-gic.c
-> +++ b/arch/mips/kernel/cevt-gic.c
-> @@ -68,7 +68,7 @@ int gic_clockevent_init(void)
->  	if (!cpu_has_counter || !gic_frequency)
->  		return -ENXIO;
+> diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
+> index 15db66b..6361d12 100644
+> --- a/drivers/hv/ring_buffer.c
+> +++ b/drivers/hv/ring_buffer.c
+> @@ -361,6 +361,11 @@ int hv_ringbuffer_init(struct hv_ring_buffer_info *ring_info,
+>  	ring_info->ring_buffer->read_index =
+>  		ring_info->ring_buffer->write_index = 0;
 >  
-> -	irq = MIPS_GIC_IRQ_BASE;
-> +	irq = MIPS_GIC_LOCAL_IRQ_BASE + GIC_LOCAL_INTR_COMPARE;
->  
->  	cd = &per_cpu(gic_clockevent_device, cpu);
->  
-> @@ -91,15 +91,13 @@ int gic_clockevent_init(void)
->  
->  	clockevents_register_device(cd);
->  
-> -	GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_COMPARE_MAP), 0x80000002);
-> -	GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_SMASK), GIC_VPE_SMASK_CMP_MSK);
-> +	if (!gic_timer_irq_installed) {
-> +		setup_percpu_irq(irq, &gic_compare_irqaction);
-> +		irq_set_handler(irq, handle_percpu_irq);
-> +		gic_timer_irq_installed = 1;
-> +	}
->  
-> -	if (gic_timer_irq_installed)
-> -		return 0;
-> +	enable_percpu_irq(irq, 0);
+> +	/*
+> +	 * Set the feature bit for enabling flow control.
+> +	 */
+> +	ring_info->ring_buffer->feature_bits.value = 1;
 
-Please use a proper IRQ_TYPE constant instead of 0
+What happens if you are running on an old system that doesn't support
+this new "feature"?
 
-Thanks,
+thanks,
 
-	tglx
+greg k-h
