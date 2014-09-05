@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbaIEJhT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 05:37:19 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:35675 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756183AbaIEJhQ (ORCPT
+	id S1756733AbaIEJjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 05:39:04 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:63467 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756421AbaIEJjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 05:37:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409840819-18976-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1409840819-18976-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Fri, 5 Sep 2014 11:37:14 +0200
-X-Google-Sender-Auth: TvE7FJjKAMn90tHTcjXyimvX7iQ
-Message-ID: <CAMuHMdXQ953Cx-MNSvWCKbQhezxr31bpAHo4JMJBK6dCoOQwnw@mail.gmail.com>
-Subject: Re: [PATCH v4 01/12] hexdump: introduce test suite
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        Benjamin Romer <benjamin.romer@unisys.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Chen Gang <gang.chen.5i5j@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Sep 2014 05:39:02 -0400
+Message-ID: <1409909940.5546.154.camel@x220>
+Subject: Re: [PATCH v2] ARM: spear: Remove references to PLAT_SPEAR_SINGLE
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.linux.kernel@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Martin Walch <walch.martin@web.de>,
+        Richard Weinberger <richard@nod.at>, spear-devel@list.st.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 05 Sep 2014 11:39:00 +0200
+In-Reply-To: <1409909229.5546.146.camel@x220>
+References: <1392153676.14317.8.camel@x220> <1397550407.1985.12.camel@x220>
+	 <534CFB45.9070704@st.com> <1402919387.30599.4.camel@x220>
+	 <1409909229.5546.146.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Sep 2014 09:39:00.0785 (UTC) FILETIME=[391A1A10:01CFC8ED]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 4:26 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Test different scenarios of function calls located in lib/hexdump.c.
->
-> Currently hex_dump_to_buffer() is only tested and test data is provided for
-> little endian CPUs.
+On Fri, 2014-09-05 at 11:27 +0200, Paul Bolle wrote:
+> On Mon, 2014-06-16 at 13:49 +0200, Paul Bolle wrote:
+> > On Tue, 2014-04-15 at 14:56 +0530, Rajeev kumar wrote:
+> > > Reviewed-by: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+> > 
+> > Thanks!
+> > 
+> > This can still be seen in v3.16-rc1 and in today's linux-next (ie,
+> > next-20140616). Is this trivial patch queued somewhere?
+> 
+> Ditto for v3.17-rc3 and next-20140904. Could someone please pix this up?
 
-That's a nice one to be amended using Chen's
-"arch: Kconfig: Let all little endian architectures define
-CPU_LITTLE_ENDIAN explicitly".
+And now Rajeev's address bounces. Has Rajeev left ST?
 
-Gr{oetje,eeting}s,
 
-                        Geert
+Paul Bolle
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
