@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaIEPlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:41:46 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:60410 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaIEPlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:41:44 -0400
+	id S1753259AbaIEPmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:42:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48289 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753108AbaIEPmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 11:42:09 -0400
+Message-ID: <5409D99C.10305@zytor.com>
+Date: Fri, 05 Sep 2014 08:41:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <20140905151640.GN19379@twins.programming.kicks-ass.net>
-References: <20140901181808.GA6427@leverpostej>
-	<20140901190534.GC5806@worktop.ger.corp.intel.com>
-	<20140902185807.GA7434@leverpostej>
-	<20140903115013.GA3127@leverpostej>
-	<20140904104402.GS4783@worktop.ger.corp.intel.com>
-	<20140904110740.GB32228@leverpostej>
-	<20140905151640.GN19379@twins.programming.kicks-ass.net>
-Date: Fri, 5 Sep 2014 08:41:43 -0700
-X-Google-Sender-Auth: w5unZhTAYw_pdyxnP8FBakkaOjI
-Message-ID: <CA+55aFwhKyjNHuSThuPOejq1uLTXoqHwAtG8cfcx-Sqp83RKSg@mail.gmail.com>
-Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yan Zheng <zheng.z.yan@intel.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Vince Weaver <vincent.weaver@maine.edu>
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>		 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>		 <20140904201123.GA9116@khazad-dum.debian.net> <5408C9C4.1010705@zytor.com>		 <20140904231923.GA15320@khazad-dum.debian.net>		 <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>		 <1409876991.28990.172.camel@misato.fc.hp.com>		 <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>	 <1409925614.28990.184.camel@misato.fc.hp.com> <5409D197.2060900@zytor.com> <1409930574.28990.192.camel@misato.fc.hp.com>
+In-Reply-To: <1409930574.28990.192.camel@misato.fc.hp.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 8:16 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> How horrible is the below patch (performance wise). It does pretty much
-> the same thing except that percpu_rw_semaphore is a lot saner, its
-> read side performance should be minimal in the absence of writes.
+On 09/05/2014 08:22 AM, Toshi Kani wrote:
+> On Fri, 2014-09-05 at 08:07 -0700, H. Peter Anvin wrote:
+>> On 09/05/2014 07:00 AM, Toshi Kani wrote:
+>>>
+>>> That's a fine idea, but as Ingo also suggested, I am going to disable
+>>> this feature on all Pentium 4 models.  That should give us a safety
+>>> margin.  Using slot 4 has a benefit that it keeps the PAT setup
+>>> consistent with Xen.      
+>>>
+>>
+>> Slot 4 is also the maximally problematic one, because it is the one that
+>> might be incorrectly invoked for the page tables themselves.
+> 
+> Good point.  I wonder if Xen folks feel strongly about keeping the PAT
+> setup consistent with the kernel.  If not, we may choose to use slot 6
+> (or 7).
+> 
 
-Ugh. Why do any locking at all (whether a new 'perf_rwsem' or using
-'get_online_cpus()').
+Who cares what the Xen folks "feel strongly about"?  If strong feelings
+were a design criterion Xen support would have been pulled from the
+kernel a long, long time ago.
 
-Wouldn't it be much nicer to just do what memory management routines
-are *supposed* to do, and get a reference count to the context while
-having a pointer to it?
+The important thing is how to design for the situation that we currently
+have to live with.
 
-IOW, why doesn't put_event() just have a
+	-hpa
 
-   get_ctx(ctx);
-   ..
-   put_ctx(ctx);
 
-around its use of the context pointer? So if the context ends up being
-migrated during this time, it doesn't get freed.
-
-However, the more fundamental question is "what protects accesses to
-'events->ctx'". Why is "put_event()" so special that *it* gets locking
-for the reading of "event->ctx", but none of the other cases of
-reading the ctx pointer gets it or needs it?
-
-I'm getting the feeling that this race is bigger than just put_event().
-
-            Linus
