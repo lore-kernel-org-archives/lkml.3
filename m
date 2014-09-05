@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312AbaIEMbK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:31:10 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:49835 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934AbaIEMbI (ORCPT
+	id S932344AbaIEMbV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:31:21 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35914 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932179AbaIEMbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:31:08 -0400
-Message-ID: <5409AD9A.4030206@gmail.com>
-Date: Fri, 05 Sep 2014 14:33:30 +0200
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 5 Sep 2014 08:31:19 -0400
+Message-ID: <5409AD0A.5090305@hurleysoftware.com>
+Date: Fri, 05 Sep 2014 08:31:06 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
-        linux-efi@vger.kernel.org
-Subject: Re: oops on kernel 3.14.17 seems related to EFI
-References: <54095D73.7010907@gmail.com> <20140905120904.GN3001@console-pimps.org>
-In-Reply-To: <20140905120904.GN3001@console-pimps.org>
-Content-Type: text/plain; charset=windows-1252
+To: David Laight <David.Laight@ACULAB.COM>,
+        "'paulmck@linux.vnet.ibm.com'" <paulmck@linux.vnet.ibm.com>
+CC: Jakub Jelinek <jakub@redhat.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-arm@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <21512.10628.412205.873477@gargle.gargle.HOWL> <20140904090952.GW17454@tucnak.redhat.com> <540859EC.5000407@hurleysoftware.com> <20140904175044.4697aee4@alan.etchedpixels.co.uk> <5408C0AB.6050801@hurleysoftware.com> <20140905001751.GL5001@linux.vnet.ibm.com> <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com> <20140905040645.GO5001@linux.vnet.ibm.com> <063D6719AE5E284EB5DD2968C1650D6D17487F66@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17487F66@AcuExch.aculab.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 02:09 PM, Matt Fleming wrote:
-> (Adding linux-efi)
-> 
-> On Fri, 05 Sep, at 08:51:31AM, Francis Moreau wrote:
->> [  +0.000045] RIP: 0010:[<0000000000000000>]  [<          (null)>]      (null)
->> [  +0.000046] RSP: 0018:ffff8800b4001da8  EFLAGS: 00010002
->> [  +0.000032] RAX: 0000000080050033 RBX: ffff880406288000 RCX: ffff880406288000
->> [  +0.000041] RDX: ffff880406288400 RSI: ffff880406288000 RDI: 0000000000000000
->> [  +0.000042] RBP: ffff8800b4001e80 R08: 0000000000000000 R09: ffff8800b4001ec0
->> [  +0.000042] R10: 0000000000000000 R11: 0000000000000246 R12: ffff880406288400
->> [  +0.000042] R13: 0000000000000000 R14: ffff8800b4001ec0 R15: 000000000009b000
->> [  +0.000042] FS:  00007f7720a567c0(0000) GS:ffff88041e2c0000(0000) knlGS:0000000000000000
->> [  +0.000048] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [  +0.000034] CR2: 0000000000000000 CR3: 000000000009b000 CR4: 00000000001427e0
->> [  +0.000042] Stack:
->> [  +0.000014]  ffffffff81063281 ffffffff811bd95c 0000000000000246 ffff8800da9e6628
->> [  +0.000052]  8000000300000000 0000000000000000 0000000000000000 ffff8800b4001e50
->> [  +0.000051]  0000000080050033 00007f7722abbc50 00007f7722abbb50 00ffffffffffffff
->> [  +0.000052] Call Trace:
->> [  +0.000022]  [<ffffffff81063281>] ? efi_call5+0x71/0xf0
->> [  +0.000035]  [<ffffffff811bd95c>] ? getname_flags+0x2c/0x130
->> [  +0.000037]  [<ffffffff81062649>] ? virt_efi_get_variable+0x49/0x60
->> [  +0.000051]  [<ffffffff813d0181>] efivar_entry_size+0x41/0x80
->> [  +0.000030]  [<ffffffff8123aec9>] efivarfs_file_read+0x49/0x100
->> [  +0.000046]  [<ffffffff811b2077>] vfs_read+0x97/0x160
->> [  +0.000041]  [<ffffffff811b2bc9>] SyS_read+0x59/0xd0
->> [  +0.000041]  [<ffffffff81509e29>] system_call_fastpath+0x16/0x1b
-> 
-> This looks like efi.systab->runtime->get_variable is NULL.
-> 
-> Could you send a copy of the dmesg buffer? It might contain some info to
-> explain this issue.
+[ +cc linux-arm ]
 
-Unfortunately, I haven't kept a copy of it.
+Hi David,
 
-> 
-> Also, is this a regression? If so it would be excellent if you could
-> pinpoint the commit that causes the problem, using git bisect.
-> 
+On 09/05/2014 04:30 AM, David Laight wrote:
+> I've seen gcc generate 32bit accesses for 16bit structure members on arm.
+> It does this because of the more limited range of the offsets for the 16bit access.
+> OTOH I don't know if it ever did this for writes - so it may be moot.
 
-it's been a while now I'm stuck to 3.14 (later kernels oops for other
-reasons) so I don't really remember. I would say no but I'm really not sure.
+Can you recall the particulars, like what ARM config or what code?
 
-Thanks
+I tried an overly-simple test to see if gcc would bump up to the word load for
+the 12-bit offset mode, but it stuck with register offset rather than immediate
+offset. [I used the compiler options for allmodconfig and a 4.8 cross-compiler.]
+
+Maybe the test doesn't generate enough register pressure on the compiler?
+
+Regards,
+Peter Hurley
+
+#define ARRAY_SIZE(x)  (sizeof(x)/sizeof((x)[0]))
+
+struct x {
+	long unused[64];
+	short b[12];
+	int unused2[10];
+	short c;
+};
+
+void store_c(struct x *p, short a[]) {
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(p->b); i++)
+		p->b[i] = a[i];
+	p->c = 2;
+}
+
+
+void store_c(struct x *p, short a[]) {
+   0:	e1a0c00d 	mov	ip, sp
+   4:	e3a03000 	mov	r3, #0
+   8:	e92dd800 	push	{fp, ip, lr, pc}
+   c:	e24cb004 	sub	fp, ip, #4
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(p->b); i++)
+		p->b[i] = a[i];
+  10:	e191c0b3 	ldrh	ip, [r1, r3]
+  14:	e0802003 	add	r2, r0, r3
+  18:	e2822c01 	add	r2, r2, #256	; 0x100
+  1c:	e2833002 	add	r3, r3, #2
+  20:	e3530018 	cmp	r3, #24
+  24:	e1c2c0b0 	strh	ip, [r2]
+  28:	1afffff8 	bne	10 <store_c+0x10>
+	p->c = 2;
+  2c:	e3a03d05 	mov	r3, #320	; 0x140
+  30:	e3a02002 	mov	r2, #2
+  34:	e18020b3 	strh	r2, [r0, r3]
+  38:	e89da800 	ldm	sp, {fp, sp, pc}
+
