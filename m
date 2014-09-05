@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaIETWA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 15:22:00 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55019 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301AbaIETV6 (ORCPT
+	id S1751754AbaIETXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 15:23:36 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:46894 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaIETXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 15:21:58 -0400
-Date: Fri, 05 Sep 2014 12:21:57 -0700 (PDT)
-Message-Id: <20140905.122157.2149128504245355664.davem@davemloft.net>
-To: cwang@twopensource.com
-Cc: sd@queasysnail.net, hannes@stressinduktion.org, tt.rantala@gmail.com,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trinity@vger.kernel.org, davej@redhat.com
-Subject: Re: [PATCH net v2] ipv6: fix rtnl locking in setsockopt for
- anycast and multicast
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAHA+R7M1qd5g1ta=YFqefgXDf1EfF2_VsJGUvH6Dd+ttnHc_VQ@mail.gmail.com>
-References: <20140902082929.GA8483@kria>
-	<20140905.115305.809714259412705649.davem@davemloft.net>
-	<CAHA+R7M1qd5g1ta=YFqefgXDf1EfF2_VsJGUvH6Dd+ttnHc_VQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Sep 2014 12:21:58 -0700 (PDT)
+	Fri, 5 Sep 2014 15:23:34 -0400
+Date: Fri, 5 Sep 2014 13:23:29 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com
+Subject: Re: [PATCH v2] PCI: keystone: add a pci quirk to limit mrrs
+Message-ID: <20140905192329.GE8080@google.com>
+References: <1407527132-3294-1-git-send-email-m-karicheri2@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407527132-3294-1-git-send-email-m-karicheri2@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <cwang@twopensource.com>
-Date: Fri, 5 Sep 2014 11:58:31 -0700
+On Fri, Aug 08, 2014 at 03:45:32PM -0400, Murali Karicheri wrote:
+> Keystone PCI controller has a limitation that memory read request
+> size must not exceed 256 bytes. This is a hardware limitation and
+> add a quirk to force this limit on all downstream devices by
+> updating mrrs.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>  -v2: made the quirk happens after tuning
+>  -v1: changed printk to indicate PCI bdf
+>  This applies on top of the Keystone PCI controller patch series
+>  at http://thread.gmane.org/gmane.linux.kernel.pci/33523
+>  drivers/pci/host/pci-keystone.c |   40 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 40 insertions(+)
+> 
+> diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
+> index c1cfaef..a132622 100644
+> --- a/drivers/pci/host/pci-keystone.c
+> +++ b/drivers/pci/host/pci-keystone.c
+> @@ -42,8 +42,48 @@
+>  /* DEV_STAT_CTRL */
+>  #define PCIE_CAP_BASE		0x70
+>  
+> +/* PCIE controller device IDs */
+> +#define PCIE_RC_K2HK		0xb008
+> +#define PCIE_RC_K2E		0xb009
+> +#define PCIE_RC_K2L		0xb00a
 
-> On Fri, Sep 5, 2014 at 11:53 AM, David Miller <davem@davemloft.net> wrote:
->> From: Sabrina Dubroca <sd@queasysnail.net>
->> Date: Tue, 2 Sep 2014 10:29:29 +0200
->>
->>> Calling setsockopt with IPV6_JOIN_ANYCAST or IPV6_LEAVE_ANYCAST
->>> triggers the assertion in addrconf_join_solict()/addrconf_leave_solict()
->>>
->>> ipv6_sock_ac_join(), ipv6_sock_ac_drop(), ipv6_sock_ac_close() need to
->>> take RTNL before calling ipv6_dev_ac_inc/dec. Same thing with
->>> ipv6_sock_mc_join(), ipv6_sock_mc_drop(), ipv6_sock_mc_close() before
->>> calling ipv6_dev_mc_inc/dec.
->>>
->>> This patch moves ASSERT_RTNL() up a level in the call stack.
->>>
->>> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
->>> Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
->>> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
->>
->> Applied and queued up for -stable, thanks.
-> 
-> I believe you applied a wrong version, at least the following
-> is not correct:
-> 
-> +       if (!dev)
-> +               return -ENODEV;
-> 
-> Sabrina took that from my draft patch, but they all don't
-> realize this is wrong.
-> 
-> (I did provide a correct version which is just ignored by you.)
+A Root Complex doesn't appear in config space as a PCI device, so I think
+these are actually Root Port devices, aren't they?
 
-Not ignored, but rather it was hard to interpret the situation due to
-poor communication in the feedback emails.
+I suppose the spec would allow Root Complex Integrated Endpoints, on which
+MRRS could also be set, but I think your quirk ignores them because they
+would appear on the root bus.  Is ignoring them OK, or would you want to
+set MRRS for those as well?
 
-The onus is on you guys to communicate things precisely so that I
-understand what patch is in what state.
+> +
+>  #define to_keystone_pcie(x)	container_of(x, struct keystone_pcie, pp)
+>  
+> +static void quirk_limit_mrrs(struct pci_dev *dev)
+> +{
+> +	struct pci_bus *bus = dev->bus;
+> +	struct pci_dev *bridge = bus->self;
+> +
+> +	if (pci_is_root_bus(bus))
+> +		return;
+> +
+> +	/* look for the host bridge */
+> +	while (!pci_is_root_bus(bus)) {
+> +		bridge = bus->self;
+> +		bus = bus->parent;
+> +	}
+> +
+> +	if (bridge) {
+> +		u16 id;
+> +
+> +		/*
+> +		 * Keystone PCI controller has a h/w limitation of
+> +		 * 256 bytes maximum read request size. It can't handle
+> +		 * anything higher than this. So force this limit on
+> +		 * all downstream devices
+> +		 */
+> +		pci_read_config_word(bridge, PCI_DEVICE_ID, &id);
+
+I think you should check the Vendor ID here as well.  Otherwise, there's a
+possibility of applying this quirk to devices under a bridge with the same
+Device ID but different Vendor ID.
+
+And I think you should be able to use the bridge->vendor and bridge->device
+fields instead of reading them from config space.  Actually, this might be
+a good place to use pci_match_id().
+
+> +		if ((id == PCIE_RC_K2HK) || (id == PCIE_RC_K2E) ||
+> +		    (id == PCIE_RC_K2L)) {
+> +			if (pcie_get_readrq(dev) > 256) {
+> +				dev_info(&dev->dev, "limiting mrrs to 256\n");
+> +				pcie_set_readrq(dev, 256);
+> +			}
+> +		}
+> +	}
+> +}
+> +DECLARE_PCI_FIXUP_ENABLE(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_mrrs);
+> +
+>  static int ks_pcie_establish_link(struct keystone_pcie *ks_pcie)
+>  {
+>  	struct pcie_port *pp = &ks_pcie->pp;
+> -- 
+> 1.7.9.5
+> 
