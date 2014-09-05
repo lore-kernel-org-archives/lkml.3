@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140AbaIEHW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 03:22:56 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:39123 "EHLO extserv.mm-sol.com"
+	id S1756157AbaIEHXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 03:23:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42524 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688AbaIEHWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 03:22:55 -0400
-Message-ID: <540964DD.7070203@mm-sol.com>
-Date: Fri, 05 Sep 2014 10:23:09 +0300
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751924AbaIEHXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 03:23:34 -0400
+Message-ID: <540964F0.8070809@suse.com>
+Date: Fri, 05 Sep 2014 09:23:28 +0200
+From: Hannes Reinecke <hare@suse.com>
+Organization: SuSE Linux Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: galak@codeaurora.org, iivanov@mm-sol.com, arm@kernel.org,
-        khilman@linaro.org, arnd@arndb.de, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olof@lixom.net, davidb@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, agross@codeaurora.org,
-        linus.walleij@linaro.org, srinivas.kandagatla@linaro.org
-Subject: Re: [PATCH v2] ARM: msm: Update the references to DEBUG_MSM_UARTx
-References: <1401116287.6068.15.camel@x220>	 <1401122260-12002-1-git-send-email-gdjakov@mm-sol.com>	 <1403165772.23136.17.camel@x220> <1409870314.5546.128.camel@x220>
-In-Reply-To: <1409870314.5546.128.camel@x220>
-Content-Type: text/plain; charset=utf-8
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, falcon@meizu.com, tiwai@suse.de,
+        tj@kernel.org, arjan@linux.intel.com
+CC: linux-kernel@vger.kernel.org, oleg@redhat.com, akpm@linux-foundation.org,
+        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
+        bpoirier@suse.de, santosh@chelsio.com,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>, MPT-FusionLinux.pdl@avagotech.com,
+        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [RFC v2 5/6] mptsas: use async probe
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1409899047-13045-6-git-send-email-mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 01:38 AM, Paul Bolle wrote:
-> On Thu, 2014-06-19 at 10:16 +0200, Paul Bolle wrote:
->> On Mon, 2014-05-26 at 19:37 +0300, Georgi Djakov wrote:
->>> The Kconfig options DEBUG_MSM_UART1, DEBUG_MSM_UART2, DEBUG_MSM_UART3,
->>> MSM_DEBUG_UART1, MSM_DEBUG_UART2 and MSM_DEBUG_UART3 are removed, but 
->>> they are still referenced in the following files:
->>> 	arch/arm/mach-msm/io.c,
->>> 	arch/arm/mach-msm/board-trout.c
->>> 	arch/arm/mach-msm/board-trout-gpio.c
->>>
->>> Fix this by updating the reference to the new Kconfig option.
->>>
->>> Reported-by: Paul Bolle <pebolle@tiscali.nl>
->>> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
->>> ---
->>
->> This patch is included neither in v3.16-rc1 nor in next-20140619.
+On 09/05/2014 08:37 AM, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
 > 
-> Still true for v3.17-rc3 and next-20140904.
+> Its reported that mptsas can at times take over 30 seconds
+> to recognize SCSI storage devices [0], this is done on the
+> driver's probe path. Use the the new asynch probe to
+> circumvent systemd from killing this driver.
 > 
+> [0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
+> 
+> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+> Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+> Cc: Tim Gardner <tim.gardner@canonical.com>
+> Cc: Pierre Fersing <pierre-fersing@pierref.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Benjamin Poirier <bpoirier@suse.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
+> Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
+> Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+> Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
+> Cc: Hariprasad S <hariprasad@chelsio.com>
+> Cc: Santosh Rastapur <santosh@chelsio.com>
+> Cc: Casey Leedom <leedom@chelsio.com>
+> Cc: MPT-FusionLinux.pdl@avagotech.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>  drivers/message/fusion/mptsas.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+> index 0707fa2..6dfee95 100644
+> --- a/drivers/message/fusion/mptsas.c
+> +++ b/drivers/message/fusion/mptsas.c
+> @@ -5385,6 +5385,7 @@ static struct pci_driver mptsas_driver = {
+>  	.suspend	= mptscsih_suspend,
+>  	.resume		= mptscsih_resume,
+>  #endif
+> +	.driver.async_probe = true,
+>  };
+>  
+>  static int __init
+> 
+This is the wrong appoach.
+First of all, the mptsas, mpt2sas, and mpt3sas all share the same
+driver layout, so any issue happeing with this driver will most
+likely affect the others, too.
+Secondly the driver is event-based anyway, so we should be moving
+the initialisation to the already existing event handler:
 
-Hi Paul,
-It was pulled yesterday into the msm/cleanup branch of the arm-soc tree.
+diff --git a/drivers/message/fusion/mptsas.c
+b/drivers/message/fusion/mptsas.c
+index 0707fa2..6f41e2c 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -5305,7 +5305,7 @@ mptsas_probe(struct pci_dev *pdev, const
+struct pci_device_id *id)
+        /* older firmware doesn't support expander events */
+        if ((ioc->facts.HeaderVersion >> 8) < 0xE)
+                ioc->old_sas_discovery_protocal = 1;
+-       mptsas_scan_sas_topology(ioc);
++       mptsas_queue_rescan(ioc);
+        mptsas_fw_event_on(ioc);
+        return 0;
 
-Thanks,
-Georgi
+
