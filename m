@@ -1,50 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471AbaIEQQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:16:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30371 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaIEQQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:16:06 -0400
-Date: Fri, 5 Sep 2014 12:16:01 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Miklos Szeredi <mszeredi@suse.cz>
-cc: Jan Kara <jack@suse.cz>, "J. Bruce Fields" <bfields@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] dcache: fix kmemcheck warning in switch_names
-Message-ID: <alpine.LRH.2.02.1409051214450.5269@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751634AbaIEQRa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:17:30 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37671 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750775AbaIEQR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 12:17:26 -0400
+Message-ID: <5409E20C.3050004@hurleysoftware.com>
+Date: Fri, 05 Sep 2014 12:17:16 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Laight <David.Laight@ACULAB.COM>,
+        "'paulmck@linux.vnet.ibm.com'" <paulmck@linux.vnet.ibm.com>
+CC: Jakub Jelinek <jakub@redhat.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        "linux-arm@vger.kernel.org" <linux-arm@vger.kernel.org>
+Subject: Re: bit fields && data tearing
+References: <54079B70.4050200@hurleysoftware.com> <1409785893.30640.118.camel@pasglop> <21512.10628.412205.873477@gargle.gargle.HOWL> <20140904090952.GW17454@tucnak.redhat.com> <540859EC.5000407@hurleysoftware.com> <20140904175044.4697aee4@alan.etchedpixels.co.uk> <5408C0AB.6050801@hurleysoftware.com> <20140905001751.GL5001@linux.vnet.ibm.com> <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com> <20140905040645.GO5001@linux.vnet.ibm.com> <063D6719AE5E284EB5DD2968C1650D6D17487F66@AcuExch.aculab.com> <5409AD0A.5090305@hurleysoftware.com> <063D6719AE5E284EB5DD2968C1650D6D17488265@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17488265@AcuExch.aculab.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes kmemcheck warning in switch_names. The function
-switch_names swaps inline names of two dentries. It swaps full arrays
-d_iname, no matter how many bytes are really used by the strings. Reading
-data beyond string ends results in kmemcheck warning.
+On 09/05/2014 08:37 AM, David Laight wrote:
+> From: Peter Hurley
+>> On 09/05/2014 04:30 AM, David Laight wrote:
+>>> I've seen gcc generate 32bit accesses for 16bit structure members on arm.
+>>> It does this because of the more limited range of the offsets for the 16bit access.
+>>> OTOH I don't know if it ever did this for writes - so it may be moot.
+>>
+>> Can you recall the particulars, like what ARM config or what code?
+>>
+>> I tried an overly-simple test to see if gcc would bump up to the word load for
+>> the 12-bit offset mode, but it stuck with register offset rather than immediate
+>> offset. [I used the compiler options for allmodconfig and a 4.8 cross-compiler.]
+>>
+>> Maybe the test doesn't generate enough register pressure on the compiler?
+> 
+> Dunno, I would have been using a much older version of the compiler.
+> It is possible that it doesn't do it any more.
+> It might only have done it for loads.
+> 
+> The compiler used to use misaligned 32bit loads for structure
+> members on large 4n+2 byte boundaries as well.
+> I'm pretty sure it doesn't do that either.
+> 
+> There have been a lot of compiler versions since I was compiling
+> anything for arm.
 
-We fix the bug by marking both arrays as fully initialized.
+Yeah, it seems gcc for ARM no longer uses the larger operand size as a
+substitute for 12-bit immediate offset addressing mode, even for reads.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vger.kernel.org # v3.15
+While this test:
 
----
- fs/dcache.c |    2 ++
- 1 file changed, 2 insertions(+)
+struct x {
+	short b[12];
+};
 
-Index: linux-2.6/fs/dcache.c
-===================================================================
---- linux-2.6.orig/fs/dcache.c	2014-09-04 23:04:21.000000000 +0200
-+++ linux-2.6/fs/dcache.c	2014-09-04 23:43:11.000000000 +0200
-@@ -2407,6 +2407,8 @@ static void switch_names(struct dentry *
- 			 */
- 			unsigned int i;
- 			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-+			kmemcheck_mark_initialized(dentry->d_iname, DNAME_INLINE_LEN);
-+			kmemcheck_mark_initialized(target->d_iname, DNAME_INLINE_LEN);
- 			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
- 				swap(((long *) &dentry->d_iname)[i],
- 				     ((long *) &target->d_iname)[i]);
+short load_b(struct x *p) {
+	return p->b[8];
+}
+
+generates the 8-bit immediate offset form,
+
+short load_b(struct x *p) {
+   0:	e1d001f0 	ldrsh	r0, [r0, #16]
+   4:	e12fff1e 	bx	lr
+
+
+pushing the offset out past 256:
+
+struct x {
+	long unused[64];
+	short b[12];
+};
+
+short load_b(struct x *p) {
+	return p->b[8];
+}
+
+generates the register offset addressing mode instead of 12-bit immediate:
+
+short load_b(struct x *p) {
+   0:	e3a03e11 	mov	r3, #272	; 0x110
+   4:	e19000f3 	ldrsh	r0, [r0, r3]
+   8:	e12fff1e 	bx	lr
+
+Regards,
+Peter Hurley
+
+[Note: I compiled without the frame pointer to simplify the code generation]
