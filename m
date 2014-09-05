@@ -1,82 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaIEUlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:41:05 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:45997 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144AbaIEUlD (ORCPT
+	id S1752264AbaIEUlL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:41:11 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:43960 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbaIEUlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:41:03 -0400
-Date: Fri, 5 Sep 2014 15:40:54 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, seth.forshee@canonical.com
-Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
- namespaces
-Message-ID: <20140905204054.GC84919@ubuntu-hedt>
-Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Serge Hallyn <serge.hallyn@ubuntu.com>,
-	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+	Fri, 5 Sep 2014 16:41:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <540A1D54.9030103@ti.com>
+References: <1407527132-3294-1-git-send-email-m-karicheri2@ti.com>
+ <20140905192329.GE8080@google.com> <540A1D54.9030103@ti.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 5 Sep 2014 14:40:43 -0600
+Message-ID: <CAErSpo7LHFbg-CiWr+UYdy4vuvPjcCyERyTzU_F59An-gW-O4w@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: keystone: add a pci quirk to limit mrrs
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 10:44:53AM -0500, Seth Forshee wrote:
-> Here's an updated set of patches for allowing fuse mounts from pid and
-> user namespaces. I discussed some of the issues we debated with the last
-> patch set (and a few others) with Eric at LinuxCon, and the updates here
-> mainly reflect the outcome of those discussions.
-> 
-> The stickiest issue in the v1 patches was the question of where to get
-> the user and pid namespaces from that are used for translating ids for
-> communication with userspace. Eric told me that for user namespaces at
-> least we need to grab a namespace at open or mount time and use only
-> that namespace to prevent certain types of attacks. That rules out the
-> suggestion of using the user ns of current in the read/write paths, and
-> I think it makes sense to handle pid and user namespaces similarly. So
-> in these patches I'm still grabbing the namespaces of current during
-> mount, but I've added an additional check to fail the mount if the
-> f_cred's userns for the fd to userspace doesn't match.
-> 
-> Another issue mentioned by Eric was what to use for i_[ug]id if the ids
-> from userspace don't map into the user namespace, which is going to be a
-> problem for any other filesystems which become mountable from user
-> namespaces as well. We discussed a few options for addressing this, the
-> most promising of which seems to be either using INVALID_[UG]ID for
-> these inodes or creating vfs-wide "nobody" ids for this purpose. After
-> thinking about it for a while I'm favoring using the invalid ids, but
-> I'm hoping to solicit some more feedback.
-> 
-> For now these patches are using invalid ids if the user doesn't map into
-> the namespace. I went through the vfs code and found one place where
-> this could be handled better (addressed in patch 1 of the series). The
-> only other issue I found was that currently no one, not even root, can
-> change onwership of such inodes, but I suspect we can find a way around
-> this.
-> 
-> The only other change since v1 is that I now fail changing file
-> ownership if the new uid or gid does not map into the namespace used for
-> userspace communication.
+On Fri, Sep 5, 2014 at 2:30 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> On 09/05/2014 03:23 PM, Bjorn Helgaas wrote:
+>>
+>> On Fri, Aug 08, 2014 at 03:45:32PM -0400, Murali Karicheri wrote:
+>>>
+>>> Keystone PCI controller has a limitation that memory read request
+>>> size must not exceed 256 bytes. This is a hardware limitation and
+>>> add a quirk to force this limit on all downstream devices by
+>>> updating mrrs.
+>>>
+>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>> ---
+>>>   -v2: made the quirk happens after tuning
+>>>   -v1: changed printk to indicate PCI bdf
+>>>   This applies on top of the Keystone PCI controller patch series
+>>>   at http://thread.gmane.org/gmane.linux.kernel.pci/33523
+>>>   drivers/pci/host/pci-keystone.c |   40
+>>> +++++++++++++++++++++++++++++++++++++++
+>>>   1 file changed, 40 insertions(+)
+>>>
+>>> diff --git a/drivers/pci/host/pci-keystone.c
+>>> b/drivers/pci/host/pci-keystone.c
+>>> index c1cfaef..a132622 100644
+>>> --- a/drivers/pci/host/pci-keystone.c
+>>> +++ b/drivers/pci/host/pci-keystone.c
+>>> @@ -42,8 +42,48 @@
+>>>   /* DEV_STAT_CTRL */
+>>>   #define PCIE_CAP_BASE         0x70
+>>>
+>>> +/* PCIE controller device IDs */
+>>> +#define PCIE_RC_K2HK           0xb008
+>>> +#define PCIE_RC_K2E            0xb009
+>>> +#define PCIE_RC_K2L            0xb00a
+>>
+>>
+>> A Root Complex doesn't appear in config space as a PCI device, so I think
+>> these are actually Root Port devices, aren't they?
+>
+>
+> Yes.
+>
+>>
+>> I suppose the spec would allow Root Complex Integrated Endpoints, on which
+>> MRRS could also be set, but I think your quirk ignores them because they
+>> would appear on the root bus.  Is ignoring them OK, or would you want to
+>> set MRRS for those as well?
+>
+>
+> How does the Root Complex integrated endpoints are designed? Our PCI can act
+> as a RC or EP and not both at the same time. So I guess this is not
+> applicable.
 
-I forgot that I did change one other thing. In v1 I didn't allow fuseblk
-mounts from user namespaces since I hadn't gotten around to testing or
-looking at the differences between it and normal fuse mounts yet. I've
-found time to do so since then and everything seems to be in good order,
-so I've enabled mounting fuseblk in user namespaces as well in the v2
-patches.
+My guess is that you probably don't have any integrated endpoints and
+hence don't need to worry about MRRS for them.  The PCIe spec (r3.0,
+sec 1.3.2.3) says "A Root Complex Integrated Endpoint is implemented
+on internal logic of Root Complexes that contains [sic] the Root
+Ports."
 
-Thanks,
-Seth
+For example, my laptop has:
+
+  00:03.0 Audio device: Intel Corporation Haswell-ULT HD Audio Controller
+  00:1c.0 PCI bridge: Intel Corporation Lynx Point-LP PCI Express Root Port 1
+  00:1c.3 PCI bridge: Intel Corporation Lynx Point-LP PCI Express Root Port 4
+
+the 00:03.0 Audio device is a PCIe device but it is a sibling of the
+Root Ports rather than being downstream from them, i.e., it's an
+Integrated Endpoint that is part of the Root Complex itself.
+
+>>> +
+>>>   #define to_keystone_pcie(x)   container_of(x, struct keystone_pcie, pp)
+>>>
+>>> +static void quirk_limit_mrrs(struct pci_dev *dev)
+>>> +{
+>>> +       struct pci_bus *bus = dev->bus;
+>>> +       struct pci_dev *bridge = bus->self;
+>>> +
+>>> +       if (pci_is_root_bus(bus))
+>>> +               return;
+>>> +
+>>> +       /* look for the host bridge */
+>>> +       while (!pci_is_root_bus(bus)) {
+>>> +               bridge = bus->self;
+>>> +               bus = bus->parent;
+>>> +       }
+>>> +
+>>> +       if (bridge) {
+>>> +               u16 id;
+>>> +
+>>> +               /*
+>>> +                * Keystone PCI controller has a h/w limitation of
+>>> +                * 256 bytes maximum read request size. It can't handle
+>>> +                * anything higher than this. So force this limit on
+>>> +                * all downstream devices
+>>> +                */
+>>> +               pci_read_config_word(bridge, PCI_DEVICE_ID,&id);
+>>
+>>
+>> I think you should check the Vendor ID here as well.  Otherwise, there's a
+>> possibility of applying this quirk to devices under a bridge with the same
+>> Device ID but different Vendor ID.
+>>
+>> And I think you should be able to use the bridge->vendor and
+>> bridge->device
+>> fields instead of reading them from config space.  Actually, this might be
+>> a good place to use pci_match_id().
+>
+>
+> Ok.
+>
+>
+>>
+>>> +               if ((id == PCIE_RC_K2HK) || (id == PCIE_RC_K2E) ||
+>>> +                   (id == PCIE_RC_K2L)) {
+>>> +                       if (pcie_get_readrq(dev)>  256) {
+>>> +                               dev_info(&dev->dev, "limiting mrrs to
+>>> 256\n");
+>>> +                               pcie_set_readrq(dev, 256);
+>>> +                       }
+>>> +               }
+>>> +       }
+>>> +}
+>>> +DECLARE_PCI_FIXUP_ENABLE(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_mrrs);
+>>> +
+>>>   static int ks_pcie_establish_link(struct keystone_pcie *ks_pcie)
+>>>   {
+>>>         struct pcie_port *pp =&ks_pcie->pp;
+>>> --
+>>> 1.7.9.5
+>>>
+>
