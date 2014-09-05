@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680AbaIEKIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:08:52 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:42269 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756575AbaIEKIu (ORCPT
+	id S1756525AbaIEKLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:11:01 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:55099 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755909AbaIEKK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:08:50 -0400
-Message-ID: <54098BA1.3090508@linaro.org>
-Date: Fri, 05 Sep 2014 19:08:33 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Will Deacon <will.deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Kees Cook <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "arndb@arndb.de" <arndb@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v6 2/6] arm64: ptrace: allow tracer to skip a system call
-References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org> <1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jJCyqpXkdvNDCu+eMr0qnqwbqUUo4u+2p_7DvFMzfKoEw@mail.gmail.com> <53F69045.7010301@linaro.org> <20140826175128.GD23445@arm.com> <53FD72E2.4020103@linaro.org> <20140901114751.GG30401@n2100.arm.linux.org.uk> <54058421.5070506@linaro.org> <20140902091622.GK30401@n2100.arm.linux.org.uk>
-In-Reply-To: <20140902091622.GK30401@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 5 Sep 2014 06:10:59 -0400
+Message-ID: <1409911856.7832.9.camel@x220>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Sergey Ryazanov <ryazanov.s.a@gmail.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
+        open@hauke-m.de, list@hauke-m.de, antonynpavlov@gmail.com,
+        openwrt-devel@lists.openwrt.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 05 Sep 2014 12:10:56 +0200
+In-Reply-To: <1403091974.1984.102.camel@x220>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-10-git-send-email-richard@nod.at>
+	 <52F7D480.1050106@hauke-m.de> <52F7DF21.70207@nod.at>
+	 <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
+	 <52F8C373.9060108@rempel-privat.de>
+	 <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
+	 <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
+	 <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
+	 <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
+	 <20140213201421.GJ22203@tuxdriver.com> <1397581703.8212.5.camel@x220>
+	 <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
+	 <1403087119.1984.93.camel@x220>
+	 <CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
+	 <1403091974.1984.102.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Sep 2014 10:10:56.0892 (UTC) FILETIME=[AF30D3C0:01CFC8F1]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2014 06:16 PM, Russell King - ARM Linux wrote:
-> On Tue, Sep 02, 2014 at 05:47:29PM +0900, AKASHI Takahiro wrote:
->> On 09/01/2014 08:47 PM, Russell King - ARM Linux wrote:
->>> On Wed, Aug 27, 2014 at 02:55:46PM +0900, AKASHI Takahiro wrote:
->>>> 1)
->>>> setting x0 to -ENOSYS is necessary because, otherwise, user-issued syscall(-1) will
->>>> return a bogus value when audit tracing is on.
->>>>
->>>> Please note that, on arm,
->>>>                    not traced      traced
->>>>                    ------          ------
->>>> syscall(-1)      aborted         OOPs(BUG_ON)
->>>> syscall(-3000)   aborted         aborted
->>>> syscall(1000)    ENOSYS          ENOSYS
->>>
->>> Two points here:
->>>
->>> 1. You've found a case which causes a BUG_ON().  Where is the bug report
->>>      for this, so the problem can be investigated and resolved?
->>
->> I think that I mentioned it could also happen on arm somewhere in a talk
->> with Will, but don't remember exactly when.
->
-> Sorry, not good enough.  Please report this bug so it can be investigated
-> and fixed.
+Jiri, Nick, Luis, John,
 
-Please review my patch as well as the commit message.
+On Wed, 2014-06-18 at 13:46 +0200, Paul Bolle wrote:
+> Having this conversation every rc1 is getting a bit silly. Could Jiri
+> e.a. perhaps set some specific deadline for ATHEROS_AR231X to be
+> submitted?
 
->>> 2. What do you mean by "aborted" ?
->>
->> I mean that the process will receive SIGILL and get aborted.
->> A system call number, like -1 and -3000, won't be trapped by *switch*
->> statement in asm_syscall() and end up with being signaled.
->
-> That is correct behaviour - because numbers greater than 0xf0000 (or
-> 0x9f0000 for OABI - the 0x900000 offset on the syscalls on OABI is to
-> distinguish them from syscalls used by RISC OS) are not intended to
-> be Linux syscalls per-se.
+I waited until rc3. Have you seen any activity on this front? If not,
+should I resend the patch that removes the code in mainline that depends
+on ATHEROS_AR231X (ie, AHB bus support)?
 
-I tried to make such invalid/pseudo syscalls hehave in the same way
-whether or not a task is traced (by seccomp, ptrace or audit).
+And to repeat the obvious: the removed code can always be re-added once
+ATHEROS_AR231X gets actually added to the tree.
 
->>> Please, if you find a problem with 32-bit ARM, report it.  Don't hide it,
->>> because hiding it can be a security issue or in the case of BUG_ON(), it
->>> could be a denial of service issue.
->>>
->>> As you're part of Linaro, I would have thought you'd be more responsible
->>> in this regard - after all, Linaro is supposed to be about improving the
->>> ARM kernel...  Maybe I got that wrong, and Linaro is actually about
->>> ensuring that the ARM kernel is stuffed full of broken features?
->>
->> I thought my first priority was on arm64 (and then arm), but now that
->> you and Will seem to want to see the fix first on arm, okey, I will
->> start with arm issue.
->
-> So what you're saying there is that if you find a bug in ARM code, which
-> everyone is currently using, you can ignore it until you've sorted out
-> ARM64 which almost no one is using.
->
-> This is absurd, and whoever has set your priorities is clearly on drugs.
+Thanks,
 
-Thank you. I learned a new English word, absurd.
 
--Takahiro AKASHI
-
->
-
+Paul Bolle
 
