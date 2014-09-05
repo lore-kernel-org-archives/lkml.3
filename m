@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaIEEKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 00:10:30 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:40909 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbaIEEK3 (ORCPT
+	id S1751762AbaIEEVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 00:21:09 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:56583 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaIEEVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 00:10:29 -0400
-From: =?UTF-8?q?Filipe=20Gon=C3=A7alves?= <filipe@codinghighway.com>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Filipe=20Gon=C3=A7alves?= <filipe@codinghighway.com>
-Subject: [PATCH 1/1] staging/lustre: Fixed checkpatch warning: Use #include <linux/statfs.h> instead of <asm/statfs.h>
-Date: Fri,  5 Sep 2014 05:09:46 +0100
-Message-Id: <1409890186-3536-1-git-send-email-filipe@codinghighway.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 5 Sep 2014 00:21:08 -0400
+Date: Fri, 5 Sep 2014 06:21:04 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, jolsa@redhat.com, namhyung@kernel.org,
+        peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com
+Subject: [PATCH] perf tool: fix compilation for ARM
+Message-ID: <20140905042103.GA3091@quad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Filipe Gonçalves <filipe@codinghighway.com>
----
- drivers/staging/lustre/lustre/lmv/lproc_lmv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-index 310df44..a7814f1 100644
---- a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-+++ b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-@@ -37,7 +37,7 @@
- #define DEBUG_SUBSYSTEM S_CLASS
- 
- #include <linux/seq_file.h>
--#include <asm/statfs.h>
-+#include <linux/statfs.h>
- #include "../include/lprocfs_status.h"
- #include "../include/obd_class.h"
- 
--- 
-1.9.1
+This patch fixes ARM compile of the perf tool.
+The debug.h header file was missing from a couple
+of unwind related modules.
 
+Signed-off-by: Stephane Eranian <eranian@google.com>
+--
+
+diff --git a/tools/perf/arch/arm/tests/dwarf-unwind.c b/tools/perf/arch/arm/tests/dwarf-unwind.c
+index 9f870d2..62eff84 100644
+--- a/tools/perf/arch/arm/tests/dwarf-unwind.c
++++ b/tools/perf/arch/arm/tests/dwarf-unwind.c
+@@ -3,6 +3,7 @@
+ #include "thread.h"
+ #include "map.h"
+ #include "event.h"
++#include "debug.h"
+ #include "tests/tests.h"
+ 
+ #define STACK_SIZE 8192
+diff --git a/tools/perf/arch/arm/util/unwind-libunwind.c b/tools/perf/arch/arm/util/unwind-libunwind.c
+index 729ed69..62c397e 100644
+--- a/tools/perf/arch/arm/util/unwind-libunwind.c
++++ b/tools/perf/arch/arm/util/unwind-libunwind.c
+@@ -3,6 +3,7 @@
+ #include <libunwind.h>
+ #include "perf_regs.h"
+ #include "../../util/unwind.h"
++#include "../../util/debug.h"
+ 
+ int libunwind__arch_reg_id(int regnum)
+ {
