@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaIEXqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:46:05 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:63732 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804AbaIEXqE (ORCPT
+	id S1752151AbaIEXsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:48:41 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:41311 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbaIEXsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:46:04 -0400
+	Fri, 5 Sep 2014 19:48:39 -0400
+Date: Sat, 6 Sep 2014 08:48:33 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@linux.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+Message-ID: <20140905234833.GJ15723@mtj.dyndns.org>
+References: <20140901230728.GM29327@sirena.org.uk>
+ <1627064.QhxvejlWdk@amdc1032>
+ <alpine.DEB.2.11.1409020857110.9201@gentwo.org>
+ <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+ <20140904171123.GD26364@mtj.dyndns.org>
+ <20140905113114.GS30467@titan.lakedaemon.net>
 MIME-Version: 1.0
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Fri, 5 Sep 2014 19:45:31 -0400
-Message-ID: <CAJhHMCCDPe_GGDWUF3OHQieCKLty2+TaYZwnKjK9ZF3z0auo8A@mail.gmail.com>
-Subject: Question reg. asm/qrwlock.h
-To: Waiman.Long@hp.com, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905113114.GS30467@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Waiman,
+On Fri, Sep 05, 2014 at 07:31:14AM -0400, Jason Cooper wrote:
+> Tejun, Christoph,
+> 
+> On Fri, Sep 05, 2014 at 02:11:23AM +0900, Tejun Heo wrote:
+> > On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
+> > > Subject: irqchip: Properly fetch the per cpu offset
+> > > 
+> > > The raw_cpu_read() conversion dropped the fetch of the offset
+> > > from base->percpu_base in gic_get_percpu_base.
+> > > 
+> > > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > > 
+> > > Index: linux/drivers/irqchip/irq-gic.c
+> > > ===================================================================
+> > > --- linux.orig/drivers/irqchip/irq-gic.c
+> > > +++ linux/drivers/irqchip/irq-gic.c
+> > > @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+> > >  #ifdef CONFIG_GIC_NON_BANKED
+> > >  static void __iomem *gic_get_percpu_base(union gic_base *base)
+> > >  {
+> > > -	return raw_cpu_read(base->percpu_base);
+> > > +	return raw_cpu_read(*base->percpu_base);
+> > 
+> > I suppose this should go through percpu/for-3.18-consistent-ops?  Can
+> > we please cc irq folks and get acks?
+> 
+> Could Thomas and I get a pointer to the original patch and thread that
+> caused the error?
 
-I see that in arch/x86/include/asm/qrwlock.h, there is this snippet within
+http://thread.gmane.org/gmane.linux.kernel/1769201/focus=1769204
+http://thread.gmane.org/gmane.linux.kernel.next/32601/focus=32606
 
-#ifndef CONFIG_X86_PPRO_FENCE
-#define queue_write_unlock queue_write_unlock
-static inline void queue_write_unlock(struct qrwlock *lock)
-{
-        barrier();
-        ACCESS_ONCE(*(u8 *)&lock->cnts) = 0;
-}
-#endif
+Thanks.
 
-
-I've been trying to understand why this special case is necessary for
-PPRO. Could you please explain?
-
-Thanks!
 -- 
-Pranith
+tejun
