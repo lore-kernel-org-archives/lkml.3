@@ -1,56 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaIEEVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 00:21:09 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:56583 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaIEEVI (ORCPT
+	id S1751847AbaIEEY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 00:24:56 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:52797 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaIEEYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 00:21:08 -0400
-Date: Fri, 5 Sep 2014 06:21:04 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, jolsa@redhat.com, namhyung@kernel.org,
-        peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com
-Subject: [PATCH] perf tool: fix compilation for ARM
-Message-ID: <20140905042103.GA3091@quad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Sep 2014 00:24:54 -0400
+From: Gyungoh Yoo <gyungoh@gmail.com>
+X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+To: sameo@linux.intel.com, lee.jones@linaro.org
+Cc: devicetree@vger.kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, Gyungoh Yoo <jack.yoo@skyworksinc.com>
+Subject: [PATCH v2.2 1/7] regulator: sky81452: Adding Skyworks SKY81452 MFD driver
+Date: Fri,  5 Sep 2014 13:24:38 +0900
+Message-Id: <1409891078-6327-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20140904092844.GB1397@lee--X1>
+References: <20140904092844.GB1397@lee--X1>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds SKY81452 MFD driver.
+SKY81452 has 2 functions : backlight LED driver and boost converter.
+The MFD driver registers I2C regmap and registers the child drivers.
 
-This patch fixes ARM compile of the perf tool.
-The debug.h header file was missing from a couple
-of unwind related modules.
+Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+---
+ drivers/mfd/Kconfig          |  12 +++++
+ drivers/mfd/Makefile         |   1 +
+ drivers/mfd/sky81452.c       | 111 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/sky81452.h |  32 +++++++++++++
+ 4 files changed, 156 insertions(+)
+ create mode 100644 drivers/mfd/sky81452.c
+ create mode 100644 include/linux/mfd/sky81452.h
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
---
-
-diff --git a/tools/perf/arch/arm/tests/dwarf-unwind.c b/tools/perf/arch/arm/tests/dwarf-unwind.c
-index 9f870d2..62eff84 100644
---- a/tools/perf/arch/arm/tests/dwarf-unwind.c
-+++ b/tools/perf/arch/arm/tests/dwarf-unwind.c
-@@ -3,6 +3,7 @@
- #include "thread.h"
- #include "map.h"
- #include "event.h"
-+#include "debug.h"
- #include "tests/tests.h"
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index de5abf2..6962b4e 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -626,6 +626,18 @@ config MFD_SM501_GPIO
+ 	 lines on the SM501. The platform data is used to supply the
+ 	 base number for the first GPIO line to register.
  
- #define STACK_SIZE 8192
-diff --git a/tools/perf/arch/arm/util/unwind-libunwind.c b/tools/perf/arch/arm/util/unwind-libunwind.c
-index 729ed69..62c397e 100644
---- a/tools/perf/arch/arm/util/unwind-libunwind.c
-+++ b/tools/perf/arch/arm/util/unwind-libunwind.c
-@@ -3,6 +3,7 @@
- #include <libunwind.h>
- #include "perf_regs.h"
- #include "../../util/unwind.h"
-+#include "../../util/debug.h"
++config MFD_SKY81452
++	tristate "Skyworks Solutions SKY81452"
++	select MFD_CORE
++	select REGMAP_I2C
++	depends on I2C
++	help
++	  This is the core driver for the Skyworks SKY81452 backlight and
++	  voltage regulator device.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called sky81452.
++
+ config MFD_SMSC
+        bool "SMSC ECE1099 series chips"
+        depends on I2C=y
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index f001487..6c2f317 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+ obj-$(CONFIG_MFD_AS3722)	+= as3722.o
+ obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+ obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
++obj-$(CONFIG_MFD_SKY81452)		+= sky81452.o
  
- int libunwind__arch_reg_id(int regnum)
- {
+ intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+ obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
+new file mode 100644
+index 0000000..3455ac7
+--- /dev/null
++++ b/drivers/mfd/sky81452.c
+@@ -0,0 +1,111 @@
++/*
++ * sky81452.c	SKY81452 MFD driver
++ *
++ * Copyright 2014 Skyworks Solutions Inc.
++ * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/regmap.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/sky81452.h>
++
++static const struct regmap_config sky81452_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++};
++
++static int sky81452_probe(struct i2c_client *client,
++				const struct i2c_device_id *id)
++{
++	struct device *dev = &client->dev;
++	const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
++	struct mfd_cell cells[2];
++	struct regmap *regmap;
++	int ret;
++
++	if (!pdata) {
++		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++		if (!pdata)
++			return -ENOMEM;
++	}
++
++	regmap = devm_regmap_init_i2c(client, &sky81452_config);
++	if (IS_ERR(regmap)) {
++		dev_err(dev, "failed to initialize I2C: %d", PTR_ERR(regmap));
++		return PTR_ERR(regmap);
++	}
++
++	i2c_set_clientdata(client, regmap);
++
++	memset(cells, 0, sizeof(cells));
++	cells[0].name = "sky81452-bl";
++	cells[0].of_compatible = "skyworks,sky81452-backlight";
++	cells[0].platform_data = pdata->bl_pdata;
++	cells[0].pdata_size = sizeof(*pdata->bl_pdata);
++	cells[1].name = "sky81452-regulator";
++	cells[1].of_compatible = "skyworks,sky81452-regulator";
++	cells[1].platform_data = pdata->regulator_init_data;
++	cells[1].pdata_size = sizeof(*pdata->regulator_init_data);
++
++	ret = mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells), NULL, 0, NULL);
++	if (ret)
++		dev_err(dev, "failed to add child devices: %d", ret);
++
++	return ret;
++}
++
++static int sky81452_remove(struct i2c_client *client)
++{
++	mfd_remove_devices(&client->dev);
++	return 0;
++}
++
++static const struct i2c_device_id sky81452_ids[] = {
++	{ "sky81452" },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, sky81452_ids);
++
++#ifdef CONFIG_OF
++static const struct of_device_id sky81452_of_match[] = {
++	{ .compatible = "skyworks,sky81452", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, sky81452_of_match);
++#endif
++
++static struct i2c_driver sky81452_driver = {
++	.driver = {
++		.name = "sky81452",
++		.of_match_table = of_match_ptr(sky81452_of_match),
++	},
++	.probe = sky81452_probe,
++	.remove = sky81452_remove,
++	.id_table = sky81452_ids,
++};
++
++module_i2c_driver(sky81452_driver);
++
++MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
++MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
++MODULE_LICENSE("GPL");
++MODULE_VERSION("1.2");
+diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
+new file mode 100644
+index 0000000..142f762
+--- /dev/null
++++ b/include/linux/mfd/sky81452.h
+@@ -0,0 +1,32 @@
++/*
++ * sky81452.h	SKY81452 MFD driver
++ *
++ * Copyright 2014 Skyworks Solutions Inc.
++ * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _SKY81452_H
++#define _SKY81452_H
++
++#include <linux/sky81452-backlight.h>
++#include <linux/regulator/machine.h>
++
++struct sky81452_platform_data {
++	struct sky81452_bl_platform_data *bl_pdata;
++	struct regulator_init_data *regulator_init_data;
++};
++
++#endif
+-- 
+1.9.1
+
