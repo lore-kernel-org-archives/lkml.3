@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759AbaIEJu7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 05:50:59 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:50224 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756552AbaIEJu4 (ORCPT
+	id S1756585AbaIEJxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 05:53:10 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43797 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756320AbaIEJxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 05:50:56 -0400
-Message-ID: <1409910654.5546.161.camel@x220>
-Subject: Re: [PATCH v2] ARM: spear: Remove references to PLAT_SPEAR_SINGLE
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Martin Walch <walch.martin@web.de>,
-        Richard Weinberger <richard@nod.at>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 05 Sep 2014 11:50:54 +0200
-In-Reply-To: <CAOh2x=koqY0SyOuP+Xk7Zd3Ue_7HPFAxUn+V3M4ehgCv-8i02A@mail.gmail.com>
-References: <1392153676.14317.8.camel@x220> <1397550407.1985.12.camel@x220>
-	 <534CFB45.9070704@st.com> <1402919387.30599.4.camel@x220>
-	 <1409909229.5546.146.camel@x220> <1409909940.5546.154.camel@x220>
-	 <CAOh2x=koqY0SyOuP+Xk7Zd3Ue_7HPFAxUn+V3M4ehgCv-8i02A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Sep 2014 09:50:54.0826 (UTC) FILETIME=[E2B41CA0:01CFC8EE]
-X-RcptDomain: vger.kernel.org
+	Fri, 5 Sep 2014 05:53:09 -0400
+Date: Fri, 5 Sep 2014 10:52:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: will.deacon@arm.com, viro@zeniv.linux.org.uk, eparis@redhat.com,
+        rgb@redhat.com, dsaxena@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH] arm: prevent BUG_ON in audit_syscall_entry()
+Message-ID: <20140905095252.GF30401@n2100.arm.linux.org.uk>
+References: <1409910393-30896-1-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409910393-30896-1-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh,
-
-On Fri, 2014-09-05 at 15:13 +0530, Viresh Kumar wrote:
-> On Fri, Sep 5, 2014 at 3:09 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> >> Ditto for v3.17-rc3 and next-20140904. Could someone please pix this up?
+On Fri, Sep 05, 2014 at 06:46:33PM +0900, AKASHI Takahiro wrote:
+> BUG_ON() in audit_syscall_entry() will be hit if user issues syscall(-1)
+> while syscall auditing is enabled (that is, by starting auditd).
+> In fact, syscall(-1) just fails (not signaled despite the expectation,
+> this is another minor bug), but the succeeding syscall hits BUG_ON.
 > 
-> You need to send it to arm@kernel.org..
-
-Will do, no problem. But why actually? (Note that MAINTAINERS is silent
-on arm@kernel.org. Maybe that address is documented elsewhere.)
-
-> > And now Rajeev's address bounces. Has Rajeev left ST?
+> When auditing syscall(-1), audit_syscall_entry() is called anyway, but
+> audit_syscall_exit() is not called and then 'in_syscall' flag in thread's
+> audit context is kept on. In this way, audit_syscall_entry() against
+> the succeeding syscall will see BUG_ON(in_syscall).
 > 
-> Yeah both Shiraz/Rajeev and myself have left ST :)
+> This patch fixes this bug by
+> 1) enforcing syscall exit tracing, including audit_syscall_exit(), to be
+>    executed in all cases,
 
-I see. Is there a current address for Rajeev.? I will not keep an
-Acked-by on a bouncing address.
+Really, no.  That adds additional overhead to every syscall, and that
+matters for system performance.  We want to have as little as possible
+overhead here.
 
-> You can add
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+The second issue here is that you haven't explained where the oops
+occurs.  It's seen as a good practice to include the oops dump for the
+bug you're fixing in the commit changelog, so that others can see the
+starting point for the investigation, and see exactly where things are
+going wrong.
 
-Thanks,
-
-
-Paul Bolle
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
