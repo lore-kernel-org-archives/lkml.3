@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaIEQy0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:54:26 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:64898 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaIEQyZ (ORCPT
+	id S1752907AbaIEQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:55:26 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46717 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaIEQzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:54:25 -0400
-Date: Fri, 5 Sep 2014 18:54:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Message-ID: <20140905165421.GI26243@dhcp22.suse.cz>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
- <20140905140815.GA10455@mtj.dyndns.org>
- <CAM_iQpXJfNAfTvfWNCUrdkwSWk7e2hkpoi4rba42RP7K=aYQDQ@mail.gmail.com>
+	Fri, 5 Sep 2014 12:55:24 -0400
+Date: Fri, 5 Sep 2014 17:55:20 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, lee.jones@linaro.org,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, peppe.cavallaro@st.com
+Subject: Re: [PATCH v6 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
+ HC
+Message-ID: <20140905165520.GA25253@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1409931392-22340-1-git-send-email-peter.griffin@linaro.org>
+ <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
+ <20140905154700.GE24449@saruman.home>
+ <20140905155321.GF24449@saruman.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAM_iQpXJfNAfTvfWNCUrdkwSWk7e2hkpoi4rba42RP7K=aYQDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140905155321.GF24449@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-09-14 09:43:52, Cong Wang wrote:
-> On Fri, Sep 5, 2014 at 7:08 AM, Tejun Heo <tj@kernel.org> wrote:
-> >
-> > Prolly should stable@vger.kernel.org?
+Hi Felipe,
+
+On Fri, 05 Sep 2014, Felipe Balbi wrote:
+> > > +
+> > > +	device_for_each_child(&pdev->dev, NULL, st_dwc3_remove_child);
+> > 
+> > same as before, of_platform_depopulate(). I can fix this one myself this
+> > time.
+
+Oh sorry, not sure what happened there, thanks for fixing it up:-)
 > 
-> Oh, yes. I assume the maintainer (Michal?) will send it to stable
+> it's in my testign/next branch, please make sure it looks alright.
 
-I guess you meant Rafael.
+Just checked and it looks good.
 
-> once it is accepted, or I can do that after it is merged.
+regards,
 
--- 
-Michal Hocko
-SUSE Labs
+Peter.
+
+
+
