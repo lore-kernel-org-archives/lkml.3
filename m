@@ -1,147 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970AbaIEWI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:08:29 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:37979 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaIEWI0 (ORCPT
+	id S1752146AbaIEWIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:08:35 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:64144 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaIEWIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:08:26 -0400
-Date: Fri, 5 Sep 2014 16:08:20 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v9 06/12] ARM: integrator: Correct usage of
- of_pci_range_to_resource()
-Message-ID: <20140905220820.GI8080@google.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-7-git-send-email-Liviu.Dudau@arm.com>
+	Fri, 5 Sep 2014 18:08:32 -0400
+Date: Fri, 5 Sep 2014 15:08:28 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Francis Moreau <francis.moro@gmail.com>, stable@vger.kernel.org,
+        linux-pm@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3.10.y+] PM / sleep: Use valid_state() for
+ platform-dependent sleep states only
+Message-ID: <20140905220828.GE18411@ld-irv-0074>
+References: <1849024.CHOUso6H2K@vostro.rjw.lan>
+ <1409865665-5375-1-git-send-email-computersforpeace@gmail.com>
+ <54095835.7000207@gmail.com>
+ <20140905074512.GA12218@brian-ubuntu>
+ <20140905214758.GC30221@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407860725-25202-7-git-send-email-Liviu.Dudau@arm.com>
+In-Reply-To: <20140905214758.GC30221@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Linus]
-
-On Tue, Aug 12, 2014 at 05:25:19PM +0100, Liviu Dudau wrote:
-> Previously, of_pci_range_to_resource() would return a resource
-> that contained physical addresses of the IO space even if the
-> IORESOURCE_IO flags mandate a logical port set of values. Now
-> that the function has been fixed we need to update the drivers
-> that were taking advantage of the old behaviour.
+On Fri, Sep 05, 2014 at 02:47:58PM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Sep 05, 2014 at 12:45:12AM -0700, Brian Norris wrote:
+> > On Fri, Sep 05, 2014 at 08:29:09AM +0200, Francis Moreau wrote:
+> > > On 09/04/2014 11:21 PM, Brian Norris wrote:
+> > [...]
+> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > Cc: <stable@vger.kernel.org> # 3.10+: 27ddcc6596e5: PM / sleep: Add state field to pm_states[] entries
+> > > > Cc: <stable@vger.kernel.org> # 3.10+
+> > > > ---
+> > > > This is a backport request for these two commits upstream:
+> > > > 
+> > > >     27ddcc6596e5 PM / sleep: Add state field to pm_states[] entries
+> > > >     43e8317b0bba PM / sleep: Use valid_state() for platform-dependent sleep states only
+> > > > 
+> > > 
+> > > Wouldn't it be cleaner to have 2 separate backports then ?
+> > 
+> > The first is purely a dependency for the second. It has no value on its
+> > own. So I thought the above form made sense and followed the process
+> > mentioned in Documentation/stable_kernel_rules.txt.
+> > 
+> > Admittedly, it's a little asymmetric. But I really don't know what the
+> > "best" option is, since I'd prefer not having to send around any patch
+> > text at all, unless the backport is not trivial (these apply cleanly).
 > 
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> If they apply cleanly, then just list the git commit ids, and I can take
+> care of the rest.
 
-Something's wrong with the CC: list.  You list Linus here in the changelog,
-but I don't see him in the CC: headers.
+OK. Is this a policy that should be documented? AIUI, we have a few
+options:
 
-> ---
->  arch/arm/mach-integrator/pci_v3.c | 24 +++++++++++++-----------
->  1 file changed, 13 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
-> index 05e1f73..193b7f8 100644
-> --- a/arch/arm/mach-integrator/pci_v3.c
-> +++ b/arch/arm/mach-integrator/pci_v3.c
-> @@ -660,6 +660,7 @@ static void __init pci_v3_preinit(void)
->  {
->  	unsigned long flags;
->  	unsigned int temp;
-> +	phys_addr_t io_address = pci_pio_to_address(io_mem.start);
->  
->  	pcibios_min_mem = 0x00100000;
->  
-> @@ -701,7 +702,7 @@ static void __init pci_v3_preinit(void)
->  	/*
->  	 * Setup window 2 - PCI IO
->  	 */
-> -	v3_writel(V3_LB_BASE2, v3_addr_to_lb_base2(io_mem.start) |
-> +	v3_writel(V3_LB_BASE2, v3_addr_to_lb_base2(io_address) |
->  			V3_LB_BASE_ENABLE);
->  	v3_writew(V3_LB_MAP2, v3_addr_to_lb_map2(0));
->  
-> @@ -742,6 +743,7 @@ static void __init pci_v3_preinit(void)
->  static void __init pci_v3_postinit(void)
->  {
->  	unsigned int pci_cmd;
-> +	phys_addr_t io_address = pci_pio_to_address(io_mem.start);
->  
->  	pci_cmd = PCI_COMMAND_MEMORY |
->  		  PCI_COMMAND_MASTER | PCI_COMMAND_INVALIDATE;
-> @@ -758,7 +760,7 @@ static void __init pci_v3_postinit(void)
->  		       "interrupt: %d\n", ret);
->  #endif
->  
-> -	register_isa_ports(non_mem.start, io_mem.start, 0);
-> +	register_isa_ports(non_mem.start, io_address, 0);
->  }
->  
->  /*
-> @@ -867,33 +869,33 @@ static int __init pci_v3_probe(struct platform_device *pdev)
->  
->  	for_each_of_pci_range(&parser, &range) {
->  		if (!range.flags) {
-> -			of_pci_range_to_resource(&range, np, &conf_mem);
-> +			ret = of_pci_range_to_resource(&range, np, &conf_mem);
->  			conf_mem.name = "PCIv3 config";
->  		}
->  		if (range.flags & IORESOURCE_IO) {
-> -			of_pci_range_to_resource(&range, np, &io_mem);
-> +			ret = of_pci_range_to_resource(&range, np, &io_mem);
-> +			dev_info(&pdev->dev, "IO PCI range converted\n");
->  			io_mem.name = "PCIv3 I/O";
->  		}
->  		if ((range.flags & IORESOURCE_MEM) &&
->  			!(range.flags & IORESOURCE_PREFETCH)) {
->  			non_mem_pci = range.pci_addr;
->  			non_mem_pci_sz = range.size;
-> -			of_pci_range_to_resource(&range, np, &non_mem);
-> +			ret = of_pci_range_to_resource(&range, np, &non_mem);
->  			non_mem.name = "PCIv3 non-prefetched mem";
->  		}
->  		if ((range.flags & IORESOURCE_MEM) &&
->  			(range.flags & IORESOURCE_PREFETCH)) {
->  			pre_mem_pci = range.pci_addr;
->  			pre_mem_pci_sz = range.size;
-> -			of_pci_range_to_resource(&range, np, &pre_mem);
-> +			ret = of_pci_range_to_resource(&range, np, &pre_mem);
->  			pre_mem.name = "PCIv3 prefetched mem";
->  		}
-> -	}
->  
-> -	if (!conf_mem.start || !io_mem.start ||
-> -	    !non_mem.start || !pre_mem.start) {
-> -		dev_err(&pdev->dev, "missing ranges in device node\n");
-> -		return -EINVAL;
-> +		if (ret < 0) {
-> +			dev_err(&pdev->dev, "missing ranges in device node\n");
-> +			return -EINVAL;
-> +		}
->  	}
->  
->  	pci_v3.map_irq = of_irq_parse_and_map_pci;
-> -- 
-> 2.0.4
-> 
+  1. Include 'Cc: stable@vger.kernel.org' in the original commit that
+  gets to Linus
+
+  2. Send an email to stable@vger.kernel.org that just contains the
+  commit IDs, after they've made it to Linus
+
+  3. Send patches to stable@vger.kernel.org, if backporting is not
+  trivial
+
+#1 is most common, and #2 seems like it would handle most of what misses
+#1. #3 seems inferior, whenever #2 would suffice. But #2 is not in
+stable_kernel_rules.txt.
+
+> Don't merge patches together, it just causes problems and makes it
+> harder to track what is going on.
+
+To be clear, the diff I sent is actually just a single patch (the fix);
+it is not a squashed version of both. I realize now that this was
+probably unclear.
+
+Brian
