@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbaIERhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:37:24 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:44550 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490AbaIERhV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:37:21 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 09/16] irqchip: mips-gic: Fix gic_set_affinity() return value
-Date: Fri,  5 Sep 2014 10:30:11 -0700
-Message-Id: <1409938218-9026-10-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
-References: <1409938218-9026-1-git-send-email-abrestic@chromium.org>
+	id S1753595AbaIERid (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:38:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38523 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820AbaIERib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:38:31 -0400
+Date: Fri, 5 Sep 2014 12:38:11 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
+        <m.szyprowski@samsung.com>, <andrzej.p@samsung.com>,
+        <k.opasiak@samsung.com>
+Subject: Re: [PATCH v7 2/2] usb: gadget: f_fs: virtual endpoint address
+ mapping
+Message-ID: <20140905173811.GJ24449@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1409812338-16012-1-git-send-email-r.baldyga@samsung.com>
+ <1409812338-16012-3-git-send-email-r.baldyga@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fKov5AqTsvseSZ0Z"
+Content-Disposition: inline
+In-Reply-To: <1409812338-16012-3-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the online CPU check in gic_set_affinity() fails, return a proper
-errno value instead of -1.
+--fKov5AqTsvseSZ0Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-No changes from v1.
----
- drivers/irqchip/irq-mips-gic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Sep 04, 2014 at 08:32:18AM +0200, Robert Baldyga wrote:
+> This patch introduces virtual endpoint address mapping. It separates
+> function logic form physical endpoint addresses making it more hardware
+> independent.
+>=20
+> Following modifications changes user space API, so to enable them user
+> have to switch on the FUNCTIONFS_VIRTUAL_ADDR flag in descriptors.
+>=20
+> Endpoints are now refered using virtual endpoint addresses chosen by
+> user in endpoint descpriptors. This applies to each context when endpoint
+> address can be used:
+> - when accessing endpoint files in FunctionFS filesystemi (in file name),
+> - in setup requests directed to specific endpoint (in wIndex field),
+> - in descriptors returned by FUNCTIONFS_ENDPOINT_DESC ioctl.
+>=20
+> In endpoint file names the endpoint address number is formatted as
+> double-digit hexadecimal value ("ep%02x") which has few advantages -
+> it is easy to parse, allows to easly recognize endpoint direction basing
+> on its name (IN endpoint number starts with digit 8, and OUT with 0)
+> which can be useful for debugging purpose, and it makes easier to introdu=
+ce
+> further features allowing to use each endpoint number in both directions
+> to have more endpoints available for function if hardware supports this
+> (for example we could have ep01 which is endpoint 1 with OUT direction,
+> and ep81 which is endpoint 1 with IN direction).
+>=20
+> Physical endpoint address can be still obtained using ioctl named
+> FUNCTIONFS_ENDPOINT_REVMAP, but now it's not neccesary to handle
+> USB transactions properly.
+>=20
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
-index 0549768..c0ff749 100644
---- a/drivers/irqchip/irq-mips-gic.c
-+++ b/drivers/irqchip/irq-mips-gic.c
-@@ -316,7 +316,7 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *cpumask,
- 
- 	cpumask_and(&tmp, cpumask, cpu_online_mask);
- 	if (cpus_empty(tmp))
--		return -1;
-+		return -EINVAL;
- 
- 	/* Assumption : cpumask refers to a single CPU */
- 	spin_lock_irqsave(&gic_lock, flags);
--- 
-2.1.0.rc2.206.gedb03e5
+this one does't apply to my testing/next. Can you please rebase ?
 
+--=20
+balbi
+
+--fKov5AqTsvseSZ0Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUCfUDAAoJEIaOsuA1yqRErHcP/j4jvCGiKnY0tS/SGyEYiIce
+Wq6Lt2619PGXq8pxP4qh2P+WCqKPJB1GKU2QVsI3GYpPBgUvwgF+0ONHIiDv1pDm
+X4jKwZ5TfsHq74mifkTWfkHLjsXl6rNhsGbwLuhXassItZh4Lhkgci+U044Kyi7T
+Cjnj/6/hQ4AOfy1ZYNpFZUy3TDNIIZxcoIRu+/pC9hF9Lij+azFpEnYv7cyeClc0
+KapQLu6kubVlpcZ4KiXDBBd99lFEfexnFpM+hac9avwcfmpfiWi2ktNuTj2bdbY5
+IFX0k91Zj/wlzRka14VobXy72Xwrs8LSS0j2BvHU8YymrA6Rc47DoEn2qfPNB7Up
+Y4r74t/y0v30urQiijw06dK2Vum/qMw7Qlhu/L96Ov0OAzm9iwFlhfZZoC3hPFSR
+cE8VEEMqbs2zBBRglY8FrSFaY6Y4jryWZR+mHrzAXB6dUfEOsR6RMz/UIH9/jBlT
+jeN2bS/15WFR4oD10mnkq4O6NFfF3lSqv8flqbMfQCZWujMD1gu7yt6hJHyPUg1s
+/2Q3M+1aDb5LpXokTCtLhw1E1zGP057xNN2gN2OLz7OKR3WX89v/Q6VBK6d6cAw7
+J3DDfD75C3ph2BPwAATt/+6Wl/dpGy4FDWQASys/1MgbZogiG0lL+B5xBvASMtmS
+qyuN5xVmiYhzgX9j5bQg
+=xhei
+-----END PGP SIGNATURE-----
+
+--fKov5AqTsvseSZ0Z--
