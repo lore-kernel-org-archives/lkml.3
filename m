@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749AbaIEOJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:09:15 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:39667 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050AbaIEOJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:09:14 -0400
-Date: Fri, 5 Sep 2014 23:09:02 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [Patch v4 2/2] freezer: remove obsolete comments in __thaw_task()
-Message-ID: <20140905140902.GB10455@mtj.dyndns.org>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
- <1409869842-10807-2-git-send-email-xiyou.wangcong@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409869842-10807-2-git-send-email-xiyou.wangcong@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932753AbaIEOKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:10:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754050AbaIEOJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 10:09:59 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: ak@linux.intel.com, mingo@redhat.com, whissi@whissi.de, dyoung@redhat.com,
+        tglx@linutronix.de, vgoyal@redhat.com, keescook@chromium.org,
+        chaowang@redhat.com, Baoquan He <bhe@redhat.com>
+Subject: [PATCH 0/4] fix the compatibility between kaslr and kexe
+Date: Fri,  5 Sep 2014 22:08:13 +0800
+Message-Id: <1409926097-2101-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 03:30:42PM -0700, Cong Wang wrote:
-> __thaw_task() no longer clears frozen flag since commit a3201227f803
-> (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE).
-> 
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Earlier it's reported kexec can't load kernel on system with over 4G
+memory and kdump didn't work when set crashkenrel=xx, high when kaslr
+is compiled. They didn't work though nokaslr is set in cmdline as long
+as it's compiled in. This is caused by not checking if the kernel
+decompression output region is in a legal region.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+In this patchset, fixs the bug peopel reported that kexec/kdump didn't
+work when kernel loading addr is above 1G. This is done in patch 2/4.
 
-Thanks.
+When kernel is put in a address which is not LOAD_PHYSICAL_ADDR, and
+kaslr is compiled in, it will do the relocation handling though user
+set nokaslr in cmdline. This is because no config checking in 2nd part
+of kaslr process, namely handle_relocations(). This is fixed in patch
+1/4.
+
+Patch 3/4 is handling the setup data avoiding. Since setup data can
+be put anywhere, if it's in below 1G region, need be avoided to be
+the kaslr random relocation slot. I just tested it using a kexec-tools
+user space trick, change kexec-tools to make the buffer allocating
+from down to top, and set E820MAX to 10, then extra e820 regions have
+to be added into setup data.
+
+Patch 4/4 is to export KERNEL_IMAGE_SIZE to VMCOREINFO, makedumpfile
+need this to calculate MODULES_VADDR. Since introduing kaslr, the
+MODULES_VADDR is not fixed.
+
+Baoquan He (3):
+  kaslr: check user's config too when handle relocations
+  kaslr: check if the random addr is available
+  export the kernel image size KERNEL_IMAGE_SIZE
+
+Dave Young (1):
+  kaslr setup_data handling
+
+ arch/x86/boot/compressed/aslr.c | 31 +++++++++++++++++++++++++++++--
+ arch/x86/boot/compressed/misc.c | 17 +++++++++++++++++
+ kernel/kexec.c                  |  3 +++
+ 3 files changed, 49 insertions(+), 2 deletions(-)
 
 -- 
-tejun
+1.8.5.3
+
