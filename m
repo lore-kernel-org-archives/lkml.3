@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaIEWLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:11:43 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44313 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaIEWLi (ORCPT
+	id S1752951AbaIEWLw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:11:52 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:59826 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaIEWLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:11:38 -0400
-Date: Fri, 5 Sep 2014 16:11:31 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Liviu Dudau <liviu@dudau.co.uk>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 04/12] PCI: OF: Fix the conversion of IO ranges into
- IO resources.
-Message-ID: <20140905221131.GJ8080@google.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-5-git-send-email-Liviu.Dudau@arm.com>
- <CAL_JsqJm6qWNdrJ2F8xddFUj46y42n6hQVu1nkTaA-5Tbg--XQ@mail.gmail.com>
- <20140822130640.GM13147@bart.dudau.co.uk>
- <CAL_JsqLGa3em5Phct-H0Q=vB5AnA78h19uA=4xi3xHA1rCVq+A@mail.gmail.com>
+	Fri, 5 Sep 2014 18:11:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqLGa3em5Phct-H0Q=vB5AnA78h19uA=4xi3xHA1rCVq+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140828093505.GC14650@leverpostej>
+References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org>
+	<CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
+	<CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
+	<53FE5B09.2020403@codeaurora.org>
+	<CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
+	<53FE7E3B.1010500@codeaurora.org>
+	<CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
+	<CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
+	<20140828093505.GC14650@leverpostej>
+Date: Fri, 5 Sep 2014 15:11:47 -0700
+X-Google-Sender-Auth: uXWQMs-UBBX4AjgPRYi4RV0KO_s
+Message-ID: <CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
+ when requested
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Olof Johansson <olof@lixom.net>, Stephen Boyd <sboyd@codeaurora.org>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 24, 2014 at 06:27:48PM -0500, Rob Herring wrote:
-> On Fri, Aug 22, 2014 at 8:06 AM, Liviu Dudau <liviu@dudau.co.uk> wrote:
-> > mips is doing the same thing and I believe is not affected, pci-host-generic.c
-> > was adjusting the returned values afterwards so that will not be needed and Lorenzo
-> > has a patch for the driver to adapt it to this series anyway.
-> >
-> > pcie-designware.c also recalculates the io.start and io.end values, so that's fine
-> > for now. The only ones that I believe are still affected are pci-tegra.c and
-> > pcie-rcar.c for which I will need to provide a patch similar to integrator unless
-> > the code gets converted to the new range parsing.
-> 
-> Well, the latter would be nice, but they certainly have to be fixed.
-> Now that I think about it, this needs to be handled in a bisectable
-> way. So I think you need to fix all affected platforms in this patch
-> rather than a separate patch as you have done.
+Mark,
 
-Yep, I was about to complain that the "ARM: integrator: Correct usage of
-of_pci_range_to_resource()" patch needs to be squashed into whatever broke
-it, but I see Rob already caught that.
+On Thu, Aug 28, 2014 at 2:35 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> Not if you boot Linux at hyp, as we've recommended for this precise
+> reason. That doesn't fix other things like CNTFRQ if the secure
+> initialisation doesn't poke that, however.
 
-Bjorn
+I'll freely admit that I'm out of my league and out of my comfort zone
+here, but...
+
+In the theory that firmware ought to be as minimal as possible
+(because it's hard to update and hard to keep in sync with kernel
+versions), it seems like firmware ought to start the kernel out in as
+permissive mode as it's willing to provide, right?
+
+If the kernel is started out as permissive as possible then it can do
+anything it needs to.  Future versions of the kernel can be
+implemented to do any way-cool things that they want to do without an
+update to firmware, right?  ...and current versions of the kernel can
+just shed permissions if they don't want them.
+
+...so if I understand correctly, "Secure SVC" mode is more permissive
+than "Non Secure HYP" mode, right?  It looks to me as if we currently
+start the kernel in "Secure SVC" mode.  What do you think about the
+kernel detecting Secure SVC and then dropping down permission levels
+(to Non Secure HYP).  Once it did this, it could update things like
+the virtual offset and then transition down further into non-secure
+SVC mode.
+
+
+...or maybe this has been discussed millions of times already and I'm
+just clueless.  ...or maybe this is just too hard for the kernel to do
+in a generic way?
+
+
+-Doug
