@@ -1,148 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408AbaIEAJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 20:09:57 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:32779 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478AbaIEAJ4 (ORCPT
+	id S1755556AbaIEAO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:14:57 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:48201 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400AbaIEAOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 20:09:56 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix build-id matching on vmlinux
-References: <1409035119-24357-1-git-send-email-namhyung@kernel.org>
-	<20140904141845.GD2997@kernel.org>
-Date: Fri, 05 Sep 2014 09:09:49 +0900
-In-Reply-To: <20140904141845.GD2997@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Thu, 4 Sep 2014 11:18:45 -0300")
-Message-ID: <87a96f9bci.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 4 Sep 2014 20:14:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Thu, 4 Sep 2014 17:14:53 -0700
+Message-ID: <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com>
+Subject: Re: [PATCH] genirq: Introduce irq_read_line()
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
-
-On Thu, 4 Sep 2014 11:18:45 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Aug 26, 2014 at 03:38:39PM +0900, Namhyung Kim escreveu:
->> There's a problem on finding correct kernel symbols when perf report
->> runs on a different kernel.  Although a part of the problem was solved
->> by the prior commit 0a7e6d1b6844 ("perf tools: Check recorded kernel
->> version when finding vmlinux"), there's a remaining problem still.
->> 
->> When perf records samples, it synthesizes the kernel map using
->> machine__mmap_name() and ref_reloc_sym like "[kernel.kallsyms]_text".
->> You can easily see it using 'perf report -D' command.
->> 
->> After finishing record, it goes through the recorded events to find
->> maps/dsos actually used.  And then record build-id info of them.
->> 
->> During this process, it needs to load symbols in a dso and it'd call
->> dso__load_vmlinux() since the default value of the symbol_conf.try_
->> vmlinux_path is true.  However it changes dso->long_name to a real
->> path of the vmlinux file (e.g. /lib/modules/3.16.0-rc2+/build/vmlinux)
->> if one is running on a custom kernel.
->> 
->> It resulted in that perf report reads the build-id of the vmlinux, but
->> cannot use it since it only knows about the [kernel.kallsyms] map.  It
->> then falls back to possible vmlinux paths by using the recorded kernel
->> version (in case of a recent version) or a running kernel silently
->> (which might break the result).  I think it's worth going to the
->> stable tree.
->> 
->> I can think of a couple of ways to fix it.  In this patch, I changed
->> to use the name of "[kernel.kallsyms]" for the kernel build-id event
->> instead of not trying vmlinux paths.  This way we can provide maximum
->> info (like annotation) with minimum change IMHO.
->> 
->> Before:
->> 
->>   $ perf record -a usleep 1
->> 
->>   $ perf buildid-list
->>   00d5ff078efe1d30b8492854f259215fd877ce30 /lib/modules/3.16.0-rc2+/build/vmlinux
->>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->> 
->>   $ perf buildid-list -H
->>   0000000000000000000000000000000000000000 [kernel.kallsyms]
->>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
->> 
->> After:
->> 
->>   $ perf record -a usleep 1
->> 
->>   $ perf buildid-list
->>   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
+On Tue, Aug 19, 2014 at 1:23 PM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
+> Introduce the irq_read_line() function to allow device drivers to read
+> the current logical state of an input when the hardware only exposes
+> this through status bits in the interrupt controller.
 >
-> We are losing information, namely the pathname for the kernel used, that
-> may be useful in analysis.
-
-Right.  That's a problem.
-
-
+> The new function is backed by a new callback function in the irq_chip -
+> irq_read_line() - that can be implemented by irq_chips that owns such
+> status bits.
 >
-> Why not make sure that if there is a build-id in the perf.data header,
-> then we completely refusing anything that doesn't match the build-id?
-> I.e. the name is irrelevant for this purpose, the contents, as keyed by
-> the build-id, is what matters.
-
-The perf report rebuilds machine states from the event records only.  In
-this case, the kernel map was recorded in the name of [kernel.kallsyms]
-so it couldn't find the build-id from the table.
-
-Thanks,
-Namhyung
-
-
+> Based on rfc patch from April 2011 by Abhijeet.
 >
-> - Arnaldo
->
->>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->> 
->>   $ perf buildid-list -H
->>   00d5ff078efe1d30b8492854f259215fd877ce30 [kernel.kallsyms]
->>   78186287bba77069a056a5ccbeb14b7fd2ca3a4b /usr/lib64/libc-2.17.so
->>   4eadca6cb82e0a85edb87c15b5e3980742514501 /usr/lib64/ld-2.17.so
->>   1e272ca30081e81ef41935a630eb2f4c636798b4 /usr/lib64/dri/swrast_dri.so
->>   0000000000000000000000000000000000000000 /tmp/perf-2523.map
->> 
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/util/header.c | 3 +++
->>  1 file changed, 3 insertions(+)
->> 
->> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
->> index 158c787ce0c4..5c4093dee467 100644
->> --- a/tools/perf/util/header.c
->> +++ b/tools/perf/util/header.c
->> @@ -263,6 +263,9 @@ static int __dsos__write_buildid_table(struct list_head *head,
->>  			machine__mmap_name(machine, nm, sizeof(nm));
->>  			name = nm;
->>  			name_len = strlen(nm) + 1;
->> +		} else if (dso__is_vmlinux(pos)) {
->> +			name = pos->name;
->> +			name_len = strlen(pos->name) + 1;
->>  		} else {
->>  			name = pos->long_name;
->>  			name_len = pos->long_name_len + 1;
->> -- 
->> 2.0.0
+> Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+
+ping?
