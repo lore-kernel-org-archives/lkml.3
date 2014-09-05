@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaIEQCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:02:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751209AbaIEQCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:02:12 -0400
-Date: Fri, 5 Sep 2014 12:01:59 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Daniel Borkmann <dborkman@redhat.com>
-cc: Alexei Starovoitov <ast@plumgrid.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH] bpf: fix a false positive kmemcheck warning
-Message-ID: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753100AbaIEQCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:02:15 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:64035 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaIEQCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 12:02:14 -0400
+From: Dmitry Voytik <voytikd@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Dmitry Voytik <voytikd@gmail.com>
+Subject: [PATCH] staging: binder: cmd_name must be initialised
+Date: Fri,  5 Sep 2014 20:02:24 +0400
+Message-Id: <1409932944-19528-1-git-send-email-voytikd@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes false positive kmemcheck warning in bpf.
+Variable cmd_name must be initialised as variable name is.
 
-When we try to write the variable len, the compiler generates a code that
-reads the 32-bit word, modifies the bits belonging to "len" and writes the
-32-bit word back. The reading of the word results in kmemcheck warning due
-to reading uninitialized memory. This patch fixes it by avoiding using bit
-fields when kmemcheck is enabled.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
+Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
 ---
- include/linux/filter.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/staging/android/binder.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6/include/linux/filter.h
-===================================================================
---- linux-2.6.orig/include/linux/filter.h	2014-09-04 23:04:26.000000000 +0200
-+++ linux-2.6/include/linux/filter.h	2014-09-04 23:43:05.000000000 +0200
-@@ -325,8 +325,13 @@ struct sock;
- struct seccomp_data;
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 4f34dc0..93b067f 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2233,7 +2233,7 @@ retry:
+ 		case BINDER_WORK_NODE: {
+ 			struct binder_node *node = container_of(w, struct binder_node, work);
+ 			uint32_t cmd = BR_NOOP;
+-			const char *cmd_name;
++			const char *cmd_name = "BR_NOOP";
+ 			int strong = node->internal_strong_refs || node->local_strong_refs;
+ 			int weak = !hlist_empty(&node->refs) || node->local_weak_refs || strong;
  
- struct bpf_prog {
-+#ifdef CONFIG_KMEMCHECK
-+	bool			jited;
-+	u32			len;
-+#else
- 	u32			jited:1,	/* Is our filter JIT'ed? */
- 				len:31;		/* Number of filter blocks */
-+#endif
- 	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
- 	unsigned int		(*bpf_func)(const struct sk_buff *skb,
- 					    const struct bpf_insn *filter);
+-- 
+1.9.1
+
