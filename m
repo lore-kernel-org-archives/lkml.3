@@ -1,115 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727AbaIEKjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:39:44 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31884 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756489AbaIEKjm (ORCPT
+	id S1756823AbaIEKkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:40:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45304 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756364AbaIEKki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:39:42 -0400
-Message-ID: <540992EA.6020209@arm.com>
-Date: Fri, 05 Sep 2014 11:39:38 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 5 Sep 2014 06:40:38 -0400
+Date: Fri, 5 Sep 2014 03:39:33 -0700
+From: tip-bot for Scot Doyle <tipbot@zytor.com>
+Message-ID: <tip-6b44f519017b219a12b37173c7eef8dfce2c0100@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, lkml14@scotdoyle.com, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, lkml14@scotdoyle.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <alpine.LNX.2.11.1408241710070.6462@localhost.localdomain>
+References: <alpine.LNX.2.11.1408241710070.6462@localhost.localdomain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/wait: Document timeout corner case
+Git-Commit-ID: 6b44f519017b219a12b37173c7eef8dfce2c0100
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Will Deacon <Will.Deacon@arm.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific
- ACPI boot support
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <4895927.Zp4WL2AZAF@wuerfel> <540986B2.7000901@arm.com> <3400229.hn32yHbVD2@wuerfel>
-In-Reply-To: <3400229.hn32yHbVD2@wuerfel>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/14 11:13, Arnd Bergmann wrote:
-> On Friday 05 September 2014 10:47:30 Marc Zyngier wrote:
->>>
->>> I still prefer being explicit here for the same reason I mentioned earlier:
->>> I want it to be very clear that we don't support arbitrary irqchips other
->>> than the ones in the APCI specification. The infrastructure exists on DT
->>> because we have to support a large number of incompatible irqchips.
->>
->> I'm not suggesting that we should support more than the ACPI spec says.
->> And that's certainly the whole point of a spec, isn't it? ACPI says what
->> we support, and we're not going any further. I'm just saying that we
->> shouldn't make the maintenance burden heavier, and the code nothing
->> short of disgusting. Using our current infrastructure doesn't mean we're
->> going to support GIcv2.37.
-> 
-> Ok
-> 
->>> In particular, the ACPI tables describing the irqchip have no way to
->>> identify the GIC at all, if I read the spec correctly, you have to
->>> parse the tables, ioremap the registers and then read the ID to know
->>> if you have GICv1/v2/v2m/v3/v4. There doesn't seem to be any "device"
->>> for the GIC that a hypothetical probe function would be based on.
->>
->> This is not the way I read the spec. Table 5-46 (Interrupt Controller
->> Structure) tells you if you have a CPU interface (GICv1/v2) or a
->> redistributor (GICv3/v4). That's enough to know whether or not you
->> should carry on probing a particular controller.
-> 
-> Ah, good. I missed that.
-> 
->> The various GIC versions don't really have a unified memory map anyway
->> (well, none that you can rely on), and you really have to rely on ACPI
->> to tell you what you have.
-> 
-> So we are back to needing to support two different irqchip drivers
-> (v1/v2/v2m and v3/v4), instead of five or more, right?
+Commit-ID:  6b44f519017b219a12b37173c7eef8dfce2c0100
+Gitweb:     http://git.kernel.org/tip/6b44f519017b219a12b37173c7eef8dfce2c0100
+Author:     Scot Doyle <lkml14@scotdoyle.com>
+AuthorDate: Sun, 24 Aug 2014 17:12:27 +0000
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 5 Sep 2014 12:37:10 +0200
 
-As long as we make sure that the variants are directly probed from the
-"canonical" driver (v2m from v2, ITS and v4 from v3), then we're OK.
+sched/wait: Document timeout corner case
 
->>> It does seem wrong to parse the tables in the irq-gic.c file though:
->>> that part can well be common across the various gic versions and then
->>> call into either irq-gic.c or irq-gic-v3.c for the version specific
->>> parts. Whether we put that common code into drivers/irqchip/irqchip.c,
->>> drivers/irqchip/gic-common.c, drivers/irqchip/irq-acpi-gic.c or
->>> drivers/acpi/irq-gic.c I don't care at all.
->>
->> I don't think so you can make that common code very easily. The
->> information required by both drivers is organized differently.
->> If it was, I'd have done that for the DT binding.
-> 
-> I see, and that's also what Tomasz just explained. So can we just
-> have one an irqchip_init() function doing this:?
-> 
-> if (dt)
-> 	of_irq_init(__irqchip_of_table);
-> else if (acpi) {
-> 	read cpu-interface and redistributor address from acpi tables
-> 	if (cpu-interface)
-> 		gic_v2_acpi_init(table);
-> 	else if(redistributor)
-> 		gic_v3_acpi_init(table)
-> }
+The timeout may elapse without 0 being returned, such as when waiting
+on an unused queue. Document this possibility.
 
-That'd be better, but that only considers the basic architecture. GICv2m
-and GICv3's ITS bring additional complexity (and their own table
-parsing). At that stage, I'm not sure how much commonality we're left with.
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1408241710070.6462@localhost.localdomain
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/wait.h | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 6fb1ba5..034f6fc 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -280,9 +280,11 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  *
+- * The function returns 0 if the @timeout elapsed, or the remaining
+- * jiffies (at least 1) if the @condition evaluated to %true before
+- * the @timeout elapsed.
++ * Returns:
++ * 0 if the @condition evaluated to %false after the @timeout elapsed,
++ * 1 if the @condition evaluated to %true after the @timeout elapsed,
++ * or the remaining jiffies (at least 1) if the @condition evaluated
++ * to %true before the @timeout elapsed.
+  */
+ #define wait_event_timeout(wq, condition, timeout)			\
+ ({									\
+@@ -363,9 +365,11 @@ do {									\
+  * change the result of the wait condition.
+  *
+  * Returns:
+- * 0 if the @timeout elapsed, -%ERESTARTSYS if it was interrupted by
+- * a signal, or the remaining jiffies (at least 1) if the @condition
+- * evaluated to %true before the @timeout elapsed.
++ * 0 if the @condition evaluated to %false after the @timeout elapsed,
++ * 1 if the @condition evaluated to %true after the @timeout elapsed,
++ * the remaining jiffies (at least 1) if the @condition evaluated
++ * to %true before the @timeout elapsed, or -%ERESTARTSYS if it was
++ * interrupted by a signal.
+  */
+ #define wait_event_interruptible_timeout(wq, condition, timeout)	\
+ ({									\
