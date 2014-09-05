@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830AbaIEOKr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:10:47 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:59913 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201AbaIEOKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:10:45 -0400
-Message-ID: <1409925614.28990.184.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-From: Toshi Kani <toshi.kani@hp.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, akpm@linuxfoundation.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 05 Sep 2014 08:00:14 -0600
-In-Reply-To: <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
-	 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
-	 <20140904201123.GA9116@khazad-dum.debian.net> <5408C9C4.1010705@zytor.com>
-	 <20140904231923.GA15320@khazad-dum.debian.net>
-	 <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
-	 <1409876991.28990.172.camel@misato.fc.hp.com>
-	 <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932770AbaIEOKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:10:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932655AbaIEOKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 10:10:02 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: ak@linux.intel.com, mingo@redhat.com, whissi@whissi.de, dyoung@redhat.com,
+        tglx@linutronix.de, vgoyal@redhat.com, keescook@chromium.org,
+        chaowang@redhat.com, Baoquan He <bhe@redhat.com>
+Subject: [PATCH 1/4] kaslr: check user's config too when handle relocations
+Date: Fri,  5 Sep 2014 22:08:14 +0800
+Message-Id: <1409926097-2101-2-git-send-email-bhe@redhat.com>
+In-Reply-To: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 17:51 -0700, Andy Lutomirski wrote:
-> On Thu, Sep 4, 2014 at 5:29 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > On Thu, 2014-09-04 at 16:34 -0700, Andy Lutomirski wrote:
-> >> On Thu, Sep 4, 2014 at 4:19 PM, Henrique de Moraes Holschuh
-> >> <hmh@hmh.eng.br> wrote:
-> >> > On Thu, 04 Sep 2014, H. Peter Anvin wrote:
-> >> >> On 09/04/2014 01:11 PM, Henrique de Moraes Holschuh wrote:
-> >> >> > I am worried of uncharted territory, here.  I'd actually advocate for not
-> >> >> > enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
-> >> >> > is using them as well.  Is this a real concern, or am I being overly
-> >> >> > cautious?
-> >> >>
-> >> >> It is extremely unlikely that we'd have PAT issues in 32-bit mode and
-> >> >> not in 64-bit mode on the same CPU.
-> >> >
-> >> > Sure, but is it really a good idea to enable this on the *old* non-64-bit
-> >> > capable processors (note: I don't mean x86-64 processors operating in 32-bit
-> >> > mode) ?
-> >> >
-> >> >> As far as I know, the current blacklist rule is very conservative due to
-> >> >> lack of testing more than anything else.
-> >> >
-> >> > I was told that much in 2009 when I asked why cpuid 0x6d8 was blacklisted
-> >> > from using PAT :-)
-> >>
-> >> At the very least, anyone who plugs an NV-DIMM into a 32-bit machine
-> >> is nuts, and not just because I'd be somewhat amazed if it even
-> >> physically fits into the slot. :)
-> >
-> > According to the spec, the upper four entries bug was fixed in Pentium 4
-> > model 0x1.  So, the remaining Intel 32-bit processors that may enable
-> > the upper four entries are Pentium 4 model 0x1-4.  Should we disable it
-> > for all Pentium 4 models?
-> 
-> Assuming that this is Pentium 4 erratum N46, then there may be another
-> option: use slot 7 instead of slot 4 for WT.  Then, even if somehow
-> the blacklist screws up, the worst that happens is that a WT page gets
-> interpreted as UC.  I suppose this could cause aliasing issues, but
-> can't cause problems for people who don't use the high entries in the
-> first place.
+kaslr's action is splitted into 2 parts. The 1st is getting available memory
+slots and randomly choose the kernel relocation address. After decompression
+of kernel to the chosen place, the 2nd part begin to check if kaslr has got
+a relocation address, and will do the relocations handling if yes.
 
-That's a fine idea, but as Ingo also suggested, I am going to disable
-this feature on all Pentium 4 models.  That should give us a safety
-margin.  Using slot 4 has a benefit that it keeps the PAT setup
-consistent with Xen.      
+However in current implementation, in the 2nd part, it doesn't check user's
+config, just compare decompression output address and the LOAD_PHYSICAL_ADDR
+where kernel was compiled to run. If they are equal, it means a kaslr is
+taking action, and need do the relocation handling. This truly works when
+bootloader always load kernel to LOAD_PHYSICAL_ADDR. But this doesn't always
+happens. Kexec/kdump kernel loading is exceptional. Kdump/kexec can load
+kernel anywhere, this is not fixed. So in this case, it will do the relocation
+handling though user clearly set nokaslr in cmdline. This is not correct.
 
-Thanks,
--Toshi
+So in this patch, check user's config too in the 2nd part, namely in
+handle_relocations().
+
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ arch/x86/boot/compressed/aslr.c |  2 ++
+ arch/x86/boot/compressed/misc.c | 12 ++++++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index fc6091a..975b07b 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -292,11 +292,13 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ #ifdef CONFIG_HIBERNATION
+ 	if (!cmdline_find_option_bool("kaslr")) {
+ 		debug_putstr("KASLR disabled by default...\n");
++		debug_putstr("No need to choose kernel relocation...\n");
+ 		goto out;
+ 	}
+ #else
+ 	if (cmdline_find_option_bool("nokaslr")) {
+ 		debug_putstr("KASLR disabled by cmdline...\n");
++		debug_putstr("No need to choose kernel relocation...\n");
+ 		goto out;
+ 	}
+ #endif
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 57ab74d..7780a5b 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -238,6 +238,18 @@ static void handle_relocations(void *output, unsigned long output_len)
+ 	unsigned long min_addr = (unsigned long)output;
+ 	unsigned long max_addr = min_addr + output_len;
+ 
++#ifdef CONFIG_HIBERNATION
++	if (!cmdline_find_option_bool("kaslr")) {
++		debug_putstr("No relocation needed... ");
++		return;
++	}
++#else
++	if (cmdline_find_option_bool("nokaslr")) {
++		debug_putstr("No relocation needed... ");
++		return;
++	}
++#endif
++
+ 	/*
+ 	 * Calculate the delta between where vmlinux was linked to load
+ 	 * and where it was actually loaded.
+-- 
+1.8.5.3
 
