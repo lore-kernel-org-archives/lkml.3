@@ -1,33 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaIEVSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 17:18:41 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:61467 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaIEVSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 17:18:40 -0400
+	id S1752395AbaIEVTO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 17:19:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53932 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237AbaIEVTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 17:19:13 -0400
+Date: Fri, 5 Sep 2014 16:18:47 -0500
+From: Nishanth Menon <nm@ti.com>
+To: <daniel.lezcano@linaro.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Keerthy <j-keerthy@ti.com>, lkml <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
+Message-ID: <20140905211847.GB31011@kahuna>
+References: <1408716154-26101-1-git-send-email-nm@ti.com>
+ <1408716154-26101-9-git-send-email-nm@ti.com>
+ <7hvbpdbvb1.fsf@paris.lan>
+ <CAGo_u6o7vAf=syzDTyxh0-kOhmzAmtdG_ardgFgoPQofrGdxUQ@mail.gmail.com>
+ <53FE3477.2020207@ti.com>
+ <7hegw1bs30.fsf@paris.lan>
 MIME-Version: 1.0
-In-Reply-To: <540A266F.80503@gmail.com>
-References: <1409826307-23075-1-git-send-email-kraxel@redhat.com>
-	<540A17A6.1000802@zytor.com>
-	<540A266F.80503@gmail.com>
-Date: Fri, 5 Sep 2014 14:18:38 -0700
-Message-ID: <CAP6exYJj8Fupa1uTLRP5uGoWNjvwKo7bAAPvYmzUYB=AOqOq8g@mail.gmail.com>
-Subject: Re: [coreboot] [PATCH] x86: add coreboot framebuffer support
-From: ron minnich <rminnich@gmail.com>
-To: =?UTF-8?Q?Vladimir_=27=CF=86=2Dcoder=2Fphcoder=27_Serbinenko?= 
-	<phcoder@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Gerd Hoffmann <kraxel@redhat.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        coreboot <coreboot@coreboot.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <7hegw1bs30.fsf@paris.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vladimir can you point me to that patch? This sounds interesting.
+Daniel,
 
-ron
+On 13:22-20140827, Kevin Hilman wrote:
+> Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
+> 
+> > On Wednesday 27 August 2014 03:35 PM, Nishanth Menon wrote:
+> >> On Wed, Aug 27, 2014 at 2:13 PM, Kevin Hilman
+> >> <khilman@deeprootsystems.com> wrote:
+> >>> + Daniel (cpuidle maintainer)
+> >> [...]
+> >>>> +static int omap_enter_idle_smp(struct cpuidle_device *dev,
+> >>>> +                            struct cpuidle_driver *drv,
+> >>>> +                            int index)
+> >>>> +{
+> >>>> +     struct idle_statedata *cx = state_ptr + index;
+> >>>> +     unsigned long flag;
+> >>>> +
+> >>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
+> >>>> +     cx->mpu_state_vote++;
+> >>>> +     if (cx->mpu_state_vote == num_online_cpus()) {
+> >>>> +             pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
+> >>>> +             omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
+> >>>> +     }
+> >>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
+> >>>> +
+> >>>> +     omap4_enter_lowpower(dev->cpu, cx->cpu_state);
+> >>>> +
+> >>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
+> >>>> +     if (cx->mpu_state_vote == num_online_cpus())
+> >>>> +             omap_set_pwrdm_state(mpu_pd, PWRDM_POWER_ON);
+> >>>> +     cx->mpu_state_vote--;
+> >>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
+> >>>> +
+> >>>> +     return index;
+> >>>> +}
+> >>>
+> >>> Hmm, maybe OMAP5/DRA7 CPUidle driver should be a new one based on MCPM?
+> >> 
+> >> Trying to understand benefit of MCPM here - at least without a deeper
+> >> understanding of mcpm infrastructure benefits (first look seemed a
+> >> little heavy for OMAP5/DRA7 needs).
+> >> 
+> >> Neither DRA7/OMAP5 are multi-cluster, the SoCs are not targetted for
+> >> "OFF" of CPU1/0, we have mercury hardware to help with context and
+> >> sync issues.
+> >> 
+> >> Being able to reuse most of existing OMAP4 infrastructure code is
+> >> useful as well to leave the existing omap4 framework as being lighter
+> >> in complexity -esp in a cpuidle like hot path?
+> >> 
+> >> The spin_lock is only for the programming of MPU power domain in a
+> >> consistent manner - I suppose might have been the trigger for
+> >> proposing mcpm?
+> >> 
+> > Mostly not....
+> >
+> > I think this is coming because last time Nicolas Pitre tried to convert
+> > the OMAP CPUIdle into MCPM but because of various ordering requirements,
+> > OMAP wasn't suitable and then the plan was dropped later.
+> >
+> > Just to make clear, OMAP OMAP5/DRA7 as well the ordering requirement
+> > remains the same for deeper states. Its just the mercury retention state
+> > which we are able to enter without ordering requirements and hence
+> > the voting scheme.
+> 
+> Ah, OK.  This is the part that I'm missing.  So for deeper states you'll
+> need to be using omap_enter_idle_coupled()
+> 
+> > Hope this clarifies to you as well as Kevin just in case he missed the
+> > part of the deeper C-states requirements.
+> 
+> Yes, thanks for clarifying.
+> 
+> That being said, I think MCPM can now do essentially what the coupled
+> states code is doing. Even so, that's probably not a reason to hold up
+> this patch, but Daniel gets to make that call.
+
+
+Gentle ping.. You can find the discussion and the patch here:
+https://patchwork.kernel.org/patch/4764661/
+
+-- 
+Regards,
+Nishanth Menon
