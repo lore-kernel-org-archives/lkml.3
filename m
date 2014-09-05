@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaIEQoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:44:11 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48196 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712AbaIEQoJ (ORCPT
+	id S1752304AbaIEQod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:44:33 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:51373 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaIEQob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:44:09 -0400
-Date: Fri, 5 Sep 2014 09:44:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
+	Fri, 5 Sep 2014 12:44:31 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 5 Sep 2014 12:50:21 -0400 (EDT)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Mark Rutland <mark.rutland@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-Message-ID: <20140905164405.GA28964@core.coreip.homeip.net>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
- <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
- <20140905141241.GC10455@mtj.dyndns.org>
+        Yan Zheng <zheng.z.yan@intel.com>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: Possible race between CPU hotplug and perf_pmu_migrate_context
+In-Reply-To: <CA+55aFwhKyjNHuSThuPOejq1uLTXoqHwAtG8cfcx-Sqp83RKSg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1409051246100.15128@vincent-weaver-1.umelst.maine.edu>
+References: <20140901181808.GA6427@leverpostej> <20140901190534.GC5806@worktop.ger.corp.intel.com> <20140902185807.GA7434@leverpostej> <20140903115013.GA3127@leverpostej> <20140904104402.GS4783@worktop.ger.corp.intel.com> <20140904110740.GB32228@leverpostej>
+ <20140905151640.GN19379@twins.programming.kicks-ass.net> <CA+55aFwhKyjNHuSThuPOejq1uLTXoqHwAtG8cfcx-Sqp83RKSg@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905141241.GC10455@mtj.dyndns.org>
-X-KMail-SignatureActionEnabled: false
-X-KMail-EncryptActionEnabled: false
-X-KMail-CryptoMessageFormat: 15
-X-KMail-Identity: 835467765
-X-KMail-Transport: 1927675701
-X-KMail-Fcc: 73
-X-KMail-Drafts: 80
-X-KMail-Templates: 13
-X-KMail-Link-Message: 551745
-X-KMail-Link-Type: reply
-User-Agent: KMail/4.13.3 (Linux/3.13.0-34-generic; KDE/4.13.3; x86_64; ; )
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 05, 2014 11:12:41 PM Tejun Heo wrote:
-> On Fri, Sep 05, 2014 at 12:47:16AM -0700, Luis R. Rodriguez wrote:
-> > Ah -- well without it the way we "find" drivers that need this new
-> > "async feature" is by a bug report and folks saying their system can't
-> > boot, or they say their device doesn't come up. That's all. Tracing
-> > this to systemd and a timeout was one of the most ugliest things ever.
-> > There two insane bug reports you can go check:
-> > 
-> > mptsas was the first:
-> > 
-> > http://article.gmane.org/gmane.linux.kernel/1669550
-> > https://bugs.launchpad.net/ubuntu/+source/systemd/+bug/1297248
-> > 
-> > Then cxgb4:
-> > 
-> > https://bugzilla.novell.com/show_bug.cgi?id=877622
-> > 
-> > I only had Cc'd you on the newest gem pata_marvell :
-> > 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=59581
-> > 
-> > We can't seriously expect to be doing all this work for every driver.
-> > a WARN_ONCE() would enable us to find the drivers that need this new
-> > async probe "feature".
+On Fri, 5 Sep 2014, Linus Torvalds wrote:
+
+
+> However, the more fundamental question is "what protects accesses to
+> 'events->ctx'". Why is "put_event()" so special that *it* gets locking
+> for the reading of "event->ctx", but none of the other cases of
+> reading the ctx pointer gets it or needs it?
 > 
-> This whole approach of trying to mark specific drivers as needing
-> "async probing" is completely broken for the problem at hand.  It
-> can't address the problem adequately while breaking backward
-> compatibility.  I don't think this makes much sense.
-> 
+> I'm getting the feeling that this race is bigger than just put_event().
 
-Which problem are we talking about here though? It does solve the slow device
-stalling the rest if the kernel booting (non-module case) for me.
+I've been chasing a bug triggered by my perf_fuzzer program (with a 
+forking workload) for the past few months.  It will reliably oops the 
+machine or worse (I've had it somehow not only take down the test 
+machine, but the whole local network somehow).
 
-I also reject the notion that anyone should be relying on drivers to be fully
-bound on module loading. It is not nineties anymore. We have hot pluggable
-buses, deferred probing, and even for not hot-pluggable ones the module
-providing the device itself might not be yet loaded. Any scripts that expect to
-find device 100% ready after module loading are simply broken.
+Often it seems to come from deep inside the perf_event context locking, in 
+conjunction with complex open/fork/close/migrate workloads.
 
-Thanks.
+Here's a link to an older bug writeup, I've had it happen more recently 
+but I've been too busy to bother writing it up.
 
--- 
-Dmitry
+	http://web.eece.maine.edu/~vweaver/projects/perf_events/fuzzer/3.15-rc5.get_cpu_context_gpf.html
+
+Is there hope that we've finally found a plausible source for this bug?
+
+Vince
