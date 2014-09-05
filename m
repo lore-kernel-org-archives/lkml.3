@@ -1,138 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972AbaIEJsd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 05:48:33 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:48547 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954AbaIEJsa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 05:48:30 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: catalin.marinas@arm.com, will.deacon@arm.com
-Cc: dsaxena@linaro.org, Vijaya.Kumar@caviumnetworks.com,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [RFC] arm64: kgdb: fix single stepping
-Date: Fri,  5 Sep 2014 18:47:43 +0900
-Message-Id: <1409910463-30936-1-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1756630AbaIEJut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 05:50:49 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:54619 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756061AbaIEJur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 05:50:47 -0400
+Message-ID: <5409875E.2080607@kapsi.fi>
+Date: Fri, 05 Sep 2014 12:50:22 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, wni@nvidia.com
+Subject: Re: [PATCH v2 1/5] of: Add descriptions of thermtrip properties to
+ Tegra PMC bindings
+References: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com> <1407933685-12404-2-git-send-email-mperttunen@nvidia.com> <53F50231.5010605@wwwdotorg.org> <20140821065853.GE4486@ulmo> <53F61275.9020508@wwwdotorg.org> <20140821165357.GC1172@ulmo> <53F6326F.2050600@wwwdotorg.org>
+In-Reply-To: <53F6326F.2050600@wwwdotorg.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to verify kgdb in vanilla kernel on fast model, but it seems that
-the single stepping with kgdb doesn't work correctly since its first
-appearance at v3.15.
+Hi again!
 
-On v3.15, 'stepi' command after breaking the kernel at some breakpoint
-steps forward to the next instruction, but the succeeding 'stepi' never
-goes beyond that.
-On v3.16, 'stepi' moves forward to the second instruction just after call of
-do_debug_execption() in el1_dbg, and never goes beyond that. This variance
-of behavior seems to come in with the following patch in v3.16:
+I have fixed all other issues mentioned apart from this one. I can see 
+three ways ahead:
 
-    commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
-    paths where possible")
+1) Keep things as is. There is a slight possibility that in the future 
+we will have a hardware configuration with multiple bus addresses and 
+this will cause annoyance.
+2) Keep things otherwise as is, but read the bus address from the 
+thermtrip node. While at it, just have a reference to the the I2C bus 
+rather than the PMIC in the bindings.
+3) Create a new poweroff driver class with two operations: poweroff and 
+get_i2c_command. The AS3722 poweroff "driver" is already separated from 
+the MFD and would be relatively straightforward to port to a new driver 
+subsystem. However, other PMICs we have, such as Palmas, don't do this 
+and would require larger refactoring. TBH, this smells of 
+overengineering to me.
+4) Other ideas?
 
-I cannot deny the possibility that this migh be a bug of fast model, but
-this patch works for me better than vanilla, and hopefully will help you
-see what's happening behind this issue.
+What is your opinion?
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/include/asm/assembler.h |    7 +++++++
- arch/arm64/kernel/entry.S          |    4 ++--
- arch/arm64/kernel/kgdb.c           |   15 ++++++---------
- 3 files changed, 15 insertions(+), 11 deletions(-)
+Cheers,
+Mikko
 
-diff --git a/arch/arm64/include/asm/assembler.h b/arch/arm64/include/asm/assembler.h
-index 5901480..a345973 100644
---- a/arch/arm64/include/asm/assembler.h
-+++ b/arch/arm64/include/asm/assembler.h
-@@ -87,6 +87,13 @@
- 9990:
- 	.endm
- 
-+	.macro  enable_dbg_if_not_stepping, tmp
-+	mrs     \tmp, mdscr_el1
-+	tbnz    \tmp, #0, 9990f
-+	enable_dbg
-+9990:
-+	.endm
-+
- /*
-  * Enable both debug exceptions and interrupts. This is likely to be
-  * faster than two daifclr operations, since writes to this register
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index d5eb447..b882f5d 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -325,7 +325,7 @@ el1_dbg:
- 	mrs	x0, far_el1
- 	mov	x2, sp				// struct pt_regs
- 	bl	do_debug_exception
--	enable_dbg
-+	enable_dbg_if_not_stepping x2
- 	kernel_exit 1
- el1_inv:
- 	// TODO: add support for undefined instructions in kernel mode
-@@ -339,7 +339,7 @@ ENDPROC(el1_sync)
- 	.align	6
- el1_irq:
- 	kernel_entry 1
--	enable_dbg
-+	enable_dbg_if_not_stepping x2
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	bl	trace_hardirqs_off
- #endif
-diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
-index 75c9cf1..bbc085f 100644
---- a/arch/arm64/kernel/kgdb.c
-+++ b/arch/arm64/kernel/kgdb.c
-@@ -176,14 +176,6 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
- 		 * over and over again.
- 		 */
- 		kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
--		atomic_set(&kgdb_cpu_doing_single_step, -1);
--		kgdb_single_step =  0;
--
--		/*
--		 * Received continue command, disable single step
--		 */
--		if (kernel_active_single_step())
--			kernel_disable_single_step();
- 
- 		err = 0;
- 		break;
-@@ -198,13 +190,13 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
- 		 */
- 		kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
- 		atomic_set(&kgdb_cpu_doing_single_step, raw_smp_processor_id());
--		kgdb_single_step =  1;
- 
- 		/*
- 		 * Enable single step handling
- 		 */
- 		if (!kernel_active_single_step())
- 			kernel_enable_single_step(linux_regs);
-+
- 		err = 0;
- 		break;
- 	default:
-@@ -229,7 +221,12 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int esr)
- 
- static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
- {
-+	kernel_disable_single_step();
-+
- 	kgdb_handle_exception(1, SIGTRAP, 0, regs);
-+
-+	atomic_set(&kgdb_cpu_doing_single_step, -1);
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
+On 08/21/2014 08:54 PM, Stephen Warren wrote:
+> On 08/21/2014 10:53 AM, Thierry Reding wrote:
+>> On Thu, Aug 21, 2014 at 09:38:29AM -0600, Stephen Warren wrote:
+>>> On 08/21/2014 12:58 AM, Thierry Reding wrote:
+>>>> On Wed, Aug 20, 2014 at 02:16:49PM -0600, Stephen Warren wrote:
+>>>>> On 08/13/2014 06:41 AM, Mikko Perttunen wrote:
+>>>>>> Hardware-triggered thermal reset requires configuring the I2C
+>>>>>> reset procedure. This configuration is read from the device tree,
+>>>>>> so document the relevant properties in the binding documentation.
+>>>>>
+>>>>>> diff --git
+>>>>>> a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>>>>>> b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>
+>>>>>> +- nvidia,pmu : Phandle to power management unit / PMIC handling
+>>>>>> poweroff
+>>>>>> +- nvidia,reg-addr : I2C register address to write poweroff
+>>>>>> command to
+>>>>>> +- nvidia,reg-data : Poweroff command to write to PMU
+>>>>>
+>>>>> Why are both the PMU/PMIC phandle and the register address/data
+>>>>> required? I
+>>>>> thought the purpose of having the phandle was to allow the register
+>>>>> address
+>>>>> and data to be queried from the PMU/PMIC driver.
+>>>>>
+>>>>> To me, it seems much simpler to get rid of the phandle and just
+>>>>> hard-code
+>>>>> the I2C bus number, address, and data into this node, rather than
+>>>>> having to
+>>>>> go query it from the PMU/PMIC driver, then find the I2C controller,
+>>>>> then
+>>>>> query it for its ID (and hope that all HW modules that talk to I2C
+>>>>> controllers directly use the same numbering scheme...)
+>>>>
+>>>> I originally requested this to be changed. It seems wrong to duplicate
+>>>> information about the PMIC in both the PMIC device tree node and the
+>>>> i2c-thermtrip node if we can get the same information from the driver
+>>>> directly (via the phandle). It certainly requires a little more code,
+>>>> but at the advantage of not having to figure out the I2C controller
+>>>> hardware number and I2C slave addresses when writing the i2c-thermtrip
+>>>> node.
+>>>
+>>> I cant see that argument, but surely the PMIC driver can also supply the
+>
+> Oops, that was meant to be can not cant.
+>
+>>> "reg-addr" and "reg-data" values too, if it's already being queried
+>>> for the
+>>> I2C device address and bus number? The binding above appears to
+>>> duplicate
+>>> part of the information, while requiring querying of the other part.
+>>
+>> I suppose that could be done. It would take a new function to do that,
+>> though, since I'm not aware of a generic mechanism to query this kind of
+>> information from a PMIC (there's no generic PMIC API, either, so perhaps
+>> it would be a good time to create one?). The I2C controller and I2C
+>> slave are generic I2C properties, whereas the register and data to power
+>> off the device are very device specific.
+>
+> I don't think it's possible to generically query an I2C device for its
+> address from the struct i2c_device object; the code still needs to call
+> a function in the PMIC driver to obtain this.
+>
+> That's because some I2C devices respond to multiple I2C addresses, and
+> there's no guarantee that the one I2C address in the DT (and hence the
+> struct i2c_device) is the address upon which the regulator function exists.
+>
+> grep for i2c_new_dummy in drivers/mfd and you'll find quite a few
+> examples. The Atmel MXT touchpad/screen is another example.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
