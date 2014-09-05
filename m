@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaIEPrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:47:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38742 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaIEPrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:47:36 -0400
-Date: Fri, 5 Sep 2014 10:47:01 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Griffin <peter.griffin@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <maxime.coquelin@st.com>, <patrice.chotard@st.com>,
-        <srinivas.kandagatla@gmail.com>, <lee.jones@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v6 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
- HC
-Message-ID: <20140905154700.GE24449@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409931392-22340-1-git-send-email-peter.griffin@linaro.org>
- <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
+	id S1752045AbaIEPr4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:47:56 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:47285 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaIEPrx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 11:47:53 -0400
+Message-ID: <5409DB25.3070204@cogentembedded.com>
+Date: Fri, 05 Sep 2014 19:47:49 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VdOwlNaOFKGAtAAV"
-Content-Disposition: inline
-In-Reply-To: <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Pavel Kiryukhin <vksavl@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH] clk-rcar-gen2: RCAN clock support
+References: <201407310023.43605.sergei.shtylyov@cogentembedded.com>	<540772A1.8080101@cogentembedded.com>	<CAMuHMdU0GJyYiP8NkELZia00gzKMmVRQ+1YwWCrFRLQytJ6YPw@mail.gmail.com> <CAMuHMdUoZ3AX-y51BaBuodu1Lmw1SvzvGUNNEtfPvfYdsWJOCw@mail.gmail.com>
+In-Reply-To: <CAMuHMdUoZ3AX-y51BaBuodu1Lmw1SvzvGUNNEtfPvfYdsWJOCw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VdOwlNaOFKGAtAAV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/05/2014 01:17 PM, Geert Uytterhoeven wrote:
 
-Hi,
+>>>> Add RCAN clock support to the R-Car generation 2 CPG driver. This clock
+>>>> gets
+>>>> derived from the USB_EXTAL clock by dividing it by 6. The layout of
+>>>> RCANCKCR
+>>>> register is close to those of the clocks supported by the 'clk-div6'
+>>>> driver
+>>>> but has no divider field, and so can't be supported by that driver...
 
-On Fri, Sep 05, 2014 at 04:36:30PM +0100, Peter Griffin wrote:
-> +static int st_dwc3_remove_child(struct device *dev, void *c)
-> +{
-> +	struct platform_device *pdev =3D to_platform_device(dev);
-> +
-> +	of_device_unregister(pdev);
-> +
-> +	return 0;
-> +}
-> +
-> +static int st_dwc3_remove(struct platform_device *pdev)
-> +{
-> +	struct st_dwc3 *dwc3_data =3D platform_get_drvdata(pdev);
-> +
-> +	device_for_each_child(&pdev->dev, NULL, st_dwc3_remove_child);
+>> I'm not a clock expert (pulling in Laurent), but it looks fine to me.
 
-same as before, of_platform_depopulate(). I can fix this one myself this
-time.
+> While you did add the rcan clock to the dtsi in "[PATCH v3 1/3] ARM:
+> shmobile: r8a7791: add CAN clocks", I couldn't find a patch to update
+> the renesas,rcar-gen2-cpg-clocks binding doc?
 
---=20
-balbi
+    Thanks, I didn't know I need to update the bindings as well...
 
---VdOwlNaOFKGAtAAV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Gr{oetje,eeting}s,
+>                          Geert
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+WBR, Sergei
 
-iQIcBAEBAgAGBQJUCdr0AAoJEIaOsuA1yqREyvAP/2XzSmWXusr9Z4vccu9UKdEO
-HyN/HGFAcIzXevRVsh73xmi3LnZdyGWJJQoxHy3MiMJC18FaAJEb0HKblAfuYwld
-yVPZLkYa/xnnQ/ru6rf15hXSLVVIDNmoAvLwVPKCAfAG+yBwUcd2rbOM4QVZHR5+
-3iyP8aXJxb4shaGyopV3/k1ZrWrXJXizy8sDgI209xQi7yHmUObAHyN04DBhpO/2
-bzj3Dbn7e61Z2AHBUxxpbSd5ewpG7viKlIEaehyEnNHCXgs+adEdeFD/CEsx3T06
-uSzjwdBIJmzW03dMwAMzjxab18KxHh4JbDUAyo51SITNTTSqaXHKqhLqh/bx/THs
-7YECetoskIGH3jvg0ZK48JCSzEDatzab/i7+Zj59jgYP7stoE3+kvTYzDP+o/+DD
-Rwfn41WAUqwMYooa04rCjVjHqf2OO7zRteODJ7Vy5uSgFCRwxxFhxnY7y4B5DsXi
-t0HlzXUBjDeLasG+KTS7ygFGUPUMbkP6IKuNZyox2IXczznbygRiG6+jo37Jx/zJ
-l3CIxTzNBTXscY0Nn124bfOFxqsbOexHRFpA7Bur+umWXJUaBkC9RofZW9C+/eK6
-zCCZKhRwl+WUAbJuRT4wgpqRwwssR+vcVwF8GFGdK4tBr6FAfvFzW8vDz+cZTLdb
-juyyy070QMxMleRBr17k
-=1CKY
------END PGP SIGNATURE-----
-
---VdOwlNaOFKGAtAAV--
