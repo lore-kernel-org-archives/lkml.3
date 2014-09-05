@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaIENqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37759 "EHLO mx1.redhat.com"
+	id S932481AbaIENqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:46:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28509 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932411AbaIENqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:46:18 -0400
-Date: Fri, 5 Sep 2014 15:43:50 +0200
+	id S932438AbaIENqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 09:46:22 -0400
+Date: Fri, 5 Sep 2014 15:43:53 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Suresh Siddha <sbsiddha@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/5] x86, fpu: fix math_state_restore() race with
-	kernel_fpu_begin()
-Message-ID: <20140905134350.GA14259@redhat.com>
+Subject: [PATCH v2 5/5] x86, fpu: introduce try_to_restore_fpu()
+Message-ID: <20140905134353.GA14262@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,97 +23,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-math_state_restore() can race with kernel_fpu_begin() if irq comes
-right after __thread_fpu_begin(), __save_init_fpu() will overwrite
-fpu->state we are going to restore.
-
-Add 2 simple helpers, kernel_fpu_disable() and kernel_fpu_enable()
-which simply set/clear in_kernel_fpu, and change math_state_restore()
-to exclude kernel_fpu_begin() in between.
-
-Perhaps we should export in_kernel_fpu and make these helpers inline.
-Probably they will have more users.
+Cosmetic. Every caller of restore_fpu_checking() does drop_init_fpu()
+on failure, add the trivial helper and update the callers.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/include/asm/i387.h |    4 ++++
- arch/x86/kernel/i387.c      |   12 +++++++++++-
- arch/x86/kernel/traps.c     |   12 +++++-------
- 3 files changed, 20 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/fpu-internal.h |   15 +++++++++++----
+ arch/x86/kernel/i387.c              |    8 +++-----
+ arch/x86/kernel/traps.c             |    8 +++-----
+ 3 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 5e275d3..605b1eb 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -51,6 +51,10 @@ static inline void kernel_fpu_end(void)
- 	preempt_enable();
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 4cbb40e..e71c7f5 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -384,6 +384,15 @@ static inline void drop_init_fpu(struct task_struct *tsk)
+ 	}
  }
  
-+/* Must be called woth preempt disabled */
-+extern void kernel_fpu_disable(void);
-+extern void kernel_fpu_enable(void);
++static inline bool try_to_restore_fpu(struct task_struct *tsk)
++{
++	if (unlikely(restore_fpu_checking(tsk))) {
++		drop_init_fpu(tsk);
++		return false;
++	}
++	return true;
++}
 +
  /*
-  * Some instructions like VIA's padlock instructions generate a spurious
-  * DNA fault but don't modify SSE registers. And these instructions
+  * FPU state switching for scheduling.
+  *
+@@ -462,10 +471,8 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
+  */
+ static inline void switch_fpu_finish(struct task_struct *new, fpu_switch_t fpu)
+ {
+-	if (fpu.preload) {
+-		if (unlikely(restore_fpu_checking(new)))
+-			drop_init_fpu(new);
+-	}
++	if (fpu.preload)
++		try_to_restore_fpu(new);
+ }
+ 
+ /*
 diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 7bc8236..ece91cf 100644
+index ece91cf..1918f67 100644
 --- a/arch/x86/kernel/i387.c
 +++ b/arch/x86/kernel/i387.c
-@@ -21,6 +21,17 @@
+@@ -104,12 +104,10 @@ void __kernel_fpu_end(void)
+ {
+ 	struct task_struct *me = current;
  
- static DEFINE_PER_CPU(bool, in_kernel_fpu);
+-	if (__thread_has_fpu(me)) {
+-		if (WARN_ON(restore_fpu_checking(me)))
+-			drop_init_fpu(me);
+-	} else if (!use_eager_fpu()) {
++	if (__thread_has_fpu(me))
++		WARN_ON(!try_to_restore_fpu(me));
++	else if (!use_eager_fpu())
+ 		stts();
+-	}
  
-+void kernel_fpu_disable(void)
-+{
-+	WARN_ON(this_cpu_read(in_kernel_fpu));
-+	this_cpu_write(in_kernel_fpu, true);
-+}
-+
-+void kernel_fpu_enable(void)
-+{
-+	this_cpu_write(in_kernel_fpu, false);
-+}
-+
- /*
-  * Were we in an interrupt that interrupted kernel mode?
-  *
-@@ -80,7 +91,6 @@ void __kernel_fpu_begin(void)
- 
- 	this_cpu_write(in_kernel_fpu, true);
- 
--	/* FIXME: race with math_state_restore()-like code */
- 	if (__thread_has_fpu(me)) {
- 		__save_init_fpu(me);
- 	} else if (!use_eager_fpu()) {
+ 	this_cpu_write(in_kernel_fpu, false);
+ }
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 0d0e922..c632843 100644
+index c632843..f516cf1 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -667,18 +667,16 @@ void math_state_restore(void)
- 		local_irq_disable();
- 	}
- 
-+	/* Avoid __kernel_fpu_begin() right after __thread_fpu_begin() */
-+	kernel_fpu_disable();
+@@ -670,12 +670,10 @@ void math_state_restore(void)
+ 	/* Avoid __kernel_fpu_begin() right after __thread_fpu_begin() */
+ 	kernel_fpu_disable();
  	__thread_fpu_begin(tsk);
--
--	/*
--	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
--	 */
- 	if (unlikely(restore_fpu_checking(tsk))) {
- 		drop_init_fpu(tsk);
- 		force_sig_info(SIGSEGV, SEND_SIG_PRIV, tsk);
--		return;
-+	} else {
-+		tsk->thread.fpu_counter++;
- 	}
--
--	tsk->thread.fpu_counter++;
-+	kernel_fpu_enable();
+-	if (unlikely(restore_fpu_checking(tsk))) {
+-		drop_init_fpu(tsk);
+-		force_sig_info(SIGSEGV, SEND_SIG_PRIV, tsk);
+-	} else {
++	if (likely(try_to_restore_fpu(tsk)))
+ 		tsk->thread.fpu_counter++;
+-	}
++	else
++		force_sig_info(SIGSEGV, SEND_SIG_PRIV, tsk);
+ 	kernel_fpu_enable();
  }
  EXPORT_SYMBOL_GPL(math_state_restore);
- 
 -- 
 1.5.5.1
 
