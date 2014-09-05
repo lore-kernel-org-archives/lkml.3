@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577AbaIENwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 09:52:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:35529 "EHLO
+	id S932630AbaIENwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 09:52:42 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:35537 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932559AbaIENw3 (ORCPT
+	with ESMTP id S932559AbaIENwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 09:52:29 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-f0-5409c01b06ad
+	Fri, 5 Sep 2014 09:52:38 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-f9-5409c0243329
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -19,144 +19,63 @@ Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         b.zolnierkie@samsung.com
-Subject: [PATCH v6 3/5] ARM: EXYNOS: cpuidle: add secure firmware support to
- AFTR mode code
-Date: Fri, 05 Sep 2014 15:51:26 +0200
-Message-id: <1409925088-4705-4-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v6 5/5] ARM: EXYNOS: cpuidle: allow driver usage on Exynos4x12
+ SoCs
+Date: Fri, 05 Sep 2014 15:51:28 +0200
+Message-id: <1409925088-4705-6-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1409925088-4705-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1409925088-4705-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t9jAV3pA5whBodma1hsnLGe1WLeZ1mL
-	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PFxq8eDjwe
-	d67tYfPYvKTe4/a/x8weW662s3j0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXRt+6d8wFM2Qr
-	Nl9Zy9rAOEmii5GTQ0LAROJC03tmCFtM4sK99WxdjFwcQgKLGCXOrXzLDuF0MUnM3PiVDaSK
-	TcBKYmL7KkYQW0RATaJn8VZGkCJmgdnMEq8ePmABSQgLxEqsuPYbrIFFQFVi6ay77CA2r4C7
-	xLe9e6HWKUp0P5sAVsMp4CEx5cEXsLgQUM3O7pssExh5FzAyrGIUTS1ILihOSs811CtOzC0u
-	zUvXS87P3cQIDsdnUjsYVzZYHGIU4GBU4uFd8JkjRIg1say4MvcQowQHs5IIr+1uzhAh3pTE
-	yqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjEcals12Mlm49lWL
-	ktC8CO8iJbe/ntu33VELCzzvv23XY57Ji+/pNy5xnO54oUY0Y8rj5hXcJsu8t+7rzn6nn58j
-	vVJWx/ZPvM69gwU7J7+ocF3bUa8k9edK6eytH3Mf7SpsyJdznHOI4+zVq4wLeGLCHETecTcG
-	N1czCwZXamww9Yqt9dP5osRSnJFoqMVcVJwIAEBjMGBDAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t9jAV2VA5whBs3H+Sw2zljPajHvs6xF
+	74KrbBZnm96wW7w/9IzZYtPja6wWl3fNYbP43HuE0WLG+X1MFmdOX2K1OPmnl9Fi41cPBx6P
+	O9f2sHlsXlLvcfvfY2aPLVfbWTz6tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoErY/35m8wF87gr
+	NqwLaGA8ydnFyMEhIWAice2JQRcjJ5ApJnHh3nq2LkYuDiGBRYwSHQu3sEM4XUwSPy+sYAep
+	YhOwkpjYvooRxBYRUJPoWbyVEaSIWWA2s8Srhw9YQKYKC4RK3JpgCmKyCKhK7H0jC1LOK+Au
+	MfPpARaIZYoS3c8msIHYnAIeElMefGEGsYWAanZ232SZwMi7gJFhFaNoakFyQXFSeq6hXnFi
+	bnFpXrpecn7uJkZwGD6T2sG4ssHiEKMAB6MSD++CzxwhQqyJZcWVuYcYJTiYlUR4bXdzhgjx
+	piRWVqUW5ccXleakFh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgFDF5JXMqcrv4
+	2aT9mlUnnJs3cd65vv2N0be7H15btz8SXmA6l+Hja7fr5dp8fltnaDcGhf60Onyw2kfrt5C6
+	6d+7J8v+l05fxPWNwyx2c8HVshVWRnqtMkcfyW6+/u8Up+P0pOOtsmZJ14L1T+i1qt64HrS+
+	K715FafI3iUKp50DFT1O1bv3KbEUZyQaajEXFScCAFB7lik/AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Move cp15 registers saving to exynos_save_cp15() helper and add
-  additional helper usage to do_idle firmware method.
+Register cpuidle platform device on Exynos4x12 SoCs allowing EXYNOS
+cpuidle driver usage on these SoCs.
 
-* Use resume firmware method instead of exynos_cpu_restore_register()
-  and skip exynos_cpu_save_register() on boards with secure firmware
-  enabled.
+AFTR mode reduces power consumption on Trats2 board (Exynos4412 SoC
+with secure firmware enabled) by ~12% when EXYNOS cpuidle driver is
+enabled (in both cases the default exynos_defconfig config is used
+and CPU1-3 are offlined).
 
-* Use sysram_ns_base_addr + 0x24/0x20 addresses instead of the default
-  ones used by exynos_cpu_set_boot_vector() on boards with secure
-  firmware enabled.
-
-* Use do_idle firmware method instead of cpu_do_idle() on boards with
-  secure firmware enabled.
+Currently Exynos4412 SoC support is limited to Trats2 board.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
 v6:
-- no changes
+- limit Exynos4412 SoC support to Trats2 board for now
 
- arch/arm/mach-exynos/firmware.c | 24 +++++++++++++++++-------
- arch/arm/mach-exynos/pm.c       | 17 ++++++++++++-----
- 2 files changed, 29 insertions(+), 12 deletions(-)
+ arch/arm/mach-exynos/exynos.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-index e57b7c3..2c5bc6b 100644
---- a/arch/arm/mach-exynos/firmware.c
-+++ b/arch/arm/mach-exynos/firmware.c
-@@ -25,13 +25,28 @@
- #include "smc.h"
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index 6a24e11..f5a78d7 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -317,7 +317,10 @@ static void __init exynos_dt_machine_init(void)
+ 		exynos_sysram_init();
  
- #define EXYNOS_SLEEP_MAGIC	0x00000bad
-+#define EXYNOS_AFTR_MAGIC	0xfcba0d10
- #define EXYNOS_BOOT_ADDR	0x8
- #define EXYNOS_BOOT_FLAG	0xc
+ 	if (of_machine_is_compatible("samsung,exynos4210") ||
+-			of_machine_is_compatible("samsung,exynos5250"))
++	    of_machine_is_compatible("samsung,exynos4212") ||
++	    (of_machine_is_compatible("samsung,exynos4412") &&
++	     of_machine_is_compatible("samsung,trats2")) ||
++	    of_machine_is_compatible("samsung,exynos5250"))
+ 		platform_device_register(&exynos_cpuidle);
  
-+static void exynos_save_cp15(void)
-+{
-+	/* Save Power control and Diagnostic registers */
-+	asm ("mrc p15, 0, %0, c15, c0, 0\n"
-+	     "mrc p15, 0, %1, c15, c0, 1\n"
-+	     : "=r" (cp15_save_power), "=r" (cp15_save_diag)
-+	     : : "cc");
-+}
-+
- static int exynos_do_idle(unsigned long mode)
- {
- 	switch (mode) {
- 	case FW_DO_IDLE_AFTR:
-+		if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
-+			exynos_save_cp15();
-+		__raw_writel(virt_to_phys(exynos_cpu_resume_ns),
-+			     sysram_ns_base_addr + 0x24);
-+		__raw_writel(EXYNOS_AFTR_MAGIC, sysram_ns_base_addr + 0x20);
- 		exynos_smc(SMC_CMD_CPU0AFTR, 0, 0, 0);
- 		break;
- 	case FW_DO_IDLE_SLEEP:
-@@ -96,13 +111,8 @@ static int exynos_cpu_suspend(unsigned long arg)
- 
- static int exynos_suspend(void)
- {
--	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
--		/* Save Power control and Diagnostic registers */
--		asm ("mrc p15, 0, %0, c15, c0, 0\n"
--			"mrc p15, 0, %1, c15, c0, 1\n"
--			: "=r" (cp15_save_power), "=r" (cp15_save_diag)
--			: : "cc");
--	}
-+	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
-+		exynos_save_cp15();
- 
- 	writel(EXYNOS_SLEEP_MAGIC, sysram_ns_base_addr + EXYNOS_BOOT_FLAG);
- 	writel(virt_to_phys(exynos_cpu_resume_ns),
-diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index 78e50ed..e0b6885 100644
---- a/arch/arm/mach-exynos/pm.c
-+++ b/arch/arm/mach-exynos/pm.c
-@@ -209,11 +209,19 @@ static void exynos_cpu_set_boot_vector(long flags)
- 
- static int exynos_aftr_finisher(unsigned long flags)
- {
-+	int ret;
-+
- 	exynos_set_wakeupmask(0x0000ff3e);
--	exynos_cpu_set_boot_vector(S5P_CHECK_AFTR);
- 	/* Set value of power down register for aftr mode */
- 	exynos_sys_powerdown_conf(SYS_AFTR);
--	cpu_do_idle();
-+
-+	ret = call_firmware_op(do_idle, FW_DO_IDLE_AFTR);
-+	if (ret == -ENOSYS) {
-+		if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
-+			exynos_cpu_save_register();
-+		exynos_cpu_set_boot_vector(S5P_CHECK_AFTR);
-+		cpu_do_idle();
-+	}
- 
- 	return 1;
- }
-@@ -223,14 +231,13 @@ void exynos_enter_aftr(void)
- 	cpu_pm_enter();
- 
- 	exynos_pm_central_suspend();
--	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
--		exynos_cpu_save_register();
- 
- 	cpu_suspend(0, exynos_aftr_finisher);
- 
- 	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
- 		scu_enable(S5P_VA_SCU);
--		exynos_cpu_restore_register();
-+		if (call_firmware_op(resume) == -ENOSYS)
-+			exynos_cpu_restore_register();
- 	}
- 
- 	exynos_pm_central_resume();
+ 	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
 -- 
 1.8.2.3
 
