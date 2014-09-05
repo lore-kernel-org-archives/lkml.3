@@ -1,164 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaIEPse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:48:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38251 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaIEPsc (ORCPT
+	id S1751266AbaIEPxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:53:23 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:17366 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaIEPxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:48:32 -0400
-Date: Fri, 5 Sep 2014 08:48:29 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Milosz Tanski <milosz@adfin.com>, LKML <linux-kernel@vger.kernel.org>,
-        Volker Lendecke <Volker.Lendecke@SerNet.DE>, Tejun Heo <tj@kernel.org>,
-        linux-aio@kvack.org
-Subject: Re: read()/readv() only from page cache
-Message-ID: <20140905154829.GA22956@infradead.org>
-References: <CANP1eJGE=vQBdLnMBFPcTWrvh+dUA-UCK=ugO-tc2KN4LWLPSA@mail.gmail.com>
- <20140905110927.GI17501@suse.de>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="5vNYLRcllDrimb99"
-Content-Disposition: inline
-In-Reply-To: <20140905110927.GI17501@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 5 Sep 2014 11:53:22 -0400
+Message-ID: <1409931772.28990.197.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
+From: Toshi Kani <toshi.kani@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Fri, 05 Sep 2014 09:42:52 -0600
+In-Reply-To: <5409D99C.10305@zytor.com>
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
+			 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
+			 <20140904201123.GA9116@khazad-dum.debian.net>
+	 <5408C9C4.1010705@zytor.com>
+			 <20140904231923.GA15320@khazad-dum.debian.net>
+			 <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
+			 <1409876991.28990.172.camel@misato.fc.hp.com>
+			 <CALCETrUhbx4hFRAkHfczLkZBYo0E7tRmdFyO7bqPd5e9JEWcMA@mail.gmail.com>
+		 <1409925614.28990.184.camel@misato.fc.hp.com> <5409D197.2060900@zytor.com>
+	 <1409930574.28990.192.camel@misato.fc.hp.com> <5409D99C.10305@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-09-05 at 08:41 -0700, H. Peter Anvin wrote:
+> On 09/05/2014 08:22 AM, Toshi Kani wrote:
+> > On Fri, 2014-09-05 at 08:07 -0700, H. Peter Anvin wrote:
+> >> On 09/05/2014 07:00 AM, Toshi Kani wrote:
+> >>>
+> >>> That's a fine idea, but as Ingo also suggested, I am going to disable
+> >>> this feature on all Pentium 4 models.  That should give us a safety
+> >>> margin.  Using slot 4 has a benefit that it keeps the PAT setup
+> >>> consistent with Xen.      
+> >>>
+> >>
+> >> Slot 4 is also the maximally problematic one, because it is the one that
+> >> might be incorrectly invoked for the page tables themselves.
+> > 
+> > Good point.  I wonder if Xen folks feel strongly about keeping the PAT
+> > setup consistent with the kernel.  If not, we may choose to use slot 6
+> > (or 7).
+> > 
+> 
+> Who cares what the Xen folks "feel strongly about"?  If strong feelings
+> were a design criterion Xen support would have been pulled from the
+> kernel a long, long time ago.
+> 
+> The important thing is how to design for the situation that we currently
+> have to live with.
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I see.  Then, I am going to use slot 7 for WT as suggested by Andy.  I
+think it is the safest slot as slot 3 is UC and is not currently used.
 
-On Fri, Sep 05, 2014 at 12:09:27PM +0100, Mel Gorman wrote:
-> I suggest you look at the recent fincore debate. It did not progress much
-> the last time because the author wanted to push a lot of functionality in
-> there where as reviewers felt it should start simple.  The simple case is
-> likely a good fit for what you want. The primary downside is that it would
-> be race-prone in memory pressure situations as the page could be reclaimed
-> between the fincore check and the read but I expect that your application
-> is already avoiding reclaim activity.
+Thanks,
+-Toshi
 
-I've actually experimentally hacked up O_NONBLOCK support for regular
-files so that it only returns data from the page cache, and not
-otherwise.  Volker promised to test it with Samba, but we never made
-any progress on it, and just last week a customer told me they would
-have liked to use it if it was available.
-
-Note that we might want to also avoid blocking on locks, and I have some
-vague memory that we shouldn't actually implement O_NONBLOCK on regular
-files due to compatibility options but would have to use a new flag
-instead.
-
-Note that mincor/fincore would not help for the usual use case where you
-have a non blocking event main loop and want to offload actual blocking
-I/O to helper threads, as you it returns information that can be stale
-any time.
-
-One further consideration would be to finally implement real buffered
-I/O in kernel space by something like the above and offloading to
-workqueues in kernelspace.  I think our workqueues now are way better
-than any possible user thread pool, although we'd need to find a way to
-temporarily tie the work threads to a user address space.
-
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=support-O_NONBLOCK-reads
-
-Index: xfs/include/linux/mm.h
-===================================================================
---- xfs.orig/include/linux/mm.h	2012-09-21 17:50:32.243490371 +0200
-+++ xfs/include/linux/mm.h	2012-09-21 17:50:43.333490305 +0200
-@@ -1467,6 +1467,12 @@ void page_cache_async_readahead(struct a
- 				pgoff_t offset,
- 				unsigned long size);
- 
-+void page_cache_nonblock_readahead(struct address_space *mapping,
-+				struct file_ra_state *ra,
-+				struct file *filp,
-+				pgoff_t offset,
-+				unsigned long size);
-+
- unsigned long max_sane_readahead(unsigned long nr);
- unsigned long ra_submit(struct file_ra_state *ra,
- 			struct address_space *mapping,
-Index: xfs/mm/filemap.c
-===================================================================
---- xfs.orig/mm/filemap.c	2012-09-21 17:50:32.243490371 +0200
-+++ xfs/mm/filemap.c	2012-09-21 18:35:53.343474115 +0200
-@@ -1107,6 +1107,9 @@ static void do_generic_file_read(struct
- find_page:
- 		page = find_get_page(mapping, index);
- 		if (!page) {
-+			if (filp && filp->f_flags & O_NONBLOCK)
-+				goto short_read;
-+
- 			page_cache_sync_readahead(mapping,
- 					ra, filp,
- 					index, last_index - index);
-@@ -1218,6 +1221,12 @@ page_not_up_to_date_locked:
- 		}
- 
- readpage:
-+		if (filp && filp->f_flags & O_NONBLOCK) {
-+			unlock_page(page);
-+			page_cache_release(page);
-+			goto short_read;
-+		}
-+
- 		/*
- 		 * A previous I/O error may have been due to temporary
- 		 * failures, eg. multipath errors.
-@@ -1293,6 +1302,10 @@ out:
- 
- 	*ppos = ((loff_t)index << PAGE_CACHE_SHIFT) + offset;
- 	file_accessed(filp);
-+	return;
-+short_read:
-+	page_cache_nonblock_readahead(mapping, ra, filp, index,
-+				      last_index - index);
- }
- 
- int file_read_actor(read_descriptor_t *desc, struct page *page,
-@@ -1466,7 +1479,8 @@ generic_file_aio_read(struct kiocb *iocb
- 		do_generic_file_read(filp, ppos, &desc, file_read_actor);
- 		retval += desc.written;
- 		if (desc.error) {
--			retval = retval ?: desc.error;
-+			if (!retval)
-+				retval = desc.error;
- 			break;
- 		}
- 		if (desc.count > 0)
-Index: xfs/mm/readahead.c
-===================================================================
---- xfs.orig/mm/readahead.c	2012-09-21 17:50:32.243490371 +0200
-+++ xfs/mm/readahead.c	2012-09-21 17:50:43.336823641 +0200
-@@ -565,6 +565,22 @@ page_cache_async_readahead(struct addres
- }
- EXPORT_SYMBOL_GPL(page_cache_async_readahead);
- 
-+void
-+page_cache_nonblock_readahead(struct address_space *mapping,
-+			   struct file_ra_state *ra, struct file *filp,
-+			   pgoff_t offset, unsigned long req_size)
-+{
-+	/*
-+	 * Defer asynchronous read-ahead on IO congestion.
-+	 */
-+	if (bdi_read_congested(mapping->backing_dev_info))
-+		return;
-+
-+	/* do read-ahead */
-+	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
-+}
-+EXPORT_SYMBOL_GPL(page_cache_nonblock_readahead);
-+
- static ssize_t
- do_readahead(struct address_space *mapping, struct file *filp,
- 	     pgoff_t index, unsigned long nr)
-
---5vNYLRcllDrimb99--
