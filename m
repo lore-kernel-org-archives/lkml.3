@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbaIEOl4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:41:56 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:58469 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757069AbaIEOly (ORCPT
+	id S1757122AbaIEOor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:44:47 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18679 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591AbaIEOoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:41:54 -0400
-Message-ID: <5409CC3D.7040009@gmail.com>
-Date: Fri, 05 Sep 2014 16:44:13 +0200
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 5 Sep 2014 10:44:46 -0400
+Message-ID: <5409CC39.3060608@oracle.com>
+Date: Fri, 05 Sep 2014 10:44:09 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>
-CC: Peter Kieser <peter@kieser.ca>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, stable <stable@vger.kernel.org>
-Subject: Re: [GIT PULL] bcache changes for 3.17
-References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk> <53E7251B.3080305@kieser.ca> <540966BA.9030106@gmail.com> <5409C5FC.6020406@kernel.dk>
-In-Reply-To: <5409C5FC.6020406@kernel.dk>
-Content-Type: text/plain; charset=windows-1252
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+CC: Joe Perches <joe@perches.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        akpm@linuxfoundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel: add support for gcc 5
+References: <1409845039-5751-1-git-send-email-sasha.levin@oracle.com>		 <20140904212535.GA5059@drone.musicnaut.iki.fi>		 <1409870628.2310799.163815377.623F33D2@webmail.messagingengine.com>	 <1409874455.2770.26.camel@joe-AO725> <54092FE0.3030004@oracle.com> <1409890133.10788.23.camel@localhost>
+In-Reply-To: <1409890133.10788.23.camel@localhost>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 04:17 PM, Jens Axboe wrote:
-> 
-> We need to do something about this. From this latest pull, looks like
-> all should go to stable:
-> 
-> 5b1016e62f74c53e0330403025954c8d95384c03
-> 9aa61a992acceeec0d1de2cd99938421498659d5
-> dbd810ab678d262d3772d29b65844d7b20dc47bc
-> 8b326d3a2a76912dfed2f0ab937d59fae9512ca2
-> e5112201c1285841f8b565ece5d6ae7e0d7947a2
-> a664d0f05a2ec02c8f042db536d84d15d6e19e81
-> c5aa4a3157b55bdca18dd2a9d9f43314470b6d32
-> 9e5c353510b26500bd6b8309823ac9ef2837b761
-> bcf090e0040e30f8409e6a535a01e6473afb096f
-> 501d52a90cbe652b41336c206ff0e95799d5a9b5
-> 8e0948080670f6330229718b15a6a1a011d441ce
-> 60ae81eee86dd7a520db8c1e3d702b49fc0418b5
-> 913dc33fb2720fb5f979011664294137ddd8b13b
-> 6b708de64adb6dc8319e7aeac922b46904fbeeec
-> 400ffaa2acd72274e2c7293a9724382383bebf3e
-> d83353b319d47ef8cce82467da6a25c2d558253f
-> bf0c55c986540483c34ca640f2eef4c3314388b1
-> c9a78332b42cbdcdd386a95192a716b67d1711a4
-> 2452cc89063a2a6890368f185c4b6d7d8802175b
-> 25abade29616d42d60f9bd5e6a5ad07f7314e39e
-> 5b25abade29616d42d60f9bd5e6a5ad07f7314e3
-> 789d21dbd9d8889e62c79ec19585fcc97e42ef07
-> 0781c8748cf1ea2b0dcd966571103909528c4efa
-> 
-> (from oldest to newest). And that's just from 3.16 to 3.17-rc3, going
-> all the way back to 3.10 would be a lot of work. If there's anyone that
-> cares about bcache on stable kernels (and actually use it), now would be
-> a good time to pipe up.
-> 
+On 09/05/2014 12:08 AM, Hannes Frederic Sowa wrote:
+> On Do, 2014-09-04 at 23:37 -0400, Sasha Levin wrote:
+>> > On 09/04/2014 07:47 PM, Joe Perches wrote:
+>>> > > On Fri, 2014-09-05 at 00:43 +0200, Hannes Frederic Sowa wrote:
+>>>>> > >> > Most statements are already depending on GCC_VERSION, maybe we can just
+>>>>> > >> > unify all gcc specific headers to one, still trying to keep the file
+>>>>> > >> > organized? ;)
+>>> > > Maybe something like:
+>>> > > 
+>>> > > gnu development of gcc will be more frequent and the use of
+>>> > > compiler-gcc<major>.h likely will not be convenient anymore.
+>>> > > 
+>>> > > Integrate the individual compiler-gcc<major>.h files into
+>>> > > compiler-gcc.h.
+>> > 
+>> > Please no. We have a similar file we maintain in our team that's supposed to
+>> > do something very similar for kernel versions. It goes all the way back to
+>> > 2.6.9 and it's a *horrible* mess.
+>> > 
+>> > This is how compiler-gcc.h will end up looking in a while.
+> Something along these lines? We can make '4' a macro describing it
+> references the latest possible compiler-gccX.h file.
 
-Then if it's too much work, it just confirmed what was asked previously:
-bcache is still experimental so mark it such for stable kernels.
+I agree, something along those lines would be great. We'd still have
+all this mess split into smaller headers and we won't be forced to add
+compiler-gccX.h until we actually need it.
 
-I wouldn't have used bcache in that case.
+The problem it causes is that if you want to figure out what specific line
+of code in one of those headers affects your kernel you may need to browse
+through multiple headers (-gcc3.h ... -gccX.h) but I suspect that we won't
+have too many conflicting declarations, as Joe pointed out - they are mostly
+upward compatible.
 
-Thanks
+
+Thanks,
+Sasha
