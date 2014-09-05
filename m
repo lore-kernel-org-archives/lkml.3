@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaIEWpP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:45:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19105 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352AbaIEWpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:45:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="382153617"
-Message-ID: <540A3CF4.5070508@linux.intel.com>
-Date: Fri, 05 Sep 2014 15:45:08 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753674AbaIEWqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:46:00 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:41184 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541AbaIEWp7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 18:45:59 -0400
+Date: Sat, 6 Sep 2014 07:45:54 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140905224554.GD15723@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <20140905140815.GA10455@mtj.dyndns.org>
+ <CAM_iQpUJONZ7UWTzJoqsbYfHsp5HnRVR-mhpP_kvR3AUafELqQ@mail.gmail.com>
+ <20140905180040.GC12991@mtj.dyndns.org>
+ <CAM_iQpUbGTxrbJZ_ztf+QUvFowsivQ-jvPCSi7kmth7nstPvaA@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com> <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net> <20140905174925.GA12991@mtj.dyndns.org> <20140905181003.GA29003@core.coreip.homeip.net> <20140905222956.GA15723@mtj.dyndns.org>
-In-Reply-To: <20140905222956.GA15723@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM_iQpUbGTxrbJZ_ztf+QUvFowsivQ-jvPCSi7kmth7nstPvaA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/5/2014 3:29 PM, Tejun Heo wrote:
-> Hello, Dmitry.
->
-> On Fri, Sep 05, 2014 at 11:10:03AM -0700, Dmitry Torokhov wrote:
->> I do not agree that it is actually user-visible change: generally speaking you
->> do not really know if device is there or not. They come and go. Like I said,
->> consider all permutations, with hot-pluggable buses, deferred probing, etc,
->
-> It is for storage devices which always have guaranteed synchronous
-> probing on module load and well-defined probing order.  Sure, modern
-> setups are a lot more dynamic but I'm quite certain that there are
-> setups in the wild which depend on storage driver loading being
-> synchronous.  We can't simply declare one day that such behavior is
-> broken and break, most likely, their boots.
+Hello,
 
-we even depend on this in the mount-by-label cases
+On Fri, Sep 05, 2014 at 11:12:24AM -0700, Cong Wang wrote:
+> > Rafael, can you please help?
+> 
+> Rafael is known not responsive at least for this topic. :)
 
-many setups assume that the internal storage prevails over the USB stick in the case of conflicts.
-it's a security issue; you don't want the built in secure bootloader that has a kernel root argument
-by label/uuid.
-the security there tends to assume that built-in wins over USB
+:(
 
+> > Shouldn't the primary goal of the comment be explaining why we need
+> > TIF_MEMDIE check there at all anyway?  The deadlock possiblity is not
+> > very obvious.
+> 
+> The changelog is not long enough?? ;-) I hate to copy+paste changelog
+> into comments, changelog is essentially necessary for people to understand
+> kernel code (at least networking) , so I don't think we have to move it
+> into comments in this case.
+
+It doesn't have to be the same text but the current comment is
+basically content-less.  e.g. it can just say "OOM killer may get
+stuck trying to kill a cgroup frozen task" and actualy provide
+information on what condition the conditional tries to address.
+
+Thanks.
+
+-- 
+tejun
