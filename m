@@ -1,73 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336AbaIEMf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:35:58 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:20630 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877AbaIEMfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:35:11 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-46-5409adfbca8a
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 RESEND 2/3] ARM: EXYNOS: Remove unneeded __ref annotation
- for cpu_die function
-Date: Fri, 05 Sep 2014 14:34:54 +0200
-Message-id: <1409920495-16533-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1409920495-16533-1-git-send-email-k.kozlowski@samsung.com>
-References: <1409920495-16533-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xK7q/13KGGJw4ZWyxccZ6Vot5n2Ut
-	Xr8wtOhdcJXN4mzTG3aLTY+vsVpc3jWHzWLG+X1MFrcv81qsPXKX3eLkn15Gi1W7/jA68Hi0
-	NPeweeycdZfd4861PWwem5fUe/RtWcXo8XmTXABbFJdNSmpOZllqkb5dAldG056dzAVN7BUt
-	W26xNDB+YO1i5OSQEDCRmLdjITuELSZx4d56ti5GLg4hgaWMEvsOzGKEcPqYJHbuaGcDqWIT
-	MJbYvHwJWJWIwA5GieX3LrODOMwCR5gklp3YzARSJSyQLDHjxAGgBAcHi4CqRPOLcJAwr4C7
-	xPYrxxgh1slJnDw2GewMTgEPib8dzSwgthBQzeR365gnMPIuYGRYxSiaWppcUJyUnmuoV5yY
-	W1yal66XnJ+7iRESjF92MC4+ZnWIUYCDUYmH94URZ4gQa2JZcWXuIUYJDmYlEV73KUAh3pTE
-	yqrUovz4otKc1OJDjEwcnFINjAXq1gc6WvibzN1cy/qfMPdez9Jt7vspe4S1zV2dcfmpqUf4
-	5K6o7v+bJJ2lV7V0u+jdJpHKrQduh2ZsfRzfJf1y9gROhkvNncq5+wPevtXjM9vcIcNSmvhc
-	/her3TH1wv0mvsx7exXetE/RFi38/nvyjTmT7iRIsJwU+Ruhq/bwrUizRhCTEktxRqKhFnNR
-	cSIAYfqWNyQCAAA=
+	id S932315AbaIEMii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:38:38 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:46009 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756856AbaIEMie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 08:38:34 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Peter Hurley'" <peter@hurleysoftware.com>,
+        "'paulmck@linux.vnet.ibm.com'" <paulmck@linux.vnet.ibm.com>
+CC: Jakub Jelinek <jakub@redhat.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        "Oleg Nesterov" <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "Miroslav Franc" <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        "linux-arm@vger.kernel.org" <linux-arm@vger.kernel.org>
+Subject: RE: bit fields && data tearing
+Thread-Topic: bit fields && data tearing
+Thread-Index: AQHPyL7OJXKiC/P/tUa9IYpE5+LVuZvyNPcQgAAzTgCAABEaUA==
+Date: Fri, 5 Sep 2014 12:37:17 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17488265@AcuExch.aculab.com>
+References: <54079B70.4050200@hurleysoftware.com>
+ <1409785893.30640.118.camel@pasglop>
+ <21512.10628.412205.873477@gargle.gargle.HOWL>
+ <20140904090952.GW17454@tucnak.redhat.com>
+ <540859EC.5000407@hurleysoftware.com>
+ <20140904175044.4697aee4@alan.etchedpixels.co.uk>
+ <5408C0AB.6050801@hurleysoftware.com>
+ <20140905001751.GL5001@linux.vnet.ibm.com>
+ <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com>
+ <20140905040645.GO5001@linux.vnet.ibm.com>
+ <063D6719AE5E284EB5DD2968C1650D6D17487F66@AcuExch.aculab.com>
+ <5409AD0A.5090305@hurleysoftware.com>
+In-Reply-To: <5409AD0A.5090305@hurleysoftware.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s85Cchse017259
 
-The __ref annotation for exynos_cpu_die() is not needed because the
-function does not reference any __init/__exit symbol or call.
+From: Peter Hurley
+> [ +cc linux-arm ]
+> 
+> Hi David,
+> 
+> On 09/05/2014 04:30 AM, David Laight wrote:
+> > I've seen gcc generate 32bit accesses for 16bit structure members on arm.
+> > It does this because of the more limited range of the offsets for the 16bit access.
+> > OTOH I don't know if it ever did this for writes - so it may be moot.
+> 
+> Can you recall the particulars, like what ARM config or what code?
+> 
+> I tried an overly-simple test to see if gcc would bump up to the word load for
+> the 12-bit offset mode, but it stuck with register offset rather than immediate
+> offset. [I used the compiler options for allmodconfig and a 4.8 cross-compiler.]
+> 
+> Maybe the test doesn't generate enough register pressure on the compiler?
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Dunno, I would have been using a much older version of the compiler.
+It is possible that it doesn't do it any more.
+It might only have done it for loads.
 
----
-Changes since v4:
-1. Rebase on linux-next-20140804.
-2. Add Reviewed-by Tomasz Figa.
----
- arch/arm/mach-exynos/platsmp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The compiler used to use misaligned 32bit loads for structure
+members on large 4n+2 byte boundaries as well.
+I'm pretty sure it doesn't do that either.
 
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index a809f76c8160..83b20a38a598 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -373,7 +373,7 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
-  *
-  * Called with IRQs disabled
-  */
--static void __ref exynos_cpu_die(unsigned int cpu)
-+static void exynos_cpu_die(unsigned int cpu)
- {
- 	int spurious = 0;
- 
--- 
-1.9.1
+There have been a lot of compiler versions since I was compiling
+anything for arm.
 
+	David
+
+> Regards,
+> Peter Hurley
+> 
+> #define ARRAY_SIZE(x)  (sizeof(x)/sizeof((x)[0]))
+> 
+> struct x {
+> 	long unused[64];
+> 	short b[12];
+> 	int unused2[10];
+> 	short c;
+> };
+> 
+> void store_c(struct x *p, short a[]) {
+> 	int i;
+> 
+> 	for (i = 0; i < ARRAY_SIZE(p->b); i++)
+> 		p->b[i] = a[i];
+> 	p->c = 2;
+> }
+> 
+> 
+> void store_c(struct x *p, short a[]) {
+>    0:	e1a0c00d 	mov	ip, sp
+>    4:	e3a03000 	mov	r3, #0
+>    8:	e92dd800 	push	{fp, ip, lr, pc}
+>    c:	e24cb004 	sub	fp, ip, #4
+> 	int i;
+> 
+> 	for (i = 0; i < ARRAY_SIZE(p->b); i++)
+> 		p->b[i] = a[i];
+>   10:	e191c0b3 	ldrh	ip, [r1, r3]
+>   14:	e0802003 	add	r2, r0, r3
+>   18:	e2822c01 	add	r2, r2, #256	; 0x100
+>   1c:	e2833002 	add	r3, r3, #2
+>   20:	e3530018 	cmp	r3, #24
+>   24:	e1c2c0b0 	strh	ip, [r2]
+>   28:	1afffff8 	bne	10 <store_c+0x10>
+> 	p->c = 2;
+>   2c:	e3a03d05 	mov	r3, #320	; 0x140
+>   30:	e3a02002 	mov	r2, #2
+>   34:	e18020b3 	strh	r2, [r0, r3]
+>   38:	e89da800 	ldm	sp, {fp, sp, pc}
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
