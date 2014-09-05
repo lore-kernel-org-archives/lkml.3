@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297AbaIEIU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 04:20:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39195 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755943AbaIEIUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 04:20:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,471,1406617200"; 
-   d="scan'208";a="598395675"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: RE: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
-Thread-Topic: [PATCH 3/3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
-Thread-Index: AQHPyF/xrVl5pOIy50CCjraIzroyT5vxx3yA///grICAAIrOQA==
-Date: Fri, 5 Sep 2014 08:20:07 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9828F8@SHSMSX101.ccr.corp.intel.com>
-References: <1409161588-19417-1-git-send-email-alvin.chen@intel.com>
-	<1409161588-19417-4-git-send-email-alvin.chen@intel.com>
-	<CACRpkdZJSf+EfYN=hHxRnpjQZGuqroBL0c+08Ng=dRkS0GZySA@mail.gmail.com>
-	<4656BEB6164FC34F8171C6538F1A595B2E9826A6@SHSMSX101.ccr.corp.intel.com>
- <CACRpkdYZ0W4+iGyP5bbARAAfrqcrG77PVCHKcGhnBXvpCHoqxw@mail.gmail.com>
-In-Reply-To: <CACRpkdYZ0W4+iGyP5bbARAAfrqcrG77PVCHKcGhnBXvpCHoqxw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1756405AbaIEIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 04:22:27 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:58745 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756061AbaIEIW0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 04:22:26 -0400
 MIME-Version: 1.0
+In-Reply-To: <1409484115-1974-3-git-send-email-pramod.gurav@smartplayin.com>
+References: <1409484115-1974-1-git-send-email-pramod.gurav@smartplayin.com>
+	<1409484115-1974-3-git-send-email-pramod.gurav@smartplayin.com>
+Date: Fri, 5 Sep 2014 10:22:25 +0200
+Message-ID: <CACRpkdY1Oebw8P4gnR7RORakj-vG+hG+1yXF0tpDaaKZ6z=hEw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] pinctrl: at91: Fix failure path in at91_gpio_probe path
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s858L30w015684
 
-> >>
-> >> Insert this into the dynamically allocated per-port or chip struct instead.
-> >>
-> > How about the following?
-> >
-> > static struct dwapb_context {
-> >         u32 data[DWAPB_MAX_PORTS];
-> >         u32 dir[DWAPB_MAX_PORTS];
-> >         u32 ext[DWAPB_MAX_PORTS];
-> >         u32 int_en;
-> >         u32 int_mask;
-> >         u32 int_type;
-> >         u32 int_pol;
-> >         u32 int_deb;
-> > } dwapb_context;
-> 
-> NO because this is still a singleton variable. Put it into the dynamically allocated
-> structs.
-> 
-> > Comparing to allocate for each port
-> > dynamically, it is more directly and easy to understand.
-> 
-> No, I disagree. The overall design pattern in the kernel is to allocate all state
-> containers dynamically.
-> 
-OK. Please also help review the v2 I just sent out, and after getting more feedbacks, I will improve this part in the next version together.
+On Sun, Aug 31, 2014 at 1:21 PM, Pramod Gurav
+<pramod.gurav@smartplayin.com> wrote:
 
+> This fixes the whole error handling in probe function by capturing and
+> returning error values on kernel function like clk_prepare,
+> clk_enable, gpiochip_add etc.
+>
+> CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/pinctrl/pinctrl-at91.c |   20 +++++++++++++-------
+>  1 files changed, 13 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index 480460d..7abe683 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -1578,16 +1578,19 @@ static int at91_gpio_probe(struct platform_device *pdev)
+>         at91_chip->clock = devm_clk_get(&pdev->dev, NULL);
+>         if (IS_ERR(at91_chip->clock)) {
+>                 dev_err(&pdev->dev, "failed to get clock, ignoring.\n");
+> +               ret = IS_ERR(at91_chip->clock);
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+No. IS_ERR() returns a bool.
+
+You want to use PTR_ERR().
+
+Yours,
+Linus Walleij
