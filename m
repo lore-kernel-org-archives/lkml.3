@@ -1,35 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaIEUo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:44:57 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:34679 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaIEUoy (ORCPT
+	id S1752230AbaIEUqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:46:23 -0400
+Received: from mail.orcon.net.nz ([219.88.242.56]:40234 "EHLO
+	mail.orcon.net.nz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751470AbaIEUqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:44:54 -0400
+	Fri, 5 Sep 2014 16:46:20 -0400
+Date: Sat, 6 Sep 2014 08:42:55 +1200
+From: Michael Cree <mcree@orcon.net.nz>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Marc Gauthier <marc@cadence.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>
+Subject: Re: bit fields && data tearing
+Message-ID: <20140905204255.GB4053@omega>
+Mail-Followup-To: Michael Cree <mcree@orcon.net.nz>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Peter Hurley <peter@hurleysoftware.com>,
+	Marc Gauthier <marc@cadence.com>,
+	"paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	David Laight <David.Laight@ACULAB.COM>,
+	Jakub Jelinek <jakub@redhat.com>,
+	"linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+	Tony Luck <tony.luck@intel.com>,
+	"linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+	Oleg Nesterov <oleg@redhat.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Paul Mackerras <paulus@samba.org>,
+	"linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+	Miroslav Franc <mfranc@redhat.com>,
+	Richard Henderson <rth@twiddle.net>,
+	"linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>
+References: <5408E458.3@zytor.com>
+ <54090AF4.7060406@hurleysoftware.com>
+ <54091B30.2090509@zytor.com>
+ <20140905081648.GB5281@omega>
+ <20140905180950.GU5001@linux.vnet.ibm.com>
+ <540A05F7.1070202@hurleysoftware.com>
+ <20140905190506.GV5001@linux.vnet.ibm.com>
+ <8CA974F497CA064FA9926E10ABCC061F05F97E7B77@MAILSJ4.global.cadence.com>
+ <540A19B8.4010907@hurleysoftware.com>
+ <540A1E6C.2020005@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <1409912186-22968-1-git-send-email-pbonzini@redhat.com>
-References: <1409912186-22968-1-git-send-email-pbonzini@redhat.com>
-Date: Fri, 5 Sep 2014 13:44:53 -0700
-X-Google-Sender-Auth: nsFjBt7vGUpX82L4u7nTBoKsbac
-Message-ID: <CA+55aFxum+O9j4ohV=BwJR_+q+hMAZ2QLp0SpgZzYFWs9F=EUg@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM changes for 3.17-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>, KVM list <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540A1E6C.2020005@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Bayes-Prob: 0.0001 (Score 0: No Bayes scoring rules defined, tokens from: outbound)
+X-Spam-Score: -2.63 () [Hold at 3.00] FREEMAIL_FROM:0.001,FSL_HELO_NON_FQDN_1:0.001,HELO_NO_DOMAIN:0.001,RDNS_DYNAMIC:0.363,CC(NZ:-3)
+X-CanIt-Geo: ip=60.234.221.162; country=NZ; latitude=-41.0000; longitude=174.0000; http://maps.google.com/maps?q=-41.0000,174.0000&z=6
+X-CanItPRO-Stream: base:outbound
+X-Canit-Stats-ID: 02MLwGVfD - 632c657c910e - 20140906
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 3:16 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+On Fri, Sep 05, 2014 at 01:34:52PM -0700, H. Peter Anvin wrote:
+> On 09/05/2014 01:14 PM, Peter Hurley wrote:
+> > 
+> > Here's how I read the two statements.
+> > 
+> > First, the commit message:
+> > 
+> > "It [this commit] documents that CPUs [supported by the Linux kernel]
+> > _must provide_ atomic one-byte and two-byte naturally aligned loads and stores."
+> > 
+> > Second, in the body of the document:
+> > 
+> > "The Linux kernel no longer supports pre-EV56 Alpha CPUs, because these
+> > older CPUs _do not provide_ atomic one-byte and two-byte loads and stores."
+> > 
+> 
+> Does this apply in general or only to SMP configurations?  I guess
+> non-SMP configurations would still have problems if interrupted in the
+> wrong place...
 
-Nothing new there. Forgot to push out, or perhaps to use "-f" to
-overwrite the previous tag of the same name?
+Yes.
 
-           Linus
+Cheers
+Michael.
