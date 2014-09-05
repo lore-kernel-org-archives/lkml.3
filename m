@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537AbaIEBJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 21:09:06 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:46344 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538AbaIEBJE (ORCPT
+	id S1755638AbaIEBNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 21:13:05 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:53720 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380AbaIEBNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 21:09:04 -0400
-From: John DeSilva <desilvjo@umich.edu>
-To: jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John DeSilva <desilvjo@umich.edu>
-Subject: [PATCH] HID: Add Holtek USB ID 04d9:a0c2 ETEKCITY Scroll
-Date: Thu,  4 Sep 2014 21:08:05 -0400
-Message-Id: <1409879285-15816-1-git-send-email-desilvjo@umich.edu>
-X-Mailer: git-send-email 1.8.5.5
+	Thu, 4 Sep 2014 21:13:04 -0400
+Message-ID: <1409879575.5208.1.camel@phoenix>
+Subject: [PATCH] regulator: da9211: Set of_match_table and export device
+ table
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: James Ban <james.ban.opensource@diasemi.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 05 Sep 2014 09:12:55 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The report descriptor for the HOLTEK USB ID 04d9:a0c2 (ETEKCITY Scroll
-T-140 Gaming Mouse) is set to a very large amount of consumer usages
-(2^16), exceeding HID_MAX_USAGES. Added id, bindings and comments for
-the mouse, and reduced the usage and logical maximums to 0x2fff,
-consistent with the other mice in the category.
-Tested on the hardware.
+Also move da9211_i2c_id and da9211_dt_ids close to the user for better
+readability.
 
-Signed-off-by: John C. DeSilva <desilvjo@umich.edu>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/hid/hid-holtek-mouse.c | 4 ++++
- drivers/hid/hid-ids.h          | 1 +
- 2 files changed, 5 insertions(+)
+ drivers/regulator/da9211-regulator.c | 29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/hid/hid-holtek-mouse.c b/drivers/hid/hid-holtek-mouse.c
-index d60fbd0..78b3a0c 100644
---- a/drivers/hid/hid-holtek-mouse.c
-+++ b/drivers/hid/hid-holtek-mouse.c
-@@ -29,6 +29,7 @@
-  *   and Zalman ZM-GM1
-  * - USB ID 04d9:a081, sold as SHARKOON DarkGlider Gaming mouse
-  * - USB ID 04d9:a072, sold as LEETGION Hellion Gaming Mouse
-+ * - USB ID 04d9:a0c2, sold as ETEKCITY Scroll T-140 Gaming Mouse
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+index 044c36c..f47adf3 100644
+--- a/drivers/regulator/da9211-regulator.c
++++ b/drivers/regulator/da9211-regulator.c
+@@ -388,20 +388,6 @@ static int da9211_regulator_init(struct da9211 *chip)
+ 	return 0;
+ }
+ 
+-static const struct i2c_device_id da9211_i2c_id[] = {
+-	{"da9211", DA9211},
+-	{"da9213", DA9213},
+-	{},
+-};
+-
+-#ifdef CONFIG_OF
+-static const struct of_device_id da9211_dt_ids[] = {
+-	{ .compatible = "dlg,da9211", .data = &da9211_i2c_id[0] },
+-	{ .compatible = "dlg,da9213", .data = &da9211_i2c_id[1] },
+-	{},
+-};
+-#endif
+-
+ /*
+  * I2C driver interface functions
   */
+@@ -479,12 +465,27 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ 	return ret;
+ }
  
- static __u8 *holtek_mouse_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-@@ -42,6 +43,7 @@ static __u8 *holtek_mouse_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		switch (hdev->product) {
- 		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A067:
- 		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072:
-+		case USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A0C2:
- 			if (*rsize >= 122 && rdesc[115] == 0xff && rdesc[116] == 0x7f
- 					&& rdesc[120] == 0xff && rdesc[121] == 0x7f) {
- 				hid_info(hdev, "Fixing up report descriptor\n");
-@@ -74,6 +76,8 @@ static const struct hid_device_id holtek_mouse_devices[] = {
- 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
- 			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT,
-+			USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A0C2) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, holtek_mouse_devices);
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 25cd674..c7b36ad 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -479,6 +479,7 @@
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A070	0xa070
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A072	0xa072
- #define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A081	0xa081
-+#define USB_DEVICE_ID_HOLTEK_ALT_MOUSE_A0C2	0xa0c2
- #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD_A096	0xa096
++static const struct i2c_device_id da9211_i2c_id[] = {
++	{"da9211", DA9211},
++	{"da9213", DA9213},
++	{},
++};
+ MODULE_DEVICE_TABLE(i2c, da9211_i2c_id);
  
- #define USB_VENDOR_ID_IMATION		0x0718
++#ifdef CONFIG_OF
++static const struct of_device_id da9211_dt_ids[] = {
++	{ .compatible = "dlg,da9211", .data = &da9211_i2c_id[0] },
++	{ .compatible = "dlg,da9213", .data = &da9211_i2c_id[1] },
++	{},
++};
++MODULE_DEVICE_TABLE(of, da9211_dt_ids);
++#endif
++
+ static struct i2c_driver da9211_regulator_driver = {
+ 	.driver = {
+ 		.name = "da9211",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(da9211_dt_ids),
+ 	},
+ 	.probe = da9211_i2c_probe,
+ 	.id_table = da9211_i2c_id,
 -- 
-1.8.5.5
+1.9.1
+
+
 
