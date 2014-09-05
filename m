@@ -1,130 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138AbaIEOlW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 10:41:22 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:52855 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172AbaIEOlU (ORCPT
+	id S932696AbaIEOl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 10:41:56 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:58469 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757069AbaIEOly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 10:41:20 -0400
+	Fri, 5 Sep 2014 10:41:54 -0400
+Message-ID: <5409CC3D.7040009@gmail.com>
+Date: Fri, 05 Sep 2014 16:44:13 +0200
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Date: Fri, 5 Sep 2014 16:41:19 +0200
-X-Google-Sender-Auth: bSGThv1T09AOC12TPnXAMIO77ds
-Message-ID: <CAJZ5v0i298zi_tQf2XfQo12dQHR3Kn7jBYfyH6RxiAWz_eE0yQ@mail.gmail.com>
-Subject: [GIT PULL] ACPI and power management fixes for 3.17-rc4
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linuxfoundation.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>
+CC: Peter Kieser <peter@kieser.ca>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org, stable <stable@vger.kernel.org>
+Subject: Re: [GIT PULL] bcache changes for 3.17
+References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk> <53E7251B.3080305@kieser.ca> <540966BA.9030106@gmail.com> <5409C5FC.6020406@kernel.dk>
+In-Reply-To: <5409C5FC.6020406@kernel.dk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 09/05/2014 04:17 PM, Jens Axboe wrote:
+> 
+> We need to do something about this. From this latest pull, looks like
+> all should go to stable:
+> 
+> 5b1016e62f74c53e0330403025954c8d95384c03
+> 9aa61a992acceeec0d1de2cd99938421498659d5
+> dbd810ab678d262d3772d29b65844d7b20dc47bc
+> 8b326d3a2a76912dfed2f0ab937d59fae9512ca2
+> e5112201c1285841f8b565ece5d6ae7e0d7947a2
+> a664d0f05a2ec02c8f042db536d84d15d6e19e81
+> c5aa4a3157b55bdca18dd2a9d9f43314470b6d32
+> 9e5c353510b26500bd6b8309823ac9ef2837b761
+> bcf090e0040e30f8409e6a535a01e6473afb096f
+> 501d52a90cbe652b41336c206ff0e95799d5a9b5
+> 8e0948080670f6330229718b15a6a1a011d441ce
+> 60ae81eee86dd7a520db8c1e3d702b49fc0418b5
+> 913dc33fb2720fb5f979011664294137ddd8b13b
+> 6b708de64adb6dc8319e7aeac922b46904fbeeec
+> 400ffaa2acd72274e2c7293a9724382383bebf3e
+> d83353b319d47ef8cce82467da6a25c2d558253f
+> bf0c55c986540483c34ca640f2eef4c3314388b1
+> c9a78332b42cbdcdd386a95192a716b67d1711a4
+> 2452cc89063a2a6890368f185c4b6d7d8802175b
+> 25abade29616d42d60f9bd5e6a5ad07f7314e39e
+> 5b25abade29616d42d60f9bd5e6a5ad07f7314e3
+> 789d21dbd9d8889e62c79ec19585fcc97e42ef07
+> 0781c8748cf1ea2b0dcd966571103909528c4efa
+> 
+> (from oldest to newest). And that's just from 3.16 to 3.17-rc3, going
+> all the way back to 3.10 would be a lot of work. If there's anyone that
+> cares about bcache on stable kernels (and actually use it), now would be
+> a good time to pipe up.
+> 
 
-Please pull from
+Then if it's too much work, it just confirmed what was asked previously:
+bcache is still experimental so mark it such for stable kernels.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.17-rc4
+I wouldn't have used bcache in that case.
 
-to receive ACPI and power management fixes for v3.17-rc4 with
-top-most commit 9aa4e2f6ac2e5d0729f5982fd0b070123808381e
-
- Merge branches 'pm-sleep', 'powercap', 'pm-domains' and 'pm-cpufreq'
-
-on top of commit 69e273c0b0a3c337a521d083374c918dc52c666f
-
- Linux 3.17-rc3
-
-These are regression fixes (ACPI sysfs, ACPI video, suspend test),
-ACPI cpuidle deadlock fix, missing runtime validation of ACPI _DSD
-output, a fix and a new CPU ID for the RAPL driver, new blacklist
-entry for the ACPI EC driver and a couple of trivial cleanups
-(intel_pstate and generic PM domains).
-
-Specifics:
-
- - Fix for recently broken test_suspend= command line argument
-   (Rafael J Wysocki).
-
- - Fixes for regressions related to the ACPI video driver caused
-   by switching the default to native backlight handling in 3.16
-   from Hans de Goede.
-
- - Fix for a sysfs attribute of ACPI device objects that returns
-   stale values sometimes due to the fact that they are cached
-   instead of executing the appropriate method (_SUN) every time
-   (broken in 3.14).  From Yasuaki Ishimatsu.
-
- - Fix for a deadlock between cpuidle_lock and cpu_hotplug.lock
-   in the ACPI processor driver from Jiri Kosina.
-
- - Runtime output validation for the ACPI _DSD device configuration
-   object missing from the support for it that has been introduced
-   recently.  From Mika Westerberg.
-
- - Fix for an unuseful and misleading RAPL (Running Average Power
-   Limit) domain detection message in the RAPL driver from Jacob Pan.
-
- - New Intel Haswell CPU ID for the RAPL driver from Jason Baron.
-
- - New Clevo W350etq blacklist entry for the ACPI EC driver
-   from Lan Tianyu.
-
- - Cleanups for the intel_pstate driver and the core generic PM
-   domains code from Gabriele Mazzotta and Geert Uytterhoeven.
-
-Thanks!
-
-
----------------
-
-Gabriele Mazzotta (1):
-      cpufreq: intel_pstate: Remove unneeded variable
-
-Geert Uytterhoeven (1):
-      PM / domains: Make generic_pm_domain.name const
-
-Hans de Goede (3):
-      ACPI / video: Fix use_native_backlight selection logic
-      ACPI / video: Add a disable_native_backlight quirk
-      ACPI / video: Disable native_backlight on HP ENVY 15 Notebook PC
-
-Jacob Pan (1):
-      powercap / RAPL: change domain detection message
-
-Jason Baron (1):
-      powercap / RAPL: add support for CPU model 0x3f
-
-Jiri Kosina (1):
-      ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
-
-Lan Tianyu (1):
-      ACPI / EC: Add msi quirk for Clevo W350etq
-
-Mika Westerberg (1):
-      ACPICA: ACPI 5.1: Add support for runtime validation of _DSD package.
-
-Rafael J. Wysocki (1):
-      PM / sleep: Fix test_suspend= command line option
-
-Yasuaki Ishimatsu (1):
-      ACPI / scan: not cache _SUN value in struct acpi_device_pnp
-
----------------
-
- drivers/acpi/acpica/nsprepkg.c | 39 ++++++++++++++++++++++++++++++++++++
- drivers/acpi/ec.c              |  4 ++++
- drivers/acpi/processor_idle.c  |  4 ++--
- drivers/acpi/scan.c            | 15 +++++++-------
- drivers/acpi/video.c           | 45 ++++++++++++++++++++++++++++++++++++++++--
- drivers/cpufreq/intel_pstate.c |  4 ----
- drivers/powercap/intel_rapl.c  |  8 ++++----
- include/acpi/acpi_bus.h        |  1 -
- include/linux/pm_domain.h      |  2 +-
- kernel/power/power.h           |  1 +
- kernel/power/suspend.c         |  2 +-
- kernel/power/suspend_test.c    | 31 ++++++++++++++++++-----------
- 12 files changed, 122 insertions(+), 34 deletions(-)
+Thanks
