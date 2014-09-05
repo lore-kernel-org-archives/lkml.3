@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226AbaIERKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 13:10:13 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:41837 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaIERKK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 13:10:10 -0400
-Message-ID: <5409EE75.9060407@kernel.dk>
-Date: Fri, 05 Sep 2014 11:10:13 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753472AbaIERKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:10:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42803 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104AbaIERKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:10:18 -0400
+Message-ID: <5409EE70.9020304@redhat.com>
+Date: Fri, 05 Sep 2014 19:10:08 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Arne Wiebalck <Arne.Wiebalck@cern.ch>, Peter Kieser <peter@kieser.ca>,
-        "eddie@ehuk.net" <eddie@ehuk.net>,
-        Francis Moreau <francis.moro@gmail.com>,
-        Kent Overstreet <kmo@daterainc.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [GIT PULL] bcache changes for 3.17
-References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk> <53E7251B.3080305@kieser.ca> <540966BA.9030106@gmail.com> <5409C5FC.6020406@kernel.dk> <5409D8BC.7030003@ehuk.net> <5409E7AB.7040704@kieser.ca> <F71A0899-EF6F-44A3-B207-E1DACC8721B6@cern.ch>
-In-Reply-To: <F71A0899-EF6F-44A3-B207-E1DACC8721B6@cern.ch>
-Content-Type: text/plain; charset=windows-1252
+To: Hannes Frederic Sowa <hannes@redhat.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] bpf: fix a false positive kmemcheck warning
+References: <alpine.LRH.2.02.1409051157440.5269@file01.intranet.prod.int.rdu2.redhat.com>  <5409E2C8.2080200@redhat.com> <1409936457.5306.2.camel@localhost>
+In-Reply-To: <1409936457.5306.2.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 11:03 AM, Arne Wiebalck wrote:
-> 
-> On Sep 5, 2014, at 6:41 PM, Peter Kieser <peter@kieser.ca>
->  wrote:
-> 
+On 09/05/2014 07:00 PM, Hannes Frederic Sowa wrote:
+> On Fr, 2014-09-05 at 18:20 +0200, Daniel Borkmann wrote:
+>> Hi Mikulas,
 >>
->> On 2014-09-05 8:37 AM, Eddie Chapman wrote:
->>> On 05/09/14 15:17, Jens Axboe wrote:
->>>> (from oldest to newest). And that's just from 3.16 to 3.17-rc3, going
->>>> all the way back to 3.10 would be a lot of work. If there's anyone that
->>>> cares about bcache on stable kernels (and actually use it), now would be
->>>> a good time to pipe up.
+>> On 09/05/2014 06:01 PM, Mikulas Patocka wrote:
+>>> This patch fixes false positive kmemcheck warning in bpf.
 >>>
->>> Just "piping up" as I care about bcache and actually use it in production on 3.10! Shame I don't have the knowledge to try and backport these though :-)
+>>> When we try to write the variable len, the compiler generates a code that
+>>> reads the 32-bit word, modifies the bits belonging to "len" and writes the
+>>> 32-bit word back. The reading of the word results in kmemcheck warning due
+>>> to reading uninitialized memory. This patch fixes it by avoiding using bit
+>>> fields when kmemcheck is enabled.
 >>>
->>> Eddie
+>>> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 >>
->> I'm "piping up" as well, I use bcache on 3.10 in production.
+>> You need to submit this patch to netdev (Cc'ed).
 >>
->> -Peter
+>>> ---
+>>>    include/linux/filter.h |    5 +++++
+>>>    1 file changed, 5 insertions(+)
+>>>
+>>> Index: linux-2.6/include/linux/filter.h
+>>> ===================================================================
+>>> --- linux-2.6.orig/include/linux/filter.h	2014-09-04 23:04:26.000000000 +0200
+>>> +++ linux-2.6/include/linux/filter.h	2014-09-04 23:43:05.000000000 +0200
+>>> @@ -325,8 +325,13 @@ struct sock;
+>>>    struct seccomp_data;
+>>>
+>>>    struct bpf_prog {
+>>> +#ifdef CONFIG_KMEMCHECK
+>>> +	bool			jited;
+>>> +	u32			len;
+>>> +#else
+>>>    	u32			jited:1,	/* Is our filter JIT'ed? */
+>>>    				len:31;		/* Number of filter blocks */
+>>> +#endif
+>>>    	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
+>>>    	unsigned int		(*bpf_func)(const struct sk_buff *skb,
+>>>    					    const struct bpf_insn *filter);
 >>
-> 
-> 
-> More "piping up": we currently use bcache on a few nodes in production, on 3.14 and 3.15, and plan to roll it out on a wider scale now.
-> If necessary we'll go with these kernels, but we'd certainly prefer our usual 3.10-based CentOS kernel.
+>> I don't really like this if-def. If you really want to fix it, can't
+>> you just use :
+>>
+>>     kmemcheck_bitfield_begin(bpf_anc_data)
+>>     ...
+>>     kmemcheck_bitfield_end(bpf_anc_data)
+>
+> you also need to annotate the bitfield after allocation:
+> struct bpf_prog *prog = kalloc(...);
+> kmemcheck_annotate_bitfield(prog, bpf_anc_data);
 
-OK, so we definitely have people using it in production. My concern was
-that whomever does the backport of the appropriate patches to 3.10/14/15
-stable would have an audience for getting some amount of testing of such
-a patch series.
+Yes, sure, sorry if that was not clear from my side, that was what I
+intended to say with kmemcheck /infrastructure/. :)
 
-Now we just need someone to line up to do the work...
-
--- 
-Jens Axboe
-
+> Bye,
+> Hannes
