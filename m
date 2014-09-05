@@ -1,231 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaIEEY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 00:24:56 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:52797 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaIEEYy (ORCPT
+	id S1753996AbaIEEad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 00:30:33 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:27077 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaIEEa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 00:24:54 -0400
-From: Gyungoh Yoo <gyungoh@gmail.com>
-X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: devicetree@vger.kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, Gyungoh Yoo <jack.yoo@skyworksinc.com>
-Subject: [PATCH v2.2 1/7] regulator: sky81452: Adding Skyworks SKY81452 MFD driver
-Date: Fri,  5 Sep 2014 13:24:38 +0900
-Message-Id: <1409891078-6327-1-git-send-email-jack.yoo@skyworksinc.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20140904092844.GB1397@lee--X1>
-References: <20140904092844.GB1397@lee--X1>
+	Fri, 5 Sep 2014 00:30:27 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-4a-54093c5fda4b
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: myungjoo.ham@samsung.com, linux-pm@vger.kernel.org
+Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
+        a.kesavan@samsung.com, kgene.kim@samsung.com, tomasz.figa@gmail.com,
+        b.zolnierkie@samsung.com, nm@ti.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [RFC PATCH 3/5] ARM: dts: Add PPMU dt node for Exynos3250
+Date: Fri, 05 Sep 2014 13:30:17 +0900
+Message-id: <1409891419-28560-4-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1409891419-28560-1-git-send-email-cw00.choi@samsung.com>
+References: <1409891419-28560-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkWDfehjPEYO4+CYvHaxYzWWycsZ7V
+	4vqX56wWvQuuslmcbXrDbrHp8TVWi8u75rBZfO49wmgx4/w+JovbjSvYLN78OMtk8XjFW3aL
+	Vbv+MDrweuycdZfdY/Gel0wem5fUe/RtWcXocfzGdiaPz5vkAtiiuGxSUnMyy1KL9O0SuDKe
+	3n7DXLBOtOJ490XGBsY3Al2MnBwSAiYS5zqnMkLYYhIX7q1n62Lk4hASWMoocftBC3sXIwdY
+	0YqTnhDx6YwSbyZcYoVwmpgkTm15AdbNJqAlsf/FDTYQW0TATGLfjr9gRcwCO5gkrh34AVYk
+	LOAksX/7dDCbRUBV4u7+n8wgG3gFXCXWT2eBuEJO4sOeR+wgNqeAm8Ta+9eYQGwhoJKLxycx
+	g8yUEDjHLnHxxAZmiDkCEt8mH2KBuFRWYtMBZog5khIHV9xgmcAovICRYRWjaGpBckFxUnqR
+	kV5xYm5xaV66XnJ+7iZGYKyc/vesbwfjzQPWhxgFOBiVeHgXfOYIEWJNLCuuzD3EaAq0YSKz
+	lGhyPjAi80riDY3NjCxMTUyNjcwtzZTEeROkfgYLCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRq
+	YMwTtnKW99r0TC5cbU6M6DdPn+RKtgfMc2+FtM0t5sibO5ft0LLN2xrdpnrIz/JOOGqpN23/
+	Pv+Tqy9emNE/P2G50VaJm+vb9rVFJPqprrdRy1b0fMGRN+dVjoV9nGx0Xx5fZ3Pn7qQJKT2/
+	119bacTLvyp473nnfXsEzk98GW2x/G+w6vNGCyWW4oxEQy3mouJEAGsFjCiQAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t9jQd14G84QgyOzhSwer1nMZLFxxnpW
+	i+tfnrNa9C64ymZxtukNu8Wmx9dYLS7vmsNm8bn3CKPFjPP7mCxuN65gs3jz4yyTxeMVb9kt
+	Vu36w+jA67Fz1l12j8V7XjJ5bF5S79G3ZRWjx/Eb25k8Pm+SC2CLamC0yUhNTEktUkjNS85P
+	ycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6VEmhLDGnFCgUkFhcrKRvh2lC
+	aIibrgVMY4Sub0gQXI+RARpIWMOY8fT2G+aCdaIVx7svMjYwvhHoYuTgkBAwkVhx0rOLkRPI
+	FJO4cG89WxcjF4eQwHRGiTcTLrFCOE1MEqe2vGAEqWIT0JLY/+IGG4gtImAmsW/HX7AiZoEd
+	TBLXDvwAKxIWcJLYv306mM0ioCpxd/9PZpBtvAKuEuuns0Bsk5P4sOcRO4jNKeAmsfb+NSYQ
+	Wwio5OLxScwTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOxGdSOxhXNlgcYhTg
+	YFTi4V3wmSNEiDWxrLgy9xCjBAezkgiv1xugEG9KYmVValF+fFFpTmrxIUZToKMmMkuJJucD
+	k0ReSbyhsYmZkaWRuaGFkbG5kjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQZG/2N/xGe2vXZm
+	kLis87a39/5S9ZSJS58eXbjuVPOlA3yx7y0mKu/LPDl9nvSHU4W2RV9Xd9npTD+6+LfKK2N+
+	gY0epRpLEj6laZ+x2L6eOf1BUYezSVNveJi+z/qKZ09KuUxO6QRyOXOEz7htz3Ur/bgSw6Uf
+	67OSrmz+++TSm8qkMqEpGzS5lViKMxINtZiLihMBvqHkjtoCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds SKY81452 MFD driver.
-SKY81452 has 2 functions : backlight LED driver and boost converter.
-The MFD driver registers I2C regmap and registers the child drivers.
+This patch add PPMU (Performance Profiling Monitoring Units) dt node
+to estimate the utilization of each IP in Exynos SoC throught DEVFREQ Event
+subsystem.
 
-Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+This patch adds following PPMU dt nodes:
+- PPMU_DMC0	0x106a0000
+- PPMU_DMC1	0x106b0000
+- PPMU_RIGHTBUS 0x112A0000
+- PPMU_LEFTBUS  0x116A0000
+- PPMU_CAMIF    0x11AC0000
+- PPMU_LCD0     0x11E40000
+- PPMU_3D       0x13220000
+- PPMU_MFC_L    0x13660000
+- PPMU_CPU	0x106c0000
+
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/mfd/Kconfig          |  12 +++++
- drivers/mfd/Makefile         |   1 +
- drivers/mfd/sky81452.c       | 111 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/sky81452.h |  32 +++++++++++++
- 4 files changed, 156 insertions(+)
- create mode 100644 drivers/mfd/sky81452.c
- create mode 100644 include/linux/mfd/sky81452.h
+ arch/arm/boot/dts/exynos3250.dtsi | 66 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index de5abf2..6962b4e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -626,6 +626,18 @@ config MFD_SM501_GPIO
- 	 lines on the SM501. The platform data is used to supply the
- 	 base number for the first GPIO line to register.
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index 1d52de6..20a4c59 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -465,6 +465,72 @@
+ 			compatible = "arm,cortex-a7-pmu";
+ 			interrupts = <0 18 0>, <0 19 0>;
+ 		};
++
++		ppmu_dmc0: ppmu_dmc0@106a0000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x106a0000 0x2000>;
++			status = "disabled";
++		};
++
++		ppmu_dmc1: ppmu_dmc1@106b0000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x106b0000 0x2000>;
++			status = "disabled";
++		};
++
++		ppmu_cpu: ppmu_cpu@106c0000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x106c0000 0x2000>;
++			status = "disabled";
++		};
++
++		ppmu_rightbus: ppmu_rightbus@112a0000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x112a0000 0x2000>;
++			clocks = <&cmu CLK_PPMURIGHT>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_leftbus: ppmu_leftbus0@116a0000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x116a0000 0x2000>;
++			clocks = <&cmu CLK_PPMULEFT>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_camif: ppmu_camif@11ac0000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x11ac0000 0x2000>;
++			clocks = <&cmu CLK_PPMUCAMIF>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_lcd0: ppmu_lcd0@11e40000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x11e40000 0x2000>;
++			clocks = <&cmu CLK_PPMULCD0>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_g3d: ppmu_g3d@13220000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x13220000 0x2000>;
++			clocks = <&cmu CLK_PPMUG3D>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_mfc_l: ppmu_mfc_l@13660000 {
++			compatible = "samsung,exynos4210-ppmu";
++			reg = <0x13660000 0x2000>;
++			clocks = <&cmu CLK_PPMUMFC_L>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
+ 	};
+ };
  
-+config MFD_SKY81452
-+	tristate "Skyworks Solutions SKY81452"
-+	select MFD_CORE
-+	select REGMAP_I2C
-+	depends on I2C
-+	help
-+	  This is the core driver for the Skyworks SKY81452 backlight and
-+	  voltage regulator device.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called sky81452.
-+
- config MFD_SMSC
-        bool "SMSC ECE1099 series chips"
-        depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index f001487..6c2f317 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
- obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-+obj-$(CONFIG_MFD_SKY81452)		+= sky81452.o
- 
- intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
- obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
-new file mode 100644
-index 0000000..3455ac7
---- /dev/null
-+++ b/drivers/mfd/sky81452.c
-@@ -0,0 +1,111 @@
-+/*
-+ * sky81452.c	SKY81452 MFD driver
-+ *
-+ * Copyright 2014 Skyworks Solutions Inc.
-+ * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/sky81452.h>
-+
-+static const struct regmap_config sky81452_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+};
-+
-+static int sky81452_probe(struct i2c_client *client,
-+				const struct i2c_device_id *id)
-+{
-+	struct device *dev = &client->dev;
-+	const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
-+	struct mfd_cell cells[2];
-+	struct regmap *regmap;
-+	int ret;
-+
-+	if (!pdata) {
-+		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+		if (!pdata)
-+			return -ENOMEM;
-+	}
-+
-+	regmap = devm_regmap_init_i2c(client, &sky81452_config);
-+	if (IS_ERR(regmap)) {
-+		dev_err(dev, "failed to initialize I2C: %d", PTR_ERR(regmap));
-+		return PTR_ERR(regmap);
-+	}
-+
-+	i2c_set_clientdata(client, regmap);
-+
-+	memset(cells, 0, sizeof(cells));
-+	cells[0].name = "sky81452-bl";
-+	cells[0].of_compatible = "skyworks,sky81452-backlight";
-+	cells[0].platform_data = pdata->bl_pdata;
-+	cells[0].pdata_size = sizeof(*pdata->bl_pdata);
-+	cells[1].name = "sky81452-regulator";
-+	cells[1].of_compatible = "skyworks,sky81452-regulator";
-+	cells[1].platform_data = pdata->regulator_init_data;
-+	cells[1].pdata_size = sizeof(*pdata->regulator_init_data);
-+
-+	ret = mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells), NULL, 0, NULL);
-+	if (ret)
-+		dev_err(dev, "failed to add child devices: %d", ret);
-+
-+	return ret;
-+}
-+
-+static int sky81452_remove(struct i2c_client *client)
-+{
-+	mfd_remove_devices(&client->dev);
-+	return 0;
-+}
-+
-+static const struct i2c_device_id sky81452_ids[] = {
-+	{ "sky81452" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, sky81452_ids);
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id sky81452_of_match[] = {
-+	{ .compatible = "skyworks,sky81452", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, sky81452_of_match);
-+#endif
-+
-+static struct i2c_driver sky81452_driver = {
-+	.driver = {
-+		.name = "sky81452",
-+		.of_match_table = of_match_ptr(sky81452_of_match),
-+	},
-+	.probe = sky81452_probe,
-+	.remove = sky81452_remove,
-+	.id_table = sky81452_ids,
-+};
-+
-+module_i2c_driver(sky81452_driver);
-+
-+MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
-+MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION("1.2");
-diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
-new file mode 100644
-index 0000000..142f762
---- /dev/null
-+++ b/include/linux/mfd/sky81452.h
-@@ -0,0 +1,32 @@
-+/*
-+ * sky81452.h	SKY81452 MFD driver
-+ *
-+ * Copyright 2014 Skyworks Solutions Inc.
-+ * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#ifndef _SKY81452_H
-+#define _SKY81452_H
-+
-+#include <linux/sky81452-backlight.h>
-+#include <linux/regulator/machine.h>
-+
-+struct sky81452_platform_data {
-+	struct sky81452_bl_platform_data *bl_pdata;
-+	struct regulator_init_data *regulator_init_data;
-+};
-+
-+#endif
 -- 
-1.9.1
+1.8.0
 
