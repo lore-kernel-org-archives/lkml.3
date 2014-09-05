@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaIEWid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:38:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58747 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751948AbaIEWic (ORCPT
+	id S1752910AbaIEWk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:40:59 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:64082 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaIEWk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:38:32 -0400
-X-Sasl-enc: kJ+uF/OdQ3JwJyVd9cm5lhSqMKGZRCedKrM8jx7ib4p8 1409956711
-Message-ID: <1409956708.5306.35.camel@localhost>
-Subject: Re: [PATCH] gcc: clamp gcc version to most highest specific header
- version available
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sasha Levin <sasha.levin@oracle.com>, akpm@linuxfoundation.org,
-        mingo@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-Date: Sat, 06 Sep 2014 00:38:28 +0200
-In-Reply-To: <1409951364.2618.28.camel@joe-AO725>
-References: <5409CC39.3060608@oracle.com>
-	 <8bf23840962ec5a33b1bfae7fdf8b0a0f94c4227.1409949573.git.hannes@stressinduktion.org>
-	 <1409951364.2618.28.camel@joe-AO725>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Sep 2014 18:40:57 -0400
+Date: Sat, 6 Sep 2014 07:40:47 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140905224047.GC15723@mtj.dyndns.org>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org>
+ <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org>
+ <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr, 2014-09-05 at 14:09 -0700, Joe Perches wrote:
-> On Fri, 2014-09-05 at 22:39 +0200, Hannes Frederic Sowa wrote:
-> > As announced in [1] gcc will increase its major number yearly but we don't
-> > need to include gcc version specific quirks for every version normally.
-> > 
-> > This patch allows to compile every kernel with all new versions of gcc
-> > without adding a specific compiler-gccX.h header. We do so by clamping
-> > the __GNUC__ version to the most specific version dependent header file.
-> > 
-> > If someone adds a new gccX.h file __GCC_CLAMP_VERSION_HEADER also needs
-> > to be modified.
-> > 
-> > The decision if chained including of header files (e.g. gcc5.h includes
-> > gcc4.h) is necessary or should be avoided can be postponed until more
-> > experience in using the official gcc release is gained.
-> 
-> I think the churn rate in the gcc compiler specific
-> #include headers will be low enough that a single
-> combined file should be acceptable.
-> 
-> Keeping all the gcc #defines together seems more
-> readable to me.
-> 
-> The trivial integration I did eliminated one
-> duplicate #define as well as that hack for
-> #include gcc_header(__GNUC__)
+Hello, Luis.
 
-It's just a proposal and I don't have a strong opinion on that. I just
-want to make sure it is easy to compile current kernel with a gcc
-released in two years. ;)
+On Fri, Sep 05, 2014 at 11:12:17AM -0700, Luis R. Rodriguez wrote:
+> Meanwhile we are allowing a major design consideration such as a 30
+> second timeout for both init + probe all of a sudden become a hard
+> requirement for device drivers. I see your point but can't also be
+> introducing major design changes willy nilly either. We *need* a
+> solution for the affected drivers.
 
-Bye,
-Hannes
+Yes, make the behavior specifically specified from userland.  When did
+I ever say that there should be no solution for the problem?  I've
+been saying that the behavior should be selected from userland from
+the get-go, haven't I?
 
+I have no idea how the seleciton should be.  It could be per-insmod or
+maybe just a system-wide flag with explicit exceptions marked on
+drivers is good enough.  I don't know.
 
+> Also what stops drivers from going ahead and just implementing their
+> own async probe? Would that now be frowned upon as it strives away
+
+The drivers can't.  How many times should I explain the same thing
+over and over again.  libata can't simply make probing asynchronous
+w.r.t. module loading no matter how it does it.  Yeah, sure, there can
+be other drivers which can do that without most people noticing it but
+a storage driver isn't one of them and the storage drivers are the
+problematic ones already, right?
+
+> from the original design? The bool would let those drivers do this
+> easily, and we would still need to identify these drivers, although
+> this particular change can be NAK'd Oleg's suggestion on
+> WARN_ON(fatal_signal_pending() at the end of load_module() seems to me
+> at least needed. And if its not async probe... what do those with
+> failed drivers do?
+
+I'm getting tired of explaining the same thing over and over again.
+The said change was nacked because the whole approach of "let's see
+which drivers get reported on the issue which exists basically for all
+drivers and just change the behavior of them" is braindead.  It makes
+no sense whatsoever.  It doesn't address the root cause of the problem
+while making the same class of drivers behave significantly
+differently for no good reason.  Please stop chasing your own tail and
+try to understand the larger picture.
+
+Thanks.
+
+-- 
+tejun
