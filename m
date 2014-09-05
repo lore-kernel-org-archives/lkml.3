@@ -1,94 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaIEGqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 02:46:38 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34694 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaIEGqg (ORCPT
+	id S1754222AbaIEGr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 02:47:26 -0400
+Received: from v032797.home.net.pl ([89.161.177.31]:60744 "HELO
+	v032797.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752283AbaIEGrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 02:46:36 -0400
-X-Greylist: delayed 3229 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Sep 2014 02:46:36 EDT
-Message-ID: <54094FA7.6000809@roeck-us.net>
-Date: Thu, 04 Sep 2014 22:52:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 5 Sep 2014 02:47:25 -0400
+Message-ID: <54095C80.10604@elproma.com.pl>
+Date: Fri, 05 Sep 2014 08:47:28 +0200
+From: =?windows-1250?Q?Janusz_U=BFycki?= <j.uzycki@elproma.com.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Xuetao Guan <gxt@pku.edu.cn>
-CC: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFJlOiDlm57lpI3vvJogUmU6IOWbnuWkje+8miA=?=
- =?UTF-8?B?U3RhdHVzIG9mICd1bmljb3JlMzInIGFyY2hpdGVjdHVyZSBpbiBMaW51eCBrZXI=?=
- =?UTF-8?B?bmVs?=
-References: <926403536.39754.1409733179383.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <926403536.39754.1409733179383.JavaMail.root@bj-mail03.pku.edu.cn>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54094FAF.0057,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: linux-kernel@vger.kernel.org
+Subject: Fwd: watchdog: WatchDog Timer Driver Core: ping a hardware watchdog
+ in kernel's space [proposal]
+References: <5408A00F.50400@elproma.com.pl>
+In-Reply-To: <5408A00F.50400@elproma.com.pl>
+X-Forwarded-Message-Id: <5408A00F.50400@elproma.com.pl>
+Content-Type: multipart/mixed;
+ boundary="------------090109060102090606050207"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 01:32 AM, Xuetao Guan  wrote:
->
-[ ... ]
+This is a multi-part message in MIME format.
+--------------090109060102090606050207
+Content-Type: text/plain; charset=windows-1250; format=flowed
+Content-Transfer-Encoding: 7bit
 
->> Please try the following patch. That seems to do it.
->> I am sure it can be improved, but it is a start.
->>
->> Thanks,
->> Guenter
->
-> Thanks. I'll test it.
-> BTW, Qemu codestyle is different, and tab should be replaced with blanks.
->
 
-Here is where I am. User space code (busybox) was compiled
-using the unicore toolchain available on the web.
+Hi,
 
-...
-serio: i8042 KBD port at 0x6eb00060,0x6eb00064 irq 22
-mousedev: PS/2 mouse device common for all mice
-Enable UniCore-F64 support.
-Warning: unable to open an initial console.
-Freeing unused kernel memory: 1156K (c0408000 - c0529000)
+Some applications require to start watchdog before userspace software.
+This patch enables such feature. Only WATCHDOG_KERNEL_PING flag is necessary to enable it (attached example for stmp3xxx_rtc_wdt.c).
+Moreover kernel's ping is re-enabled when userspace software closed watchdog using the magic character.
+The features improves kernel's reliable if hardware watchdog is available.
 
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+* Can you comment the proposed patch?
+* Shoud dynamic or static timer_list be used (small structure...)?
+* I also added wdd->ops->ref/unref calls but I'm afraid that even original code is buggy in watchdog_dev.c.
+Is any driver that uses the pointers?
+In my opinion watchdog_open() should call wdd->ops->ref() before watchdog_start() and watchdog_release() should call wdd->ops->unref() before module_put().
+Otherwise fault is possible if watchdog module is unloaded.
+* I noticed that current watchdog core does not support suspend/resume case.
+If you want to use suspend without the patch you need to close a watchdog in userspace using the magic character before suspend command.
+With the patch you must to use WDIOC_SETOPTIONS ioctl and WDIOS_DISABLECARD/WDIOS_ENABLECARD.
+Is there any other method to suspend with watchdog?
 
----[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+best regards
+Janusz Uzycki
 
-The kernel tries to execute the init program, which fails with SIGSEGV.
-I confirmed that the init program is loaded and starts to execute.
 
-Any idea what might cause such a problem ?
+--------------090109060102090606050207
+Content-Type: text/plain; charset=windows-1250;
+ name="wdt_kernel_ping.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="wdt_kernel_ping.diff"
 
-Thanks,
-Guenter
+Signed-off-by: Janusz Uzycki <j.uzycki@elproma.com.pl>
 
+diff --git a/linux-3.14.17/drivers/watchdog/stmp3xxx_rtc_wdt.c b/linux-3.14.17/drivers/watchdog/stmp3xxx_rtc_wdt.c
+index b4d6b34..52c5f1c 100644
+--- a/linux-3.14.17/drivers/watchdog/stmp3xxx_rtc_wdt.c
++++ b/linux-3.14.17/drivers/watchdog/stmp3xxx_rtc_wdt.c
+@@ -78,6 +78,7 @@ static int stmp3xxx_wdt_probe(struct platform_device *pdev)
+ 
+ 	stmp3xxx_wdd.timeout = clamp_t(unsigned, heartbeat, 1, STMP3XXX_MAX_TIMEOUT);
+ 
++	stmp3xxx_wdd.status |= WATCHDOG_KERNEL_PING;
+ 	ret = watchdog_register_device(&stmp3xxx_wdd);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "cannot register watchdog device\n");
+diff --git a/linux-3.14.17/drivers/watchdog/watchdog_dev.c b/linux-3.14.17/drivers/watchdog/watchdog_dev.c
+index 6aaefba..d4fae2c 100644
+--- a/linux-3.14.17/drivers/watchdog/watchdog_dev.c
++++ b/linux-3.14.17/drivers/watchdog/watchdog_dev.c
+@@ -41,6 +41,8 @@
+ #include <linux/miscdevice.h>	/* For handling misc devices */
+ #include <linux/init.h>		/* For __init/__exit/... */
+ #include <linux/uaccess.h>	/* For copy_to_user/put_user/... */
++#include <linux/slab.h>		/* for kernel ping timer (dynamic) */
++#include <linux/jiffies.h>	/* for kernel ping timer */
+ 
+ #include "watchdog_core.h"
+ 
+@@ -277,6 +279,34 @@ out_ioctl:
+ 	return err;
+ }
+ 
++/* kernel ping feature */
++static void watchdog_kping_timer_cb(unsigned long data)
++{
++	struct watchdog_device *wdd = (struct watchdog_device *)data;
++	if (test_bit(WDOG_KERNEL_PING, &wdd->status) && !test_bit(WDOG_DEV_OPEN, &wdd->status)) {
++		watchdog_ping(wdd);
++		/* call next ping a second or 0.5s before hardware timeout */
++		mod_timer(wdd->kping_timer, wdd->timeout > 1 ?
++				jiffies + (wdd->timeout - 1) * HZ : jiffies + HZ/2);
++	}
++}
++
++static void watchdog_kping_start(struct watchdog_device *wdd)
++{
++	if (wdd->ops->ref)
++		wdd->ops->ref(wdd);
++	watchdog_start(wdd);
++	watchdog_ping(wdd);
++	mod_timer(wdd->kping_timer, jiffies + HZ/2);
++}
++
++static void watchdog_kping_stop(struct watchdog_device *wdd)
++{
++	del_timer_sync(wdd->kping_timer);
++	if (wdd->ops->unref)
++		wdd->ops->unref(wdd);
++}
++
+ /*
+  *	watchdog_write: writes to the watchdog.
+  *	@file: file from VFS
+@@ -430,6 +460,9 @@ static int watchdog_open(struct inode *inode, struct file *file)
+ 	if (!try_module_get(wdd->ops->owner))
+ 		goto out;
+ 
++	if (test_bit(WDOG_KERNEL_PING, &wdd->status))
++		watchdog_kping_stop(wdd);
++
+ 	err = watchdog_start(wdd);
+ 	if (err < 0)
+ 		goto out_mod;
+@@ -472,8 +505,13 @@ static int watchdog_release(struct inode *inode, struct file *file)
+ 	if (!test_bit(WDOG_ACTIVE, &wdd->status))
+ 		err = 0;
+ 	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
+-		 !(wdd->info->options & WDIOF_MAGICCLOSE))
+-		err = watchdog_stop(wdd);
++		 !(wdd->info->options & WDIOF_MAGICCLOSE)) {
++		if (test_bit(WDOG_KERNEL_PING, &wdd->status)) {
++			watchdog_kping_start(wdd);
++			err = 0;
++		} else
++			err = watchdog_stop(wdd);
++	}
+ 
+ 	/* If the watchdog was not stopped, send a keepalive ping */
+ 	if (err < 0) {
+@@ -524,6 +562,16 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+ {
+ 	int err, devno;
+ 
++	if (test_bit(WDOG_KERNEL_PING, &watchdog->status)) {
++		if (!try_module_get(watchdog->ops->owner))
++			return -ENODEV;
++		watchdog->kping_timer = kzalloc(sizeof(*watchdog->kping_timer), GFP_KERNEL);
++		if (!watchdog->kping_timer)
++			return -ENOMEM;
++		setup_timer(watchdog->kping_timer, watchdog_kping_timer_cb, (unsigned long)watchdog);
++		watchdog_kping_start(watchdog);
++	}
++
+ 	if (watchdog->id == 0) {
+ 		old_wdd = watchdog;
+ 		watchdog_miscdev.parent = watchdog->parent;
+@@ -575,6 +623,15 @@ int watchdog_dev_unregister(struct watchdog_device *watchdog)
+ 		misc_deregister(&watchdog_miscdev);
+ 		old_wdd = NULL;
+ 	}
++
++	if (test_bit(WDOG_KERNEL_PING, &watchdog->status) || watchdog->kping_timer) {
++		watchdog_kping_stop(watchdog);
++		watchdog_stop(watchdog);
++		kfree(watchdog->kping_timer);
++		watchdog->kping_timer = NULL;
++		watchdog_stop(watchdog);
++		module_put(watchdog->ops->owner);
++	}
+ 	return 0;
+ }
+ 
+diff --git a/linux-3.14.17/include/linux/watchdog.h b/linux-3.14.17/include/linux/watchdog.h
+index 2a3038e..8cf9148 100644
+--- a/linux-3.14.17/include/linux/watchdog.h
++++ b/linux-3.14.17/include/linux/watchdog.h
+@@ -12,6 +12,7 @@
+ #include <linux/bitops.h>
+ #include <linux/device.h>
+ #include <linux/cdev.h>
++#include <linux/timer.h>		/* for kernel ping timer */
+ #include <uapi/linux/watchdog.h>
+ 
+ struct watchdog_ops;
+@@ -95,6 +96,9 @@ struct watchdog_device {
+ #define WDOG_ALLOW_RELEASE	2	/* Did we receive the magic char ? */
+ #define WDOG_NO_WAY_OUT		3	/* Is 'nowayout' feature set ? */
+ #define WDOG_UNREGISTERED	4	/* Has the device been unregistered */
++#define WDOG_KERNEL_PING	5	/* Ping is done by kernel if device not opened by userland */
++	struct timer_list *kping_timer;	/* kernel ping timer */
++#define WATCHDOG_KERNEL_PING	(1 << WDOG_KERNEL_PING)
+ };
+ 
+ #ifdef CONFIG_WATCHDOG_NOWAYOUT
+
+
+
+
+--------------090109060102090606050207--
