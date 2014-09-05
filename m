@@ -1,162 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777AbaIEAh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Sep 2014 20:37:28 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:35035 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247AbaIEAhX (ORCPT
+	id S1755579AbaIEAkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Sep 2014 20:40:22 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:37957 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbaIEAkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Sep 2014 20:37:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140904134201.GA3312@redhat.com>
-References: <20140904134135.GA3309@redhat.com> <20140904134201.GA3312@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 4 Sep 2014 17:37:01 -0700
-Message-ID: <CALCETrV5p4aRQUE2vNm_BTwZjCh7jZC_=Pp-vsLq=t_3Q=1LvA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86: reimplement ___preempt_schedule*() using THUNK helpers
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Sep 2014 20:40:21 -0400
+Message-ID: <1409876991.28990.172.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, akpm@linuxfoundation.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 04 Sep 2014 18:29:51 -0600
+In-Reply-To: <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
+	 <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
+	 <20140904201123.GA9116@khazad-dum.debian.net> <5408C9C4.1010705@zytor.com>
+	 <20140904231923.GA15320@khazad-dum.debian.net>
+	 <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 6:42 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> ___preempt_schedule() does SAVE_ALL/RESTORE_ALL but this is suboptimal,
-> we do not need to save/restore the callee-saved register. And we already
-> have arch/x86/lib/thunk_*.S which implements the similar asm wrappers,
-> so it makes sense to redefine ___preempt_schedule() as "THUNK ..." and
-> remove preempt.S altogether.
+On Thu, 2014-09-04 at 16:34 -0700, Andy Lutomirski wrote:
+> On Thu, Sep 4, 2014 at 4:19 PM, Henrique de Moraes Holschuh
+> <hmh@hmh.eng.br> wrote:
+> > On Thu, 04 Sep 2014, H. Peter Anvin wrote:
+> >> On 09/04/2014 01:11 PM, Henrique de Moraes Holschuh wrote:
+> >> > I am worried of uncharted territory, here.  I'd actually advocate for not
+> >> > enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
+> >> > is using them as well.  Is this a real concern, or am I being overly
+> >> > cautious?
+> >>
+> >> It is extremely unlikely that we'd have PAT issues in 32-bit mode and
+> >> not in 64-bit mode on the same CPU.
+> >
+> > Sure, but is it really a good idea to enable this on the *old* non-64-bit
+> > capable processors (note: I don't mean x86-64 processors operating in 32-bit
+> > mode) ?
+> >
+> >> As far as I know, the current blacklist rule is very conservative due to
+> >> lack of testing more than anything else.
+> >
+> > I was told that much in 2009 when I asked why cpuid 0x6d8 was blacklisted
+> > from using PAT :-)
+> 
+> At the very least, anyone who plugs an NV-DIMM into a 32-bit machine
+> is nuts, and not just because I'd be somewhat amazed if it even
+> physically fits into the slot. :)
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+According to the spec, the upper four entries bug was fixed in Pentium 4
+model 0x1.  So, the remaining Intel 32-bit processors that may enable
+the upper four entries are Pentium 4 model 0x1-4.  Should we disable it
+for all Pentium 4 models?
 
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/kernel/Makefile  |    2 --
->  arch/x86/kernel/preempt.S |   25 -------------------------
->  arch/x86/lib/thunk_32.S   |   20 ++++++++++++++++----
->  arch/x86/lib/thunk_64.S   |    7 +++++++
->  4 files changed, 23 insertions(+), 31 deletions(-)
->  delete mode 100644 arch/x86/kernel/preempt.S
->
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-> index b5ea75c..58cf60b 100644
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -39,8 +39,6 @@ obj-y                 += tsc.o tsc_msr.o io_delay.o rtc.o
->  obj-y                  += pci-iommu_table.o
->  obj-y                  += resource.o
->
-> -obj-$(CONFIG_PREEMPT)  += preempt.o
-> -
->  obj-y                          += process.o
->  obj-y                          += i387.o xsave.o
->  obj-y                          += ptrace.o
-> diff --git a/arch/x86/kernel/preempt.S b/arch/x86/kernel/preempt.S
-> deleted file mode 100644
-> index ca7f0d5..0000000
-> --- a/arch/x86/kernel/preempt.S
-> +++ /dev/null
-> @@ -1,25 +0,0 @@
-> -
-> -#include <linux/linkage.h>
-> -#include <asm/dwarf2.h>
-> -#include <asm/asm.h>
-> -#include <asm/calling.h>
-> -
-> -ENTRY(___preempt_schedule)
-> -       CFI_STARTPROC
-> -       SAVE_ALL
-> -       call preempt_schedule
-> -       RESTORE_ALL
-> -       ret
-> -       CFI_ENDPROC
-> -
-> -#ifdef CONFIG_CONTEXT_TRACKING
-> -
-> -ENTRY(___preempt_schedule_context)
-> -       CFI_STARTPROC
-> -       SAVE_ALL
-> -       call preempt_schedule_context
-> -       RESTORE_ALL
-> -       ret
-> -       CFI_ENDPROC
-> -
-> -#endif
-> diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
-> index 28f85c9..7f1641a 100644
-> --- a/arch/x86/lib/thunk_32.S
-> +++ b/arch/x86/lib/thunk_32.S
-> @@ -7,16 +7,19 @@
->         #include <linux/linkage.h>
->         #include <asm/asm.h>
->
-> -#ifdef CONFIG_TRACE_IRQFLAGS
->         /* put return address in eax (arg1) */
-> -       .macro thunk_ra name,func
-> +       .macro thunk_ra name, func, put_ret_addr_in_eax=0
->         .globl \name
->  \name:
->         pushl %eax
->         pushl %ecx
->         pushl %edx
-> +
-> +       .if \put_ret_addr_in_eax
->         /* Place EIP in the arg1 */
->         movl 3*4(%esp), %eax
-> +       .endif
-> +
->         call \func
->         popl %edx
->         popl %ecx
-> @@ -25,6 +28,15 @@
->         _ASM_NOKPROBE(\name)
->         .endm
->
-> -       thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
-> -       thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
-> +#ifdef CONFIG_TRACE_IRQFLAGS
-> +       thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller,1
-> +       thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller,1
-> +#endif
-> +
-> +#ifdef CONFIG_PREEMPT
-> +       THUNK ___preempt_schedule, preempt_schedule
-> +#ifdef CONFIG_CONTEXT_TRACKING
-> +       THUNK ___preempt_schedule_context, preempt_schedule_context
->  #endif
-> +#endif
-> +
-> diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
-> index 92d9fea..b30b5eb 100644
-> --- a/arch/x86/lib/thunk_64.S
-> +++ b/arch/x86/lib/thunk_64.S
-> @@ -38,6 +38,13 @@
->         THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
->  #endif
->
-> +#ifdef CONFIG_PREEMPT
-> +       THUNK ___preempt_schedule, preempt_schedule
-> +#ifdef CONFIG_CONTEXT_TRACKING
-> +       THUNK ___preempt_schedule_context, preempt_schedule_context
-> +#endif
-> +#endif
-> +
->         /* SAVE_ARGS below is used only for the .cfi directives it contains. */
->         CFI_STARTPROC
->         SAVE_ARGS
-> --
-> 1.5.5.1
->
->
+Thanks,
+-Toshi  
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
