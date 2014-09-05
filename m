@@ -1,151 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaIEQGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:06:47 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:42865 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaIEQGo (ORCPT
+	id S1751119AbaIEQPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 12:15:52 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13745 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750744AbaIEQPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:06:44 -0400
-Date: Fri, 5 Sep 2014 09:06:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Cc: "wim@iguana.be" <wim@iguana.be>, "mpa@pengutronix.de" <mpa@pengutronix.de>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv2] watchdog: imx2_wdt: Convert to use regmap framework's
- endianness method.
-Message-ID: <20140905160640.GB12374@roeck-us.net>
-References: <1408953277-2069-1-git-send-email-Li.Xiubo@freescale.com>
- <54446636ab294eed83c4a4e3d405dfe7@BY2PR0301MB0613.namprd03.prod.outlook.com>
+	Fri, 5 Sep 2014 12:15:50 -0400
+Message-ID: <5409E1B0.5060703@arm.com>
+Date: Fri, 05 Sep 2014 17:15:44 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54446636ab294eed83c4a4e3d405dfe7@BY2PR0301MB0613.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V4] irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+References: <1407942041-3291-1-git-send-email-suravee.suthikulpanit@amd.com> <1407942041-3291-2-git-send-email-suravee.suthikulpanit@amd.com> <87fvgxrgte.fsf@approximate.cambridge.arm.com> <53FEEF7C.1090902@amd.com>
+In-Reply-To: <53FEEF7C.1090902@amd.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 07:11:31AM +0000, Li.Xiubo@freescale.com wrote:
-> Hi,
+On 28/08/14 09:59, Suravee Suthikulpanit wrote:
 > 
-> Ping :)
 > 
-Wim usually picks up patches shortly before the next release window opens.
+> On 08/15/2014 09:03 AM, Marc Zyngier wrote:
+>>> +
+>>> +static struct irq_chip gicv2m_chip;
+>>> +
+>>> +#ifdef CONFIG_OF
+>>
+>> Is there any reason why this should be guarded by CONFIG_OF? Surely the
+>> v2m capability should only be enabled if OF is.
+> 
+> [Suravee]
+> We are also planning to support ACPI in the future also, which will be 
+> using a different init function.  Also, there is the same #ifdef in the 
+> irq-gic.c for the gic_of_init().  So, I am just trying to be consistent 
+> here.
+> 
+> 
+>>> +
+>>> +       memcpy(&gicv2m_chip, gic->irq_chip, sizeof(struct irq_chip));
+>>> +       gicv2m_chip.name = "GICv2m",
+>>> +       gicv2m_chip.irq_mask = gicv2m_mask_irq;
+>>> +       gicv2m_chip.irq_unmask = gicv2m_unmask_irq;
+>>> +       gic->irq_chip = &gicv2m_chip;
+>>
+>> I liked it until this last line. You're overriding the irq_chip for the
+>> whole GIC. I was expecting you'd only use it for the MSI range
+>> (basically return a range to the caller, together with your brand new
+>> irq_chip).
+> 
+> [Suravee]
+> I'm not sure if I understand you point here. Actually, I don't see the 
+> whole point of the need to have a whole different irq_chip for v2m 
+> stuff.  All I need is just a way to overwrite the irq_chip.irq_mask() 
+> and irq_chip.irq_unmask() with the v2m version which should check for 
+> MSI before calling mask/unmask_msi_irq(). I should be able to just do:
+> 
+> 	gic->irq_chip.irq_mask = gicv2m_mask_irq;
+> 	gic->irq_chip.irq_unmask = gicv2m_unmask_irq;
 
-It is in my watchdog-next branch, so it is not forgotten. I'll send a pull
-request to Wim after -rc5.
+You should only do it for the few interrupts that are actually routed
+via the v2m widget, not inflict the overhead on all interrupts.
 
-Wim, I am wondering - should I ask Stephen to add my watchdog-next branch to
-linux-next ? I know it isn't really perfect, and there is no guarantee that
-you will accept the patches in my branch, but it would expose the pending
-patches to earlier visibility in -next.
+This is why I insist on having a separate irqchip, and for this irqchip
+to be only used for the MSI-generated interrupts.
+
+Have a look at what I do for GICv3:
+http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3.c?h=gicv3/its-split&id=b717e532c4312a410a8ee0cb2349baa2769c6b94#n712
+
+and how this gets used when routing the interrupts:
+http://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3.c?h=gicv3/its-split&id=b717e532c4312a410a8ee0cb2349baa2769c6b94#n589
+
+The ITS gets its own irqchip, entirely separate from the rest of the
+GIC. This gives you the flexibility you require, and let the other
+interrupts free of any overhead.
 
 Thanks,
-Guenter
 
-> Thanks,
-> 
-> BRs
-> Xiubo
-> 
-> 
-> > -----Original Message-----
-> > From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
-> > Sent: Monday, August 25, 2014 3:55 PM
-> > To: wim@iguana.be; linux@roeck-us.net; mpa@pengutronix.de; linux-
-> > watchdog@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; Xiubo Li-B47053
-> > Subject: [PATCHv2] watchdog: imx2_wdt: Convert to use regmap framework's
-> > endianness method.
-> > 
-> > Regmap framework will contain some patches to handle endianess, and there
-> > does not need any parsing of endianness DT properties of individual driver,
-> > so we can savely remove it here.
-> > 
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > Cc: Markus Pargmann <mpa@pengutronix.de>
-> > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> > 
-> > Changes in v2:
-> > - Remove useless header file.
-> > 
-> > 
-> > 
-> > 
-> >  Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt | 4 ++--
-> >  drivers/watchdog/imx2_wdt.c                                | 9 +--------
-> >  2 files changed, 3 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt
-> > b/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt
-> > index e52ba2d..9e1ebe2 100644
-> > --- a/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt
-> > +++ b/Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt
-> > @@ -6,8 +6,8 @@ Required properties:
-> >  - interrupts : Should contain WDT interrupt
-> > 
-> >  Optional property:
-> > -- big-endian: If present the watchdog device's registers are implemented
-> > -  in big endian mode, otherwise in little mode.
-> > +- big-endian: Boolean property, required if all the i.MX WDT registers
-> > +  are big-endian rather than little-endian.
-> > 
-> >  Examples:
-> > 
-> > diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-> > index 68c3d37..afc8738 100644
-> > --- a/drivers/watchdog/imx2_wdt.c
-> > +++ b/drivers/watchdog/imx2_wdt.c
-> > @@ -28,7 +28,6 @@
-> >  #include <linux/kernel.h>
-> >  #include <linux/module.h>
-> >  #include <linux/moduleparam.h>
-> > -#include <linux/of_address.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/regmap.h>
-> >  #include <linux/timer.h>
-> > @@ -182,7 +181,7 @@ static struct watchdog_ops imx2_wdt_ops = {
-> >  	.set_timeout = imx2_wdt_set_timeout,
-> >  };
-> > 
-> > -static struct regmap_config imx2_wdt_regmap_config = {
-> > +static const struct regmap_config imx2_wdt_regmap_config = {
-> >  	.reg_bits = 16,
-> >  	.reg_stride = 2,
-> >  	.val_bits = 16,
-> > @@ -191,12 +190,10 @@ static struct regmap_config imx2_wdt_regmap_config = {
-> > 
-> >  static int __init imx2_wdt_probe(struct platform_device *pdev)
-> >  {
-> > -	struct device_node *np = pdev->dev.of_node;
-> >  	struct imx2_wdt_device *wdev;
-> >  	struct watchdog_device *wdog;
-> >  	struct resource *res;
-> >  	void __iomem *base;
-> > -	bool big_endian;
-> >  	int ret;
-> >  	u32 val;
-> > 
-> > @@ -204,10 +201,6 @@ static int __init imx2_wdt_probe(struct platform_device
-> > *pdev)
-> >  	if (!wdev)
-> >  		return -ENOMEM;
-> > 
-> > -	big_endian = of_property_read_bool(np, "big-endian");
-> > -	if (big_endian)
-> > -		imx2_wdt_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
-> > -
-> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >  	base = devm_ioremap_resource(&pdev->dev, res);
-> >  	if (IS_ERR(base))
-> > --
-> > 1.8.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	M.
+-- 
+Jazz is not dead. It just smells funny...
