@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250AbaIEWrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:47:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43545 "EHLO
+	id S1754187AbaIEWrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:47:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43539 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaIEWrk (ORCPT
+	with ESMTP id S1752714AbaIEWrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Sep 2014 18:47:40 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
@@ -12,9 +12,9 @@ To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH v2 04/15] clk: divider: Make generic for usage elsewhere
-Date: Fri,  5 Sep 2014 15:47:23 -0700
-Message-Id: <1409957256-23729-5-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH v2 03/15] clk: Add __clk_mux_determine_rate_closest
+Date: Fri,  5 Sep 2014 15:47:22 -0700
+Message-Id: <1409957256-23729-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
 References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
@@ -22,402 +22,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices don't use mmio to interact with dividers. Split out the
-logic from the register read/write parts so that we can reuse the
-division logic elsewhere.
+Some clock drivers want to find the closest rate on the input of
+a mux instead of a rate that's less than or equal to the desired
+rate. Add a generic mux function to support this.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clk/clk-divider.c    | 197 ++++++++++++++++++++++++++-----------------
- include/linux/clk-provider.h |  11 +++
- 2 files changed, 132 insertions(+), 76 deletions(-)
+ drivers/clk/clk.c            | 47 +++++++++++++++++++++++++++++++++++---------
+ include/linux/clk-provider.h |  9 +++++++--
+ 2 files changed, 45 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index 18a9de29df0e..78ecd8af8740 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -30,7 +30,7 @@
- 
- #define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
- 
--#define div_mask(d)	((1 << ((d)->width)) - 1)
-+#define div_mask(width)	(BIT(width) - 1)
- 
- static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
- {
-@@ -54,15 +54,16 @@ static unsigned int _get_table_mindiv(const struct clk_div_table *table)
- 	return mindiv;
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index b76fa69b44cb..255ec8c92919 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -712,14 +712,20 @@ struct clk *__clk_lookup(const char *name)
+ 	return NULL;
  }
  
--static unsigned int _get_maxdiv(struct clk_divider *divider)
-+static unsigned int _get_maxdiv(const struct clk_div_table *table, u8 width,
-+				unsigned long flags)
- {
--	if (divider->flags & CLK_DIVIDER_ONE_BASED)
--		return div_mask(divider);
--	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
--		return 1 << div_mask(divider);
--	if (divider->table)
--		return _get_table_maxdiv(divider->table);
--	return div_mask(divider) + 1;
-+	if (flags & CLK_DIVIDER_ONE_BASED)
-+		return div_mask(width);
-+	if (flags & CLK_DIVIDER_POWER_OF_TWO)
-+		return 1 << div_mask(width);
-+	if (table)
-+		return _get_table_maxdiv(table);
-+	return div_mask(width) + 1;
- }
- 
- static unsigned int _get_table_div(const struct clk_div_table *table,
-@@ -76,14 +77,15 @@ static unsigned int _get_table_div(const struct clk_div_table *table,
- 	return 0;
- }
- 
--static unsigned int _get_div(struct clk_divider *divider, unsigned int val)
-+static unsigned int _get_div(const struct clk_div_table *table,
-+			     unsigned int val, unsigned long flags)
- {
--	if (divider->flags & CLK_DIVIDER_ONE_BASED)
-+	if (flags & CLK_DIVIDER_ONE_BASED)
- 		return val;
--	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
-+	if (flags & CLK_DIVIDER_POWER_OF_TWO)
- 		return 1 << val;
--	if (divider->table)
--		return _get_table_div(divider->table, val);
-+	if (table)
-+		return _get_table_div(table, val);
- 	return val + 1;
- }
- 
-@@ -98,29 +100,28 @@ static unsigned int _get_table_val(const struct clk_div_table *table,
- 	return 0;
- }
- 
--static unsigned int _get_val(struct clk_divider *divider, unsigned int div)
-+static unsigned int _get_val(const struct clk_div_table *table,
-+			     unsigned int div, unsigned long flags)
- {
--	if (divider->flags & CLK_DIVIDER_ONE_BASED)
-+	if (flags & CLK_DIVIDER_ONE_BASED)
- 		return div;
--	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
-+	if (flags & CLK_DIVIDER_POWER_OF_TWO)
- 		return __ffs(div);
--	if (divider->table)
--		return  _get_table_val(divider->table, div);
-+	if (table)
-+		return  _get_table_val(table, div);
- 	return div - 1;
- }
- 
--static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
--		unsigned long parent_rate)
-+unsigned long divider_recalc_rate(struct clk_hw *hw, unsigned long parent_rate,
-+				  unsigned int val,
-+				  const struct clk_div_table *table,
-+				  unsigned long flags)
- {
--	struct clk_divider *divider = to_clk_divider(hw);
--	unsigned int div, val;
--
--	val = clk_readl(divider->reg) >> divider->shift;
--	val &= div_mask(divider);
-+	unsigned int div;
- 
--	div = _get_div(divider, val);
-+	div = _get_div(table, val, flags);
- 	if (!div) {
--		WARN(!(divider->flags & CLK_DIVIDER_ALLOW_ZERO),
-+		WARN(!(flags & CLK_DIVIDER_ALLOW_ZERO),
- 			"%s: Zero divisor and CLK_DIVIDER_ALLOW_ZERO not set\n",
- 			__clk_get_name(hw->clk));
- 		return parent_rate;
-@@ -128,6 +129,20 @@ static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
- 
- 	return DIV_ROUND_UP(parent_rate, div);
- }
-+EXPORT_SYMBOL_GPL(divider_recalc_rate);
-+
-+static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
-+		unsigned long parent_rate)
+-/*
+- * Helper for finding best parent to provide a given frequency. This can be used
+- * directly as a determine_rate callback (e.g. for a mux), or from a more
+- * complex clock that may combine a mux with other operations.
+- */
+-long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+-			      unsigned long *best_parent_rate,
+-			      struct clk **best_parent_p)
++static bool mux_is_better_rate(unsigned long rate, unsigned long now,
++			   unsigned long best, unsigned long flags)
 +{
-+	struct clk_divider *divider = to_clk_divider(hw);
-+	unsigned int val;
++	if (flags & CLK_MUX_ROUND_CLOSEST)
++		return abs(now - rate) < abs(best - rate);
 +
-+	val = clk_readl(divider->reg) >> divider->shift;
-+	val &= div_mask(divider->width);
-+
-+	return divider_recalc_rate(hw, parent_rate, val, divider->table,
-+				   divider->flags);
-+}
- 
- /*
-  * The reverse of DIV_ROUND_UP: The maximum number which
-@@ -146,12 +161,13 @@ static bool _is_valid_table_div(const struct clk_div_table *table,
- 	return false;
- }
- 
--static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
-+static bool _is_valid_div(const struct clk_div_table *table, unsigned int div,
-+			  unsigned long flags)
- {
--	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
-+	if (flags & CLK_DIVIDER_POWER_OF_TWO)
- 		return is_power_of_2(div);
--	if (divider->table)
--		return _is_valid_table_div(divider->table, div);
-+	if (table)
-+		return _is_valid_table_div(table, div);
- 	return true;
- }
- 
-@@ -191,71 +207,76 @@ static int _round_down_table(const struct clk_div_table *table, int div)
- 	return down;
- }
- 
--static int _div_round_up(struct clk_divider *divider,
--		unsigned long parent_rate, unsigned long rate)
-+static int _div_round_up(const struct clk_div_table *table,
-+			 unsigned long parent_rate, unsigned long rate,
-+			 unsigned long flags)
- {
- 	int div = DIV_ROUND_UP(parent_rate, rate);
- 
--	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
-+	if (flags & CLK_DIVIDER_POWER_OF_TWO)
- 		div = __roundup_pow_of_two(div);
--	if (divider->table)
--		div = _round_up_table(divider->table, div);
-+	if (table)
-+		div = _round_up_table(table, div);
- 
- 	return div;
- }
- 
--static int _div_round_closest(struct clk_divider *divider,
--		unsigned long parent_rate, unsigned long rate)
-+static int _div_round_closest(const struct clk_div_table *table,
-+			      unsigned long parent_rate, unsigned long rate,
-+			      unsigned long flags)
- {
- 	int up, down, div;
- 
- 	up = down = div = DIV_ROUND_CLOSEST(parent_rate, rate);
- 
--	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO) {
-+	if (flags & CLK_DIVIDER_POWER_OF_TWO) {
- 		up = __roundup_pow_of_two(div);
- 		down = __rounddown_pow_of_two(div);
--	} else if (divider->table) {
--		up = _round_up_table(divider->table, div);
--		down = _round_down_table(divider->table, div);
-+	} else if (table) {
-+		up = _round_up_table(table, div);
-+		down = _round_down_table(table, div);
- 	}
- 
- 	return (up - div) <= (div - down) ? up : down;
- }
- 
--static int _div_round(struct clk_divider *divider, unsigned long parent_rate,
--		unsigned long rate)
-+static int _div_round(const struct clk_div_table *table,
-+		      unsigned long parent_rate, unsigned long rate,
-+		      unsigned long flags)
- {
--	if (divider->flags & CLK_DIVIDER_ROUND_CLOSEST)
--		return _div_round_closest(divider, parent_rate, rate);
-+	if (flags & CLK_DIVIDER_ROUND_CLOSEST)
-+		return _div_round_closest(table, parent_rate, rate, flags);
- 
--	return _div_round_up(divider, parent_rate, rate);
-+	return _div_round_up(table, parent_rate, rate, flags);
- }
- 
--static bool _is_best_div(struct clk_divider *divider,
--		unsigned long rate, unsigned long now, unsigned long best)
-+static bool _is_best_div(unsigned long rate, unsigned long now,
-+			 unsigned long best, unsigned long flags)
- {
--	if (divider->flags & CLK_DIVIDER_ROUND_CLOSEST)
-+	if (flags & CLK_DIVIDER_ROUND_CLOSEST)
- 		return abs(rate - now) < abs(rate - best);
- 
- 	return now <= rate && now > best;
- }
- 
--static int _next_div(struct clk_divider *divider, int div)
-+static int _next_div(const struct clk_div_table *table, int div,
-+		     unsigned long flags)
- {
- 	div++;
- 
--	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
-+	if (flags & CLK_DIVIDER_POWER_OF_TWO)
- 		return __roundup_pow_of_two(div);
--	if (divider->table)
--		return _round_up_table(divider->table, div);
-+	if (table)
-+		return _round_up_table(table, div);
- 
- 	return div;
- }
- 
- static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
--		unsigned long *best_parent_rate)
-+			       unsigned long *best_parent_rate,
-+			       const struct clk_div_table *table, u8 width,
-+			       unsigned long flags)
- {
--	struct clk_divider *divider = to_clk_divider(hw);
- 	int i, bestdiv = 0;
- 	unsigned long parent_rate, best = 0, now, maxdiv;
- 	unsigned long parent_rate_saved = *best_parent_rate;
-@@ -263,11 +284,11 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 	if (!rate)
- 		rate = 1;
- 
--	maxdiv = _get_maxdiv(divider);
-+	maxdiv = _get_maxdiv(table, width, flags);
- 
- 	if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
- 		parent_rate = *best_parent_rate;
--		bestdiv = _div_round(divider, parent_rate, rate);
-+		bestdiv = _div_round(table, parent_rate, rate, flags);
- 		bestdiv = bestdiv == 0 ? 1 : bestdiv;
- 		bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
- 		return bestdiv;
-@@ -279,8 +300,8 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 	 */
- 	maxdiv = min(ULONG_MAX / rate, maxdiv);
- 
--	for (i = 1; i <= maxdiv; i = _next_div(divider, i)) {
--		if (!_is_valid_div(divider, i))
-+	for (i = 1; i <= maxdiv; i = _next_div(table, i, flags)) {
-+		if (!_is_valid_div(table, i, flags))
- 			continue;
- 		if (rate * i == parent_rate_saved) {
- 			/*
-@@ -294,7 +315,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 		parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
- 				MULT_ROUND_UP(rate, i));
- 		now = DIV_ROUND_UP(parent_rate, i);
--		if (_is_best_div(divider, rate, now, best)) {
-+		if (_is_best_div(rate, now, best, flags)) {
- 			bestdiv = i;
- 			best = now;
- 			*best_parent_rate = parent_rate;
-@@ -302,48 +323,72 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 	}
- 
- 	if (!bestdiv) {
--		bestdiv = _get_maxdiv(divider);
-+		bestdiv = _get_maxdiv(table, width, flags);
- 		*best_parent_rate = __clk_round_rate(__clk_get_parent(hw->clk), 1);
- 	}
- 
- 	return bestdiv;
- }
- 
--static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
--				unsigned long *prate)
-+long divider_round_rate(struct clk_hw *hw, unsigned long rate,
-+			unsigned long *prate, const struct clk_div_table *table,
-+			u8 width, unsigned long flags)
- {
- 	int div;
--	div = clk_divider_bestdiv(hw, rate, prate);
-+
-+	div = clk_divider_bestdiv(hw, rate, prate, table, width, flags);
- 
- 	return DIV_ROUND_UP(*prate, div);
- }
-+EXPORT_SYMBOL_GPL(divider_round_rate);
- 
--static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
--				unsigned long parent_rate)
-+static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long *prate)
- {
- 	struct clk_divider *divider = to_clk_divider(hw);
-+
-+	return divider_round_rate(hw, rate, prate, divider->table,
-+				  divider->width, divider->flags);
++	return now <= rate && now > best;
 +}
 +
-+int divider_get_val(unsigned long rate, unsigned long parent_rate,
-+		    const struct clk_div_table *table, u8 width,
-+		    unsigned long flags)
++static long
++clk_mux_determine_rate_flags(struct clk_hw *hw, unsigned long rate,
++			     unsigned long *best_parent_rate,
++			     struct clk **best_parent_p,
++			     unsigned long flags)
+ {
+ 	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
+ 	int i, num_parents;
+@@ -747,7 +753,7 @@ long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+ 			parent_rate = __clk_round_rate(parent, rate);
+ 		else
+ 			parent_rate = __clk_get_rate(parent);
+-		if (parent_rate <= rate && parent_rate > best) {
++		if (mux_is_better_rate(rate, parent_rate, best, flags)) {
+ 			best_parent = parent;
+ 			best = parent_rate;
+ 		}
+@@ -760,8 +766,31 @@ out:
+ 
+ 	return best;
+ }
++
++/*
++ * Helper for finding best parent to provide a given frequency. This can be used
++ * directly as a determine_rate callback (e.g. for a mux), or from a more
++ * complex clock that may combine a mux with other operations.
++ */
++long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
++			      unsigned long *best_parent_rate,
++			      struct clk **best_parent_p)
 +{
- 	unsigned int div, value;
--	unsigned long flags = 0;
--	u32 val;
- 
- 	div = DIV_ROUND_UP(parent_rate, rate);
- 
--	if (!_is_valid_div(divider, div))
-+	if (!_is_valid_div(table, div, flags))
- 		return -EINVAL;
- 
--	value = _get_val(divider, div);
-+	value = _get_val(table, div, flags);
-+
-+	min_t(unsigned int, value, div_mask(width));
-+
-+	return 0;
++	return clk_mux_determine_rate_flags(hw, rate, best_parent_rate,
++					    best_parent_p, 0);
 +}
-+EXPORT_SYMBOL_GPL(divider_get_val);
-+
-+static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long parent_rate)
+ EXPORT_SYMBOL_GPL(__clk_mux_determine_rate);
+ 
++long __clk_mux_determine_rate_closest(struct clk_hw *hw, unsigned long rate,
++			      unsigned long *best_parent_rate,
++			      struct clk **best_parent_p)
 +{
-+	struct clk_divider *divider = to_clk_divider(hw);
-+	unsigned int value;
-+	unsigned long flags = 0;
-+	u32 val;
++	return clk_mux_determine_rate_flags(hw, rate, best_parent_rate,
++					    best_parent_p,
++					    CLK_MUX_ROUND_CLOSEST);
++}
++EXPORT_SYMBOL_GPL(__clk_mux_determine_rate_closest);
++
+ /***        clk api        ***/
  
--	if (value > div_mask(divider))
--		value = div_mask(divider);
-+	value = divider_get_val(rate, parent_rate, divider->table,
-+				divider->width, divider->flags);
- 
- 	if (divider->lock)
- 		spin_lock_irqsave(divider->lock, flags);
- 
- 	if (divider->flags & CLK_DIVIDER_HIWORD_MASK) {
--		val = div_mask(divider) << (divider->shift + 16);
-+		val = div_mask(divider->width) << (divider->shift + 16);
- 	} else {
- 		val = clk_readl(divider->reg);
--		val &= ~(div_mask(divider) << divider->shift);
-+		val &= ~(div_mask(divider->width) << divider->shift);
- 	}
- 	val |= value << divider->shift;
- 	clk_writel(val, divider->reg);
+ void __clk_unprepare(struct clk *clk)
 diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index ba97e25c1115..32d39613d217 100644
+index 48a92e318542..ba97e25c1115 100644
 --- a/include/linux/clk-provider.h
 +++ b/include/linux/clk-provider.h
-@@ -342,6 +342,17 @@ struct clk_divider {
+@@ -372,6 +372,8 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+  *	register, and mask of mux bits are in higher 16-bit of this register.
+  *	While setting the mux bits, higher 16-bit should also be updated to
+  *	indicate changing mux bits.
++ * CLK_MUX_ROUND_CLOSEST - Use the parent rate that is closest to the desired
++ *	frequency.
+  */
+ struct clk_mux {
+ 	struct clk_hw	hw;
+@@ -386,7 +388,8 @@ struct clk_mux {
+ #define CLK_MUX_INDEX_ONE		BIT(0)
+ #define CLK_MUX_INDEX_BIT		BIT(1)
+ #define CLK_MUX_HIWORD_MASK		BIT(2)
+-#define CLK_MUX_READ_ONLY	BIT(3) /* mux setting cannot be changed */
++#define CLK_MUX_READ_ONLY		BIT(3) /* mux can't be changed */
++#define CLK_MUX_ROUND_CLOSEST		BIT(4)
  
- extern const struct clk_ops clk_divider_ops;
- extern const struct clk_ops clk_divider_ro_ops;
-+
-+unsigned long divider_recalc_rate(struct clk_hw *hw, unsigned long parent_rate,
-+		unsigned int val, const struct clk_div_table *table,
-+		unsigned long flags);
-+long divider_round_rate(struct clk_hw *hw, unsigned long rate,
-+		unsigned long *prate, const struct clk_div_table *table,
-+		u8 width, unsigned long flags);
-+int divider_get_val(unsigned long rate, unsigned long parent_rate,
-+		const struct clk_div_table *table, u8 width,
-+		unsigned long flags);
-+
- struct clk *clk_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
+ extern const struct clk_ops clk_mux_ops;
+ extern const struct clk_ops clk_mux_ro_ops;
+@@ -529,7 +532,9 @@ struct clk *__clk_lookup(const char *name);
+ long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
+ 			      unsigned long *best_parent_rate,
+ 			      struct clk **best_parent_p);
+-
++long __clk_mux_determine_rate_closest(struct clk_hw *hw, unsigned long rate,
++			      unsigned long *best_parent_rate,
++			      struct clk **best_parent_p);
+ /*
+  * FIXME clock api without lock protection
+  */
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
