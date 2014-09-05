@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaIEWpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 18:45:16 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:53824 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaIEWpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 18:45:13 -0400
-Date: Fri, 5 Sep 2014 15:45:09 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Francis Moreau <francis.moro@gmail.com>, stable@vger.kernel.org,
-        linux-pm@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3.10.y+] PM / sleep: Use valid_state() for
- platform-dependent sleep states only
-Message-ID: <20140905224509.GF18411@ld-irv-0074>
-References: <1849024.CHOUso6H2K@vostro.rjw.lan>
- <1409865665-5375-1-git-send-email-computersforpeace@gmail.com>
- <54095835.7000207@gmail.com>
- <20140905074512.GA12218@brian-ubuntu>
- <20140905214758.GC30221@kroah.com>
- <20140905220828.GE18411@ld-irv-0074>
- <20140905223626.GA2376@kroah.com>
+	id S1753175AbaIEWpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 18:45:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19105 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352AbaIEWpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 18:45:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="382153617"
+Message-ID: <540A3CF4.5070508@linux.intel.com>
+Date: Fri, 05 Sep 2014 15:45:08 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905223626.GA2376@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com> <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net> <20140905174925.GA12991@mtj.dyndns.org> <20140905181003.GA29003@core.coreip.homeip.net> <20140905222956.GA15723@mtj.dyndns.org>
+In-Reply-To: <20140905222956.GA15723@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 03:36:26PM -0700, Greg Kroah-Hartman wrote:
-> > > If they apply cleanly, then just list the git commit ids, and I can take
-> > > care of the rest.
-> > 
-> > OK. Is this a policy that should be documented? AIUI, we have a few
-> > options:
-> > 
-> >   1. Include 'Cc: stable@vger.kernel.org' in the original commit that
-> >   gets to Linus
-> > 
-> >   2. Send an email to stable@vger.kernel.org that just contains the
-> >   commit IDs, after they've made it to Linus
-> > 
-> >   3. Send patches to stable@vger.kernel.org, if backporting is not
-> >   trivial
-> > 
-> > #1 is most common, and #2 seems like it would handle most of what misses
-> > #1. #3 seems inferior, whenever #2 would suffice. But #2 is not in
-> > stable_kernel_rules.txt.
-> 
-> I always gladly take patches to that .txt file if you wish to make it
-> clearer.
+On 9/5/2014 3:29 PM, Tejun Heo wrote:
+> Hello, Dmitry.
+>
+> On Fri, Sep 05, 2014 at 11:10:03AM -0700, Dmitry Torokhov wrote:
+>> I do not agree that it is actually user-visible change: generally speaking you
+>> do not really know if device is there or not. They come and go. Like I said,
+>> consider all permutations, with hot-pluggable buses, deferred probing, etc,
+>
+> It is for storage devices which always have guaranteed synchronous
+> probing on module load and well-defined probing order.  Sure, modern
+> setups are a lot more dynamic but I'm quite certain that there are
+> setups in the wild which depend on storage driver loading being
+> synchronous.  We can't simply declare one day that such behavior is
+> broken and break, most likely, their boots.
 
-I was interested in whether I had my facts straight before trying to
-document them. I'll take your response to mean I'm not far off base, so
-I'll take a stab at patching the file.
+we even depend on this in the mount-by-label cases
 
-Thanks,
-Brian
+many setups assume that the internal storage prevails over the USB stick in the case of conflicts.
+it's a security issue; you don't want the built in secure bootloader that has a kernel root argument
+by label/uuid.
+the security there tends to assume that built-in wins over USB
+
