@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaIEQ5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 12:57:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42062 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736AbaIEQ5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 12:57:18 -0400
-Date: Fri, 5 Sep 2014 11:56:43 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Griffin <peter.griffin@linaro.org>
-CC: Felipe Balbi <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <maxime.coquelin@st.com>,
-        <patrice.chotard@st.com>, <srinivas.kandagatla@gmail.com>,
-        <lee.jones@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v6 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
- HC
-Message-ID: <20140905165642.GI24449@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409931392-22340-1-git-send-email-peter.griffin@linaro.org>
- <1409931392-22340-2-git-send-email-peter.griffin@linaro.org>
- <20140905154700.GE24449@saruman.home>
- <20140905155321.GF24449@saruman.home>
- <20140905165520.GA25253@griffinp-ThinkPad-X1-Carbon-2nd>
+	id S1752127AbaIERAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 13:00:11 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:60979 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaIERAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 13:00:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FUFe+yI/t+r3nyH4"
-Content-Disposition: inline
-In-Reply-To: <20140905165520.GA25253@griffinp-ThinkPad-X1-Carbon-2nd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1409926097-2101-5-git-send-email-bhe@redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+	<1409926097-2101-5-git-send-email-bhe@redhat.com>
+Date: Fri, 5 Sep 2014 10:00:08 -0700
+X-Google-Sender-Auth: fYaXvto1Qo-b9_ZdnauyPIAY_yg
+Message-ID: <CAGXu5jKbsosXC2VRedP4ykezbbDebkEXwaP4Cxxuoev259Bc1g@mail.gmail.com>
+Subject: Re: [PATCH 4/4] export the kernel image size KERNEL_IMAGE_SIZE
+From: Kees Cook <keescook@chromium.org>
+To: Baoquan He <bhe@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Deutschmann <whissi@whissi.de>,
+        Dave Young <dyoung@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---FUFe+yI/t+r3nyH4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 5, 2014 at 7:08 AM, Baoquan He <bhe@redhat.com> wrote:
+> Now kaslr makes kernel image size changable, not the fixed size 512M.
+> So KERNEL_IMAGE_SIZE need be exported to VMCOREINFO, otherwise makedumfile
+> will crash.
 
-On Fri, Sep 05, 2014 at 05:55:20PM +0100, Peter Griffin wrote:
-> Hi Felipe,
->=20
-> On Fri, 05 Sep 2014, Felipe Balbi wrote:
-> > > > +
-> > > > +	device_for_each_child(&pdev->dev, NULL, st_dwc3_remove_child);
-> > >=20
-> > > same as before, of_platform_depopulate(). I can fix this one myself t=
-his
-> > > time.
->=20
-> Oh sorry, not sure what happened there, thanks for fixing it up:-)
+Seems like a good idea, yes.
 
-no problem, it was small enough
+>
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+> ---
+>  kernel/kexec.c | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 2bee072..bd680d3 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -2003,6 +2003,9 @@ static int __init crash_save_vmcoreinfo_init(void)
+>  #endif
+>         VMCOREINFO_NUMBER(PG_head_mask);
+>         VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
+> +#ifdef CONFIG_X86
+> +       VMCOREINFO_NUMBER(KERNEL_IMAGE_SIZE);
+> +#endif
+>  #ifdef CONFIG_HUGETLBFS
+>         VMCOREINFO_SYMBOL(free_huge_page);
+>  #endif
 
-> > it's in my testign/next branch, please make sure it looks alright.
->=20
-> Just checked and it looks good.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-cool thanks, I'll run some extra build testing and move it to next
-soonish.
+-Kees
 
---=20
-balbi
-
---FUFe+yI/t+r3nyH4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUCetKAAoJEIaOsuA1yqREP5wP/1n8vrT8LcwXIdpN0Cb+Y0Xm
-upqsFNc2Rjz6+2XuU6qjlw6UAvdCMrkbknLrl6ctZ+6TsHc8dj5c5lDc00YMlTQT
-v3wFS7txCnmMOyG0xILrlb8x5bxpoXB7P3Rj5MdZx4iPcpTd5/gCo+vQOm8iDASj
-EgUVvy2eu32WPse/TxoNjs/McfiGrOy5kIEQprt52mLJHfw8ot2T5Llo5i3+8Y8W
-JvrGs/aRDWkWxBeAhY9VufzPyT1A5WQ/GIaJo8QRLepDk6G3cYuCJMJMvUjSjQhn
-qaA8wOHnE3+dv7FEboCxHrADKXFMEold1UaYE+0tcfx2U3ewxEwqXSpPAO3BJ8SU
-PDV3uj12iSCY6zvAamseLGVKZjWjMcUKMWENyPaGqLr9J9pHwdo3SqpI+PTeYgkM
-V6VrFlkckM3B+WmNPu6+UD98C/25EoR0Cy3UjoCNMdYr/G9IU/gEz6ZY5kA9mMih
-wdy3Q9T4x9p+lHSVpMIznY/eFTsEz0HePxDI2zC0z90CVCZ3MemDO8e4+YQxY+Fg
-bCuPLafwbQ338CCVbMX6Lm5uk0Xc3trWtw7LAi2ncTIiCTPRO0Q/rgsAUMfzhsnx
-MkZjmnbq9CxkT8n7bzMZB7cJdbbkCH6ULTz5eGRIAx2n/0TuTSs7RUWzNtxfx6Ij
-G30EkQCPYP8B2i9MybXs
-=XG+P
------END PGP SIGNATURE-----
-
---FUFe+yI/t+r3nyH4--
+-- 
+Kees Cook
+Chrome OS Security
