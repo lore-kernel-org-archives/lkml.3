@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176AbaIEKzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:55:40 -0400
-Received: from 8bytes.org ([81.169.241.247]:37762 "EHLO theia.8bytes.org"
+	id S1756803AbaIELDQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 07:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756874AbaIEKxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:53:10 -0400
-From: Joerg Roedel <joro@8bytes.org>
-To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 05/12] iommu/fsl: Convert to iommu_capable() API function
-Date: Fri,  5 Sep 2014 12:52:57 +0200
-Message-Id: <1409914384-21191-6-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409914384-21191-1-git-send-email-joro@8bytes.org>
-References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
+	id S1756472AbaIELDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 07:03:14 -0400
+Date: Fri, 5 Sep 2014 12:59:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, falcon@meizu.com,
+        tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com,
+        linux-kernel@vger.kernel.org, hare@suse.com, akpm@linux-foundation.org,
+        penguin-kernel@i-love.sakura.ne.jp, joseph.salisbury@canonical.com,
+        bpoirier@suse.de, santosh@chelsio.com,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140905105949.GA22778@redhat.com>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <1409899047-13045-4-git-send-email-mcgrof@do-not-panic.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409899047-13045-4-git-send-email-mcgrof@do-not-panic.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <jroedel@suse.de>
+On 09/04, Luis R. Rodriguez wrote:
+>
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>
+> The new umh kill option has allowed kthreads to receive
+> kill signals but they are generally accepting all sources
+> of kill signals
 
-Cc: Varun Sethi <Varun.Sethi@freescale.com>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
----
- drivers/iommu/fsl_pamu_domain.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+And I think this is right,
 
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index 61d1daf..f43a80d 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -411,8 +411,7 @@ static phys_addr_t fsl_pamu_iova_to_phys(struct iommu_domain *domain,
- 	return get_phys_addr(dma_domain, iova);
- }
- 
--static int fsl_pamu_domain_has_cap(struct iommu_domain *domain,
--				      unsigned long cap)
-+static bool fsl_pamu_capable(enum iommu_cap cap)
- {
- 	return cap == IOMMU_CAP_CACHE_COHERENCY;
- }
-@@ -1074,6 +1073,7 @@ static u32 fsl_pamu_get_windows(struct iommu_domain *domain)
- }
- 
- static const struct iommu_ops fsl_pamu_ops = {
-+	.capable	= fsl_pamu_capable,
- 	.domain_init	= fsl_pamu_domain_init,
- 	.domain_destroy = fsl_pamu_domain_destroy,
- 	.attach_dev	= fsl_pamu_attach_device,
-@@ -1083,7 +1083,6 @@ static const struct iommu_ops fsl_pamu_ops = {
- 	.domain_get_windows = fsl_pamu_get_windows,
- 	.domain_set_windows = fsl_pamu_set_windows,
- 	.iova_to_phys	= fsl_pamu_iova_to_phys,
--	.domain_has_cap = fsl_pamu_domain_has_cap,
- 	.domain_set_attr = fsl_pamu_set_domain_attr,
- 	.domain_get_attr = fsl_pamu_get_domain_attr,
- 	.add_device	= fsl_pamu_add_device,
--- 
-1.9.1
+> while the original motivation was to enable
+> through the OOM from sending the kill.
+
+even if the main concern was OOM.
+
+> Users can provide a log output and it should be clear on
+> the trace what probe / driver got the kill signal.
+
+Well, if you need a WARN output, perhaps you could just add
+WARN_ON(fatal_signal_pending()) at the end of load_module() ?
+
+Not only kthread_create() can fail if systemd sends SIGKILL.
+
+> Although Oleg had rejected a
+> similar change a while ago
+
+And honestly, I still dislike this change.
+
+Oleg.
 
