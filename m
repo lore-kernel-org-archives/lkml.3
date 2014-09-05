@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaIEIEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 04:04:21 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:54164 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387AbaIEIEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 04:04:15 -0400
+	id S1756452AbaIEIEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 04:04:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43469 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756430AbaIEIE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 04:04:28 -0400
+Message-ID: <54096E8A.6010904@suse.com>
+Date: Fri, 05 Sep 2014 10:04:26 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1409420113-13731-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1409420113-13731-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Fri, 5 Sep 2014 10:04:14 +0200
-Message-ID: <CACRpkdYceGArp0Qhm23z6pSSfHGHRn6HawZZUzKz_2GhN+1MqA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: adi2: Remove duplicate gpiochip_remove_pin_ranges
- from remove function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Vrabel <david.vrabel@citrix.com>, Jan Beulich <JBeulich@suse.com>
+CC: boris.ostrovsky@oracle.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 2/3] xen: eliminate scalability issues from
+ initrd handling
+References: <1409834326-29287-1-git-send-email-jgross@suse.com>	<1409834326-29287-3-git-send-email-jgross@suse.com>	<5408607F.6020108@citrix.com> <540893570200007800030E4C@mail.emea.novell.com> <54087CE3.6020400@citrix.com>
+In-Reply-To: <54087CE3.6020400@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 30, 2014 at 7:35 PM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
-
-> This patch removes call to gpiochip_remove_pin_ranges() from platform_driver remove
-> function as it will anway be called by gpiochip_remove().
+On 09/04/2014 04:53 PM, David Vrabel wrote:
+> On 04/09/14 15:29, Jan Beulich wrote:
+>>>>> On 04.09.14 at 14:52, <david.vrabel@citrix.com> wrote:
+>>> On 04/09/14 13:38, Juergen Gross wrote:
+>>>> --- a/arch/x86/xen/xen-head.S
+>>>> +++ b/arch/x86/xen/xen-head.S
+>>>> @@ -124,6 +124,9 @@ NEXT_HYPERCALL(arch_6)
+>>>>   	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
+>>>>   		.quad _PAGE_PRESENT; .quad _PAGE_PRESENT)
+>>>>   	ELFNOTE(Xen, XEN_ELFNOTE_SUSPEND_CANCEL, .long 1)
+>>>> +#ifdef CONFIG_X86_64
+>>>> +	ELFNOTE(Xen, XEN_ELFNOTE_MOD_START_PFN,  .long 1)
+>>>> +#endif
+>>>
+>>> Why X86_64 only?  If there's a good reason the commit message needs to
+>>> explain why.
+>>
+>> Does native 32-bit support huge initrd?
 >
-> CC: Sonic Zhang <sonic.zhang@analog.com>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> Does that matter? If the MOD_START_PFN options works with a 32-bit guest
+> then it should use it, regardless of whether it is essential or not.
+> Because this reduces the #ifdef'ery.
 
-Patch applied.
+Okay, I'll verify it's working on 32-bit, too.
 
-Yours,
-Linus Walleij
+
+Juergen
+
