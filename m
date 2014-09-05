@@ -1,125 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216AbaIEPWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 11:22:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64644 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754920AbaIEPWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 11:22:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,473,1406617200"; 
-   d="scan'208";a="568912997"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: linus.walleij@linaro.org, gnurou@gmail.com
-Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH] gpiolib: fix a few issues with gpiochip_remove
-Date: Fri,  5 Sep 2014 18:22:04 +0300
-Message-Id: <1409930524-1529-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S932782AbaIEPXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 11:23:16 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:44181 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756679AbaIEPXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 11:23:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140905065013.21111541@tlielax.poochiereds.net>
+References: <54095E79.9010306@huawei.com>
+	<20140905065013.21111541@tlielax.poochiereds.net>
+Date: Fri, 5 Sep 2014 23:23:13 +0800
+Message-ID: <CABMCRV897Vc26C_yG7YUzUgDEfKEPkDYGS7GmBTOGmdR2c=-Kg@mail.gmail.com>
+Subject: Re: [PATCH] audit: vfs: fix audit records error when write to a file
+From: =?UTF-8?B?6IOh5YmR6Ziz?= <hujyang@gmail.com>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: hujianyang <hujianyang@huawei.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        eparis@redhat.com, jlayton@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation of gpiochip_remove() does not check to see
-if the GPIO pins are busy before removing the associated irqchip and
-this is causing the following warning:
+Hi Jeff,
 
-WARNING: CPU: 3 PID: 553 at fs/proc/generic.c:521 remove_proc_entry+0x19f/0x1b0()
-remove_proc_entry: removing non-empty directory 'irq/24', leaking at least 'bmc150_accel_event'
-Call Trace:
- [<ffffffff81a78504>] dump_stack+0x4e/0x7a
- [<ffffffff810c79bd>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff810c7a2c>] warn_slowpath_fmt+0x4c/0x50
- [<ffffffff8125259f>] remove_proc_entry+0x19f/0x1b0
- [<ffffffff811138ae>] unregister_irq_proc+0xce/0xf0
- [<ffffffff8110dbc1>] free_desc+0x31/0x70
- [<ffffffff8110dc3c>] irq_free_descs+0x3c/0x80
- [<ffffffff81113096>] irq_dispose_mapping+0x36/0x50
- [<ffffffff8148549a>] gpiochip_remove+0x5a/0x160
- [<ffffffff814895d8>] dln2_do_remove+0x18/0x80
- [<ffffffff8148966a>] dln2_gpio_remove+0x2a/0x30
- [<ffffffff816143bd>] platform_drv_remove+0x1d/0x40
-...
+I don't know if we can keep audit_inode() in do_last(). I've tried
+this but found
+the only way to enable both write() and create() is moving it to lookup_open().
+I know this is not good, but I think we have no choice.
 
-and bug:
+The current patch really miss the ROFS condition as you said. How about
+moving audit_inode() to the beginning of the O_CREAT case in lookup_open()?
+That's my mistake. After this, it seems no creating records will be missing.
 
-BUG: sleeping function called from invalid context at kernel/locking/mutex.c:97
-in_atomic(): 1, irqs_disabled(): 1, pid: 553, name: khubd
-Preemption disabled at:[<ffffffff81485462>] gpiochip_remove+0x22/0x160
-Call Trace:
- [<ffffffff81a78504>] dump_stack+0x4e/0x7a
- [<ffffffff810e8dff>] __might_sleep+0x10f/0x180
- [<ffffffff81a7f3f0>] mutex_lock+0x20/0x3d
- [<ffffffff8110dbcd>] free_desc+0x3d/0x70
- [<ffffffff8110dc3c>] irq_free_descs+0x3c/0x80
- [<ffffffff81113096>] irq_dispose_mapping+0x36/0x50
- [<ffffffff8148549a>] gpiochip_remove+0x5a/0x160
- [<ffffffff814895d8>] dln2_do_remove+0x18/0x80
- [<ffffffff8148966a>] dln2_gpio_remove+0x2a/0x30
- [<ffffffff816143bd>] platform_drv_remove+0x1d/0x40
-...
+I would like to change this and resend a new patch. I'm worry about if we miss
+something. Before I do this, do you have any suggestions? Or do you have a
+better way to keep audit_inode() in do_last()?
 
-The current implementaion also does a partial cleanup if one of the
-pins is busy, which makes it impossible to retry the remove operation
-later.
+Thank you~!
 
-A retry operation is needed in the case of MFD devices that bundles a
-GPIO device and another device that is an indirect consumer of the
-GPIO device (typical an I2C bus).
+Hu
 
-In this case, when the MFD device is removed, if an I2C device
-associated with the I2C bus of the MFD device is using a GPIO pin (as
-an interrupt source for example), and the remove routine for the GPIO
-device is called first, then the removal of the gpio chip will fail.
-
-However, we can later retry the gpio chip removal, as the I2C bus will
-eventually be removed which will cause the I2C device to release the
-GPIO pin.
-
-This patch modifies gpiochip_remove to be atomic (i.e. if it fails no
-partial cleanup is done) and it also moves gpiochip_irqchip_remove()
-out of the spinlock to avoid the bug above.
-
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
----
- drivers/gpio/gpiolib.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 15cc0bb..0f53bef 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -314,14 +314,8 @@ int gpiochip_remove(struct gpio_chip *chip)
- 	int		status = 0;
- 	unsigned	id;
- 
--	acpi_gpiochip_remove(chip);
--
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
--	gpiochip_irqchip_remove(chip);
--	gpiochip_remove_pin_ranges(chip);
--	of_gpiochip_remove(chip);
--
- 	for (id = 0; id < chip->ngpio; id++) {
- 		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
- 			status = -EBUSY;
-@@ -337,8 +331,13 @@ int gpiochip_remove(struct gpio_chip *chip)
- 
- 	spin_unlock_irqrestore(&gpio_lock, flags);
- 
--	if (status == 0)
-+	if (status == 0) {
-+		gpiochip_irqchip_remove(chip);
-+		gpiochip_remove_pin_ranges(chip);
-+		of_gpiochip_remove(chip);
-+		acpi_gpiochip_remove(chip);
- 		gpiochip_unexport(chip);
-+	}
- 
- 	return status;
- }
--- 
-1.9.1
-
+2014-09-05 18:50 GMT+08:00 Jeff Layton <jeff.layton@primarydata.com>:
+> On Fri, 5 Sep 2014 14:55:53 +0800
+> hujianyang <hujianyang@huawei.com> wrote:
+>
+>> commit 33e2208acfc1
+>>
+>> audit: vfs: fix audit_inode call in O_CREAT case of do_last
+>>
+>> fix a regression in auditing of open(..., O_CREAT) syscalls but
+>> import a new problem which lead the records of write operation
+>> confusion.
+>>
+>> This error can be reproduced by these steps:
+>>
+>>       touch /etc/test
+>>       echo "-w /etc/test" >>/etc/audit/audit.rules
+>>       /etc/init.d/auditd restart
+>>
+>>       echo "abc" >> /etc/test
+>>
+>> audit_name records are:
+>>
+>> type=PATH msg=audit(1409764556.196:67): item=0 name="/etc/" inode=5097 dev=00:01 mode=040755 ouid=0 ogid=0 rdev=00:00 nametype=PARENT
+>> type=PATH msg=audit(1409764556.196:67): item=1 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+>> type=PATH msg=audit(1409764556.196:67): item=2 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+>>
+>> but if we revert commit 33e2208acfc1, records are correct:
+>>
+>> type=PATH msg=audit(1409763058.192:219): item=0 name="/etc/test" inode=1275 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+>>
+>> We shouldn't leave audit_inode(.., LOOKUP_PARENT) in O_CREAT case
+>> of do_last() because this branch don't really know if vfs need to
+>> create a new file. There is no need to do vfs_create() if we open
+>> an existing file with O_CREAT flag and write to it. But this
+>> audit_inode() in O_CREAT case will record a msg as we create a new
+>> file and confuse the records of write.
+>>
+>> This patch moves the audit for create operation to where a file
+>> really need to be created, the O_CREAT case in lookup_open().
+>> We have to add the pointer of struct filename as a parameter of
+>> lookup_open(). By doing this, the records of both create and write
+>> are correct.
+>>
+>> Signed-off-by: hujianyang <hujianyang@huawei.com>
+>> ---
+>>  fs/namei.c | 9 ++++++---
+>>  1 file changed, 6 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/fs/namei.c b/fs/namei.c
+>> index a996bb4..0bc7734 100644
+>> --- a/fs/namei.c
+>> +++ b/fs/namei.c
+>> @@ -2808,7 +2808,8 @@ looked_up:
+>>  static int lookup_open(struct nameidata *nd, struct path *path,
+>>                       struct file *file,
+>>                       const struct open_flags *op,
+>> -                     bool got_write, int *opened)
+>> +                     bool got_write, int *opened,
+>> +                     struct filename *name)
+>>  {
+>>       struct dentry *dir = nd->path.dentry;
+>>       struct inode *dir_inode = dir->d_inode;
+>> @@ -2854,6 +2855,9 @@ static int lookup_open(struct nameidata *nd, struct path *path,
+>>                       error = -EROFS;
+>>                       goto out_dput;
+>>               }
+>> +
+>> +             audit_inode(name, dir, LOOKUP_PARENT);
+>> +
+>>               *opened |= FILE_CREATED;
+>>               error = security_path_mknod(&nd->path, dentry, mode, 0);
+>>               if (error)
+>> @@ -2926,7 +2930,6 @@ static int do_last(struct nameidata *nd, struct path *path,
+>>               if (error)
+>>                       return error;
+>>
+>> -             audit_inode(name, dir, LOOKUP_PARENT);
+>>               error = -EISDIR;
+>>               /* trailing slashes? */
+>>               if (nd->last.name[nd->last.len])
+>> @@ -2945,7 +2948,7 @@ retry_lookup:
+>>                */
+>>       }
+>>       mutex_lock(&dir->d_inode->i_mutex);
+>> -     error = lookup_open(nd, path, file, op, got_write, opened);
+>> +     error = lookup_open(nd, path, file, op, got_write, opened, name);
+>>       mutex_unlock(&dir->d_inode->i_mutex);
+>>
+>>       if (error <= 0) {
+>
+> I'm not sure about this. Won't this cause us to miss creating audit
+> records in some error conditions?
+>
+> For instance, if you end up not being able to create the file due to
+> the fs being read-only, then I think this patch would make you miss the
+> audit record for the parent.
+>
+> Might it be better to not plumb an extra pointer into lookup_open and
+> just move the audit_inode calls around do_last in the appropriate
+> places instead?
+>
+> --
+> Jeff Layton <jlayton@primarydata.com>
