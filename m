@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaIEUof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 16:44:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51343 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413AbaIEUod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 16:44:33 -0400
-Message-ID: <540A2080.8050404@zytor.com>
-Date: Fri, 05 Sep 2014 13:43:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752804AbaIEUon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 16:44:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34337 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752759AbaIEUol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 16:44:41 -0400
+Date: Fri, 5 Sep 2014 22:44:36 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Florian Fainelli <f.fainelli@gmail.com>
+cc: Mark Rutland <mark.rutland@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Documentation: bcm7120-l2: Add Broadcom BCM7120-style
+ L2 binding
+In-Reply-To: <540A15AA.4000805@gmail.com>
+Message-ID: <alpine.DEB.2.10.1409052224211.5472@nanos>
+References: <1409265326-7579-1-git-send-email-f.fainelli@gmail.com> <1409265326-7579-3-git-send-email-f.fainelli@gmail.com> <alpine.DEB.2.10.1409031410580.3333@nanos> <20140903124317.GB3127@leverpostej> <5407490E.7060505@gmail.com> <20140905090528.GG2172@leverpostej>
+ <5409FA82.6000703@gmail.com> <alpine.DEB.2.10.1409052113210.5472@nanos> <540A15AA.4000805@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>
-CC: Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Post-merge-window ping (Re: [PATCH v4 0/5] x86: two-phase syscall
- tracing and seccomp fastpath)
-References: <CALCETrUaZ8w92g96SmFEZDE0Jr+0Moeo+S24-TyW8crrK5reSg@mail.gmail.com> <540A1800.3000005@zytor.com>
-In-Reply-To: <540A1800.3000005@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 01:07 PM, H. Peter Anvin wrote:
-> On 08/26/2014 06:32 PM, Andy Lutomirski wrote:
->> On Mon, Jul 28, 2014 at 8:38 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> This applies to:
->>> git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git seccomp-fastpath
->>>
->>> Gitweb:
->>> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/fastpath
->>
->> Hi all-
->>
->> AFAIK the only thing that's changed since I submitted it is that the
->> 3.17 merge window is closed.  Kees rebased the tree this applies to,
->> but I think the patches all still apply.  What, if anything, do I need
->> to do to help this along for 3.18?
->>
+On Fri, 5 Sep 2014, Florian Fainelli wrote:
+> On 09/05/2014 12:21 PM, Thomas Gleixner wrote:
+> > So if I understand correctly what you have is:
+> > 
+> >                           /- GIC------------->   
+> >  Device-irq ---- [routing]
+> >                           \- BC irq chip ---->
+> > 
+> > and you implement it as
+> > 
+> >  Device-irq ---- [BC irq chip] ---- [GIC] --->
+> >                             |
+> >                             ----------------->
+> > 
+> > And the fwd mask is to tell the BC chip to use the GIC and which irq
+> > of the GIC, so it can fiddle with the GIC under the hood, right?
 > 
-> Just put this stuff in a branch and running through my personal test
-> battery now.
+> The forward mask really is to tell the BCM7120 l2 interrupt controller:
+> bypass me, and output the UART interrupts directly at the GIC level, so
+> I think this does match your understanding.
 > 
+> Not setting the forward mask means you would get the UART interrupts at
+> the BCM7120 l2 interrupt controller level, and have to handle them here.
+> 
+> Hope this helps clarify what this funky piece of hardware does.
 
-... and they fail build testing.  Specifically, both i386 and x86-64
-allnoconfig fail with:
+Sigh, this stacked interrupt chip nonsense is becoming a plague.
 
-arch/x86/kernel/ptrace.c: In function ‘syscall_trace_enter_phase2’:
-  LD      fs/quota/built-in.o
-../arch/x86/kernel/ptrace.c:1579:2: error: implicit declaration of
-function ‘seccomp_phase2’ [-Werror=implicit-function-declaration]
-  if (phase1_result > 1 && seccomp_phase2(phase1_result)) {
-  ^
-cc1: some warnings being treated as errors
-  CC      arch/x86/kernel/step.o
-make[4]: *** [arch/x86/kernel/ptrace.o] Error 1
+So if you set that bit then the UART driver only sees the GIC as its
+interrupt controller and not the L2 thingy. So, the L2 chip only
+enables its interrupt unconditionally for that line and the
+enable/disable happens at the GIC level.
 
-	-hpa
+If that's the case, that's fine with me. It's not pretty, but at least
+it does not involve L2 fiddling indirectly with the GIC.
+
+Thanks,
+
+	tglx
+
+
 
 
