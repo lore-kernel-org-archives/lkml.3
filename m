@@ -1,134 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbaIEKV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 06:21:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63678 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756626AbaIEKVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 06:21:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,471,1406617200"; 
-   d="scan'208";a="586711199"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
-        "atull@opensource.altera.com" <atull@opensource.altera.com>
-Subject: RE: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver binding
- to MFD driver
-Thread-Topic: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver
- binding to MFD driver
-Thread-Index: AQHPyNc/kBMLSfD+Nk6gyOY6CiHQz5vyMzuAgAAX0oA=
-Date: Fri, 5 Sep 2014 10:20:53 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9829DA@SHSMSX101.ccr.corp.intel.com>
-References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
-	 <1409928798-31895-2-git-send-email-alvin.chen@intel.com>
- <1409908917.30155.84.camel@intel.com>
-In-Reply-To: <1409908917.30155.84.camel@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S932116AbaIEKXT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 06:23:19 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:51222 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756344AbaIEKXQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 06:23:16 -0400
 MIME-Version: 1.0
+In-Reply-To: <53FC3A5D.8030708@nvidia.com>
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
+ <53FB7511.9090205@wwwdotorg.org> <53FC3A5D.8030708@nvidia.com>
+From: Tomeu Vizoso <tomeu@tomeuvizoso.net>
+Date: Fri, 5 Sep 2014 12:22:55 +0200
+X-Google-Sender-Auth: xV5-aw5cvsy2gSW2jO6rZtKDhQ0
+Message-ID: <CAAObsKABUa9xD+hntyv97ZQB7Bk05kN0h0-+H7Q9ks6RT0yV2Q@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Tegra124 EMC (external memory controller) support
+To: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s85ALefU016527
 
-> > -static void dwapb_irq_handler(u32 irq, struct irq_desc *desc)
-> > +static u32 _dwapb_irq_handler(struct dwapb_gpio *gpio)
-> 
-> What about dwapb_do_irq() ?
-OK, I will improve it.
+On 26 August 2014 09:42, Mikko Perttunen <mperttunen@nvidia.com> wrote:
+> On 25/08/14 20:40, Stephen Warren wrote:
+>>
+>> On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
+>>>
+>>> Hi everyone,
+>>>
+>>> this series adds support for the EMC (external memory controller) clock
+>>> in the Tegra124 system-on-chip. The series has been tested on Jetson TK1.
+>>>
+>>> The first two patches remove the old "emc_mux" and "emc" clocks from the
+>>> clock tree and the device tree bindings. This is, of course, not
+>>> backwards
+>>> compatible, but as these clocks have never been useful for anything
+>>> (apart from maybe reading the boot rate of the EMC clock). If this is
+>>> still
+>>> not acceptable, the second patch can be dropped.
+>>
+>> ...
+>>
+>> Mikko, this series had some comments, especially on the DT binding
+>> (patch 5/8) and how the MC/EMC drivers interact. Is there an updated
+>> version of the series? Or, is the series replaced by Tomeu Vizoso's work?
+>
+>
+> Yes, I have a v2 with these comments addressed. One concern, though, is the
+> part writing to CLK_SOURCE_EMC. If some other driver also wants to read this
+> register (MC, likely), we might need to have an API for it in the CAR
+> driver. On the other hand, maybe not, since it's only one register. Thierry?
+>
+> Another point is that v2 adds a new API to the MC driver, which also doesn't
+> exist yet. The EMC driver can technically work without the MC driver (but
+> with a header for MC added), but I'm not sure the result would be very
+> useful.
+>
+> I believe the plan is that Tomeu's EMC code will be integrated into this EMC
+> driver once both are ready.
 
-> > +static irqreturn_t dwapb_irq_handler_mfd(int irq, void *dev_id) {
-> > +	u32 worked;
-> > +	struct dwapb_gpio *gpio = (struct dwapb_gpio *)dev_id;
-> 
-> No need to cast explicitly from void *.
-OK.
+That's mostly right. My clk constraints series just allow consumers to
+influence the effective rate of a clock, such as the EMC. And the
+pm_qos series will allow to track the total memory bandwidth needs in
+the system. I'm not sure yet where in the code this tracking will be
+done. It could be done in an EMC driver in drivers/memory, but it's
+probably too unrelated to be placed in the EMC clock driver.
 
+Regards,
 
-> > -	port->bgc.gc.ngpio = ngpio;
-> > -	port->bgc.gc.of_node = port_np;
-> > +#ifdef CONFIG_OF_GPIO
-> 
-> Do we really need this #ifdef ?
-> of_node will be NULL anyway, or I missed something?
-Yes, otherwise, can't compile it. Please refer 'struct gpio_chip', 'gc.of_node' is in OF_GPIO micro also.
-
-> > +	if (pp->irq)
-> 
-> irq == 0 is a valid hwirq (hardware irq) number. Yes, there is unlikely we have it
-> somewhere, but still it's possible. And yes, IRQ framework doesn't work with
-> virq == 0 (*virtual* irq), but accepts hwirq == 0. I recommend to use int type for
-> irq line number, and recognize negative value (usually -1) as no irq needed /
-> found.
-Understand. But if you refer the original code, you can see:
-irq = irq_of_parse_and_map(node, 0);
-If (!irq) {
-......
-return;
-}
->From above code, if irq=0, it indicates irq is not supported for OF devices. If we use '-1' to indicate irq is not supported. To make OF work, then our code should be:
-
-irq = irq_of_parse_and_map(node, 0);
-If (!irq) {
-pp->irq = -1;
-return;
-} else {
-pp->irq = irq;
-}
-Then the code looks strange.
-
-How do you think?
-
-> > +	bool is_of;
-> 
-> is_pdata_alloc (it might be not only OF case in future).
-> 
-OK
-
-
-> > +	if (!pdata) {
-> 
-> (*)
-
-> > +		pdata = dwapb_gpio_get_pdata_of(dev);
-> > +		if (IS_ERR(pdata))
-> > +			return PTR_ERR(pdata);
-> 
-> > +		is_of = true;
-> > +	} else {
-> > +		is_of = false;
-> 
-> Instead of above three lines, how about
-> bool is_pdata_alloc = !pdata;
-> 
-> And (*) if (is_pdata_alloc) ...
-> 
-OK. I will improve this part.
-
-> > +	if (is_of) {
-> > +		dwapb_free_pdata_of(dev, pdata);
-> > +		pdata = NULL;
-> 
-> Besides that pdata assignment is probably redundant, you may use plain
-> kmalloc/kfree and avoid unnecessary devm_* calls.
-> 
-OK.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Tomeu
