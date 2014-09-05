@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217AbaIEMUJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 08:20:09 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:36593 "EHLO e8.ny.us.ibm.com"
+	id S932302AbaIEMUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 08:20:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34977 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751672AbaIEMUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 08:20:06 -0400
-Message-ID: <5409AA64.2010700@linux.vnet.ibm.com>
-Date: Fri, 05 Sep 2014 17:49:48 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932151AbaIEMUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 08:20:09 -0400
+Date: Fri, 5 Sep 2014 14:17:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/3] uprobes: add comment with insn opcodes, mnemonics
+	and why we dont support them
+Message-ID: <20140905121732.GA26662@redhat.com>
+References: <1409839951-8073-1-git-send-email-dvlasenk@redhat.com> <20140904142454.GA5237@redhat.com> <CAK1hOcMM_79Uz=xms=BQu6BsrDLRmAaXUs_s-qOj-N0e-+qezA@mail.gmail.com>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [QUERY] Confusing usage of rq->nr_running in load balancing
-References: <540707D9.4040208@linux.vnet.ibm.com> <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com>
-In-Reply-To: <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090512-0320-0000-0000-00000067942D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK1hOcMM_79Uz=xms=BQu6BsrDLRmAaXUs_s-qOj-N0e-+qezA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+On 09/05, Denys Vlasenko wrote:
+>
+> On Thu, Sep 4, 2014 at 4:24 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > Does this replace the previous series (which at first glance looks
+> > pretty much the same) ?
+>
+> All 5 patches (two patch sets)
 
-On 09/03/2014 10:28 PM, Vincent Guittot wrote:
-> On 3 September 2014 14:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->> Hi,
-> 
-> Hi Preeti,
-> 
->>
->> There are places in kernel/sched/fair.c in the load balancing part where
->> rq->nr_running is used as against cfs_rq->nr_running. At least I could
->> not make out why the former was used in the following scenarios.
->> It looks to me that it can very well lead to incorrect load balancing.
->> Also I did not pay attention to the numa balancing part of the code
->> while skimming through this file to catch this scenario. There are a
->> couple of places there too which need to be scrutinized.
->>
->> 1. load_balance(): The check (busiest->nr_running > 1)
->> The load balancing would be futile if there are tasks of other
->> scheduling classes, wouldn't it?
-> 
-> agree with you
-> 
->>
->> 2. active_load_balance_cpu_stop(): A similar check and a similar
->> consequence as 1 here.
-> 
-> agree with you
-> 
->>
->> 3. nohz_kick_needed() : We check for more than one task on the runqueue
->> and hence trigger load balancing even if there are rt-tasks.
-> 
-> I can see one potentiel reason why rq->nr_running is interesting that
-> is the group capacity might have changed because of non cfs tasks
-> since last load balance. So we need to monitor the change of the
-> groups' capacity to ensure that the average load of each group is
-> still in the same level
-> 
->>
->> 4. cpu_avg_load_per_task(): This stands out among the rest as an
->> incorrect usage of rq->nr_running in place of cfs_rq->nr_running. We
->> divide the load associated with the cfs_rq by the number of tasks on the
->> rq. This will make the cfs_rq load look smaller.
-> 
-> This one is solved in the consolidation of cpu_capacity patchset
+FYI, I obvoiuosly can't take the 1st series which changes lib/insn.c ;)
 
-Sorry, but I don't see where in your patchset you have addressed this
-issue. Can you please point out the patch?
+> I sent yesterday are resends.
 
-Regards
-Preeti U Murthy
+OK, and the changes in arch/x86/kernel/uprobes.c (2nd series) were acked
+by Jim in the past.
+
+Oleg.
 
