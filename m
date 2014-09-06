@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaIFSkK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 14:40:10 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:58396 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaIFSkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 14:40:09 -0400
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] memfd: Add memfd.h to uapi headers
-Date: Sat,  6 Sep 2014 20:40:33 +0200
-Message-Id: <1410028833-31840-1-git-send-email-marcel@holtmann.org>
-X-Mailer: git-send-email 1.9.3
+	id S1751734AbaIFSrH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 14:47:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751334AbaIFSrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 14:47:05 -0400
+Date: Sat, 6 Sep 2014 20:46:31 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Avi Kivity <avi@cloudius-systems.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Jan Stancek <jstancek@redhat.com>
+Subject: [BUG] perf tools: Demangle kernel and kernel module symbols too
+Message-ID: <20140906184631.GA6059@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems like a good idea to actually expose include/uapi/linux/memfd.h
-so that it gets installed and can be used by userspace.
+hi,
+Jan Stancek found test 1 breakage, probably caused by following patch:
+  950b8354716e perf tools: Demangle kernel and kernel module symbols too
 
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+it seems to break test 1:
 ---
- include/uapi/linux/Kbuild | 1 +
- 1 file changed, 1 insertion(+)
+[jolsa@krava perf]$ ./perf test -v 1
+ 1: vmlinux symtab matches kallsyms                        :
+--- start ---
+test child forked, pid 6288
+Looking at the vmlinux_path (6 entries long)
 
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 24e9033f8b3f..939df6973102 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -240,6 +240,7 @@ header-y += matroxfb.h
- header-y += mdio.h
- header-y += media.h
- header-y += mei.h
-+header-y += memfd.h
- header-y += mempolicy.h
- header-y += meye.h
- header-y += mic_common.h
--- 
-1.9.3
+SNIP
 
+0xffffffff8142dba0: diff name v: event_queue virtual table k: __vt_event_queue
+0xffffffff8142dc00: diff name v: event_dequeue virtual table k: __vt_event_dequeue
+0xffffffff8142dd90: diff name v: event_wait::isra::::part:: virtual table k: __vt_event_wait.isra.0.part.1
+---
+
+Avi,
+could you please update the tests/vmlinux-kallsyms.c to reflect
+the demangle change?
+
+thanks,
+jirka
