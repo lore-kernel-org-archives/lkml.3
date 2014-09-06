@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338AbaIFLAy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 07:00:54 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:57718 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaIFLAv (ORCPT
+	id S1751465AbaIFLBy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 07:01:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57049 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaIFLBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 07:00:51 -0400
-Date: Sat, 6 Sep 2014 13:00:50 +0200
-From: Karol Lewandowski <lmctlx@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Karol Lewandowski <k.lewandowsk@samsung.com>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.14-stable] usb: gadget: f_fs: drop duplicate
- usb_functionfs_descs_head declaration
-Message-ID: <20140906110050.GA15459@pix>
-References: <1409943884-13823-1-git-send-email-k.lewandowsk@samsung.com>
- <20140905195853.GA26296@kroah.com>
+	Sat, 6 Sep 2014 07:01:52 -0400
+Date: Sat, 6 Sep 2014 04:01:31 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-9bf2419fa7bffa16ce58a4d5c20399eff8c970c9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        gleb@kernel.org, john.stultz@linaro.org, pbonzini@redhat.com,
+        chris.j.arges@canonical.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        gleb@kernel.org, john.stultz@linaro.org, pbonzini@redhat.com,
+        chris.j.arges@canonical.com, tglx@linutronix.de
+In-Reply-To: <alpine.DEB.2.10.1409050000570.3333@nanos>
+References: <alpine.DEB.2.10.1409050000570.3333@nanos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] timekeeping:
+  Update timekeeper before updating vsyscall and pvclock
+Git-Commit-ID: 9bf2419fa7bffa16ce58a4d5c20399eff8c970c9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140905195853.GA26296@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 12:58:53PM -0700, Greg Kroah-Hartman wrote:
+Commit-ID:  9bf2419fa7bffa16ce58a4d5c20399eff8c970c9
+Gitweb:     http://git.kernel.org/tip/9bf2419fa7bffa16ce58a4d5c20399eff8c970c9
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sat, 6 Sep 2014 12:24:49 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 6 Sep 2014 12:58:18 +0200
 
-OP here.
+timekeeping: Update timekeeper before updating vsyscall and pvclock
 
-> On Fri, Sep 05, 2014 at 09:04:44PM +0200, Karol Lewandowski wrote:
-> > Applicable for 3.14-stable only.
-> > 
-> > This commit drops duplicate declaration of struct usb_functionfs_descs_head
-> > erronousely added in commit 28c5980b54 ("usb: gadget: f_fs: resurect
-> > usb_functionfs_descs_head structure").
-> > 
-> > Fix from 28c5980b54 is applicable only for v3.15-rc1 and newer kernels.
-> > 
-> > This fixes error in uapi:
-> > 
-> >   /src/linux$ make -C tools usb
-> > 
-> >   make: Entering directory '/src/linux/tools'
-> >     DESCEND  usb
-> >   make[1]: Entering directory '/src/linux/tools/usb'
-> >   gcc -Wall -Wextra -g -I../include -o testusb testusb.c -lpthread
-> >   gcc -Wall -Wextra -g -I../include -o ffs-test ffs-test.c -lpthread
-> >   In file included from ffs-test.c:41:0:
-> >   ../../include/uapi/linux/usb/functionfs.h:42:8: error: redefinition of ‘struct usb_functionfs_descs_head’
-> >    struct usb_functionfs_descs_head {
-> >           ^
-> >   ../../include/uapi/linux/usb/functionfs.h:31:8: note: originally defined here
-> >    struct usb_functionfs_descs_head {
-> >           ^
-> > 
-> > Cc: Michal Nazarewicz <mina86@mina86.com>
-> > Cc: Felipe Balbi <balbi@ti.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> > ---
-> >  include/uapi/linux/usb/functionfs.h | 10 ++--------
-> >  1 file changed, 2 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
-> > index 29e9c7a..f279394 100644
-> > --- a/include/uapi/linux/usb/functionfs.h
-> > +++ b/include/uapi/linux/usb/functionfs.h
-> > @@ -27,24 +27,18 @@ struct usb_endpoint_descriptor_no_audio {
-> >  	__u8  bInterval;
-> >  } __attribute__((packed));
-> >  
-> > -/* Legacy format, deprecated as of 3.14. */
-> > -struct usb_functionfs_descs_head {
-> > -	__le32 magic;
-> > -	__le32 length;
-> > -	__le32 fs_count;
-> > -	__le32 hs_count;
-> > -} __attribute__((packed, deprecated));
-> >  
-> >  /*
-> >   * All numbers must be in little endian order.
-> >   */
-> >  
-> > +/* Legacy format, deprecated as of 3.14. */
-> >  struct usb_functionfs_descs_head {
-> >  	__le32 magic;
-> >  	__le32 length;
-> >  	__le32 fs_count;
-> >  	__le32 hs_count;
-> > -} __attribute__((packed));
-> > +} __attribute__((packed, deprecated));
-> >  
-> >  /*
-> >   * Descriptors format:
-> > -- 
-> > 2.0.1
-> 
-> Ah, well, instead I should just revert
-> 28c5980b5494b8163d6cba5a5007b6ec7e63de66 as it shouldn't have gone to
-> 3.14-stable, right?  I'll do that for the next round of stable releases
-> after this one.
+The update_walltime() code works on the shadow timekeeper to make the
+seqcount protected region as short as possible. But that update to the
+shadow timekeeper does not update all timekeeper fields because it's
+sufficient to do that once before it becomes life. One of these fields
+is tkr.base_mono. That stays stale in the shadow timekeeper unless an
+operation happens which copies the real timekeeper to the shadow.
 
-Yes.  Revert would certainly be ok and this is what I did first.  However,
-we would miss 'deprecated' attribute that was added in original patch.
+The update function is called after the update calls to vsyscall and
+pvclock. While not correct, it did not cause any problems because none
+of the invoked update functions used base_mono.
 
-This, and the fact that every new kernel has a note that it's deprecated
-from 3.14 convinced me to do a bit more than revert.
+commit cbcf2dd3b3d4 (x86: kvm: Make kvm_get_time_and_clockread()
+nanoseconds based) changed that in the kvm pvclock update function, so
+the stale mono_base value got used and caused kvm-clock to malfunction.
 
-Cheers,
-Karol Lewandowski
+Put the update where it belongs and fix the issue.
+
+Reported-by: Chris J Arges <chris.j.arges@canonical.com>
+Reported-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409050000570.3333@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/timekeeping.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index fb4a9c2..ec1791f 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -442,11 +442,12 @@ static void timekeeping_update(struct timekeeper *tk, unsigned int action)
+ 		tk->ntp_error = 0;
+ 		ntp_clear();
+ 	}
+-	update_vsyscall(tk);
+-	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
+ 
+ 	tk_update_ktime_data(tk);
+ 
++	update_vsyscall(tk);
++	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
++
+ 	if (action & TK_MIRROR)
+ 		memcpy(&shadow_timekeeper, &tk_core.timekeeper,
+ 		       sizeof(tk_core.timekeeper));
