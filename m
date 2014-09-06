@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751140AbaIFJPw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 05:15:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31625 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817AbaIFJPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 05:15:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="382285042"
-Message-ID: <1409994948.2460.48.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] efi: Resolve some shadow warnings
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: matt.fleming@intel.com, Mark Rustad <mark.d.rustad@intel.com>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 06 Sep 2014 02:15:48 -0700
-In-Reply-To: <20140906090331.GQ3001@console-pimps.org>
-References: <1409967292-31441-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <20140906090331.GQ3001@console-pimps.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-VOWvnzG+Qwg5ec+4dQY3"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+	id S1751268AbaIFJVC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 05:21:02 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:49274 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaIFJU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 05:20:57 -0400
+Message-ID: <540AD288.5050602@gmail.com>
+Date: Sat, 06 Sep 2014 11:23:20 +0200
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Peter Kieser <peter@kieser.ca>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org, stable <stable@vger.kernel.org>
+Subject: Re: [GIT PULL] bcache changes for 3.17
+References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk> <53E7251B.3080305@kieser.ca> <540966BA.9030106@gmail.com> <20140905214532.GA30221@kroah.com>
+In-Reply-To: <20140905214532.GA30221@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/05/2014 11:45 PM, Greg KH wrote:
+> On Fri, Sep 05, 2014 at 09:31:06AM +0200, Francis Moreau wrote:
+>> On 08/10/2014 09:54 AM, Peter Kieser wrote:
+>>>
+>>> On 2014-08-05 9:58 AM, Jens Axboe wrote:
+>>>> On 08/04/2014 10:33 PM, Kent Overstreet wrote:
+>>>>> Hey Jens, here's the pull request for 3.17 - typically late, but lots of tasty
+>>>>> fixes in this one :)
+>>>> Normally I'd say no, but since it's basically just fixes, I guess we can
+>>>> pull it in. But generally, it has to be in my hands a week before this,
+>>>> so it can simmer a bit in for-next before going in...
+>>>>
+>>> Are these fixes going to be backported to 3.10 or other stable releases?
+>>>
+>>
+>> Could you please answer this question ?
+>>
+>> If you don't want to maintain bcache for stable kernels (I can
+>> understand that), can you mark it at least as unstable/experimental
+>> stuff since it really is ?
+> 
+> WTF?
+> 
+> Just because a maintainer/developer doesn't want to do anything for the
+> stable kernel releases does _NOT_ mean the code is
+> "unstable/expreimental" at all.
+> 
+> That's not how stable kernel releases work.  _IF_ a maintainer wants to
+> / has the time to, they can mark patches for inclusion in stable kernel
+> releases.  Given the huge list of patches that Jens just posted, I doubt
+> that those are really something I would ever take for a stable kernel
+> release.
+> 
+> Please read Documentation/stable_kernel_rules.txt for more details
+> please.  And don't ask others to do backporting work for you, it's not
+> ok, and is something that I have always said is never required, and is
+> not going to be.
+> 
 
---=-VOWvnzG+Qwg5ec+4dQY3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+wow, not sure why I deserve such anger...
 
-On Sat, 2014-09-06 at 10:03 +0100, Matt Fleming wrote:
-> On Fri, 05 Sep, at 06:34:52PM, Jeff Kirsher wrote:
-> > From: Mark Rustad <mark.d.rustad@intel.com>
-> >=20
-> > It is a really bad idea to declare variables or parameters that
-> > have the same name as common types. It is valid C, but it gets
-> > surprising if a macro expansion attempts to declare an inner
-> > local with that type. Change the local names to eliminate the
-> > hazard.
-> =20
-> Oops, good catch. Could you include a copy of the compiler shadow
-> warnings in the commit log? I'm guessing this bug is highlighted with
-> -Wshadow? How did you discover this problem?
+Looks like you haven't understood me well and specially I *never* asked
+others to do the backporting for me.
 
-Mark was using W=3D2 to see the warning, so I will see if I can wade
-through the numerous warnings that get generated with W=3D2 for the
-specific warning.
-
->=20
-> > Change s16 =3D> ps16, s8 =3D> ps8.
-> =20
-> Hmm... Instead, could you change it to str16 and str8? s8/s16 were
-> clearly misguided names in the first place, and it's not immediatealy
-> obvious to me that a 'ps16' would represent "pointer to 16-bit string".
->=20
-
-Ok, I can re-spin the patch for Mark, that is if I can capture the
-original warning to add to his commit message.  Otherwise, I will wait
-till Monday to have Mark re-spin the patch.
-
---=-VOWvnzG+Qwg5ec+4dQY3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUCtDEAAoJEOVv75VaS+3OIQIP+wV5dXiuBGv7zkTJEy541X8n
-R9ikVWg0ANQ4VskDDAPJhIMgj0/XEa8gAvx6gYH/Q+kcLBqjUa33fI9rwgm1hz+r
-wf6ie3ZQ6sJvoBt8i838rz7BUGjkftsh9RH3I7mjehGgob3d4BREYs84JM25301G
-khmF28q0JjEGVoDL1HBkgZus543nF6r92yGdJzeG4gHEpJyMckZpCLi6cX/Brv7t
-YGglGeiuQ7gCPxvfkKfnm8or179SAjyZ2AQyoBfEw7fXU7WzgdOmG8t/3oDZWYC8
-VgcFMwsV5dinIk3zYM4GySDjFAbhSLHyYUYibJF9mu7xrVj3fIs3UHaNnxHC9kv9
-8ZimOZKKJkr15rLs5mY5aFzgUgLUtuQ6qt3J9W9Jca8g8PLs4MC66ds7RQjAaaYH
-jNxaVBeQjZE/HUk+vJ7YA8zyjsV0cJait0Jcw9uMdTogHxVYFR1B9yyxH8+uhuLq
-AmzCVkC20nzesh994UF9ZKlyNntBH8NYg0nwMAt1thEPmC7jp2evcWmm/2euGRBz
-RZc/oTayDD9kiY92fATrVY1wF+8KiD42TLQw1NvkC2KaiALr26DIsIhtb5CDskc2
-7avd+/wzY6d0s2Brf8WlTFzDe+Xdnm2FdyK763YzjdE6oNY18BYkLb4C/NxsTqYH
-SzqldEGAleKxBgqy/yMX
-=NGip
------END PGP SIGNATURE-----
-
---=-VOWvnzG+Qwg5ec+4dQY3--
+Please reread the thread, perhaps peaceful music can help too.
 
