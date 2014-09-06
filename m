@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215AbaIFCm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 22:42:57 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54253 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797AbaIFCm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 22:42:56 -0400
-Date: Fri, 5 Sep 2014 19:42:54 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Azael Avalos <coproscefalo@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] toshiba_acpi: Add accelerometer input polled device
-Message-ID: <20140906024253.GB11389@vmdeb7>
-References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
- <1409937247-2525-4-git-send-email-coproscefalo@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409937247-2525-4-git-send-email-coproscefalo@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751176AbaIFCzy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 22:55:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51354 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750818AbaIFCzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 22:55:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="382222538"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] tty/serial/8250: Resolve missing-field-initializers warnings
+Date: Fri,  5 Sep 2014 19:55:49 -0700
+Message-Id: <1409972149-26272-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 11:14:05AM -0600, Azael Avalos wrote:
-> The accelerometer sensor is very sensitive, and having userspace
-> poll the sysfs position entry is not very battery friendly.
-> 
-> This patch removes the sysfs entry and instead, it creates an
-> input polled device (joystick) for the built-in accelerometer.
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-Hrm, while sysfs details can change across kernel versions, usually due to
-driver core changes, we try to keep them as consistent as possible so as not to
-break userspace.
+Resolve some missing-field-initializers warnings by using
+designated initialization in the expansion of the SERIAL_PORT_DFNS
+macro.
 
-That said, if we are going to try and come up with a better model for
-representing an accelerometer, wouldn't treating it as an IIO device be the more
-logical approach?
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ arch/x86/include/asm/serial.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/arch/x86/include/asm/serial.h b/arch/x86/include/asm/serial.h
+index 628c801..03ece8e 100644
+--- a/arch/x86/include/asm/serial.h
++++ b/arch/x86/include/asm/serial.h
+@@ -21,9 +21,9 @@
+ 
+ #define SERIAL_PORT_DFNS			\
+ 	/* UART CLK   PORT IRQ     FLAGS        */			\
+-	{ 0, BASE_BAUD, 0x3F8, 4, STD_COM_FLAGS },	/* ttyS0 */	\
+-	{ 0, BASE_BAUD, 0x2F8, 3, STD_COM_FLAGS },	/* ttyS1 */	\
+-	{ 0, BASE_BAUD, 0x3E8, 4, STD_COM_FLAGS },	/* ttyS2 */	\
+-	{ 0, BASE_BAUD, 0x2E8, 3, STD_COM4_FLAGS },	/* ttyS3 */
++	{ .uart = 0, BASE_BAUD, 0x3F8, 4, STD_COM_FLAGS }, /* ttyS0 */	\
++	{ .uart = 0, BASE_BAUD, 0x2F8, 3, STD_COM_FLAGS }, /* ttyS1 */	\
++	{ .uart = 0, BASE_BAUD, 0x3E8, 4, STD_COM_FLAGS }, /* ttyS2 */	\
++	{ .uart = 0, BASE_BAUD, 0x2E8, 3, STD_COM4_FLAGS }, /* ttyS3 */
+ 
+ #endif /* _ASM_X86_SERIAL_H */
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.9.3
+
