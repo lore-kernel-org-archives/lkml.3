@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279AbaIFRxD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 13:53:03 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:63244 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaIFRwz (ORCPT
+	id S1752182AbaIFSOU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 14:14:20 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:61021 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352AbaIFSOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 13:52:55 -0400
-From: =?UTF-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: =?utf-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>
-Subject: [PATCHv4 1/4] ARM: at91/tclib: prefer using of devm_* functions
-Date: Sat,  6 Sep 2014 19:52:34 +0200
-Message-Id: <1410025957-5952-2-git-send-email-gael.portay@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410025957-5952-1-git-send-email-gael.portay@gmail.com>
-References: <1410025957-5952-1-git-send-email-gael.portay@gmail.com>
+	Sat, 6 Sep 2014 14:14:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140906153245.GA25739@roeck-us.net>
+References: <20140905165052.GF29327@sirena.org.uk>
+	<20140906153245.GA25739@roeck-us.net>
+Date: Sat, 6 Sep 2014 20:14:17 +0200
+X-Google-Sender-Auth: YpsGPUQ91c9LbxbTaTgt6b9EqsY
+Message-ID: <CAMuHMdVrr5H7iij45QR+opMdUy16mJjiXngis1+x_=SK=6wggQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Sep 5: build error due to 'ath5k: added
+ debugfs file for dumping eeprom'
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Mark Brown <broonie@kernel.org>, Jade Bilkey <herself@thefumon.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- drivers/misc/atmel_tclib.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+On Sat, Sep 6, 2014 at 5:32 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> I see the following build error on linux-next-20140905.
+>
+> Guenter
+>
+> ---
+>
+> Building alpha:allmodconfig ... failed
+> Building sparc64:allmodconfig ... failed
+>
+> drivers/net/wireless/ath/ath5k/debug.c: In function 'open_file_eeprom':
+> drivers/net/wireless/ath/ath5k/debug.c:933:2: error:
+>         implicit declaration of function 'vmalloc' [-Werror=implicit-function-declaration]
+> drivers/net/wireless/ath/ath5k/debug.c:933:6: warning:
+>         assignment makes pointer from integer without a cast [enabled by default]
+> drivers/net/wireless/ath/ath5k/debug.c:960:2: error:
+>         implicit declaration of function 'vfree' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
 
-diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
-index c8d8e38..b514a2d 100644
---- a/drivers/misc/atmel_tclib.c
-+++ b/drivers/misc/atmel_tclib.c
-@@ -150,17 +150,15 @@ static int __init tc_probe(struct platform_device *pdev)
- 	if (irq < 0)
- 		return -EINVAL;
- 
--	tc = kzalloc(sizeof(struct atmel_tc), GFP_KERNEL);
-+	tc = devm_kzalloc(&pdev->dev, sizeof(struct atmel_tc), GFP_KERNEL);
- 	if (!tc)
- 		return -ENOMEM;
- 
- 	tc->pdev = pdev;
- 
--	clk = clk_get(&pdev->dev, "t0_clk");
--	if (IS_ERR(clk)) {
--		kfree(tc);
--		return -EINVAL;
--	}
-+	clk = devm_clk_get(&pdev->dev, "t0_clk");
-+	if (IS_ERR(clk))
-+		return PTR_ERR(clk);
- 
- 	/* Now take SoC information if available */
- 	if (pdev->dev.of_node) {
-@@ -171,10 +169,10 @@ static int __init tc_probe(struct platform_device *pdev)
- 	}
- 
- 	tc->clk[0] = clk;
--	tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
-+	tc->clk[1] = devm_clk_get(&pdev->dev, "t1_clk");
- 	if (IS_ERR(tc->clk[1]))
- 		tc->clk[1] = clk;
--	tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
-+	tc->clk[2] = devm_clk_get(&pdev->dev, "t2_clk");
- 	if (IS_ERR(tc->clk[2]))
- 		tc->clk[2] = clk;
- 
+Missing #include <linux/vmalloc.h>?
+
+> make[5]: *** [drivers/net/wireless/ath/ath5k/debug.o] Error 1
+> make[4]: *** [drivers/net/wireless/ath/ath5k] Error 2
+> make[3]: *** [drivers/net/wireless/ath] Error 2
+>
+> Bisect results:
+>
+> db906eb2101b0564b0c65edf4a8647395196342e is the first bad commit
+> commit db906eb2101b0564b0c65edf4a8647395196342e
+> Author: Jade Bilkey <herself@thefumon.com>
+> Date:   Sat Aug 30 15:14:14 2014 -0400
+>
+> ath5k: added debugfs file for dumping eeprom
+>
+> Signed-off-by: Jade Bilkey <herself@thefumon.com>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+
+
+
+
 -- 
-1.9.3
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
