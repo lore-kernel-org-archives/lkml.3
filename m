@@ -1,74 +1,438 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359AbaIFNIC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 09:08:02 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:53461 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaIFNH5 (ORCPT
+	id S1751413AbaIFNfW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 09:35:22 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:63461 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbaIFNfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 09:07:57 -0400
-X-AuditID: cbfee68d-f79c46d000000b84-2e-540b072b680b
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, s.nawrocki@samsung.com,
-        mturquette@linaro.org, naushad@samsung.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH] clk: samsung: exynos3250: fix mout_cam_blk parent list
-Date: Sat, 06 Sep 2014 18:33:33 +0530
-Message-id: <1410008613-20861-1-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsWyRsSkRlebnTvE4P0hbYveBVfZLDY9vsZq
-	cXnXHDaLGef3MVk8nXCRzeLT0f+sFou2fmG3OPymndVi1a4/jA6cHjtn3WX3uHNtD5vH5iX1
-	Hn1bVjF6fN4kF8AaxWWTkpqTWZZapG+XwJWxd14LS8Fbtorz+xayNjAeZe1i5OSQEDCRWHHo
-	AAuELSZx4d56ti5GLg4hgaWMEi9P7QFyOMCKzhyug4gvYpT4NOcjC4QzgUniaM9kNpBuNgFd
-	iSfv5zKD2CIC2RL9t1eDFTELLGSU2HX3Gtg6YQF3iY3X7oLZLAKqEm+urmAF2cAr4CGxr9cC
-	YpmCxJxJNiCtEgLd7BJtzQ3MEOUCEt8mH2KBqJGV2HSAGeJoSYmDK26wTGAUXMDIsIpRNLUg
-	uaA4Kb3IUK84Mbe4NC9dLzk/dxMjMIxP/3vWu4Px9gHrQ4wCHIxKPLwnnLhChFgTy4orcw8x
-	mgJtmMgsJZqcD4yWvJJ4Q2MzIwtTE1NjI3NLMyVxXkWpn8FCAumJJanZqakFqUXxRaU5qcWH
-	GJk4OKUaGK+b+n372BbjWXPyc2nEq3lHL1gul2bXVtpRNK0kTyd32swntrGR59jyDCOa2n5H
-	8+v8NZQxmKdY59+dz6G3RGnZ/K535xuMjx7M7G0VWpGx6d6PPvG3BS8EOUsedk620Dd+8mpd
-	1Euj+FOvMpNeiP2TFM38u7471kBa8brQnvVKPoHRDmdslViKMxINtZiLihMByosbrF4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jAV1tdu4QgxeLlSx6F1xls9j0+Bqr
-	xeVdc9gsZpzfx2TxdMJFNotPR/+zWiza+oXd4vCbdlaLVbv+MDpweuycdZfd4861PWwem5fU
-	e/RtWcXo8XmTXABrVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqt
-	kotPgK5bZg7QQUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjL3zWlgK
-	3rJVnN+3kLWB8ShrFyMHh4SAicSZw3VdjJxAppjEhXvr2boYuTiEBBYxSnya85EFwpnAJHG0
-	ZzIbSBWbgK7Ek/dzmUFsEYFsif7bq8GKmAUWMkrsunuNFSQhLOAusfHaXTCbRUBV4s3VFWDb
-	eAU8JPb1WkAsVpCYM8lmAiP3AkaGVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBUfJMegfj
-	qgaLQ4wCHIxKPLyFDlwhQqyJZcWVuYcYJTiYlUR4OyYDhXhTEiurUovy44tKc1KLDzGaAu2e
-	yCwlmpwPjOC8knhDYxNzU2NTSxMLEzNLJXHeg63WgUIC6YklqdmpqQWpRTB9TBycUg2MFidz
-	XY/MMquNiz9qtqNi73LBo1qVq2ZYBIhN+MNY8uJLfH12ALPcwlms7AEiDWcfhosfYXpsH3xv
-	bqd00atdsfM+nZu/Z/ZUk2zpes/6+zoTDvnJyN849OCl0ALndWcPt635+9dVrcqhfN/Vb34O
-	21WKkhlC2jUdArU4uoqd4/93/Oq7v2+pEktxRqKhFnNRcSIAlw7896gCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sat, 6 Sep 2014 09:35:18 -0400
+Date: Sat, 6 Sep 2014 15:35:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Catalin Iacob <iacobcatalin@gmail.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 3/9] irq_work: Force raised irq work to run on irq
+ work interrupt
+Message-ID: <20140906133513.GA1471@lerouge>
+References: <1408632777-3348-1-git-send-email-fweisbec@gmail.com>
+ <1408632777-3348-4-git-send-email-fweisbec@gmail.com>
+ <20140904061137.GB3190@worktop.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904061137.GB3190@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per user manual of Exynos3250 SRC_CAM can select
-div_cam_blk_320 if it's value is 0xC, so placing
-div_cam_blk_320 at proper index in parent list of mout_cam_blk.
+On Thu, Sep 04, 2014 at 08:11:37AM +0200, Peter Zijlstra wrote:
+> On Thu, Aug 21, 2014 at 04:52:51PM +0200, Frederic Weisbecker wrote:
+> > diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> > index e6bcbe7..17bd203 100644
+> > --- a/kernel/irq_work.c
+> > +++ b/kernel/irq_work.c
+> > @@ -22,6 +22,7 @@
+> >  
+> >  static DEFINE_PER_CPU(struct llist_head, raised_list);
+> >  static DEFINE_PER_CPU(struct llist_head, lazy_list);
+> > +static bool has_own_interrupt;
+> >  
+> >  /*
+> >   * Claim the entry so that no one else will poke at it.
+> 
+> > +void irq_work_tick(void)
+> > +{
+> > +	if (!has_own_interrupt)
+> > +		irq_work_run_list(&__get_cpu_var(raised_list));
+> > +	irq_work_run_list(&__get_cpu_var(lazy_list));
+> > +}
+> > +
+> >  /*
+> >   * Synchronize against the irq_work @entry, ensures the entry is not
+> >   * currently in use.
+> 
+> Why not something like the below; then it becomes a compile time matter.
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
- drivers/clk/samsung/clk-exynos3250.c |    1 +
- 1 file changed, 1 insertion(+)
+You have a script that does that arch/*/include/asm/Kbuild edit for you right?
+Is this something in scripts/ ?
 
-diff --git a/drivers/clk/samsung/clk-exynos3250.c b/drivers/clk/samsung/clk-exynos3250.c
-index e1cb464..ba8f073f 100644
---- a/drivers/clk/samsung/clk-exynos3250.c
-+++ b/drivers/clk/samsung/clk-exynos3250.c
-@@ -248,6 +248,7 @@ PNAME(group_sclk_cam_blk_p)	= { "xxti", "xusbxti",
- 				    "none", "none", "none",
- 				    "none", "div_mpll_pre",
- 				    "mout_epll_user", "mout_vpll",
-+				    "none", "none", "none",
- 				    "div_cam_blk_320", };
- PNAME(group_sclk_fimd0_p)	= { "xxti", "xusbxti",
- 				    "m_bitclkhsdiv4_2l", "none",
--- 
-1.7.9.5
-
+Thanks.
+ 
+> ---
+> diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> index e858aa0..a52cbf1 100644
+> --- a/arch/alpha/include/asm/Kbuild
+> +++ b/arch/alpha/include/asm/Kbuild
+> @@ -4,6 +4,7 @@ generic-y += clkdev.h
+>  generic-y += cputime.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+>  generic-y += scatterlist.h
+> diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
+> index e76fd79..b8fffc1 100644
+> --- a/arch/arc/include/asm/Kbuild
+> +++ b/arch/arc/include/asm/Kbuild
+> @@ -18,6 +18,7 @@ generic-y += ioctl.h
+>  generic-y += ioctls.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kmap_types.h
+>  generic-y += kvm_para.h
+>  generic-y += local.h
+> diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
+> index 70cd84e..202905e 100644
+> --- a/arch/arm/include/asm/Kbuild
+> +++ b/arch/arm/include/asm/Kbuild
+> @@ -11,6 +11,7 @@ generic-y += hash.h
+>  generic-y += ioctl.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += local.h
+>  generic-y += local64.h
+> diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
+> index 0b3fcf8..d617789 100644
+> --- a/arch/arm64/include/asm/Kbuild
+> +++ b/arch/arm64/include/asm/Kbuild
+> @@ -9,8 +9,8 @@ generic-y += current.h
+>  generic-y += delay.h
+>  generic-y += div64.h
+>  generic-y += dma.h
+> -generic-y += emergency-restart.h
+>  generic-y += early_ioremap.h
+> +generic-y += emergency-restart.h
+>  generic-y += errno.h
+>  generic-y += ftrace.h
+>  generic-y += hash.h
+> @@ -19,6 +19,7 @@ generic-y += ioctl.h
+>  generic-y += ioctls.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += kvm_para.h
+> diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
+> index 00a0f3c..2a71b1c 100644
+> --- a/arch/avr32/include/asm/Kbuild
+> +++ b/arch/avr32/include/asm/Kbuild
+> @@ -9,6 +9,7 @@ generic-y += exec.h
+>  generic-y += futex.h
+>  generic-y += hash.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += local.h
+>  generic-y += local64.h
+>  generic-y += mcs_spinlock.h
+> diff --git a/arch/blackfin/include/asm/Kbuild b/arch/blackfin/include/asm/Kbuild
+> index 0d93b9a..46ed6bb 100644
+> --- a/arch/blackfin/include/asm/Kbuild
+> +++ b/arch/blackfin/include/asm/Kbuild
+> @@ -15,6 +15,7 @@ generic-y += hw_irq.h
+>  generic-y += ioctl.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += kvm_para.h
+> diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
+> index 8dbdce8..e77e0c1 100644
+> --- a/arch/c6x/include/asm/Kbuild
+> +++ b/arch/c6x/include/asm/Kbuild
+> @@ -22,6 +22,7 @@ generic-y += ioctl.h
+>  generic-y += ioctls.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += local.h
+> diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+> index 31742df..802b94c4 100644
+> --- a/arch/cris/include/asm/Kbuild
+> +++ b/arch/cris/include/asm/Kbuild
+> @@ -8,6 +8,7 @@ generic-y += clkdev.h
+>  generic-y += cputime.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += kvm_para.h
+>  generic-y += linkage.h
+>  generic-y += mcs_spinlock.h
+> diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
+> index 5b73921..3caf05c 100644
+> --- a/arch/frv/include/asm/Kbuild
+> +++ b/arch/frv/include/asm/Kbuild
+> @@ -3,6 +3,7 @@ generic-y += clkdev.h
+>  generic-y += cputime.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+>  generic-y += scatterlist.h
+> diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
+> index 0e69796..5f234a5 100644
+> --- a/arch/hexagon/include/asm/Kbuild
+> +++ b/arch/hexagon/include/asm/Kbuild
+> @@ -23,6 +23,7 @@ generic-y += ioctls.h
+>  generic-y += iomap.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += local.h
+> diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
+> index e8317d2..747320b 100644
+> --- a/arch/ia64/include/asm/Kbuild
+> +++ b/arch/ia64/include/asm/Kbuild
+> @@ -2,6 +2,7 @@
+>  generic-y += clkdev.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += kvm_para.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+> diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
+> index accc10a..e02448b 100644
+> --- a/arch/m32r/include/asm/Kbuild
+> +++ b/arch/m32r/include/asm/Kbuild
+> @@ -3,6 +3,7 @@ generic-y += clkdev.h
+>  generic-y += cputime.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += module.h
+>  generic-y += preempt.h
+> diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
+> index c67c94a..dbaf9f3 100644
+> --- a/arch/m68k/include/asm/Kbuild
+> +++ b/arch/m68k/include/asm/Kbuild
+> @@ -11,6 +11,7 @@ generic-y += hw_irq.h
+>  generic-y += ioctl.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += kvm_para.h
+> diff --git a/arch/metag/include/asm/Kbuild b/arch/metag/include/asm/Kbuild
+> index c29ead8..7b8111c 100644
+> --- a/arch/metag/include/asm/Kbuild
+> +++ b/arch/metag/include/asm/Kbuild
+> @@ -19,6 +19,7 @@ generic-y += ioctl.h
+>  generic-y += ioctls.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += kvm_para.h
+> diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
+> index 27a3acd..448143b 100644
+> --- a/arch/microblaze/include/asm/Kbuild
+> +++ b/arch/microblaze/include/asm/Kbuild
+> @@ -5,6 +5,7 @@ generic-y += cputime.h
+>  generic-y += device.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+>  generic-y += scatterlist.h
+> diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
+> index 335e529..57012ef 100644
+> --- a/arch/mips/include/asm/Kbuild
+> +++ b/arch/mips/include/asm/Kbuild
+> @@ -3,6 +3,7 @@ generic-y += cputime.h
+>  generic-y += current.h
+>  generic-y += emergency-restart.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += local64.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += mutex.h
+> diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
+> index ecbd667..77eb1a6 100644
+> --- a/arch/mn10300/include/asm/Kbuild
+> +++ b/arch/mn10300/include/asm/Kbuild
+> @@ -4,6 +4,7 @@ generic-y += clkdev.h
+>  generic-y += cputime.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+>  generic-y += scatterlist.h
+> diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
+> index 480af0d..89b61d7 100644
+> --- a/arch/openrisc/include/asm/Kbuild
+> +++ b/arch/openrisc/include/asm/Kbuild
+> @@ -31,6 +31,7 @@ generic-y += ioctl.h
+>  generic-y += ioctls.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += kvm_para.h
+> diff --git a/arch/parisc/include/asm/Kbuild b/arch/parisc/include/asm/Kbuild
+> index ecf25e6..ffb024b 100644
+> --- a/arch/parisc/include/asm/Kbuild
+> +++ b/arch/parisc/include/asm/Kbuild
+> @@ -10,6 +10,7 @@ generic-y += exec.h
+>  generic-y += hash.h
+>  generic-y += hw_irq.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kvm_para.h
+>  generic-y += local.h
+> diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
+> index 7f23f16..31e8f59 100644
+> --- a/arch/powerpc/include/asm/Kbuild
+> +++ b/arch/powerpc/include/asm/Kbuild
+> @@ -1,6 +1,7 @@
+>  
+>  generic-y += clkdev.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+>  generic-y += rwsem.h
+> diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
+> index b3fea07..773f866 100644
+> --- a/arch/s390/include/asm/Kbuild
+> +++ b/arch/s390/include/asm/Kbuild
+> @@ -2,6 +2,7 @@
+>  
+>  generic-y += clkdev.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+>  generic-y += scatterlist.h
+> diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
+> index aad2091..1909d2a 100644
+> --- a/arch/score/include/asm/Kbuild
+> +++ b/arch/score/include/asm/Kbuild
+> @@ -6,6 +6,7 @@ generic-y += barrier.h
+>  generic-y += clkdev.h
+>  generic-y += cputime.h
+>  generic-y += hash.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += preempt.h
+>  generic-y += scatterlist.h
+> diff --git a/arch/sh/include/asm/Kbuild b/arch/sh/include/asm/Kbuild
+> index c19e47d..5a6c9ac 100644
+> --- a/arch/sh/include/asm/Kbuild
+> +++ b/arch/sh/include/asm/Kbuild
+> @@ -12,6 +12,7 @@ generic-y += hash.h
+>  generic-y += ioctl.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kvm_para.h
+>  generic-y += local.h
+>  generic-y += local64.h
+> diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
+> index cdd1b44..f5f94ce 100644
+> --- a/arch/sparc/include/asm/Kbuild
+> +++ b/arch/sparc/include/asm/Kbuild
+> @@ -8,6 +8,7 @@ generic-y += emergency-restart.h
+>  generic-y += exec.h
+>  generic-y += hash.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += linkage.h
+>  generic-y += local.h
+>  generic-y += local64.h
+> diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
+> index 0aa5675..e6462b8 100644
+> --- a/arch/tile/include/asm/Kbuild
+> +++ b/arch/tile/include/asm/Kbuild
+> @@ -17,6 +17,7 @@ generic-y += ioctl.h
+>  generic-y += ioctls.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += local.h
+>  generic-y += local64.h
+>  generic-y += mcs_spinlock.h
+> diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+> index 7bd64aa..244b12c 100644
+> --- a/arch/um/include/asm/Kbuild
+> +++ b/arch/um/include/asm/Kbuild
+> @@ -14,6 +14,7 @@ generic-y += hash.h
+>  generic-y += hw_irq.h
+>  generic-y += io.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += mutex.h
+> diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
+> index 1e5fb87..5a2bb53 100644
+> --- a/arch/unicore32/include/asm/Kbuild
+> +++ b/arch/unicore32/include/asm/Kbuild
+> @@ -22,6 +22,7 @@ generic-y += ioctl.h
+>  generic-y += ioctls.h
+>  generic-y += ipcbuf.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += local.h
+> diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
+> index 3bf000f..8fa909c 100644
+> --- a/arch/x86/include/asm/Kbuild
+> +++ b/arch/x86/include/asm/Kbuild
+> @@ -7,5 +7,6 @@ genhdr-y += unistd_x32.h
+>  generic-y += clkdev.h
+>  generic-y += cputime.h
+>  generic-y += early_ioremap.h
+> +generic-y += irq_work.h
+>  generic-y += mcs_spinlock.h
+>  generic-y += scatterlist.h
+> diff --git a/arch/xtensa/include/asm/Kbuild b/arch/xtensa/include/asm/Kbuild
+> index c3d20ba..105d389 100644
+> --- a/arch/xtensa/include/asm/Kbuild
+> +++ b/arch/xtensa/include/asm/Kbuild
+> @@ -12,6 +12,7 @@ generic-y += hardirq.h
+>  generic-y += hash.h
+>  generic-y += ioctl.h
+>  generic-y += irq_regs.h
+> +generic-y += irq_work.h
+>  generic-y += kdebug.h
+>  generic-y += kmap_types.h
+>  generic-y += kvm_para.h
+> diff --git a/include/asm-generic/irq_work.h b/include/asm-generic/irq_work.h
+> index e69de29..e962b41 100644
+> --- a/include/asm-generic/irq_work.h
+> +++ b/include/asm-generic/irq_work.h
+> @@ -0,0 +1,10 @@
+> +#ifndef __ASM_IRQ_WORK_H
+> +#define __ASM_IRQ_WORK_H
+> +
+> +static inline bool arch_irq_work_interrupt(void)
+> +{
+> +	return false;
+> +}
+> +
+> +#undef /* __ASM_IRQ_WORK_H */
+> +
