@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaIFQtT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 12:49:19 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:45883 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaIFQtR (ORCPT
+	id S1751950AbaIFRMf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 13:12:35 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:51932 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381AbaIFRMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 12:49:17 -0400
-Message-ID: <540B3B0A.5040307@contactless.ru>
-Date: Sat, 06 Sep 2014 20:49:14 +0400
-From: Evgeny Boger <boger@contactless.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sat, 6 Sep 2014 13:12:34 -0400
+Date: Sat, 6 Sep 2014 19:12:26 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Catalin Iacob <iacobcatalin@gmail.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 3/9] irq_work: Force raised irq work to run on irq
+ work interrupt
+Message-ID: <20140906171223.GB1471@lerouge>
+References: <1408632777-3348-1-git-send-email-fweisbec@gmail.com>
+ <1408632777-3348-4-git-send-email-fweisbec@gmail.com>
+ <20140904061137.GB3190@worktop.ger.corp.intel.com>
+ <20140906133513.GA1471@lerouge>
+ <20140906154556.GO19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Alexander Shiyan <shc_work@mail.ru>
-CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add support for always enabled watchdog timers
-References: <1408236338-12555-1-git-send-email-boger@contactless.ru> <53F8CC58.2030406@roeck-us.net> <1408814702.730436497@f133.i.mail.ru> <53F8D052.6060705@roeck-us.net>
-In-Reply-To: <53F8D052.6060705@roeck-us.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140906154556.GO19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2014 09:33 PM, Guenter Roeck wrote:
-> On 08/23/2014 10:25 AM, Alexander Shiyan wrote:
->> Sat, 23 Aug 2014 10:16:08 -0700 от Guenter Roeck <linux@roeck-us.net>:
->>> On 08/16/2014 05:45 PM, Evgeny Boger wrote:
->>>> From: Evgeny Boger <boger@contactless.ru>
->>>>
->>>> Add option to use with watchdog timers which are always enabled
->>>> in hardware, i.e. there is no way to enable/disable it via GPIO pin.
->>>> The driver will start pinging WDT immediately upon loading
->>>> and will continue to do so even after stopping the watchdog.
->>>>
->>> The headline needs a reference to the affected driver.
->>>
->>> Also, please copy the dt mailing list and maintainers.
->>>
->>>> Signed-off-by: Evgeny Boger <boger@contactless.ru>
->>>> ---
->>>>    .../devicetree/bindings/watchdog/gpio-wdt.txt      | 14 ++++++-
->>>>    drivers/watchdog/gpio_wdt.c                        | 45 
->>>> +++++++++++++++++-----
->>>>    2 files changed, 48 insertions(+), 11 deletions(-)
->>>>
->>>> diff --git 
->>>> a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt 
->>>> b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
->>>> index 37afec1..1f8ca46 100644
->>>> --- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
->>>> +++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
->>>> @@ -12,8 +12,11 @@ Required Properties:
->>>>        the opposite level disables the WDT. Active level is determined
->>>>        by the GPIO flags.
->>>>    - hw_margin_ms: Maximum time to reset watchdog circuit 
->>>> (milliseconds).
->>>> +- always-enabled: Use with wathdog timer which is always enabled
->>
->> Similar to NOWAYOUT?
->>
-> I think this one is different. NOWAYOUT is a software flag, while
-> the flag here is supposed to mean that the hardware watchdog
-> is always enabled and running, and can not be disabled. Or at least
-> this is my understanding.
+On Sat, Sep 06, 2014 at 05:45:56PM +0200, Peter Zijlstra wrote:
+> On Sat, Sep 06, 2014 at 03:35:15PM +0200, Frederic Weisbecker wrote:
+> > You have a script that does that arch/*/include/asm/Kbuild edit for you right?
+> > Is this something in scripts/ ?
+> 
+> See commit b119fa61d440 ("locking/mcs: Order the header files in Kbuild
+> of each architecture in alphabetical order")
+> 
+> That script is a little buggy, but should work in the current case. So
+> first do something like:
+> 
+> 	for i in arch/*/include/asm/Kbuild; do
+> 		echo "generic-y += foo.h" >> $i;
+> 	done
+> 
+> Then run that script.
+> 
+> IIRC the bug was where a single line contained multiple headers and/or a
+> continuation. I should have a better version somewhere, but this one was
+> easier to find.
 
-exactly
+I see. Meanwhile I've applied your suggestion as a separate patch in
+the series. May I use your SOB?
 
->
-> Guenter
->
-
-
--- 
-С уважением,
-     Евгений Богер
-     ООО Бесконтактные устройства
-     http://contactless.ru
-     +7 (919) 965 88 36
-
+Thanks!
