@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaIFLBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 07:01:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57049 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaIFLBw (ORCPT
+	id S1751400AbaIFLLb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 07:11:31 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53000 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaIFLL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 07:01:52 -0400
-Date: Sat, 6 Sep 2014 04:01:31 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-9bf2419fa7bffa16ce58a4d5c20399eff8c970c9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        gleb@kernel.org, john.stultz@linaro.org, pbonzini@redhat.com,
-        chris.j.arges@canonical.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gleb@kernel.org, john.stultz@linaro.org, pbonzini@redhat.com,
-        chris.j.arges@canonical.com, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.10.1409050000570.3333@nanos>
-References: <alpine.DEB.2.10.1409050000570.3333@nanos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] timekeeping:
-  Update timekeeper before updating vsyscall and pvclock
-Git-Commit-ID: 9bf2419fa7bffa16ce58a4d5c20399eff8c970c9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Sat, 6 Sep 2014 07:11:29 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>
+Date: Sat,  6 Sep 2014 12:11:21 +0100
+Message-Id: <1410001881-14417-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.1.0
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: tps65217: Remove spurious platform data check
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9bf2419fa7bffa16ce58a4d5c20399eff8c970c9
-Gitweb:     http://git.kernel.org/tip/9bf2419fa7bffa16ce58a4d5c20399eff8c970c9
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sat, 6 Sep 2014 12:24:49 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 6 Sep 2014 12:58:18 +0200
+We should always be able to probe a regulator with no platform data. This
+will enable readback of current state, though no changes can be made to
+the device configuration.
 
-timekeeping: Update timekeeper before updating vsyscall and pvclock
-
-The update_walltime() code works on the shadow timekeeper to make the
-seqcount protected region as short as possible. But that update to the
-shadow timekeeper does not update all timekeeper fields because it's
-sufficient to do that once before it becomes life. One of these fields
-is tkr.base_mono. That stays stale in the shadow timekeeper unless an
-operation happens which copies the real timekeeper to the shadow.
-
-The update function is called after the update calls to vsyscall and
-pvclock. While not correct, it did not cause any problems because none
-of the invoked update functions used base_mono.
-
-commit cbcf2dd3b3d4 (x86: kvm: Make kvm_get_time_and_clockread()
-nanoseconds based) changed that in the kvm pvclock update function, so
-the stale mono_base value got used and caused kvm-clock to malfunction.
-
-Put the update where it belongs and fix the issue.
-
-Reported-by: Chris J Arges <chris.j.arges@canonical.com>
-Reported-by: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409050000570.3333@nanos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 ---
- kernel/time/timekeeping.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/regulator/tps65217-regulator.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index fb4a9c2..ec1791f 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -442,11 +442,12 @@ static void timekeeping_update(struct timekeeper *tk, unsigned int action)
- 		tk->ntp_error = 0;
- 		ntp_clear();
- 	}
--	update_vsyscall(tk);
--	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
+diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
+index d58db72a63b0..1cf16aed9735 100644
+--- a/drivers/regulator/tps65217-regulator.c
++++ b/drivers/regulator/tps65217-regulator.c
+@@ -230,11 +230,6 @@ static int tps65217_regulator_probe(struct platform_device *pdev)
+ 	if (tps->dev->of_node)
+ 		pdata = tps65217_parse_dt(pdev);
  
- 	tk_update_ktime_data(tk);
- 
-+	update_vsyscall(tk);
-+	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
-+
- 	if (action & TK_MIRROR)
- 		memcpy(&shadow_timekeeper, &tk_core.timekeeper,
- 		       sizeof(tk_core.timekeeper));
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "Platform data not found\n");
+-		return -EINVAL;
+-	}
+-
+ 	if (tps65217_chip_id(tps) != TPS65217) {
+ 		dev_err(&pdev->dev, "Invalid tps chip version\n");
+ 		return -ENODEV;
+@@ -245,7 +240,8 @@ static int tps65217_regulator_probe(struct platform_device *pdev)
+ 	for (i = 0; i < TPS65217_NUM_REGULATOR; i++) {
+ 		/* Register the regulators */
+ 		config.dev = tps->dev;
+-		config.init_data = pdata->tps65217_init_data[i];
++		if (pdata)
++			config.init_data = pdata->tps65217_init_data[i];
+ 		config.driver_data = tps;
+ 		config.regmap = tps->regmap;
+ 		if (tps->dev->of_node)
+-- 
+2.1.0
+
