@@ -1,121 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750910AbaIFEjI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 00:39:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59734 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIFEjF (ORCPT
+	id S1750967AbaIFEtM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 00:49:12 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:42255 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaIFEtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 00:39:05 -0400
-Date: Fri, 05 Sep 2014 21:39:02 -0700 (PDT)
-Message-Id: <20140905.213902.1124686922505260665.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: prashant@broadcom.com, bpoirier@suse.de, mchan@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net v6 4/4] tg3: Fix tx_pending checks for tg3_tso_bug
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140905.171306.1460013939580748402.davem@davemloft.net>
-References: <1409960135.18724.33.camel@prashant>
-	<1409961810.26422.149.camel@edumazet-glaptop2.roam.corp.google.com>
-	<20140905.171306.1460013939580748402.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Sep 2014 21:39:04 -0700 (PDT)
+	Sat, 6 Sep 2014 00:49:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140906023537.GA11389@vmdeb7>
+References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
+	<1409937247-2525-3-git-send-email-coproscefalo@gmail.com>
+	<20140906023537.GA11389@vmdeb7>
+Date: Fri, 5 Sep 2014 22:49:09 -0600
+Message-ID: <CAGdLNWHRU9sD9Ot2RcmEXA0HdLuQ=r=mYPsiS1SMcwwuxfpEeQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] toshiba_acpi: Fix illumination not available on
+ certain models
+From: Azael Avalos <coproscefalo@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Fri, 05 Sep 2014 17:13:06 -0700 (PDT)
+Hi there
 
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Fri, 05 Sep 2014 17:03:30 -0700
-> 
->> Instead of this private helper (and pretty limited one btw), we could
->> add a core function, that would build skbs with order-0 fragments.
->> 
->> Instead of skb_linearize(), I guess many call sites could instead use
->> this new helper.
->> 
->> Because as you said, skb_linearize() of one 64KB GSO packet can ask
->> order-5 allocations, and this generally does not work reliably.
-> 
-> xen-netback could make use of this helper too.
+2014-09-05 20:35 GMT-06:00 Darren Hart <dvhart@infradead.org>:
+> On Fri, Sep 05, 2014 at 11:14:04AM -0600, Azael Avalos wrote:
+>> Some Toshiba models with illumination support set a different
+>> value on the returned codes, thus not allowing the illumination
+>> LED to be registered, where it should be.
+>>
+>> This patch removes a check from toshiba_illumination_available
+>> function to allow such models to register the illumination LED.
+>>
+>> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+>> ---
+>>  drivers/platform/x86/toshiba_acpi.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+>> index a149bc6..4803e7b 100644
+>> --- a/drivers/platform/x86/toshiba_acpi.c
+>> +++ b/drivers/platform/x86/toshiba_acpi.c
+>> @@ -436,7 +436,7 @@ static int toshiba_illumination_available(struct toshiba_acpi_dev *dev)
+>>       if (ACPI_FAILURE(status) || out[0] == HCI_FAILURE) {
+>>               pr_err("ACPI call to query Illumination support failed\n");
+>>               return 0;
+>> -     } else if (out[0] == HCI_NOT_SUPPORTED || out[1] != 1) {
+>> +     } else if (out[0] == HCI_NOT_SUPPORTED) {
+>
+> OK, but by eliminating the check, supposedly certain models which do not support
+> illumination but do not report it via out[0], but instead via out[1], will now
+> attempt to use illumination - correct?
 
-I was curious what it might look like so I cobbled the following
-completely untested patch together :-)
+Oh no, the main check is out[0], which either hold success if the
+feature is supported
+or an HCI/SCI error otherwise.
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index da1378a..eba0ad6 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -955,6 +955,67 @@ struct sk_buff *skb_copy(const struct sk_buff *skb, gfp_t gfp_mask)
- EXPORT_SYMBOL(skb_copy);
- 
- /**
-+ *	skb_copy_pskb	-	copy sk_buff into a paged skb
-+ *	@oskb: buffer to copy
-+ *	@gfp_mask: allocation priority
-+ *
-+ *	Normalize a paged skb into one that maximally uses order
-+ *	zero pages in it's fragment array.  This is used to canonicalize
-+ *	spaghetti SKBs that use the page array inefficiently (f.e. only
-+ *	one byte per page frag).
-+ */
-+
-+struct sk_buff *skb_copy_pskb(const struct sk_buff *oskb, gfp_t gfp_mask)
-+{
-+	unsigned int data_len = oskb->data_len;
-+	int offset, npages, i;
-+	struct sk_buff *skb;
-+
-+	npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
-+	if (npages > MAX_SKB_FRAGS)
-+		return NULL;
-+
-+	skb = __alloc_skb(skb_end_offset(oskb), gfp_mask,
-+			  skb_alloc_rx_flag(oskb), NUMA_NO_NODE);
-+	if (!skb)
-+		return NULL;
-+
-+	skb_reserve(skb, skb_headroom(oskb));
-+	skb_put(skb, skb_headlen(oskb));
-+	skb_copy_from_linear_data(oskb, skb->data, skb->len);
-+
-+	copy_skb_header(skb, oskb);
-+
-+	skb->truesize += data_len;
-+	offset = skb_headlen(oskb);
-+	for (i = 0; i < npages; i++) {
-+		struct page *page = alloc_page(gfp_mask);
-+		unsigned int chunk;
-+		u8 *vaddr;
-+
-+		if (!page) {
-+			kfree(skb);
-+			skb = NULL;
-+			break;
-+		}
-+
-+		chunk = min_t(unsigned int, data_len, PAGE_SIZE);
-+		skb_fill_page_desc(skb, i, page, 0, chunk);
-+
-+		vaddr = kmap_atomic(page);
-+		skb_copy_bits(oskb, offset, vaddr, chunk);
-+		kunmap_atomic(vaddr);
-+
-+		offset += chunk;
-+		data_len -= chunk;
-+		skb->data_len += chunk;
-+	}
-+
-+	return skb;
-+}
-+EXPORT_SYMBOL(skb_copy_pskb);
-+
-+/**
-  *	__pskb_copy_fclone	-  create copy of an sk_buff with private head.
-  *	@skb: buffer to copy
-  *	@headroom: headroom of new skb
+>
+> The end result being user calls to an ACPI function which at best doesn't exist
+> and at worst.... does, but does something entirely different.
+>
+> I admit the potential for a problem is slight, but is it possible to check
+> something explicit for support on the newer models rather than removing an
+> existing check?
+
+Our only resource right now is the DSDT and actual hardware to test,
+as those calls
+are not documented anywhere, and everytime the vendor decides to
+change something,
+we're on the loose end.
+
+All the DSDTs that I previously had all set out[1] to one, so I was
+using that as an
+extra check to make sure we had illumination support, but now, recent models
+set out[1] to zero, and those models, which do happen to have illumination
+support (Qosmio X75 for example) were failing to register the LED.
+
+>
+> --
+> Darren Hart
+> Intel Open Source Technology Center
+
+
+
+-- 
+-- El mundo apesta y vosotros apestais tambien --
