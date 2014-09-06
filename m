@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaIFPqM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 11:46:12 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57492 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706AbaIFPqJ (ORCPT
+	id S1752041AbaIFPrc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 11:47:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:35302 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284AbaIFPr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 11:46:09 -0400
-Date: Sat, 6 Sep 2014 17:45:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Catalin Iacob <iacobcatalin@gmail.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 3/9] irq_work: Force raised irq work to run on irq
- work interrupt
-Message-ID: <20140906154556.GO19379@twins.programming.kicks-ass.net>
-References: <1408632777-3348-1-git-send-email-fweisbec@gmail.com>
- <1408632777-3348-4-git-send-email-fweisbec@gmail.com>
- <20140904061137.GB3190@worktop.ger.corp.intel.com>
- <20140906133513.GA1471@lerouge>
+	Sat, 6 Sep 2014 11:47:28 -0400
+Message-ID: <540B2C84.5000002@oracle.com>
+Date: Sat, 06 Sep 2014 11:47:16 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140906133513.GA1471@lerouge>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Guenter Roeck <linux@roeck-us.net>, Mark Brown <broonie@kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linuxfoundation.org>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Sep 5: build failure due to 'mm: introduce
+ dump_vma'
+References: <20140905165052.GF29327@sirena.org.uk> <20140906154309.GB25739@roeck-us.net>
+In-Reply-To: <20140906154309.GB25739@roeck-us.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 06, 2014 at 03:35:15PM +0200, Frederic Weisbecker wrote:
-> You have a script that does that arch/*/include/asm/Kbuild edit for you right?
-> Is this something in scripts/ ?
+On 09/06/2014 11:43 AM, Guenter Roeck wrote:
+> I see the following build failure in next-20140905.
+> 
+> Guenter
 
-See commit b119fa61d440 ("locking/mcs: Order the header files in Kbuild
-of each architecture in alphabetical order")
+Hey Guenter,
 
-That script is a little buggy, but should work in the current case. So
-first do something like:
+Apologies for that. There is already a fix in -mm:
 
-	for i in arch/*/include/asm/Kbuild; do
-		echo "generic-y += foo.h" >> $i;
-	done
+	http://ozlabs.org/~akpm/mmots/broken-out/introduce-dump_vma-fix-2.patch
 
-Then run that script.
+So -next would be fixed once -mm is pulled in again.
 
-IIRC the bug was where a single line contained multiple headers and/or a
-continuation. I should have a better version somewhere, but this one was
-easier to find.
+
+Thanks,
+Sasha
