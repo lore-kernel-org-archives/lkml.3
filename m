@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370AbaIFIWi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 04:22:38 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:42165 "EHLO mx02.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaIFIWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 04:22:33 -0400
-Date: Sat, 6 Sep 2014 10:13:09 +0200
-From: Andreas Schlick <ninox@posteo.net>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] staging: rtl8821ae: Fix sparse warning by making functions
- static.
-Message-ID: <20140906101309.3a7f5e7d@ninox>
+	id S1751317AbaIFIpq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 04:45:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45501 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbaIFIpl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 04:45:41 -0400
+Date: Sat, 6 Sep 2014 14:15:28 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Kroderia <kroderia@gmail.com>
+Cc: LinuxKernel Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [a9888889e36e] Task 02 result
+Message-ID: <20140906084527.GA10086@sudip-PC>
+References: <540AC2D1.5040405@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540AC2D1.5040405@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 06, 2014 at 04:16:17PM +0800, Kroderia wrote:
+> vagrant@lucid32:~$ uname -r
+> 3.17.0-rc3-00130-g86ba8b0
+> vagrant@lucid32:~$ ls /lib/modules/
+> 2.6.32-38-generic  3.17.0-rc3+  3.17.0-rc3-00130-g86ba8b0
+> vagrant@lucid32:~$ ls /boot/
+> abi-2.6.32-38-generic                 memtest86+.bin
+> config-2.6.32-38-generic              System.map-2.6.32-38-generic
+> config-3.17.0-rc3+                    System.map-3.17.0-rc3+
+> config-3.17.0-rc3-00130-g86ba8b0      System.map-3.17.0-rc3-00130-g86ba8b0
+> grub                                  vmcoreinfo-2.6.32-38-generic
+> initrd.img-2.6.32-38-generic          vmlinuz-2.6.32-38-generic
+> initrd.img-3.17.0-rc3+                vmlinuz-3.17.0-rc3+
+> initrd.img-3.17.0-rc3-00130-g86ba8b0  vmlinuz-3.17.0-rc3-00130-g86ba8b0
+> lost+found
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Andreas Schlick <ninox@posteo.net>
----
- drivers/staging/rtl8821ae/rtl8821ae/hw.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+are you supposed to send your task result here ?
 
-diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hw.c b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-index 1aa1661..0539105 100644
---- a/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-+++ b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-@@ -1067,7 +1067,7 @@ static u16 _rtl8821ae_mdio_read(struct rtl_priv *rtlpriv, u8 addr)
- 	return ret;
- }
- 
--void _rtl8821ae_mdio_write(struct rtl_priv *rtlpriv, u8 addr, u16 data)
-+static void _rtl8821ae_mdio_write(struct rtl_priv *rtlpriv, u8 addr, u16 data)
- {
- 	u8 tmp = 0, count = 0;
- 
-@@ -1103,7 +1103,7 @@ static u8 _rtl8821ae_dbi_read(struct rtl_priv *rtlpriv, u16 addr)
- 	return ret;
- }
- 
--void _rtl8821ae_dbi_write(struct rtl_priv *rtlpriv, u16 addr, u8 data)
-+static void _rtl8821ae_dbi_write(struct rtl_priv *rtlpriv, u16 addr, u8 data)
- {
- 	u8 tmp = 0, count = 0;
- 	u16 wrtie_addr, remainder = addr % 4;
-@@ -1327,7 +1327,7 @@ void _rtl8821ae_reset_pcie_interface_dma(struct ieee80211_hw *hw,
- #define MAC_ID_STATIC_FOR_BT_CLIENT_END				3
- // -----------------------------------------------------------
- 
--void rtl8821ae_macid_initialize_mediastatus(struct ieee80211_hw *hw)
-+static void rtl8821ae_macid_initialize_mediastatus(struct ieee80211_hw *hw)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	u8	media_rpt[4] = {RT_MEDIA_CONNECT, 1, \
--- 
-2.1.0
+thanks
+sudip
+
 
