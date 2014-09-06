@@ -1,318 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291AbaIEXYn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 19:24:43 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:63312 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaIEXYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 19:24:41 -0400
-From: behanw@converseincode.com
-To: anderson@redhat.com, catalin.marinas@arm.com, cl@linux.com,
-        cov@codeaurora.org, jays.lee@samsung.com, msalter@redhat.com,
-        sandeepa.prabhu@linaro.org, srivatsa.bhat@linux.vnet.ibm.com,
-        steve.capper@linaro.org, sudeep.karkadanagesha@arm.com,
-        takahiro.akashi@linaro.org, Vijaya.Kumar@caviumnetworks.com,
-        will.deacon@arm.com
-Cc: a.p.zijlstra@chello.nl, acme@kernel.org, akpm@linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        lorenzo.pieralisi@arm.com, marc.zyngier@arm.com, Matthew.Leach@arm.com,
-        mingo@redhat.com, olof@lixom.net, paulus@samba.org,
-        Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] arm64: LLVMLinux: Fix inline arm64 assembly for use with clang
-Date: Fri,  5 Sep 2014 16:24:20 -0700
-Message-Id: <1409959460-15989-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752489AbaIEXZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 19:25:09 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:48103
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352AbaIEXZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 19:25:07 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 1/1] Drivers: hv: vmbus: Enable interrupt driven flow control
+Date: Fri,  5 Sep 2014 17:29:12 -0700
+Message-Id: <1409963352-2193-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+In win8 we have a feature that allows for interrupt driven flow management
+for host/guest communication. For instance, if the host were blocked because
+there was no space available in the ringbuffer, the host could request that the
+guest send an interrupt when space becomes available in the ringbuffer (when
+the guest drains the ringbuffer).
 
-Fix variable types for 64-bit inline assembly.
+While this feature was implemented in the guest a while ago, we had not
+advertised that the guest supported this feature. This patch advertises
+the support to the host.
 
-This patch now works with both gcc and clang.
+For pre-win8 hosts, this has no effect since the size of the ringbuffer
+control structure has not changed and all changes have been backward
+compatible - unused/reserved space has been used to implement this
+feature.
 
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
+In this version of the patch I have cleaned up the commit log based on
+feedback from Greg KH.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- arch/arm64/include/asm/arch_timer.h | 26 +++++++++++++++-----------
- arch/arm64/include/asm/uaccess.h    |  2 +-
- arch/arm64/kernel/debug-monitors.c  |  8 ++++----
- arch/arm64/kernel/perf_event.c      | 34 +++++++++++++++++-----------------
- arch/arm64/mm/mmu.c                 |  2 +-
- 5 files changed, 38 insertions(+), 34 deletions(-)
+ drivers/hv/ring_buffer.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-index 9400596..c1f87e0 100644
---- a/arch/arm64/include/asm/arch_timer.h
-+++ b/arch/arm64/include/asm/arch_timer.h
-@@ -37,19 +37,23 @@ void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
- 	if (access == ARCH_TIMER_PHYS_ACCESS) {
- 		switch (reg) {
- 		case ARCH_TIMER_REG_CTRL:
--			asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
-+			asm volatile("msr cntp_ctl_el0,  %0"
-+				: : "r" ((u64)val));
- 			break;
- 		case ARCH_TIMER_REG_TVAL:
--			asm volatile("msr cntp_tval_el0, %0" : : "r" (val));
-+			asm volatile("msr cntp_tval_el0, %0"
-+				: : "r" ((u64)val));
- 			break;
- 		}
- 	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
- 		switch (reg) {
- 		case ARCH_TIMER_REG_CTRL:
--			asm volatile("msr cntv_ctl_el0,  %0" : : "r" (val));
-+			asm volatile("msr cntv_ctl_el0,  %0"
-+				: : "r" ((u64)val));
- 			break;
- 		case ARCH_TIMER_REG_TVAL:
--			asm volatile("msr cntv_tval_el0, %0" : : "r" (val));
-+			asm volatile("msr cntv_tval_el0, %0"
-+				: : "r" ((u64)val));
- 			break;
- 		}
- 	}
-@@ -60,7 +64,7 @@ void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
- static __always_inline
- u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
- {
--	u32 val;
-+	u64 val;
+diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
+index 15db66b..6361d12 100644
+--- a/drivers/hv/ring_buffer.c
++++ b/drivers/hv/ring_buffer.c
+@@ -361,6 +361,11 @@ int hv_ringbuffer_init(struct hv_ring_buffer_info *ring_info,
+ 	ring_info->ring_buffer->read_index =
+ 		ring_info->ring_buffer->write_index = 0;
  
- 	if (access == ARCH_TIMER_PHYS_ACCESS) {
- 		switch (reg) {
-@@ -82,26 +86,26 @@ u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
- 		}
- 	}
++	/*
++	 * Set the feature bit for enabling flow control.
++	 */
++	ring_info->ring_buffer->feature_bits.value = 1;
++
+ 	ring_info->ring_size = buflen;
+ 	ring_info->ring_datasize = buflen - sizeof(struct hv_ring_buffer);
  
--	return val;
-+	return (u32)val;
- }
- 
- static inline u32 arch_timer_get_cntfrq(void)
- {
--	u32 val;
-+	u64 val;
- 	asm volatile("mrs %0,   cntfrq_el0" : "=r" (val));
--	return val;
-+	return (u32)val;
- }
- 
- static inline u32 arch_timer_get_cntkctl(void)
- {
--	u32 cntkctl;
-+	u64 cntkctl;
- 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
--	return cntkctl;
-+	return (u32)cntkctl;
- }
- 
- static inline void arch_timer_set_cntkctl(u32 cntkctl)
- {
--	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
-+	asm volatile("msr	cntkctl_el1, %0" : : "r" ((u64)cntkctl));
- }
- 
- static inline void arch_counter_set_user_access(void)
-diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
-index 3bf8f4e..104719b 100644
---- a/arch/arm64/include/asm/uaccess.h
-+++ b/arch/arm64/include/asm/uaccess.h
-@@ -93,7 +93,7 @@ static inline void set_fs(mm_segment_t fs)
- 	__chk_user_ptr(addr);						\
- 	asm("adds %1, %1, %3; ccmp %1, %4, #2, cc; cset %0, ls"		\
- 		: "=&r" (flag), "=&r" (roksum)				\
--		: "1" (addr), "Ir" (size),				\
-+		: "1" (addr), "r" ((u64)size),				\
- 		  "r" (current_thread_info()->addr_limit)		\
- 		: "cc");						\
- 	flag;								\
-diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
-index b056369..695a18f 100644
---- a/arch/arm64/kernel/debug-monitors.c
-+++ b/arch/arm64/kernel/debug-monitors.c
-@@ -43,15 +43,15 @@ static void mdscr_write(u32 mdscr)
- {
- 	unsigned long flags;
- 	local_dbg_save(flags);
--	asm volatile("msr mdscr_el1, %0" :: "r" (mdscr));
-+	asm volatile("msr mdscr_el1, %0" : : "r" ((u64)mdscr));
- 	local_dbg_restore(flags);
- }
- 
- static u32 mdscr_read(void)
- {
--	u32 mdscr;
-+	u64 mdscr;
- 	asm volatile("mrs %0, mdscr_el1" : "=r" (mdscr));
--	return mdscr;
-+	return (u32)mdscr;
- }
- 
- /*
-@@ -127,7 +127,7 @@ void disable_debug_monitors(enum debug_el el)
-  */
- static void clear_os_lock(void *unused)
- {
--	asm volatile("msr oslar_el1, %0" : : "r" (0));
-+	asm volatile("msr oslar_el1, %0" : : "r" ((u64)0));
- }
- 
- static int os_lock_notify(struct notifier_block *self,
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-index baf5afb..f2e399c 100644
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -844,16 +844,16 @@ static const unsigned armv8_pmuv3_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- 
- static inline u32 armv8pmu_pmcr_read(void)
- {
--	u32 val;
-+	u64 val;
- 	asm volatile("mrs %0, pmcr_el0" : "=r" (val));
--	return val;
-+	return (u32)val;
- }
- 
- static inline void armv8pmu_pmcr_write(u32 val)
- {
- 	val &= ARMV8_PMCR_MASK;
- 	isb();
--	asm volatile("msr pmcr_el0, %0" :: "r" (val));
-+	asm volatile("msr pmcr_el0, %0" : : "r" ((u64)val));
- }
- 
- static inline int armv8pmu_has_overflowed(u32 pmovsr)
-@@ -893,7 +893,7 @@ static inline int armv8pmu_select_counter(int idx)
- 	}
- 
- 	counter = ARMV8_IDX_TO_COUNTER(idx);
--	asm volatile("msr pmselr_el0, %0" :: "r" (counter));
-+	asm volatile("msr pmselr_el0, %0" : : "r" ((u64)counter));
- 	isb();
- 
- 	return idx;
-@@ -901,7 +901,7 @@ static inline int armv8pmu_select_counter(int idx)
- 
- static inline u32 armv8pmu_read_counter(int idx)
- {
--	u32 value = 0;
-+	u64 value = 0;
- 
- 	if (!armv8pmu_counter_valid(idx))
- 		pr_err("CPU%u reading wrong counter %d\n",
-@@ -911,7 +911,7 @@ static inline u32 armv8pmu_read_counter(int idx)
- 	else if (armv8pmu_select_counter(idx) == idx)
- 		asm volatile("mrs %0, pmxevcntr_el0" : "=r" (value));
- 
--	return value;
-+	return (u32)value;
- }
- 
- static inline void armv8pmu_write_counter(int idx, u32 value)
-@@ -920,16 +920,16 @@ static inline void armv8pmu_write_counter(int idx, u32 value)
- 		pr_err("CPU%u writing wrong counter %d\n",
- 			smp_processor_id(), idx);
- 	else if (idx == ARMV8_IDX_CYCLE_COUNTER)
--		asm volatile("msr pmccntr_el0, %0" :: "r" (value));
-+		asm volatile("msr pmccntr_el0, %0" : : "r" ((u64)value));
- 	else if (armv8pmu_select_counter(idx) == idx)
--		asm volatile("msr pmxevcntr_el0, %0" :: "r" (value));
-+		asm volatile("msr pmxevcntr_el0, %0" : : "r" ((u64)value));
- }
- 
- static inline void armv8pmu_write_evtype(int idx, u32 val)
- {
- 	if (armv8pmu_select_counter(idx) == idx) {
- 		val &= ARMV8_EVTYPE_MASK;
--		asm volatile("msr pmxevtyper_el0, %0" :: "r" (val));
-+		asm volatile("msr pmxevtyper_el0, %0" : : "r" ((u64)val));
- 	}
- }
- 
-@@ -944,7 +944,7 @@ static inline int armv8pmu_enable_counter(int idx)
- 	}
- 
- 	counter = ARMV8_IDX_TO_COUNTER(idx);
--	asm volatile("msr pmcntenset_el0, %0" :: "r" (BIT(counter)));
-+	asm volatile("msr pmcntenset_el0, %0" : : "r" ((u64)BIT(counter)));
- 	return idx;
- }
- 
-@@ -959,7 +959,7 @@ static inline int armv8pmu_disable_counter(int idx)
- 	}
- 
- 	counter = ARMV8_IDX_TO_COUNTER(idx);
--	asm volatile("msr pmcntenclr_el0, %0" :: "r" (BIT(counter)));
-+	asm volatile("msr pmcntenclr_el0, %0" : : "r" ((u64)BIT(counter)));
- 	return idx;
- }
- 
-@@ -974,7 +974,7 @@ static inline int armv8pmu_enable_intens(int idx)
- 	}
- 
- 	counter = ARMV8_IDX_TO_COUNTER(idx);
--	asm volatile("msr pmintenset_el1, %0" :: "r" (BIT(counter)));
-+	asm volatile("msr pmintenset_el1, %0" : : "r" ((u64)BIT(counter)));
- 	return idx;
- }
- 
-@@ -989,17 +989,17 @@ static inline int armv8pmu_disable_intens(int idx)
- 	}
- 
- 	counter = ARMV8_IDX_TO_COUNTER(idx);
--	asm volatile("msr pmintenclr_el1, %0" :: "r" (BIT(counter)));
-+	asm volatile("msr pmintenclr_el1, %0" : : "r" ((u64)BIT(counter)));
- 	isb();
- 	/* Clear the overflow flag in case an interrupt is pending. */
--	asm volatile("msr pmovsclr_el0, %0" :: "r" (BIT(counter)));
-+	asm volatile("msr pmovsclr_el0, %0" : : "r" ((u64)BIT(counter)));
- 	isb();
- 	return idx;
- }
- 
- static inline u32 armv8pmu_getreset_flags(void)
- {
--	u32 value;
-+	u64 value;
- 
- 	/* Read */
- 	asm volatile("mrs %0, pmovsclr_el0" : "=r" (value));
-@@ -1008,7 +1008,7 @@ static inline u32 armv8pmu_getreset_flags(void)
- 	value &= ARMV8_OVSR_MASK;
- 	asm volatile("msr pmovsclr_el0, %0" :: "r" (value));
- 
--	return value;
-+	return (u32)value;
- }
- 
- static void armv8pmu_enable_event(struct hw_perf_event *hwc, int idx)
-@@ -1217,7 +1217,7 @@ static void armv8pmu_reset(void *info)
- 	armv8pmu_pmcr_write(ARMV8_PMCR_P | ARMV8_PMCR_C);
- 
- 	/* Disable access from userspace. */
--	asm volatile("msr pmuserenr_el0, %0" :: "r" (0));
-+	asm volatile("msr pmuserenr_el0, %0" : : "r" ((u64)0));
- }
- 
- static int armv8_pmuv3_map_event(struct perf_event *event)
-diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
-index c555672..6894ef3 100644
---- a/arch/arm64/mm/mmu.c
-+++ b/arch/arm64/mm/mmu.c
-@@ -94,7 +94,7 @@ static int __init early_cachepolicy(char *p)
- 	 */
- 	asm volatile(
- 	"	mrs	%0, mair_el1\n"
--	"	bfi	%0, %1, #%2, #8\n"
-+	"	bfi	%0, %1, %2, #8\n"
- 	"	msr	mair_el1, %0\n"
- 	"	isb\n"
- 	: "=&r" (tmp)
 -- 
-1.9.1
+1.7.4.1
 
