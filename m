@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaIFTBT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 15:01:19 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:61631 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaIFTBS (ORCPT
+	id S1751972AbaIFTGd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 15:06:33 -0400
+Received: from [83.145.59.141] ([83.145.59.141]:15427 "EHLO
+	stoexhubfe02.domain01.net" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751887AbaIFTGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 15:01:18 -0400
+	Sat, 6 Sep 2014 15:06:31 -0400
+Date: Sat, 6 Sep 2014 21:05:35 +0200
+From: Anders Darander <anders@chargestorm.se>
+To: Matt Fleming <matt@console-pimps.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
+Message-ID: <20140906190534.GA4767@ad.chargestorm.se>
+References: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
+ <20140904100137.GK3001@console-pimps.org>
+ <5408D299.5000300@zytor.com>
+ <20140905221616.GP3001@console-pimps.org>
 MIME-Version: 1.0
-In-Reply-To: <1410028833-31840-1-git-send-email-marcel@holtmann.org>
-References: <1410028833-31840-1-git-send-email-marcel@holtmann.org>
-Date: Sat, 6 Sep 2014 21:01:17 +0200
-Message-ID: <CANq1E4QFLW3RdNTnQmmyiDNDQg-m5zCP_mL1tRJuRD=cZtW8Xw@mail.gmail.com>
-Subject: Re: [PATCH] memfd: Add memfd.h to uapi headers
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140905221616.GP3001@console-pimps.org>
+X-Accept-Language: sv, en, de
+X-GPG-Fingerprint: 5AF0 B2E9 78FE 9D75 D110  6F8F 3E31 84D7 920E 938C
+X-GPG-Key-Id: 0x920E938C
+X-GPG-Keyserver: hkp://keys.gnupg.net
+Organization: ChargeStorm AB
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-GFI-SMTP-Submission: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+* Matt Fleming <matt@console-pimps.org> [140906 00:16]:
 
-On Sat, Sep 6, 2014 at 8:40 PM, Marcel Holtmann <marcel@holtmann.org> wrote:
-> It seems like a good idea to actually expose include/uapi/linux/memfd.h
-> so that it gets installed and can be used by userspace.
->
-> Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+> On Thu, 04 Sep, at 01:59:05PM, H. Peter Anvin wrote:
 
-Already in -mmots, will probably be pulled by Linus next week:
+> > I am fine with this patch, but at the same time I do want to note that
+> > there is an alternative to double-buffer the patch and/or (if that
+> > applies to the buggy BIOS) round up the size of the target buffer.
 
-http://ozlabs.org/~akpm/mmots/broken-out/shm-add-memfdh-to-uapi-export-list.patch
+> I took a whack at the double-buffer strategy, and I think the patch is
+> conceptually pretty straight forward.
 
-Thanks
-David
+> Could someone try out the following patch? It works around the problem
+> on my ASUS machine.
 
-> ---
->  include/uapi/linux/Kbuild | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-> index 24e9033f8b3f..939df6973102 100644
-> --- a/include/uapi/linux/Kbuild
-> +++ b/include/uapi/linux/Kbuild
-> @@ -240,6 +240,7 @@ header-y += matroxfb.h
->  header-y += mdio.h
->  header-y += media.h
->  header-y += mei.h
-> +header-y += memfd.h
->  header-y += mempolicy.h
->  header-y += meye.h
->  header-y += mic_common.h
-> --
-> 1.9.3
->
+Your patch works around the problem on my Dell machine also. With that
+one applied, it boots fine!
+
+Thus, 
+
+Tested-by: Anders Darander <anders@chargestorm.se>
+
+Cheers,
+Anders
+
+-- 
+All the troubles you have will pass away very quickly.
