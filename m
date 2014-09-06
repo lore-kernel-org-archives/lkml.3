@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442AbaIFNDB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 09:03:01 -0400
-Received: from mga14.intel.com ([192.55.52.115]:9177 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994AbaIFNC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 09:02:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="382326269"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: matt.fleming@intel.com
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH v2] efi: Resolve some shadow warnings
-Date: Sat,  6 Sep 2014 06:02:53 -0700
-Message-Id: <1410008573-444-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.9.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1751359AbaIFNIC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 09:08:02 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:53461 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaIFNH5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 09:07:57 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-2e-540b072b680b
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, s.nawrocki@samsung.com,
+        mturquette@linaro.org, naushad@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH] clk: samsung: exynos3250: fix mout_cam_blk parent list
+Date: Sat, 06 Sep 2014 18:33:33 +0530
+Message-id: <1410008613-20861-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsWyRsSkRlebnTvE4P0hbYveBVfZLDY9vsZq
+	cXnXHDaLGef3MVk8nXCRzeLT0f+sFou2fmG3OPymndVi1a4/jA6cHjtn3WX3uHNtD5vH5iX1
+	Hn1bVjF6fN4kF8AaxWWTkpqTWZZapG+XwJWxd14LS8Fbtorz+xayNjAeZe1i5OSQEDCRWHHo
+	AAuELSZx4d56ti5GLg4hgaWMEi9P7QFyOMCKzhyug4gvYpT4NOcjC4QzgUniaM9kNpBuNgFd
+	iSfv5zKD2CIC2RL9t1eDFTELLGSU2HX3Gtg6YQF3iY3X7oLZLAKqEm+urmAF2cAr4CGxr9cC
+	YpmCxJxJNiCtEgLd7BJtzQ3MEOUCEt8mH2KBqJGV2HSAGeJoSYmDK26wTGAUXMDIsIpRNLUg
+	uaA4Kb3IUK84Mbe4NC9dLzk/dxMjMIxP/3vWu4Px9gHrQ4wCHIxKPLwnnLhChFgTy4orcw8x
+	mgJtmMgsJZqcD4yWvJJ4Q2MzIwtTE1NjI3NLMyVxXkWpn8FCAumJJanZqakFqUXxRaU5qcWH
+	GJk4OKUaGK+b+n372BbjWXPyc2nEq3lHL1gul2bXVtpRNK0kTyd32swntrGR59jyDCOa2n5H
+	8+v8NZQxmKdY59+dz6G3RGnZ/K535xuMjx7M7G0VWpGx6d6PPvG3BS8EOUsedk620Dd+8mpd
+	1Euj+FOvMpNeiP2TFM38u7471kBa8brQnvVKPoHRDmdslViKMxINtZiLihMByosbrF4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jAV1tdu4QgxeLlSx6F1xls9j0+Bqr
+	xeVdc9gsZpzfx2TxdMJFNotPR/+zWiza+oXd4vCbdlaLVbv+MDpweuycdZfd4861PWwem5fU
+	e/RtWcXo8XmTXABrVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqt
+	kotPgK5bZg7QQUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjL3zWlgK
+	3rJVnN+3kLWB8ShrFyMHh4SAicSZw3VdjJxAppjEhXvr2boYuTiEBBYxSnya85EFwpnAJHG0
+	ZzIbSBWbgK7Ek/dzmUFsEYFsif7bq8GKmAUWMkrsunuNFSQhLOAusfHaXTCbRUBV4s3VFWDb
+	eAU8JPb1WkAsVpCYM8lmAiP3AkaGVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBUfJMegfj
+	qgaLQ4wCHIxKPLyFDlwhQqyJZcWVuYcYJTiYlUR4OyYDhXhTEiurUovy44tKc1KLDzGaAu2e
+	yCwlmpwPjOC8knhDYxNzU2NTSxMLEzNLJXHeg63WgUIC6YklqdmpqQWpRTB9TBycUg2MFidz
+	XY/MMquNiz9qtqNi73LBo1qVq2ZYBIhN+MNY8uJLfH12ALPcwlms7AEiDWcfhosfYXpsH3xv
+	bqd00atdsfM+nZu/Z/ZUk2zpes/6+zoTDvnJyN849OCl0ALndWcPt635+9dVrcqhfN/Vb34O
+	21WKkhlC2jUdArU4uoqd4/93/Oq7v2+pEktxRqKhFnNRcSIAlw7896gCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+As per user manual of Exynos3250 SRC_CAM can select
+div_cam_blk_320 if it's value is 0xC, so placing
+div_cam_blk_320 at proper index in parent list of mout_cam_blk.
 
-It is a really bad idea to declare variables or parameters that
-have the same name as common types. It is valid C, but it gets
-surprising if a macro expansion attempts to declare an inner
-local with that type. Change the local names to eliminate the
-hazard.
-
-Change s16 => str16, s8 => str8.
-
-This resolves warnings seen when using W=2 during make, for instance:
-
-drivers/firmware/efi/vars.c: In function ‘dup_variable_bug’:
-drivers/firmware/efi/vars.c:324:44: warning: declaration of ‘s16’ shadows a global declaration [-Wshadow]
- static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
-
-drivers/firmware/efi/vars.c:328:8: warning: declaration of ‘s8’ shadows a global declaration [-Wshadow]
-  char *s8;
-
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 ---
+ drivers/clk/samsung/clk-exynos3250.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-v2: Updated patch description to add warning information and modified the
-    variable names to str* instead of ps*, based on feed back from Matt
-    Fleming
-
- drivers/firmware/efi/vars.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
-index 5abe943..afa3596 100644
---- a/drivers/firmware/efi/vars.c
-+++ b/drivers/firmware/efi/vars.c
-@@ -321,11 +321,11 @@ static unsigned long var_name_strnsize(efi_char16_t *variable_name,
-  * Print a warning when duplicate EFI variables are encountered and
-  * disable the sysfs workqueue since the firmware is buggy.
-  */
--static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
-+static void dup_variable_bug(efi_char16_t *str16, efi_guid_t *vendor_guid,
- 			     unsigned long len16)
- {
- 	size_t i, len8 = len16 / sizeof(efi_char16_t);
--	char *s8;
-+	char *str8;
- 
- 	/*
- 	 * Disable the workqueue since the algorithm it uses for
-@@ -334,16 +334,16 @@ static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
- 	 */
- 	efivar_wq_enabled = false;
- 
--	s8 = kzalloc(len8, GFP_KERNEL);
--	if (!s8)
-+	str8 = kzalloc(len8, GFP_KERNEL);
-+	if (!str8)
- 		return;
- 
- 	for (i = 0; i < len8; i++)
--		s8[i] = s16[i];
-+		str8[i] = str16[i];
- 
- 	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
--	       s8, vendor_guid);
--	kfree(s8);
-+	       str8, vendor_guid);
-+	kfree(str8);
- }
- 
- /**
+diff --git a/drivers/clk/samsung/clk-exynos3250.c b/drivers/clk/samsung/clk-exynos3250.c
+index e1cb464..ba8f073f 100644
+--- a/drivers/clk/samsung/clk-exynos3250.c
++++ b/drivers/clk/samsung/clk-exynos3250.c
+@@ -248,6 +248,7 @@ PNAME(group_sclk_cam_blk_p)	= { "xxti", "xusbxti",
+ 				    "none", "none", "none",
+ 				    "none", "div_mpll_pre",
+ 				    "mout_epll_user", "mout_vpll",
++				    "none", "none", "none",
+ 				    "div_cam_blk_320", };
+ PNAME(group_sclk_fimd0_p)	= { "xxti", "xusbxti",
+ 				    "m_bitclkhsdiv4_2l", "none",
 -- 
-1.9.3
+1.7.9.5
 
