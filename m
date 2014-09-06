@@ -1,45 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaIFTIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 15:08:25 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:44220 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaIFTIY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 15:08:24 -0400
+	id S1751963AbaIFTiz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 15:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505AbaIFTiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 15:38:54 -0400
+Date: Sat, 6 Sep 2014 21:38:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: kan.liang@intel.com
+Cc: acme@kernel.org, linux-kernel@vger.kernel.org, ak@linux.intel.com
+Subject: Re: [PATCH v4 2/3] perf tools: parse the pmu event prefix and surfix
+Message-ID: <20140906193848.GC6059@krava.brq.redhat.com>
+References: <1409671770-17260-1-git-send-email-kan.liang@intel.com>
+ <1409671770-17260-2-git-send-email-kan.liang@intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] memfd: Add memfd.h to uapi headers
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <CANq1E4QFLW3RdNTnQmmyiDNDQg-m5zCP_mL1tRJuRD=cZtW8Xw@mail.gmail.com>
-Date: Sat, 6 Sep 2014 12:08:49 -0700
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3FBD6ED1-82F5-4D47-BDA8-2506129E4A44@holtmann.org>
-References: <1410028833-31840-1-git-send-email-marcel@holtmann.org> <CANq1E4QFLW3RdNTnQmmyiDNDQg-m5zCP_mL1tRJuRD=cZtW8Xw@mail.gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-X-Mailer: Apple Mail (2.1878.6)
+Content-Disposition: inline
+In-Reply-To: <1409671770-17260-2-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Tue, Sep 02, 2014 at 11:29:29AM -0400, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
 
->> It seems like a good idea to actually expose include/uapi/linux/memfd.h
->> so that it gets installed and can be used by userspace.
->> 
->> Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-> 
-> Already in -mmots, will probably be pulled by Linus next week:
-> 
-> http://ozlabs.org/~akpm/mmots/broken-out/shm-add-memfdh-to-uapi-export-list.patch
+SNIP
 
-might be a good idea to get it in before 3.17-rc4 and not have it dangling around for another week. Just an idea ;)
+> + * Read the pmu events list from sysfs
+> + * Save it into kernel_pmu_events_list
+> + */
+> +static void scan_kernel_pmu_events_list(void)
+> +{
+> +
+> +	struct perf_pmu *pmu = NULL;
+> +	struct perf_pmu_alias *alias;
+> +	int len = 0;
+> +
+> +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
+> +		list_for_each_entry(alias, &pmu->aliases, list) {
 
-Regards
+Why do we need to call scan here? Looks like:
+  pmu = pmu_lookup("cpu")
 
-Marcel
+should be enough.. and could be used below as well
 
+> +			if (!strcmp(pmu->name, "cpu")) {
+> +				if (strchr(alias->name, '-'))
+> +					len++;
+> +				len++;
+> +			}
+> +	}
+> +	if (len == 0)
+> +		return;
+> +	kernel_pmu_events_list =
+> +		malloc(sizeof(struct kernel_pmu_event_symbol) * len);
+> +	kernel_pmu_events_list_num = len;
+> +
+> +	pmu = NULL;
+> +	len = 0;
+> +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
+> +		list_for_each_entry(alias, &pmu->aliases, list) {
+> +			if (!strcmp(pmu->name, "cpu")) {
+> +				struct kernel_pmu_event_symbol *p =
+> +					kernel_pmu_events_list + len;
+> +				char *tmp = strchr(alias->name, '-');
+> +
+> +				if (tmp != NULL) {
+> +					strlcpy(p->symbol, alias->name,
+> +						tmp - alias->name + 1);
+> +					p->type = KERNEL_PMU_EVENT_PREFIX;
+> +					tmp++;
+> +					p++;
+> +					strcpy(p->symbol, tmp);
+> +					p->type = KERNEL_PMU_EVENT_SUFFIX;
+> +					len += 2;
+> +				} else {
+> +					strcpy(p->symbol, alias->name);
+> +					p->type = KERNEL_PMU_EVENT;
+> +					len++;
+> +				}
+> +			}
+> +		}
+> +	qsort(kernel_pmu_events_list, len,
+> +		sizeof(struct kernel_pmu_event_symbol), comp_pmu);
+> +
+> +}
+
+SNIP
+
+thanks,
+jirka
