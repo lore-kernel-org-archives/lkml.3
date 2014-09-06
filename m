@@ -1,218 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaIFXmP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 19:42:15 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:33329 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaIFXmN (ORCPT
+	id S1752250AbaIFXoY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 19:44:24 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:42596 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930AbaIFXoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 19:42:13 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8821ae: Fix '"(foo*)" should be "(foo *)"' errors
-Date: Sat,  6 Sep 2014 18:40:29 -0500
-Message-Id: <1410046829-5821-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 6 Sep 2014 19:44:23 -0400
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Sat, 6 Sep 2014 19:44:05 -0400
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Rob Landley <rob@landley.net>, Rogelio Serrano <rogelio.serrano@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        =?utf-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Christopher Barry <christopher.r.barry@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: OT: Open letter to the Linux World
+Message-ID: <20140906234405.GA17692@csclub.uwaterloo.ca>
+References: <20140812202129.GA20344@home.goodmis.org>
+ <yw1xr40l2whi.fsf@unicorn.mansr.com>
+ <20140813082756.GB2923@twins.programming.kicks-ass.net>
+ <20140813090013.GA20581@pd.tnic>
+ <53F242D1.4050506@ahsoftware.de>
+ <CANszf4jauBAhaTogvSprhhspKywXSu_8xkWh+ETsWMMUDKo0=g@mail.gmail.com>
+ <5408B069.9080708@ahsoftware.de>
+ <CAOS_Y6RAiwY=Zh4g6Ei4UYm3FMybwf+bSo_CwqQhaMsaJh10uw@mail.gmail.com>
+ <540958AD.8030503@ahsoftware.de>
+ <540B6819.9030201@ahsoftware.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540B6819.9030201@ahsoftware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl '"(foo*)" should be "(foo *)"' errors
+On Sat, Sep 06, 2014 at 10:01:29PM +0200, Alexander Holler wrote:
+> I've brought up the critics about using C in a critical and very
+> security sensitive piece of software in userland, so I've decided a
+> bit more explanations might make sense.
+> 
+> First, as you don't seem to have noticed or you don't know or you
+> ignore the difference, let me repeat that this thread is about a
+> piece of SW which runs in userland. So, please, keep away with any
+> comments from Linus where he talks about kernelspace. I'm pretty
+> sure he knows the difference.
+> 
+> Now let me bring up a very small piece of code which you can find in
+> a similiar fashion in almost every piece of software which gets in
+> contact with strings. And not just in one place or function, but in
+> dozens or even hundred of places (inline, not in functions) in one
+> project.
+> 
+> First in C++:
+> 
+> void foo_bar(const std::string& foo, const std::string& bar,
+> std::string& foobar)
+> {
+> 	foobar = foo + bar;
+> }
+> 
+> For those which don't know C++, this concatenates the two strings
+> named foo and bar and puts the result into foobar.
+> 
+> Now an example how you would have to do that in C:
+> 
+> char *foo_bar(const char *foo, const char *bar)
+> {
+> 	char *foobar = malloc(strlen(foo) + strlen(bar));
+> 
+> 	strcpy(foobar, foo);
+> 	strcat(foobar, bar);
+> 
+> 	return foobar;
+> }
+> 
+> Do you see the difference and spot all the problems?
+> 
+> First I've though about not posting the answer to see the response,
+> but that would just have ended up with a lot of people calling me a
+> fool and/or assuming I can't write proper C. And it bears the
+> problem that some inexperienced people might copy and paste and use
+> it.
+> 
+> So at first: THE ABOVE EXAMPLE IN C IS BROKEN.
+> 
+> The very first problem is that foobar is allocated with the wrong
+> size, because it doesn't take care of the terminating null byte. A
+> very common problem already found at uncountable places.
+> 
+> But there are several more problems:
+> 
+> - What happens if foo or bar isn't terminated with a null byte?
+> 
+> - What happens if malloc fails?
+> 
+> - Who is the owner of foo, bar and/or foobar? Does the caller still
+> owns foo and bar afterwards? Will the caller own foobar? (That means
+> who is repsonsible to free foo, bar and foobar if they aren't used
+> anymore).
+> 
+> So now we extend the above C example:
+> 
+> char *foo_bar(const char *foo, const char *bar)
+> {
+> 	char *foobar;
+> 
+> 	if (!foo || !bar)
+> 		return NULL;
+> 
+> 	foobar = malloc(strlen(foo) + strlen(bar) + 1);
+> 
+> 	if (!foobar)
+> 		return NULL;
+> 
+> 	strcpy(foobar, foo);
+> 	strcat(foobar, bar);
+> 
+> 	return foobar;
+> }
+> 
+> This has still some problems. First, the caller has to check if
+> foo_bar() hasn't returned NULL. A very common bug already found in
+> uncountable places too.
+> 
+> Next, there is still the unsolvable problem about what happens if
+> foo or bar isn't terminated with a null byte (in other words they
+> aren't C strings).
+> So you have to check all callers up to the source of foo and bar to
+> be sure the program doesn't crash in the possible far far away place
+> called foo_bar().
+> 
+> And still no comment about ownership. That means someone who just
+> looks at the prototype or sees a call of foo_bar() somewhere has no
+> idea about the ownership of foo, bar and the returned foobar without
+> a comment.
+> 
+> So just this very simple functionality about string handling in C
+> already contains several still open questions and is 17 lines long
+> which have to be reviewed very carefull (e.g. to not miss the
+> off-by-one bug).
+> Compare this with the 4 lines in C++ which are almost impossible to
+> do or to use wrong.
+> 
+> And, again, this thread is about a piece of software which runs with
+> process ID 1, wants to control the whole system and owns all
+> permissions to modify the system in almost every possible way. It
+> doesn't run as some user  with restricted permissions or in chroot
+> or something similar. Some parts might do, but for sure not all
+> (read again the above "far far away").
+> 
+> And now some stats. I've just checked out systemd:
+> 
+> git grep -E "strcat|strncat|strcpy|strncpy|strlen" | wc -l
+> 570
+> 
+> git grep -E "strcat|strncat|strcpy|strncpy|memcpy|strlen" | wc -l
+> 850
+> 
+> Ok, not every of those places might be part of pid 1. And several
+> places are trivial calls like strlen("ATTR"), but it gives an idea
+> about how many places do exist in systemd which might contain a
+> problem wich isn't trivial to spot.
+> 
+> And regardless how clever and experienced these people are which are
+> writing this piece of software, everyone is prone to do e.g. such an
+> off-by-one bug.
+> Maybe he writes the piece of code after having worked 12 hours,
+> maybe he got interrupted while writing the code and continued it a
+> day later, maybe it's full moon or maybe his last meal wasn't like
+> it should have been.
+> 
+> Whatever.
+> 
+> This means, every piece of code in that piece of software has to be
+> reviewed multiple times (reviewers aren't perfect too), and, as long
+> as the software changes, every piece which changes has to be
+> reviewed multiple times again.
+> 
+> I could continue with examples for lists, sets and similiar data
+> structures, which have to be inventent again and again and again in
+> C, whereas in C++ people can reuse some code which is already in use
+> by many, many people in many, many other projects.
+> 
+> And to come to your argument about how simple everything in C is.
+> Just look at the macro for container_of(). I wouldn't say it's such
+> simple that everyone understands what it does. And it's just part of
+> the Linux kernel, that means limited documentation and many people
+> never heard of it before, compared with stuff which can be found
+> standard libraries.
+> 
+> And, again, this is not about the kernelspace, it isn't the Linux
+> kernel where Linus has managed it to organize an army of people
+> which do look at every line again and again (and still do sometimes
+> miss a bug).
+> Most software projects don't have that many resources (human or not)
+> available as the Linux kernel. In fact it's an absolute exception.
+> 
+> So you just don't want to use error prone C in new and non-trivial
+> projects (if not really necessary) which are a major problem if
+> something fails in the code.
+> 
+> Doing so just means nothing has be learned from the (of corse
+> relatively short) history of software development.
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8821ae/base.h                   | 26 +++++++++++-----------
- drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c |  8 +++----
- drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.h |  4 ++--
- drivers/staging/rtl8821ae/core.c                   |  6 ++---
- drivers/staging/rtl8821ae/debug.h                  |  2 +-
- drivers/staging/rtl8821ae/pci.c                    |  6 ++---
- drivers/staging/rtl8821ae/rtl8821ae/def.h          |  2 +-
- drivers/staging/rtl8821ae/rtl8821ae/dm.c           |  2 +-
- 8 files changed, 28 insertions(+), 28 deletions(-)
+So why C++ then if you care about making the code easy to make safe when
+there are clearly even better options.  Why not OCAML or Erlang or one
+of the other much more robust languages that don't contain all the
+dangers of C?
 
-diff --git a/drivers/staging/rtl8821ae/base.h b/drivers/staging/rtl8821ae/base.h
-index 629d14f..cf166f3 100644
---- a/drivers/staging/rtl8821ae/base.h
-+++ b/drivers/staging/rtl8821ae/base.h
-@@ -78,33 +78,33 @@ enum ap_peer {
- 	SET_BITS_TO_LE_2BYTE(_hdr, 8, 1, _val)
- 
- #define SET_80211_PS_POLL_AID(_hdr, _val)		\
--	WRITEEF2BYTE(((u8*)(_hdr))+2, _val)
-+	WRITEEF2BYTE(((u8 *)(_hdr))+2, _val)
- #define SET_80211_PS_POLL_BSSID(_hdr, _val)		\
--	CP_MACADDR(((u8*)(_hdr))+4, (u8*)(_val))
-+	CP_MACADDR(((u8 *)(_hdr))+4, (u8 *)(_val))
- #define SET_80211_PS_POLL_TA(_hdr, _val)		\
--	CP_MACADDR(((u8*)(_hdr))+10, (u8*)(_val))
-+	CP_MACADDR(((u8 *)(_hdr))+10, (u8 *)(_val))
- 
- #define SET_80211_HDR_DURATION(_hdr, _val)	\
--	WRITEEF2BYTE((u8*)(_hdr)+FRAME_OFFSET_DURATION, _val)
-+	WRITEEF2BYTE((u8 *)(_hdr)+FRAME_OFFSET_DURATION, _val)
- #define SET_80211_HDR_ADDRESS1(_hdr, _val)	\
--	CP_MACADDR((u8*)(_hdr)+FRAME_OFFSET_ADDRESS1, (u8*)(_val))
-+	CP_MACADDR((u8 *)(_hdr)+FRAME_OFFSET_ADDRESS1, (u8 *)(_val))
- #define SET_80211_HDR_ADDRESS2(_hdr, _val) 	\
--	CP_MACADDR((u8*)(_hdr)+FRAME_OFFSET_ADDRESS2, (u8*)(_val))
-+	CP_MACADDR((u8 *)(_hdr)+FRAME_OFFSET_ADDRESS2, (u8 *)(_val))
- #define SET_80211_HDR_ADDRESS3(_hdr, _val) 	\
--	CP_MACADDR((u8*)(_hdr)+FRAME_OFFSET_ADDRESS3, (u8*)(_val))
-+	CP_MACADDR((u8 *)(_hdr)+FRAME_OFFSET_ADDRESS3, (u8 *)(_val))
- #define SET_80211_HDR_FRAGMENT_SEQUENCE(_hdr, _val)  \
--	WRITEEF2BYTE((u8*)(_hdr)+FRAME_OFFSET_SEQUENCE, _val)
-+	WRITEEF2BYTE((u8 *)(_hdr)+FRAME_OFFSET_SEQUENCE, _val)
- 
- #define SET_BEACON_PROBE_RSP_TIME_STAMP_LOW(__phdr, __val) 	\
--	WRITEEF4BYTE(((u8*)(__phdr)) + 24, __val)
-+	WRITEEF4BYTE(((u8 *)(__phdr)) + 24, __val)
- #define SET_BEACON_PROBE_RSP_TIME_STAMP_HIGH(__phdr, __val) \
--	WRITEEF4BYTE(((u8*)(__phdr)) + 28, __val)
-+	WRITEEF4BYTE(((u8 *)(__phdr)) + 28, __val)
- #define SET_BEACON_PROBE_RSP_BEACON_INTERVAL(__phdr, __val) \
--	WRITEEF2BYTE(((u8*)(__phdr)) + 32, __val)
-+	WRITEEF2BYTE(((u8 *)(__phdr)) + 32, __val)
- #define GET_BEACON_PROBE_RSP_CAPABILITY_INFO(__phdr) 		\
--	READEF2BYTE(((u8*)(__phdr)) + 34)
-+	READEF2BYTE(((u8 *)(__phdr)) + 34)
- #define SET_BEACON_PROBE_RSP_CAPABILITY_INFO(__phdr, __val) \
--	WRITEEF2BYTE(((u8*)(__phdr)) + 34, __val)
-+	WRITEEF2BYTE(((u8 *)(__phdr)) + 34, __val)
- #define MASK_BEACON_PROBE_RSP_CAPABILITY_INFO(__phdr, __val) \
- 	SET_BEACON_PROBE_RSP_CAPABILITY_INFO(__phdr, \
- 	(GET_BEACON_PROBE_RSP_CAPABILITY_INFO(__phdr) & (~(__val))))
-diff --git a/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c b/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c
-index 01f5a74..5fbdf33 100644
---- a/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c
-+++ b/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c
-@@ -285,10 +285,10 @@ static bool halbtc_get(void *void_btcoexist, u8 get_type, void *out_buf)
- 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
- 	struct rtl_mac *mac = rtl_mac(rtlpriv);
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
--	bool *bool_tmp = (bool*)out_buf;
--	int *s32_tmp = (int*)out_buf;
--	u32 *u32_tmp = (u32*)out_buf;
--	u8 *u8_tmp = (u8*)out_buf;
-+	bool *bool_tmp = (bool *)out_buf;
-+	int *s32_tmp = (int *)out_buf;
-+	u32 *u32_tmp = (u32 *)out_buf;
-+	u8 *u8_tmp = (u8 *)out_buf;
- 	bool tmp = false;
- 
- 
-diff --git a/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.h b/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.h
-index fd233cc..2d4b4ef 100644
---- a/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.h
-+++ b/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.h
-@@ -109,7 +109,7 @@ extern u32 btc_dbg_type[];
- 	do { 							\
- 		if(unlikely(btc_dbg_type[dbgtype] & dbgflag)) {	\
- 			int __i;				\
--			u8* __ptr = (u8*)_Ptr;			\
-+			u8 *__ptr = (u8 *)_Ptr;			\
- 			printk printstr;			\
- 			for( __i = 0; __i < 6; __i++ )		\
- 				printk("%02X%s", __ptr[__i], (__i==5)?"":"-");\
-@@ -121,7 +121,7 @@ extern u32 btc_dbg_type[];
- 	do {								\
- 		if(unlikely(btc_dbg_type[dbgtype] & dbgflag) )	{ 	\
- 			int __i;					\
--			u8 *__ptr = (u8*)_hexdata;			\
-+			u8 *__ptr = (u8 *)_hexdata;			\
- 			printk(_titlestring);				\
- 			for( __i = 0; __i < (int)_hexdatalen; __i++ ) {	\
- 				printk("%02X%s", __ptr[__i], (((__i + 1) % 4) \
-diff --git a/drivers/staging/rtl8821ae/core.c b/drivers/staging/rtl8821ae/core.c
-index 046be2c..73c780b 100644
---- a/drivers/staging/rtl8821ae/core.c
-+++ b/drivers/staging/rtl8821ae/core.c
-@@ -691,7 +691,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
- 				rtlpriv->cfg->ops->linked_set_reg(hw);
- 
- 			rcu_read_lock();
--			sta = ieee80211_find_sta(vif, (u8*)bss_conf->bssid);
-+			sta = ieee80211_find_sta(vif, (u8 *)bss_conf->bssid);
- 
- 			if (vif->type == NL80211_IFTYPE_STATION && sta)
- 				rtlpriv->cfg->ops->update_rate_tbl(hw, sta, 0);
-@@ -760,7 +760,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
- 			 ("BSS_CHANGED_HT\n"));
- 
- 		rcu_read_lock();
--		sta = ieee80211_find_sta(vif, (u8*)bss_conf->bssid);
-+		sta = ieee80211_find_sta(vif, (u8 *)bss_conf->bssid);
- 		if (sta) {
- 			if (sta->ht_cap.ampdu_density >
- 			    mac->current_ampdu_density)
-@@ -796,7 +796,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
- 		rtlpriv->cfg->ops->set_network_type(hw, vif->type);
- 
- 		rcu_read_lock();
--		sta = ieee80211_find_sta(vif, (u8*)bss_conf->bssid);
-+		sta = ieee80211_find_sta(vif, (u8 *)bss_conf->bssid);
- 		if (!sta) {
- 			rcu_read_unlock();
- 			goto out;
-diff --git a/drivers/staging/rtl8821ae/debug.h b/drivers/staging/rtl8821ae/debug.h
-index 6c0a553..c793f8c 100644
---- a/drivers/staging/rtl8821ae/debug.h
-+++ b/drivers/staging/rtl8821ae/debug.h
-@@ -203,7 +203,7 @@ enum dbgp_flag_e {
- 		if(unlikely(((_comp) & rtlpriv->dbg.global_debugcomponents ) &&\
- 			(_level <= rtlpriv->dbg.global_debuglevel )))	{ \
- 			int __i;					\
--			u8*	ptr = (u8*)_hexdata;			\
-+			u8 *ptr = (u8 *)_hexdata;			\
- 			printk(KERN_DEBUG "%s: ", KBUILD_MODNAME);	\
- 			printk(KERN_DEBUG "In process \"%s\" (pid %i):", \
- 					current->comm, 	\
-diff --git a/drivers/staging/rtl8821ae/pci.c b/drivers/staging/rtl8821ae/pci.c
-index b818788..2995230 100644
---- a/drivers/staging/rtl8821ae/pci.c
-+++ b/drivers/staging/rtl8821ae/pci.c
-@@ -897,10 +897,10 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
- 
- 			/* static bcn for roaming */
- 			rtl_beacon_statistic(hw, skb);
--			rtl_p2p_info(hw, (void*)skb->data, skb->len);
-+			rtl_p2p_info(hw, (void *)skb->data, skb->len);
- 			/* for sw lps */
--			rtl_swlps_beacon(hw, (void*)skb->data, skb->len);
--			rtl_recognize_peer(hw, (void*)skb->data, skb->len);
-+			rtl_swlps_beacon(hw, (void *)skb->data, skb->len);
-+			rtl_recognize_peer(hw, (void *)skb->data, skb->len);
- 			if ((rtlpriv->mac80211.opmode == NL80211_IFTYPE_AP) &&
- 			    (rtlpriv->rtlhal.current_bandtype == BAND_ON_2_4G)&&
- 			    (ieee80211_is_beacon(fc) ||
-diff --git a/drivers/staging/rtl8821ae/rtl8821ae/def.h b/drivers/staging/rtl8821ae/rtl8821ae/def.h
-index 72ebdea..26644ae 100644
---- a/drivers/staging/rtl8821ae/rtl8821ae/def.h
-+++ b/drivers/staging/rtl8821ae/rtl8821ae/def.h
-@@ -182,7 +182,7 @@
- #define	GET_C2H_CMD_CONTINUE(__prxhdr)		\
- 	LE_BITS_TO_4BYTE((__prxhdr), 31, 1)
- #define	GET_C2H_CMD_CONTENT(__prxhdr)		\
--	((u8*)(__prxhdr) + C2H_RX_CMD_HDR_LEN)
-+	((u8 *)(__prxhdr) + C2H_RX_CMD_HDR_LEN)
- 
- #define	GET_C2H_CMD_FEEDBACK_ELEMENT_ID(__pcmdfbhdr)	\
- 	LE_BITS_TO_4BYTE((__pcmdfbhdr), 0, 8)
-diff --git a/drivers/staging/rtl8821ae/rtl8821ae/dm.c b/drivers/staging/rtl8821ae/rtl8821ae/dm.c
-index e0efcd2..cddf1b6 100644
---- a/drivers/staging/rtl8821ae/rtl8821ae/dm.c
-+++ b/drivers/staging/rtl8821ae/rtl8821ae/dm.c
-@@ -2733,7 +2733,7 @@ void rtl8821ae_dm_dynamic_edcca(struct ieee80211_hw *hw)
- 	bool b_fw_current_in_ps_mode = false;
- 
- 	rtlpriv->cfg->ops->get_hw_reg(hw,HW_VAR_FW_PSMODE_STATUS, \
--		(u8*)(&b_fw_current_in_ps_mode));
-+		(u8 *)(&b_fw_current_in_ps_mode));
- 	if (b_fw_current_in_ps_mode)
- 		return;
- }
 -- 
-1.9.1
-
+Len Sorensen
