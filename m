@@ -1,219 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaIFUCb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 16:02:31 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:48776 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaIFUCa (ORCPT
+	id S1751901AbaIFUJI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 16:09:08 -0400
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:43370 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaIFUJG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 16:02:30 -0400
-Message-ID: <540B6819.9030201@ahsoftware.de>
-Date: Sat, 06 Sep 2014 22:01:29 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Sat, 6 Sep 2014 16:09:06 -0400
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Rogelio Serrano <rogelio.serrano@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
+In-Reply-To: <20140905221616.GP3001@console-pimps.org>
+References: <1409806207-3992-1-git-send-email-yinghai@kernel.org>
+	<20140904100137.GK3001@console-pimps.org>
+	<5408D299.5000300@zytor.com>
+	<20140905221616.GP3001@console-pimps.org>
+Date: Sat, 6 Sep 2014 23:09:04 +0300
+Message-ID: <CAPWNY8V6Vw0JBZ=VE_ZLZ1hiKVhrDbYyWfkLXMQtKYHZjmewRA@mail.gmail.com>
+Subject: Re: [PATCH -v4] x86: only load initrd above 4g on second try
+From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Anders Darander <anders@chargestorm.se>, linux-efi@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: OT: Open letter to the Linux World
-References: <20140812153812.2923046a@monolith.infinux.org>	<20140812202129.GA20344@home.goodmis.org>	<yw1xr40l2whi.fsf@unicorn.mansr.com>	<20140813082756.GB2923@twins.programming.kicks-ass.net>	<20140813090013.GA20581@pd.tnic>	<53F242D1.4050506@ahsoftware.de>	<CANszf4jauBAhaTogvSprhhspKywXSu_8xkWh+ETsWMMUDKo0=g@mail.gmail.com>	<5408B069.9080708@ahsoftware.de> <CAOS_Y6RAiwY=Zh4g6Ei4UYm3FMybwf+bSo_CwqQhaMsaJh10uw@mail.gmail.com> <540958AD.8030503@ahsoftware.de>
-In-Reply-To: <540958AD.8030503@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.09.2014 08:31, schrieb Alexander Holler:
-> Am 04.09.2014 21:18, schrieb Rob Landley:
->
->> What's actually wrong with C++ at a language design level.
+On Sat, Sep 6, 2014 at 1:16 AM, Matt Fleming <matt@console-pimps.org> wrote:
+> On Thu, 04 Sep, at 01:59:05PM, H. Peter Anvin wrote:
 >>
->> Short version:
+>> I am fine with this patch, but at the same time I do want to note that
+>> there is an alternative to double-buffer the patch and/or (if that
+>> applies to the buggy BIOS) round up the size of the target buffer.
 >
-> OMG.
+> I took a whack at the double-buffer strategy, and I think the patch is
+> conceptually pretty straight forward.
 >
-> It's better than C. In almost every aspect. Stop. Nothing else. Of
-> course, if you want to write something like systemd in Python, Perl,
-> Pascal, Modula or Erlang, feel free to so. And if you want more security
-> bugs, feel free to still use C for string handling instead of
-> std::string, Or still write your sorted list for every structure (or
-> just don't and go the slow way, because you don't find the time to do it
-> right in C). And ...
+> Could someone try out the following patch? It works around the problem
+> on my ASUS machine.
 >
-> You don't have to understand how templates do work to use e.g.
-> std::string. Other people do hard stuff for you. So don't panic.
+> ---
+>
+> From 89e7fdaeb04f79d9834678e486215974986d4ac8 Mon Sep 17 00:00:00 2001
+> From: Matt Fleming <matt.fleming@intel.com>
+> Date: Fri, 5 Sep 2014 23:15:11 +0100
+> Subject: [PATCH] x86/efi: Workaround firmware bug with double-buffer read
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+>
+> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
+> loaded above 4G"), the kernel freezes at the earliest possible moment
+> when trying to boot via UEFI on Asus laptop.
+>
+> The cause of the freeze appears to be a firmware bug when reading file
+> data into buffers above 4GB, though the exact reason is unknown.  Mantas
+> reports that the hang can be avoided if the file size is a multiple of
+> 512 bytes, but I've seen some ASUS firmware simply corrupting the file
+> data rather than freezing.
+>
+> Since the bug has only been reported when reading into a buffer above
+> 4GB, we can workaround the problem by doing a double-buffer read, where
+> we read a partial file chunk into a buffer < 4GB then copy it to the
+> buffer (potentially) above 4GB.
+>
+> Laszlo fixed an issue in the upstream EDK2 DiskIO code in Aug 2013 which
+> may possibly be related, commit 4e39b75e ("MdeModulePkg/DiskIoDxe: fix
+> source/destination pointer of overrun transfer"). Whatever the cause,
+> it's unlikely that a fix will be forthcoming from the vendor, hence the
+> workaround.
+>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Laszlo Ersek <lersek@redhat.com>
+> Reported-by: Mantas Mikulėnas <grawity@gmail.com>
+> Reported-by: Harald Hoyer <harald@redhat.com>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  drivers/firmware/efi/libstub/efi-stub-helper.c | 28 ++++++++++++++++++++++++--
+>  1 file changed, 26 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/firmware/efi/libstub/efi-stub-helper.c b/drivers/firmware/efi/libstub/efi-stub-helper.c
+> index 32d5cca30f49..470793ce2617 100644
+> --- a/drivers/firmware/efi/libstub/efi-stub-helper.c
+> +++ b/drivers/firmware/efi/libstub/efi-stub-helper.c
+> @@ -297,6 +297,7 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>  {
+>         struct file_info *files;
+>         unsigned long file_addr;
+> +       unsigned long chunkbuf;
+>         u64 file_size_total;
+>         efi_file_handle_t *fh = NULL;
+>         efi_status_t status;
+> @@ -416,6 +417,24 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>                         goto free_file_total;
+>                 }
+>
+> +               /*
+> +                * Allocate a bounce buffer below 4GB.
+> +                *
+> +                * Some firmware implementations cannot perform file
+> +                * reads into buffers above 4G and at best corrupt the
+> +                * buffer, at worst they hang completely.
+> +                *
+> +                * Pass chunkbuf to the firmware to perform reads in
+> +                * chunksize bytes and copy them to the target buffer
+> +                * 'file_addr'.
+> +                */
+> +               status = efi_high_alloc(sys_table_arg, EFI_READ_CHUNK_SIZE,
+> +                                       0x1000, &chunkbuf, 0xffffffff);
+> +               if (status != EFI_SUCCESS) {
+> +                       pr_efi_err(sys_table_arg, "Failed to alloc file chunk buffer\n");
+> +                       goto free_chunk;
+> +               }
+> +
+>                 addr = file_addr;
+>                 for (j = 0; j < nr_files; j++) {
+>                         unsigned long size;
+> @@ -430,11 +449,13 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>
+>                                 status = efi_file_read(files[j].handle,
+>                                                        &chunksize,
+> -                                                      (void *)addr);
+> +                                                      (void *)chunkbuf);
+>                                 if (status != EFI_SUCCESS) {
+>                                         pr_efi_err(sys_table_arg, "Failed to read file\n");
+> -                                       goto free_file_total;
+> +                                       goto free_chunk;
+>                                 }
+> +
+> +                               memcpy((void *)addr, (void *)chunkbuf, chunksize);
+>                                 addr += chunksize;
+>                                 size -= chunksize;
+>                         }
+> @@ -442,6 +463,7 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>                         efi_file_close(files[j].handle);
+>                 }
+>
+> +               efi_free(sys_table_arg, EFI_READ_CHUNK_SIZE, chunkbuf);
+>         }
+>
+>         efi_call_early(free_pool, files);
+> @@ -451,6 +473,8 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+>
+>         return status;
+>
+> +free_chunk:
+> +       efi_free(sys_table_arg, EFI_READ_CHUNK_SIZE, chunkbuf);
+>  free_file_total:
+>         efi_free(sys_table_arg, file_size_total, file_addr);
+>
+> --
+> 1.9.3
+>
+> --
+> Matt Fleming, Intel Open Source Technology Center
 
+Finally got around to testing the patches here. Sorry for no replies earlier.
 
-I've brought up the critics about using C in a critical and very 
-security sensitive piece of software in userland, so I've decided a bit 
-more explanations might make sense.
+This seemed like it would work, but... it hangs at the memcpy?...
 
-First, as you don't seem to have noticed or you don't know or you ignore 
-the difference, let me repeat that this thread is about a piece of SW 
-which runs in userland. So, please, keep away with any comments from 
-Linus where he talks about kernelspace. I'm pretty sure he knows the 
-difference.
+(If I add a printk before memcpy and a printk after memcpy, I never
+see the second one. I guess that memory location is just cursed, or
+something.)
 
-Now let me bring up a very small piece of code which you can find in a 
-similiar fashion in almost every piece of software which gets in contact 
-with strings. And not just in one place or function, but in dozens or 
-even hundred of places (inline, not in functions) in one project.
+Going to test Yinghai's 6aacad3513bf now, just in case.
 
-First in C++:
-
-void foo_bar(const std::string& foo, const std::string& bar, 
-std::string& foobar)
-{
-	foobar = foo + bar;
-}
-
-For those which don't know C++, this concatenates the two strings named 
-foo and bar and puts the result into foobar.
-
-Now an example how you would have to do that in C:
-
-char *foo_bar(const char *foo, const char *bar)
-{
-	char *foobar = malloc(strlen(foo) + strlen(bar));
-
-	strcpy(foobar, foo);
-	strcat(foobar, bar);
-
-	return foobar;
-}
-
-Do you see the difference and spot all the problems?
-
-First I've though about not posting the answer to see the response, but 
-that would just have ended up with a lot of people calling me a fool 
-and/or assuming I can't write proper C. And it bears the problem that 
-some inexperienced people might copy and paste and use it.
-
-So at first: THE ABOVE EXAMPLE IN C IS BROKEN.
-
-The very first problem is that foobar is allocated with the wrong size, 
-because it doesn't take care of the terminating null byte. A very common 
-problem already found at uncountable places.
-
-But there are several more problems:
-
-- What happens if foo or bar isn't terminated with a null byte?
-
-- What happens if malloc fails?
-
-- Who is the owner of foo, bar and/or foobar? Does the caller still owns 
-foo and bar afterwards? Will the caller own foobar? (That means who is 
-repsonsible to free foo, bar and foobar if they aren't used anymore).
-
-So now we extend the above C example:
-
-char *foo_bar(const char *foo, const char *bar)
-{
-	char *foobar;
-
-	if (!foo || !bar)
-		return NULL;
-
-	foobar = malloc(strlen(foo) + strlen(bar) + 1);
-
-	if (!foobar)
-		return NULL;
-
-	strcpy(foobar, foo);
-	strcat(foobar, bar);
-
-	return foobar;
-}
-
-This has still some problems. First, the caller has to check if 
-foo_bar() hasn't returned NULL. A very common bug already found in 
-uncountable places too.
-
-Next, there is still the unsolvable problem about what happens if foo or 
-bar isn't terminated with a null byte (in other words they aren't C 
-strings).
-So you have to check all callers up to the source of foo and bar to be 
-sure the program doesn't crash in the possible far far away place called 
-foo_bar().
-
-And still no comment about ownership. That means someone who just looks 
-at the prototype or sees a call of foo_bar() somewhere has no idea about 
-the ownership of foo, bar and the returned foobar without a comment.
-
-So just this very simple functionality about string handling in C 
-already contains several still open questions and is 17 lines long which 
-have to be reviewed very carefull (e.g. to not miss the off-by-one bug).
-Compare this with the 4 lines in C++ which are almost impossible to do 
-or to use wrong.
-
-And, again, this thread is about a piece of software which runs with 
-process ID 1, wants to control the whole system and owns all permissions 
-to modify the system in almost every possible way. It doesn't run as 
-some user  with restricted permissions or in chroot or something 
-similar. Some parts might do, but for sure not all (read again the above 
-"far far away").
-
-And now some stats. I've just checked out systemd:
-
-git grep -E "strcat|strncat|strcpy|strncpy|strlen" | wc -l
-570
-
-git grep -E "strcat|strncat|strcpy|strncpy|memcpy|strlen" | wc -l
-850
-
-Ok, not every of those places might be part of pid 1. And several places 
-are trivial calls like strlen("ATTR"), but it gives an idea about how 
-many places do exist in systemd which might contain a problem wich isn't 
-trivial to spot.
-
-And regardless how clever and experienced these people are which are 
-writing this piece of software, everyone is prone to do e.g. such an 
-off-by-one bug.
-Maybe he writes the piece of code after having worked 12 hours, maybe he 
-got interrupted while writing the code and continued it a day later, 
-maybe it's full moon or maybe his last meal wasn't like it should have been.
-
-Whatever.
-
-This means, every piece of code in that piece of software has to be 
-reviewed multiple times (reviewers aren't perfect too), and, as long as 
-the software changes, every piece which changes has to be reviewed 
-multiple times again.
-
-I could continue with examples for lists, sets and similiar data 
-structures, which have to be inventent again and again and again in C, 
-whereas in C++ people can reuse some code which is already in use by 
-many, many people in many, many other projects.
-
-And to come to your argument about how simple everything in C is. Just 
-look at the macro for container_of(). I wouldn't say it's such simple 
-that everyone understands what it does. And it's just part of the Linux 
-kernel, that means limited documentation and many people never heard of 
-it before, compared with stuff which can be found standard libraries.
-
-And, again, this is not about the kernelspace, it isn't the Linux kernel 
-where Linus has managed it to organize an army of people which do look 
-at every line again and again (and still do sometimes miss a bug).
-Most software projects don't have that many resources (human or not) 
-available as the Linux kernel. In fact it's an absolute exception.
-
-So you just don't want to use error prone C in new and non-trivial 
-projects (if not really necessary) which are a major problem if 
-something fails in the code.
-
-Doing so just means nothing has be learned from the (of corse relatively 
-short) history of software development.
-
-Alexander Holler
-
-PS: Please don't try to tell me that even the above C++ example ends up 
-in some similar code as the C code. std::string is used by even more 
-people than which do review the Linux kernel code. Besides that it was 
-designed and reviewed by clever people too. And, just to repeat it 
-again, we are talking about userspace, not kernelspace.
-
+-- 
+Mantas Mikulėnas <grawity@gmail.com>
