@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaIFMzF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 08:55:05 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53267 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaIFMy6 (ORCPT
+	id S1751691AbaIFMzI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 08:55:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58099 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488AbaIFMy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 08:54:58 -0400
-Date: Sat, 6 Sep 2014 13:54:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linaro-kernel@lists.linaro.org, Marc Zyngier <marc.zyngier@arm.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140906125448.GB32429@sirena.org.uk>
-References: <1406480224-24628-1-git-send-email-broonie@kernel.org>
- <20140817165736.GD12769@titan.lakedaemon.net>
+	Sat, 6 Sep 2014 08:54:59 -0400
+Date: Sat, 6 Sep 2014 05:54:45 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-196cf358422517b3ff3779c46a1f3e26fb084172@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        mark.d.rustad@intel.com, tglx@linutronix.de,
+        jeffrey.t.kirsher@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mark.d.rustad@intel.com,
+        jeffrey.t.kirsher@intel.com
+In-Reply-To: <1409972149-26272-1-git-send-email-jeffrey.t.kirsher@intel.com>
+References: <1409972149-26272-1-git-send-email-jeffrey.t.kirsher@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86/tty/serial/8250: Clean up the asm/
+ serial.h include file a bit
+Git-Commit-ID: 196cf358422517b3ff3779c46a1f3e26fb084172
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EuxKj2iCbKjpUGkD"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140817165736.GD12769@titan.lakedaemon.net>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] irqchip: gic-v3: Only define gic_peek_irq() when
- building SMP
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  196cf358422517b3ff3779c46a1f3e26fb084172
+Gitweb:     http://git.kernel.org/tip/196cf358422517b3ff3779c46a1f3e26fb084172
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Sat, 6 Sep 2014 10:12:19 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sat, 6 Sep 2014 10:20:55 +0200
 
---EuxKj2iCbKjpUGkD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+x86/tty/serial/8250: Clean up the asm/serial.h include file a bit
 
-On Sun, Aug 17, 2014 at 12:57:36PM -0400, Jason Cooper wrote:
-> On Sun, Jul 27, 2014 at 05:57:04PM +0100, Mark Brown wrote:
-> > From: Mark Brown <broonie@linaro.org>
+ - correct spelling
+ - align fields vertically to make things more readable
+ - make the layout of magic defines more obvious
 
-> > If building with CONFIG_SMP disbled (for example, with allnoconfig) then
-> > GCC complains that the static function gic_peek_irq() is defined but not
-> > used since the only reference is in the SMP initialisation code. Fix this
-> > by moving the function definition inside the ifdef.
+Cc: Mark Rustad <mark.d.rustad@intel.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Link: http://lkml.kernel.org/r/1409972149-26272-1-git-send-email-jeffrey.t.kirsher@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/serial.h | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-> Applied to irqchip/urgent with Mark's Ack.
-
-This also appears to have disappeared from -next and again the warning
-is back.
-
---EuxKj2iCbKjpUGkD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUCwQYAAoJECTWi3JdVIfQTikH/38Jj+8ZbNTz+6TUopNUPfJU
-RO49e/L8u0aRPVhOBJCXKH2DW9HRn7Dk/r/aWg0WJC/FJp3b38URwlEegGPNuGxG
-7UNF6AqlI98D3yKpOSbguA60KliTJdBBoUxEtB11wZJjRSWVFN/lhdl70TfPc8A+
-lEy6p1rBOqxYJeSfduK5Qo7EMArMNbsPLXKwPNwEubS8cFZRu/kM6JqWfA37Wvma
-vEmX7jWFlP+MvM76BAaNXrNBi9/Zm9fDzFFD0rw7qVMUVDAdNOKvHaSgjePS2iPw
-MSU+YlxKCH3OO/ZiyAwYgOqMeYhWATVydGs9d9lucaEVPzWMdrwOl1CDEpdrfWc=
-=tMF6
------END PGP SIGNATURE-----
-
---EuxKj2iCbKjpUGkD--
+diff --git a/arch/x86/include/asm/serial.h b/arch/x86/include/asm/serial.h
+index 03ece8e..460b84f 100644
+--- a/arch/x86/include/asm/serial.h
++++ b/arch/x86/include/asm/serial.h
+@@ -6,24 +6,24 @@
+  *
+  * It'd be nice if someone built a serial card with a 24.576 MHz
+  * clock, since the 16550A is capable of handling a top speed of 1.5
+- * megabits/second; but this requires the faster clock.
++ * megabits/second; but this requires a faster clock.
+  */
+-#define BASE_BAUD ( 1843200 / 16 )
++#define BASE_BAUD (1843200/16)
+ 
+ /* Standard COM flags (except for COM4, because of the 8514 problem) */
+ #ifdef CONFIG_SERIAL_DETECT_IRQ
+-#define STD_COM_FLAGS (ASYNC_BOOT_AUTOCONF | ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ)
+-#define STD_COM4_FLAGS (ASYNC_BOOT_AUTOCONF | ASYNC_AUTO_IRQ)
++# define STD_COMX_FLAGS	(ASYNC_BOOT_AUTOCONF |	ASYNC_SKIP_TEST	| ASYNC_AUTO_IRQ)
++# define STD_COM4_FLAGS	(ASYNC_BOOT_AUTOCONF |	0		| ASYNC_AUTO_IRQ)
+ #else
+-#define STD_COM_FLAGS (ASYNC_BOOT_AUTOCONF | ASYNC_SKIP_TEST)
+-#define STD_COM4_FLAGS ASYNC_BOOT_AUTOCONF
++# define STD_COMX_FLAGS	(ASYNC_BOOT_AUTOCONF |	ASYNC_SKIP_TEST	| 0		)
++# define STD_COM4_FLAGS	(ASYNC_BOOT_AUTOCONF |	0		| 0		)
+ #endif
+ 
+-#define SERIAL_PORT_DFNS			\
+-	/* UART CLK   PORT IRQ     FLAGS        */			\
+-	{ .uart = 0, BASE_BAUD, 0x3F8, 4, STD_COM_FLAGS }, /* ttyS0 */	\
+-	{ .uart = 0, BASE_BAUD, 0x2F8, 3, STD_COM_FLAGS }, /* ttyS1 */	\
+-	{ .uart = 0, BASE_BAUD, 0x3E8, 4, STD_COM_FLAGS }, /* ttyS2 */	\
+-	{ .uart = 0, BASE_BAUD, 0x2E8, 3, STD_COM4_FLAGS }, /* ttyS3 */
++#define SERIAL_PORT_DFNS								\
++	/* UART		CLK		PORT	IRQ	FLAGS			    */	\
++	{ .uart = 0,	BASE_BAUD,	0x3F8,	4,	STD_COMX_FLAGS	}, /* ttyS0 */	\
++	{ .uart = 0,	BASE_BAUD,	0x2F8,	3,	STD_COMX_FLAGS	}, /* ttyS1 */	\
++	{ .uart = 0,	BASE_BAUD,	0x3E8,	4,	STD_COMX_FLAGS	}, /* ttyS2 */	\
++	{ .uart = 0,	BASE_BAUD,	0x2E8,	3,	STD_COM4_FLAGS	}, /* ttyS3 */
+ 
+ #endif /* _ASM_X86_SERIAL_H */
