@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaIFRxo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 13:53:44 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:63723 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123AbaIFRxD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752279AbaIFRxD (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 6 Sep 2014 13:53:03 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:63244 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092AbaIFRwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 13:52:55 -0400
 From: =?UTF-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -18,9 +18,9 @@ To: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Cc: =?utf-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>
-Subject: [PATCHv4 4/4] clocksource: tcb_clksrc: sanitize IRQ request
-Date: Sat,  6 Sep 2014 19:52:37 +0200
-Message-Id: <1410025957-5952-5-git-send-email-gael.portay@gmail.com>
+Subject: [PATCHv4 1/4] ARM: at91/tclib: prefer using of devm_* functions
+Date: Sat,  6 Sep 2014 19:52:34 +0200
+Message-Id: <1410025957-5952-2-git-send-email-gael.portay@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410025957-5952-1-git-send-email-gael.portay@gmail.com>
 References: <1410025957-5952-1-git-send-email-gael.portay@gmail.com>
@@ -31,53 +31,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock is not unprepared in case of the request IRQ fails.
-
-Also update to request_irq.
-
 Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- drivers/clocksource/tcb_clksrc.c | 13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ drivers/misc/atmel_tclib.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index f922e81..8bdbc45 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -178,12 +178,6 @@ static irqreturn_t ch2_irq(int irq, void *handle)
- 	return IRQ_NONE;
- }
+diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
+index c8d8e38..b514a2d 100644
+--- a/drivers/misc/atmel_tclib.c
++++ b/drivers/misc/atmel_tclib.c
+@@ -150,17 +150,15 @@ static int __init tc_probe(struct platform_device *pdev)
+ 	if (irq < 0)
+ 		return -EINVAL;
  
--static struct irqaction tc_irqaction = {
--	.name		= "tc_clkevt",
--	.flags		= IRQF_TIMER,
--	.handler	= ch2_irq,
--};
--
- static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
- {
- 	int ret;
-@@ -198,15 +192,16 @@ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
+-	tc = kzalloc(sizeof(struct atmel_tc), GFP_KERNEL);
++	tc = devm_kzalloc(&pdev->dev, sizeof(struct atmel_tc), GFP_KERNEL);
+ 	if (!tc)
+ 		return -ENOMEM;
  
- 	clkevt.regs = tc->regs;
- 	clkevt.clk = t2_clk;
--	tc_irqaction.dev_id = &clkevt;
+ 	tc->pdev = pdev;
  
- 	timer_clock = clk32k_divisor_idx;
+-	clk = clk_get(&pdev->dev, "t0_clk");
+-	if (IS_ERR(clk)) {
+-		kfree(tc);
+-		return -EINVAL;
+-	}
++	clk = devm_clk_get(&pdev->dev, "t0_clk");
++	if (IS_ERR(clk))
++		return PTR_ERR(clk);
  
- 	clkevt.clkevt.cpumask = cpumask_of(0);
+ 	/* Now take SoC information if available */
+ 	if (pdev->dev.of_node) {
+@@ -171,10 +169,10 @@ static int __init tc_probe(struct platform_device *pdev)
+ 	}
  
--	ret = setup_irq(irq, &tc_irqaction);
--	if (ret)
-+	ret = request_irq(irq, ch2_irq, IRQF_TIMER, "tc_clkevt", &clkevt);
-+	if (ret) {
-+		clk_disable_unprepare(t2_clk);
- 		return ret;
-+	}
- 
- 	clockevents_config_and_register(&clkevt.clkevt, 32768, 1, 0xffff);
+ 	tc->clk[0] = clk;
+-	tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
++	tc->clk[1] = devm_clk_get(&pdev->dev, "t1_clk");
+ 	if (IS_ERR(tc->clk[1]))
+ 		tc->clk[1] = clk;
+-	tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
++	tc->clk[2] = devm_clk_get(&pdev->dev, "t2_clk");
+ 	if (IS_ERR(tc->clk[2]))
+ 		tc->clk[2] = clk;
  
 -- 
 1.9.3
