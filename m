@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaIFI4I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 04:56:08 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:34138 "EHLO mail.kapsi.fi"
+	id S1751942AbaIFI4G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 04:56:06 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:58828 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871AbaIFIzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751156AbaIFIzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Sep 2014 04:55:18 -0400
 From: Mikko Perttunen <cyndis@kapsi.fi>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-tegra@vger.kernel.org, wni@nvidia.com,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v3 3/5] ARM: tegra124: Add I2C controller ids to device tree
-Date: Sat,  6 Sep 2014 11:54:43 +0300
-Message-Id: <1409993685-21911-4-git-send-email-cyndis@kapsi.fi>
+        Mikko Perttunen <cyndis@kapsi.fi>
+Subject: [PATCH v3 0/5] Thermal reset support in PMC
+Date: Sat,  6 Sep 2014 11:54:40 +0300
+Message-Id: <1409993685-21911-1-git-send-email-cyndis@kapsi.fi>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1409993685-21911-1-git-send-email-cyndis@kapsi.fi>
-References: <1409993685-21911-1-git-send-email-cyndis@kapsi.fi>
 X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
 X-SA-Exim-Mail-From: cyndis@kapsi.fi
 X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
@@ -24,72 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikko Perttunen <mperttunen@nvidia.com>
+Hi,
 
-I2C controller ids are required when programming hardware blocks
-that send messages to devices connected to an I2C bus, such as
-when the PMC sends a poweroff message to the PMIC. Add ids
-to all I2C controllers in Tegra124.
+this series adds support for hardware-triggered thermal reset to the PMC
+driver. Namely, it adds device tree properties for specifying the I2C
+command to be sent when thermtrip is triggered. It is to be noted
+that thermtrip won't be ever triggered without a soctherm driver to
+calibrate the sensors.
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-Reviewed-by: Wei Ni <wni@nvidia.com>
-Tested-by: Wei Ni <wni@nvidia.com>
----
- arch/arm/boot/dts/tegra124.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+Git repo at
+  git://github.com/cyndis/linux.git pmc-thermtrip-v3
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index a7608a4..65daa9e 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -356,6 +356,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 21>, <&apbdma 21>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <0>;
- 		status = "disabled";
- 	};
- 
-@@ -371,6 +372,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 22>, <&apbdma 22>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <1>;
- 		status = "disabled";
- 	};
- 
-@@ -386,6 +388,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 23>, <&apbdma 23>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <2>;
- 		status = "disabled";
- 	};
- 
-@@ -401,6 +404,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 26>, <&apbdma 26>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <3>;
- 		status = "disabled";
- 	};
- 
-@@ -416,6 +420,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 24>, <&apbdma 24>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <4>;
- 		status = "disabled";
- 	};
- 
-@@ -431,6 +436,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 30>, <&apbdma 30>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <5>;
- 		status = "disabled";
- 	};
- 
+Mikko Perttunen (5):
+  of: Add descriptions of thermtrip properties to Tegra PMC bindings
+  of: Add nvidia,controller-id property to Tegra I2C bindings
+  ARM: tegra124: Add I2C controller ids to device tree
+  ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
+  ARM: tegra: Add thermal reset (thermtrip) support to PMC
+
+ .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      |  23 ++
+ .../devicetree/bindings/i2c/nvidia,tegra20-i2c.txt |   5 +
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   9 +-
+ arch/arm/boot/dts/tegra124.dtsi                    |   6 +
+ drivers/soc/tegra/pmc.c                            | 379 ++++++++++++++-------
+ 5 files changed, 289 insertions(+), 133 deletions(-)
+
 -- 
 2.1.0
 
