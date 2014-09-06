@@ -1,128 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaIFQZX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 12:25:23 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:49540 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaIFQZQ (ORCPT
+	id S1751744AbaIFQe1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 12:34:27 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41255 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284AbaIFQe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 12:25:16 -0400
-X-Amavis-Alert: BAD HEADER, Duplicate header field: "In-Reply-To"
-From: Stefan Agner <stefan@agner.ch>
-To: linus.walleij@linaro.org, gnurou@gmail.com, shawn.guo@freescale.com,
-        kernel@pengutronix.de
-Cc: linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH 1/4] pinctrl: imx: detect uninitialized pins
-Date: Sat,  6 Sep 2014 18:25:04 +0200
-Message-Id: <6d676a88eb82a47f8fa9e16abbc768e3e9ac236a.1410020458.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1410020458.git.stefan@agner.ch>
-References: <cover.1410020458.git.stefan@agner.ch>
-In-Reply-To: <cover.1410020458.git.stefan@agner.ch>
-References: <cover.1410020458.git.stefan@agner.ch>
+	Sat, 6 Sep 2014 12:34:26 -0400
+Message-ID: <540B378E.2000400@roeck-us.net>
+Date: Sat, 06 Sep 2014 09:34:22 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>, Mark Brown <broonie@kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linuxfoundation.org>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Sep 5: build failure due to 'mm: introduce
+ dump_vma'
+References: <20140905165052.GF29327@sirena.org.uk> <20140906154309.GB25739@roeck-us.net> <540B2C84.5000002@oracle.com>
+In-Reply-To: <540B2C84.5000002@oracle.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.540B3791.00E3,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pinctrl driver initialized the register offsets for the pins
-with 0. On Vybrid an offset of 0 is a valid offset for the pinctrl
-mux register. So far, this was solved using the ZERO_OFFSET_VALID
-flag which allowed offsets of 0. However, this does not allow to
-verify whether a pins struct imx_pmx_func was initialized or not.
+On 09/06/2014 08:47 AM, Sasha Levin wrote:
+> On 09/06/2014 11:43 AM, Guenter Roeck wrote:
+>> I see the following build failure in next-20140905.
+>>
+>> Guenter
+>
+> Hey Guenter,
+>
+> Apologies for that. There is already a fix in -mm:
+>
+No worries.
 
-Use signed offset values for register offsets and initialize those
-with -1 in order to detect uninitialized offset values reliable.
+> 	http://ozlabs.org/~akpm/mmots/broken-out/introduce-dump_vma-fix-2.patch
+>
+> So -next would be fixed once -mm is pulled in again.
+>
+Great!
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- drivers/pinctrl/pinctrl-imx.c   | 9 +++++----
- drivers/pinctrl/pinctrl-imx.h   | 7 +++----
- drivers/pinctrl/pinctrl-vf610.c | 2 +-
- 3 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-index 946d594..0d4558b 100644
---- a/drivers/pinctrl/pinctrl-imx.c
-+++ b/drivers/pinctrl/pinctrl-imx.c
-@@ -204,7 +204,7 @@ static int imx_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
- 		pin_id = pin->pin;
- 		pin_reg = &info->pin_regs[pin_id];
- 
--		if (!(info->flags & ZERO_OFFSET_VALID) && !pin_reg->mux_reg) {
-+		if (pin_reg->mux_reg == -1) {
- 			dev_err(ipctl->dev, "Pin(%s) does not support mux function\n",
- 				info->pins[pin_id].name);
- 			return -EINVAL;
-@@ -308,7 +308,7 @@ static int imx_pinconf_get(struct pinctrl_dev *pctldev,
- 	const struct imx_pinctrl_soc_info *info = ipctl->info;
- 	const struct imx_pin_reg *pin_reg = &info->pin_regs[pin_id];
- 
--	if (!(info->flags & ZERO_OFFSET_VALID) && !pin_reg->conf_reg) {
-+	if (pin_reg->conf_reg == -1) {
- 		dev_err(info->dev, "Pin(%s) does not support config function\n",
- 			info->pins[pin_id].name);
- 		return -EINVAL;
-@@ -331,7 +331,7 @@ static int imx_pinconf_set(struct pinctrl_dev *pctldev,
- 	const struct imx_pin_reg *pin_reg = &info->pin_regs[pin_id];
- 	int i;
- 
--	if (!(info->flags & ZERO_OFFSET_VALID) && !pin_reg->conf_reg) {
-+	if (pin_reg->conf_reg == -1) {
- 		dev_err(info->dev, "Pin(%s) does not support config function\n",
- 			info->pins[pin_id].name);
- 		return -EINVAL;
-@@ -586,10 +586,11 @@ int imx_pinctrl_probe(struct platform_device *pdev,
- 	if (!ipctl)
- 		return -ENOMEM;
- 
--	info->pin_regs = devm_kzalloc(&pdev->dev, sizeof(*info->pin_regs) *
-+	info->pin_regs = devm_kmalloc(&pdev->dev, sizeof(*info->pin_regs) *
- 				      info->npins, GFP_KERNEL);
- 	if (!info->pin_regs)
- 		return -ENOMEM;
-+	memset(info->pin_regs, 0xff, sizeof(*info->pin_regs) * info->npins);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	ipctl->base = devm_ioremap_resource(&pdev->dev, res);
-diff --git a/drivers/pinctrl/pinctrl-imx.h b/drivers/pinctrl/pinctrl-imx.h
-index db408b0..49e55d3 100644
---- a/drivers/pinctrl/pinctrl-imx.h
-+++ b/drivers/pinctrl/pinctrl-imx.h
-@@ -67,8 +67,8 @@ struct imx_pmx_func {
-  * @conf_reg: config register offset
-  */
- struct imx_pin_reg {
--	u16 mux_reg;
--	u16 conf_reg;
-+	s16 mux_reg;
-+	s16 conf_reg;
- };
- 
- struct imx_pinctrl_soc_info {
-@@ -83,8 +83,7 @@ struct imx_pinctrl_soc_info {
- 	unsigned int flags;
- };
- 
--#define ZERO_OFFSET_VALID	0x1
--#define SHARE_MUX_CONF_REG	0x2
-+#define SHARE_MUX_CONF_REG	0x1
- 
- #define NO_MUX		0x0
- #define NO_PAD		0x0
-diff --git a/drivers/pinctrl/pinctrl-vf610.c b/drivers/pinctrl/pinctrl-vf610.c
-index bddd913..b788e15 100644
---- a/drivers/pinctrl/pinctrl-vf610.c
-+++ b/drivers/pinctrl/pinctrl-vf610.c
-@@ -299,7 +299,7 @@ static const struct pinctrl_pin_desc vf610_pinctrl_pads[] = {
- static struct imx_pinctrl_soc_info vf610_pinctrl_info = {
- 	.pins = vf610_pinctrl_pads,
- 	.npins = ARRAY_SIZE(vf610_pinctrl_pads),
--	.flags = ZERO_OFFSET_VALID | SHARE_MUX_CONF_REG,
-+	.flags = SHARE_MUX_CONF_REG,
- };
- 
- static struct of_device_id vf610_pinctrl_of_match[] = {
--- 
-2.1.0
+Thanks,
+Guenter
 
