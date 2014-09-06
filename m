@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaIFAHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 20:07:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56515 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911AbaIFAHc (ORCPT
+	id S1753062AbaIFAIB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 20:08:01 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40533 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaIFAHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 20:07:32 -0400
-Message-ID: <540A503D.20807@infradead.org>
-Date: Fri, 05 Sep 2014 17:07:25 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Peter Foley <pefoley2@pefoley.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
- built-in.o files
-References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com> <53FB9DA0.7000301@infradead.org> <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com> <540651B3.8030400@infradead.org> <20140902232906.GG29327@sirena.org.uk> <CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com> <20140903232149.GG29327@sirena.org.uk> <5407A68F.5090805@infradead.org> <20140904104201.GI29327@sirena.org.uk>
-In-Reply-To: <20140904104201.GI29327@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Sep 2014 20:07:01 -0400
+From: behanw@converseincode.com
+To: a.ryabinin@samsung.com, anurag19aggarwal@gmail.com, charlebm@gmail.com,
+        cl@linux-foundation.org, dave.long@linaro.org,
+        k.khlebnikov@samsung.com, linux@arm.linux.org.uk,
+        linyongting@gmail.com, Nikolay.Borisov@arm.com, tglx@linutronix.de,
+        tj@kernel.org, u.kleine-koenig@pengutronix.de
+Cc: behanw@converseincode.com, Dave.Martin@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rabin@rab.in, rostedt@goodmis.org, rric@kernel.org,
+        will.deacon@arm.com
+Subject: [PATCH v2 7/7] arm: LLVMLinux: Use global stack register variable for percpu
+Date: Fri,  5 Sep 2014 17:06:17 -0700
+Message-Id: <1409961977-11762-8-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
+References: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/14 03:42, Mark Brown wrote:
-> On Wed, Sep 03, 2014 at 04:38:55PM -0700, Randy Dunlap wrote:
-> 
->> Hm, it could be a problem with the Index line.  I'll disable that option
->> in quilt and see if that helps for the next time.
-> 
-> Still seems to be happening today I'm afraid.
-> 
+From: Mark Charlebois <charlebm@gmail.com>
 
-I tested using git-am.  Yes, that fails.  These patch files are not emails
-but git-am expects emails and fails when it cannot find email headers (AFAICT).
+Using global current_stack_pointer works on both clang and gcc.
+current_stack_pointer is an unsigned long and needs to be cast
+as a pointer to dereference.
 
-Using git-apply instead of git-am does apply these patches.
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+---
+ arch/arm/include/asm/percpu.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm/include/asm/percpu.h b/arch/arm/include/asm/percpu.h
+index 209e650..a89b407 100644
+--- a/arch/arm/include/asm/percpu.h
++++ b/arch/arm/include/asm/percpu.h
+@@ -30,14 +30,14 @@ static inline void set_my_cpu_offset(unsigned long off)
+ static inline unsigned long __my_cpu_offset(void)
+ {
+ 	unsigned long off;
+-	register unsigned long *sp asm ("sp");
+ 
+ 	/*
+ 	 * Read TPIDRPRW.
+ 	 * We want to allow caching the value, so avoid using volatile and
+ 	 * instead use a fake stack read to hazard against barrier().
+ 	 */
+-	asm("mrc p15, 0, %0, c13, c0, 4" : "=r" (off) : "Q" (*sp));
++	asm("mrc p15, 0, %0, c13, c0, 4" : "=r" (off)
++		: "Q" (*(const unsigned long *)current_stack_pointer));
+ 
+ 	return off;
+ }
 -- 
-~Randy
+1.9.1
+
