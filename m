@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195AbaIFBIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 21:08:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11495 "EHLO mga01.intel.com"
+	id S1751051AbaIFBe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 21:34:58 -0400
+Received: from mga14.intel.com ([192.55.52.115]:18630 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110AbaIFBIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 21:08:43 -0400
+	id S1750762AbaIFBez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 21:34:55 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,477,1406617200"; 
-   d="scan'208";a="595397770"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="382204935"
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: akpm@linuxfoundation.org
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
+To: matt.fleming@intel.com
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH] ipc: Resolve shadow warnings
-Date: Fri,  5 Sep 2014 18:08:38 -0700
-Message-Id: <1409965718-26633-1-git-send-email-jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] efi: Resolve some shadow warnings
+Date: Fri,  5 Sep 2014 18:34:52 -0700
+Message-Id: <1409967292-31441-1-git-send-email-jeffrey.t.kirsher@intel.com>
 X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,242 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Rustad <mark.d.rustad@intel.com>
 
-Resolve some shadow warnings produced in W=2 builds by changing
-the name of some parameters and local variables. Change instances
-of "s64" because that clashes with the well-known typedef. Also
-change a local variable with the name "up" because that clashes
-with the name of of the "up" function for semaphores. These are
-hazards so eliminate the hazards by renaming them.
+It is a really bad idea to declare variables or parameters that
+have the same name as common types. It is valid C, but it gets
+surprising if a macro expansion attempts to declare an inner
+local with that type. Change the local names to eliminate the
+hazard.
+
+Change s16 => ps16, s8 => ps8.
 
 Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
 Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 ---
- ipc/compat.c | 92 ++++++++++++++++++++++++++++++------------------------------
- 1 file changed, 46 insertions(+), 46 deletions(-)
+ drivers/firmware/efi/vars.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/ipc/compat.c b/ipc/compat.c
-index b5ef4f7..9b3c85f 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -171,32 +171,32 @@ static inline int __put_compat_ipc64_perm(struct ipc64_perm *p64,
- }
- 
- static inline int __put_compat_ipc_perm(struct ipc64_perm *p,
--					struct compat_ipc_perm __user *up)
-+					struct compat_ipc_perm __user *uip)
+diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
+index 5abe943..afa3596 100644
+--- a/drivers/firmware/efi/vars.c
++++ b/drivers/firmware/efi/vars.c
+@@ -321,11 +321,11 @@ static unsigned long var_name_strnsize(efi_char16_t *variable_name,
+  * Print a warning when duplicate EFI variables are encountered and
+  * disable the sysfs workqueue since the firmware is buggy.
+  */
+-static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
++static void dup_variable_bug(efi_char16_t *ps16, efi_guid_t *vendor_guid,
+ 			     unsigned long len16)
  {
- 	int err;
- 	__compat_uid_t u;
- 	__compat_gid_t g;
+ 	size_t i, len8 = len16 / sizeof(efi_char16_t);
+-	char *s8;
++	char *ps8;
  
--	err  = __put_user(p->key, &up->key);
-+	err  = __put_user(p->key, &uip->key);
- 	SET_UID(u, p->uid);
--	err |= __put_user(u, &up->uid);
-+	err |= __put_user(u, &uip->uid);
- 	SET_GID(g, p->gid);
--	err |= __put_user(g, &up->gid);
-+	err |= __put_user(g, &uip->gid);
- 	SET_UID(u, p->cuid);
--	err |= __put_user(u, &up->cuid);
-+	err |= __put_user(u, &uip->cuid);
- 	SET_GID(g, p->cgid);
--	err |= __put_user(g, &up->cgid);
--	err |= __put_user(p->mode, &up->mode);
--	err |= __put_user(p->seq, &up->seq);
-+	err |= __put_user(g, &uip->cgid);
-+	err |= __put_user(p->mode, &uip->mode);
-+	err |= __put_user(p->seq, &uip->seq);
- 	return err;
+ 	/*
+ 	 * Disable the workqueue since the algorithm it uses for
+@@ -334,16 +334,16 @@ static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
+ 	 */
+ 	efivar_wq_enabled = false;
+ 
+-	s8 = kzalloc(len8, GFP_KERNEL);
+-	if (!s8)
++	ps8 = kzalloc(len8, GFP_KERNEL);
++	if (!ps8)
+ 		return;
+ 
+ 	for (i = 0; i < len8; i++)
+-		s8[i] = s16[i];
++		ps8[i] = ps16[i];
+ 
+ 	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
+-	       s8, vendor_guid);
+-	kfree(s8);
++	       ps8, vendor_guid);
++	kfree(ps8);
  }
  
--static inline int get_compat_semid64_ds(struct semid64_ds *s64,
-+static inline int get_compat_semid64_ds(struct semid64_ds *sem64,
- 					struct compat_semid64_ds __user *up64)
- {
- 	if (!access_ok(VERIFY_READ, up64, sizeof(*up64)))
- 		return -EFAULT;
--	return __get_compat_ipc64_perm(&s64->sem_perm, &up64->sem_perm);
-+	return __get_compat_ipc64_perm(&sem64->sem_perm, &up64->sem_perm);
- }
- 
- static inline int get_compat_semid_ds(struct semid64_ds *s,
-@@ -207,17 +207,17 @@ static inline int get_compat_semid_ds(struct semid64_ds *s,
- 	return __get_compat_ipc_perm(&s->sem_perm, &up->sem_perm);
- }
- 
--static inline int put_compat_semid64_ds(struct semid64_ds *s64,
-+static inline int put_compat_semid64_ds(struct semid64_ds *sem64,
- 					struct compat_semid64_ds __user *up64)
- {
- 	int err;
- 
- 	if (!access_ok(VERIFY_WRITE, up64, sizeof(*up64)))
- 		return -EFAULT;
--	err  = __put_compat_ipc64_perm(&s64->sem_perm, &up64->sem_perm);
--	err |= __put_user(s64->sem_otime, &up64->sem_otime);
--	err |= __put_user(s64->sem_ctime, &up64->sem_ctime);
--	err |= __put_user(s64->sem_nsems, &up64->sem_nsems);
-+	err  = __put_compat_ipc64_perm(&sem64->sem_perm, &up64->sem_perm);
-+	err |= __put_user(sem64->sem_otime, &up64->sem_otime);
-+	err |= __put_user(sem64->sem_ctime, &up64->sem_ctime);
-+	err |= __put_user(sem64->sem_nsems, &up64->sem_nsems);
- 	return err;
- }
- 
-@@ -239,11 +239,11 @@ static long do_compat_semctl(int first, int second, int third, u32 pad)
- {
- 	unsigned long fourth;
- 	int err, err2;
--	struct semid64_ds s64;
-+	struct semid64_ds sem64;
- 	struct semid64_ds __user *up64;
- 	int version = compat_ipc_parse_version(&third);
- 
--	memset(&s64, 0, sizeof(s64));
-+	memset(&sem64, 0, sizeof(sem64));
- 
- 	if ((third & (~IPC_64)) == SETVAL)
- #ifdef __BIG_ENDIAN
-@@ -269,29 +269,29 @@ static long do_compat_semctl(int first, int second, int third, u32 pad)
- 
- 	case IPC_STAT:
- 	case SEM_STAT:
--		up64 = compat_alloc_user_space(sizeof(s64));
-+		up64 = compat_alloc_user_space(sizeof(sem64));
- 		fourth = (unsigned long)up64;
- 		err = sys_semctl(first, second, third, fourth);
- 		if (err < 0)
- 			break;
--		if (copy_from_user(&s64, up64, sizeof(s64)))
-+		if (copy_from_user(&sem64, up64, sizeof(sem64)))
- 			err2 = -EFAULT;
- 		else if (version == IPC_64)
--			err2 = put_compat_semid64_ds(&s64, compat_ptr(pad));
-+			err2 = put_compat_semid64_ds(&sem64, compat_ptr(pad));
- 		else
--			err2 = put_compat_semid_ds(&s64, compat_ptr(pad));
-+			err2 = put_compat_semid_ds(&sem64, compat_ptr(pad));
- 		if (err2)
- 			err = -EFAULT;
- 		break;
- 
- 	case IPC_SET:
- 		if (version == IPC_64)
--			err = get_compat_semid64_ds(&s64, compat_ptr(pad));
-+			err = get_compat_semid64_ds(&sem64, compat_ptr(pad));
- 		else
--			err = get_compat_semid_ds(&s64, compat_ptr(pad));
-+			err = get_compat_semid_ds(&sem64, compat_ptr(pad));
- 
--		up64 = compat_alloc_user_space(sizeof(s64));
--		if (copy_to_user(up64, &s64, sizeof(s64)))
-+		up64 = compat_alloc_user_space(sizeof(sem64));
-+		if (copy_to_user(up64, &sem64, sizeof(sem64)))
- 			err = -EFAULT;
- 		if (err)
- 			break;
-@@ -561,12 +561,12 @@ COMPAT_SYSCALL_DEFINE3(shmat, int, shmid, compat_uptr_t, shmaddr, int, shmflg)
- 	return (long)ret;
- }
- 
--static inline int get_compat_shmid64_ds(struct shmid64_ds *s64,
-+static inline int get_compat_shmid64_ds(struct shmid64_ds *sem64,
- 					struct compat_shmid64_ds __user *up64)
- {
- 	if (!access_ok(VERIFY_READ, up64, sizeof(*up64)))
- 		return -EFAULT;
--	return __get_compat_ipc64_perm(&s64->shm_perm, &up64->shm_perm);
-+	return __get_compat_ipc64_perm(&sem64->shm_perm, &up64->shm_perm);
- }
- 
- static inline int get_compat_shmid_ds(struct shmid64_ds *s,
-@@ -577,21 +577,21 @@ static inline int get_compat_shmid_ds(struct shmid64_ds *s,
- 	return __get_compat_ipc_perm(&s->shm_perm, &up->shm_perm);
- }
- 
--static inline int put_compat_shmid64_ds(struct shmid64_ds *s64,
-+static inline int put_compat_shmid64_ds(struct shmid64_ds *sem64,
- 					struct compat_shmid64_ds __user *up64)
- {
- 	int err;
- 
- 	if (!access_ok(VERIFY_WRITE, up64, sizeof(*up64)))
- 		return -EFAULT;
--	err  = __put_compat_ipc64_perm(&s64->shm_perm, &up64->shm_perm);
--	err |= __put_user(s64->shm_atime, &up64->shm_atime);
--	err |= __put_user(s64->shm_dtime, &up64->shm_dtime);
--	err |= __put_user(s64->shm_ctime, &up64->shm_ctime);
--	err |= __put_user(s64->shm_segsz, &up64->shm_segsz);
--	err |= __put_user(s64->shm_nattch, &up64->shm_nattch);
--	err |= __put_user(s64->shm_cpid, &up64->shm_cpid);
--	err |= __put_user(s64->shm_lpid, &up64->shm_lpid);
-+	err  = __put_compat_ipc64_perm(&sem64->shm_perm, &up64->shm_perm);
-+	err |= __put_user(sem64->shm_atime, &up64->shm_atime);
-+	err |= __put_user(sem64->shm_dtime, &up64->shm_dtime);
-+	err |= __put_user(sem64->shm_ctime, &up64->shm_ctime);
-+	err |= __put_user(sem64->shm_segsz, &up64->shm_segsz);
-+	err |= __put_user(sem64->shm_nattch, &up64->shm_nattch);
-+	err |= __put_user(sem64->shm_cpid, &up64->shm_cpid);
-+	err |= __put_user(sem64->shm_lpid, &up64->shm_lpid);
- 	return err;
- }
- 
-@@ -668,12 +668,12 @@ static inline int put_compat_shm_info(struct shm_info __user *ip,
- COMPAT_SYSCALL_DEFINE3(shmctl, int, first, int, second, void __user *, uptr)
- {
- 	void __user *p;
--	struct shmid64_ds s64;
-+	struct shmid64_ds sem64;
- 	struct shminfo64 smi;
- 	int err, err2;
- 	int version = compat_ipc_parse_version(&second);
- 
--	memset(&s64, 0, sizeof(s64));
-+	memset(&sem64, 0, sizeof(sem64));
- 
- 	switch (second & (~IPC_64)) {
- 	case IPC_RMID:
-@@ -700,14 +700,14 @@ COMPAT_SYSCALL_DEFINE3(shmctl, int, first, int, second, void __user *, uptr)
- 
- 	case IPC_SET:
- 		if (version == IPC_64)
--			err = get_compat_shmid64_ds(&s64, uptr);
-+			err = get_compat_shmid64_ds(&sem64, uptr);
- 		else
--			err = get_compat_shmid_ds(&s64, uptr);
-+			err = get_compat_shmid_ds(&sem64, uptr);
- 
- 		if (err)
- 			break;
--		p = compat_alloc_user_space(sizeof(s64));
--		if (copy_to_user(p, &s64, sizeof(s64)))
-+		p = compat_alloc_user_space(sizeof(sem64));
-+		if (copy_to_user(p, &sem64, sizeof(sem64)))
- 			err = -EFAULT;
- 		else
- 			err = sys_shmctl(first, second, p);
-@@ -715,16 +715,16 @@ COMPAT_SYSCALL_DEFINE3(shmctl, int, first, int, second, void __user *, uptr)
- 
- 	case IPC_STAT:
- 	case SHM_STAT:
--		p = compat_alloc_user_space(sizeof(s64));
-+		p = compat_alloc_user_space(sizeof(sem64));
- 		err = sys_shmctl(first, second, p);
- 		if (err < 0)
- 			break;
--		if (copy_from_user(&s64, p, sizeof(s64)))
-+		if (copy_from_user(&sem64, p, sizeof(sem64)))
- 			err2 = -EFAULT;
- 		else if (version == IPC_64)
--			err2 = put_compat_shmid64_ds(&s64, uptr);
-+			err2 = put_compat_shmid64_ds(&sem64, uptr);
- 		else
--			err2 = put_compat_shmid_ds(&s64, uptr);
-+			err2 = put_compat_shmid_ds(&sem64, uptr);
- 		if (err2)
- 			err = -EFAULT;
- 		break;
+ /**
 -- 
 1.9.3
 
