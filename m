@@ -1,512 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750998AbaIFB6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 21:58:05 -0400
-Received: from mga14.intel.com ([192.55.52.115]:63653 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797AbaIFB6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 21:58:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,477,1406617200"; 
-   d="scan'208";a="475619809"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH] tty/vt/keyboard: Resolve many shadow warnings
-Date: Fri,  5 Sep 2014 18:57:57 -0700
-Message-Id: <1409968677-4721-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1751082AbaIFCDW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 22:03:22 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:3640 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797AbaIFCDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Sep 2014 22:03:19 -0400
+Subject: [PATCH] MIPS: bugfix of coherentio variable default setup
+To: <linux-mips@linux-mips.org>, <nbd@openwrt.org>, <james.hogan@imgtec.com>,
+        <jchandra@broadcom.com>, <paul.burton@imgtec.com>,
+        <david.daney@cavium.com>, <linux-kernel@vger.kernel.org>,
+        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
+        <macro@linux-mips.org>, <manuel.lauss@gmail.com>,
+        <jerinjacobk@gmail.com>, <chenhc@lemote.com>, <blogic@openwrt.org>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Date: Fri, 5 Sep 2014 19:03:12 -0700
+Message-ID: <20140906020312.5192.70037.stgit@linux-yegoshin>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+Patch commit b6d92b4a6bdb880b39789c677b952c53a437028d
 
-Many local variables were given the same name as a global. This
-is valid, but generates many shadow warnings in W=2 builds. Resolve
-them by changing the local names. Also change local variables
-named "up" because they shadow the semaphore "up" function. Also
-moved the outer declaration of the variable "a" because it is
-only used in one block, and that resolves all of the shadow warnings
-for the other declarations of "a" that have different types.
+    MIPS: Add option to disable software I/O coherency.
 
-Change diacr => dia, kbd => kb, rep => rpt, up => udp.
+    Some MIPS controllers have hardware I/O coherency. This patch
+    detects those and turns off software coherency. A new kernel
+    command line option also allows the user to manually turn
+    software coherency on or off.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+in fact enforces L2 cache flushes even on systems with IOCU.
+The default value of coherentio is 0 and is not changed even with IOCU.
+It is a serious performance problem because it destroys all IOCU performance
+advantages.
+
+It is fixed by setting coherentio to tri-state with default value as (-1) and
+setup a final value during platform coherency setup.
 ---
- drivers/tty/vt/keyboard.c | 166 +++++++++++++++++++++++-----------------------
- 1 file changed, 83 insertions(+), 83 deletions(-)
+ arch/mips/include/asm/mach-generic/dma-coherence.h |    7 ++++++-
+ arch/mips/mm/c-r4k.c                               |    2 +-
+ arch/mips/mm/dma-default.c                         |    2 +-
+ arch/mips/mti-malta/malta-setup.c                  |    8 ++++++--
+ arch/mips/pci/pci-alchemy.c                        |    2 +-
+ 5 files changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index d0e3a44..c039cfe 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -268,30 +268,30 @@ EXPORT_SYMBOL(kd_mksound);
- static int kbd_rate_helper(struct input_handle *handle, void *data)
+diff --git a/arch/mips/include/asm/mach-generic/dma-coherence.h b/arch/mips/include/asm/mach-generic/dma-coherence.h
+index 7629c35..b4563df 100644
+--- a/arch/mips/include/asm/mach-generic/dma-coherence.h
++++ b/arch/mips/include/asm/mach-generic/dma-coherence.h
+@@ -49,7 +49,12 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
+ 
+ static inline int plat_device_is_coherent(struct device *dev)
  {
- 	struct input_dev *dev = handle->dev;
--	struct kbd_repeat *rep = data;
-+	struct kbd_repeat *rpt = data;
+-	return coherentio;
++#ifdef CONFIG_DMA_COHERENT
++	return 1;
++#else
++	return (coherentio > 0);
++#endif
++
+ }
  
- 	if (test_bit(EV_REP, dev->evbit)) {
+ #ifdef CONFIG_SWIOTLB
+diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+index fbcd867..ad6ff7b 100644
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -1660,7 +1660,7 @@ void r4k_cache_init(void)
+ 	local_flush_icache_range	= local_r4k_flush_icache_range;
  
--		if (rep[0].delay > 0)
-+		if (rpt[0].delay > 0)
- 			input_inject_event(handle,
--					   EV_REP, REP_DELAY, rep[0].delay);
--		if (rep[0].period > 0)
-+					   EV_REP, REP_DELAY, rpt[0].delay);
-+		if (rpt[0].period > 0)
- 			input_inject_event(handle,
--					   EV_REP, REP_PERIOD, rep[0].period);
-+					   EV_REP, REP_PERIOD, rpt[0].period);
+ #if defined(CONFIG_DMA_NONCOHERENT) || defined(CONFIG_DMA_MAYBE_COHERENT)
+-	if (coherentio) {
++	if (coherentio > 0) {
+ 		_dma_cache_wback_inv	= (void *)cache_noop;
+ 		_dma_cache_wback	= (void *)cache_noop;
+ 		_dma_cache_inv		= (void *)cache_noop;
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index 44b6dff..42c819a 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -24,7 +24,7 @@
+ #include <dma-coherence.h>
  
--		rep[1].delay = dev->rep[REP_DELAY];
--		rep[1].period = dev->rep[REP_PERIOD];
-+		rpt[1].delay = dev->rep[REP_DELAY];
-+		rpt[1].period = dev->rep[REP_PERIOD];
+ #ifdef CONFIG_DMA_MAYBE_COHERENT
+-int coherentio = 0;	/* User defined DMA coherency from command line. */
++int coherentio = -1;    /* User defined DMA coherency is not defined yet. */
+ EXPORT_SYMBOL_GPL(coherentio);
+ int hw_coherentio = 0;	/* Actual hardware supported DMA coherency setting. */
+ 
+diff --git a/arch/mips/mti-malta/malta-setup.c b/arch/mips/mti-malta/malta-setup.c
+index db7c9e5..48039fd 100644
+--- a/arch/mips/mti-malta/malta-setup.c
++++ b/arch/mips/mti-malta/malta-setup.c
+@@ -147,13 +147,17 @@ static void __init plat_setup_iocoherency(void)
+ 	if (plat_enable_iocoherency()) {
+ 		if (coherentio == 0)
+ 			pr_info("Hardware DMA cache coherency disabled\n");
+-		else
++		else {
++			coherentio = 1;
+ 			pr_info("Hardware DMA cache coherency enabled\n");
++		}
+ 	} else {
+ 		if (coherentio == 1)
+ 			pr_info("Hardware DMA cache coherency unsupported, but enabled from command line!\n");
+-		else
++		else {
++			coherentio = 0;
+ 			pr_info("Software DMA cache coherency enabled\n");
++		}
  	}
+ #else
+ 	if (!plat_enable_iocoherency())
+diff --git a/arch/mips/pci/pci-alchemy.c b/arch/mips/pci/pci-alchemy.c
+index c19600a..0d0b6c1 100644
+--- a/arch/mips/pci/pci-alchemy.c
++++ b/arch/mips/pci/pci-alchemy.c
+@@ -429,7 +429,7 @@ static int alchemy_pci_probe(struct platform_device *pdev)
  
- 	return 0;
- }
- 
--int kbd_rate(struct kbd_repeat *rep)
-+int kbd_rate(struct kbd_repeat *rpt)
- {
--	struct kbd_repeat data[2] = { *rep };
-+	struct kbd_repeat data[2] = { *rpt };
- 
- 	input_handler_for_each_handle(&kbd_handler, data, kbd_rate_helper);
--	*rep = data[1];	/* Copy currently used settings */
-+	*rpt = data[1];	/* Copy currently used settings */
- 
- 	return 0;
- }
-@@ -971,15 +971,15 @@ static unsigned char getledstate(void)
- 	return ledstate;
- }
- 
--void setledstate(struct kbd_struct *kbd, unsigned int led)
-+void setledstate(struct kbd_struct *kb, unsigned int led)
- {
-         unsigned long flags;
-         spin_lock_irqsave(&led_lock, flags);
- 	if (!(led & ~7)) {
- 		ledioctl = led;
--		kbd->ledmode = LED_SHOW_IOCTL;
-+		kb->ledmode = LED_SHOW_IOCTL;
- 	} else
--		kbd->ledmode = LED_SHOW_FLAGS;
-+		kb->ledmode = LED_SHOW_FLAGS;
- 
- 	set_leds();
- 	spin_unlock_irqrestore(&led_lock, flags);
-@@ -987,12 +987,12 @@ void setledstate(struct kbd_struct *kbd, unsigned int led)
- 
- static inline unsigned char getleds(void)
- {
--	struct kbd_struct *kbd = kbd_table + fg_console;
-+	struct kbd_struct *kb = kbd_table + fg_console;
- 
--	if (kbd->ledmode == LED_SHOW_IOCTL)
-+	if (kb->ledmode == LED_SHOW_IOCTL)
- 		return ledioctl;
- 
--	return kbd->ledflagstate;
-+	return kb->ledflagstate;
- }
- 
- static int kbd_update_leds_helper(struct input_handle *handle, void *data)
-@@ -1018,12 +1018,12 @@ static int kbd_update_leds_helper(struct input_handle *handle, void *data)
-  */
- int vt_get_leds(int console, int flag)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	int ret;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&led_lock, flags);
--	ret = vc_kbd_led(kbd, flag);
-+	ret = vc_kbd_led(kb, flag);
- 	spin_unlock_irqrestore(&led_lock, flags);
- 
- 	return ret;
-@@ -1040,8 +1040,8 @@ EXPORT_SYMBOL_GPL(vt_get_leds);
-  */
- void vt_set_led_state(int console, int leds)
- {
--	struct kbd_struct * kbd = kbd_table + console;
--	setledstate(kbd, leds);
-+	struct kbd_struct *kb = kbd_table + console;
-+	setledstate(kb, leds);
- }
- 
- /**
-@@ -1059,10 +1059,10 @@ void vt_set_led_state(int console, int leds)
-  */
- void vt_kbd_con_start(int console)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	unsigned long flags;
- 	spin_lock_irqsave(&led_lock, flags);
--	clr_vc_kbd_led(kbd, VC_SCROLLOCK);
-+	clr_vc_kbd_led(kb, VC_SCROLLOCK);
- 	set_leds();
- 	spin_unlock_irqrestore(&led_lock, flags);
- }
-@@ -1076,10 +1076,10 @@ void vt_kbd_con_start(int console)
-  */
- void vt_kbd_con_stop(int console)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	unsigned long flags;
- 	spin_lock_irqsave(&led_lock, flags);
--	set_vc_kbd_led(kbd, VC_SCROLLOCK);
-+	set_vc_kbd_led(kb, VC_SCROLLOCK);
- 	set_leds();
- 	spin_unlock_irqrestore(&led_lock, flags);
- }
-@@ -1512,15 +1512,14 @@ int __init kbd_init(void)
- /**
-  *	vt_do_diacrit		-	diacritical table updates
-  *	@cmd: ioctl request
-- *	@up: pointer to user data for ioctl
-+ *	@udp: pointer to user data for ioctl
-  *	@perm: permissions check computed by caller
-  *
-  *	Update the diacritical tables atomically and safely. Lock them
-  *	against simultaneous keypresses
-  */
--int vt_do_diacrit(unsigned int cmd, void __user *up, int perm)
-+int vt_do_diacrit(unsigned int cmd, void __user *udp, int perm)
- {
--	struct kbdiacrs __user *a = up;
- 	unsigned long flags;
- 	int asize;
- 	int ret = 0;
-@@ -1528,12 +1527,13 @@ int vt_do_diacrit(unsigned int cmd, void __user *up, int perm)
- 	switch (cmd) {
- 	case KDGKBDIACR:
- 	{
--		struct kbdiacr *diacr;
-+		struct kbdiacrs __user *a = udp;
-+		struct kbdiacr *dia;
- 		int i;
- 
--		diacr = kmalloc(MAX_DIACR * sizeof(struct kbdiacr),
-+		dia = kmalloc(MAX_DIACR * sizeof(struct kbdiacr),
- 								GFP_KERNEL);
--		if (diacr == NULL)
-+		if (!dia)
- 			return -ENOMEM;
- 
- 		/* Lock the diacriticals table, make a copy and then
-@@ -1542,26 +1542,26 @@ int vt_do_diacrit(unsigned int cmd, void __user *up, int perm)
- 
- 		asize = accent_table_size;
- 		for (i = 0; i < asize; i++) {
--			diacr[i].diacr = conv_uni_to_8bit(
-+			dia[i].diacr = conv_uni_to_8bit(
- 						accent_table[i].diacr);
--			diacr[i].base = conv_uni_to_8bit(
-+			dia[i].base = conv_uni_to_8bit(
- 						accent_table[i].base);
--			diacr[i].result = conv_uni_to_8bit(
-+			dia[i].result = conv_uni_to_8bit(
- 						accent_table[i].result);
- 		}
- 		spin_unlock_irqrestore(&kbd_event_lock, flags);
- 
- 		if (put_user(asize, &a->kb_cnt))
- 			ret = -EFAULT;
--		else  if (copy_to_user(a->kbdiacr, diacr,
-+		else  if (copy_to_user(a->kbdiacr, dia,
- 				asize * sizeof(struct kbdiacr)))
- 			ret = -EFAULT;
--		kfree(diacr);
-+		kfree(dia);
- 		return ret;
- 	}
- 	case KDGKBDIACRUC:
- 	{
--		struct kbdiacrsuc __user *a = up;
-+		struct kbdiacrsuc __user *a = udp;
- 		void *buf;
- 
- 		buf = kmalloc(MAX_DIACR * sizeof(struct kbdiacruc),
-@@ -1589,8 +1589,8 @@ int vt_do_diacrit(unsigned int cmd, void __user *up, int perm)
- 
- 	case KDSKBDIACR:
- 	{
--		struct kbdiacrs __user *a = up;
--		struct kbdiacr *diacr = NULL;
-+		struct kbdiacrs __user *a = udp;
-+		struct kbdiacr *dia = NULL;
- 		unsigned int ct;
- 		int i;
- 
-@@ -1602,14 +1602,14 @@ int vt_do_diacrit(unsigned int cmd, void __user *up, int perm)
- 			return -EINVAL;
- 
- 		if (ct) {
--			diacr = kmalloc(sizeof(struct kbdiacr) * ct,
-+			dia = kmalloc(sizeof(struct kbdiacr) * ct,
- 								GFP_KERNEL);
--			if (diacr == NULL)
-+			if (!dia)
- 				return -ENOMEM;
- 
--			if (copy_from_user(diacr, a->kbdiacr,
-+			if (copy_from_user(dia, a->kbdiacr,
- 					sizeof(struct kbdiacr) * ct)) {
--				kfree(diacr);
-+				kfree(dia);
- 				return -EFAULT;
- 			}
- 		}
-@@ -1618,20 +1618,20 @@ int vt_do_diacrit(unsigned int cmd, void __user *up, int perm)
- 		accent_table_size = ct;
- 		for (i = 0; i < ct; i++) {
- 			accent_table[i].diacr =
--					conv_8bit_to_uni(diacr[i].diacr);
-+					conv_8bit_to_uni(dia[i].diacr);
- 			accent_table[i].base =
--					conv_8bit_to_uni(diacr[i].base);
-+					conv_8bit_to_uni(dia[i].base);
- 			accent_table[i].result =
--					conv_8bit_to_uni(diacr[i].result);
-+					conv_8bit_to_uni(dia[i].result);
- 		}
- 		spin_unlock_irqrestore(&kbd_event_lock, flags);
--		kfree(diacr);
-+		kfree(dia);
- 		return 0;
- 	}
- 
- 	case KDSKBDIACRUC:
- 	{
--		struct kbdiacrsuc __user *a = up;
-+		struct kbdiacrsuc __user *a = udp;
- 		unsigned int ct;
- 		void *buf = NULL;
- 
-@@ -1679,28 +1679,28 @@ int vt_do_diacrit(unsigned int cmd, void __user *up, int perm)
-  */
- int vt_do_kdskbmode(int console, unsigned int arg)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	int ret = 0;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&kbd_event_lock, flags);
- 	switch(arg) {
- 	case K_RAW:
--		kbd->kbdmode = VC_RAW;
-+		kb->kbdmode = VC_RAW;
- 		break;
- 	case K_MEDIUMRAW:
--		kbd->kbdmode = VC_MEDIUMRAW;
-+		kb->kbdmode = VC_MEDIUMRAW;
- 		break;
- 	case K_XLATE:
--		kbd->kbdmode = VC_XLATE;
-+		kb->kbdmode = VC_XLATE;
- 		do_compute_shiftstate();
- 		break;
- 	case K_UNICODE:
--		kbd->kbdmode = VC_UNICODE;
-+		kb->kbdmode = VC_UNICODE;
- 		do_compute_shiftstate();
- 		break;
- 	case K_OFF:
--		kbd->kbdmode = VC_OFF;
-+		kb->kbdmode = VC_OFF;
- 		break;
- 	default:
- 		ret = -EINVAL;
-@@ -1719,17 +1719,17 @@ int vt_do_kdskbmode(int console, unsigned int arg)
-  */
- int vt_do_kdskbmeta(int console, unsigned int arg)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	int ret = 0;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&kbd_event_lock, flags);
- 	switch(arg) {
- 	case K_METABIT:
--		clr_vc_kbd_mode(kbd, VC_META);
-+		clr_vc_kbd_mode(kb, VC_META);
- 		break;
- 	case K_ESCPREFIX:
--		set_vc_kbd_mode(kbd, VC_META);
-+		set_vc_kbd_mode(kb, VC_META);
- 		break;
- 	default:
- 		ret = -EINVAL;
-@@ -1768,7 +1768,7 @@ int vt_do_kbkeycode_ioctl(int cmd, struct kbkeycode __user *user_kbkc,
- int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe, int perm,
- 						int console)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	struct kbentry tmp;
- 	ushort *key_map, *new_map, val, ov;
- 	unsigned long flags;
-@@ -1786,7 +1786,7 @@ int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe, int perm,
- 		key_map = key_maps[s];
- 		if (key_map) {
- 		    val = U(key_map[i]);
--		    if (kbd->kbdmode != VC_UNICODE && KTYP(val) >= NR_TYPES)
-+		    if (kb->kbdmode != VC_UNICODE && KTYP(val) >= NR_TYPES)
- 			val = K_HOLE;
- 		} else
- 		    val = (i ? K_HOLE : K_NOSUCHMAP);
-@@ -1814,7 +1814,7 @@ int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe, int perm,
- 		    if (KVAL(v) > max_vals[KTYP(v)])
- 				return -EINVAL;
- 		} else
--		    if (kbd->kbdmode != VC_UNICODE)
-+		    if (kb->kbdmode != VC_UNICODE)
- 				return -EINVAL;
- 
- 		/* ++Geert: non-PC keyboards may generate keycode zero */
-@@ -1985,7 +1985,7 @@ reterr:
- 
- int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
-         unsigned long flags;
- 	unsigned char ucval;
- 
-@@ -1994,7 +1994,7 @@ int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm)
- 	/* don't use them - they will go away without warning */
- 	case KDGKBLED:
-                 spin_lock_irqsave(&kbd_event_lock, flags);
--		ucval = kbd->ledflagstate | (kbd->default_ledflagstate << 4);
-+		ucval = kb->ledflagstate | (kb->default_ledflagstate << 4);
-                 spin_unlock_irqrestore(&kbd_event_lock, flags);
- 		return put_user(ucval, (char __user *)arg);
- 
-@@ -2004,8 +2004,8 @@ int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm)
- 		if (arg & ~0x77)
- 			return -EINVAL;
-                 spin_lock_irqsave(&led_lock, flags);
--		kbd->ledflagstate = (arg & 7);
--		kbd->default_ledflagstate = ((arg >> 4) & 7);
-+		kb->ledflagstate = (arg & 7);
-+		kb->default_ledflagstate = ((arg >> 4) & 7);
- 		set_leds();
-                 spin_unlock_irqrestore(&led_lock, flags);
- 		return 0;
-@@ -2019,7 +2019,7 @@ int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm)
- 	case KDSETLED:
- 		if (!perm)
- 			return -EPERM;
--		setledstate(kbd, arg);
-+		setledstate(kb, arg);
- 		return 0;
-         }
-         return -ENOIOCTLCMD;
-@@ -2027,9 +2027,9 @@ int vt_do_kdskled(int console, int cmd, unsigned long arg, int perm)
- 
- int vt_do_kdgkbmode(int console)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	/* This is a spot read so needs no locking */
--	switch (kbd->kbdmode) {
-+	switch (kb->kbdmode) {
- 	case VC_RAW:
- 		return K_RAW;
- 	case VC_MEDIUMRAW:
-@@ -2051,9 +2051,9 @@ int vt_do_kdgkbmode(int console)
-  */
- int vt_do_kdgkbmeta(int console)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
-         /* Again a spot read so no locking */
--	return vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT;
-+	return vc_kbd_mode(kb, VC_META) ? K_ESCPREFIX : K_METABIT;
- }
- 
- /**
-@@ -2092,19 +2092,19 @@ int vt_get_shift_state(void)
-  */
- void vt_reset_keyboard(int console)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&kbd_event_lock, flags);
--	set_vc_kbd_mode(kbd, VC_REPEAT);
--	clr_vc_kbd_mode(kbd, VC_CKMODE);
--	clr_vc_kbd_mode(kbd, VC_APPLIC);
--	clr_vc_kbd_mode(kbd, VC_CRLF);
--	kbd->lockstate = 0;
--	kbd->slockstate = 0;
-+	set_vc_kbd_mode(kb, VC_REPEAT);
-+	clr_vc_kbd_mode(kb, VC_CKMODE);
-+	clr_vc_kbd_mode(kb, VC_APPLIC);
-+	clr_vc_kbd_mode(kb, VC_CRLF);
-+	kb->lockstate = 0;
-+	kb->slockstate = 0;
- 	spin_lock(&led_lock);
--	kbd->ledmode = LED_SHOW_FLAGS;
--	kbd->ledflagstate = kbd->default_ledflagstate;
-+	kb->ledmode = LED_SHOW_FLAGS;
-+	kb->ledflagstate = kb->default_ledflagstate;
- 	spin_unlock(&led_lock);
- 	/* do not do set_leds here because this causes an endless tasklet loop
- 	   when the keyboard hasn't been initialized yet */
-@@ -2122,8 +2122,8 @@ void vt_reset_keyboard(int console)
- 
- int vt_get_kbd_mode_bit(int console, int bit)
- {
--	struct kbd_struct * kbd = kbd_table + console;
--	return vc_kbd_mode(kbd, bit);
-+	struct kbd_struct *kb = kbd_table + console;
-+	return vc_kbd_mode(kb, bit);
- }
- 
- /**
-@@ -2137,11 +2137,11 @@ int vt_get_kbd_mode_bit(int console, int bit)
- 
- void vt_set_kbd_mode_bit(int console, int bit)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&kbd_event_lock, flags);
--	set_vc_kbd_mode(kbd, bit);
-+	set_vc_kbd_mode(kb, bit);
- 	spin_unlock_irqrestore(&kbd_event_lock, flags);
- }
- 
-@@ -2156,10 +2156,10 @@ void vt_set_kbd_mode_bit(int console, int bit)
- 
- void vt_clr_kbd_mode_bit(int console, int bit)
- {
--	struct kbd_struct * kbd = kbd_table + console;
-+	struct kbd_struct *kb = kbd_table + console;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&kbd_event_lock, flags);
--	clr_vc_kbd_mode(kbd, bit);
-+	clr_vc_kbd_mode(kb, bit);
- 	spin_unlock_irqrestore(&kbd_event_lock, flags);
- }
--- 
-1.9.3
+ 	/* Au1500 revisions older than AD have borked coherent PCI */
+ 	if ((alchemy_get_cputype() == ALCHEMY_CPU_AU1500) &&
+-	    (read_c0_prid() < 0x01030202) && !coherentio) {
++	    (read_c0_prid() < 0x01030202) && (coherentio <= 0)) {
+ 		val = __raw_readl(ctx->regs + PCI_REG_CONFIG);
+ 		val |= PCI_CONFIG_NC;
+ 		__raw_writel(val, ctx->regs + PCI_REG_CONFIG);
 
