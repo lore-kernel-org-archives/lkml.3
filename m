@@ -1,134 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751186AbaIFMdL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 08:33:11 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:51517 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaIFMdH (ORCPT
+	id S1751332AbaIFMyf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 08:54:35 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53256 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaIFMyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 08:33:07 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Sat, 6 Sep 2014 08:33:03 -0400
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/17] nfsd: don't keep a pointer to the lease in
- nfs4_file
-Message-ID: <20140906083303.6b79a775@tlielax.poochiereds.net>
-In-Reply-To: <20140905214058.GA5443@fieldses.org>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
-	<1409834323-7171-8-git-send-email-jlayton@primarydata.com>
-	<20140905214058.GA5443@fieldses.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Sat, 6 Sep 2014 08:54:32 -0400
+Date: Sat, 6 Sep 2014 13:54:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linaro-kernel@lists.linaro.org, Geoff Levand <geoff@infradead.org>,
+        linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140906125412.GA32429@sirena.org.uk>
+References: <1406748194-21094-1-git-send-email-broonie@kernel.org>
+ <20140817170453.GE12769@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+Content-Disposition: inline
+In-Reply-To: <20140817170453.GE12769@titan.lakedaemon.net>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] irq: gic-v3: Tag all low level accessors __maybey_unused
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014 17:40:58 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-> On Thu, Sep 04, 2014 at 08:38:33AM -0400, Jeff Layton wrote:
-> > Now that we don't need to pass in an actual lease pointer to
-> > vfs_setlease on unlock, we can stop tracking a pointer to the lease in
-> > the nfs4_file.
-> > 
-> > Switch all of the places that check the fi_lease to check fi_deleg_file
-> > instead. We always set that at the same time so it will have the same
-> > semantics.
-> > 
-> > Cc: J. Bruce Fields <bfields@fieldses.org>
-> > Signed-off-by: Jeff Layton <jlayton@primarydata.com>
-> > Reviewed-by: Christoph Hellwig <hch@lst.de>
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Sun, Aug 17, 2014 at 01:04:53PM -0400, Jason Cooper wrote:
+> On Wed, Jul 30, 2014 at 08:23:14PM +0100, Mark Brown wrote:
+> > From: Mark Brown <broonie@linaro.org>
+
+> > This is only really needed for gic_write_sgi1r in the !SMP case since it
+> > is only referenced in the SMP initialisation code but it seems better to
+> > have these functions all next to each other and declared consistently.
+
+> > Signed-off-by: Mark Brown <broonie@linaro.org>
 > > ---
-> >  fs/nfsd/nfs4state.c | 10 ++++------
-> >  fs/nfsd/state.h     |  1 -
-> >  2 files changed, 4 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> > index 0cd252916e1a..d0a6e8e022a2 100644
-> > --- a/fs/nfsd/nfs4state.c
-> > +++ b/fs/nfsd/nfs4state.c
-> > @@ -680,11 +680,10 @@ static void nfs4_put_deleg_lease(struct nfs4_file *fp)
-> >  {
-> >  	lockdep_assert_held(&state_lock);
-> >  
-> > -	if (!fp->fi_lease)
-> > +	if (!fp->fi_deleg_file)
-> >  		return;
-> >  	if (atomic_dec_and_test(&fp->fi_delegees)) {
-> >  		vfs_setlease(fp->fi_deleg_file, F_UNLCK, NULL);
-> > -		fp->fi_lease = NULL;
-> >  		fput(fp->fi_deleg_file);
-> >  		fp->fi_deleg_file = NULL;
-> >  	}
-> 
-> Note the code in my for-3.18 branch is different here due to a couple
-> patches I've already taken from you.
-> 
-> --b.
-> 
+> >  drivers/irqchip/irq-gic-v3.c | 10 +++++-----
+> >  1 file changed, 5 insertions(+), 5 deletions(-)
 
-Doh! Yes, I'll make sure to pull those into the topic branch where I'm
-working on these and rebase on top of them. Thanks!
+> Applied to irqchip/urgent
 
-> > @@ -3061,8 +3060,8 @@ static void nfsd4_init_file(struct nfs4_file *fp, struct knfsd_fh *fh)
-> >  	INIT_LIST_HEAD(&fp->fi_stateids);
-> >  	INIT_LIST_HEAD(&fp->fi_delegations);
-> >  	fh_copy_shallow(&fp->fi_fhandle, fh);
-> > +	fp->fi_deleg_file = NULL;
-> >  	fp->fi_had_conflict = false;
-> > -	fp->fi_lease = NULL;
-> >  	fp->fi_share_deny = 0;
-> >  	memset(fp->fi_fds, 0, sizeof(fp->fi_fds));
-> >  	memset(fp->fi_access, 0, sizeof(fp->fi_access));
-> > @@ -3803,13 +3802,12 @@ static int nfs4_setlease(struct nfs4_delegation *dp)
-> >  	if (fp->fi_had_conflict)
-> >  		goto out_unlock;
-> >  	/* Race breaker */
-> > -	if (fp->fi_lease) {
-> > +	if (fp->fi_deleg_file) {
-> >  		status = 0;
-> >  		atomic_inc(&fp->fi_delegees);
-> >  		hash_delegation_locked(dp, fp);
-> >  		goto out_unlock;
-> >  	}
-> > -	fp->fi_lease = fl;
-> >  	fp->fi_deleg_file = filp;
-> >  	atomic_set(&fp->fi_delegees, 1);
-> >  	hash_delegation_locked(dp, fp);
-> > @@ -3842,7 +3840,7 @@ nfs4_set_delegation(struct nfs4_client *clp, struct svc_fh *fh,
-> >  	spin_lock(&state_lock);
-> >  	spin_lock(&fp->fi_lock);
-> >  	dp->dl_stid.sc_file = fp;
-> > -	if (!fp->fi_lease) {
-> > +	if (!fp->fi_deleg_file) {
-> >  		spin_unlock(&fp->fi_lock);
-> >  		spin_unlock(&state_lock);
-> >  		status = nfs4_setlease(dp);
-> > diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-> > index 4a89e00d7461..64f291a25a8c 100644
-> > --- a/fs/nfsd/state.h
-> > +++ b/fs/nfsd/state.h
-> > @@ -477,7 +477,6 @@ struct nfs4_file {
-> >  	atomic_t		fi_access[2];
-> >  	u32			fi_share_deny;
-> >  	struct file		*fi_deleg_file;
-> > -	struct file_lock	*fi_lease;
-> >  	atomic_t		fi_delegees;
-> >  	struct knfsd_fh		fi_fhandle;
-> >  	bool			fi_had_conflict;
-> > -- 
-> > 1.9.3
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This appears to have disappeared from -next and the warning is back.
 
+--vtzGhvizbBRQ85DL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Jeff Layton <jlayton@primarydata.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUCwPxAAoJECTWi3JdVIfQrmwH/ihvFx1AcFhW4tCX8TRFrIPW
+ToHQ300JMOWOHo025F5+dGvIwKM4JZyaC2++NWUpwQnKFzlHcjZMftcbVoQT6JTp
+79ew5Eq0bq/qyBWN86iu+x6t8+lO+VhdFnGW/Yye30M/8gREktWDkN8jgIDLtA1Y
+uFomLCvQOMpJekCTV1uBq/JCcdGbpDIm/hVVo22/3vI/0ZMx/5uFHAo7eMPQSyto
+wY/S7mUGa+gmbK5NaafUVZ4Pc4Qn3OmALfUJt3UPboHTEjFg8bEPjLy24npPLj5h
+LwKugOGlOIL/oTqGJEies8u+lPd+u0kNSL3D5yMub6RHPVRl/oZCvBn0KfPzmf8=
+=LkL2
+-----END PGP SIGNATURE-----
+
+--vtzGhvizbBRQ85DL--
