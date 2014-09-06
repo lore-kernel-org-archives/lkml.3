@@ -1,161 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaIFTjv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 15:39:51 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51374 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268AbaIFTjt (ORCPT
+	id S1751793AbaIFUCb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 16:02:31 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:48776 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaIFUCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 15:39:49 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: akpm@linux-foundation.org
-Cc: kirill.shutemov@linux.intel.com, khlebnikov@openvz.org, riel@redhat.com,
-        mgorman@suse.de, n-horiguchi@ah.jp.nec.com, mhocko@suse.cz,
-        hughd@google.com, vbabka@suse.cz, walken@google.com,
-        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 2/3] mm: introduce VM_BUG_ON_MM
-Date: Sat,  6 Sep 2014 15:38:45 -0400
-Message-Id: <1410032326-4380-2-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410032326-4380-1-git-send-email-sasha.levin@oracle.com>
-References: <1410032326-4380-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sat, 6 Sep 2014 16:02:30 -0400
+Message-ID: <540B6819.9030201@ahsoftware.de>
+Date: Sat, 06 Sep 2014 22:01:29 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Rob Landley <rob@landley.net>
+CC: Rogelio Serrano <rogelio.serrano@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Christopher Barry <christopher.r.barry@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: OT: Open letter to the Linux World
+References: <20140812153812.2923046a@monolith.infinux.org>	<20140812202129.GA20344@home.goodmis.org>	<yw1xr40l2whi.fsf@unicorn.mansr.com>	<20140813082756.GB2923@twins.programming.kicks-ass.net>	<20140813090013.GA20581@pd.tnic>	<53F242D1.4050506@ahsoftware.de>	<CANszf4jauBAhaTogvSprhhspKywXSu_8xkWh+ETsWMMUDKo0=g@mail.gmail.com>	<5408B069.9080708@ahsoftware.de> <CAOS_Y6RAiwY=Zh4g6Ei4UYm3FMybwf+bSo_CwqQhaMsaJh10uw@mail.gmail.com> <540958AD.8030503@ahsoftware.de>
+In-Reply-To: <540958AD.8030503@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very similar to VM_BUG_ON_PAGE and VM_BUG_ON_VMA, dump struct_mm
-when the bug is hit.
+Am 05.09.2014 08:31, schrieb Alexander Holler:
+> Am 04.09.2014 21:18, schrieb Rob Landley:
+>
+>> What's actually wrong with C++ at a language design level.
+>>
+>> Short version:
+>
+> OMG.
+>
+> It's better than C. In almost every aspect. Stop. Nothing else. Of
+> course, if you want to write something like systemd in Python, Perl,
+> Pascal, Modula or Erlang, feel free to so. And if you want more security
+> bugs, feel free to still use C for string handling instead of
+> std::string, Or still write your sorted list for every structure (or
+> just don't and go the slow way, because you don't find the time to do it
+> right in C). And ...
+>
+> You don't have to understand how templates do work to use e.g.
+> std::string. Other people do hard stuff for you. So don't panic.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- include/linux/mmdebug.h |   10 +++++++
- mm/debug.c              |   69 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 79 insertions(+)
 
-diff --git a/include/linux/mmdebug.h b/include/linux/mmdebug.h
-index 569e4c8..5116d4b 100644
---- a/include/linux/mmdebug.h
-+++ b/include/linux/mmdebug.h
-@@ -5,11 +5,13 @@
- 
- struct page;
- struct vm_area_struct;
-+struct mm_struct;
- 
- extern void dump_page(struct page *page, const char *reason);
- extern void dump_page_badflags(struct page *page, const char *reason,
- 			       unsigned long badflags);
- void dump_vma(const struct vm_area_struct *vma);
-+void dump_mm(const struct mm_struct *mm);
- 
- #ifdef CONFIG_DEBUG_VM
- #define VM_BUG_ON(cond) BUG_ON(cond)
-@@ -27,6 +29,13 @@ void dump_vma(const struct vm_area_struct *vma);
- 			BUG();						\
- 		}							\
- 	} while (0)
-+#define VM_BUG_ON_MM(cond, mm)						\
-+        do {								\
-+                if (unlikely(cond)) {					\
-+                        dump_mm(mm);					\
-+                        BUG();						\
-+                }							\
-+        } while (0)
- #define VM_WARN_ON(cond) WARN_ON(cond)
- #define VM_WARN_ON_ONCE(cond) WARN_ON_ONCE(cond)
- #define VM_WARN_ONCE(cond, format...) WARN_ONCE(cond, format)
-@@ -34,6 +43,7 @@ void dump_vma(const struct vm_area_struct *vma);
- #define VM_BUG_ON(cond) BUILD_BUG_ON_INVALID(cond)
- #define VM_BUG_ON_PAGE(cond, page) VM_BUG_ON(cond)
- #define VM_BUG_ON_VMA(cond, vma) VM_BUG_ON(cond)
-+#define VM_BUG_ON_MM(cond, mm) VM_BUG_ON(cond)
- #define VM_WARN_ON(cond) BUILD_BUG_ON_INVALID(cond)
- #define VM_WARN_ON_ONCE(cond) BUILD_BUG_ON_INVALID(cond)
- #define VM_WARN_ONCE(cond, format...) BUILD_BUG_ON_INVALID(cond)
-diff --git a/mm/debug.c b/mm/debug.c
-index c19af12..8418893 100644
---- a/mm/debug.c
-+++ b/mm/debug.c
-@@ -1,3 +1,10 @@
-+/*
-+ * mm/debug.c
-+ *
-+ * mm/ specific debug routines.
-+ *
-+ */
-+
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/ftrace_event.h>
-@@ -158,4 +165,66 @@ void dump_vma(const struct vm_area_struct *vma)
- }
- EXPORT_SYMBOL(dump_vma);
- 
-+void dump_mm(const struct mm_struct *mm)
-+{
-+	printk(KERN_ALERT
-+		"mm %p mmap %p seqnum %d task_size %lu\n"
-+#ifdef CONFIG_MMU
-+		"get_unmapped_area %p\n"
-+#endif
-+		"mmap_base %lu mmap_legacy_base %lu highest_vm_end %lu\n"
-+		"pgd %p mm_users %d mm_count %d nr_ptes %lu map_count %d\n"
-+		"hiwater_rss %lx hiwater_vm %lx total_vm %lx locked_vm %lx\n"
-+		"pinned_vm %lx shared_vm %lx exec_vm %lx stack_vm %lx\n"
-+		"start_code %lx end_code %lx start_data %lx end_data %lx\n"
-+		"start_brk %lx brk %lx start_stack %lx\n"
-+		"arg_start %lx arg_end %lx env_start %lx env_end %lx\n"
-+		"binfmt %p flags %lx core_state %p\n"
-+#ifdef CONFIG_AIO
-+		"ioctx_table %p\n"
-+#endif
-+		"owner %p exe_file %p\n"
-+#ifdef CONFIG_MMU_NOTIFIER
-+		"mmu_notifier_mm %p\n"
-+#endif
-+#ifdef CONFIG_NUMA_BALANCING
-+		"numa_next_scan %lu numa_scan_offset %lu numa_scan_seq %d\n"
-+#endif
-+#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
-+		"tlb_flush_pending %d\n",
-+#endif
-+		mm, mm->mmap, mm->vmacache_seqnum, mm->task_size,
-+#ifdef CONFIG_MMU
-+		mm->get_unmapped_area,
-+#endif
-+		mm->mmap_base, mm->mmap_legacy_base, mm->highest_vm_end,
-+		mm->pgd, atomic_read(&mm->mm_users),
-+		atomic_read(&mm->mm_count),
-+		atomic_long_read((atomic_long_t *)&mm->nr_ptes),
-+		mm->map_count,
-+		mm->hiwater_rss, mm->hiwater_vm, mm->total_vm, mm->locked_vm,
-+		mm->pinned_vm, mm->shared_vm, mm->exec_vm, mm->stack_vm,
-+		mm->start_code, mm->end_code, mm->start_data, mm->end_data,
-+		mm->start_brk, mm->brk, mm->start_stack,
-+		mm->arg_start, mm->arg_end, mm->env_start, mm->env_end,
-+		mm->binfmt, mm->flags, mm->core_state,
-+#ifdef CONFIG_AIO
-+		mm->ioctx_table,
-+#endif
-+		mm->owner, mm->exe_file,
-+#ifdef CONFIG_MMU_NOTIFIER
-+		mm->mmu_notifier_mm,
-+#endif
-+#ifdef CONFIG_NUMA_BALANCING
-+		mm->numa_next_scan, mm->numa_scan_offset, mm->numa_scan_seq,
-+#endif
-+#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
-+		mm->tlb_flush_pending
-+#endif
-+		);
-+
-+		dump_flags(mm->def_flags, vmaflags_names,
-+				ARRAY_SIZE(vmaflags_names));
-+}
-+
- #endif		/* CONFIG_DEBUG_VM */
--- 
-1.7.10.4
+I've brought up the critics about using C in a critical and very 
+security sensitive piece of software in userland, so I've decided a bit 
+more explanations might make sense.
+
+First, as you don't seem to have noticed or you don't know or you ignore 
+the difference, let me repeat that this thread is about a piece of SW 
+which runs in userland. So, please, keep away with any comments from 
+Linus where he talks about kernelspace. I'm pretty sure he knows the 
+difference.
+
+Now let me bring up a very small piece of code which you can find in a 
+similiar fashion in almost every piece of software which gets in contact 
+with strings. And not just in one place or function, but in dozens or 
+even hundred of places (inline, not in functions) in one project.
+
+First in C++:
+
+void foo_bar(const std::string& foo, const std::string& bar, 
+std::string& foobar)
+{
+	foobar = foo + bar;
+}
+
+For those which don't know C++, this concatenates the two strings named 
+foo and bar and puts the result into foobar.
+
+Now an example how you would have to do that in C:
+
+char *foo_bar(const char *foo, const char *bar)
+{
+	char *foobar = malloc(strlen(foo) + strlen(bar));
+
+	strcpy(foobar, foo);
+	strcat(foobar, bar);
+
+	return foobar;
+}
+
+Do you see the difference and spot all the problems?
+
+First I've though about not posting the answer to see the response, but 
+that would just have ended up with a lot of people calling me a fool 
+and/or assuming I can't write proper C. And it bears the problem that 
+some inexperienced people might copy and paste and use it.
+
+So at first: THE ABOVE EXAMPLE IN C IS BROKEN.
+
+The very first problem is that foobar is allocated with the wrong size, 
+because it doesn't take care of the terminating null byte. A very common 
+problem already found at uncountable places.
+
+But there are several more problems:
+
+- What happens if foo or bar isn't terminated with a null byte?
+
+- What happens if malloc fails?
+
+- Who is the owner of foo, bar and/or foobar? Does the caller still owns 
+foo and bar afterwards? Will the caller own foobar? (That means who is 
+repsonsible to free foo, bar and foobar if they aren't used anymore).
+
+So now we extend the above C example:
+
+char *foo_bar(const char *foo, const char *bar)
+{
+	char *foobar;
+
+	if (!foo || !bar)
+		return NULL;
+
+	foobar = malloc(strlen(foo) + strlen(bar) + 1);
+
+	if (!foobar)
+		return NULL;
+
+	strcpy(foobar, foo);
+	strcat(foobar, bar);
+
+	return foobar;
+}
+
+This has still some problems. First, the caller has to check if 
+foo_bar() hasn't returned NULL. A very common bug already found in 
+uncountable places too.
+
+Next, there is still the unsolvable problem about what happens if foo or 
+bar isn't terminated with a null byte (in other words they aren't C 
+strings).
+So you have to check all callers up to the source of foo and bar to be 
+sure the program doesn't crash in the possible far far away place called 
+foo_bar().
+
+And still no comment about ownership. That means someone who just looks 
+at the prototype or sees a call of foo_bar() somewhere has no idea about 
+the ownership of foo, bar and the returned foobar without a comment.
+
+So just this very simple functionality about string handling in C 
+already contains several still open questions and is 17 lines long which 
+have to be reviewed very carefull (e.g. to not miss the off-by-one bug).
+Compare this with the 4 lines in C++ which are almost impossible to do 
+or to use wrong.
+
+And, again, this thread is about a piece of software which runs with 
+process ID 1, wants to control the whole system and owns all permissions 
+to modify the system in almost every possible way. It doesn't run as 
+some user  with restricted permissions or in chroot or something 
+similar. Some parts might do, but for sure not all (read again the above 
+"far far away").
+
+And now some stats. I've just checked out systemd:
+
+git grep -E "strcat|strncat|strcpy|strncpy|strlen" | wc -l
+570
+
+git grep -E "strcat|strncat|strcpy|strncpy|memcpy|strlen" | wc -l
+850
+
+Ok, not every of those places might be part of pid 1. And several places 
+are trivial calls like strlen("ATTR"), but it gives an idea about how 
+many places do exist in systemd which might contain a problem wich isn't 
+trivial to spot.
+
+And regardless how clever and experienced these people are which are 
+writing this piece of software, everyone is prone to do e.g. such an 
+off-by-one bug.
+Maybe he writes the piece of code after having worked 12 hours, maybe he 
+got interrupted while writing the code and continued it a day later, 
+maybe it's full moon or maybe his last meal wasn't like it should have been.
+
+Whatever.
+
+This means, every piece of code in that piece of software has to be 
+reviewed multiple times (reviewers aren't perfect too), and, as long as 
+the software changes, every piece which changes has to be reviewed 
+multiple times again.
+
+I could continue with examples for lists, sets and similiar data 
+structures, which have to be inventent again and again and again in C, 
+whereas in C++ people can reuse some code which is already in use by 
+many, many people in many, many other projects.
+
+And to come to your argument about how simple everything in C is. Just 
+look at the macro for container_of(). I wouldn't say it's such simple 
+that everyone understands what it does. And it's just part of the Linux 
+kernel, that means limited documentation and many people never heard of 
+it before, compared with stuff which can be found standard libraries.
+
+And, again, this is not about the kernelspace, it isn't the Linux kernel 
+where Linus has managed it to organize an army of people which do look 
+at every line again and again (and still do sometimes miss a bug).
+Most software projects don't have that many resources (human or not) 
+available as the Linux kernel. In fact it's an absolute exception.
+
+So you just don't want to use error prone C in new and non-trivial 
+projects (if not really necessary) which are a major problem if 
+something fails in the code.
+
+Doing so just means nothing has be learned from the (of corse relatively 
+short) history of software development.
+
+Alexander Holler
+
+PS: Please don't try to tell me that even the above C++ example ends up 
+in some similar code as the C code. std::string is used by even more 
+people than which do review the Linux kernel code. Besides that it was 
+designed and reviewed by clever people too. And, just to repeat it 
+again, we are talking about userspace, not kernelspace.
 
