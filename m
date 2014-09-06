@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaIFAK4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 20:10:56 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:52523 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaIFAGv (ORCPT
+	id S1751158AbaIFANO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 20:13:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57760 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaIFANL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 20:06:51 -0400
-From: behanw@converseincode.com
-To: a.ryabinin@samsung.com, anurag19aggarwal@gmail.com, charlebm@gmail.com,
-        cl@linux-foundation.org, dave.long@linaro.org,
-        k.khlebnikov@samsung.com, linux@arm.linux.org.uk,
-        linyongting@gmail.com, Nikolay.Borisov@arm.com, tglx@linutronix.de,
-        tj@kernel.org, u.kleine-koenig@pengutronix.de
-Cc: behanw@converseincode.com, Dave.Martin@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rabin@rab.in, rostedt@goodmis.org, rric@kernel.org,
-        will.deacon@arm.com
-Subject: [PATCH v2 3/7] arm: LLVMLinux: Use current_stack_pointer for return_address
-Date: Fri,  5 Sep 2014 17:06:13 -0700
-Message-Id: <1409961977-11762-4-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
-References: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 5 Sep 2014 20:13:11 -0400
+Date: Fri, 05 Sep 2014 17:13:06 -0700 (PDT)
+Message-Id: <20140905.171306.1460013939580748402.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: prashant@broadcom.com, bpoirier@suse.de, mchan@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net v6 4/4] tg3: Fix tx_pending checks for tg3_tso_bug
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1409961810.26422.149.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1409880647-14887-5-git-send-email-bpoirier@suse.de>
+	<1409960135.18724.33.camel@prashant>
+	<1409961810.26422.149.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 05 Sep 2014 17:13:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 05 Sep 2014 17:03:30 -0700
 
-Use the global current_stack_pointer to get the value of the stack pointer.
-This change supports being able to compile the kernel with both gcc and Clang.
+> Instead of this private helper (and pretty limited one btw), we could
+> add a core function, that would build skbs with order-0 fragments.
+> 
+> Instead of skb_linearize(), I guess many call sites could instead use
+> this new helper.
+> 
+> Because as you said, skb_linearize() of one 64KB GSO packet can ask
+> order-5 allocations, and this generally does not work reliably.
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
----
- arch/arm/kernel/return_address.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/arm/kernel/return_address.c b/arch/arm/kernel/return_address.c
-index fafedd8..5bceaef 100644
---- a/arch/arm/kernel/return_address.c
-+++ b/arch/arm/kernel/return_address.c
-@@ -39,13 +39,12 @@ void *return_address(unsigned int level)
- {
- 	struct return_address_data data;
- 	struct stackframe frame;
--	register unsigned long current_sp asm ("sp");
- 
- 	data.level = level + 2;
- 	data.addr = NULL;
- 
- 	frame.fp = (unsigned long)__builtin_frame_address(0);
--	frame.sp = current_sp;
-+	frame.sp = current_stack_pointer;
- 	frame.lr = (unsigned long)__builtin_return_address(0);
- 	frame.pc = (unsigned long)return_address;
- 
--- 
-1.9.1
-
+xen-netback could make use of this helper too.
