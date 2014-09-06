@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528AbaIFIq5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 04:46:57 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:47214 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849AbaIFIqx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 04:46:53 -0400
-Message-ID: <540AC9F7.9000202@gmail.com>
-Date: Sat, 06 Sep 2014 10:46:47 +0200
-From: Milan Broz <gmazyland@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
-MIME-Version: 1.0
-To: behanw@converseincode.com, agk@redhat.com, dm-devel@redhat.com,
-        snitzer@redhat.com
-CC: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de,
-        torvalds@linux-foundation.org,
-        =?UTF-8?B?SmFuLVNpbW9uIE3Dtg==?= =?UTF-8?B?bGxlcg==?= 
-	<dl9pf@gmx.de>,
-        pageexec@freemail.hu
-Subject: Re: [PATCH v2] crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
-References: <1409958138-2727-1-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1409958138-2727-1-git-send-email-behanw@converseincode.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1751457AbaIFIzW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 04:55:22 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:58534 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863AbaIFIzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 04:55:18 -0400
+From: Mikko Perttunen <cyndis@kapsi.fi>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, wni@nvidia.com,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH v3 2/5] of: Add nvidia,controller-id property to Tegra I2C bindings
+Date: Sat,  6 Sep 2014 11:54:42 +0300
+Message-Id: <1409993685-21911-3-git-send-email-cyndis@kapsi.fi>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1409993685-21911-1-git-send-email-cyndis@kapsi.fi>
+References: <1409993685-21911-1-git-send-email-cyndis@kapsi.fi>
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: cyndis@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2014 01:02 AM, behanw@converseincode.com wrote:
-> From: Jan-Simon Möller <dl9pf@gmx.de>
-> 
-> The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-> precludes the use of compilers which don't implement VLAIS (for instance the
-> Clang compiler). This patch instead allocates the appropriate amount of memory
-> using an char array.
+From: Mikko Perttunen <mperttunen@nvidia.com>
 
-Well, if clang (or C99 code) is now preferred for kernel, why not.
+Sometimes, hardware blocks want to issue requests to devices
+connected to I2C buses by itself. In such case, the bus the
+target device resides on must be configured into a register.
+For this purpose, each I2C controller has a defined ID known
+by the hardware. Add a property for these IDs to the device tree
+bindings, so that drivers can know what ID to write to a hardware
+register when configuring a block that sends I2C messages autonomously.
 
-Just please commit the patch series en bloc (together with the patches
-removing VLAIS from crypto code you posted to cryptoapi list).
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+Reviewed-by: Wei Ni <wni@nvidia.com>
+Tested-by: Wei Ni <wni@nvidia.com>
+---
+ Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Dmcrypt should always use the same coding practices as crypto part of the kernel
-so we should not divert here.
-
-> -	struct {
-> -		struct shash_desc desc;
-> -		char ctx[crypto_shash_descsize(lmk->hash_tfm)];
-> -	} sdesc;
-> +	char sdesc[sizeof(struct shash_desc) +
-> +		crypto_shash_descsize(lmk->hash_tfm)] CRYPTO_MINALIGN_ATTR;
-> +	struct shash_desc *desc = (struct shash_desc *)sdesc;
-
-TBH, this looks even more uglier that the previous code :-)
-
-(But tglx already complained on different patch and I fully agree that crypto code
-should not use this kind of construction in the first place...
-It would be very nice to introduce at least some macro hiding these crazy
-stack allocations later.)
-
-Thanks,
-Milan
+diff --git a/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt b/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt
+index 87507e9..e9e5994 100644
+--- a/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt
++++ b/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt
+@@ -57,6 +57,10 @@ Required properties:
+   - rx
+   - tx
+ 
++Optional properties:
++- nvidia,controller-id: ID of controller when referred to in
++                        hardware registers.
++
+ Example:
+ 
+ 	i2c@7000c000 {
+@@ -71,5 +75,6 @@ Example:
+ 		reset-names = "i2c";
+ 		dmas = <&apbdma 16>, <&apbdma 16>;
+ 		dma-names = "rx", "tx";
++		nvidia,controller-id = <0>;
+ 		status = "disabled";
+ 	};
+-- 
+2.1.0
 
