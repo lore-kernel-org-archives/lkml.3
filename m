@@ -1,154 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaIFATK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 20:19:10 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56702 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762AbaIFATG (ORCPT
+	id S1751445AbaIFAWA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 20:22:00 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43305 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaIFAV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 20:19:06 -0400
-Date: Fri, 5 Sep 2014 18:18:59 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, dllehr@us.ibm.com, miltonm@us.ibm.com
-Subject: Re: [PATCH] PCI: Increase BAR size quirk for IBM ipr SAS Crocodile
- adapters
-Message-ID: <20140906001859.GO8080@google.com>
-References: <20140821092652.604d7484@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140821092652.604d7484@kryten>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Sep 2014 20:21:57 -0400
+From: behanw@converseincode.com
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Behan Webster <behanw@converseincode.com>
+Subject: [PATCH] kbuild, LLVMLinux: Add better clang cross build support
+Date: Fri,  5 Sep 2014 17:21:49 -0700
+Message-Id: <1409962909-14660-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 09:26:52AM +1000, Anton Blanchard wrote:
-> From: Douglas Lehr <dllehr@us.ibm.com>
-> 
-> The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.
-> Due to an errata, setting the SR-IOV page size causes the physical
-> function BARs to expand to the system page size.  Since ppc64 uses
-> 64k pages, when Linux tries to assign the smaller resource sizes
-> to the now 64k BARs the address will be truncated and the BARs will
-> overlap.
-> 
-> This quirk will force Linux to allocate the resource as a full page,
-> which will avoid the overlap.
-> 
-> Cc: <stable@vger.kernel.org> 
-> Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Acked-by: Milton Miller <miltonm@us.ibm.com>
+From: Behan Webster <behanw@converseincode.com>
 
-Applied to pci/misc for v3.18, thanks!
+Add cross target to CC if using clang. Also add custom gcc toolchain path for
+fallback gcc tools.
 
-I tweaked it to print the expanded resource, see below.
+COMPILER is previously set to "clang" if CC=clang was set from the make command
+line.  So -target and -gcc-toolchain can be added to CC, since we already know
+that it is set.
 
-> ---
->  drivers/pci/quirks.c |   19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 80c2d01..45b946d 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -24,6 +24,7 @@
->  #include <linux/ioport.h>
->  #include <linux/sched.h>
->  #include <linux/ktime.h>
-> +#include <linux/mm.h>
->  #include <asm/dma.h>	/* isa_dma_bridge_buggy */
->  #include "pci.h"
->  
-> @@ -287,6 +288,24 @@ static void quirk_citrine(struct pci_dev *dev)
->  }
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
->  
-> +/*  On IBM Crocodile ipr SAS adapters, expand bar size to system page size. */
-> +static void quirk_extend_bar_to_page(struct pci_dev *dev)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
-> +		struct resource *r = &dev->resource[i];
-> +
-> +		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
-> +			dev_info(&dev->dev, "Setting Bar size to Page size");
-> +			r->end = PAGE_SIZE-1;
-> +			r->start = 0;
-> +			r->flags |= IORESOURCE_UNSET;
-> +		}
-> +	}
-> +}
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
-> +
->  /*
->   *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
->   *  If it's needed, re-allocate the region.
-> -- 
+Clang will fallback to using things like ld, as, and libgcc if (respectively)
+one of the llvm linkers isn't available, the integrated assembler is turned
+off, or an appropriately cross-compiled version of compiler-rt isn't available.
+To this end, you can specify the path to this fallback gcc toolchain with
+GCC_TOOLCHAIN.
 
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
+ Makefile | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
+diff --git a/Makefile b/Makefile
+index 2893d7f..c772619 100644
+--- a/Makefile
++++ b/Makefile
+@@ -360,7 +360,16 @@ include $(srctree)/scripts/Kbuild.include
+ # Make variables (CC, etc...)
+ AS		= $(CROSS_COMPILE)as
+ LD		= $(CROSS_COMPILE)ld
++ifeq ($(COMPILER),clang)
++ifneq ($(CROSS_COMPILE),)
++CC		+= -target $(CROSS_COMPILE:%-=%)
++endif
++ifneq ($(GCC_TOOLCHAIN),)
++CC		+= -gcc-toolchain $(GCC_TOOLCHAIN)
++endif
++else
+ CC		= $(CROSS_COMPILE)gcc
++endif
+ CPP		= $(CC) -E
+ AR		= $(CROSS_COMPILE)ar
+ NM		= $(CROSS_COMPILE)nm
+-- 
+1.9.1
 
-commit 86b6431a306ab5a5204c436a45a3337fb17efa21
-Author: Douglas Lehr <dllehr@us.ibm.com>
-Date:   Thu Aug 21 09:26:52 2014 +1000
-
-    PCI: Increase IBM ipr SAS Crocodile BARs to at least system page size
-    
-    The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.  Due to
-    an erratum, setting the SR-IOV page size causes the physical function BARs
-    to expand to the system page size.  Since ppc64 uses 64k pages, when Linux
-    tries to assign the smaller resource sizes to the now 64k BARs the address
-    will be truncated and the BARs will overlap.
-    
-    Force Linux to allocate the resource as a full page, which avoids the
-    overlap.
-    
-    [bhelgaas: print expanded resource, too]
-    Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
-    Signed-off-by: Anton Blanchard <anton@samba.org>
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-    Acked-by: Milton Miller <miltonm@us.ibm.com>
-    CC: stable@vger.kernel.org
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 80c2d014283d..e73960311fb4 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -24,6 +24,7 @@
- #include <linux/ioport.h>
- #include <linux/sched.h>
- #include <linux/ktime.h>
-+#include <linux/mm.h>
- #include <asm/dma.h>	/* isa_dma_bridge_buggy */
- #include "pci.h"
- 
-@@ -287,6 +288,25 @@ static void quirk_citrine(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
- 
-+/*  On IBM Crocodile ipr SAS adapters, expand BAR to system page size */
-+static void quirk_extend_bar_to_page(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
-+		struct resource *r = &dev->resource[i];
-+
-+		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
-+			r->end = PAGE_SIZE - 1;
-+			r->start = 0;
-+			r->flags |= IORESOURCE_UNSET;
-+			dev_info(&dev->dev, "expanded BAR %d to page size: %pR\n",
-+				 r);
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
-+
- /*
-  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
-  *  If it's needed, re-allocate the region.
