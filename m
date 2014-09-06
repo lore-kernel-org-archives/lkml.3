@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198AbaIFJAB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 05:00:01 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:49082 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaIFI74 (ORCPT
+	id S1751177AbaIFJDj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 05:03:39 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45379 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaIFJDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 04:59:56 -0400
-From: Omar Sandoval <osandov@osandov.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH] staging: bcm: sort.c: fix coding style
-Date: Sat,  6 Sep 2014 01:59:37 -0700
-Message-Id: <1409993977-4383-1-git-send-email-osandov@osandov.com>
-X-Mailer: git-send-email 2.1.0
+	Sat, 6 Sep 2014 05:03:34 -0400
+Date: Sat, 6 Sep 2014 10:03:31 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: matt.fleming@intel.com, Mark Rustad <mark.d.rustad@intel.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efi: Resolve some shadow warnings
+Message-ID: <20140906090331.GQ3001@console-pimps.org>
+References: <1409967292-31441-1-git-send-email-jeffrey.t.kirsher@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409967292-31441-1-git-send-email-jeffrey.t.kirsher@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "Alignment should match open parenthesis".
+On Fri, 05 Sep, at 06:34:52PM, Jeff Kirsher wrote:
+> From: Mark Rustad <mark.d.rustad@intel.com>
+> 
+> It is a really bad idea to declare variables or parameters that
+> have the same name as common types. It is valid C, but it gets
+> surprising if a macro expansion attempts to declare an inner
+> local with that type. Change the local names to eliminate the
+> hazard.
+ 
+Oops, good catch. Could you include a copy of the compiler shadow
+warnings in the commit log? I'm guessing this bug is highlighted with
+-Wshadow? How did you discover this problem?
 
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
----
- drivers/staging/bcm/sort.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> Change s16 => ps16, s8 => ps8.
+ 
+Hmm... Instead, could you change it to str16 and str8? s8/s16 were
+clearly misguided names in the first place, and it's not immediatealy
+obvious to me that a 'ps16' would represent "pointer to 16-bit string".
 
-diff --git a/drivers/staging/bcm/sort.c b/drivers/staging/bcm/sort.c
-index d518c42..ca0b179 100644
---- a/drivers/staging/bcm/sort.c
-+++ b/drivers/staging/bcm/sort.c
-@@ -28,7 +28,7 @@ VOID SortPackInfo(struct bcm_mini_adapter *Adapter)
- 			DBG_LVL_ALL, "<=======");
- 
- 	sort(Adapter->PackInfo, NO_OF_QUEUES, sizeof(struct bcm_packet_info),
--		compare_packet_info, NULL);
-+	     compare_packet_info, NULL);
- }
- 
- static int compare_classifiers(void const *a, void const *b)
-@@ -48,5 +48,5 @@ VOID SortClassifiers(struct bcm_mini_adapter *Adapter)
- 			DBG_LVL_ALL, "<=======");
- 
- 	sort(Adapter->astClassifierTable, MAX_CLASSIFIERS,
--		sizeof(struct bcm_classifier_rule), compare_classifiers, NULL);
-+	     sizeof(struct bcm_classifier_rule), compare_classifiers, NULL);
- }
 -- 
-2.1.0
-
+Matt Fleming, Intel Open Source Technology Center
