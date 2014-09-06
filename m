@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaIFPQd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 11:16:33 -0400
-Received: from dd17628.kasserver.com ([85.13.138.83]:53559 "EHLO
-	dd17628.kasserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaIFPQb (ORCPT
+	id S1751774AbaIFP1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 11:27:45 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:61349 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaIFP1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 11:16:31 -0400
-X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Sep 2014 11:16:31 EDT
-From: Milian Wolff <mail@milianw.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Adrien BAK <adrien.bak@numscale.com>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@redhat.com, acme@kernel.org,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] perf tools : adds support for native scripting
-Date: Sat, 06 Sep 2014 17:06:07 +0200
-Message-ID: <141010294.FOuOkOaNci@minime>
-User-Agent: KMail/4.14 (Linux/3.16.1-1-ARCH; KDE/4.14.0; x86_64; ; )
-In-Reply-To: <871tvmqco4.fsf@tassilo.jf.intel.com>
-References: <1400727182.19852.0.camel@desktop> <871tvmqco4.fsf@tassilo.jf.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sat, 6 Sep 2014 11:27:40 -0400
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH 0/5] media: davinci: vpif fixes
+Date: Sat,  6 Sep 2014 16:26:46 +0100
+Message-Id: <1410017211-15438-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 May 2014 04:24:11 Andi Kleen wrote:
-> Adrien BAK <adrien.bak@numscale.com> writes:
-> > As it is perf-script allows one to use perl or python scripts to parse
-> > perf events.
-> > The following proposal aimed to introduce support of .so files as scripts.
-> > This support allows for better performance when parsing perf's data
-> > files and a complete access to the raw data.
-> 
-> You'll at least need some documentation how to use it.
+this patch series fixes several small issues in VPIF driver.
 
-Ping, any news on this feature? I'd welcome the ability to create native 
-scripts to write efficient tools based on perf.
+Lad, Prabhakar (5):
+  media: davinci: vpif_display: drop setting of vb2 buffer state to
+    ACTIVE
+  media: davinci: vpif_capture: drop setting of vb2 buffer state to
+    ACTIVE
+  media: videobuf2-core.h: add a helper to get status of
+    start_streaming()
+  media: davinci: vpif_display: fix the check on suspend/resume
+    callbacks
+  media: davinci: vpif_capture: fix the check on suspend/resume
+    callbacks
 
-Bye
+ drivers/media/platform/davinci/vpif_capture.c | 7 ++-----
+ drivers/media/platform/davinci/vpif_display.c | 8 ++------
+ include/media/videobuf2-core.h                | 9 +++++++++
+ 3 files changed, 13 insertions(+), 11 deletions(-)
+
 -- 
-Milian Wolff
-mail@milianw.de
-http://milianw.de
+1.9.1
+
