@@ -1,263 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994AbaIFRcX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 13:32:23 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:51871 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaIFRcV (ORCPT
+	id S1752113AbaIFRii (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 13:38:38 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:46722 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbaIFRig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 13:32:21 -0400
-Date: Sat, 6 Sep 2014 19:32:07 +0200
-From: Jurriaan <jurriaan@onderneming10.net>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: ARM kirkwood: 1 Gb memory 25% unusable due to vmalloc region overlap
-Message-ID: <20140906173207.GA1046@qnap.onderneming10.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 6 Sep 2014 13:38:36 -0400
+From: Spencer Baugh <sbaugh@andrew.cmu.edu>
+To: gregkh@linuxfoundation.org
+Cc: Spencer Baugh <sbaugh@andrew.cmu.edu>, Oleg Drokin <oleg.drokin@intel.com>,
+        Niu Yawei <yawei.niu@intel.com>, Masanari Iida <standby24x7@gmail.com>,
+        Hongchao Zhang <hongchao.zhang@intel.com>,
+        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/3] staging: lustre: fix function definition style
+Date: Sat,  6 Sep 2014 13:38:27 -0400
+Message-Id: <1410025111-31422-1-git-send-email-sbaugh@andrew.cmu.edu>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I updated my Qnap TS-212 with 256 Mb memory to a new TS-221 with 1 Gb
-memory.
+Fix errors reported by checkpatch of this kind:
+ERROR: open brace '{' following function declarations go on the next line
 
-On booting, I see that a large chunk of that new memory is not used by
-linux:
+Signed-off-by: Spencer Baugh <sbaugh@andrew.cmu.edu>
+---
+ drivers/staging/lustre/lustre/include/lustre_import.h | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Initializing cgroup subsys cpuset
-[    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Initializing cgroup subsys cpuacct
-[    0.000000] Linux version 3.14-2-kirkwood (debian-kernel@lists.debian.org) (gcc version 4.8.3 (Debian 4.8.3-7) ) #1 Debian 3.14.15-2 (2014-08-09)
-[    0.000000] CPU: Feroceon 88FR131 [56251311] revision 1 (ARMv5TE), cr=00053977
-[    0.000000] CPU: VIVT data cache, VIVT instruction cache
-[    0.000000] Machine: QNAP TS-119/TS-219
-[    0.000000] Ignoring unrecognised tag 0x41000403
-[    0.000000] Truncating RAM at 20000000-3fffffff to -2f7fffff (vmalloc region overlap).
-
-Whoops!
-
-[    0.000000] Memory policy: Data cache writeback
-[    0.000000] On node 0 totalpages: 194560
-[    0.000000] free_area_init_node: node 0, pgdat c05af874, node_mem_map ef20b000
-[    0.000000]   DMA zone: 1520 pages used for memmap
-[    0.000000]   DMA zone: 0 pages reserved
-[    0.000000]   DMA zone: 194560 pages, LIFO batch:31
-[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
-[    0.000000] pcpu-alloc: [0] 0 
-[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 193040
-[    0.000000] Kernel command line: console=ttyS0,115200 root=/dev/ram initrd=0xa00000,0x900000 ramdisk=34816
-[    0.000000] PID hash table entries: 4096 (order: 2, 16384 bytes)
-[    0.000000] Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
-[    0.000000] Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
-[    0.000000] Memory: 755820K/778240K available (3869K kernel code, 352K rwdata, 1412K rodata, 202K init, 417K bss, 22420K reserved)
-[    0.000000] Virtual kernel memory layout:
-[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
-[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
-[    0.000000]     vmalloc : 0xf0000000 - 0xff000000   ( 240 MB)
-[    0.000000]     lowmem  : 0xc0000000 - 0xef800000   ( 760 MB)
-[    0.000000]     modules : 0xbf000000 - 0xc0000000   (  16 MB)
-[    0.000000]       .text : 0xc0008000 - 0xc053097c   (5283 kB)
-[    0.000000]       .init : 0xc0531000 - 0xc0563b34   ( 203 kB)
-[    0.000000]       .data : 0xc0564000 - 0xc05bc128   ( 353 kB)
-[    0.000000]        .bss : 0xc05bc128 - 0xc06246c4   ( 418 kB)
-[    0.000000] NR_IRQS:114
-
-As far as I've been able to determine, this config is used in the debian
-linux-image-3.14-2-kirkwood package:
-
-CONFIG_ARCH_KIRKWOOD=y
-CONFIG_PCI=y
-CONFIG_UACCESS_WITH_MEMCPY=y
-CONFIG_ZBOOT_ROM_TEXT=0x0
-CONFIG_ZBOOT_ROM_BSS=0x0
-CONFIG_ARM_APPENDED_DTB=y
-CONFIG_ARM_ATAG_DTB_COMPAT=y
-CONFIG_CMDLINE=""
-CONFIG_KEXEC=y
-CONFIG_ATAGS_PROC=y
-CONFIG_FPE_NWFPE=y
-CONFIG_MACH_D2NET_V2=y
-CONFIG_MACH_DOCKSTAR=y
-CONFIG_MACH_ESATA_SHEEVAPLUG=y
-CONFIG_MACH_GURUPLUG=y
-CONFIG_MACH_INETSPACE_V2=y
-CONFIG_MACH_MV88F6281GTW_GE=y
-CONFIG_MACH_NET2BIG_V2=y
-CONFIG_MACH_NET5BIG_V2=y
-CONFIG_MACH_NETSPACE_MAX_V2=y
-CONFIG_MACH_NETSPACE_V2=y
-CONFIG_MACH_OPENRD_BASE=y
-CONFIG_MACH_OPENRD_CLIENT=y
-CONFIG_MACH_OPENRD_ULTIMATE=y
-CONFIG_MACH_RD88F6192_NAS=y
-CONFIG_MACH_RD88F6281=y
-CONFIG_MACH_SHEEVAPLUG=y
-CONFIG_MACH_T5325=y
-CONFIG_MACH_TS219=y
-CONFIG_MACH_TS41X=y
-CONFIG_ARCH_KIRKWOOD_DT=y
-CONFIG_MACH_DLINK_KIRKWOOD_DT=y
-CONFIG_MACH_DOCKSTAR_DT=y
-CONFIG_MACH_DREAMPLUG_DT=y
-CONFIG_MACH_GOFLEXNET_DT=y
-CONFIG_MACH_GURUPLUG_DT=y
-CONFIG_MACH_IB62X0_DT=y
-CONFIG_MACH_ICONNECT_DT=y
-CONFIG_MACH_INETSPACE_V2_DT=y
-CONFIG_MACH_IOMEGA_IX2_200_DT=y
-CONFIG_MACH_KM_KIRKWOOD_DT=y
-CONFIG_MACH_LSXL_DT=y
-CONFIG_MACH_MPLCEC4_DT=y
-CONFIG_MACH_NETSPACE_LITE_V2_DT=y
-CONFIG_MACH_NETSPACE_MAX_V2_DT=y
-CONFIG_MACH_NETSPACE_MINI_V2_DT=y
-CONFIG_MACH_NETSPACE_V2_DT=y
-CONFIG_MACH_OPENBLOCKS_A6_DT=y
-CONFIG_MACH_TOPKICK_DT=y
-CONFIG_MACH_TS219_DT=y
-CONFIG_ARM_THUMB=y
-CONFIG_ACORN_PARTITION=y
-CONFIG_ACORN_PARTITION_ICS=y
-CONFIG_ACORN_PARTITION_RISCIX=y
-CONFIG_OSF_PARTITION=y
-CONFIG_AMIGA_PARTITION=y
-CONFIG_ATARI_PARTITION=y
-CONFIG_MAC_PARTITION=y
-CONFIG_BSD_DISKLABEL=y
-CONFIG_MINIX_SUBPARTITION=y
-CONFIG_SOLARIS_X86_PARTITION=y
-CONFIG_UNIXWARE_DISKLABEL=y
-CONFIG_LDM_PARTITION=y
-CONFIG_SGI_PARTITION=y
-CONFIG_ULTRIX_PARTITION=y
-CONFIG_SUN_PARTITION=y
-CONFIG_ATA=m
-CONFIG_SATA_AHCI=m
-CONFIG_ATA_SFF=y
-CONFIG_SATA_MV=m
-CONFIG_BT_HCIBCM203X=m
-CONFIG_BT_HCIBPA10X=m
-CONFIG_BT_HCIBFUSB=m
-CONFIG_BT_HCIVHCI=m
-CONFIG_CPU_IDLE=y
-CONFIG_CRYPTO_DEV_MV_CESA=m
-CONFIG_DMADEVICES=y
-CONFIG_MV_XOR=y
-CONFIG_GPIO_SYSFS=y
-CONFIG_SENSORS_GPIO_FAN=m
-CONFIG_I2C=y
-CONFIG_I2C_CHARDEV=y
-CONFIG_I2C_MV64XXX=y
-CONFIG_GAMEPORT=m
-CONFIG_INPUT_JOYSTICK=y
-CONFIG_KEYBOARD_GPIO=m
-CONFIG_INPUT_TOUCHSCREEN=y
-CONFIG_ISDN=y
-CONFIG_ISDN_CAPI=m
-CONFIG_ISDN_DRV_AVMB1_VERBOSE_REASON=y
-CONFIG_ISDN_CAPI_MIDDLEWARE=y
-CONFIG_ISDN_CAPI_CAPI20=m
-CONFIG_ISDN_CAPI_CAPIDRV=m
-CONFIG_CAPI_AVM=y
-CONFIG_ISDN_DRV_AVMB1_B1PCI=m
-CONFIG_ISDN_DRV_AVMB1_B1PCIV4=y
-CONFIG_ISDN_DRV_AVMB1_B1PCMCIA=m
-CONFIG_ISDN_DRV_AVMB1_AVM_CS=m
-CONFIG_ISDN_DRV_AVMB1_T1PCI=m
-CONFIG_ISDN_DRV_AVMB1_C4=m
-CONFIG_CAPI_EICON=y
-CONFIG_ISDN_DIVAS=m
-CONFIG_ISDN_DIVAS_BRIPCI=y
-CONFIG_ISDN_DIVAS_PRIPCI=y
-CONFIG_ISDN_DIVAS_DIVACAPI=m
-CONFIG_ISDN_DIVAS_USERIDI=m
-CONFIG_ISDN_DIVAS_MAINT=m
-CONFIG_LEDS_GPIO=y
-CONFIG_LEDS_NS2=m
-CONFIG_LEDS_NETXBIG=m
-CONFIG_LEDS_TRIGGER_TIMER=y
-CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
-CONFIG_MMC=m
-CONFIG_MMC_BLOCK=m
-CONFIG_MMC_MVSDIO=m
-CONFIG_MTD=y
-CONFIG_MTD_CMDLINE_PARTS=y
-CONFIG_MTD_OF_PARTS=y
-CONFIG_MTD_BLOCK=y
-CONFIG_FTL=m
-CONFIG_NFTL=m
-CONFIG_MTD_CFI=y
-CONFIG_MTD_JEDECPROBE=y
-CONFIG_MTD_CFI_ADV_OPTIONS=y
-CONFIG_MTD_CFI_NOSWAP=y
-CONFIG_MTD_CFI_GEOMETRY=y
-CONFIG_MTD_MAP_BANK_WIDTH_1=y
-CONFIG_MTD_MAP_BANK_WIDTH_2=y
-CONFIG_MTD_MAP_BANK_WIDTH_4=y
-CONFIG_MTD_CFI_I1=y
-CONFIG_MTD_CFI_I2=y
-CONFIG_MTD_CFI_I4=y
-CONFIG_MTD_CFI_INTELEXT=y
-CONFIG_MTD_CFI_AMDSTD=m
-CONFIG_MTD_CFI_STAA=m
-CONFIG_MTD_M25P80=y
-CONFIG_MTD_PHYSMAP_OF=y
-CONFIG_MTD_NAND=y
-CONFIG_MTD_NAND_ORION=y
-CONFIG_MTD_UBI=y
-CONFIG_MV643XX_ETH=m
-CONFIG_MVMDIO=m
-CONFIG_MWIFIEX=m
-CONFIG_MWIFIEX_SDIO=m
-CONFIG_PROC_DEVICETREE=y
-CONFIG_POWER_RESET_QNAP=y
-CONFIG_POWER_RESET_RESTART=y
-CONFIG_RTC_DRV_S35390A=y
-CONFIG_RTC_DRV_MV=y
-CONFIG_SPI_ORION=y
-CONFIG_FB_XGI=m
-CONFIG_KIRKWOOD_THERMAL=m
-CONFIG_SERIAL_OF_PLATFORM=y
-CONFIG_SERIAL_8250=y
-CONFIG_SERIAL_8250_CONSOLE=y
-CONFIG_SERIAL_8250_NR_UARTS=4
-CONFIG_SERIAL_8250_RUNTIME_UARTS=2
-CONFIG_USB_SUPPORT=y
-CONFIG_USB=m
-CONFIG_USB_ATM=m
-CONFIG_USB_SPEEDTOUCH=m
-CONFIG_USB_EHCI_HCD=m
-CONFIG_USB_EHCI_HCD_ORION=y
-CONFIG_USB_OHCI_HCD=m
-CONFIG_USB_UHCI_HCD=m
-CONFIG_USB_SL811_HCD=m
-CONFIG_FB=m
-CONFIG_FRAMEBUFFER_CONSOLE=m
-CONFIG_ORION_WATCHDOG=m
-CONFIG_BINFMT_AOUT=m
-CONFIG_JFFS2_FS=y
-CONFIG_UBIFS_FS=y
-CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-CONFIG_FLATMEM_MANUAL=y
-CONFIG_ATM=m
-CONFIG_HAMRADIO=y
-CONFIG_AX25=m
-CONFIG_NETROM=m
-CONFIG_ROSE=m
-CONFIG_SND_SOC=m
-CONFIG_SND_KIRKWOOD_SOC=m
-CONFIG_SND_KIRKWOOD_SOC_OPENRD=m
-CONFIG_SND_KIRKWOOD_SOC_T5325=m
-CONFIG_MACH_DB88F6281_BP=y
-
-Is there something I can tweak in this config to make all memory usable
-or any other way to solve this? I can test new kernels, I have a working
-serial console cable installed in the TS-221.
-
-Thanks,
-Jurriaan
+diff --git a/drivers/staging/lustre/lustre/include/lustre_import.h b/drivers/staging/lustre/lustre/include/lustre_import.h
+index 8304a55..feb4291 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_import.h
++++ b/drivers/staging/lustre/lustre/include/lustre_import.h
+@@ -346,21 +346,24 @@ static inline unsigned int at_timeout2est(unsigned int val)
+ 	return (max((val << 2) / 5, 5U) - 4);
+ }
+ 
+-static inline void at_reset(struct adaptive_timeout *at, int val) {
++static inline void at_reset(struct adaptive_timeout *at, int val) 
++{
+ 	spin_lock(&at->at_lock);
+ 	at->at_current = val;
+ 	at->at_worst_ever = val;
+ 	at->at_worst_time = get_seconds();
+ 	spin_unlock(&at->at_lock);
+ }
+-static inline void at_init(struct adaptive_timeout *at, int val, int flags) {
++static inline void at_init(struct adaptive_timeout *at, int val, int flags) 
++{
+ 	memset(at, 0, sizeof(*at));
+ 	spin_lock_init(&at->at_lock);
+ 	at->at_flags = flags;
+ 	at_reset(at, val);
+ }
+ extern unsigned int at_min;
+-static inline int at_get(struct adaptive_timeout *at) {
++static inline int at_get(struct adaptive_timeout *at) 
++{
+ 	return (at->at_current > at_min) ? at->at_current : at_min;
+ }
+ int at_measured(struct adaptive_timeout *at, unsigned int val);
+-- 
+2.1.0
 
