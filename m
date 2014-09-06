@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317AbaIFIpq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 04:45:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45501 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849AbaIFIpl (ORCPT
+	id S1751528AbaIFIq5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 04:46:57 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:47214 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbaIFIqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 04:45:41 -0400
-Date: Sat, 6 Sep 2014 14:15:28 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Kroderia <kroderia@gmail.com>
-Cc: LinuxKernel Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [a9888889e36e] Task 02 result
-Message-ID: <20140906084527.GA10086@sudip-PC>
-References: <540AC2D1.5040405@gmail.com>
+	Sat, 6 Sep 2014 04:46:53 -0400
+Message-ID: <540AC9F7.9000202@gmail.com>
+Date: Sat, 06 Sep 2014 10:46:47 +0200
+From: Milan Broz <gmazyland@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540AC2D1.5040405@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: behanw@converseincode.com, agk@redhat.com, dm-devel@redhat.com,
+        snitzer@redhat.com
+CC: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de,
+        torvalds@linux-foundation.org,
+        =?UTF-8?B?SmFuLVNpbW9uIE3Dtg==?= =?UTF-8?B?bGxlcg==?= 
+	<dl9pf@gmx.de>,
+        pageexec@freemail.hu
+Subject: Re: [PATCH v2] crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
+References: <1409958138-2727-1-git-send-email-behanw@converseincode.com>
+In-Reply-To: <1409958138-2727-1-git-send-email-behanw@converseincode.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 06, 2014 at 04:16:17PM +0800, Kroderia wrote:
-> vagrant@lucid32:~$ uname -r
-> 3.17.0-rc3-00130-g86ba8b0
-> vagrant@lucid32:~$ ls /lib/modules/
-> 2.6.32-38-generic  3.17.0-rc3+  3.17.0-rc3-00130-g86ba8b0
-> vagrant@lucid32:~$ ls /boot/
-> abi-2.6.32-38-generic                 memtest86+.bin
-> config-2.6.32-38-generic              System.map-2.6.32-38-generic
-> config-3.17.0-rc3+                    System.map-3.17.0-rc3+
-> config-3.17.0-rc3-00130-g86ba8b0      System.map-3.17.0-rc3-00130-g86ba8b0
-> grub                                  vmcoreinfo-2.6.32-38-generic
-> initrd.img-2.6.32-38-generic          vmlinuz-2.6.32-38-generic
-> initrd.img-3.17.0-rc3+                vmlinuz-3.17.0-rc3+
-> initrd.img-3.17.0-rc3-00130-g86ba8b0  vmlinuz-3.17.0-rc3-00130-g86ba8b0
-> lost+found
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On 09/06/2014 01:02 AM, behanw@converseincode.com wrote:
+> From: Jan-Simon Möller <dl9pf@gmx.de>
+> 
+> The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+> precludes the use of compilers which don't implement VLAIS (for instance the
+> Clang compiler). This patch instead allocates the appropriate amount of memory
+> using an char array.
 
-are you supposed to send your task result here ?
+Well, if clang (or C99 code) is now preferred for kernel, why not.
 
-thanks
-sudip
+Just please commit the patch series en bloc (together with the patches
+removing VLAIS from crypto code you posted to cryptoapi list).
 
+Dmcrypt should always use the same coding practices as crypto part of the kernel
+so we should not divert here.
+
+> -	struct {
+> -		struct shash_desc desc;
+> -		char ctx[crypto_shash_descsize(lmk->hash_tfm)];
+> -	} sdesc;
+> +	char sdesc[sizeof(struct shash_desc) +
+> +		crypto_shash_descsize(lmk->hash_tfm)] CRYPTO_MINALIGN_ATTR;
+> +	struct shash_desc *desc = (struct shash_desc *)sdesc;
+
+TBH, this looks even more uglier that the previous code :-)
+
+(But tglx already complained on different patch and I fully agree that crypto code
+should not use this kind of construction in the first place...
+It would be very nice to introduce at least some macro hiding these crazy
+stack allocations later.)
+
+Thanks,
+Milan
 
