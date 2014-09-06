@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaIFAIB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 20:08:01 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:40533 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaIFAHB (ORCPT
+	id S1753153AbaIFAIG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 20:08:06 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47888 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaIFAG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 20:07:01 -0400
+	Fri, 5 Sep 2014 20:06:59 -0400
 From: behanw@converseincode.com
 To: a.ryabinin@samsung.com, anurag19aggarwal@gmail.com, charlebm@gmail.com,
         cl@linux-foundation.org, dave.long@linaro.org,
@@ -17,48 +17,52 @@ Cc: behanw@converseincode.com, Dave.Martin@arm.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rabin@rab.in, rostedt@goodmis.org, rric@kernel.org,
         will.deacon@arm.com
-Subject: [PATCH v2 7/7] arm: LLVMLinux: Use global stack register variable for percpu
-Date: Fri,  5 Sep 2014 17:06:17 -0700
-Message-Id: <1409961977-11762-8-git-send-email-behanw@converseincode.com>
+Subject: [PATCH v2 6/7] arm: LLVMLinux: Use current_stack_pointer in unwind_backtrace
+Date: Fri,  5 Sep 2014 17:06:16 -0700
+Message-Id: <1409961977-11762-7-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
 References: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+From: Behan Webster <behanw@converseincode.com>
 
-Using global current_stack_pointer works on both clang and gcc.
-current_stack_pointer is an unsigned long and needs to be cast
-as a pointer to dereference.
+Use the global current_stack_pointer to get the value of the stack pointer.
+This change supports being able to compile the kernel with both gcc and clang.
 
+Signed-off-by: Behan Webster <behanw@converseincode.com>
 Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
 ---
- arch/arm/include/asm/percpu.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/unwind.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/percpu.h b/arch/arm/include/asm/percpu.h
-index 209e650..a89b407 100644
---- a/arch/arm/include/asm/percpu.h
-+++ b/arch/arm/include/asm/percpu.h
-@@ -30,14 +30,14 @@ static inline void set_my_cpu_offset(unsigned long off)
- static inline unsigned long __my_cpu_offset(void)
+diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
+index a61a1df..caea23b 100644
+--- a/arch/arm/kernel/unwind.c
++++ b/arch/arm/kernel/unwind.c
+@@ -471,7 +471,6 @@ int unwind_frame(struct stackframe *frame)
+ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
  {
- 	unsigned long off;
--	register unsigned long *sp asm ("sp");
+ 	struct stackframe frame;
+-	register unsigned long current_sp asm ("sp");
  
- 	/*
- 	 * Read TPIDRPRW.
- 	 * We want to allow caching the value, so avoid using volatile and
- 	 * instead use a fake stack read to hazard against barrier().
- 	 */
--	asm("mrc p15, 0, %0, c13, c0, 4" : "=r" (off) : "Q" (*sp));
-+	asm("mrc p15, 0, %0, c13, c0, 4" : "=r" (off)
-+		: "Q" (*(const unsigned long *)current_stack_pointer));
+ 	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
  
- 	return off;
- }
+@@ -485,7 +484,7 @@ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ 			frame.pc = regs->ARM_lr;
+ 	} else if (tsk == current) {
+ 		frame.fp = (unsigned long)__builtin_frame_address(0);
+-		frame.sp = current_sp;
++		frame.sp = current_stack_pointer;
+ 		frame.lr = (unsigned long)__builtin_return_address(0);
+ 		frame.pc = (unsigned long)unwind_backtrace;
+ 	} else {
 -- 
 1.9.1
 
