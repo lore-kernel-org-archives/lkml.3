@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaIFKUU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 06:20:20 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:39577 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaIFKUP (ORCPT
+	id S1751341AbaIFKrP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 06:47:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8565 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750931AbaIFKrM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 06:20:15 -0400
-From: Mostyn Bramley-Moore <mbmcode@gmail.com>
-To: linux-kernel@vger.kernel.org, mbmcode@gmail.com
-Subject: [PATCH] staging/lustre: annotate lock/unlock in lov_stripe_lock / lov_stripe_unlock
-Date: Sat,  6 Sep 2014 12:20:06 +0200
-Message-Id: <1409998806-6413-1-git-send-email-mbmcode@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 6 Sep 2014 06:47:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,479,1406617200"; 
+   d="scan'208";a="587179231"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Subject: RE: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Thread-Topic: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver
+ binding to MFD driver
+Thread-Index: AQHPyP+JkBMLSfD+Nk6gyOY6CiHQz5vyaZUAgAGDTeA=
+Date: Sat, 6 Sep 2014 10:47:01 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E982BFA@SHSMSX101.ccr.corp.intel.com>
+References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+ <1409928798-31895-2-git-send-email-alvin.chen@intel.com>
+ <3465722.Gc9y01nQRe@wuerfel> <20140905193736.GA7981@breakpoint.cc>
+In-Reply-To: <20140905193736.GA7981@breakpoint.cc>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Annotate the lock/unlock pair in lov_stripe_lock/lov_stripe_unlock to
-avoid sparse warning about a context imbalance.
-Part of the eudyptula challenge: http://eudyptula-challenge.org/
+> > >
+> > > -	irq_set_chained_handler(irq, dwapb_irq_handler);
+> > > -	irq_set_handler_data(irq, gpio);
+> > > +	if (!pp->irq_shared) {
+> > > +		irq_set_chained_handler(pp->irq, dwapb_irq_handler);
+> > > +		irq_set_handler_data(pp->irq, gpio);
+> > > +	} else {
+> > > +		/*
+> > > +		 * Request a shared IRQ since where MFD would have devices
+> > > +		 * using the same irq pin
+> > > +		 */
+> > > +		err = devm_request_irq(gpio->dev, pp->irq,
+> > > +				       dwapb_irq_handler_mfd,
+> > > +				       IRQF_SHARED, "gpio-dwapb-mfd", gpio);
+> > > +		if (err) {
+> > > +			dev_err(gpio->dev, "error requesting IRQ\n");
+> > > +			irq_domain_remove(gpio->domain);
+> > > +			gpio->domain = NULL;
+> > > +			return;
+> > > +		}
+> > > +	}
+> > >
+> >
+> > I think this need some better documentation. Why is it safe to use
+> > devm_request_irq rather than irq_set_chained_handler here?
+> 
+> Usually it is preferred to use irq_set_chained_handler() for the chained handler
+> so the handler does not show up in /proc/interrupts.
+> This requires an exclusive non-shared handler which is not the case on the intel
+> platform. So they have to use devm_request_irq() instead.
+> 
+Yes, for Intel Quark, it has a single PCI function exporting a GPIO and I2C controller, and
+the irq is shared by GPIO and I2C, so we need shared irq as the comments said.
 
-Signed-off-by: Mostyn Bramley-Moore <mbmcode@gmail.com>
----
- drivers/staging/lustre/lustre/lov/lov_obd.c | 2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/lustre/lustre/lov/lov_obd.c b/drivers/staging/lustre/lustre/lov/lov_obd.c
-index cb778df..0baef6a 100644
---- a/drivers/staging/lustre/lustre/lov/lov_obd.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_obd.c
-@@ -2649,6 +2649,7 @@ static int lov_extent_calc(struct obd_export *exp, struct lov_stripe_md *lsm,
- }
- 
- void lov_stripe_lock(struct lov_stripe_md *md)
-+		__acquires(&md->lsm_lock)
- {
- 	LASSERT(md->lsm_lock_owner != current_pid());
- 	spin_lock(&md->lsm_lock);
-@@ -2658,6 +2659,7 @@ void lov_stripe_lock(struct lov_stripe_md *md)
- EXPORT_SYMBOL(lov_stripe_lock);
- 
- void lov_stripe_unlock(struct lov_stripe_md *md)
-+		__releases(&md->lsm_lock)
- {
- 	LASSERT(md->lsm_lock_owner == current_pid());
- 	md->lsm_lock_owner = 0;
--- 
-1.9.1
 
