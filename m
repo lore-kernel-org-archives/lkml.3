@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaIFXDA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 19:03:00 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:65191 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaIFXC7 (ORCPT
+	id S1752155AbaIFXFs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 19:05:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60586 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708AbaIFXFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 19:02:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <540B8040.5010206@gmail.com>
-References: <540B8040.5010206@gmail.com>
-Date: Sun, 7 Sep 2014 01:02:58 +0200
-Message-ID: <CAFLxGvx7-KR7JqeH3d5nZ6prSez-32BVq6-SNot3s+Nw=UBVhg@mail.gmail.com>
-Subject: Re: /proc/<pid>/exe symlink behavior change in >=3.15.
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Piotr Karbowski <piotr.karbowski@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 6 Sep 2014 19:05:46 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [PATCH] block: remove artifical max_hw_sectors cap
+Date: Sat,  6 Sep 2014 16:08:05 -0700
+Message-Id: <1410044885-14893-1-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.9.1
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 6, 2014 at 11:44 PM, Piotr Karbowski
-<piotr.karbowski@gmail.com> wrote:
-> Hi,
->
-> Starting with kernel 3.15 the 'exe' symlink under /proc/<pid>/ acts diffrent
-> than it used to in all the pre-3.15 kernels.
->
-> The usecase:
->
-> run /root/testbin (app that just sleeps)
-> cp /root/testbin /root/testbin.new
-> mv /root/testbin.new /root/testbin
-> ls -al /proc/`pidof testbin`/exe
->
-> <=3.14: /root/testbin (deleted)
->>=3.15: /root/testbin.new (deleted)
->
-> Was the change intentional? It does render my system unusable and I failed
-> to find a information about such change in the ChangeLog.
+Set max_sectors to the value the drivers provides as hardware limit by
+default.  Linux had proper I/O throttling for a long time and doesn't
+rely on a artifically small maximum I/O size anymore.  By not limiting
+the I/O size by default we remove an annoying tuning step required for
+most Linux installation.
 
-Can you please find the offending commit?
-Using an automated bisect run this should be easily doable.
+Note that both the user, and if absolutely required the driver can still
+impose a limit for FS requests below max_hw_sectors_kb.
 
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ block/blk-settings.c       | 4 +---
+ drivers/block/aoe/aoeblk.c | 2 +-
+ include/linux/blkdev.h     | 1 -
+ 3 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index f1a1795..f52c223 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -257,9 +257,7 @@ void blk_limits_max_hw_sectors(struct queue_limits *limits, unsigned int max_hw_
+ 		       __func__, max_hw_sectors);
+ 	}
+ 
+-	limits->max_hw_sectors = max_hw_sectors;
+-	limits->max_sectors = min_t(unsigned int, max_hw_sectors,
+-				    BLK_DEF_MAX_SECTORS);
++	limits->max_sectors = limits->max_hw_sectors = max_hw_sectors;
+ }
+ EXPORT_SYMBOL(blk_limits_max_hw_sectors);
+ 
+diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+index dd73e1f..46c282f 100644
+--- a/drivers/block/aoe/aoeblk.c
++++ b/drivers/block/aoe/aoeblk.c
+@@ -395,7 +395,7 @@ aoeblk_gdalloc(void *vp)
+ 	WARN_ON(d->flags & DEVFL_TKILL);
+ 	WARN_ON(d->gd);
+ 	WARN_ON(d->flags & DEVFL_UP);
+-	blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
++	blk_queue_max_hw_sectors(q, 1024);
+ 	q->backing_dev_info.name = "aoe";
+ 	q->backing_dev_info.ra_pages = READ_AHEAD / PAGE_CACHE_SIZE;
+ 	d->bufpool = mp;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 518b465..7e3c172 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1192,7 +1192,6 @@ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
+ enum blk_default_limits {
+ 	BLK_MAX_SEGMENTS	= 128,
+ 	BLK_SAFE_MAX_SECTORS	= 255,
+-	BLK_DEF_MAX_SECTORS	= 1024,
+ 	BLK_MAX_SEGMENT_SIZE	= 65536,
+ 	BLK_SEG_BOUNDARY_MASK	= 0xFFFFFFFFUL,
+ };
 -- 
-Thanks,
-//richard
+1.9.1
+
