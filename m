@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaIFKrP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 06:47:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8565 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931AbaIFKrM convert rfc822-to-8bit (ORCPT
+	id S1751338AbaIFLAy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 07:00:54 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:57718 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaIFLAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 06:47:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,479,1406617200"; 
-   d="scan'208";a="587179231"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Subject: RE: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver binding
- to MFD driver
-Thread-Topic: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver
- binding to MFD driver
-Thread-Index: AQHPyP+JkBMLSfD+Nk6gyOY6CiHQz5vyaZUAgAGDTeA=
-Date: Sat, 6 Sep 2014 10:47:01 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E982BFA@SHSMSX101.ccr.corp.intel.com>
-References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
- <1409928798-31895-2-git-send-email-alvin.chen@intel.com>
- <3465722.Gc9y01nQRe@wuerfel> <20140905193736.GA7981@breakpoint.cc>
-In-Reply-To: <20140905193736.GA7981@breakpoint.cc>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 6 Sep 2014 07:00:51 -0400
+Date: Sat, 6 Sep 2014 13:00:50 +0200
+From: Karol Lewandowski <lmctlx@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Karol Lewandowski <k.lewandowsk@samsung.com>, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14-stable] usb: gadget: f_fs: drop duplicate
+ usb_functionfs_descs_head declaration
+Message-ID: <20140906110050.GA15459@pix>
+References: <1409943884-13823-1-git-send-email-k.lewandowsk@samsung.com>
+ <20140905195853.GA26296@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140905195853.GA26296@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >
-> > > -	irq_set_chained_handler(irq, dwapb_irq_handler);
-> > > -	irq_set_handler_data(irq, gpio);
-> > > +	if (!pp->irq_shared) {
-> > > +		irq_set_chained_handler(pp->irq, dwapb_irq_handler);
-> > > +		irq_set_handler_data(pp->irq, gpio);
-> > > +	} else {
-> > > +		/*
-> > > +		 * Request a shared IRQ since where MFD would have devices
-> > > +		 * using the same irq pin
-> > > +		 */
-> > > +		err = devm_request_irq(gpio->dev, pp->irq,
-> > > +				       dwapb_irq_handler_mfd,
-> > > +				       IRQF_SHARED, "gpio-dwapb-mfd", gpio);
-> > > +		if (err) {
-> > > +			dev_err(gpio->dev, "error requesting IRQ\n");
-> > > +			irq_domain_remove(gpio->domain);
-> > > +			gpio->domain = NULL;
-> > > +			return;
-> > > +		}
-> > > +	}
-> > >
-> >
-> > I think this need some better documentation. Why is it safe to use
-> > devm_request_irq rather than irq_set_chained_handler here?
+On Fri, Sep 05, 2014 at 12:58:53PM -0700, Greg Kroah-Hartman wrote:
+
+OP here.
+
+> On Fri, Sep 05, 2014 at 09:04:44PM +0200, Karol Lewandowski wrote:
+> > Applicable for 3.14-stable only.
+> > 
+> > This commit drops duplicate declaration of struct usb_functionfs_descs_head
+> > erronousely added in commit 28c5980b54 ("usb: gadget: f_fs: resurect
+> > usb_functionfs_descs_head structure").
+> > 
+> > Fix from 28c5980b54 is applicable only for v3.15-rc1 and newer kernels.
+> > 
+> > This fixes error in uapi:
+> > 
+> >   /src/linux$ make -C tools usb
+> > 
+> >   make: Entering directory '/src/linux/tools'
+> >     DESCEND  usb
+> >   make[1]: Entering directory '/src/linux/tools/usb'
+> >   gcc -Wall -Wextra -g -I../include -o testusb testusb.c -lpthread
+> >   gcc -Wall -Wextra -g -I../include -o ffs-test ffs-test.c -lpthread
+> >   In file included from ffs-test.c:41:0:
+> >   ../../include/uapi/linux/usb/functionfs.h:42:8: error: redefinition of ‘struct usb_functionfs_descs_head’
+> >    struct usb_functionfs_descs_head {
+> >           ^
+> >   ../../include/uapi/linux/usb/functionfs.h:31:8: note: originally defined here
+> >    struct usb_functionfs_descs_head {
+> >           ^
+> > 
+> > Cc: Michal Nazarewicz <mina86@mina86.com>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+> > ---
+> >  include/uapi/linux/usb/functionfs.h | 10 ++--------
+> >  1 file changed, 2 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
+> > index 29e9c7a..f279394 100644
+> > --- a/include/uapi/linux/usb/functionfs.h
+> > +++ b/include/uapi/linux/usb/functionfs.h
+> > @@ -27,24 +27,18 @@ struct usb_endpoint_descriptor_no_audio {
+> >  	__u8  bInterval;
+> >  } __attribute__((packed));
+> >  
+> > -/* Legacy format, deprecated as of 3.14. */
+> > -struct usb_functionfs_descs_head {
+> > -	__le32 magic;
+> > -	__le32 length;
+> > -	__le32 fs_count;
+> > -	__le32 hs_count;
+> > -} __attribute__((packed, deprecated));
+> >  
+> >  /*
+> >   * All numbers must be in little endian order.
+> >   */
+> >  
+> > +/* Legacy format, deprecated as of 3.14. */
+> >  struct usb_functionfs_descs_head {
+> >  	__le32 magic;
+> >  	__le32 length;
+> >  	__le32 fs_count;
+> >  	__le32 hs_count;
+> > -} __attribute__((packed));
+> > +} __attribute__((packed, deprecated));
+> >  
+> >  /*
+> >   * Descriptors format:
+> > -- 
+> > 2.0.1
 > 
-> Usually it is preferred to use irq_set_chained_handler() for the chained handler
-> so the handler does not show up in /proc/interrupts.
-> This requires an exclusive non-shared handler which is not the case on the intel
-> platform. So they have to use devm_request_irq() instead.
-> 
-Yes, for Intel Quark, it has a single PCI function exporting a GPIO and I2C controller, and
-the irq is shared by GPIO and I2C, so we need shared irq as the comments said.
+> Ah, well, instead I should just revert
+> 28c5980b5494b8163d6cba5a5007b6ec7e63de66 as it shouldn't have gone to
+> 3.14-stable, right?  I'll do that for the next round of stable releases
+> after this one.
 
+Yes.  Revert would certainly be ok and this is what I did first.  However,
+we would miss 'deprecated' attribute that was added in original patch.
 
+This, and the fact that every new kernel has a note that it's deprecated
+from 3.14 convinced me to do a bit more than revert.
 
+Cheers,
+Karol Lewandowski
