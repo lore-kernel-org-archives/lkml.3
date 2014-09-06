@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaIFOjB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 10:39:01 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53587 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaIFOi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 10:38:59 -0400
-Date: Sat, 6 Sep 2014 15:38:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Gyungoh Yoo <gyungoh@gmail.com>
-Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Gyungoh Yoo <jack.yoo@skyworksinc.com>
-Message-ID: <20140906143828.GJ2601@sirena.org.uk>
-References: <20140813190423.GI17528@sirena.org.uk>
- <1409539218-5571-1-git-send-email-jack.yoo@skyworksinc.com>
- <1409539218-5571-3-git-send-email-jack.yoo@skyworksinc.com>
- <20140901103158.GO29327@sirena.org.uk>
- <20140905015507.GA2636@jack-ThinkPad-T520>
+	id S1751904AbaIFOkS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 10:40:18 -0400
+Received: from smtp.ptt.gov.tr ([212.175.152.50]:64397 "EHLO smtp.ptt.gov.tr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751732AbaIFOkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 10:40:15 -0400
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Sep 2014 10:40:14 EDT
+X-AuditID: d4af9832-f793e6d00000104e-57-540b1a456bbc
+To: undisclosed-recipients:;
+Date: Sat, 6 Sep 2014 17:25:03 +0300 (EEST)
+From: Ong Eng <kargo-nitelik@ptt.gov.tr>
+Reply-To: Ong Eng <ongenghuat005@gmail.com>
+Message-ID: <304848249.2011395.1410013503657.JavaMail.root@ptt.gov.tr>
+Subject: Let's Partner In Trust.
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ibvzjYYg+QDzMCy1"
-Content-Disposition: inline
-In-Reply-To: <20140905015507.GA2636@jack-ThinkPad-T520>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.248.127
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2.2 2/2] dt-bindings: Adding compatible attribute for
- SKY81452 regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.207.132.76]
+X-Mailer: Zimbra 8.0.2_GA_5569 (zclient/8.0.2_GA_5569)
+Thread-Topic: Let's Partner In Trust.
+Thread-Index: U03uSCTp4X1JAyp1lgmnCmFitE+39Q==
+X-Brightmail-Tracker: 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
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ibvzjYYg+QDzMCy1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, Sep 05, 2014 at 10:55:07AM +0900, Gyungoh Yoo wrote:
-> On Mon, Sep 01, 2014 at 11:31:58AM +0100, Mark Brown wrote:
-
-> > Why is this a good idea - can this driver be used for anything other
-> > than a sky81452?
-
-> Yes. There is a possibility that this driver will be used by similar
-> device with SKY81452.
-
-OK, so tha was slightly the wrong question.  What added information is
-forcing the user to create a subnode and specify a compatible string
-providing?  This driver is specifying a block of multiple regulators
-with absolute register addresses hard coded into it, there's no real
-ability to use the driver in a different configuration here.  As soon as
-we see the parent device we already know everything there is to know
-about the IP block, having a separate compatible string just forces the
-user to do more typing for no gain.
-
---ibvzjYYg+QDzMCy1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUCxxgAAoJECTWi3JdVIfQcBYH/R2CS4T/GKxj2OQMNW2zJrC8
-FdTwq6lavlnYlxzmwXiOF7+grWbxXil5oLxw3N/qRPN2c5Tu2XaNz2BG2MK6gIgY
-jgBIvY7tOKxnVohjcf2GWn60EyCZDBws76Exs3MJlE1qAPZjIeTt+eh42IGHCdo7
-/JnBWobjro77Q8zJpHkEj31kjHrSb97POZoqn9gMOhpmWVdfJr/qbb6GKiu5rwJj
-Kg7eNszlJx/739Rs732ZgEzdiIWXQkLT8d22Q6hW4Dz9aUKnJxohhpcFaqsM/vn5
-Hfd+LKavPdodU8l0Rv4N7XEXVj0iMMWK0SB/WwV9aY2XM0bMai2W/8ULfdWiZCA=
-=ncGW
------END PGP SIGNATURE-----
-
---ibvzjYYg+QDzMCy1--
+I need your help to transfer funds to buy properties:Email:ongenghuat005@gmail.com
