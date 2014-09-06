@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963AbaIFTiz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 15:38:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63533 "EHLO mx1.redhat.com"
+	id S1752069AbaIFTjG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 15:39:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14349 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505AbaIFTiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 15:38:54 -0400
-Date: Sat, 6 Sep 2014 21:38:49 +0200
+	id S1751968AbaIFTjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Sep 2014 15:39:05 -0400
+Date: Sat, 6 Sep 2014 21:39:00 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: kan.liang@intel.com
 Cc: acme@kernel.org, linux-kernel@vger.kernel.org, ak@linux.intel.com
 Subject: Re: [PATCH v4 2/3] perf tools: parse the pmu event prefix and surfix
-Message-ID: <20140906193848.GC6059@krava.brq.redhat.com>
+Message-ID: <20140906193900.GD6059@krava.brq.redhat.com>
 References: <1409671770-17260-1-git-send-email-kan.liang@intel.com>
  <1409671770-17260-2-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
@@ -24,71 +24,64 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Sep 02, 2014 at 11:29:29AM -0400, kan.liang@intel.com wrote:
-> From: Kan Liang <kan.liang@intel.com>
 
 SNIP
 
-> + * Read the pmu events list from sysfs
-> + * Save it into kernel_pmu_events_list
-> + */
-> +static void scan_kernel_pmu_events_list(void)
-> +{
-> +
-> +	struct perf_pmu *pmu = NULL;
-> +	struct perf_pmu_alias *alias;
-> +	int len = 0;
-> +
-> +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-> +		list_for_each_entry(alias, &pmu->aliases, list) {
+>  {
+>  	YY_BUFFER_STATE buffer;
+> @@ -906,7 +1006,10 @@ int parse_events(struct perf_evlist *evlist, const char *str)
+>  	};
+>  	int ret;
+>  
+> +	/* scan kernel pmu events from sysfs */
+> +	scan_kernel_pmu_events_list();
+>  	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
+> +	release_kernel_pmu_events_list();
+>  	if (!ret) {
+>  		int entries = data.idx - evlist->nr_entries;
+>  		perf_evlist__splice_list_tail(evlist, &data.list, entries);
+> diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+> index df094b4..d06fec4 100644
+> --- a/tools/perf/util/parse-events.h
+> +++ b/tools/perf/util/parse-events.h
+> @@ -35,6 +35,19 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
+>  
+>  #define EVENTS_HELP_MAX (128*1024)
+>  
+> +#define KERNEL_PMU_EVENT_MAX	1024
 
-Why do we need to call scan here? Looks like:
-  pmu = pmu_lookup("cpu")
+hum.. so roughly for 15 (+-) strings of size around 20 bytes we will
+use 15K of memory.. seems like overkill
 
-should be enough.. and could be used below as well
+seems better to allocate each symbol string separatelly, and
+update the release function
 
-> +			if (!strcmp(pmu->name, "cpu")) {
-> +				if (strchr(alias->name, '-'))
-> +					len++;
-> +				len++;
-> +			}
-> +	}
-> +	if (len == 0)
-> +		return;
-> +	kernel_pmu_events_list =
-> +		malloc(sizeof(struct kernel_pmu_event_symbol) * len);
-> +	kernel_pmu_events_list_num = len;
+> +enum kernel_pmu_event_type {
+> +	NONE_KERNEL_PMU_EVENT,		/* not a PMU EVENT */
+> +	KERNEL_PMU_EVENT,		/* normal style PMU event */
+> +	KERNEL_PMU_EVENT_PREFIX,	/* prefix of pre-suf style event */
+> +	KERNEL_PMU_EVENT_SUFFIX,	/* suffix of pre-suf style event */
+> +};
 > +
-> +	pmu = NULL;
-> +	len = 0;
-> +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-> +		list_for_each_entry(alias, &pmu->aliases, list) {
-> +			if (!strcmp(pmu->name, "cpu")) {
-> +				struct kernel_pmu_event_symbol *p =
-> +					kernel_pmu_events_list + len;
-> +				char *tmp = strchr(alias->name, '-');
+> +struct kernel_pmu_event_symbol {
+> +	char	symbol[KERNEL_PMU_EVENT_MAX];
+> +	enum kernel_pmu_event_type	type;
+> +};
 > +
-> +				if (tmp != NULL) {
-> +					strlcpy(p->symbol, alias->name,
-> +						tmp - alias->name + 1);
-> +					p->type = KERNEL_PMU_EVENT_PREFIX;
-> +					tmp++;
-> +					p++;
-> +					strcpy(p->symbol, tmp);
-> +					p->type = KERNEL_PMU_EVENT_SUFFIX;
-> +					len += 2;
-> +				} else {
-> +					strcpy(p->symbol, alias->name);
-> +					p->type = KERNEL_PMU_EVENT;
-> +					len++;
-> +				}
-> +			}
-> +		}
-> +	qsort(kernel_pmu_events_list, len,
-> +		sizeof(struct kernel_pmu_event_symbol), comp_pmu);
-> +
-> +}
 
-SNIP
+also, I think this is more pmu object related stuff.. how about:
 
-thanks,
+enum perf_pmu_event_symbol_type
+struct perf_pmu_event_symbol
+
+  perf_pmu__parse_init
+  perf_pmu__parse_cleanup
+  perf_pmu__parse_check
+
+with perf_pmu__parse_init being called from perf_pmu__parse_check
+in case it's needed..
+
+and perf_pmu__parse_cleanup being called from parse_events same as
+release_kernel_pmu_events_list
+
 jirka
