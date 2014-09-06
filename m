@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750902AbaIFFEW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 01:04:22 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:52653 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaIFFEV (ORCPT
+	id S1751049AbaIFFUs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 01:20:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47775 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779AbaIFFUq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 01:04:21 -0400
+	Sat, 6 Sep 2014 01:20:46 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+Subject: [GIT PULL] ARM: SoC: fixes for v3.17-rc4          
+Date: Fri, 05 Sep 2014 22:20:43 -0700
+Message-ID: <7hsik5wcic.fsf@paris.lan>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140906024253.GB11389@vmdeb7>
-References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
-	<1409937247-2525-4-git-send-email-coproscefalo@gmail.com>
-	<20140906024253.GB11389@vmdeb7>
-Date: Fri, 5 Sep 2014 23:04:18 -0600
-Message-ID: <CAGdLNWGhdQU3Fpud9Zgvx3AQ5Lb=WdEkJb_wWTb1hJoHxXPXpQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] toshiba_acpi: Add accelerometer input polled device
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Linus,
 
-2014-09-05 20:42 GMT-06:00 Darren Hart <dvhart@infradead.org>:
-> On Fri, Sep 05, 2014 at 11:14:05AM -0600, Azael Avalos wrote:
->> The accelerometer sensor is very sensitive, and having userspace
->> poll the sysfs position entry is not very battery friendly.
->>
->> This patch removes the sysfs entry and instead, it creates an
->> input polled device (joystick) for the built-in accelerometer.
->
-> Hrm, while sysfs details can change across kernel versions, usually due to
-> driver core changes, we try to keep them as consistent as possible so as not to
-> break userspace.
->
-> That said, if we are going to try and come up with a better model for
-> representing an accelerometer, wouldn't treating it as an IIO device be the more
-> logical approach?
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
 
-Yes of course, but the actual accelerometer device (sensor?) is not
-really exposed,
-only certain "functions" it provides, and they are divided across two
-different ACPI devices,
-TOS620A exposes the protection, and the TOS1900 (and et. al.) only
-exposes the axes.
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
-I see your point in breaking userspace, but given the fact that it was
-recently introduced,
-I didn't thought it was already "adopted", that's why I decided to
-remove the sysfs entry.
+are available in the git repository at:
 
-Then we might as well keep the sysfs entry and have the input polled
-device as well.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
->
-> --
-> Darren Hart
-> Intel Open Source Technology Center
+for you to fetch changes up to 389710837f684b397ecea7e66a3a87f16e1542de:
 
+  Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes (2014-09-05 13:29:17 -0700)
 
-Cheers
-Azael
+----------------------------------------------------------------
+ARM: SoC fixes for v3.17-rc4
 
+Another round of fixes from arm-soc land, which are mostly DT fixes
+for:
 
--- 
--- El mundo apesta y vosotros apestais tambien --
+- OMAP: handful of DT fixes devices on newly supported hardware
+- davinci: fix 2nd EDMA channel
+- ux500: extend previous pinctrl fix to another board
+- at91: clock registration fixes, compatibility string precision
+
+And one more fix for event cleanup in drivers/bus/arm-ccn.
+
+----------------------------------------------------------------
+Alexandre Belloni (2):
+      ARM: at91: rm9200: fix clock registration
+      ARM: at91/dt: rm9200: fix usb clock definition
+
+Arnd Bergmann (1):
+      Merge tag 'davinci-fixes-for-v3.17-rc4' of git://git.kernel.org/.../nsekhar/linux-davinci into fixes
+
+Felipe Balbi (1):
+      ARM: dts: am4372: fix USB regs size
+
+Gaël PORTAY (1):
+      ARM: at91/dt: sam9g20: set at91sam9g20 pllb driver
+
+Kevin Hilman (2):
+      Merge tag 'omap-fixes-against-v3.17-rc3' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
+
+Linus Walleij (1):
+      ARM: ux500: disable msp2 node on Snowball
+
+Lokesh Vutla (1):
+      ARM: dts: dra7-evm: Add vtt regulator support
+
+Nishanth Menon (2):
+      ARM: dts: am437x-gp: switch i2c0 to 100KHz
+      ARM: dts: dra7-evm: Fix spi1 mux documentation
+
+Pawel Moll (1):
+      bus: arm-ccn: Move event cleanup routine
+
+Peter Ujfalusi (1):
+      ARM: edma: Fix configuration parsing for SoCs with multiple eDMA3 CC
+
+Roger Quadros (8):
+      ARM: dts: dra7-evm: Fix i2c3 pinmux and frequency
+      ARM: dts: dra7-evm: Fix 8th NAND partition's name
+      ARM: dts: am43x-epos-evm: Use BCH16 ECC scheme instead of BCH8
+      ARM: dts: am437x-gp-evm: Use BCH16 ECC scheme instead of BCH8
+      ARM: dts: am437x-gp-evm: Don't use read/write wait monitoring
+      ARM: dts: am43xx-epos-evm: Don't use read/write wait monitoring
+      ARM: OMAP2+: gpmc: Don't complain if wait pin is used without r/w monitoring
+      ARM: dts: am43x-epos-evm: Disable QSPI to prevent conflict with GPMC-NAND
+
+Stefan Herbrechtsmeier (1):
+      ARM: dts: set 'ti,set-rate-parent' for dpll4_m5x2 clock
+
+Tony Lindgren (1):
+      Merge branch 'for-v3.17-rc/ti-clk-dt' of github.com:t-kristo/linux-pm into fixes-rc3
+
+ arch/arm/boot/dts/am4372.dtsi          |  4 ++--
+ arch/arm/boot/dts/am437x-gp-evm.dts    |  6 ++----
+ arch/arm/boot/dts/am43x-epos-evm.dts   |  9 ++++-----
+ arch/arm/boot/dts/at91rm9200.dtsi      |  2 +-
+ arch/arm/boot/dts/at91sam9g20.dtsi     |  1 +
+ arch/arm/boot/dts/dra7-evm.dts         | 47 ++++++++++++++++++++++++++++++++++++-----------
+ arch/arm/boot/dts/omap3xxx-clocks.dtsi |  1 +
+ arch/arm/boot/dts/ste-snowball.dts     |  1 -
+ arch/arm/common/edma.c                 |  9 +++++----
+ arch/arm/mach-at91/board-dt-rm9200.c   | 11 ++++++++++-
+ arch/arm/mach-omap2/gpmc.c             |  7 +++----
+ drivers/bus/arm-ccn.c                  | 51 +++++++++++++++++++++++++--------------------------
+ 12 files changed, 90 insertions(+), 59 deletions(-)
