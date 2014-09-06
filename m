@@ -1,118 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaIFR0B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 13:26:01 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47333 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaIFRZ7 (ORCPT
+	id S1751994AbaIFRcX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 13:32:23 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:51871 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaIFRcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 13:25:59 -0400
-Message-ID: <540B439C.8070204@roeck-us.net>
-Date: Sat, 06 Sep 2014 10:25:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 6 Sep 2014 13:32:21 -0400
+Date: Sat, 6 Sep 2014 19:32:07 +0200
+From: Jurriaan <jurriaan@onderneming10.net>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: ARM kirkwood: 1 Gb memory 25% unusable due to vmalloc region overlap
+Message-ID: <20140906173207.GA1046@qnap.onderneming10.net>
 MIME-Version: 1.0
-To: Xuetao Guan <gxt@pku.edu.cn>
-CC: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFJlOiDlm57lpI3vvJogUmU6IOWbnuWkje+8miA=?=
- =?UTF-8?B?UmU6IOWbnuWkje+8miBTdGF0dXMgb2YgJ3VuaWNvcmUzMicgYXJjaGl0ZWN0dXI=?=
- =?UTF-8?B?ZSBpbiBMaW51eCBrZXJuZWw=?=
-References: <501661250.62198.1409897580592.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <501661250.62198.1409897580592.JavaMail.root@bj-mail03.pku.edu.cn>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.540B43A7.004A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 11:13 PM, Xuetao Guan  wrote:
->
-> ----- Guenter Roeck <linux@roeck-us.net> 写道：
->> On 09/03/2014 01:32 AM, Xuetao Guan  wrote:
->>>
->> [ ... ]
->>
->>>> Please try the following patch. That seems to do it.
->>>> I am sure it can be improved, but it is a start.
->>>>
->>>> Thanks,
->>>> Guenter
->>>
->>> Thanks. I'll test it.
->>> BTW, Qemu codestyle is different, and tab should be replaced with blanks.
->>>
->>
->> Here is where I am. User space code (busybox) was compiled
->> using the unicore toolchain available on the web.
->>
->> ...
->> serio: i8042 KBD port at 0x6eb00060,0x6eb00064 irq 22
->> mousedev: PS/2 mouse device common for all mice
->> Enable UniCore-F64 support.
->> Warning: unable to open an initial console.
->> Freeing unused kernel memory: 1156K (c0408000 - c0529000)
->>
->> Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
->>
->> ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
->>
->> The kernel tries to execute the init program, which fails with SIGSEGV.
->> I confirmed that the init program is loaded and starts to execute.
->>
->> Any idea what might cause such a problem ?
->>
->> Thanks,
->> Guenter
->>
-> 'slink /init             /bin/busybox 777 0 0' should be inserted in initramfs config
-> Also, I recommend compile busybox statically for initramfs.
->
-> I need more information, including full kmsg and initramfs configs
->
+I updated my Qnap TS-212 with 256 Mb memory to a new TS-221 with 1 Gb
+memory.
 
-Hi,
+On booting, I see that a large chunk of that new memory is not used by
+linux:
 
-I made everything I have available at http://server.roeck-us.net/qemu/unicore32/.
-I tried multiple variants for creating the root file system, including the one
-on https://github.com/gxt/UniCore32.git and the one using mkrootfs.sh in
-the link above. No difference - I always see the same crash. Note that the
-'init' program is loading, but crashes with above error (0x0000000b is SIGSEGV
-unless I am missing something).
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Initializing cgroup subsys cpuset
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Initializing cgroup subsys cpuacct
+[    0.000000] Linux version 3.14-2-kirkwood (debian-kernel@lists.debian.org) (gcc version 4.8.3 (Debian 4.8.3-7) ) #1 Debian 3.14.15-2 (2014-08-09)
+[    0.000000] CPU: Feroceon 88FR131 [56251311] revision 1 (ARMv5TE), cr=00053977
+[    0.000000] CPU: VIVT data cache, VIVT instruction cache
+[    0.000000] Machine: QNAP TS-119/TS-219
+[    0.000000] Ignoring unrecognised tag 0x41000403
+[    0.000000] Truncating RAM at 20000000-3fffffff to -2f7fffff (vmalloc region overlap).
 
-Note that I used the latest qemu for unicore from upstream sources; I was unable
-to compile it from git@github.com:gxt/QEMU.git. Qemu configuration did not seem
-to make a difference. The toolchain was extracted from uc4-1.0.5-hard.tgz.
+Whoops!
 
-Hope this helps,
-Guenter
+[    0.000000] Memory policy: Data cache writeback
+[    0.000000] On node 0 totalpages: 194560
+[    0.000000] free_area_init_node: node 0, pgdat c05af874, node_mem_map ef20b000
+[    0.000000]   DMA zone: 1520 pages used for memmap
+[    0.000000]   DMA zone: 0 pages reserved
+[    0.000000]   DMA zone: 194560 pages, LIFO batch:31
+[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 193040
+[    0.000000] Kernel command line: console=ttyS0,115200 root=/dev/ram initrd=0xa00000,0x900000 ramdisk=34816
+[    0.000000] PID hash table entries: 4096 (order: 2, 16384 bytes)
+[    0.000000] Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
+[    0.000000] Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
+[    0.000000] Memory: 755820K/778240K available (3869K kernel code, 352K rwdata, 1412K rodata, 202K init, 417K bss, 22420K reserved)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+[    0.000000]     vmalloc : 0xf0000000 - 0xff000000   ( 240 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xef800000   ( 760 MB)
+[    0.000000]     modules : 0xbf000000 - 0xc0000000   (  16 MB)
+[    0.000000]       .text : 0xc0008000 - 0xc053097c   (5283 kB)
+[    0.000000]       .init : 0xc0531000 - 0xc0563b34   ( 203 kB)
+[    0.000000]       .data : 0xc0564000 - 0xc05bc128   ( 353 kB)
+[    0.000000]        .bss : 0xc05bc128 - 0xc06246c4   ( 418 kB)
+[    0.000000] NR_IRQS:114
+
+As far as I've been able to determine, this config is used in the debian
+linux-image-3.14-2-kirkwood package:
+
+CONFIG_ARCH_KIRKWOOD=y
+CONFIG_PCI=y
+CONFIG_UACCESS_WITH_MEMCPY=y
+CONFIG_ZBOOT_ROM_TEXT=0x0
+CONFIG_ZBOOT_ROM_BSS=0x0
+CONFIG_ARM_APPENDED_DTB=y
+CONFIG_ARM_ATAG_DTB_COMPAT=y
+CONFIG_CMDLINE=""
+CONFIG_KEXEC=y
+CONFIG_ATAGS_PROC=y
+CONFIG_FPE_NWFPE=y
+CONFIG_MACH_D2NET_V2=y
+CONFIG_MACH_DOCKSTAR=y
+CONFIG_MACH_ESATA_SHEEVAPLUG=y
+CONFIG_MACH_GURUPLUG=y
+CONFIG_MACH_INETSPACE_V2=y
+CONFIG_MACH_MV88F6281GTW_GE=y
+CONFIG_MACH_NET2BIG_V2=y
+CONFIG_MACH_NET5BIG_V2=y
+CONFIG_MACH_NETSPACE_MAX_V2=y
+CONFIG_MACH_NETSPACE_V2=y
+CONFIG_MACH_OPENRD_BASE=y
+CONFIG_MACH_OPENRD_CLIENT=y
+CONFIG_MACH_OPENRD_ULTIMATE=y
+CONFIG_MACH_RD88F6192_NAS=y
+CONFIG_MACH_RD88F6281=y
+CONFIG_MACH_SHEEVAPLUG=y
+CONFIG_MACH_T5325=y
+CONFIG_MACH_TS219=y
+CONFIG_MACH_TS41X=y
+CONFIG_ARCH_KIRKWOOD_DT=y
+CONFIG_MACH_DLINK_KIRKWOOD_DT=y
+CONFIG_MACH_DOCKSTAR_DT=y
+CONFIG_MACH_DREAMPLUG_DT=y
+CONFIG_MACH_GOFLEXNET_DT=y
+CONFIG_MACH_GURUPLUG_DT=y
+CONFIG_MACH_IB62X0_DT=y
+CONFIG_MACH_ICONNECT_DT=y
+CONFIG_MACH_INETSPACE_V2_DT=y
+CONFIG_MACH_IOMEGA_IX2_200_DT=y
+CONFIG_MACH_KM_KIRKWOOD_DT=y
+CONFIG_MACH_LSXL_DT=y
+CONFIG_MACH_MPLCEC4_DT=y
+CONFIG_MACH_NETSPACE_LITE_V2_DT=y
+CONFIG_MACH_NETSPACE_MAX_V2_DT=y
+CONFIG_MACH_NETSPACE_MINI_V2_DT=y
+CONFIG_MACH_NETSPACE_V2_DT=y
+CONFIG_MACH_OPENBLOCKS_A6_DT=y
+CONFIG_MACH_TOPKICK_DT=y
+CONFIG_MACH_TS219_DT=y
+CONFIG_ARM_THUMB=y
+CONFIG_ACORN_PARTITION=y
+CONFIG_ACORN_PARTITION_ICS=y
+CONFIG_ACORN_PARTITION_RISCIX=y
+CONFIG_OSF_PARTITION=y
+CONFIG_AMIGA_PARTITION=y
+CONFIG_ATARI_PARTITION=y
+CONFIG_MAC_PARTITION=y
+CONFIG_BSD_DISKLABEL=y
+CONFIG_MINIX_SUBPARTITION=y
+CONFIG_SOLARIS_X86_PARTITION=y
+CONFIG_UNIXWARE_DISKLABEL=y
+CONFIG_LDM_PARTITION=y
+CONFIG_SGI_PARTITION=y
+CONFIG_ULTRIX_PARTITION=y
+CONFIG_SUN_PARTITION=y
+CONFIG_ATA=m
+CONFIG_SATA_AHCI=m
+CONFIG_ATA_SFF=y
+CONFIG_SATA_MV=m
+CONFIG_BT_HCIBCM203X=m
+CONFIG_BT_HCIBPA10X=m
+CONFIG_BT_HCIBFUSB=m
+CONFIG_BT_HCIVHCI=m
+CONFIG_CPU_IDLE=y
+CONFIG_CRYPTO_DEV_MV_CESA=m
+CONFIG_DMADEVICES=y
+CONFIG_MV_XOR=y
+CONFIG_GPIO_SYSFS=y
+CONFIG_SENSORS_GPIO_FAN=m
+CONFIG_I2C=y
+CONFIG_I2C_CHARDEV=y
+CONFIG_I2C_MV64XXX=y
+CONFIG_GAMEPORT=m
+CONFIG_INPUT_JOYSTICK=y
+CONFIG_KEYBOARD_GPIO=m
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_ISDN=y
+CONFIG_ISDN_CAPI=m
+CONFIG_ISDN_DRV_AVMB1_VERBOSE_REASON=y
+CONFIG_ISDN_CAPI_MIDDLEWARE=y
+CONFIG_ISDN_CAPI_CAPI20=m
+CONFIG_ISDN_CAPI_CAPIDRV=m
+CONFIG_CAPI_AVM=y
+CONFIG_ISDN_DRV_AVMB1_B1PCI=m
+CONFIG_ISDN_DRV_AVMB1_B1PCIV4=y
+CONFIG_ISDN_DRV_AVMB1_B1PCMCIA=m
+CONFIG_ISDN_DRV_AVMB1_AVM_CS=m
+CONFIG_ISDN_DRV_AVMB1_T1PCI=m
+CONFIG_ISDN_DRV_AVMB1_C4=m
+CONFIG_CAPI_EICON=y
+CONFIG_ISDN_DIVAS=m
+CONFIG_ISDN_DIVAS_BRIPCI=y
+CONFIG_ISDN_DIVAS_PRIPCI=y
+CONFIG_ISDN_DIVAS_DIVACAPI=m
+CONFIG_ISDN_DIVAS_USERIDI=m
+CONFIG_ISDN_DIVAS_MAINT=m
+CONFIG_LEDS_GPIO=y
+CONFIG_LEDS_NS2=m
+CONFIG_LEDS_NETXBIG=m
+CONFIG_LEDS_TRIGGER_TIMER=y
+CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
+CONFIG_MMC=m
+CONFIG_MMC_BLOCK=m
+CONFIG_MMC_MVSDIO=m
+CONFIG_MTD=y
+CONFIG_MTD_CMDLINE_PARTS=y
+CONFIG_MTD_OF_PARTS=y
+CONFIG_MTD_BLOCK=y
+CONFIG_FTL=m
+CONFIG_NFTL=m
+CONFIG_MTD_CFI=y
+CONFIG_MTD_JEDECPROBE=y
+CONFIG_MTD_CFI_ADV_OPTIONS=y
+CONFIG_MTD_CFI_NOSWAP=y
+CONFIG_MTD_CFI_GEOMETRY=y
+CONFIG_MTD_MAP_BANK_WIDTH_1=y
+CONFIG_MTD_MAP_BANK_WIDTH_2=y
+CONFIG_MTD_MAP_BANK_WIDTH_4=y
+CONFIG_MTD_CFI_I1=y
+CONFIG_MTD_CFI_I2=y
+CONFIG_MTD_CFI_I4=y
+CONFIG_MTD_CFI_INTELEXT=y
+CONFIG_MTD_CFI_AMDSTD=m
+CONFIG_MTD_CFI_STAA=m
+CONFIG_MTD_M25P80=y
+CONFIG_MTD_PHYSMAP_OF=y
+CONFIG_MTD_NAND=y
+CONFIG_MTD_NAND_ORION=y
+CONFIG_MTD_UBI=y
+CONFIG_MV643XX_ETH=m
+CONFIG_MVMDIO=m
+CONFIG_MWIFIEX=m
+CONFIG_MWIFIEX_SDIO=m
+CONFIG_PROC_DEVICETREE=y
+CONFIG_POWER_RESET_QNAP=y
+CONFIG_POWER_RESET_RESTART=y
+CONFIG_RTC_DRV_S35390A=y
+CONFIG_RTC_DRV_MV=y
+CONFIG_SPI_ORION=y
+CONFIG_FB_XGI=m
+CONFIG_KIRKWOOD_THERMAL=m
+CONFIG_SERIAL_OF_PLATFORM=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_SERIAL_8250_NR_UARTS=4
+CONFIG_SERIAL_8250_RUNTIME_UARTS=2
+CONFIG_USB_SUPPORT=y
+CONFIG_USB=m
+CONFIG_USB_ATM=m
+CONFIG_USB_SPEEDTOUCH=m
+CONFIG_USB_EHCI_HCD=m
+CONFIG_USB_EHCI_HCD_ORION=y
+CONFIG_USB_OHCI_HCD=m
+CONFIG_USB_UHCI_HCD=m
+CONFIG_USB_SL811_HCD=m
+CONFIG_FB=m
+CONFIG_FRAMEBUFFER_CONSOLE=m
+CONFIG_ORION_WATCHDOG=m
+CONFIG_BINFMT_AOUT=m
+CONFIG_JFFS2_FS=y
+CONFIG_UBIFS_FS=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_FLATMEM_MANUAL=y
+CONFIG_ATM=m
+CONFIG_HAMRADIO=y
+CONFIG_AX25=m
+CONFIG_NETROM=m
+CONFIG_ROSE=m
+CONFIG_SND_SOC=m
+CONFIG_SND_KIRKWOOD_SOC=m
+CONFIG_SND_KIRKWOOD_SOC_OPENRD=m
+CONFIG_SND_KIRKWOOD_SOC_T5325=m
+CONFIG_MACH_DB88F6281_BP=y
+
+Is there something I can tweak in this config to make all memory usable
+or any other way to solve this? I can test new kernels, I have a working
+serial console cable installed in the TS-221.
+
+Thanks,
+Jurriaan
 
