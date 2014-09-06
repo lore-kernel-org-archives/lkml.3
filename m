@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaIFAG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Sep 2014 20:06:57 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:53414 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaIFAGt (ORCPT
+	id S1752837AbaIFAHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Sep 2014 20:07:04 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:62383 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaIFAG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Sep 2014 20:06:49 -0400
+	Fri, 5 Sep 2014 20:06:57 -0400
 From: behanw@converseincode.com
 To: a.ryabinin@samsung.com, anurag19aggarwal@gmail.com, charlebm@gmail.com,
         cl@linux-foundation.org, dave.long@linaro.org,
@@ -17,9 +17,9 @@ Cc: behanw@converseincode.com, Dave.Martin@arm.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rabin@rab.in, rostedt@goodmis.org, rric@kernel.org,
         will.deacon@arm.com
-Subject: [PATCH v2 2/7] arm: LLVMLinux: Use current_stack_pointer to calculate pt_regs address
-Date: Fri,  5 Sep 2014 17:06:12 -0700
-Message-Id: <1409961977-11762-3-git-send-email-behanw@converseincode.com>
+Subject: [PATCH v2 5/7] arm: LLVMLinux: Calculate current_thread_info from current_stack_pointer
+Date: Fri,  5 Sep 2014 17:06:15 -0700
+Message-Id: <1409961977-11762-6-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
 References: <1409961977-11762-1-git-send-email-behanw@converseincode.com>
@@ -32,32 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Behan Webster <behanw@converseincode.com>
 
-Use the global current_stack_pointer to calculate the end of the stack for
-current_pt_regs()
+Use the global current_stack_pointer to get the value of the stack pointer.
+This change supports being able to compile the kernel with both gcc and clang.
 
 Signed-off-by: Behan Webster <behanw@converseincode.com>
 Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
 ---
- arch/arm/include/asm/ptrace.h | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/include/asm/thread_info.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/ptrace.h b/arch/arm/include/asm/ptrace.h
-index 601264d..51622ba 100644
---- a/arch/arm/include/asm/ptrace.h
-+++ b/arch/arm/include/asm/ptrace.h
-@@ -154,9 +154,8 @@ static inline unsigned long user_stack_pointer(struct pt_regs *regs)
- 	return regs->ARM_sp;
+diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+index bb43515..b9dc3dc 100644
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -112,8 +112,8 @@ static inline struct thread_info *current_thread_info(void) __attribute_const__;
+ 
+ static inline struct thread_info *current_thread_info(void)
+ {
+-	register unsigned long sp asm ("sp");
+-	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
++	return (struct thread_info *)
++		(current_stack_pointer & ~(THREAD_SIZE - 1));
  }
  
--#define current_pt_regs(void) ({				\
--	register unsigned long sp asm ("sp");			\
--	(struct pt_regs *)((sp | (THREAD_SIZE - 1)) - 7) - 1;	\
-+#define current_pt_regs(void) ({ (struct pt_regs *)			\
-+		((current_stack_pointer | (THREAD_SIZE - 1)) - 7) - 1;	\
- })
- 
- #endif /* __ASSEMBLY__ */
+ #define thread_saved_pc(tsk)	\
 -- 
 1.9.1
 
