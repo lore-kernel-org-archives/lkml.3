@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaIGBmj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 21:42:39 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:43097 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaIGBmi (ORCPT
+	id S1752165AbaIGCG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 22:06:28 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:41671 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaIGCG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 21:42:38 -0400
-Message-ID: <540BB7E8.3030907@ahsoftware.de>
-Date: Sun, 07 Sep 2014 03:42:00 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Sat, 6 Sep 2014 22:06:27 -0400
+Message-ID: <540BBD9E.6050708@converseincode.com>
+Date: Sat, 06 Sep 2014 19:06:22 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-CC: Rob Landley <rob@landley.net>, Rogelio Serrano <rogelio.serrano@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: OT: Open letter to the Linux World
-References: <20140812202129.GA20344@home.goodmis.org> <yw1xr40l2whi.fsf@unicorn.mansr.com> <20140813082756.GB2923@twins.programming.kicks-ass.net> <20140813090013.GA20581@pd.tnic> <53F242D1.4050506@ahsoftware.de> <CANszf4jauBAhaTogvSprhhspKywXSu_8xkWh+ETsWMMUDKo0=g@mail.gmail.com> <5408B069.9080708@ahsoftware.de> <CAOS_Y6RAiwY=Zh4g6Ei4UYm3FMybwf+bSo_CwqQhaMsaJh10uw@mail.gmail.com> <540958AD.8030503@ahsoftware.de> <540B6819.9030201@ahsoftware.de> <20140906234405.GA17692@csclub.uwaterloo.ca>
-In-Reply-To: <20140906234405.GA17692@csclub.uwaterloo.ca>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: zohar@linux.vnet.ibm.com, d.kasatkin@samsung.com,
+        james.l.morris@oracle.com, linux-ima-devel@lists.sourceforge.net,
+        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, serge@hallyn.com,
+        torvalds@linux-foundation.org, Mark Charlebois <charlebm@gmail.com>,
+        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>
+Subject: Re: [PATCH] security, crypto: LLVMLinux: Remove VLAIS from ima_crypto.c
+References: <1409958360-8061-1-git-send-email-behanw@converseincode.com> <alpine.DEB.2.10.1409060131260.5472@nanos> <540A590F.1030407@converseincode.com> <alpine.DEB.2.10.1409061152090.5472@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409061152090.5472@nanos>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.09.2014 01:44, schrieb Lennart Sorensen:
+On 09/06/14 03:11, Thomas Gleixner wrote:
+> On Fri, 5 Sep 2014, Behan Webster wrote:
+>> On 09/05/14 17:18, Thomas Gleixner wrote:
+>>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>>>> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+>>>> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+>>> This SOB chain is completely ass backwards. See Documentation/...
+>> "The Signed-off-by: tag indicates that the signer was involved in the
+>> development of the patch, or that he/she was in the patch's delivery path."
+>>
+>> All three of us were involved. Does that not satisfy this rule?
+> No. Read #12
+>
+> The sign-off is a simple line at the end of the explanation for the
+> patch, which certifies that you wrote it or otherwise have the right to
+> pass it on as an open-source patch.
+>
+> So the above chain says:
+>
+>     Written-by:   Behan
+>     Passed-on-by: Mark
+>     Passed-on-by: Jan
+>
+> That would be correct if you sent the patch to Mark, Mark sent it to
+> Jan and Jan finally submitted it to LKML.
+I suppose "Reviewed-by" is probably more appropriate for the last 2 
+then. Will fix.
 
-> So why C++ then if you care about making the code easy to make safe when
-> there are clearly even better options.  Why not OCAML or Erlang or one
-> of the other much more robust languages that don't contain all the
-> dangers of C?
+>>>> -	struct {
+>>>> -		struct shash_desc shash;
+>>>> -		char ctx[crypto_shash_descsize(tfm)];
+>>>> -	} desc;
+>>>> +	char desc[sizeof(struct shash_desc) +
+>>>> +		crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
+>>>> +	struct shash_desc *shash = (struct shash_desc *)desc;
+>>> That anon struct should have never happened in the first place.
+>> Sadly this is a design pattern used in many places through out the kernel, and
+>> appears to be fundamental to the crypto system. I was advised *not* to change
+>> it, so we haven't.
+>>
+>> I agree that it's not a good practice.
+>>
+>>>    Not
+>>> your problem, but you are not making it any better. You replace open
+>>> coded crap with even more unreadable crap.
+>>>
+>>> Whats wrong with
+>>>
+>>>         SHASH_DESC_ON_STACK(shash, tfm);
+>> Nothing is wrong with that. I would have actually preferred that. But it would
+>> have fundamentally changed a lot more code.
+> Errm. Why is
+>
+> #define SHASH_DESC_ON_STACK(shash, tfm)				\
+> 	char __shash[sizeof(.....)];				\
+> 	struct shash_desc *shash = (struct shash_desc *) __shash
+>
+> requiring more fundamental than open coding the same thing a gazillion
+> times. You still need to change ALL usage sides of the anon struct.
+>
+> So in fact you could avoid the whole code change by making it
+>
+>     SHASH_DESC_ON_STACK(desc, tfm);
+>
+> and do the anon struct or a proper struct magic in the macro.
+I see. I thought you meant a more fundamental change to the crypto 
+system API. My misunderstanding.
 
-I would choose Prolog. ;)
+Ironically we tried to stay away from macros since the last time we 
+tried to replace VLAIS using macros (we've attempted patches to remove 
+VLAIS a few times) we were told *not* to hide the implementation with 
+macro magic. Though, to be fair, we were using more pointer math in our 
+other macro-based effort, and the non-crypto uses of VLAIS are a lot 
+more complex to replace.
 
-I don't have to provide an answer because I'm not one of those which 
-have gone out to change this critical part of many systems.
+Like I said I'm actually a fan of hiding ugliness in macros. Will fix.
 
-My concerns are that C is one of the worst languages for that. I'm not
-saying that C++ would be the best solution. But I'm pretty sure it would 
-have been a much better solution than C.
+Again, thanks for the feedback,
 
-That means I haven't spend much time (around zero) to think about what 
-an init-replacement has to do and how it would be done best. I'm just 
-very concerned about what happens there.
+Behan
 
-So here are just some thoughts:
+-- 
+Behan Webster
+behanw@converseincode.com
 
-- Why do you call OCAML or Erlang more robust? Many problems in other 
-languages just aren't well known because they are only used by a few 
-people which don't tell you bad things about the language they've 
-choosen. ;)
-
-- Can you achieve all goals with just using OCAML or another language? 
-My experience is that in almost all of those "very well designed 
-languages", you are reaching very often some limits or problems which 
-are very ugly to solve, if it's possible at all to solve them.
-
-- How many people do you know which can program (and review) that language?
-
-- How robust are the compilers/interpreters? How are they maintained? 
-What happens if you find a bug in the compiler/interpreter?
-
-But, as said above, I don't have to provide a solution because I'm not 
-the one who has gone out to change PID 1 into something more complicated. ;)
-
-Regards,
-
-Alexander Holler
