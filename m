@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaIGIth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 04:49:37 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:48907 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaIGItf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 04:49:35 -0400
-Message-ID: <540C1C01.1000308@plexistor.com>
-Date: Sun, 07 Sep 2014 11:49:05 +0300
-From: Yigal Korman <yigal@plexistor.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>, Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, akpm@linuxfoundation.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 4/5] x86, mm: Add set_memory_wt() for WT
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>	 <1409855739-8985-5-git-send-email-toshi.kani@hp.com>	 <CALCETrXjpoVmCi07zo0dKH9LrF+nz9F3GshNiQvmiueFFH=TUQ@mail.gmail.com> <1409857025.28990.125.camel@misato.fc.hp.com>
-In-Reply-To: <1409857025.28990.125.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752117AbaIGJhQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 05:37:16 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:55638 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462AbaIGJhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 05:37:11 -0400
+Message-ID: <1410082623.2650.9.camel@jlt4.sipsolutions.net>
+Subject: Re: [RFC v2] device coredump: add new device coredump class
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Luciano Coelho <luca@coelho.fi>, Kalle Valo <kvalo@adurom.com>,
+        dri-devel@lists.freedesktop.org, linux-wireless@vger.kernel.org
+Date: Sun, 07 Sep 2014 11:37:03 +0200
+In-Reply-To: <20140905221314.GA1533@kroah.com>
+References: <1409907054-17596-1-git-send-email-johannes@sipsolutions.net>
+	 <20140905221314.GA1533@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think that what confused Andy (or at least me) is the documentation in Documentation/x86/pat.txt
-If it's possible, can you please update pat.txt as part of the patch?
+On Fri, 2014-09-05 at 15:13 -0700, Greg Kroah-Hartman wrote:
 
-Thank you,
-Yigal
+> > +MODULE_AUTHOR("Johannes Berg <johannes@sipsolutions.net>");
+> > +MODULE_DESCRIPTION("Device Coredump support");
+> > +MODULE_LICENSE("GPL");
+> 
+> As you only allow Y or N as build options, it's not really a "module" :)
 
-On 04/09/2014 21:57, Toshi Kani wrote:
-> On Thu, 2014-09-04 at 11:57 -0700, Andy Lutomirski wrote:
->> On Thu, Sep 4, 2014 at 11:35 AM, Toshi Kani <toshi.kani@hp.com> wrote:
->>> This patch adds set_memory_wt(), set_memory_array_wt(), and
->>> set_pages_array_wt() for setting range(s) of memory to WT.
->>>
->> Possibly dumb question: I thought that set_memory_xyz was only for
->> RAM.  Is that incorrect?
-> It works for non-RAM ranges as well.  For instance, you can use
-> set_memory_xyz() to change cache attribute for a non-RAM range mapped by
-> ioremap_cache().
->
-> Thanks,
-> -Toshi
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Umm, yeah. I went back and forth on whether this should be allowed to be
+modular, but then decided it wasn't big enough to be worth it.
+
+> > +	/*
+> > +	 * this seems racy, but I don't see a notifier or such on
+> > +	 * a struct device to know when it goes away?
+> > +	 */
+> > +	if (devcd->failing_dev->kobj.sd)
+> > +		sysfs_delete_link(&devcd->failing_dev->kobj, &dev->kobj,
+> > +				  "dev_coredump");
+> 
+> What is this link?  It should "just go away" if this:
+> 
+> > +	put_device(devcd->failing_dev);
+> 
+> was the last put_device() call on the failing_dev, right?  So you
+> shouldn't need to make this call to sysfs_delete_link().
+
+Oh, thanks, I'll try that. I did something slightly different first and
+ended up with dead symlinks, but in that case I think I was actually
+removing the bus/class of the device while the device was still alive or
+something - that was a big mess.
+
+> > +void dev_coredumpm(struct device *dev, struct module *owner,
+> > +		   const void *data, size_t datalen, gfp_t gfp,
+> > +		   ssize_t (*read)(char *buffer, loff_t offset, size_t count,
+> > +				   const void *data, size_t datalen),
+> > +		   void (*free)(const void *data))
+> > +{
+> > +	static atomic_t devcd_count = ATOMIC_INIT(0);
+> > +	struct devcd_entry *devcd;
+> > +	struct device *existing;
+> > +
+> > +	existing = class_find_device(&devcd_class, NULL, dev,
+> > +				     devcd_match_failing);
+> > +	if (existing) {
+> > +		put_device(existing);
+> > +		return;
+> > +	}
+> 
+> I thought multiple dumps per "device" would throw away the older ones?
+> It's fine if you don't, but you might want to document this behavior in
+> the kerneldoc for the function.
+
+I ... umm ... Yeah. I need to free the new one here. I actually wanted
+to keep the first one because it seems likely that the driver would
+attempt some sort of recovery and then if it happens to crash the device
+again it's probably not very helpful to see the last crash.
+
+But I definitely need to free the new one and document the behaviour.
+Maybe if somebody needs something else we can make it configurable, but
+for now I think all potential users have indicated that they'd prefer
+keeping the first dump.
+
+> Other than those very minor things, looks good to me, want to resend it
+> cleaned up and without the "RFC" in the Subject?
+
+Tomorrow :)
+
+johannes
 
