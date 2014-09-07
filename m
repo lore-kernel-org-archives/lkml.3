@@ -1,138 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaIGK2l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 06:28:41 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37087 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaIGK2j (ORCPT
+	id S1752271AbaIGK3c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 06:29:32 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:35485 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082AbaIGK3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 06:28:39 -0400
-Message-ID: <1410009467.5521.2.camel@phoenix>
-Subject: [PATCH] regulator: as3711: Remove unused fields from
- as3711_regulator_info and as3711_regulator
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 06 Sep 2014 21:17:47 +0800
-Mime-Version: 1.0
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Sep 2014 06:29:31 -0400
+From: Vidya Sagar <sagar.tv@gmail.com>
+X-Google-Original-From: Vidya Sagar <vidyas@nvidia.com>
+To: linux@arm.linux.org.uk, bhelgaas@google.com, wangyijing@huawei.com,
+        thierry.reding@gmail.com, jason@lakedaemon.net, will.deacon@arm.com,
+        swarren@nvidia.com
+Cc: kthota@nvidia.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Vidya Sagar <sagar.tv@gmail.com>
+Subject: [PATCH v4] ARM: fix debug prints relevant to PCI devices
+Date: Sun,  7 Sep 2014 15:58:07 +0530
+Message-Id: <1410085687-11273-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max_uV is not used, so remove it from struct as3711_regulator_info.
-Current code is using devm_regulator_register(), so we don't need to store *rdev
-in struct as3711_regulator for clean up.
+From: Vidya Sagar <sagar.tv@gmail.com>
 
-Also clean up AS3711_REG macro to remove _vshift, _min_uV and _max_uV arguments.
-_vshift is always 0, so remove it.
-_min_uV and _max_uV are not required, all required settings are set in
-REGULATOR_LINEAR_RANGE macro.
+As per PCIe spec, fast back-to-back transactions feature
+is not applicable to PCIe devices. Hence, do not print
+that fast back-to-back trasactions are disabled when
+there is a PCIe device found on the bus
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
 ---
- drivers/regulator/as3711-regulator.c | 61 +++++++++++++++++-------------------
- 1 file changed, 28 insertions(+), 33 deletions(-)
+v4:
+* initialized 'has_pcie_dev' to 'false'
 
-diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
-index b47283f..8459b0b 100644
---- a/drivers/regulator/as3711-regulator.c
-+++ b/drivers/regulator/as3711-regulator.c
-@@ -22,12 +22,10 @@
+v3:
+* removed KERN_INFO from pr_info() which was not removed by mistake in previous patch
+
+v2:
+* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
+* replaced printk with pr_info
+
+ arch/arm/kernel/bios32.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c1..03c56ba 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+ 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
++	bool has_pcie_dev = false;
  
- struct as3711_regulator_info {
- 	struct regulator_desc	desc;
--	unsigned int		max_uV;
- };
+ 	/*
+ 	 * Walk the devices on this bus, working out what we can
+@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		u16 status;
  
- struct as3711_regulator {
- 	struct as3711_regulator_info *reg_info;
--	struct regulator_dev *rdev;
- };
++		if (!has_pcie_dev)
++			has_pcie_dev = pci_is_pcie(dev);
+ 		pci_read_config_word(dev, PCI_STATUS, &status);
  
- /*
-@@ -132,39 +130,37 @@ static const struct regulator_linear_range as3711_dldo_ranges[] = {
- 	REGULATOR_LINEAR_RANGE(1750000, 0x20, 0x3f, 50000),
- };
+ 		/*
+@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
  
--#define AS3711_REG(_id, _en_reg, _en_bit, _vmask, _vshift, _min_uV, _max_uV, _sfx)	\
--	[AS3711_REGULATOR_ ## _id] = {							\
--	.desc = {									\
--		.name = "as3711-regulator-" # _id,					\
--		.id = AS3711_REGULATOR_ ## _id,						\
--		.n_voltages = (_vmask + 1),						\
--		.ops = &as3711_ ## _sfx ## _ops,					\
--		.type = REGULATOR_VOLTAGE,						\
--		.owner = THIS_MODULE,							\
--		.vsel_reg = AS3711_ ## _id ## _VOLTAGE,					\
--		.vsel_mask = _vmask << _vshift,						\
--		.enable_reg = AS3711_ ## _en_reg,					\
--		.enable_mask = BIT(_en_bit),						\
--		.min_uV	= _min_uV,							\
--		.linear_ranges = as3711_ ## _sfx ## _ranges,				\
--		.n_linear_ranges = ARRAY_SIZE(as3711_ ## _sfx ## _ranges),		\
--	},										\
--	.max_uV = _max_uV,								\
-+#define AS3711_REG(_id, _en_reg, _en_bit, _vmask, _sfx)			   \
-+	[AS3711_REGULATOR_ ## _id] = {					   \
-+	.desc = {							   \
-+		.name = "as3711-regulator-" # _id,			   \
-+		.id = AS3711_REGULATOR_ ## _id,				   \
-+		.n_voltages = (_vmask + 1),				   \
-+		.ops = &as3711_ ## _sfx ## _ops,			   \
-+		.type = REGULATOR_VOLTAGE,				   \
-+		.owner = THIS_MODULE,					   \
-+		.vsel_reg = AS3711_ ## _id ## _VOLTAGE,			   \
-+		.vsel_mask = _vmask,					   \
-+		.enable_reg = AS3711_ ## _en_reg,			   \
-+		.enable_mask = BIT(_en_bit),				   \
-+		.linear_ranges = as3711_ ## _sfx ## _ranges,		   \
-+		.n_linear_ranges = ARRAY_SIZE(as3711_ ## _sfx ## _ranges), \
-+	},								   \
+ 	/*
+ 	 * Report what we did for this bus
++	 * (only if the bus doesn't have any PCIe devices)
+ 	 */
+-	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+-		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
++	if (!has_pcie_dev)
++		pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
++			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
  }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
  
- static struct as3711_regulator_info as3711_reg_info[] = {
--	AS3711_REG(SD_1, SD_CONTROL, 0, 0x7f, 0, 612500, 3350000, sd),
--	AS3711_REG(SD_2, SD_CONTROL, 1, 0x7f, 0, 612500, 3350000, sd),
--	AS3711_REG(SD_3, SD_CONTROL, 2, 0x7f, 0, 612500, 3350000, sd),
--	AS3711_REG(SD_4, SD_CONTROL, 3, 0x7f, 0, 612500, 3350000, sd),
--	AS3711_REG(LDO_1, LDO_1_VOLTAGE, 7, 0x1f, 0, 1200000, 3300000, aldo),
--	AS3711_REG(LDO_2, LDO_2_VOLTAGE, 7, 0x1f, 0, 1200000, 3300000, aldo),
--	AS3711_REG(LDO_3, LDO_3_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
--	AS3711_REG(LDO_4, LDO_4_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
--	AS3711_REG(LDO_5, LDO_5_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
--	AS3711_REG(LDO_6, LDO_6_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
--	AS3711_REG(LDO_7, LDO_7_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
--	AS3711_REG(LDO_8, LDO_8_VOLTAGE, 7, 0x3f, 0, 900000, 3300000, dldo),
-+	AS3711_REG(SD_1, SD_CONTROL, 0, 0x7f, sd),
-+	AS3711_REG(SD_2, SD_CONTROL, 1, 0x7f, sd),
-+	AS3711_REG(SD_3, SD_CONTROL, 2, 0x7f, sd),
-+	AS3711_REG(SD_4, SD_CONTROL, 3, 0x7f, sd),
-+	AS3711_REG(LDO_1, LDO_1_VOLTAGE, 7, 0x1f, aldo),
-+	AS3711_REG(LDO_2, LDO_2_VOLTAGE, 7, 0x1f, aldo),
-+	AS3711_REG(LDO_3, LDO_3_VOLTAGE, 7, 0x3f, dldo),
-+	AS3711_REG(LDO_4, LDO_4_VOLTAGE, 7, 0x3f, dldo),
-+	AS3711_REG(LDO_5, LDO_5_VOLTAGE, 7, 0x3f, dldo),
-+	AS3711_REG(LDO_6, LDO_6_VOLTAGE, 7, 0x3f, dldo),
-+	AS3711_REG(LDO_7, LDO_7_VOLTAGE, 7, 0x3f, dldo),
-+	AS3711_REG(LDO_8, LDO_8_VOLTAGE, 7, 0x3f, dldo),
- 	/* StepUp output voltage depends on supplying regulator */
- };
- 
-@@ -263,7 +259,6 @@ static int as3711_regulator_probe(struct platform_device *pdev)
- 				ri->desc.name);
- 			return PTR_ERR(rdev);
- 		}
--		reg->rdev = rdev;
- 	}
- 	platform_set_drvdata(pdev, regs);
- 	return 0;
 -- 
-1.9.1
-
-
+1.8.1.5
 
