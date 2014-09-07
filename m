@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaIGIjv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 04:39:51 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:39664 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaIGIjq (ORCPT
+	id S1752493AbaIGIj4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 04:39:56 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:63350 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400AbaIGIjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 04:39:46 -0400
+	Sun, 7 Sep 2014 04:39:53 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
 Cc: linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
         Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 4/6] virtio-blk: implement init_flush_rq
-Date: Sun,  7 Sep 2014 16:39:20 +0800
-Message-Id: <1410079162-9872-5-git-send-email-ming.lei@canonical.com>
+Subject: [PATCH 6/6] blk-mq: don't copy pdu any more for flush req
+Date: Sun,  7 Sep 2014 16:39:22 +0800
+Message-Id: <1410079162-9872-7-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410079162-9872-1-git-send-email-ming.lei@canonical.com>
 References: <1410079162-9872-1-git-send-email-ming.lei@canonical.com>
@@ -21,54 +21,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we use init_flush_rq callback to initialize pdu of
-flush req.
+The in-tree drivers which need to handle flush request
+have implemented init_flush_rq already, so don't
+copy pdu any more for flush req.
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/block/virtio_blk.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ block/blk-mq.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 0a58140..f478ec8 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -177,7 +177,6 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 
- 	BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
- 
--	vbr->req = req;
- 	if (req->cmd_flags & REQ_FLUSH) {
- 		vbr->out_hdr.type = VIRTIO_BLK_T_FLUSH;
- 		vbr->out_hdr.sector = 0;
-@@ -556,6 +555,19 @@ static int virtblk_init_request(void *data, struct request *rq,
- 	struct virtio_blk *vblk = data;
- 	struct virtblk_req *vbr = blk_mq_rq_to_pdu(rq);
- 
-+	vbr->req = rq;
-+	sg_init_table(vbr->sg, vblk->sg_elems);
-+	return 0;
-+}
-+
-+static int virtblk_init_flush_rq(struct request_queue *q,
-+		struct request *rq)
-+{
-+	/* q->queuedata isn't setup yet */
-+	struct virtio_blk *vblk = q->tag_set->driver_data;
-+	struct virtblk_req *vbr = blk_mq_rq_to_pdu(rq);
-+
-+	vbr->req = rq;
- 	sg_init_table(vbr->sg, vblk->sg_elems);
- 	return 0;
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 113d58d..16f595f 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -287,15 +287,8 @@ void blk_mq_free_request(struct request *rq)
+ void blk_mq_clone_flush_request(struct request *flush_rq,
+ 		struct request *orig_rq)
+ {
+-	struct blk_mq_hw_ctx *hctx =
+-		orig_rq->q->mq_ops->map_queue(orig_rq->q, orig_rq->mq_ctx->cpu);
+-
+ 	flush_rq->mq_ctx = orig_rq->mq_ctx;
+ 	flush_rq->tag = orig_rq->tag;
+-
+-	if (!orig_rq->q->mq_ops->init_flush_rq)
+-		memcpy(blk_mq_rq_to_pdu(flush_rq),
+-			blk_mq_rq_to_pdu(orig_rq), hctx->cmd_size);
  }
-@@ -565,6 +577,7 @@ static struct blk_mq_ops virtio_mq_ops = {
- 	.map_queue	= blk_mq_map_queue,
- 	.complete	= virtblk_request_done,
- 	.init_request	= virtblk_init_request,
-+	.init_flush_rq	= virtblk_init_flush_rq,
- };
  
- static unsigned int virtblk_queue_depth;
+ inline void __blk_mq_end_io(struct request *rq, int error)
 -- 
 1.7.9.5
 
