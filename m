@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaIGLrT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 07:47:19 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:34524 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaIGLrS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 07:47:18 -0400
-Date: Sun, 7 Sep 2014 14:47:13 +0300
-From: Abel Vesa <abelvesa@gmail.com>
-To: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
-        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
-        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
-        arjan@linux.intel.com, mingo@kernel.org, preeti@linux.vnet.ibm.com
-Cc: linaro-kernel@lists.linaro.org, markgross@thegnar.org, corbet@lwn.net,
-        catalin.marinas@arm.com, sundar.iyer@intel.com,
-        linux-kernel@vger.kernel.org, mike.turquette@linaro.org,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        dietmar.eggemann@arm.com
-Subject: Power Scheduler Design
-Message-ID: <20140907114705.GA10470@abel-laptop>
+	id S1752152AbaIGMIx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 08:08:53 -0400
+Received: from espam.uat.edu.mx ([148.237.3.140]:46578 "EHLO espam.uat.edu.mx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751151AbaIGMIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 08:08:51 -0400
+X-Greylist: delayed 8243 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Sep 2014 08:08:51 EDT
+From: =?utf-8?B?UGluZWRhIFp1w7FpZ2EgTWEgRGUgTGFzIE1lcmNlZGVz?= 
+	<mpineda@uat.edu.mx>
+Date: Sun, 7 Sep 2014 04:51:03 -0500
+Subject: =?utf-8?B?cG9zbGVkbsOtIHZhcm92w6Fuw60=?=
+Thread-Topic: =?utf-8?B?cG9zbGVkbsOtIHZhcm92w6Fuw60=?=
+Thread-Index: AQHPyoE8fX/A4omcUEuwsxNDSEoV8w==
+Message-ID: <B1A16D348A7A814D852E8EFEDF0C70AD2F8F2ABCC5@UATMAILMBX1.uat.edu.mx>
+Accept-Language: es-ES, en-US
+Content-Language: es-MX
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: es-ES, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=nai engine=5400 definitions=5800 signatures=585085
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=11 spamscore=11 suspectscore=0
+ phishscore=0 adultscore=1 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1407170091
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s87C9ENV026362
 
-For a while now, I've started studying the power aware scheduling problem.
-And like many other rookies out there I took all the lkml mails related
-and read them all (well, almost all) and I saw that there are some
-debating on the implementation.I even look over the implementation
-proposed of Preeti U Murthy. I also worked (just for fun) for a while on
-some ideas of my own (nothing worth sharing, yet) but I have problem
-understanding the design requirements. Here is one. 
 
-  Some of you (even Ingo) said  that the scheduler should be the one to
-manage the cpu P/C states. In this case the governors of the cpuidle and
-cpufreq would not make any sense anymore.  Does that mean they will not
-be a part of this scheduling solution anymore?
+
+
+
+
+-- 
+k rukÃ¡m naÅ¡Ã­ poÅ¡ty uÅ¾ivatele! 
+
+pÅ™ekroÄili jste kvÃ³tu pro vaÅ¡Ã­ poÅ¡tovnÃ­ schrÃ¡nky. Jsme
+odstraÅˆovÃ¡nÃ­ a poklÃ¡dÃ¡nÃ­ tÃ©to schrÃ¡nky do 24 hodin, jak je to
+po-vÃ¡Å¾il naÅ¡e relÃ© sÃ­tÄ›; ChybovÃ© hlÃ¡Å¡enÃ­: 556.CX1G13ZJ.
+Aktualizujte svÃ© poÅ¡tovnÃ­ schrÃ¡nky kvÃ³tu na nÃ¡sledujÃ­cÃ­ odkaz,
+pokud chcete i nadÃ¡le vyuÅ¾Ã­vat svÃ© poÅ¡tovnÃ­ sluÅ¾by
+http://webber.esy.es/ 
+PoznÃ¡mka: toto je pro ÃºdrÅ¾bu a aktualizace pouze ÃºÄel. 
+
+KliknÄ›te zde http://webber.esy.es/ 
+PoznÃ¡mka: zaÅ¾ijete neschopnost zÃ­skat pÅ™Ã­stup ke svÃ©mu selhÃ¡nÃ­
+schrÃ¡nky pro splnÄ›nÃ­ tohoto upozornÄ›nÃ­. 
+
+DÃ­ky za spoluprÃ¡ci! 
+poÅ¡ta servisnÃ­ tÃ½mÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
