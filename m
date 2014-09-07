@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaIGLiO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 07:38:14 -0400
-Received: from www.augenpunkt.de ([213.239.207.9]:34474 "EHLO
+	id S1752476AbaIGLib (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 07:38:31 -0400
+Received: from www.augenpunkt.de ([213.239.207.9]:34484 "EHLO
 	www.augenpunkt.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaIGLiL (ORCPT
+	with ESMTP id S1751951AbaIGLiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 07:38:11 -0400
-X-Greylist: delayed 1297 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Sep 2014 07:38:11 EDT
+	Sun, 7 Sep 2014 07:38:14 -0400
 From: Stefan Wahren <info@lategoodbye.de>
 To: lgirdwood@gmail.com, broonie@kernel.org, shawn.guo@linaro.org,
         robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -15,69 +14,53 @@ To: lgirdwood@gmail.com, broonie@kernel.org, shawn.guo@linaro.org,
 Cc: festevam@gmail.com, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         stefan.wahren@i2se.com, Stefan Wahren <info@lategoodbye.de>
-Subject: [PATCH RFC 1/3] DT: add binding for MXS regulator
-Date: Sun,  7 Sep 2014 13:37:47 +0200
-Message-Id: <1410089869-6611-2-git-send-email-info@lategoodbye.de>
+Subject: [PATCH RFC 0/3] ARM: regulator: add Freescale MXS regulator driver
+Date: Sun,  7 Sep 2014 13:37:46 +0200
+Message-Id: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
-References: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Device tree bindings for the Freescale MXS on-chip
-regulators.
+This patch series draft should adds support for Freescale i.MX23, i.MX28 
+on-chip regulators. I'm new to regulator drivers and need early feedback for 
+the driver's stage before i go in the wrong direction.
 
-Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
----
- .../bindings/regulator/mxs-regulator.txt           | 38 ++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+The information about the i.MX28 regulators are from chapter 11 of the 
+reference manual [1].
+
+This driver based on the Freescale high level [2] and low level driver [3], 
+but contains the following changes:
+
+* devictree support
+* code cleanup
+
+Please bear in mind that the code is not tested against real hardware and 
+it's not expected to work.
+
+I'm not sure if it's correct, but these series based on the for-next branch
+of Mark Brown's regulator repository.
+
+Any comments about the code are welcome.
+
+[1] - http://cache.freescale.com/files/dsp/doc/ref_manual/MCIMX28RM.pdf
+[2] - http://git.freescale.com/git/cgit.cgi/imx/linux-2.6-imx.git/tree/drivers/regulator/mxs-regulator.c?h=imx_2.6.35_maintain
+[3] - http://git.freescale.com/git/cgit.cgi/imx/linux-2.6-imx.git/tree/arch/arm/mach-mx28/power.c?h=imx_2.6.35_maintain
+
+Stefan Wahren (3):
+  DT: add binding for MXS regulator
+  ARM: regulator: add Freescale MXS regulator driver
+  DT: ARM: mxs: enable regulator support for i.MX28
+
+ .../bindings/regulator/mxs-regulator.txt           |  38 ++
+ arch/arm/boot/dts/imx28.dtsi                       |  50 ++-
+ drivers/regulator/Kconfig                          |   9 +
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/mxs-regulator.c                  | 411 +++++++++++++++++++++
+ 5 files changed, 508 insertions(+), 1 deletion(-)
  create mode 100644 Documentation/devicetree/bindings/regulator/mxs-regulator.txt
+ create mode 100644 drivers/regulator/mxs-regulator.c
 
-diff --git a/Documentation/devicetree/bindings/regulator/mxs-regulator.txt b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-new file mode 100644
-index 0000000..c3226cc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-@@ -0,0 +1,38 @@
-+MXS regulators
-+
-+Required node properties:
-+- compatible: Should be "fsl,<soc>-power", where soc is "imx23" or "imx28"
-+- reg: Offset and length of the register set for the device
-+
-+Required regulator properties:
-+- compatible: Must be "fsl,mxs-regulator"
-+- reg: Offset of the register set for the regulator
-+- mxs-max-reg-val: Maximum value of this register
-+
-+Optional regulator properties:
-+- mxs-default-microvolt: initial voltage of the regulator
-+
-+Any regulator property defined as part of the core regulator
-+binding, defined in regulator.txt, can also be used.
-+
-+Example:
-+
-+	power: power@80044000 {
-+		compatible = "fsl,imx28-power";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		reg = <0x80044000 0x2000>;
-+
-+		reg_vddio: regulator-vddio@80044060 {
-+			reg = <0x80044060>;
-+			compatible = "fsl,mxs-regulator";
-+			regulator-name = "vddio";
-+			regulator-min-microvolt = <2800000>;
-+			regulator-max-microvolt = <3600000>;
-+			regulator-microvolt-offset = <80000>;
-+			regulator-always-on;
-+			mxs-max-reg-val = <0x10>;
-+			mxs-default-microvolt = <3300000>;
-+		};
-+	};
-+
 -- 
 1.8.1.4
 
