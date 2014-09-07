@@ -1,220 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaIGAnV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Sep 2014 20:43:21 -0400
-Received: from mail-yk0-f181.google.com ([209.85.160.181]:42994 "EHLO
-	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaIGAnT (ORCPT
+	id S1752009AbaIGAr6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Sep 2014 20:47:58 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:54279 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaIGAr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Sep 2014 20:43:19 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linux.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8723au: Fix '"(foo*)" should be "(foo *)"' errors
-Date: Sat,  6 Sep 2014 19:42:03 -0500
-Message-Id: <1410050523-20883-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 6 Sep 2014 20:47:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAG-aW07Lx=WOEf+j=_+G5T57uzhvKiP3-ZpaadKvoafW=iJKrw@mail.gmail.com>
+References: <CAG-aW06Q9VVyW-atZEsURs0rfjysdEbxb_dC4Tm3K-tZg++tQg@mail.gmail.com>
+	<20140828152205.GA18432@kroah.com>
+	<CAG-aW05qkQKgntBM87XHSMECjD-GMjeRt+m0-0CkezBG_weCOg@mail.gmail.com>
+	<20140828153252.GA18868@kroah.com>
+	<CAG-aW07Lx=WOEf+j=_+G5T57uzhvKiP3-ZpaadKvoafW=iJKrw@mail.gmail.com>
+Date: Sun, 7 Sep 2014 02:47:55 +0200
+Message-ID: <CAG-aW04YvZVxKBhSAYqhr5OBFovA3HHHWgdfEQU_jXKzQK7QdA@mail.gmail.com>
+Subject: Re: linux-3.16.2 queue (3.16.1+)
+From: Matt <jackdachef@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl '"(foo*)" should be "(foo *)"' errors
+On Thu, Aug 28, 2014 at 9:18 PM, Matt <jackdachef@gmail.com> wrote:
+> On Thu, Aug 28, 2014 at 5:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Thu, Aug 28, 2014 at 05:27:27PM +0200, Matt wrote:
+>>> On Thu, Aug 28, 2014 at 5:22 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>> > On Thu, Aug 28, 2014 at 05:16:58PM +0200, Matt wrote:
+>>> >> Hi Greg,
+>>> >>
+>>> >>
+>>> >> please consider adding the following 2 patches to 3.16.2:
+>>> >>
+>>> >> Jan Kara (1):
+>>> >>       reiserfs: Fix use after free in journal teardown
+>>> >>
+>>> >> Jeff Mahoney (1):
+>>> >>       reiserfs: fix corruption introduced by balance_leaf refactor
+>>> >>
+>>> >>
+>>> >>
+>>> >> Reason/Related:
+>>> >>
+>>> >> https://bugzilla.kernel.org/show_bug.cgi?id=83121
+>>> >>
+>>> >> https://bugzilla.kernel.org/show_bug.cgi?id=83321
+>>> >>
+>>> >> http://forums.gentoo.org/viewtopic-t-998538-postdays-0-postorder-asc-start-0.html
+>>> >>
+>>> >>
+>>> >> Many thanks in advance
+>>> >
+>>> > I need git commit ids of these patches in Linus's tree, can you provide
+>>> > those please?
+>>> >
+>>> > thanks,
+>>> >
+>>> > greg k-h
+>>>
+>>>
+>>> Sure:
+>>>
+>>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=27d0e5bc85f3341b9ba66f0c23627cf9d7538c9d
+>>> reiserfs: fix corruption introduced by balance_leaf refactor
+>>>
+>>>
+>>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=01777836c87081e4f68c4a43c9abe6114805f91e
+>>> reiserfs: Fix use after free in journal teardown
+>>>
+>>>
+>>>
+>>> are checkpatch warnings usually also fixed within stable releases ?
+>>
+>> No, not at all, please read Documentation/stable_kernel_patches.txt for
+>> what is acceptable for stable kernel patches.
+>>
+>> thanks,
+>>
+>> greg k-h
+>
+>
+> okay, will do
+>
+> thanks for pointing that out
+>
+>
+> Regards
+>
+> Matt
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_ap.c        | 14 ++++++++------
- drivers/staging/rtl8723au/core/rtw_cmd.c       |  6 +++---
- drivers/staging/rtl8723au/core/rtw_mlme.c      |  4 ++--
- drivers/staging/rtl8723au/core/rtw_mlme_ext.c  | 12 ++++++------
- drivers/staging/rtl8723au/core/rtw_wlan_util.c |  2 +-
- 5 files changed, 20 insertions(+), 18 deletions(-)
+Hi Greg,
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-index 888abeb..be85b7e 100644
---- a/drivers/staging/rtl8723au/core/rtw_ap.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-@@ -143,7 +143,7 @@ static void update_BCNTIM(struct rtw_adapter *padapter)
- 		*dst_ie++ = 0;
- 
- 	if (tim_ielen == 4) {
--		*dst_ie++ = *(u8*)&tim_bitmap_le;
-+		*dst_ie++ = *(u8 *)&tim_bitmap_le;
- 	} else if (tim_ielen == 5) {
- 		memcpy(dst_ie, &tim_bitmap_le, 2);
- 		dst_ie+= 2;
-@@ -463,7 +463,8 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
- 
- 		psta->ieee8021x_blocked = 0;
- 
--		memset((void*)&psta->sta_stats, 0, sizeof(struct stainfo_stats));
-+		memset((void *)&psta->sta_stats, 0,
-+		       sizeof(struct stainfo_stats));
- 
- 		/* prepare for add_RATid23a */
- 		supportRateNum = rtw_get_rateset_len23a((u8*)&pcur_network->SupportedRates);
-@@ -599,7 +600,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
- 
- 	/* todo: init other variables */
- 
--	memset((void*)&psta->sta_stats, 0, sizeof(struct stainfo_stats));
-+	memset((void *)&psta->sta_stats, 0, sizeof(struct stainfo_stats));
- 
- 	spin_lock_bh(&psta->lock);
- 	psta->state |= _FW_LINKED;
-@@ -1021,7 +1022,7 @@ int rtw_check_beacon_data23a(struct rtw_adapter *padapter,
- 	pbss_network->Length = get_wlan_bssid_ex_sz(pbss_network);
- 
- 	/* issue beacon to start bss network */
--	start_bss_network(padapter, (u8*)pbss_network);
-+	start_bss_network(padapter, (u8 *)pbss_network);
- 
- 	/* alloc sta_info for ap itself */
- 	psta = rtw_get_stainfo23a(&padapter->stapriv, pbss_network->MacAddress);
-@@ -1674,7 +1675,8 @@ u8 ap_free_sta23a(struct rtw_adapter *padapter, struct sta_info *psta, bool acti
- 
- 	/* clear cam entry / key */
- 	/* clear_cam_entry23a(padapter, (psta->mac_id + 3)); */
--	rtw_clearstakey_cmd23a(padapter, (u8*)psta, (u8)(psta->mac_id + 3), true);
-+	rtw_clearstakey_cmd23a(padapter, (u8 *)psta, (u8)(psta->mac_id + 3),
-+			       true);
- 
- 	spin_lock_bh(&psta->lock);
- 	psta->state &= ~_FW_LINKED;
-@@ -1829,7 +1831,7 @@ void rtw_ap_restore_network(struct rtw_adapter *padapter)
- 
- 	set_channel_bwmode23a(padapter, pmlmeext->cur_channel, pmlmeext->cur_ch_offset, pmlmeext->cur_bwmode);
- 
--	start_bss_network(padapter, (u8*)&mlmepriv->cur_network.network);
-+	start_bss_network(padapter, (u8 *)&mlmepriv->cur_network.network);
- 
- 	if (padapter->securitypriv.dot11PrivacyAlgrthm ==
- 	    WLAN_CIPHER_SUITE_TKIP ||
-diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
-index 71a0878..9fd9b10 100644
---- a/drivers/staging/rtl8723au/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
-@@ -677,7 +677,7 @@ int rtw_setstakey_cmd23a(struct rtw_adapter *padapter, u8 *psta, u8 unicast_key)
- 	struct set_stakey_rsp *psetstakey_rsp = NULL;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 	struct security_priv *psecuritypriv = &padapter->securitypriv;
--	struct sta_info *sta = (struct sta_info*)psta;
-+	struct sta_info *sta = (struct sta_info *)psta;
- 	int res = _SUCCESS;
- 
- 	ph2c = kzalloc(sizeof(struct cmd_obj), GFP_KERNEL);
-@@ -1493,7 +1493,7 @@ void rtw_setstaKey_cmdrsp_callback23a(struct rtw_adapter *padapter,
- 	struct sta_info *psta;
- 
- 	pstapriv = &padapter->stapriv;
--	psetstakey_rsp = (struct set_stakey_rsp*) (pcmd->rsp);
-+	psetstakey_rsp = (struct set_stakey_rsp *) (pcmd->rsp);
- 	psta = rtw_get_stainfo23a(pstapriv, psetstakey_rsp->addr);
- 
- 	if (!psta) {
-@@ -1518,7 +1518,7 @@ void rtw_setassocsta_cmdrsp_callback23a(struct rtw_adapter *padapter,
- 	struct sta_info *psta;
- 
- 	passocsta_parm = (struct set_assocsta_parm *)(pcmd->parmbuf);
--	passocsta_rsp = (struct set_assocsta_rsp*) (pcmd->rsp);
-+	passocsta_rsp = (struct set_assocsta_rsp *) (pcmd->rsp);
- 	psta = rtw_get_stainfo23a(pstapriv, passocsta_parm->addr);
- 
- 	if (psta == NULL) {
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme.c b/drivers/staging/rtl8723au/core/rtw_mlme.c
-index 57f93f5..099ef8c 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme.c
-@@ -1256,7 +1256,7 @@ void rtw_stassoc_event_callback23a(struct rtw_adapter *adapter, const u8 *pbuf)
- {
- 	struct sta_info *psta;
- 	struct mlme_priv *pmlmepriv = &adapter->mlmepriv;
--	struct stassoc_event *pstassoc = (struct stassoc_event*)pbuf;
-+	struct stassoc_event *pstassoc = (struct stassoc_event *)pbuf;
- 	struct wlan_network *cur_network = &pmlmepriv->cur_network;
- 	struct wlan_network *ptarget_wlan;
- 
-@@ -2187,7 +2187,7 @@ bool rtw_restructure_ht_ie23a(struct rtw_adapter *padapter, u8 *in_ie,
- 
- 		pframe = rtw_set_ie23a(out_ie + out_len, WLAN_EID_HT_CAPABILITY,
- 				    sizeof(struct ieee80211_ht_cap),
--				    (unsigned char*)&ht_capie, pout_len);
-+				    (unsigned char *)&ht_capie, pout_len);
- 
- 		phtpriv->ht_option = true;
- 
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-index c5511ea..23621a8 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-@@ -2436,7 +2436,7 @@ void issue_beacon23a(struct rtw_adapter *padapter, int timeout_ms)
- 		if (wps_ie && wps_ie[1] > 0) {
- 			rtw_get_wps_attr_content23a(wps_ie, wps_ie[1],
- 						    WPS_ATTR_SELECTED_REGISTRAR,
--						    (u8*)&sr);
-+						    (u8 *)&sr);
- 		}
- 		if (sr != 0)
- 			set_fwstate(pmlmepriv, WIFI_UNDER_WPS);
-@@ -4763,7 +4763,7 @@ void report_survey_event23a(struct rtw_adapter *padapter,
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct survey_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_Survey);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4814,7 +4814,7 @@ void report_surveydone_event23a(struct rtw_adapter *padapter)
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct surveydone_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_SurveyDone);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4858,7 +4858,7 @@ void report_join_res23a(struct rtw_adapter *padapter, int res)
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct joinbss_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_JoinBss);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4908,7 +4908,7 @@ void report_del_sta_event23a(struct rtw_adapter *padapter,
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct stadel_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_DelSTA);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4962,7 +4962,7 @@ void report_add_sta_event23a(struct rtw_adapter *padapter,
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct stassoc_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_AddSTA);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-diff --git a/drivers/staging/rtl8723au/core/rtw_wlan_util.c b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-index 32f3603..bc587b3 100644
---- a/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-+++ b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-@@ -1537,7 +1537,7 @@ void process_addba_req23a(struct rtw_adapter *padapter,
- 	u16 tid, start_seq, param;
- 	struct recv_reorder_ctrl *preorder_ctrl;
- 	struct sta_priv *pstapriv = &padapter->stapriv;
--	struct ADDBA_request *preq = (struct ADDBA_request*)paddba_req;
-+	struct ADDBA_request *preq = (struct ADDBA_request *)paddba_req;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
- 
--- 
-1.9.1
+could you please add the above mentioned two patches
 
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=27d0e5bc85f3341b9ba66f0c23627cf9d7538c9d
+reiserfs: fix corruption introduced by balance_leaf refactor
+
+
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=01777836c87081e4f68c4a43c9abe6114805f91e
+reiserfs: Fix use after free in journal teardown
+
+in next stable (3.16.3) kernel ?
+
+more and more people seem to be affected by the data corruption
+introduced by the recent changes.
+
+
+Reading through Documentation/stable_kernel_rules.txt,
+http://cwe.mitre.org/data/definitions/416.html and
+http://www.hpenterprisesecurity.com/vulncat/en/vulncat/cpp/use_after_free.html
+
+both patches seem relevant enough (concerning data integrity
+filesystem-wise and security) to be included for the stable branch
+
+
+Thanks & Regards
+
+Matt
