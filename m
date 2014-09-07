@@ -1,167 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaIGKvN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 06:51:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42480 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaIGKvL (ORCPT
+	id S1752218AbaIGLAq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 07:00:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39031 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaIGLAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 06:51:11 -0400
-Date: Sun, 7 Sep 2014 03:49:24 -0700
-From: "tip-bot for xiaofeng.yan" <tipbot@zytor.com>
-Message-ID: <tip-177ef2a6315ea7bf173653182324e1dcd08ffeaa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        juri.lelli@arm.com, tglx@linutronix.de, xiaofeng.yan@huawei.com,
-        lizefan@huawei.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        juri.lelli@arm.com, tglx@linutronix.de, xiaofeng.yan@huawei.com,
-        lizefan@huawei.com
-In-Reply-To: <1409022941-5880-1-git-send-email-xiaofeng.yan@huawei.com>
-References: <1409022941-5880-1-git-send-email-xiaofeng.yan@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/deadline:
-  Fix a precision problem in the microseconds range
-Git-Commit-ID: 177ef2a6315ea7bf173653182324e1dcd08ffeaa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 7 Sep 2014 07:00:45 -0400
+Date: Sun, 7 Sep 2014 13:00:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] timer updates for 3.17
+Message-ID: <alpine.DEB.2.10.1409071252460.5472@nanos>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  177ef2a6315ea7bf173653182324e1dcd08ffeaa
-Gitweb:     http://git.kernel.org/tip/177ef2a6315ea7bf173653182324e1dcd08ffeaa
-Author:     xiaofeng.yan <xiaofeng.yan@huawei.com>
-AuthorDate: Tue, 26 Aug 2014 03:15:41 +0000
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 7 Sep 2014 11:09:59 +0200
+Linus,
 
-sched/deadline: Fix a precision problem in the microseconds range
+please pull the latest timers-urgent-for-linus git tree from:
 
-An overrun could happen in function start_hrtick_dl()
-when a task with SCHED_DEADLINE runs in the microseconds
-range.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-For example, if a task with SCHED_DEADLINE has the following parameters:
+Three fixlets from the timer departement:
 
-  Task  runtime  deadline  period
-   P1   200us     500us    500us
+ - Update the timekeeper before updating vsyscall and pvclock. This
+   fixes the kvm-clock regression reported by Chris and Paolo.
 
-The deadline and period from task P1 are less than 1ms.
+ - Use the proper irq work interface from NMI. This fixes the
+   regression reported by Catalin and Dave.
 
-In order to achieve microsecond precision, we need to enable HRTICK feature
-by the next command:
+ - Clarify the compat_nanosleep error handling mechanism to avoid
+   future confusion.
 
-  PC#echo "HRTICK" > /sys/kernel/debug/sched_features
-  PC#trace-cmd record -e sched_switch &
-  PC#./schedtool -E -t 200000:500000:500000 -e ./test
+Thanks,
 
-The binary test is in an endless while(1) loop here.
-Some pieces of trace.dat are as follows:
+	tglx
 
-  <idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
-  test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
-  <idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
-  test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
-  trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
+------------------>
+Frederic Weisbecker (1):
+      nohz: Restore NMI safe local irq work for local nohz kick
 
-We can get the runtime of P1 from the information above:
+Thomas Gleixner (2):
+      compat: nanosleep: Clarify error handling
+      timekeeping: Update timekeeper before updating vsyscall and pvclock
 
-  runtime = 157.608183 - 157.605657
-  runtime = 0.002526(2.526ms)
 
-The correct runtime should be less than or equal to 200us at some point.
+ include/linux/tick.h      |  7 +------
+ kernel/compat.c           | 24 +++++++++++++++++++++---
+ kernel/time/tick-sched.c  | 14 ++++++++++++++
+ kernel/time/timekeeping.c |  5 +++--
+ 4 files changed, 39 insertions(+), 11 deletions(-)
 
-The problem is caused by a conditional judgment "delta > 10000"
-in function start_hrtick_dl().
-
-Because no hrtimer start up to control the rest of runtime
-when the reset of runtime is less than 10us.
-
-So the process will continue to run until tick-period is coming.
-
-Move the code with the limit of the least time slice
-from hrtick_start_fair() to hrtick_start() because the
-EDF schedule class also needs this function in start_hrtick_dl().
-
-To fix this problem, we call hrtimer_start() unconditionally in
-start_hrtick_dl(), and make sure the scheduling slice won't be smaller
-than 10us in hrtimer_start().
-
-Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
-Reviewed-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Juri Lelli <juri.lelli@arm.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409022941-5880-1-git-send-email-xiaofeng.yan@huawei.com
-[ Massaged the changelog and the code. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c     | 10 +++++++++-
- kernel/sched/deadline.c |  5 +----
- kernel/sched/fair.c     |  8 --------
- 3 files changed, 10 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a773c91..8d00f4a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -455,7 +455,15 @@ static void __hrtick_start(void *arg)
- void hrtick_start(struct rq *rq, u64 delay)
- {
- 	struct hrtimer *timer = &rq->hrtick_timer;
--	ktime_t time = ktime_add_ns(timer->base->get_time(), delay);
-+	ktime_t time;
-+	s64 delta;
-+
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 059052306831..9a82c7dc3fdd 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -183,13 +183,8 @@ static inline bool tick_nohz_full_cpu(int cpu)
+ 
+ extern void tick_nohz_init(void);
+ extern void __tick_nohz_full_check(void);
++extern void tick_nohz_full_kick(void);
+ extern void tick_nohz_full_kick_cpu(int cpu);
+-
+-static inline void tick_nohz_full_kick(void)
+-{
+-	tick_nohz_full_kick_cpu(smp_processor_id());
+-}
+-
+ extern void tick_nohz_full_kick_all(void);
+ extern void __tick_nohz_task_switch(struct task_struct *tsk);
+ #else
+diff --git a/kernel/compat.c b/kernel/compat.c
+index 633394f442f8..ebb3c369d03d 100644
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -226,7 +226,7 @@ static long compat_nanosleep_restart(struct restart_block *restart)
+ 	ret = hrtimer_nanosleep_restart(restart);
+ 	set_fs(oldfs);
+ 
+-	if (ret) {
++	if (ret == -ERESTART_RESTARTBLOCK) {
+ 		rmtp = restart->nanosleep.compat_rmtp;
+ 
+ 		if (rmtp && compat_put_timespec(&rmt, rmtp))
+@@ -256,7 +256,26 @@ COMPAT_SYSCALL_DEFINE2(nanosleep, struct compat_timespec __user *, rqtp,
+ 				HRTIMER_MODE_REL, CLOCK_MONOTONIC);
+ 	set_fs(oldfs);
+ 
+-	if (ret) {
 +	/*
-+	 * Don't schedule slices shorter than 10000ns, that just
-+	 * doesn't make sense and can cause timer DoS.
++	 * hrtimer_nanosleep() can only return 0 or
++	 * -ERESTART_RESTARTBLOCK here because:
++	 *
++	 * - we call it with HRTIMER_MODE_REL and therefor exclude the
++	 *   -ERESTARTNOHAND return path.
++	 *
++	 * - we supply the rmtp argument from the task stack (due to
++	 *   the necessary compat conversion. So the update cannot
++	 *   fail, which excludes the -EFAULT return path as well. If
++	 *   it fails nevertheless we have a bigger problem and wont
++	 *   reach this place anymore.
++	 *
++	 * - if the return value is 0, we do not have to update rmtp
++	 *    because there is no remaining time.
++	 *
++	 * We check for -ERESTART_RESTARTBLOCK nevertheless if the
++	 * core implementation decides to return random nonsense.
 +	 */
-+	delta = max_t(s64, delay, 10000LL);
-+	time = ktime_add_ns(timer->base->get_time(), delta);
++	if (ret == -ERESTART_RESTARTBLOCK) {
+ 		struct restart_block *restart
+ 			= &current_thread_info()->restart_block;
  
- 	hrtimer_set_expires(timer, time);
- 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index d21a8e0..cc4eb89 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -997,10 +997,7 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
- #ifdef CONFIG_SCHED_HRTICK
- static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
- {
--	s64 delta = p->dl.dl_runtime - p->dl.runtime;
--
--	if (delta > 10000)
--		hrtick_start(rq, p->dl.runtime);
-+	hrtick_start(rq, p->dl.runtime);
- }
- #endif
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 02fc949..50d2025 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3897,14 +3897,6 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
- 				resched_curr(rq);
- 			return;
- 		}
--
--		/*
--		 * Don't schedule slices shorter than 10000ns, that just
--		 * doesn't make sense. Rely on vruntime for fairness.
--		 */
--		if (rq->curr != p)
--			delta = max_t(s64, 10000LL, delta);
--
- 		hrtick_start(rq, delta);
+@@ -266,7 +285,6 @@ COMPAT_SYSCALL_DEFINE2(nanosleep, struct compat_timespec __user *, rqtp,
+ 		if (rmtp && compat_put_timespec(&rmt, rmtp))
+ 			return -EFAULT;
  	}
+-
+ 	return ret;
  }
+ 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 99aa6ee3908f..f654a8a298fa 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -225,6 +225,20 @@ static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
+ };
+ 
+ /*
++ * Kick this CPU if it's full dynticks in order to force it to
++ * re-evaluate its dependency on the tick and restart it if necessary.
++ * This kick, unlike tick_nohz_full_kick_cpu() and tick_nohz_full_kick_all(),
++ * is NMI safe.
++ */
++void tick_nohz_full_kick(void)
++{
++	if (!tick_nohz_full_cpu(smp_processor_id()))
++		return;
++
++	irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
++}
++
++/*
+  * Kick the CPU if it's full dynticks in order to force it to
+  * re-evaluate its dependency on the tick and restart it if necessary.
+  */
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index fb4a9c2cf8d9..ec1791fae965 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -442,11 +442,12 @@ static void timekeeping_update(struct timekeeper *tk, unsigned int action)
+ 		tk->ntp_error = 0;
+ 		ntp_clear();
+ 	}
+-	update_vsyscall(tk);
+-	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
+ 
+ 	tk_update_ktime_data(tk);
+ 
++	update_vsyscall(tk);
++	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
++
+ 	if (action & TK_MIRROR)
+ 		memcpy(&shadow_timekeeper, &tk_core.timekeeper,
+ 		       sizeof(tk_core.timekeeper));
