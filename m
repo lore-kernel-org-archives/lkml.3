@@ -1,131 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751155AbaIGFH1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 01:07:27 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58552 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750819AbaIGFHZ (ORCPT
+	id S1751331AbaIGGco (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 02:32:44 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:48303 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaIGGcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 01:07:25 -0400
-Message-ID: <1410066442.12512.13.camel@jarvis.lan>
-Subject: Re: bit fields && data tearing
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Hurley <peter@hurleysoftware.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Date: Sat, 06 Sep 2014 22:07:22 -0700
-In-Reply-To: <20140905040645.GO5001@linux.vnet.ibm.com>
-References: <54079B70.4050200@hurleysoftware.com>
-	 <1409785893.30640.118.camel@pasglop>
-	 <21512.10628.412205.873477@gargle.gargle.HOWL>
-	 <20140904090952.GW17454@tucnak.redhat.com>
-	 <540859EC.5000407@hurleysoftware.com>
-	 <20140904175044.4697aee4@alan.etchedpixels.co.uk>
-	 <5408C0AB.6050801@hurleysoftware.com>
-	 <20140905001751.GL5001@linux.vnet.ibm.com>
-	 <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com>
-	 <20140905040645.GO5001@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Sep 2014 02:32:43 -0400
+MIME-Version: 1.0
+X-Originating-IP: [212.25.79.130]
+In-Reply-To: <20140905101451.GF17501@suse.de>
+References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+ <1404893588-21371-7-git-send-email-mgorman@suse.de> <53E4EC53.1050904@suse.cz>
+ <20140811121241.GD7970@suse.de> <53E8B83D.1070004@suse.cz>
+ <20140902140116.GD29501@cmpxchg.org> <20140905101451.GF17501@suse.de>
+From: Leon Romanovsky <leon@leon.nu>
+Date: Sun, 7 Sep 2014 09:32:20 +0300
+Message-ID: <CALq1K=JO2b-=iq40RRvK8JFFbrzyH5EyAp5jyS50CeV0P3eQcA@mail.gmail.com>
+Subject: Re: [PATCH] mm: page_alloc: Fix setting of ZONE_FAIR_DEPLETED on UP
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
-> On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
-> > Hi James,
-> > 
-> > On 09/04/2014 10:11 PM, James Bottomley wrote:
-> > > On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
-> > >> +And there are anti-guarantees:
-> > >> +
-> > >> + (*) These guarantees do not apply to bitfields, because compilers often
-> > >> +     generate code to modify these using non-atomic read-modify-write
-> > >> +     sequences.  Do not attempt to use bitfields to synchronize parallel
-> > >> +     algorithms.
-> > >> +
-> > >> + (*) Even in cases where bitfields are protected by locks, all fields
-> > >> +     in a given bitfield must be protected by one lock.  If two fields
-> > >> +     in a given bitfield are protected by different locks, the compiler's
-> > >> +     non-atomic read-modify-write sequences can cause an update to one
-> > >> +     field to corrupt the value of an adjacent field.
-> > >> +
-> > >> + (*) These guarantees apply only to properly aligned and sized scalar
-> > >> +     variables.  "Properly sized" currently means "int" and "long",
-> > >> +     because some CPU families do not support loads and stores of
-> > >> +     other sizes.  ("Some CPU families" is currently believed to
-> > >> +     be only Alpha 21064.  If this is actually the case, a different
-> > >> +     non-guarantee is likely to be formulated.)
-> > > 
-> > > This is a bit unclear.  Presumably you're talking about definiteness of
-> > > the outcome (as in what's seen after multiple stores to the same
-> > > variable).
-> > 
-> > No, the last conditions refers to adjacent byte stores from different
-> > cpu contexts (either interrupt or SMP).
-> > 
-> > > The guarantees are only for natural width on Parisc as well,
-> > > so you would get a mess if you did byte stores to adjacent memory
-> > > locations.
-> > 
-> > For a simple test like:
-> > 
-> > struct x {
-> > 	long a;
-> > 	char b;
-> > 	char c;
-> > 	char d;
-> > 	char e;
-> > };
-> > 
-> > void store_bc(struct x *p) {
-> > 	p->b = 1;
-> > 	p->c = 2;
-> > }
-> > 
-> > on parisc, gcc generates separate byte stores
-> > 
-> > void store_bc(struct x *p) {
-> >    0:	34 1c 00 02 	ldi 1,ret0
-> >    4:	0f 5c 12 08 	stb ret0,4(r26)
-> >    8:	34 1c 00 04 	ldi 2,ret0
-> >    c:	e8 40 c0 00 	bv r0(rp)
-> >   10:	0f 5c 12 0a 	stb ret0,5(r26)
-> > 
-> > which appears to confirm that on parisc adjacent byte data
-> > is safe from corruption by concurrent cpu updates; that is,
-> > 
-> > CPU 0                | CPU 1
-> >                      |
-> > p->b = 1             | p->c = 2
-> >                      |
-> > 
-> > will result in p->b == 1 && p->c == 2 (assume both values
-> > were 0 before the call to store_bc()).
-> 
-> What Peter said.  I would ask for suggestions for better wording, but
-> I would much rather be able to say that single-byte reads and writes
-> are atomic and that aligned-short reads and writes are also atomic.
-> 
-> Thus far, it looks like we lose only very old Alpha systems, so unless
-> I hear otherwise, I update my patch to outlaw these very old systems.
+Hi Mel,
+>         __mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+> -       if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
+> +       if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0 &&
+zone_page_state is declared to return unsigned long value [1], so it
+should never be below 0.
+So interesting question: what zone_page_state will return for negative
+atomic_long_read(&zone->vm_stat[item]) ?
 
-This isn't universally true according to the architecture manual.  The
-PARISC CPU can make byte to long word stores atomic against the memory
-bus but not against the I/O bus for instance.  Atomicity is a property
-of the underlying substrate, not of the CPU.  Implying that atomicity is
-a CPU property is incorrect.
+130 static inline unsigned long zone_page_state(struct zone *zone,
+131                                         enum zone_stat_item item)
+132 {
+133         long x = atomic_long_read(&zone->vm_stat[item]);
+134 #ifdef CONFIG_SMP
+135         if (x < 0)
+136                 x = 0;
+137 #endif
+138         return x;
+139 }
 
-James
+[1] https://git.kernel.org/cgit/linux/kernel/git/mhocko/mm.git/tree/include/linux/vmstat.h#n130
 
-
+-- 
+Leon Romanovsky | Independent Linux Consultant
+        www.leon.nu | leon@leon.nu
