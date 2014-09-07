@@ -1,172 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822AbaIGS6p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 14:58:45 -0400
-Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:43367 "EHLO
+	id S1752860AbaIGS7b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 14:59:31 -0400
+Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:43370 "EHLO
 	dhcp-27-160.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752711AbaIGS63 (ORCPT
+	by vger.kernel.org with ESMTP id S1752447AbaIGS7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 14:58:29 -0400
+	Sun, 7 Sep 2014 14:59:30 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
         Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH v2 3/3] PCI/MSI: Remove arch_msi_check_device()
-Date: Sun,  7 Sep 2014 20:57:55 +0200
-Message-Id: <50a2f79ce58b6b67b40d7737b21c168131240c31.1410078503.git.agordeev@redhat.com>
+Subject: [PATCH v2 0/3] PCI/MSI: Remove arch_msi_check_device()
+Date: Sun,  7 Sep 2014 20:57:52 +0200
+Message-Id: <cover.1410078503.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1410078503.git.agordeev@redhat.com>
-References: <cover.1410078503.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no archs that override arch_msi_check_device()
-hook. Remove it as it is completely redundant.
+Hello,
 
-If an arch would need to check MSI/MSI-X possibility for a
-device it should make it within arch_setup_msi_irqs() hook.
+This is a cleanup effort to get rid of arch_msi_check_device() function.
 
+I am sending v2 series, since kbuild for v1 reports compile errors on
+ppc4xx and Armada 370. Still, I have not checked the fixes on these
+platforms.
+
+Changes since v1:
+  - patch 1: 'pdev' undeclared compile error fixed on ppc4xx. I updated
+             changelog and removed ACK from this patch in case there are
+             any objections;
+
+  - patch 2: 'struct msi_chip' has no 'check_device' error fixed on
+             Armada 370 - armada_370_xp_check_msi_device() hook removed;
+
+  - patch 3: msi_check_device() renamed to pci_msi_supported(). This is
+             the very same patch I sent earlier;
+
+Thanks!
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Michael Ellerman <mpe@ellerman.id.au>
 Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-pci@vger.kernel.org
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/pci/msi.c   | 49 +++++++++++++------------------------------------
- include/linux/msi.h |  3 ---
- 2 files changed, 13 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 5a40516..6c2cc41 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -56,16 +56,6 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
- 	chip->teardown_irq(chip, irq);
- }
- 
--int __weak arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
--{
--	struct msi_chip *chip = dev->bus->msi;
--
--	if (!chip || !chip->check_device)
--		return 0;
--
--	return chip->check_device(chip, dev, nvec, type);
--}
--
- int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- {
- 	struct msi_desc *entry;
-@@ -806,22 +796,23 @@ out_free:
- }
- 
- /**
-- * pci_msi_check_device - check whether MSI may be enabled on a device
-+ * pci_msi_supported - check whether MSI may be enabled on a device
-  * @dev: pointer to the pci_dev data structure of MSI device function
-  * @nvec: how many MSIs have been requested ?
-- * @type: are we checking for MSI or MSI-X ?
-  *
-  * Look at global flags, the device itself, and its parent buses
-  * to determine if MSI/-X are supported for the device. If MSI/-X is
-  * supported return 0, else return an error code.
-  **/
--static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
-+static int pci_msi_supported(struct pci_dev *dev, int nvec)
- {
- 	struct pci_bus *bus;
--	int ret;
- 
- 	/* MSI must be globally enabled and supported by the device */
--	if (!pci_msi_enable || !dev || dev->no_msi)
-+	if (!pci_msi_enable)
-+		return -EINVAL;
-+
-+	if (!dev || dev->no_msi || dev->current_state != PCI_D0)
- 		return -EINVAL;
- 
- 	/*
-@@ -843,10 +834,6 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
- 		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
- 			return -EINVAL;
- 
--	ret = arch_msi_check_device(dev, nvec, type);
--	if (ret)
--		return ret;
--
- 	return 0;
- }
- 
-@@ -949,13 +936,13 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
- 	int status, nr_entries;
- 	int i, j;
- 
--	if (!entries || !dev->msix_cap || dev->current_state != PCI_D0)
--		return -EINVAL;
--
--	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSIX);
-+	status = pci_msi_supported(dev, nvec);
- 	if (status)
- 		return status;
- 
-+	if (!entries)
-+		return -EINVAL;
-+
- 	nr_entries = pci_msix_vec_count(dev);
- 	if (nr_entries < 0)
- 		return nr_entries;
-@@ -1062,8 +1049,9 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
- 	int nvec;
- 	int rc;
- 
--	if (dev->current_state != PCI_D0)
--		return -EINVAL;
-+	rc = pci_msi_supported(dev, minvec);
-+	if (rc)
-+		return rc;
- 
- 	WARN_ON(!!dev->msi_enabled);
- 
-@@ -1086,17 +1074,6 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
- 		nvec = maxvec;
- 
- 	do {
--		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
--		if (rc < 0) {
--			return rc;
--		} else if (rc > 0) {
--			if (rc < minvec)
--				return -ENOSPC;
--			nvec = rc;
--		}
--	} while (rc);
--
--	do {
- 		rc = msi_capability_init(dev, nvec);
- 		if (rc < 0) {
- 			return rc;
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 8103f32..dbf7cc9 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -60,7 +60,6 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc);
- void arch_teardown_msi_irq(unsigned int irq);
- int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void arch_teardown_msi_irqs(struct pci_dev *dev);
--int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
- void arch_restore_msi_irqs(struct pci_dev *dev);
- 
- void default_teardown_msi_irqs(struct pci_dev *dev);
-@@ -77,8 +76,6 @@ struct msi_chip {
- 	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
- 			 struct msi_desc *desc);
- 	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
--	int (*check_device)(struct msi_chip *chip, struct pci_dev *dev,
--			    int nvec, int type);
- };
- 
- #endif /* LINUX_MSI_H */
+Alexander Gordeev (3):
+  patch 1 - PCI/MSI/PPC: Remove arch_msi_check_device()
+  patch 2 - PCI/MSI/Armada-370-xp: Remove arch_msi_check_device()
+  patch 3 - PCI/MSI: Remove arch_msi_check_device()
+
+ arch/powerpc/include/asm/machdep.h     |  2 --
+ arch/powerpc/kernel/msi.c              | 12 +--------
+ arch/powerpc/platforms/cell/axon_msi.c |  9 -------
+ arch/powerpc/platforms/powernv/pci.c   | 19 ++++---------
+ arch/powerpc/platforms/pseries/msi.c   | 42 +++++++++++------------------
+ arch/powerpc/sysdev/fsl_msi.c          | 12 +++------
+ arch/powerpc/sysdev/mpic_pasemi_msi.c  | 11 ++------
+ arch/powerpc/sysdev/mpic_u3msi.c       | 28 ++++++++-----------
+ arch/powerpc/sysdev/ppc4xx_hsta_msi.c  | 18 +++++--------
+ arch/powerpc/sysdev/ppc4xx_msi.c       | 19 +++++--------
+ drivers/irqchip/irq-armada-370-xp.c    | 14 +++-------
+ drivers/pci/msi.c                      | 49 +++++++++-------------------------
+ include/linux/msi.h                    |  3 ---
+ 13 files changed, 67 insertions(+), 171 deletions(-)
+
 -- 
 1.9.3
 
