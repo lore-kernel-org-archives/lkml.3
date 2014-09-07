@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaIGVBG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 17:01:06 -0400
-Received: from mail1.SerNet.de ([193.175.80.2]:37383 "EHLO mail.SerNet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114AbaIGVBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 17:01:05 -0400
-X-Greylist: delayed 708 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Sep 2014 17:01:04 EDT
-Date: Sun, 7 Sep 2014 22:48:51 +0200
-From: Volker Lendecke <Volker.Lendecke@SerNet.DE>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        linux-aio@kvack.org
-Subject: Re: read()/readv() only from page cache
-Reply-To: Volker.Lendecke@SerNet.DE
-References: <CANP1eJGE=vQBdLnMBFPcTWrvh+dUA-UCK=ugO-tc2KN4LWLPSA@mail.gmail.com>
- <20140905110927.GI17501@suse.de>
- <20140905154829.GA22956@infradead.org>
- <CANP1eJEdH8Hk-i348N3YQ4FUoSGb-2Tp9g9ZJxnKO1zZskTKjg@mail.gmail.com>
+	id S1752675AbaIGVGp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 17:06:45 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:53473 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaIGVGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 17:06:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        arm@kernel.org
+Subject: Re: [PATCH ] ARM: pxa: fix section mismatch warning for pxa_timer_nodt_init
+Date: Sun, 07 Sep 2014 23:06:05 +0200
+Message-ID: <3188925.pjYA4K7kjn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <12220413.BdRleC0Xf5@wuerfel>
+References: <1405356724-32207-1-git-send-email-robert.jarzmik@free.fr> <87oawivarv.fsf@free.fr> <12220413.BdRleC0Xf5@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANP1eJEdH8Hk-i348N3YQ4FUoSGb-2Tp9g9ZJxnKO1zZskTKjg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Message-Id: <E1XQjOX-00CcnG-UC@intern.SerNet.DE>
-Organization: SerNet GmbH, Goettingen, Germany
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:+g/6DcdkH2ICxbdH8vv4tkWzTVfnjIy8tnqElAqfRQC
+ snOaNufC8GAFc7LcPEfE4f9JLWj2zgR06twru1peo+ofIx1YNY
+ GI9s70dVacGMqjyryW/9F+K2xvuDMuxb+i7vRDNYG5/n82kBV2
+ iyvsJwj0qNckmDahColCe2vbJWMyvgGkci9SXoiOayu2NZJApY
+ stBlkcka27xEd8bnvOHwx5mA6Qs1toJFwRlCsJgEB4F1CNwCYi
+ lg8EBX1X8kv4HNsMmivfHlM76O3wgYLkACeshiZWxPJniDRhy3
+ qYff1Z66FanlubPrCFpUW42NbDDZTS6xGaqtcpYXELyFxmjtxk
+ QnmvbgxHhJfcnrk+CzFQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 12:27:21PM -0400, Milosz Tanski wrote:
-> In a VLDB like workload this would enable me to lower the latency of
-> common fast requests and. By fast requests I mean ones that do not
-> require much data, the data is cached, or there's a predictable read
-> pattern (read-ahead). Obviously it would be at the expense of the
-> latency of large/slow requests (they have to make 2 read calls, the
-> first one always EWOULDBLOCK) ... but in that case it doesn't matter
-> since the time to do actual IO would trump any kind of extra latency.
+On Saturday 26 July 2014 20:50:36 Arnd Bergmann wrote:
+> commit a38b1f60b5245a3 ("ARM: pxa: Add non device-tree timer link to
+> clocksource") introduced a harmless section mismatch warning for
+> all pxa platforms, by introducing a new pxa_timer_init() function
+> that is not marked __init but that calls pxa_timer_nodt_init(),
+> which is. The function is only called at init time, so it is safe
+> to also annotate it this way.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
 
-That was my thinking as well when I discussed it with Christoph. Sorry
-for not getting around to actually test his patch. Samba right
-now uses a thread pool for aio, we get parallel read requests from
-clients over a single TCP connection and we need to keep all disks busy
-simultaneously. We'd like to avoid the thread overhead when it's not
-necessary because the data is already around. A per-request flag would
-fit Samba better than a flag settable by fcntl in this pattern. Samba
-can't easily open a file twice (once with NONBLOCK and once without).
+Apparently this is not merged yet, should we take it through arm-soc?
 
-Volker
-
--- 
-SerNet GmbH, Bahnhofsallee 1b, 37081 Göttingen
-phone: +49-551-370000-0, fax: +49-551-370000-9
-AG Göttingen, HRB 2816, GF: Dr. Johannes Loxen
-http://www.sernet.de, mailto:kontakt@sernet.de
+diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
+index 630fa916bbc6..04b013fbc98f 100644
+--- a/arch/arm/mach-pxa/generic.c
++++ b/arch/arm/mach-pxa/generic.c
+@@ -61,7 +61,7 @@ EXPORT_SYMBOL(get_clock_tick_rate);
+ /*
+  * For non device-tree builds, keep legacy timer init
+  */
+-void pxa_timer_init(void)
++void __init pxa_timer_init(void)
+ {
+        pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
+                            get_clock_tick_rate());
