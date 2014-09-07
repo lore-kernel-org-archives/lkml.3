@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbaIGSAD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 14:00:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35372 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaIGSAB (ORCPT
+	id S1752773AbaIGSA3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 14:00:29 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:45175 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaIGSA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 14:00:01 -0400
-Message-ID: <540C9D19.5080201@infradead.org>
-Date: Sun, 07 Sep 2014 10:59:53 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Sun, 7 Sep 2014 14:00:27 -0400
+Date: Sun, 7 Sep 2014 20:00:23 +0200
+From: Quentin Lambert <lambert.quentin@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Scott Murray <scott@spiteful.org>
+Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/4] Extending the first version of the patch to the
+ entire directory
+Message-ID: <20140907180023.GA1849@greed>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Peter Foley <pefoley2@pefoley.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
- built-in.o files
-References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com> <53FB9DA0.7000301@infradead.org> <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com> <540651B3.8030400@infradead.org> <20140902232906.GG29327@sirena.org.uk> <CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com> <20140903232149.GG29327@sirena.org.uk> <5407A68F.5090805@infradead.org> <20140904104201.GI29327@sirena.org.uk> <540A503D.20807@infradead.org>
-In-Reply-To: <540A503D.20807@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/14 17:07, Randy Dunlap wrote:
-> On 09/04/14 03:42, Mark Brown wrote:
->> On Wed, Sep 03, 2014 at 04:38:55PM -0700, Randy Dunlap wrote:
->>
->>> Hm, it could be a problem with the Index line.  I'll disable that option
->>> in quilt and see if that helps for the next time.
->>
->> Still seems to be happening today I'm afraid.
->>
-> 
-> I tested using git-am.  Yes, that fails.  These patch files are not emails
-> but git-am expects emails and fails when it cannot find email headers (AFAICT).
-> 
-> Using git-apply instead of git-am does apply these patches.
-> 
+Patch 1 and 2 are straight forward extension from the previous version
+of the patch.
 
-Hi Mark,
+Patch 3 introduces checkpatch warning due to lines surpassing 80
+characters. Another warning concerning too many preceding tabs
+is not fixed either.
 
-The quilt-import.log from 20140829 says:
-
-$ git am --patch-format=mbox ../quilt/rd-docs/001-docum-use-subdiry-avoid-builtin.patch
-
-and in the 20140905 git tree it says:
-
-$ git am ../quilt/rd-docs/001-docum-use-subdiry-avoid-builtin.patch
-Patch format detection failed.
+Patch 4 are less straight forward similar modifications
+the modification made to ibmphp_res.c change the value of len_tmp
+when the first condition in if statement is not met.
+I wasn't quite sure how to solve elegantly the checkpatch error for
+slot.c, I chose to use a label and gotos since it was already used
+and allowed for a slight code factorisation. This being my first patch I
+understand that this may not be the best solution.
 
 
-Are you using Stephen's scripts?  Why would his tree apply patches with
---patch-format=mbox
-while the later trees did not use that git-am option?
 
-Thanks.
+Quentin Lambert (4):
+  PCI: fix a missing space coding style issue
+  PCI: fix a simple if coding style issue
+  PCI: remove assignement from if conditions
+  PCI: remove assignement in non straight forward if condition
+
+ drivers/pci/hotplug/acpi_pcihp.c        |  3 ++-
+ drivers/pci/hotplug/acpiphp_ibm.c       |  2 +-
+ drivers/pci/hotplug/cpci_hotplug_core.c | 13 ++++++----
+ drivers/pci/hotplug/cpcihp_generic.c    | 28 ++++++++++-----------
+ drivers/pci/hotplug/cpcihp_zt5550.c     | 44 ++++++++++++++++-----------------
+ drivers/pci/hotplug/cpqphp.h            |  2 +-
+ drivers/pci/hotplug/cpqphp_core.c       |  3 +--
+ drivers/pci/hotplug/cpqphp_ctrl.c       | 19 ++++++--------
+ drivers/pci/hotplug/cpqphp_nvram.c      | 13 ++++------
+ drivers/pci/hotplug/ibmphp_core.c       | 19 ++++++++------
+ drivers/pci/hotplug/ibmphp_ebda.c       |  3 +--
+ drivers/pci/hotplug/ibmphp_hpc.c        |  3 +--
+ drivers/pci/hotplug/ibmphp_pci.c        |  6 +++--
+ drivers/pci/hotplug/ibmphp_res.c        | 43 ++++++++++++++++++++++----------
+ drivers/pci/hotplug/shpchp_ctrl.c       | 12 ++++++---
+ drivers/pci/hotplug/shpchp_hpc.c        |  3 ++-
+ drivers/pci/pci.c                       | 19 +++++++++++---
+ drivers/pci/slot.c                      | 12 +++++++--
+ 18 files changed, 143 insertions(+), 104 deletions(-)
 
 -- 
-~Randy
+1.9.1
+
