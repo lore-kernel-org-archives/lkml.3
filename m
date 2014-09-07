@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaIGVGp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 17:06:45 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:53473 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaIGVGn (ORCPT
+	id S1752613AbaIGVbV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 17:31:21 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:61807 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010AbaIGVbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 17:06:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        arm@kernel.org
-Subject: Re: [PATCH ] ARM: pxa: fix section mismatch warning for pxa_timer_nodt_init
-Date: Sun, 07 Sep 2014 23:06:05 +0200
-Message-ID: <3188925.pjYA4K7kjn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <12220413.BdRleC0Xf5@wuerfel>
-References: <1405356724-32207-1-git-send-email-robert.jarzmik@free.fr> <87oawivarv.fsf@free.fr> <12220413.BdRleC0Xf5@wuerfel>
+	Sun, 7 Sep 2014 17:31:19 -0400
+Date: Sun, 7 Sep 2014 14:31:17 -0700
+From: Peter Feiner <pfeiner@google.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH v5] mm: softdirty: enable write notifications on VMAs
+ after VM_SOFTDIRTY cleared
+Message-ID: <20140907213117.GA388@google.com>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
+ <1408937681-1472-1-git-send-email-pfeiner@google.com>
+ <alpine.LSU.2.11.1408252142380.2073@eggly.anvils>
+ <20140904164311.GA29610@google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:+g/6DcdkH2ICxbdH8vv4tkWzTVfnjIy8tnqElAqfRQC
- snOaNufC8GAFc7LcPEfE4f9JLWj2zgR06twru1peo+ofIx1YNY
- GI9s70dVacGMqjyryW/9F+K2xvuDMuxb+i7vRDNYG5/n82kBV2
- iyvsJwj0qNckmDahColCe2vbJWMyvgGkci9SXoiOayu2NZJApY
- stBlkcka27xEd8bnvOHwx5mA6Qs1toJFwRlCsJgEB4F1CNwCYi
- lg8EBX1X8kv4HNsMmivfHlM76O3wgYLkACeshiZWxPJniDRhy3
- qYff1Z66FanlubPrCFpUW42NbDDZTS6xGaqtcpYXELyFxmjtxk
- QnmvbgxHhJfcnrk+CzFQ=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140904164311.GA29610@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 26 July 2014 20:50:36 Arnd Bergmann wrote:
-> commit a38b1f60b5245a3 ("ARM: pxa: Add non device-tree timer link to
-> clocksource") introduced a harmless section mismatch warning for
-> all pxa platforms, by introducing a new pxa_timer_init() function
-> that is not marked __init but that calls pxa_timer_nodt_init(),
-> which is. The function is only called at init time, so it is safe
-> to also annotate it this way.
+On Thu, Sep 04, 2014 at 09:43:11AM -0700, Peter Feiner wrote:
+> On Mon, Aug 25, 2014 at 09:45:34PM -0700, Hugh Dickins wrote:
+> > That sets me wondering: have you placed the VM_SOFTDIRTY check in the
+> > right place in this series of tests?
+> > 
+> > I think, once pgprot_modify() is correct on all architectures,
+> > it should be possible to drop that pgprot_val() check from
+> > vma_wants_writenotify() - which would be a welcome simplification.
+> > 
+> > But what about the VM_PFNMAP test below it?  If that test was necessary,
+> > then having your VM_SOFTDIRTY check before it seems dangerous.  But I'm
+> > hoping we can persuade ourselves that the VM_PFNMAP test was unnecessary,
+> > and simply delete it.
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
+> If VM_PFNMAP is necessary, then I definitely put the VM_SOFTDIRTY check in the
+> wrong spot :-) I don't know much (i.e., anything) about VM_PFNMAP, so I'll
+> have to bone up on a lot of code before I have an informed opinion about the
+> necessity of the check.
 
-Apparently this is not merged yet, should we take it through arm-soc?
-
-diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
-index 630fa916bbc6..04b013fbc98f 100644
---- a/arch/arm/mach-pxa/generic.c
-+++ b/arch/arm/mach-pxa/generic.c
-@@ -61,7 +61,7 @@ EXPORT_SYMBOL(get_clock_tick_rate);
- /*
-  * For non device-tree builds, keep legacy timer init
-  */
--void pxa_timer_init(void)
-+void __init pxa_timer_init(void)
- {
-        pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
-                            get_clock_tick_rate());
+AFAICT, the VM_PFNMAP check is unnecessary since I can't find any drivers that
+set VM_PFNMAP and enable dirty accounting on their mappings. If anything,
+VM_PFNMAP precludes mapping dirty tracking since set_page_dirty takes a
+struct_page argument! Perhaps the VM_PFNMAP check was originally put in
+vma_wants_writenotify as a safeguard against bogus calls to set_page_dirty?
+In any case, it seems harmless to me to put the VM_SOFTDIRTY check before the
+VM_PFNMAP check since none of the fault handling code in mm/memory.c calls
+set_page_dirty on a VM_PFNMAP fault because either vm_normal_page() returns
+NULL or ->fault() / ->page_mkwrite() return VM_FAULT_NOPAGE. Moreover, for
+the purpose of softdirty tracking, enabling write notifications on VM_PFNMAP
+VMAs is OK since do_wp_page does the right thing when vm_normal_page() returns
+NULL.
