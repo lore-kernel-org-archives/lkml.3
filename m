@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaIGTUr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 15:20:47 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:54663 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaIGTUq (ORCPT
+	id S1752469AbaIGT4n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 15:56:43 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:33984 "EHLO
+	homiemail-a62.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751496AbaIGT4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 15:20:46 -0400
+	Sun, 7 Sep 2014 15:56:41 -0400
+X-Greylist: delayed 95070 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Sep 2014 15:56:41 EDT
+Date: Sun, 7 Sep 2014 21:56:37 +0200
+From: jurriaan@onderneming10.net
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ARM kirkwood: 1 Gb memory 25% unusable due to vmalloc region
+ overlap
+Message-ID: <20140907195637.GA5310@qnap.onderneming10.net>
+References: <20140906173207.GA1046@qnap.onderneming10.net>
+ <20140906182916.GA12361@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CA+ydwtrB-rJB1fURO+CC1J-=VZ16g9Un47cMSMAZsTFPNg2s+g@mail.gmail.com>
-References: <CA+ydwtrB-rJB1fURO+CC1J-=VZ16g9Un47cMSMAZsTFPNg2s+g@mail.gmail.com>
-Date: Sun, 7 Sep 2014 22:20:44 +0300
-Message-ID: <CA+ydwtrtyb5wQXCmyBigqufVz10UkKS76hVOY8mKc4FOyYmECw@mail.gmail.com>
-Subject: Re: f2fs get_dnode_of_data oops
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: linux-f2fs-devel@lists.sourceforge.net, Jaegeuk Kim <jaegeuk@kernel.org>,
-        Changman Lee <cm224.lee@samsung.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140906182916.GA12361@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-07 22:14 GMT+03:00 Tommi Rantala <tt.rantala@gmail.com>:
-> Hello,
->
-> Hit this oops while fuzzing v3.17-rc3-176-g2b12164 with Trinity.
->
-> Tommi
->
->
-> BUG: unable to handle kernel paging request at ffff8804338717a8
-> IP: [<ffffffff81779039>] get_dnode_of_data+0x3a9/0x440
-> PGD 4594067 PUD 0
-> Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-> CPU: 0 PID: 4719 Comm: trinity-c3 Not tainted 3.17.0-rc3+ #33
-> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> task: ffff880015630000 ti: ffff88000724c000 task.ti: ffff88000724c000
-> RIP: 0010:[<ffffffff81779039>]  [<ffffffff81779039>]
-> get_dnode_of_data+0x3a9/0x440
-> RSP: 0018:ffff88000724fe08  EFLAGS: 00010246
-> RAX: ffff880033874000 RBX: 00000000000000f8 RCX: 00000000fffff590
-> RDX: ffff880033874168 RSI: ffff88000724fd98 RDI: ffff88000724fef0
-> RBP: ffff88000724feb8 R08: 0000000000000000 R09: 0000000000000000
-> R10: 0000000000000001 R11: ffffffff83b33f90 R12: fffffffffffff590
-> R13: 0000000000000000 R14: ffffea0000ce1d00 R15: ffff8800209f8000
-> FS:  00007f2bd22dc700(0000) GS:ffff88003fa00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: ffff8804338717a8 CR3: 00000000346c0000 CR4: 00000000000006f0
-> DR0: 000000000185d000 DR1: 000000000185d000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000b0602
-> Stack:
->  ffff88000724fef0 ffff88000724fe30 ffff880036c18000 0000000000000004
->  ffff8800209f80f0 00000002fffff590 ffffffff81189f1d ffff8800fffff590
->  0000000000000246 ffffffff00000000 ffffffff81189ce0 ffffffff000000f8
-> Call Trace:
->  [<ffffffff81189f1d>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff81189ce0>] ? mark_held_locks+0x90/0xa0
->  [<ffffffff81189e75>] ? trace_hardirqs_on_caller+0x185/0x220
->  [<ffffffff81763417>] f2fs_llseek+0xf7/0x420
->  [<ffffffff8127e4d5>] SyS_lseek+0x65/0xa0
->  [<ffffffff8259b229>] system_call_fastpath+0x16/0x1b
-> Code: ba 00 00 00 00 00 88 ff ff 48 c1 f8 06 48 c1 e0 0c 48 01 d0 8b
-> 98 ec 0f 00 00 39 98 e8 0f 00 00 48 8d 90 68 01 00 00 48 0f 45 d0 <8b>
-> 04 8a 89 47 24 31 c0 eb 75 41 bc e4 ff ff ff 4d 85 f6 74 19
-> RIP  [<ffffffff81779039>] get_dnode_of_data+0x3a9/0x440
->  RSP <ffff88000724fe08>
-> CR2: ffff8804338717a8
-> ---[ end trace bed7b35d1c48e9c3 ]---
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Date: Sat, Sep 06, 2014 at 07:29:16PM +0100
+> On Sat, Sep 06, 2014 at 07:32:07PM +0200, Jurriaan wrote:
+> > I updated my Qnap TS-212 with 256 Mb memory to a new TS-221 with 1 Gb
+> > memory.
+> > 
+> > On booting, I see that a large chunk of that new memory is not used by
+> > linux:
+> > 
+> > [    0.000000] Booting Linux on physical CPU 0x0
+> > [    0.000000] Initializing cgroup subsys cpuset
+> > [    0.000000] Initializing cgroup subsys cpu
+> > [    0.000000] Initializing cgroup subsys cpuacct
+> > [    0.000000] Linux version 3.14-2-kirkwood (debian-kernel@lists.debian.org) (gcc version 4.8.3 (Debian 4.8.3-7) ) #1 Debian 3.14.15-2 (2014-08-09)
+> > [    0.000000] CPU: Feroceon 88FR131 [56251311] revision 1 (ARMv5TE), cr=00053977
+> > [    0.000000] CPU: VIVT data cache, VIVT instruction cache
+> > [    0.000000] Machine: QNAP TS-119/TS-219
+> > [    0.000000] Ignoring unrecognised tag 0x41000403
+> > [    0.000000] Truncating RAM at 20000000-3fffffff to -2f7fffff (vmalloc region overlap).
+> > 
+> > Whoops!
+> 
+> You can either enable highmem (which has been available on ARM for
+> ages now, there's little excuse not to use it) or reduce the available
+> userspace virtual memory by enabling VMSPLIT_2G.
+> 
 
-If it helps, here is the location of the crash:
+Thanks, CONFIG_HIGHMEM=y did the trick:
 
-(gdb) list *0xffffffff81779039
-0xffffffff81779039 is in get_dnode_of_data (fs/f2fs/f2fs.h:950).
-945     {
-946             struct f2fs_node *raw_node;
-947             __le32 *addr_array;
-948             raw_node = F2FS_NODE(node_page);
-949             addr_array = blkaddr_in_node(raw_node);
-950             return le32_to_cpu(addr_array[offset]);
-951     }
-952
-953     static inline int f2fs_test_bit(unsigned int nr, char *addr)
-954     {
-(gdb)
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Initializing cgroup subsys cpuset
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Initializing cgroup subsys cpuacct
+[    0.000000] Linux version 3.14.15-kirkwood (root@qnap) (gcc version 4.9.1 (Debian 4.9.1-12) ) #1 Sun Sep 7 12:36:56 CEST 2014
+[    0.000000] CPU: Feroceon 88FR131 [56251311] revision 1 (ARMv5TE), cr=00053977
+[    0.000000] CPU: VIVT data cache, VIVT instruction cache
+[    0.000000] Machine: QNAP TS-119/TS-219
+[    0.000000] Ignoring unrecognised tag 0x41000403
+[    0.000000] Memory policy: Data cache writeback
+[    0.000000] On node 0 totalpages: 262144
+[    0.000000] free_area_init_node: node 0, pgdat c05a78b4, node_mem_map eeffa000
+[    0.000000]   DMA zone: 1520 pages used for memmap
+[    0.000000]   DMA zone: 0 pages reserved
+[    0.000000]   DMA zone: 194560 pages, LIFO batch:31
+[    0.000000]   HighMem zone: 528 pages used for memmap
+[    0.000000]   HighMem zone: 67584 pages, LIFO batch:15
+[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 260624
+[    0.000000] Kernel command line: console=ttyS0,115200 root=/dev/ram initrd=0xa00000,0x900000 ramdisk=34816
+[    0.000000] PID hash table entries: 4096 (order: 2, 16384 bytes)
+[    0.000000] Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
+[    0.000000] Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
+[    0.000000] Memory: 1024056K/1048576K available (3849K kernel code, 353K rwdata, 1396K rodata, 202K init, 428K bss, 24520K reserved, 270336K highmem)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+[    0.000000]     vmalloc : 0xf0000000 - 0xff000000   ( 240 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xef800000   ( 760 MB)
+[    0.000000]     pkmap   : 0xbfe00000 - 0xc0000000   (   2 MB)
+[    0.000000]     modules : 0xbf000000 - 0xbfe00000   (  14 MB)
+[    0.000000]       .text : 0xc0008000 - 0xc05278a4   (5247 kB)
+[    0.000000]       .init : 0xc0528000 - 0xc055aa1c   ( 203 kB)
+[    0.000000]       .data : 0xc055c000 - 0xc05b4448   ( 354 kB)
+[    0.000000]        .bss : 0xc05b4448 - 0xc061f5e4   ( 429 kB)
+[    0.000000] NR_IRQS:114
 
-Tommi
+Kind regards,
+Jurriaan
