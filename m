@@ -1,91 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaIGUF0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 16:05:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39715 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751496AbaIGUFY (ORCPT
+	id S1752506AbaIGUNL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 16:13:11 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:60320 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaIGUNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 16:05:24 -0400
-Message-ID: <1410120305.6822.9.camel@decadent.org.uk>
-Subject: [PATCH RESEND] x86: Reject x32 executables if x32 ABI not supported
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 07 Sep 2014 21:05:05 +0100
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-uAY0rl8HUPqi3/1ZBRRl"
-X-Mailer: Evolution 3.12.5-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 7 Sep 2014 16:13:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140907180737.GA5057@salvia>
+References: <1409894238-9055-1-git-send-email-ast@plumgrid.com>
+	<1409894238-9055-3-git-send-email-ast@plumgrid.com>
+	<20140906141051.GA4245@salvia>
+	<CAMEtUuxPynQ4wdWDgCU+9_3_GRYn8oA4f-emcF+mqiQdLsqEWg@mail.gmail.com>
+	<20140907180737.GA5057@salvia>
+Date: Sun, 7 Sep 2014 13:13:06 -0700
+Message-ID: <CAMEtUuxJLDu8AAsZQdtG781vwC8y60Ygdt4ji5tbeyTE8YbWbQ@mail.gmail.com>
+Subject: Re: [PATCH v10 net-next 2/2] net: filter: split filter.h and expose
+ eBPF to user space
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 7, 2014 at 11:07 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+>
+> If the patches that provide the very first user interface don't get in
+> time to this merge window round for whatever reason, we'll have the
+> layout of this exposed to userspace in the next kernel version with no
+> clients at all, that doesn't make sense to me.
 
---=-uAY0rl8HUPqi3/1ZBRRl
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+eBPF cannot have the first user without verifier and tracing
+fully reviewed, so first user cannot be in the first
+patch no matter what.
 
-It is currently possible to execve() an x32 executable on an x86_64
-kernel that has only ia32 compat enabled.  However all its syscalls
-will fail, even _exit().  This usually causes it to segfault.
+In particular this patch only exposed eBPF as an _instruction set_
+to user space. llvm and gcc are only two users.
+llvm patches _were_ submitted to the list.
+Compilers are not some fictitious users.
+eBPF ISA is solid. Two backends is a proof.
 
-Change the ELF compat architecture check so that x32 executables are
-rejected if we don't support the x32 ABI.
+For eBPF to be loaded, verifier, syscall and other pieces need to
+come in gradually. So I logically split them in series:
+stage I - expose instruction set
+stage II - bpf syscall for maps and manpage
+stage III - programs, verifier and user space testsuite
+stage IV - ebpf+tracing (the first user of ebpf isa and syscall)
+stage V - ebpf+sockets
+stage VI - ebpf+ovs
+all of the patches _were_ submitted in the past.
+Split is done to make review and integration easier.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/x86/include/asm/elf.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+After stage III user space will be able to load eBPF programs,
+but they will still be useless, because they cannot be attached
+to anything. Realistically only stage IV makes first real use of
+them in tracing.
+You know this, yet, you're saying the first user must be
+in the first series. Really, what this 'feedback' is about?
 
-diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
-index 1a055c8..ca3347a 100644
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -160,8 +160,9 @@ do {						\
- #define elf_check_arch(x)			\
- 	((x)->e_machine =3D=3D EM_X86_64)
-=20
--#define compat_elf_check_arch(x)		\
--	(elf_check_arch_ia32(x) || (x)->e_machine =3D=3D EM_X86_64)
-+#define compat_elf_check_arch(x)					\
-+	(elf_check_arch_ia32(x) ||					\
-+	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine =3D=3D EM_X86_64))
-=20
- #if __USER32_DS !=3D __USER_DS
- # error "The following code assumes __USER32_DS =3D=3D __USER_DS"
+> I don't think the speed up of the llvm submission is a good argument,
+> this sounds to me similar to the "please apply this patch that
+> reserves this new netlink family in include/linux/netlink.h, I promise
+> this new subsystem will be submitted soon though. Meanwhile this will
+> speed up submission of my userspace software to distributions for
+> packaging" argument.
 
+You're not correct here. I'm not saying 'I promise it will be submitted'.
+There _were_ already submitted. I split them in chunks to make
+review easier and to follow standard linux philosophy of making
+small decisions that can be reverted.
+We still have a month until merge window, so if stages II and III
+don't make it in time, Dave can revert these small patches just
+as easily. You're advocating first_user_must_be_in_first_patch
+approach, which is against the linux methodology.
 
---=20
-Ben Hutchings
-Experience is directly proportional to the value of equipment destroyed.
-                                                         - Carolyn Scheppne=
-r
+> I think you have to find the way to send a small batch with the very
+> essencial stuff that, if merged mainstream, will provide just one new
+> feature while leaving the repository in consistent state. Then, send
+> follow up patches that enhance your thing and that add new clients of
+> it.
 
---=-uAY0rl8HUPqi3/1ZBRRl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+As I said above the _minimum_ useful program needs verifier
+which is more than Dave's cutoff of 10 patches. Therefore I
+split all very_essential_stuff into these stages.
+Note I'm not sending radix-tree type of eBPF maps as part
+of these stages, neither I send array type of eBPF maps,
+though they're needed for my last stage (ebpf+ovs).
+I'm not sending pointer leak detector for verifier either,
+it will be needed before syscall can be exposed to unprivileged
+users, etc. There is a lot of stuff that I need for ebpf+ovs that
+is _not_ part of these stages. What you see is really
+the minimum to make ebpf+tracing useful.
+btw, all of ebpf+ovs was submitted to the list back in Sep 2013.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVAy6d+e/yOyVhhEJAQqZXw//axU1vljWQQlJXSBuda89IssfBU/okwSj
-UvWFwRXHCaMkQUjzqGQqUnxNWYI3Ayhfou1yoEZGSpwekahVR9T91K8wO4zj5jlu
-C7bUq4lFHO6w8mdoGOAEtMsk1pEE4HJ3G2Evv0l200arcqH6ZcEOUDmH8vWZiMMC
-kT8iBC6yY9/ZdjFKk1xxzGOzCLKVq7wRhmNsEFEWu74jE4xM1jprUHAbQ+0rnmaA
-9Gy14yo93vHXWsuSyqc5WHqB2/RMNolQBUmDeF50d16x6al8ITJi6C4z9EEZt/E7
-d7W3pt8l4C0FV+w9C6cIaBqJQszsAx8CkoqqiRKTS0bdMklMtJeAhO/pHSM9y56X
-ENx2scfLcst7jge7AtNKRJR7trVIJ2s0c4dGz20UvkgSNoFlt4DwADIT4TUGzOA2
-/0c3dVVCCybi3UNYe8G3bdFSmLOfwINehwfnHhogPh0JhTrKXfdZWHDWY2MH6RZ+
-KYxe24VLiV5Uosy5Z4Oca8bBunTTU2SZ2L8wHD8PZpsOx9Teq9MayNJqEFfQa+fQ
-ZMl+p41HVLyIw6fx+Hbh3CTimiEP/nY7LPLcTArHgsKrPqp6gPf5fBDaAEkY24gv
-+vUGSzfn116kbczHIJ+n/Y4l5uQ7tp+CfhwCx5AMFPm9YQzOQ63M6IMisYrZ6WJO
-00wxJLpjtyU=
-=j3a8
------END PGP SIGNATURE-----
-
---=-uAY0rl8HUPqi3/1ZBRRl--
+So there is no practical way to do first set of < 10 patches
+that will be usable from user space on its own.
+Even if I remove verifier and maps altogether, bpf programs
+need to be attached to something like tracing and
+that is again >10 patches.
+These stages with small patches is only sensible approach.
