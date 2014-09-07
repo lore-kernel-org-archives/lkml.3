@@ -1,175 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaIGLAq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 07:00:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39031 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbaIGLAp (ORCPT
+	id S1752262AbaIGLiO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 07:38:14 -0400
+Received: from www.augenpunkt.de ([213.239.207.9]:34474 "EHLO
+	www.augenpunkt.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaIGLiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 07:00:45 -0400
-Date: Sun, 7 Sep 2014 13:00:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] timer updates for 3.17
-Message-ID: <alpine.DEB.2.10.1409071252460.5472@nanos>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 7 Sep 2014 07:38:11 -0400
+X-Greylist: delayed 1297 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Sep 2014 07:38:11 EDT
+From: Stefan Wahren <info@lategoodbye.de>
+To: lgirdwood@gmail.com, broonie@kernel.org, shawn.guo@linaro.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: festevam@gmail.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        stefan.wahren@i2se.com, Stefan Wahren <info@lategoodbye.de>
+Subject: [PATCH RFC 1/3] DT: add binding for MXS regulator
+Date: Sun,  7 Sep 2014 13:37:47 +0200
+Message-Id: <1410089869-6611-2-git-send-email-info@lategoodbye.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
+References: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This patch adds the Device tree bindings for the Freescale MXS on-chip
+regulators.
 
-please pull the latest timers-urgent-for-linus git tree from:
+Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
+---
+ .../bindings/regulator/mxs-regulator.txt           | 38 ++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/mxs-regulator.txt
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
-
-Three fixlets from the timer departement:
-
- - Update the timekeeper before updating vsyscall and pvclock. This
-   fixes the kvm-clock regression reported by Chris and Paolo.
-
- - Use the proper irq work interface from NMI. This fixes the
-   regression reported by Catalin and Dave.
-
- - Clarify the compat_nanosleep error handling mechanism to avoid
-   future confusion.
-
-Thanks,
-
-	tglx
-
------------------->
-Frederic Weisbecker (1):
-      nohz: Restore NMI safe local irq work for local nohz kick
-
-Thomas Gleixner (2):
-      compat: nanosleep: Clarify error handling
-      timekeeping: Update timekeeper before updating vsyscall and pvclock
-
-
- include/linux/tick.h      |  7 +------
- kernel/compat.c           | 24 +++++++++++++++++++++---
- kernel/time/tick-sched.c  | 14 ++++++++++++++
- kernel/time/timekeeping.c |  5 +++--
- 4 files changed, 39 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 059052306831..9a82c7dc3fdd 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -183,13 +183,8 @@ static inline bool tick_nohz_full_cpu(int cpu)
- 
- extern void tick_nohz_init(void);
- extern void __tick_nohz_full_check(void);
-+extern void tick_nohz_full_kick(void);
- extern void tick_nohz_full_kick_cpu(int cpu);
--
--static inline void tick_nohz_full_kick(void)
--{
--	tick_nohz_full_kick_cpu(smp_processor_id());
--}
--
- extern void tick_nohz_full_kick_all(void);
- extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 633394f442f8..ebb3c369d03d 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -226,7 +226,7 @@ static long compat_nanosleep_restart(struct restart_block *restart)
- 	ret = hrtimer_nanosleep_restart(restart);
- 	set_fs(oldfs);
- 
--	if (ret) {
-+	if (ret == -ERESTART_RESTARTBLOCK) {
- 		rmtp = restart->nanosleep.compat_rmtp;
- 
- 		if (rmtp && compat_put_timespec(&rmt, rmtp))
-@@ -256,7 +256,26 @@ COMPAT_SYSCALL_DEFINE2(nanosleep, struct compat_timespec __user *, rqtp,
- 				HRTIMER_MODE_REL, CLOCK_MONOTONIC);
- 	set_fs(oldfs);
- 
--	if (ret) {
-+	/*
-+	 * hrtimer_nanosleep() can only return 0 or
-+	 * -ERESTART_RESTARTBLOCK here because:
-+	 *
-+	 * - we call it with HRTIMER_MODE_REL and therefor exclude the
-+	 *   -ERESTARTNOHAND return path.
-+	 *
-+	 * - we supply the rmtp argument from the task stack (due to
-+	 *   the necessary compat conversion. So the update cannot
-+	 *   fail, which excludes the -EFAULT return path as well. If
-+	 *   it fails nevertheless we have a bigger problem and wont
-+	 *   reach this place anymore.
-+	 *
-+	 * - if the return value is 0, we do not have to update rmtp
-+	 *    because there is no remaining time.
-+	 *
-+	 * We check for -ERESTART_RESTARTBLOCK nevertheless if the
-+	 * core implementation decides to return random nonsense.
-+	 */
-+	if (ret == -ERESTART_RESTARTBLOCK) {
- 		struct restart_block *restart
- 			= &current_thread_info()->restart_block;
- 
-@@ -266,7 +285,6 @@ COMPAT_SYSCALL_DEFINE2(nanosleep, struct compat_timespec __user *, rqtp,
- 		if (rmtp && compat_put_timespec(&rmt, rmtp))
- 			return -EFAULT;
- 	}
--
- 	return ret;
- }
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 99aa6ee3908f..f654a8a298fa 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -225,6 +225,20 @@ static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
- };
- 
- /*
-+ * Kick this CPU if it's full dynticks in order to force it to
-+ * re-evaluate its dependency on the tick and restart it if necessary.
-+ * This kick, unlike tick_nohz_full_kick_cpu() and tick_nohz_full_kick_all(),
-+ * is NMI safe.
-+ */
-+void tick_nohz_full_kick(void)
-+{
-+	if (!tick_nohz_full_cpu(smp_processor_id()))
-+		return;
+diff --git a/Documentation/devicetree/bindings/regulator/mxs-regulator.txt b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
+new file mode 100644
+index 0000000..c3226cc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
+@@ -0,0 +1,38 @@
++MXS regulators
 +
-+	irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+}
++Required node properties:
++- compatible: Should be "fsl,<soc>-power", where soc is "imx23" or "imx28"
++- reg: Offset and length of the register set for the device
 +
-+/*
-  * Kick the CPU if it's full dynticks in order to force it to
-  * re-evaluate its dependency on the tick and restart it if necessary.
-  */
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index fb4a9c2cf8d9..ec1791fae965 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -442,11 +442,12 @@ static void timekeeping_update(struct timekeeper *tk, unsigned int action)
- 		tk->ntp_error = 0;
- 		ntp_clear();
- 	}
--	update_vsyscall(tk);
--	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
- 
- 	tk_update_ktime_data(tk);
- 
-+	update_vsyscall(tk);
-+	update_pvclock_gtod(tk, action & TK_CLOCK_WAS_SET);
++Required regulator properties:
++- compatible: Must be "fsl,mxs-regulator"
++- reg: Offset of the register set for the regulator
++- mxs-max-reg-val: Maximum value of this register
 +
- 	if (action & TK_MIRROR)
- 		memcpy(&shadow_timekeeper, &tk_core.timekeeper,
- 		       sizeof(tk_core.timekeeper));
++Optional regulator properties:
++- mxs-default-microvolt: initial voltage of the regulator
++
++Any regulator property defined as part of the core regulator
++binding, defined in regulator.txt, can also be used.
++
++Example:
++
++	power: power@80044000 {
++		compatible = "fsl,imx28-power";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x80044000 0x2000>;
++
++		reg_vddio: regulator-vddio@80044060 {
++			reg = <0x80044060>;
++			compatible = "fsl,mxs-regulator";
++			regulator-name = "vddio";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <3600000>;
++			regulator-microvolt-offset = <80000>;
++			regulator-always-on;
++			mxs-max-reg-val = <0x10>;
++			mxs-default-microvolt = <3300000>;
++		};
++	};
++
+-- 
+1.8.1.4
+
