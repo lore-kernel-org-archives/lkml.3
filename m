@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaIGUwN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 16:52:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35885 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaIGUwL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 16:52:11 -0400
-Message-ID: <540CC574.4080203@infradead.org>
-Date: Sun, 07 Sep 2014 13:52:04 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752610AbaIGVBG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 17:01:06 -0400
+Received: from mail1.SerNet.de ([193.175.80.2]:37383 "EHLO mail.SerNet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752114AbaIGVBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 17:01:05 -0400
+X-Greylist: delayed 708 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Sep 2014 17:01:04 EDT
+Date: Sun, 7 Sep 2014 22:48:51 +0200
+From: Volker Lendecke <Volker.Lendecke@SerNet.DE>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        linux-aio@kvack.org
+Subject: Re: read()/readv() only from page cache
+Reply-To: Volker.Lendecke@SerNet.DE
+References: <CANP1eJGE=vQBdLnMBFPcTWrvh+dUA-UCK=ugO-tc2KN4LWLPSA@mail.gmail.com>
+ <20140905110927.GI17501@suse.de>
+ <20140905154829.GA22956@infradead.org>
+ <CANP1eJEdH8Hk-i348N3YQ4FUoSGb-2Tp9g9ZJxnKO1zZskTKjg@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Peter Foley <pefoley2@pefoley.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
- built-in.o files
-References: <53FB9DA0.7000301@infradead.org> <CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com> <540651B3.8030400@infradead.org> <20140902232906.GG29327@sirena.org.uk> <CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com> <20140903232149.GG29327@sirena.org.uk> <5407A68F.5090805@infradead.org> <20140904104201.GI29327@sirena.org.uk> <540A503D.20807@infradead.org> <540C9D19.5080201@infradead.org> <20140907184837.GD4015@sirena.org.uk>
-In-Reply-To: <20140907184837.GD4015@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANP1eJEdH8Hk-i348N3YQ4FUoSGb-2Tp9g9ZJxnKO1zZskTKjg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <E1XQjOX-00CcnG-UC@intern.SerNet.DE>
+Organization: SerNet GmbH, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/14 11:48, Mark Brown wrote:
-> On Sun, Sep 07, 2014 at 10:59:53AM -0700, Randy Dunlap wrote:
-> 
->> The quilt-import.log from 20140829 says:
-> 
->> $ git am --patch-format=mbox ../quilt/rd-docs/001-docum-use-subdiry-avoid-builtin.patch
-> 
->> and in the 20140905 git tree it says:
-> 
->> $ git am ../quilt/rd-docs/001-docum-use-subdiry-avoid-builtin.patch
->> Patch format detection failed.
-> 
->> Are you using Stephen's scripts?  Why would his tree apply patches with
->> --patch-format=mbox
->> while the later trees did not use that git-am option?
-> 
-> Yes, I'm using his scripts.  I guess it's possible there's something in
-> his global git configuration that changes the behaviour?
+On Fri, Sep 05, 2014 at 12:27:21PM -0400, Milosz Tanski wrote:
+> In a VLDB like workload this would enable me to lower the latency of
+> common fast requests and. By fast requests I mean ones that do not
+> require much data, the data is cached, or there's a predictable read
+> pattern (read-ahead). Obviously it would be at the expense of the
+> latency of large/slow requests (they have to make 2 read calls, the
+> first one always EWOULDBLOCK) ... but in that case it doesn't matter
+> since the time to do actual IO would trump any kind of extra latency.
 
-I can't find any such animal.  Hopefully Stephen can provide some insight
-into this.
+That was my thinking as well when I discussed it with Christoph. Sorry
+for not getting around to actually test his patch. Samba right
+now uses a thread pool for aio, we get parallel read requests from
+clients over a single TCP connection and we need to keep all disks busy
+simultaneously. We'd like to avoid the thread overhead when it's not
+necessary because the data is already around. A per-request flag would
+fit Samba better than a flag settable by fcntl in this pattern. Samba
+can't easily open a file twice (once with NONBLOCK and once without).
 
-thanks,
+Volker
+
 -- 
-~Randy
+SerNet GmbH, Bahnhofsallee 1b, 37081 Göttingen
+phone: +49-551-370000-0, fax: +49-551-370000-9
+AG Göttingen, HRB 2816, GF: Dr. Johannes Loxen
+http://www.sernet.de, mailto:kontakt@sernet.de
