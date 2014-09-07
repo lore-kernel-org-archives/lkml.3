@@ -1,61 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364AbaIGN7G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 09:59:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37302 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752010AbaIGN7E (ORCPT
+	id S1752519AbaIGOAY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 10:00:24 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:37630 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbaIGOAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 09:59:04 -0400
-X-Sasl-enc: uCzNybXYQPRgouptBFkxgq6syYRoHg70G8Qd3Qo4FUle 1410098343
-Date: Sun, 7 Sep 2014 10:58:50 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, akpm@linuxfoundation.org, arnd@arndb.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-Message-ID: <20140907135850.GA23026@khazad-dum.debian.net>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
- <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
- <20140904201123.GA9116@khazad-dum.debian.net>
- <1409862708.28990.141.camel@misato.fc.hp.com>
- <1409873255.28990.158.camel@misato.fc.hp.com>
- <20140905102347.GA30096@gmail.com>
- <1409925023.28990.176.camel@misato.fc.hp.com>
+	Sun, 7 Sep 2014 10:00:23 -0400
+Message-ID: <540C64E0.2030201@gmail.com>
+Date: Sun, 07 Sep 2014 07:00:00 -0700
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409925023.28990.176.camel@misato.fc.hp.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.72 is released
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Sep 2014, Toshi Kani wrote:
-> On Fri, 2014-09-05 at 12:23 +0200, Ingo Molnar wrote:
-> > Any reason why we have to create such a sharp boundary, instead 
-> > of simply saying: 'disable PAT on all x86 CPU families that have 
-> > at least one buggy model'?
-> > 
-> > That would nicely sort out all the broken CPUs, and would make it 
-> > highly unlikely that we'd accidentally forget about a model or 
-> > two.
-> 
-> Agreed.  I will disable this feature on all Pentium 4 models as well.  I
-> do not think there is any necessity to enable it on Pentium 4.
+Gidday,
 
-Thank you.  That takes care of my misguivings about enabling this on aging
-platforms as well.
+The Linux man-pages maintainer proudly announces:
+
+    man-pages-3.72 - man pages for Linux
+
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.72
+
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2014/09/man-pages-372-is-released.html
+
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
+
+A few changes in this release that may be of interest to readers of
+this list are given below.
+
+Cheers,
+
+Michael
+
+
+==================== Changes in man-pages-3.72 ====================
+
+New and rewritten pages
+-----------------------
+
+memusage.1
+    Peter Schiffer, Michael Kerrisk  [Jan Chaloupka]
+        New page for glibc memusage(1) command
+
+memusagestat.1
+    Peter Schiffer  [Jan Chaloupka, Michael Kerrisk]
+        New page for glibc memusagestat(1) command
+
+mtrace.1
+    Peter Schiffer  [Jan Chaloupka]
+        New page describing the glibc mtrace(1) command
+
+
+Changes to individual pages
+---------------------------
+
+connect.2
+    Michael Haardt
+        Note that a new socket should be used if connect() fails
+
+poll.2, select.2
+    Rusty Russell
+        Fix erroneous description of "available for write".
+            POSIX says: "POLLOUT Normal data may be written without
+            blocking.".  This "may" is misleading, see the POSIX
+            write page:
+
+                Write requests to a pipe or FIFO shall be handled in the
+                same way as a regular file with the following exceptions:
+                ...
+                If the O_NONBLOCK flag is clear, a write request may cause
+                the thread to block, but on normal completion it shall
+                return nbyte.
+                ...
+                When attempting to write to a file descriptor (other than a
+                pipe or FIFO) that supports non-blocking writes and cannot
+                accept the data immediately:
+
+                If the O_NONBLOCK flag is clear, write() shall block the
+                calling thread until the data can be accepted.
+
+                If the O_NONBLOCK flag is set, write() shall not block the
+                thread. If some data can be written without blocking the
+                thread, write() shall write what it can and return the
+                number of bytes written. Otherwise, it shall return -1 and
+                set errno to [EAGAIN].
+
+            The net result is that write() of more than 1 byte on a
+            socket, pipe or FIFO which is "ready" may block: write()
+            (unlike read!) will attempt to write the entire buffer and
+            only return a short write under exceptional circumstances.
+
+            Indeed, this is the behaviour we see in Linux:
+
+            https://github.com/rustyrussell/ccan/commit/897626152d12d7fd13a8feb36989eb5c8c1f3485
+            https://plus.google.com/103188246877163594460/posts/BkTGTMHDFgZ
+
+inotify.7
+    Michael Kerrisk
+        IN_OPEN and IN_CLOSE_NOWRITE can also occur for directories
+    Michael Kerrisk
+        IN_CLOSE_WRITE occurs only for files (not monitored directory)
+    Michael Kerrisk
+        IN_MODIFY is generated for files only (not monitored directories)
+    Michael Kerrisk
+        IN_ACCESS occurs only for files inside directories
+            IN_ACCESS does not occur for monitored directory.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
