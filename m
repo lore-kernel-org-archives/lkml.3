@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbaIGODR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 10:03:17 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22941 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752010AbaIGODQ (ORCPT
+	id S1752473AbaIGOKR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 10:10:17 -0400
+Received: from smtprelay0153.hostedemail.com ([216.40.44.153]:38644 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752251AbaIGOKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 10:03:16 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+OXW+wXxAt8+Od6Gcl6bpF/McDYmcIm18=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 3703A5DA542
-Date: Sun, 7 Sep 2014 10:02:55 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Mark Brown <broonie@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linaro-kernel@lists.linaro.org, Geoff Levand <geoff@infradead.org>,
-        linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irq: gic-v3: Tag all low level accessors
- __maybey_unused
-Message-ID: <20140907140255.GB30828@titan.lakedaemon.net>
-References: <1406748194-21094-1-git-send-email-broonie@kernel.org>
- <20140817170453.GE12769@titan.lakedaemon.net>
- <20140906125412.GA32429@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140906125412.GA32429@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 7 Sep 2014 10:10:15 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:7875:7903:8985:9025:10004:10400:10848:11232:11658:11914:12043:12050:12517:12519:12663:12740:13069:13071:13311:13357:21063:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wood21_1f648fc7883d
+X-Filterd-Recvd-Size: 1562
+Message-ID: <1410099012.2723.13.camel@joe-AO725>
+Subject: Re: Error in scripts/checkpatch.pl
+From: Joe Perches <joe@perches.com>
+To: Daniel Bomar <dbdaniel42@gmail.com>
+Cc: apw@canonical.com, linux-kernel@vger.kernel.org
+Date: Sun, 07 Sep 2014 07:10:12 -0700
+In-Reply-To: <CAMXhOsrZfqvB3YDvdATwBAd9OJCxuAZWkdukenzLp4VKyZ_Svw@mail.gmail.com>
+References: <CAMXhOsrZfqvB3YDvdATwBAd9OJCxuAZWkdukenzLp4VKyZ_Svw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark, Stephen,
-
-On Sat, Sep 06, 2014 at 01:54:12PM +0100, Mark Brown wrote:
-> On Sun, Aug 17, 2014 at 01:04:53PM -0400, Jason Cooper wrote:
-> > On Wed, Jul 30, 2014 at 08:23:14PM +0100, Mark Brown wrote:
-> > > From: Mark Brown <broonie@linaro.org>
+On Sun, 2014-09-07 at 04:39 -0500, Daniel Bomar wrote:
+> Hello, I'm new to all this so please correct me if I'm sending this to
+> the wrong place.  I'd like to report the following error that shows
+> whenever I run scripts/checkpatch.pl.  The error shows at the top of
+> the output after which the script appears to function normally.  I'm
+> running Arch Linux and Perl version 5.20.0.  The error is as follows:
 > 
-> > > This is only really needed for gic_write_sgi1r in the !SMP case since it
-> > > is only referenced in the SMP initialisation code but it seems better to
-> > > have these functions all next to each other and declared consistently.
-> 
-> > > Signed-off-by: Mark Brown <broonie@linaro.org>
-> > > ---
-> > >  drivers/irqchip/irq-gic-v3.c | 10 +++++-----
-> > >  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> > Applied to irqchip/urgent
-> 
-> This appears to have disappeared from -next and the warning is back.
+> Useless use of greediness modifier '+' in regex; marked by <-- HERE in
+> m/(^\+.*) {8,8}+ <-- HERE \t/ at scripts/checkpatch.pl line 2424.
 
-Hmm, interesting. Here's what I have in irqchip/for-next,irqchip/urgent:
+Hello.  Thanks for the report.
 
-  c44e9d77fd1c irqchip: gic-v3: Tag all low level accessors __maybe_unused
-  ddc86821ee2c irqchip: gic-v3: Only define gic_peek_irq() when building SMP
+A patch to fix this was submitted a couple
+of months ago.  It just takes awhile to
+get into the appropriate trees.
 
-and:
+https://lkml.org/lkml/2014/7/11/809
 
-$ git tag --contains c44e9d77fd1c | grep ^next | sort -V
-next-20140820
-next-20140822
-next-20140823
-next-20140825
-next-20140826
-next-20140827
-next-20140828
-next-20140829
 
-To see whether I forgot to add /urgent to /for-next or if
-irqchip/for-next was dropped, I did the same search against the first
-commit I added to irqchip/core:
-
-$ git tag --contains 1c36d42c4ffe | grep ^next | sort -V
-next-20140822
-next-20140823
-next-20140825
-next-20140826
-next-20140827
-next-20140828
-next-20140829
-
-Also dropped on the 30th.  So, unless I really screwed up, -next is no
-longer pulling irqchip/for-next.
-
-Stephen, could you please look and see if this is the case?
-
-thx,
-
-Jason.
