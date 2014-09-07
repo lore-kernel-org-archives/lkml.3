@@ -1,102 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaIGUYP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 16:24:15 -0400
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:42032 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaIGUYN convert rfc822-to-8bit (ORCPT
+	id S1752601AbaIGUl6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 16:41:58 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35164 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751947AbaIGUlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 16:24:13 -0400
+	Sun, 7 Sep 2014 16:41:55 -0400
+Message-ID: <540CC305.8010407@hurleysoftware.com>
+Date: Sun, 07 Sep 2014 16:41:41 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140905154402.GF30520@kernel.org>
-References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
-	<540964C0.1050702@intel.com>
-	<20140905141123.GE30520@kernel.org>
-	<1409930200.1662.16.camel@leonhard>
-	<20140905154402.GF30520@kernel.org>
-Date: Sun, 7 Sep 2014 22:24:12 +0200
-Message-ID: <CABPqkBQxcTK7YFhcaV5PORx7ub+scwpkd3Rd=bAPgTK6Cvh1Rg@mail.gmail.com>
-Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        paulmck@linux.vnet.ibm.com
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>	 <20140904090952.GW17454@tucnak.redhat.com>	 <540859EC.5000407@hurleysoftware.com>	 <20140904175044.4697aee4@alan.etchedpixels.co.uk>	 <5408C0AB.6050801@hurleysoftware.com>	 <20140905001751.GL5001@linux.vnet.ibm.com>	 <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com>	 <20140905040645.GO5001@linux.vnet.ibm.com>	 <1410066442.12512.13.camel@jarvis.lan>	 <20140907162146.GK5001@linux.vnet.ibm.com> <1410116687.2027.19.camel@jarvis.lan>
+In-Reply-To: <1410116687.2027.19.camel@jarvis.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 5:44 PM, Arnaldo Carvalho de Melo
-<acme@kernel.org> wrote:
-> Em Sat, Sep 06, 2014 at 12:16:40AM +0900, Namhyung Kim escreveu:
->> Hi Adrian and Arnaldo,
->>
->> 2014-09-05 (금), 11:11 -0300, Arnaldo Carvalho de Melo:
->> > Em Fri, Sep 05, 2014 at 10:22:40AM +0300, Adrian Hunter escreveu:
->> > > On 09/05/2014 07:59 AM, Namhyung Kim wrote:
->> > > > +++ b/tools/perf/util/machine.c
->> > > > @@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
->> > > >                                 strlen(kmmap_prefix));
->> > > >                 /*
->> > > >                  * Should be there already, from the build-id table in
->> > > > -                * the header.
->> > > > +                * the header (but maybe with a different name: "vmlinux").
->> > > >                  */
->> > > > -               struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
->> > > > -                                                    kmmap_prefix);
->> > > > +               struct dso *kernel = dsos__find(&machine->kernel_dsos,
->> > > > +                                               "vmlinux", true);
->> >
->> > > Isn't "vmlinux" just the basename of the original file name, so if it had a
->> > > different name this wouldn't work e.g. if the filename had been
->> > > /boot/vmlinuz-3.11.0-26-generic then you would need
->> > > "vmlinuz-3.11.0-26-generic" for this to work?
->> >
->> > Yeah, looking for well known pathnames to then check if the build-id
->> > matches the one we're looking for, be it because we obtained it from
->> > /sys/kernel/notes (for the running kernel), or from the perf.data file
->> > build-id table is ok, as we don't know where it is.
->> >
->> > Plain sticking "vmlinux" there is not.
->>
->> I don't get it.  AFAIK when perf record runs, it uses [kernel.kallsyms]
->> name for kernel map.  But it can be changed only if it found a "vmlinux"
->> file in the vmlinux_path[].  So short name will always be "vmlinux" -
->> okay, it might be vmlinux-$(uname -r) too; I can add it.
->>
->> As you know, the vmlinux file is a ELF image that created during kernel
->> build process so I guess its name is fixed.  It's different from the
->> vmlinu"z" which resides in /boot directory.
->>
->> Am I missing something?
->
-> [acme@zoo linux]$ perf report --help 2>&1 | grep vmlin
->        -k, --vmlinux=<file>
->            vmlinux pathname
-> [acme@zoo linux]$
->
-> Yes, it is using [kernel.kallsyms].ref_reloc_sym for the synthesized
-> KERNEL mmap event, but it stores the full path in the build-id table.
->
-> It seems we need a way to state that an entry in the build-id table is
-> for the kernel, without looking at its file name. That or to put the
-> build-id into the synthesized kernel mmap event. Which is better,
-> because:
->
-Can't you figure out it is from the kernel (in perf record) by remembering
-you got the buildid from /sys/kernel/notes?
+On 09/07/2014 03:04 PM, James Bottomley wrote:
+> On Sun, 2014-09-07 at 09:21 -0700, Paul E. McKenney wrote:
+>> On Sat, Sep 06, 2014 at 10:07:22PM -0700, James Bottomley wrote:
+>>> On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
+>>>> On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
+>>>>> Hi James,
+>>>>>
+>>>>> On 09/04/2014 10:11 PM, James Bottomley wrote:
+>>>>>> On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
+>>>>>>> +And there are anti-guarantees:
+>>>>>>> +
+>>>>>>> + (*) These guarantees do not apply to bitfields, because compilers often
+>>>>>>> +     generate code to modify these using non-atomic read-modify-write
+>>>>>>> +     sequences.  Do not attempt to use bitfields to synchronize parallel
+>>>>>>> +     algorithms.
+>>>>>>> +
+>>>>>>> + (*) Even in cases where bitfields are protected by locks, all fields
+>>>>>>> +     in a given bitfield must be protected by one lock.  If two fields
+>>>>>>> +     in a given bitfield are protected by different locks, the compiler's
+>>>>>>> +     non-atomic read-modify-write sequences can cause an update to one
+>>>>>>> +     field to corrupt the value of an adjacent field.
+>>>>>>> +
+>>>>>>> + (*) These guarantees apply only to properly aligned and sized scalar
+>>>>>>> +     variables.  "Properly sized" currently means "int" and "long",
+>>>>>>> +     because some CPU families do not support loads and stores of
+>>>>>>> +     other sizes.  ("Some CPU families" is currently believed to
+>>>>>>> +     be only Alpha 21064.  If this is actually the case, a different
+>>>>>>> +     non-guarantee is likely to be formulated.)
+>>>>>>
+>>>>>> This is a bit unclear.  Presumably you're talking about definiteness of
+>>>>>> the outcome (as in what's seen after multiple stores to the same
+>>>>>> variable).
+>>>>>
+>>>>> No, the last conditions refers to adjacent byte stores from different
+>>>>> cpu contexts (either interrupt or SMP).
+>>>>>
+>>>>>> The guarantees are only for natural width on Parisc as well,
+>>>>>> so you would get a mess if you did byte stores to adjacent memory
+>>>>>> locations.
+>>>>>
+>>>>> For a simple test like:
+>>>>>
+>>>>> struct x {
+>>>>> 	long a;
+>>>>> 	char b;
+>>>>> 	char c;
+>>>>> 	char d;
+>>>>> 	char e;
+>>>>> };
+>>>>>
+>>>>> void store_bc(struct x *p) {
+>>>>> 	p->b = 1;
+>>>>> 	p->c = 2;
+>>>>> }
+>>>>>
+>>>>> on parisc, gcc generates separate byte stores
+>>>>>
+>>>>> void store_bc(struct x *p) {
+>>>>>    0:	34 1c 00 02 	ldi 1,ret0
+>>>>>    4:	0f 5c 12 08 	stb ret0,4(r26)
+>>>>>    8:	34 1c 00 04 	ldi 2,ret0
+>>>>>    c:	e8 40 c0 00 	bv r0(rp)
+>>>>>   10:	0f 5c 12 0a 	stb ret0,5(r26)
+>>>>>
+>>>>> which appears to confirm that on parisc adjacent byte data
+>>>>> is safe from corruption by concurrent cpu updates; that is,
+>>>>>
+>>>>> CPU 0                | CPU 1
+>>>>>                      |
+>>>>> p->b = 1             | p->c = 2
+>>>>>                      |
+>>>>>
+>>>>> will result in p->b == 1 && p->c == 2 (assume both values
+>>>>> were 0 before the call to store_bc()).
+>>>>
+>>>> What Peter said.  I would ask for suggestions for better wording, but
+>>>> I would much rather be able to say that single-byte reads and writes
+>>>> are atomic and that aligned-short reads and writes are also atomic.
+>>>>
+>>>> Thus far, it looks like we lose only very old Alpha systems, so unless
+>>>> I hear otherwise, I update my patch to outlaw these very old systems.
+>>>
+>>> This isn't universally true according to the architecture manual.  The
+>>> PARISC CPU can make byte to long word stores atomic against the memory
+>>> bus but not against the I/O bus for instance.  Atomicity is a property
+>>> of the underlying substrate, not of the CPU.  Implying that atomicity is
+>>> a CPU property is incorrect.
 
+To go back to this briefly, while it's true that atomicity is not
+a CPU property, atomicity is not possible if the CPU is not cooperating.
 
-> That leads to another problem that needs to get solved eventually: We
-> need to have the build-id into PERF_RECORD_MMAP, because we're now using
-> just the mmap filename as the key, not the contents, and for long
-> running sessions, DSOs can get updated, etc.
->
-> - Arnaldo
+>> OK, fair point.
+>>
+>> But are there in-use-for-Linux PARISC memory fabrics (for normal memory,
+>> not I/O) that do not support single-byte and double-byte stores?
+> 
+> For aligned access, I believe that's always the case for the memory bus
+> (on both 32 and 64 bit systems).  However, it only applies to machine
+> instruction loads and stores of the same width..  If you mix the widths
+> on the loads and stores, all bets are off.  That means you have to
+> beware of the gcc penchant for coalescing loads and stores: if it sees
+> two adjacent byte stores it can coalesce them into a short store
+> instead ... that screws up the atomicity guarantees.
+
+Two things: I think that gcc has given up on combining adjacent writes,
+perhaps because unaligned writes on some arches are prohibitive, so
+whatever minor optimization was believed to be gained was quickly lost,
+multi-fold. (Although this might not be the reason since one would
+expect that gcc would know the alignment of the promoted store).
+
+But additionally, even if gcc combines adjacent writes _that are part
+of the program flow_ then I believe the situation is no worse than
+would otherwise exist.
+
+For instance, given the following:
+
+struct x {
+	spinlock_t lock;
+	long a;
+	byte b;
+	byte c;
+};
+
+void locked_store_b(struct x *p)
+{
+	spin_lock(&p->lock);
+	p->b = 1;
+	spin_unlock(&p->lock);
+	p->c = 2;
+}
+
+Granted, the author probably expects ordered writes of
+	STORE B
+	STORE C
+but that's not guaranteed because there is no memory barrier
+ordering B before C.
+
+I see no problem with gcc write-combining in the absence of
+memory barriers (as long as alignment is still respected,
+ie., the size-promoted write is still naturally aligned). The
+combined write is still atomic.
+
+Regards,
+Peter Hurley
