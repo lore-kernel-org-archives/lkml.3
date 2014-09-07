@@ -1,219 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaIGXAa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 19:00:30 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54139 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaIGXA1 (ORCPT
+	id S1752850AbaIGXBz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 19:01:55 -0400
+Received: from mail-oi0-f73.google.com ([209.85.218.73]:45506 "EHLO
+	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178AbaIGXBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 19:00:27 -0400
-Date: Sun, 7 Sep 2014 16:00:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140907230019.GO5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <540859EC.5000407@hurleysoftware.com>
- <20140904175044.4697aee4@alan.etchedpixels.co.uk>
- <5408C0AB.6050801@hurleysoftware.com>
- <20140905001751.GL5001@linux.vnet.ibm.com>
- <1409883098.5078.14.camel@jarvis.lan>
- <5409243C.4080704@hurleysoftware.com>
- <20140905040645.GO5001@linux.vnet.ibm.com>
- <1410066442.12512.13.camel@jarvis.lan>
- <20140907162146.GK5001@linux.vnet.ibm.com>
- <1410116687.2027.19.camel@jarvis.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410116687.2027.19.camel@jarvis.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090723-1344-0000-0000-0000040330F0
+	Sun, 7 Sep 2014 19:01:53 -0400
+From: Peter Feiner <pfeiner@google.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Peter Feiner <pfeiner@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v6] mm: softdirty: enable write notifications on VMAs after VM_SOFTDIRTY cleared
+Date: Sun,  7 Sep 2014 16:01:49 -0700
+Message-Id: <1410130909-8864-1-git-send-email-pfeiner@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1408571182-28750-1-git-send-email-pfeiner@google.com>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 07, 2014 at 12:04:47PM -0700, James Bottomley wrote:
-> On Sun, 2014-09-07 at 09:21 -0700, Paul E. McKenney wrote:
-> > On Sat, Sep 06, 2014 at 10:07:22PM -0700, James Bottomley wrote:
-> > > On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
-> > > > On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
-> > > > > Hi James,
-> > > > > 
-> > > > > On 09/04/2014 10:11 PM, James Bottomley wrote:
-> > > > > > On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
-> > > > > >> +And there are anti-guarantees:
-> > > > > >> +
-> > > > > >> + (*) These guarantees do not apply to bitfields, because compilers often
-> > > > > >> +     generate code to modify these using non-atomic read-modify-write
-> > > > > >> +     sequences.  Do not attempt to use bitfields to synchronize parallel
-> > > > > >> +     algorithms.
-> > > > > >> +
-> > > > > >> + (*) Even in cases where bitfields are protected by locks, all fields
-> > > > > >> +     in a given bitfield must be protected by one lock.  If two fields
-> > > > > >> +     in a given bitfield are protected by different locks, the compiler's
-> > > > > >> +     non-atomic read-modify-write sequences can cause an update to one
-> > > > > >> +     field to corrupt the value of an adjacent field.
-> > > > > >> +
-> > > > > >> + (*) These guarantees apply only to properly aligned and sized scalar
-> > > > > >> +     variables.  "Properly sized" currently means "int" and "long",
-> > > > > >> +     because some CPU families do not support loads and stores of
-> > > > > >> +     other sizes.  ("Some CPU families" is currently believed to
-> > > > > >> +     be only Alpha 21064.  If this is actually the case, a different
-> > > > > >> +     non-guarantee is likely to be formulated.)
-> > > > > > 
-> > > > > > This is a bit unclear.  Presumably you're talking about definiteness of
-> > > > > > the outcome (as in what's seen after multiple stores to the same
-> > > > > > variable).
-> > > > > 
-> > > > > No, the last conditions refers to adjacent byte stores from different
-> > > > > cpu contexts (either interrupt or SMP).
-> > > > > 
-> > > > > > The guarantees are only for natural width on Parisc as well,
-> > > > > > so you would get a mess if you did byte stores to adjacent memory
-> > > > > > locations.
-> > > > > 
-> > > > > For a simple test like:
-> > > > > 
-> > > > > struct x {
-> > > > > 	long a;
-> > > > > 	char b;
-> > > > > 	char c;
-> > > > > 	char d;
-> > > > > 	char e;
-> > > > > };
-> > > > > 
-> > > > > void store_bc(struct x *p) {
-> > > > > 	p->b = 1;
-> > > > > 	p->c = 2;
-> > > > > }
-> > > > > 
-> > > > > on parisc, gcc generates separate byte stores
-> > > > > 
-> > > > > void store_bc(struct x *p) {
-> > > > >    0:	34 1c 00 02 	ldi 1,ret0
-> > > > >    4:	0f 5c 12 08 	stb ret0,4(r26)
-> > > > >    8:	34 1c 00 04 	ldi 2,ret0
-> > > > >    c:	e8 40 c0 00 	bv r0(rp)
-> > > > >   10:	0f 5c 12 0a 	stb ret0,5(r26)
-> > > > > 
-> > > > > which appears to confirm that on parisc adjacent byte data
-> > > > > is safe from corruption by concurrent cpu updates; that is,
-> > > > > 
-> > > > > CPU 0                | CPU 1
-> > > > >                      |
-> > > > > p->b = 1             | p->c = 2
-> > > > >                      |
-> > > > > 
-> > > > > will result in p->b == 1 && p->c == 2 (assume both values
-> > > > > were 0 before the call to store_bc()).
-> > > > 
-> > > > What Peter said.  I would ask for suggestions for better wording, but
-> > > > I would much rather be able to say that single-byte reads and writes
-> > > > are atomic and that aligned-short reads and writes are also atomic.
-> > > > 
-> > > > Thus far, it looks like we lose only very old Alpha systems, so unless
-> > > > I hear otherwise, I update my patch to outlaw these very old systems.
-> > > 
-> > > This isn't universally true according to the architecture manual.  The
-> > > PARISC CPU can make byte to long word stores atomic against the memory
-> > > bus but not against the I/O bus for instance.  Atomicity is a property
-> > > of the underlying substrate, not of the CPU.  Implying that atomicity is
-> > > a CPU property is incorrect.
-> > 
-> > OK, fair point.
-> > 
-> > But are there in-use-for-Linux PARISC memory fabrics (for normal memory,
-> > not I/O) that do not support single-byte and double-byte stores?
-> 
-> For aligned access, I believe that's always the case for the memory bus
-> (on both 32 and 64 bit systems).  However, it only applies to machine
-> instruction loads and stores of the same width..  If you mix the widths
-> on the loads and stores, all bets are off.  That means you have to
-> beware of the gcc penchant for coalescing loads and stores: if it sees
-> two adjacent byte stores it can coalesce them into a short store
-> instead ... that screws up the atomicity guarantees.
+For VMAs that don't want write notifications, PTEs created for read
+faults have their write bit set. If the read fault happens after
+VM_SOFTDIRTY is cleared, then the PTE's softdirty bit will remain
+clear after subsequent writes.
 
-OK, that means that to make PARISC work reliably, we need to use
-ACCESS_ONCE() for loads and stores that could have racing accesses.
-If I understand correctly, this will -not- be needed for code guarded
-by locks, even with Peter's examples.
+Here's a simple code snippet to demonstrate the bug:
 
-So if we have something like this:
+  char* m = mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE,
+                 MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+  system("echo 4 > /proc/$PPID/clear_refs"); /* clear VM_SOFTDIRTY */
+  assert(*m == '\0');     /* new PTE allows write access */
+  assert(!soft_dirty(x));
+  *m = 'x';               /* should dirty the page */
+  assert(soft_dirty(x));  /* fails */
 
-	struct foo {
-		char a;
-		char b;
-	};
-	struct foo *fp;
+With this patch, write notifications are enabled when VM_SOFTDIRTY is
+cleared. Furthermore, to avoid unnecessary faults, write
+notifications are disabled when VM_SOFTDIRTY is set.
 
-then this code would be bad:
+As a side effect of enabling and disabling write notifications with
+care, this patch fixes a bug in mprotect where vm_page_prot bits set
+by drivers were zapped on mprotect. An analogous bug was fixed in mmap
+by c9d0bf241451a3ab7d02e1652c22b80cd7d93e8f.
 
-	fp->a = 1;
-	fp->b = 2;
+Reported-by: Peter Feiner <pfeiner@google.com>
+Suggested-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Peter Feiner <pfeiner@google.com>
 
-The reason is (as you say) that GCC would be happy to store 0x0102
-(or vice versa, depending on endianness) to the pair.  We instead
-need:
+---
 
-	ACCESS_ONCE(fp->a) = 1;
-	ACCESS_ONCE(fp->b) = 2;
+v1 -> v2: Instead of checking VM_SOFTDIRTY in the fault handler,
+          enable write notifications on vm_page_prot when we clear
+          VM_SOFTDIRTY.
 
-However, if the code is protected by locks, no problem:
+v2 -> v3: * Grab the mmap_sem in write mode if any VMAs have
+            VM_SOFTDIRTY set. This involved refactoring clear_refs_write
+            to make it less unwieldy.
 
-	struct foo {
-		spinlock_t lock_a;
-		spinlock_t lock_b;
-		char a;
-		char b;
-	};
+          * In mprotect, don't inadvertently disable write notifications on VMAs
+            that have had VM_SOFTDIRTY cleared
 
-Then it is OK to do the following:
+          * The mprotect fix and mmap cleanup that comprised the
+            second and third patches in v2 were swallowed by the main
+            patch because of vm_page_prot corner case handling.
 
-	spin_lock(fp->lock_a);
-	fp->a = 1;
-	spin_unlock(fp->lock_a);
-	spin_lock(fp->lock_b);
-	fp->b = 1;
-	spin_unlock(fp->lock_b);
+v3 -> v4: Handle !defined(CONFIG_MEM_SOFT_DIRTY): old patch would have
+          enabled write notifications for all VMAs in this case.
 
-Or even this, assuming ->lock_a precedes ->lock_b in the locking hierarchy:
+v4 -> v5: IS_ENABLED(CONFIG_MEM_SOFT_DIRTY) instead of #ifdef ...
 
-	spin_lock(fp->lock_a);
-	spin_lock(fp->lock_b);
-	fp->a = 1;
-	fp->b = 1;
-	spin_unlock(fp->lock_a);
-	spin_unlock(fp->lock_b);
+v5 -> v6:
+          * Replaced vma_{enable,disable}_writenotify() with vma_set_page_prot()
+            as per Hugh's suggestion.
 
-Here gcc might merge the assignments to fp->a and fp->b, but that is OK
-because both locks are held, presumably preventing other assignments or
-references to fp->a and fp->b.
+          * Per Hugh's suggestion, added an arch generic pgprot_modify that
+            handles pgprot_noncached and pgprot_writecombine pgprot. This arch
+            generic pgprot_modify fixes the regression introduced in v2 that
+            re-introduced the bug fixed by
+            c9d0bf241451a3ab7d02e1652c22b80cd7d93e8f for arch's without
+            pgprot_modify.
 
-On the other hand, if either fp->a or fp->b are referenced outside of their
-respective locks, even once, then this last code fragment would still need
-ACCESS_ONCE() as follows:
+          * Made vma_set_page_prot's pgprot check less restrictive by using
+            pgprot_modify. Couldn't remove the pgprot check altogether since
+            pgprot_modify isn't 100% on all arch's, such as powerpc.
 
-	spin_lock(fp->lock_a);
-	spin_lock(fp->lock_b);
-	ACCESS_ONCE(fp->a) = 1;
-	ACCESS_ONCE(fp->b) = 1;
-	spin_unlock(fp->lock_a);
-	spin_unlock(fp->lock_b);
+          * Fixed dirty_accountable bug.
 
-Does that cover it?  If so, I will update memory-barriers.txt accordingly.
+          * Fixed non-x86 build (tested build on arm64 and powerpc)
 
-							Thanx, Paul
+          * Per Kirill's suggestion, changed locking so mmap_sem isn't held
+            exclusively during page table traversal.
+
+Kirill & Cyrill: I removed your Reviewed-By: footers since this patch is quite
+different than v5 and I didn't want to presume your approval. Please re-add as
+you see fit - this has been a group effort!
+---
+ fs/proc/task_mmu.c            | 19 +++++++++++++-----
+ include/asm-generic/pgtable.h | 12 ++++++++++++
+ include/linux/mm.h            |  5 +++++
+ mm/memory.c                   |  3 ++-
+ mm/mmap.c                     | 45 +++++++++++++++++++++++++++----------------
+ mm/mprotect.c                 | 20 +++++--------------
+ 6 files changed, 66 insertions(+), 38 deletions(-)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index dfc791c..4621914 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -829,8 +829,21 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 			.private = &cp,
+ 		};
+ 		down_read(&mm->mmap_sem);
+-		if (type == CLEAR_REFS_SOFT_DIRTY)
++		if (type == CLEAR_REFS_SOFT_DIRTY) {
++			for (vma = mm->mmap; vma; vma = vma->vm_next) {
++				if (!(vma->vm_flags & VM_SOFTDIRTY))
++					continue;
++				up_read(&mm->mmap_sem);
++				down_write(&mm->mmap_sem);
++				for (vma = mm->mmap; vma; vma = vma->vm_next) {
++					vma->vm_flags &= ~VM_SOFTDIRTY;
++					vma_set_page_prot(vma);
++				}
++				downgrade_write(&mm->mmap_sem);
++				break;
++			}
+ 			mmu_notifier_invalidate_range_start(mm, 0, -1);
++		}
+ 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+ 			cp.vma = vma;
+ 			if (is_vm_hugetlb_page(vma))
+@@ -850,10 +863,6 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 				continue;
+ 			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+ 				continue;
+-			if (type == CLEAR_REFS_SOFT_DIRTY) {
+-				if (vma->vm_flags & VM_SOFTDIRTY)
+-					vma->vm_flags &= ~VM_SOFTDIRTY;
+-			}
+ 			walk_page_range(vma->vm_start, vma->vm_end,
+ 					&clear_refs_walk);
+ 		}
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 53b2acc..0f6edbd 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -249,6 +249,18 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
+ #define pgprot_writecombine pgprot_noncached
+ #endif
+ 
++#ifndef pgprot_modify
++#define pgprot_modify pgprot_modify
++static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
++{
++	if (pgprot_val(oldprot) == pgprot_val(pgprot_noncached(oldprot)))
++		newprot = pgprot_noncached(newprot);
++	if (pgprot_val(oldprot) == pgprot_val(pgprot_writecombine(oldprot)))
++		newprot = pgprot_writecombine(newprot);
++	return newprot;
++}
++#endif
++
+ /*
+  * When walking page tables, get the address of the next boundary,
+  * or the end address of the range if that comes earlier.  Although no
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 8981cc8..4e070aa 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1939,11 +1939,16 @@ static inline struct vm_area_struct *find_exact_vma(struct mm_struct *mm,
+ 
+ #ifdef CONFIG_MMU
+ pgprot_t vm_get_page_prot(unsigned long vm_flags);
++void vma_set_page_prot(struct vm_area_struct *vma);
+ #else
+ static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
+ {
+ 	return __pgprot(0);
+ }
++static inline void vma_set_page_prot(struct vm_area_struct *vma)
++{
++	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
++}
+ #endif
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+diff --git a/mm/memory.c b/mm/memory.c
+index adeac30..1715233 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2051,7 +2051,8 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	old_page = vm_normal_page(vma, address, orig_pte);
+ 	if (!old_page) {
+ 		/*
+-		 * VM_MIXEDMAP !pfn_valid() case
++		 * VM_MIXEDMAP !pfn_valid() case, or VM_SOFTDIRTY clear on a
++		 * VM_PFNMAP VMA.
+ 		 *
+ 		 * We should not cow pages in a shared writeable mapping.
+ 		 * Just mark the pages writable as we can't do any dirty
+diff --git a/mm/mmap.c b/mm/mmap.c
+index c1f2ea4..4ef9325 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -89,6 +89,25 @@ pgprot_t vm_get_page_prot(unsigned long vm_flags)
+ }
+ EXPORT_SYMBOL(vm_get_page_prot);
+ 
++static pgprot_t vm_pgprot_modify(pgprot_t oldprot, unsigned long vm_flags)
++{
++	return pgprot_modify(oldprot, vm_get_page_prot(vm_flags));
++}
++
++/* Update vma->vm_page_prot to reflect vma->vm_flags. */
++void vma_set_page_prot(struct vm_area_struct *vma)
++{
++	unsigned long vm_flags = vma->vm_flags;
++
++	vma->vm_page_prot = vm_pgprot_modify(vma->vm_page_prot, vm_flags);
++	if (vma_wants_writenotify(vma)) {
++		vm_flags &= ~VM_SHARED;
++		vma->vm_page_prot = vm_pgprot_modify(vma->vm_page_prot,
++						     vm_flags);
++	}
++}
++
++
+ int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
+ int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
+ unsigned long sysctl_overcommit_kbytes __read_mostly;
+@@ -1470,11 +1489,16 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
+ 	if (vma->vm_ops && vma->vm_ops->page_mkwrite)
+ 		return 1;
+ 
+-	/* The open routine did something to the protections already? */
++	/* The open routine did something to the protections that pgprot_modify
++	 * won't preserve? */
+ 	if (pgprot_val(vma->vm_page_prot) !=
+-	    pgprot_val(vm_get_page_prot(vm_flags)))
++	    pgprot_val(vm_pgprot_modify(vma->vm_page_prot, vm_flags)))
+ 		return 0;
+ 
++	/* Do we need to track softdirty? */
++	if (IS_ENABLED(CONFIG_MEM_SOFT_DIRTY) && !(vm_flags & VM_SOFTDIRTY))
++		return 1;
++
+ 	/* Specialty mapping? */
+ 	if (vm_flags & VM_PFNMAP)
+ 		return 0;
+@@ -1610,21 +1634,6 @@ munmap_back:
+ 			goto free_vma;
+ 	}
+ 
+-	if (vma_wants_writenotify(vma)) {
+-		pgprot_t pprot = vma->vm_page_prot;
+-
+-		/* Can vma->vm_page_prot have changed??
+-		 *
+-		 * Answer: Yes, drivers may have changed it in their
+-		 *         f_op->mmap method.
+-		 *
+-		 * Ensures that vmas marked as uncached stay that way.
+-		 */
+-		vma->vm_page_prot = vm_get_page_prot(vm_flags & ~VM_SHARED);
+-		if (pgprot_val(pprot) == pgprot_val(pgprot_noncached(pprot)))
+-			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-	}
+-
+ 	vma_link(mm, vma, prev, rb_link, rb_parent);
+ 	/* Once vma denies write, undo our temporary denial count */
+ 	if (file) {
+@@ -1658,6 +1667,8 @@ out:
+ 	 */
+ 	vma->vm_flags |= VM_SOFTDIRTY;
+ 
++	vma_set_page_prot(vma);
++
+ 	return addr;
+ 
+ unmap_and_free_vma:
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index c43d557..ace9345 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -29,13 +29,6 @@
+ #include <asm/cacheflush.h>
+ #include <asm/tlbflush.h>
+ 
+-#ifndef pgprot_modify
+-static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+-{
+-	return newprot;
+-}
+-#endif
+-
+ /*
+  * For a prot_numa update we only hold mmap_sem for read so there is a
+  * potential race with faulting where a pmd was temporarily none. This
+@@ -93,7 +86,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 				 * Avoid taking write faults for pages we
+ 				 * know to be dirty.
+ 				 */
+-				if (dirty_accountable && pte_dirty(ptent))
++				if (dirty_accountable && pte_dirty(ptent) &&
++				    (pte_soft_dirty(ptent) ||
++				     !(vma->vm_flags & VM_SOFTDIRTY)))
+ 					ptent = pte_mkwrite(ptent);
+ 				ptep_modify_prot_commit(mm, addr, pte, ptent);
+ 				updated = true;
+@@ -320,13 +315,8 @@ success:
+ 	 * held in write mode.
+ 	 */
+ 	vma->vm_flags = newflags;
+-	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
+-					  vm_get_page_prot(newflags));
+-
+-	if (vma_wants_writenotify(vma)) {
+-		vma->vm_page_prot = vm_get_page_prot(newflags & ~VM_SHARED);
+-		dirty_accountable = 1;
+-	}
++	dirty_accountable = vma_wants_writenotify(vma);
++	vma_set_page_prot(vma);
+ 
+ 	change_protection(vma, start, end, vma->vm_page_prot,
+ 			  dirty_accountable, 0);
+-- 
+2.1.0.rc2.206.gedb03e5
 
