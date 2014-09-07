@@ -1,165 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaIGW75 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 18:59:57 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:43279 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaIGW7z convert rfc822-to-8bit (ORCPT
+	id S1752803AbaIGXAa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 19:00:30 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54139 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178AbaIGXA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 18:59:55 -0400
+	Sun, 7 Sep 2014 19:00:27 -0400
+Date: Sun, 7 Sep 2014 16:00:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+Message-ID: <20140907230019.GO5001@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <540859EC.5000407@hurleysoftware.com>
+ <20140904175044.4697aee4@alan.etchedpixels.co.uk>
+ <5408C0AB.6050801@hurleysoftware.com>
+ <20140905001751.GL5001@linux.vnet.ibm.com>
+ <1409883098.5078.14.camel@jarvis.lan>
+ <5409243C.4080704@hurleysoftware.com>
+ <20140905040645.GO5001@linux.vnet.ibm.com>
+ <1410066442.12512.13.camel@jarvis.lan>
+ <20140907162146.GK5001@linux.vnet.ibm.com>
+ <1410116687.2027.19.camel@jarvis.lan>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1409051340450.879-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1409051340450.879-100000@iolanthe.rowland.org>
-Date: Sun, 7 Sep 2014 17:59:53 -0500
-Message-ID: <CADT32eLJOd5AuFSkg34gOJx-7GXe3Lz1xNe3SzCBv9U1F1ikbA@mail.gmail.com>
-Subject: Re: WARNING in block layer triggered in 3.17-rc3
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410116687.2027.19.camel@jarvis.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090723-1344-0000-0000-0000040330F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think the problem is, when a gendisk is detached, its request queue
-is not put in bypass mode
-cause when it is re-attached, code tries to put it out of bypass mode,
-hence the warning.
+On Sun, Sep 07, 2014 at 12:04:47PM -0700, James Bottomley wrote:
+> On Sun, 2014-09-07 at 09:21 -0700, Paul E. McKenney wrote:
+> > On Sat, Sep 06, 2014 at 10:07:22PM -0700, James Bottomley wrote:
+> > > On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
+> > > > On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
+> > > > > Hi James,
+> > > > > 
+> > > > > On 09/04/2014 10:11 PM, James Bottomley wrote:
+> > > > > > On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
+> > > > > >> +And there are anti-guarantees:
+> > > > > >> +
+> > > > > >> + (*) These guarantees do not apply to bitfields, because compilers often
+> > > > > >> +     generate code to modify these using non-atomic read-modify-write
+> > > > > >> +     sequences.  Do not attempt to use bitfields to synchronize parallel
+> > > > > >> +     algorithms.
+> > > > > >> +
+> > > > > >> + (*) Even in cases where bitfields are protected by locks, all fields
+> > > > > >> +     in a given bitfield must be protected by one lock.  If two fields
+> > > > > >> +     in a given bitfield are protected by different locks, the compiler's
+> > > > > >> +     non-atomic read-modify-write sequences can cause an update to one
+> > > > > >> +     field to corrupt the value of an adjacent field.
+> > > > > >> +
+> > > > > >> + (*) These guarantees apply only to properly aligned and sized scalar
+> > > > > >> +     variables.  "Properly sized" currently means "int" and "long",
+> > > > > >> +     because some CPU families do not support loads and stores of
+> > > > > >> +     other sizes.  ("Some CPU families" is currently believed to
+> > > > > >> +     be only Alpha 21064.  If this is actually the case, a different
+> > > > > >> +     non-guarantee is likely to be formulated.)
+> > > > > > 
+> > > > > > This is a bit unclear.  Presumably you're talking about definiteness of
+> > > > > > the outcome (as in what's seen after multiple stores to the same
+> > > > > > variable).
+> > > > > 
+> > > > > No, the last conditions refers to adjacent byte stores from different
+> > > > > cpu contexts (either interrupt or SMP).
+> > > > > 
+> > > > > > The guarantees are only for natural width on Parisc as well,
+> > > > > > so you would get a mess if you did byte stores to adjacent memory
+> > > > > > locations.
+> > > > > 
+> > > > > For a simple test like:
+> > > > > 
+> > > > > struct x {
+> > > > > 	long a;
+> > > > > 	char b;
+> > > > > 	char c;
+> > > > > 	char d;
+> > > > > 	char e;
+> > > > > };
+> > > > > 
+> > > > > void store_bc(struct x *p) {
+> > > > > 	p->b = 1;
+> > > > > 	p->c = 2;
+> > > > > }
+> > > > > 
+> > > > > on parisc, gcc generates separate byte stores
+> > > > > 
+> > > > > void store_bc(struct x *p) {
+> > > > >    0:	34 1c 00 02 	ldi 1,ret0
+> > > > >    4:	0f 5c 12 08 	stb ret0,4(r26)
+> > > > >    8:	34 1c 00 04 	ldi 2,ret0
+> > > > >    c:	e8 40 c0 00 	bv r0(rp)
+> > > > >   10:	0f 5c 12 0a 	stb ret0,5(r26)
+> > > > > 
+> > > > > which appears to confirm that on parisc adjacent byte data
+> > > > > is safe from corruption by concurrent cpu updates; that is,
+> > > > > 
+> > > > > CPU 0                | CPU 1
+> > > > >                      |
+> > > > > p->b = 1             | p->c = 2
+> > > > >                      |
+> > > > > 
+> > > > > will result in p->b == 1 && p->c == 2 (assume both values
+> > > > > were 0 before the call to store_bc()).
+> > > > 
+> > > > What Peter said.  I would ask for suggestions for better wording, but
+> > > > I would much rather be able to say that single-byte reads and writes
+> > > > are atomic and that aligned-short reads and writes are also atomic.
+> > > > 
+> > > > Thus far, it looks like we lose only very old Alpha systems, so unless
+> > > > I hear otherwise, I update my patch to outlaw these very old systems.
+> > > 
+> > > This isn't universally true according to the architecture manual.  The
+> > > PARISC CPU can make byte to long word stores atomic against the memory
+> > > bus but not against the I/O bus for instance.  Atomicity is a property
+> > > of the underlying substrate, not of the CPU.  Implying that atomicity is
+> > > a CPU property is incorrect.
+> > 
+> > OK, fair point.
+> > 
+> > But are there in-use-for-Linux PARISC memory fabrics (for normal memory,
+> > not I/O) that do not support single-byte and double-byte stores?
+> 
+> For aligned access, I believe that's always the case for the memory bus
+> (on both 32 and 64 bit systems).  However, it only applies to machine
+> instruction loads and stores of the same width..  If you mix the widths
+> on the loads and stores, all bets are off.  That means you have to
+> beware of the gcc penchant for coalescing loads and stores: if it sees
+> two adjacent byte stores it can coalesce them into a short store
+> instead ... that screws up the atomicity guarantees.
 
-So either of these should work, I have not tested it, just coded it up.
+OK, that means that to make PARISC work reliably, we need to use
+ACCESS_ONCE() for loads and stores that could have racing accesses.
+If I understand correctly, this will -not- be needed for code guarded
+by locks, even with Peter's examples.
 
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 4db5abf..f94c7ba 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -600,6 +600,8 @@ void blk_unregister_queue(struct gendisk *disk)
-  if (q->request_fn)
-  elv_unregister_queue(q);
+So if we have something like this:
 
-+ blk_queue_bypss_start(q);
-+
-  kobject_uevent(&q->kobj, KOBJ_REMOVE);
-  kobject_del(&q->kobj);
-  blk_trace_remove_sysfs(disk_to_dev(disk));
+	struct foo {
+		char a;
+		char b;
+	};
+	struct foo *fp;
 
+then this code would be bad:
 
+	fp->a = 1;
+	fp->b = 2;
 
+The reason is (as you say) that GCC would be happy to store 0x0102
+(or vice versa, depending on endianness) to the pair.  We instead
+need:
 
+	ACCESS_ONCE(fp->a) = 1;
+	ACCESS_ONCE(fp->b) = 2;
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 2c2041c..1c7ef55f 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -3054,15 +3054,26 @@ static int sd_probe(struct device *dev)
- static int sd_remove(struct device *dev)
- {
-  struct scsi_disk *sdkp;
-+ struct request_queue *q;
-+ struct scsi_device *sdp;
-  dev_t devt;
+However, if the code is protected by locks, no problem:
 
-  sdkp = dev_get_drvdata(dev);
-+ q = sdkp->disk->queue;
-  devt = disk_devt(sdkp->disk);
-  scsi_autopm_get_device(sdkp->device);
+	struct foo {
+		spinlock_t lock_a;
+		spinlock_t lock_b;
+		char a;
+		char b;
+	};
 
-  async_synchronize_full_domain(&scsi_sd_pm_domain);
-  async_synchronize_full_domain(&scsi_sd_probe_domain);
-  device_del(&sdkp->dev);
-+
-+ if (q) {
-+ spin_lock_irq(q->queue_lock);
-+ q->bypass_depth++;
-+ queue_flag_set(QUEUE_FLAG_BYPASS, q);
-+ spin_unlock_irq(q->queue_lock);
-+ }
-+
-  del_gendisk(sdkp->disk);
-  sd_shutdown(dev);
+Then it is OK to do the following:
 
+	spin_lock(fp->lock_a);
+	fp->a = 1;
+	spin_unlock(fp->lock_a);
+	spin_lock(fp->lock_b);
+	fp->b = 1;
+	spin_unlock(fp->lock_b);
 
+Or even this, assuming ->lock_a precedes ->lock_b in the locking hierarchy:
 
-On Fri, Sep 5, 2014 at 12:45 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> James and Jens:
->
-> I got a WARNING when unbinding the sd driver from a USB flash drive and
-> then binding it back again.  Here's where the flash drive gets probed
-> initially:
->
-> [  143.300886] usb-storage 4-8:1.0: usb_probe_interface
-> [  143.300911] usb-storage 4-8:1.0: usb_probe_interface - got id
-> [  143.300930] usb-storage 4-8:1.0: USB Mass Storage device detected
-> [  143.318239] scsi host0: usb-storage 4-8:1.0
-> [  143.359979] scsi 0:0:0:0: Direct-Access     Ut165    USB2FlashStorage 0.00 PQ: 0 ANSI: 2
-> [  143.376366] usbcore: registered new interface driver usb-storage
-> [  143.468464] sd 0:0:0:0: [sda] 7892040 512-byte logical blocks: (4.04 GB/3.76 GiB)
-> [  143.481725] sd 0:0:0:0: [sda] Write Protect is off
-> [  143.485712] sd 0:0:0:0: [sda] Mode Sense: 00 00 00 00
-> [  143.487064] sd 0:0:0:0: [sda] Asking for cache data failed
-> [  143.498428] sd 0:0:0:0: [sda] Assuming drive cache: write through
-> [  143.656797]  sda: sda1
-> [  143.676922] sd 0:0:0:0: [sda] Attached SCSI removable disk
->
-> Then I did
->
->         echo 0:0:0:0 >/sys/bus/scsi/drivers/sd_mod/unbind
->
-> followed by
->
->         echo 0:0:0:0 >/sys/bus/scsi/drivers/sd_mod/bind
->
-> which resulted in:
->
-> [  165.079557] sd 0:0:0:0: [sda] 7892040 512-byte logical blocks: (4.04 GB/3.76 GiB)
-> [  165.093510] sd 0:0:0:0: [sda] Write Protect is off
-> [  165.104388] sd 0:0:0:0: [sda] Mode Sense: 00 00 00 00
-> [  165.105632] sd 0:0:0:0: [sda] Asking for cache data failed
-> [  165.115136] sd 0:0:0:0: [sda] Assuming drive cache: write through
-> [  165.142950]  sda: sda1
-> [  165.156480] ------------[ cut here ]------------
-> [  165.159912] WARNING: CPU: 0 PID: 29 at block/blk-core.c:473 blk_queue_bypass_end+0x4d/0x62()
-> [  165.160030] Modules linked in: sd_mod usb_storage scsi_mod hid_generic usbhid hid pcspkr evdev i915 cfbfillrect cfbimgblt i2c_algo_bit cfbcopyarea video fbcon backlight bitblit softcursor font ehci_pci drm_kms_helper uhci_hcd ehci_hcd ohci_pci ohci_hcd drm i2ccore usbcore e100 mii usb_common fb fbdev fan processor button thermal_sys
-> [  165.160030] CPU: 0 PID: 29 Comm: kworker/u4:1 Not tainted 3.17.0-rc3AS-dirty #12
-> [  165.160030] Hardware name: Hewlett-Packard HP dx2000 MT (EE004AA)/08FCh, BIOS 1.17    11/24/2005
-> [  165.160030] Workqueue: events_unbound async_run_entry_fn
-> [  165.160030]  c105d2ef 00000000 ea569e10 c12771c0 00000000 ea569e28 c102c5fb c114907d
-> [  165.160030]  ecc18000 ea619c20 ecc18000 ea569e38 c102c676 00000009 00000000 ea569e44
-> [  165.160030]  c114907d ea619c20 ea569e5c c114b97d ea569e5c ea619c20 ed74e400 ea619c2c
-> [  165.160030] Call Trace:
-> [  165.160030]  [<c105d2ef>] ? console_unlock+0x37e/0x3ab
-> [  165.160030]  [<c12771c0>] dump_stack+0x49/0x73
-> [  165.160030]  [<c102c5fb>] warn_slowpath_common+0x5c/0x73
-> [  165.160030]  [<c114907d>] ? blk_queue_bypass_end+0x4d/0x62
-> [  165.160030]  [<c102c676>] warn_slowpath_null+0xf/0x13
-> [  165.160030]  [<c114907d>] blk_queue_bypass_end+0x4d/0x62
-> [  165.160030]  [<c114b97d>] blk_register_queue+0x8f/0xc4
-> [  165.160030]  [<c11548a6>] add_disk+0x2bc/0x3a8
-> [  165.160030]  [<efff40a5>] sd_probe_async+0xf5/0x17b [sd_mod]
-> [  165.160030]  [<c103fc08>] async_run_entry_fn+0x59/0xf9
-> [  165.160030]  [<c103ab22>] process_one_work+0x187/0x2ac
-> [  165.160030]  [<c103aac4>] ? process_one_work+0x129/0x2ac
-> [  165.160030]  [<c103ae19>] worker_thread+0x1b1/0x26b
-> [  165.160030]  [<c103ac68>] ? process_scheduled_works+0x21/0x21
-> [  165.160030]  [<c103e4ee>] kthread+0x82/0x87
-> [  165.160030]  [<c127b074>] ? _raw_spin_unlock_irq+0x22/0x3f
-> [  165.160030]  [<c1160000>] ? radix_tree_tag_set+0x3f/0xa5
-> [  165.160030]  [<c127b781>] ret_from_kernel_thread+0x21/0x30
-> [  165.160030]  [<c103e46c>] ? __kthread_parkme+0x50/0x50
-> [  165.160030] ---[ end trace 31df765b6ea80892 ]---
-> [  165.308986] sd 0:0:0:0: [sda] Attached SCSI removable disk
->
-> I don't know what's going on here, but it looks like something doesn't
-> get cleaned up properly during the unbind operation.
->
-> This was in vanilla 3.17-rc3.
->
-> Alan Stern
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	spin_lock(fp->lock_a);
+	spin_lock(fp->lock_b);
+	fp->a = 1;
+	fp->b = 1;
+	spin_unlock(fp->lock_a);
+	spin_unlock(fp->lock_b);
+
+Here gcc might merge the assignments to fp->a and fp->b, but that is OK
+because both locks are held, presumably preventing other assignments or
+references to fp->a and fp->b.
+
+On the other hand, if either fp->a or fp->b are referenced outside of their
+respective locks, even once, then this last code fragment would still need
+ACCESS_ONCE() as follows:
+
+	spin_lock(fp->lock_a);
+	spin_lock(fp->lock_b);
+	ACCESS_ONCE(fp->a) = 1;
+	ACCESS_ONCE(fp->b) = 1;
+	spin_unlock(fp->lock_a);
+	spin_unlock(fp->lock_b);
+
+Does that cover it?  If so, I will update memory-barriers.txt accordingly.
+
+							Thanx, Paul
+
