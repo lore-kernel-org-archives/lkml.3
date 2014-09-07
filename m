@@ -1,117 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaIGUNL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 16:13:11 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:60320 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbaIGUNI (ORCPT
+	id S1752393AbaIGUYP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 16:24:15 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:42032 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaIGUYN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 16:13:08 -0400
+	Sun, 7 Sep 2014 16:24:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140907180737.GA5057@salvia>
-References: <1409894238-9055-1-git-send-email-ast@plumgrid.com>
-	<1409894238-9055-3-git-send-email-ast@plumgrid.com>
-	<20140906141051.GA4245@salvia>
-	<CAMEtUuxPynQ4wdWDgCU+9_3_GRYn8oA4f-emcF+mqiQdLsqEWg@mail.gmail.com>
-	<20140907180737.GA5057@salvia>
-Date: Sun, 7 Sep 2014 13:13:06 -0700
-Message-ID: <CAMEtUuxJLDu8AAsZQdtG781vwC8y60Ygdt4ji5tbeyTE8YbWbQ@mail.gmail.com>
-Subject: Re: [PATCH v10 net-next 2/2] net: filter: split filter.h and expose
- eBPF to user space
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+In-Reply-To: <20140905154402.GF30520@kernel.org>
+References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
+	<540964C0.1050702@intel.com>
+	<20140905141123.GE30520@kernel.org>
+	<1409930200.1662.16.camel@leonhard>
+	<20140905154402.GF30520@kernel.org>
+Date: Sun, 7 Sep 2014 22:24:12 +0200
+Message-ID: <CABPqkBQxcTK7YFhcaV5PORx7ub+scwpkd3Rd=bAPgTK6Cvh1Rg@mail.gmail.com>
+Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        stable@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 7, 2014 at 11:07 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+On Fri, Sep 5, 2014 at 5:44 PM, Arnaldo Carvalho de Melo
+<acme@kernel.org> wrote:
+> Em Sat, Sep 06, 2014 at 12:16:40AM +0900, Namhyung Kim escreveu:
+>> Hi Adrian and Arnaldo,
+>>
+>> 2014-09-05 (금), 11:11 -0300, Arnaldo Carvalho de Melo:
+>> > Em Fri, Sep 05, 2014 at 10:22:40AM +0300, Adrian Hunter escreveu:
+>> > > On 09/05/2014 07:59 AM, Namhyung Kim wrote:
+>> > > > +++ b/tools/perf/util/machine.c
+>> > > > @@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+>> > > >                                 strlen(kmmap_prefix));
+>> > > >                 /*
+>> > > >                  * Should be there already, from the build-id table in
+>> > > > -                * the header.
+>> > > > +                * the header (but maybe with a different name: "vmlinux").
+>> > > >                  */
+>> > > > -               struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+>> > > > -                                                    kmmap_prefix);
+>> > > > +               struct dso *kernel = dsos__find(&machine->kernel_dsos,
+>> > > > +                                               "vmlinux", true);
+>> >
+>> > > Isn't "vmlinux" just the basename of the original file name, so if it had a
+>> > > different name this wouldn't work e.g. if the filename had been
+>> > > /boot/vmlinuz-3.11.0-26-generic then you would need
+>> > > "vmlinuz-3.11.0-26-generic" for this to work?
+>> >
+>> > Yeah, looking for well known pathnames to then check if the build-id
+>> > matches the one we're looking for, be it because we obtained it from
+>> > /sys/kernel/notes (for the running kernel), or from the perf.data file
+>> > build-id table is ok, as we don't know where it is.
+>> >
+>> > Plain sticking "vmlinux" there is not.
+>>
+>> I don't get it.  AFAIK when perf record runs, it uses [kernel.kallsyms]
+>> name for kernel map.  But it can be changed only if it found a "vmlinux"
+>> file in the vmlinux_path[].  So short name will always be "vmlinux" -
+>> okay, it might be vmlinux-$(uname -r) too; I can add it.
+>>
+>> As you know, the vmlinux file is a ELF image that created during kernel
+>> build process so I guess its name is fixed.  It's different from the
+>> vmlinu"z" which resides in /boot directory.
+>>
+>> Am I missing something?
 >
-> If the patches that provide the very first user interface don't get in
-> time to this merge window round for whatever reason, we'll have the
-> layout of this exposed to userspace in the next kernel version with no
-> clients at all, that doesn't make sense to me.
+> [acme@zoo linux]$ perf report --help 2>&1 | grep vmlin
+>        -k, --vmlinux=<file>
+>            vmlinux pathname
+> [acme@zoo linux]$
+>
+> Yes, it is using [kernel.kallsyms].ref_reloc_sym for the synthesized
+> KERNEL mmap event, but it stores the full path in the build-id table.
+>
+> It seems we need a way to state that an entry in the build-id table is
+> for the kernel, without looking at its file name. That or to put the
+> build-id into the synthesized kernel mmap event. Which is better,
+> because:
+>
+Can't you figure out it is from the kernel (in perf record) by remembering
+you got the buildid from /sys/kernel/notes?
 
-eBPF cannot have the first user without verifier and tracing
-fully reviewed, so first user cannot be in the first
-patch no matter what.
 
-In particular this patch only exposed eBPF as an _instruction set_
-to user space. llvm and gcc are only two users.
-llvm patches _were_ submitted to the list.
-Compilers are not some fictitious users.
-eBPF ISA is solid. Two backends is a proof.
-
-For eBPF to be loaded, verifier, syscall and other pieces need to
-come in gradually. So I logically split them in series:
-stage I - expose instruction set
-stage II - bpf syscall for maps and manpage
-stage III - programs, verifier and user space testsuite
-stage IV - ebpf+tracing (the first user of ebpf isa and syscall)
-stage V - ebpf+sockets
-stage VI - ebpf+ovs
-all of the patches _were_ submitted in the past.
-Split is done to make review and integration easier.
-
-After stage III user space will be able to load eBPF programs,
-but they will still be useless, because they cannot be attached
-to anything. Realistically only stage IV makes first real use of
-them in tracing.
-You know this, yet, you're saying the first user must be
-in the first series. Really, what this 'feedback' is about?
-
-> I don't think the speed up of the llvm submission is a good argument,
-> this sounds to me similar to the "please apply this patch that
-> reserves this new netlink family in include/linux/netlink.h, I promise
-> this new subsystem will be submitted soon though. Meanwhile this will
-> speed up submission of my userspace software to distributions for
-> packaging" argument.
-
-You're not correct here. I'm not saying 'I promise it will be submitted'.
-There _were_ already submitted. I split them in chunks to make
-review easier and to follow standard linux philosophy of making
-small decisions that can be reverted.
-We still have a month until merge window, so if stages II and III
-don't make it in time, Dave can revert these small patches just
-as easily. You're advocating first_user_must_be_in_first_patch
-approach, which is against the linux methodology.
-
-> I think you have to find the way to send a small batch with the very
-> essencial stuff that, if merged mainstream, will provide just one new
-> feature while leaving the repository in consistent state. Then, send
-> follow up patches that enhance your thing and that add new clients of
-> it.
-
-As I said above the _minimum_ useful program needs verifier
-which is more than Dave's cutoff of 10 patches. Therefore I
-split all very_essential_stuff into these stages.
-Note I'm not sending radix-tree type of eBPF maps as part
-of these stages, neither I send array type of eBPF maps,
-though they're needed for my last stage (ebpf+ovs).
-I'm not sending pointer leak detector for verifier either,
-it will be needed before syscall can be exposed to unprivileged
-users, etc. There is a lot of stuff that I need for ebpf+ovs that
-is _not_ part of these stages. What you see is really
-the minimum to make ebpf+tracing useful.
-btw, all of ebpf+ovs was submitted to the list back in Sep 2013.
-
-So there is no practical way to do first set of < 10 patches
-that will be usable from user space on its own.
-Even if I remove verifier and maps altogether, bpf programs
-need to be attached to something like tracing and
-that is again >10 patches.
-These stages with small patches is only sensible approach.
+> That leads to another problem that needs to get solved eventually: We
+> need to have the build-id into PERF_RECORD_MMAP, because we're now using
+> just the mmap filename as the key, not the contents, and for long
+> running sessions, DSOs can get updated, etc.
+>
+> - Arnaldo
