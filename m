@@ -1,124 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaIGIlF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 04:41:05 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33102 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaIGIjk (ORCPT
+	id S1752092AbaIGIth (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 04:49:37 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:48907 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaIGItf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 04:39:40 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 2/6] blk-mq: introduce init_flush_rq callback and its pair
-Date: Sun,  7 Sep 2014 16:39:18 +0800
-Message-Id: <1410079162-9872-3-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410079162-9872-1-git-send-email-ming.lei@canonical.com>
-References: <1410079162-9872-1-git-send-email-ming.lei@canonical.com>
+	Sun, 7 Sep 2014 04:49:35 -0400
+Message-ID: <540C1C01.1000308@plexistor.com>
+Date: Sun, 07 Sep 2014 11:49:05 +0300
+From: Yigal Korman <yigal@plexistor.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>, Andy Lutomirski <luto@amacapital.net>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, akpm@linuxfoundation.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 4/5] x86, mm: Add set_memory_wt() for WT
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>	 <1409855739-8985-5-git-send-email-toshi.kani@hp.com>	 <CALCETrXjpoVmCi07zo0dKH9LrF+nz9F3GshNiQvmiueFFH=TUQ@mail.gmail.com> <1409857025.28990.125.camel@misato.fc.hp.com>
+In-Reply-To: <1409857025.28990.125.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently pdu of the flush rq is simlpy copied from another rq,
-turns out it isn't a good approach:
+I think that what confused Andy (or at least me) is the documentation in Documentation/x86/pat.txt
+If it's possible, can you please update pat.txt as part of the patch?
 
-	- it isn't enough to initialize pointer field well, and
-	easy to cause bugs if some pointers filed are included
-	in pdu
+Thank you,
+Yigal
 
-	- the copy isn't necessary, because the pdu should just
-	serve for submitting flush req purpose, like non-flush
-	case, and flush case of legacy block driver
-
-	- actually init_flush_rq/exit_flush_rq is needed for
-	seting up flush request.
-
-So introduce these two callbacks for driver to handle the case
-easily.
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- block/blk-flush.c      |   11 +++++++++++
- block/blk-mq.c         |    2 ++
- block/blk-mq.h         |    1 +
- include/linux/blk-mq.h |    9 +++++++++
- 4 files changed, 23 insertions(+)
-
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 75ca6cd0..14654e1 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -485,5 +485,16 @@ int blk_mq_init_flush(struct request_queue *q)
- 				GFP_KERNEL);
- 	if (!q->flush_rq)
- 		return -ENOMEM;
-+
-+	if (q->mq_ops->init_flush_rq)
-+		return q->mq_ops->init_flush_rq(q, q->flush_rq);
-+
- 	return 0;
- }
-+
-+void blk_mq_exit_flush(struct request_queue *q)
-+{
-+	/* flush_rq is freed centrally for both mq and legacy queue */
-+	if (q->mq_ops->exit_flush_rq)
-+		q->mq_ops->exit_flush_rq(q, q->flush_rq);
-+}
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 23386c0..1daef32 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1868,6 +1868,8 @@ void blk_mq_free_queue(struct request_queue *q)
- {
- 	struct blk_mq_tag_set	*set = q->tag_set;
- 
-+	blk_mq_exit_flush(q);
-+
- 	blk_mq_del_queue_tag_set(q);
- 
- 	blk_mq_exit_hw_queues(q, set, set->nr_hw_queues);
-diff --git a/block/blk-mq.h b/block/blk-mq.h
-index b0bd9bc..ea9974f 100644
---- a/block/blk-mq.h
-+++ b/block/blk-mq.h
-@@ -28,6 +28,7 @@ struct blk_mq_ctx {
- void __blk_mq_complete_request(struct request *rq);
- void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async);
- int blk_mq_init_flush(struct request_queue *q);
-+void blk_mq_exit_flush(struct request_queue *q);
- void blk_mq_freeze_queue(struct request_queue *q);
- void blk_mq_free_queue(struct request_queue *q);
- void blk_mq_clone_flush_request(struct request *flush_rq,
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index a1e31f2..d24c13e 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -85,6 +85,8 @@ typedef int (init_request_fn)(void *, struct request *, unsigned int,
- 		unsigned int, unsigned int);
- typedef void (exit_request_fn)(void *, struct request *, unsigned int,
- 		unsigned int);
-+typedef int (init_flush_rq_fn)(struct request_queue *, struct request *);
-+typedef void (exit_flush_rq_fn)(struct request_queue *, struct request *);
- 
- struct blk_mq_ops {
- 	/*
-@@ -119,6 +121,13 @@ struct blk_mq_ops {
- 	 */
- 	init_request_fn		*init_request;
- 	exit_request_fn		*exit_request;
-+
-+	/*
-+	 * Called after flush request allocated by the block layer to
-+	 * allow the driver to set up driver specific data.
-+	 */
-+	init_flush_rq_fn	*init_flush_rq;
-+	exit_flush_rq_fn	*exit_flush_rq;
- };
- 
- enum {
--- 
-1.7.9.5
+On 04/09/2014 21:57, Toshi Kani wrote:
+> On Thu, 2014-09-04 at 11:57 -0700, Andy Lutomirski wrote:
+>> On Thu, Sep 4, 2014 at 11:35 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+>>> This patch adds set_memory_wt(), set_memory_array_wt(), and
+>>> set_pages_array_wt() for setting range(s) of memory to WT.
+>>>
+>> Possibly dumb question: I thought that set_memory_xyz was only for
+>> RAM.  Is that incorrect?
+> It works for non-RAM ranges as well.  For instance, you can use
+> set_memory_xyz() to change cache attribute for a non-RAM range mapped by
+> ioremap_cache().
+>
+> Thanks,
+> -Toshi
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
