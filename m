@@ -1,269 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaIGXhH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 19:37:07 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:41398 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaIGXhC (ORCPT
+	id S1752759AbaIGXkY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 19:40:24 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:43973 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149AbaIGXkW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 19:37:02 -0400
-Date: Sun, 7 Sep 2014 16:36:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140907233655.GR5001@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5408C0AB.6050801@hurleysoftware.com>
- <20140905001751.GL5001@linux.vnet.ibm.com>
- <1409883098.5078.14.camel@jarvis.lan>
- <5409243C.4080704@hurleysoftware.com>
- <20140905040645.GO5001@linux.vnet.ibm.com>
- <1410066442.12512.13.camel@jarvis.lan>
- <20140907162146.GK5001@linux.vnet.ibm.com>
- <1410116687.2027.19.camel@jarvis.lan>
- <20140907230019.GO5001@linux.vnet.ibm.com>
- <6092b453-e0c9-4f6d-922b-48bce988f774@email.android.com>
+	Sun, 7 Sep 2014 19:40:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6092b453-e0c9-4f6d-922b-48bce988f774@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090723-7164-0000-0000-0000046D2468
+Date: Sun, 7 Sep 2014 16:40:21 -0700
+X-Google-Sender-Auth: Lf7PJgW46t9mPkH353fJYhtrYRg
+Message-ID: <CA+55aFzM2XR8VouQ+kwNNq6UTch3UY8X_bnyOydGfuwmeYr6Ag@mail.gmail.com>
+Subject: Linus 3.17-rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 07, 2014 at 04:17:30PM -0700, H. Peter Anvin wrote:
-> I'm confused why storing 0x0102 would be a problem.  I think gcc does that even on other cpus.
-> 
-> More atomicity can't hurt, can it?
+For a short while there, this week was really nice and calm, but that
+was mostly because the "linux-foundation.org" entry fell off the DNS
+universe, and my mailbox got very quiet for a few hours.  The rest of
+the week looked pretty normal.
 
-I must defer to James for any additional details on why PARISC systems
-don't provide atomicity for partially overlapping stores.  ;-)
+"Pretty normal" isn't bad, though, and I'm not complaining. There is
+nothing particularly big or scary going on - we had a quick scare
+about a stupid compat layer bug, but it seems to have been just a
+false positive and resulted in some added commentary rather than any
+real code changes.
 
-							Thanx, Paul
+The diffstat is pretty reasonable, and it's fairly spread out. We have
+the usual arch and driver updates, but there's actually more changes
+under fs/ than under either of those. That's largely due to just a
+late f2fs update, which I decided I couldn't be bothered to get too
+upset about, most of it being pretty clear-cut fixes, with just a few
+cleanups mixed in.
 
-> On September 7, 2014 4:00:19 PM PDT, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> >On Sun, Sep 07, 2014 at 12:04:47PM -0700, James Bottomley wrote:
-> >> On Sun, 2014-09-07 at 09:21 -0700, Paul E. McKenney wrote:
-> >> > On Sat, Sep 06, 2014 at 10:07:22PM -0700, James Bottomley wrote:
-> >> > > On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
-> >> > > > On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
-> >> > > > > Hi James,
-> >> > > > > 
-> >> > > > > On 09/04/2014 10:11 PM, James Bottomley wrote:
-> >> > > > > > On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
-> >> > > > > >> +And there are anti-guarantees:
-> >> > > > > >> +
-> >> > > > > >> + (*) These guarantees do not apply to bitfields, because
-> >compilers often
-> >> > > > > >> +     generate code to modify these using non-atomic
-> >read-modify-write
-> >> > > > > >> +     sequences.  Do not attempt to use bitfields to
-> >synchronize parallel
-> >> > > > > >> +     algorithms.
-> >> > > > > >> +
-> >> > > > > >> + (*) Even in cases where bitfields are protected by
-> >locks, all fields
-> >> > > > > >> +     in a given bitfield must be protected by one lock. 
-> >If two fields
-> >> > > > > >> +     in a given bitfield are protected by different
-> >locks, the compiler's
-> >> > > > > >> +     non-atomic read-modify-write sequences can cause an
-> >update to one
-> >> > > > > >> +     field to corrupt the value of an adjacent field.
-> >> > > > > >> +
-> >> > > > > >> + (*) These guarantees apply only to properly aligned and
-> >sized scalar
-> >> > > > > >> +     variables.  "Properly sized" currently means "int"
-> >and "long",
-> >> > > > > >> +     because some CPU families do not support loads and
-> >stores of
-> >> > > > > >> +     other sizes.  ("Some CPU families" is currently
-> >believed to
-> >> > > > > >> +     be only Alpha 21064.  If this is actually the case,
-> >a different
-> >> > > > > >> +     non-guarantee is likely to be formulated.)
-> >> > > > > > 
-> >> > > > > > This is a bit unclear.  Presumably you're talking about
-> >definiteness of
-> >> > > > > > the outcome (as in what's seen after multiple stores to the
-> >same
-> >> > > > > > variable).
-> >> > > > > 
-> >> > > > > No, the last conditions refers to adjacent byte stores from
-> >different
-> >> > > > > cpu contexts (either interrupt or SMP).
-> >> > > > > 
-> >> > > > > > The guarantees are only for natural width on Parisc as
-> >well,
-> >> > > > > > so you would get a mess if you did byte stores to adjacent
-> >memory
-> >> > > > > > locations.
-> >> > > > > 
-> >> > > > > For a simple test like:
-> >> > > > > 
-> >> > > > > struct x {
-> >> > > > > 	long a;
-> >> > > > > 	char b;
-> >> > > > > 	char c;
-> >> > > > > 	char d;
-> >> > > > > 	char e;
-> >> > > > > };
-> >> > > > > 
-> >> > > > > void store_bc(struct x *p) {
-> >> > > > > 	p->b = 1;
-> >> > > > > 	p->c = 2;
-> >> > > > > }
-> >> > > > > 
-> >> > > > > on parisc, gcc generates separate byte stores
-> >> > > > > 
-> >> > > > > void store_bc(struct x *p) {
-> >> > > > >    0:	34 1c 00 02 	ldi 1,ret0
-> >> > > > >    4:	0f 5c 12 08 	stb ret0,4(r26)
-> >> > > > >    8:	34 1c 00 04 	ldi 2,ret0
-> >> > > > >    c:	e8 40 c0 00 	bv r0(rp)
-> >> > > > >   10:	0f 5c 12 0a 	stb ret0,5(r26)
-> >> > > > > 
-> >> > > > > which appears to confirm that on parisc adjacent byte data
-> >> > > > > is safe from corruption by concurrent cpu updates; that is,
-> >> > > > > 
-> >> > > > > CPU 0                | CPU 1
-> >> > > > >                      |
-> >> > > > > p->b = 1             | p->c = 2
-> >> > > > >                      |
-> >> > > > > 
-> >> > > > > will result in p->b == 1 && p->c == 2 (assume both values
-> >> > > > > were 0 before the call to store_bc()).
-> >> > > > 
-> >> > > > What Peter said.  I would ask for suggestions for better
-> >wording, but
-> >> > > > I would much rather be able to say that single-byte reads and
-> >writes
-> >> > > > are atomic and that aligned-short reads and writes are also
-> >atomic.
-> >> > > > 
-> >> > > > Thus far, it looks like we lose only very old Alpha systems, so
-> >unless
-> >> > > > I hear otherwise, I update my patch to outlaw these very old
-> >systems.
-> >> > > 
-> >> > > This isn't universally true according to the architecture manual.
-> > The
-> >> > > PARISC CPU can make byte to long word stores atomic against the
-> >memory
-> >> > > bus but not against the I/O bus for instance.  Atomicity is a
-> >property
-> >> > > of the underlying substrate, not of the CPU.  Implying that
-> >atomicity is
-> >> > > a CPU property is incorrect.
-> >> > 
-> >> > OK, fair point.
-> >> > 
-> >> > But are there in-use-for-Linux PARISC memory fabrics (for normal
-> >memory,
-> >> > not I/O) that do not support single-byte and double-byte stores?
-> >> 
-> >> For aligned access, I believe that's always the case for the memory
-> >bus
-> >> (on both 32 and 64 bit systems).  However, it only applies to machine
-> >> instruction loads and stores of the same width..  If you mix the
-> >widths
-> >> on the loads and stores, all bets are off.  That means you have to
-> >> beware of the gcc penchant for coalescing loads and stores: if it
-> >sees
-> >> two adjacent byte stores it can coalesce them into a short store
-> >> instead ... that screws up the atomicity guarantees.
-> >
-> >OK, that means that to make PARISC work reliably, we need to use
-> >ACCESS_ONCE() for loads and stores that could have racing accesses.
-> >If I understand correctly, this will -not- be needed for code guarded
-> >by locks, even with Peter's examples.
-> >
-> >So if we have something like this:
-> >
-> >	struct foo {
-> >		char a;
-> >		char b;
-> >	};
-> >	struct foo *fp;
-> >
-> >then this code would be bad:
-> >
-> >	fp->a = 1;
-> >	fp->b = 2;
-> >
-> >The reason is (as you say) that GCC would be happy to store 0x0102
-> >(or vice versa, depending on endianness) to the pair.  We instead
-> >need:
-> >
-> >	ACCESS_ONCE(fp->a) = 1;
-> >	ACCESS_ONCE(fp->b) = 2;
-> >
-> >However, if the code is protected by locks, no problem:
-> >
-> >	struct foo {
-> >		spinlock_t lock_a;
-> >		spinlock_t lock_b;
-> >		char a;
-> >		char b;
-> >	};
-> >
-> >Then it is OK to do the following:
-> >
-> >	spin_lock(fp->lock_a);
-> >	fp->a = 1;
-> >	spin_unlock(fp->lock_a);
-> >	spin_lock(fp->lock_b);
-> >	fp->b = 1;
-> >	spin_unlock(fp->lock_b);
-> >
-> >Or even this, assuming ->lock_a precedes ->lock_b in the locking
-> >hierarchy:
-> >
-> >	spin_lock(fp->lock_a);
-> >	spin_lock(fp->lock_b);
-> >	fp->a = 1;
-> >	fp->b = 1;
-> >	spin_unlock(fp->lock_a);
-> >	spin_unlock(fp->lock_b);
-> >
-> >Here gcc might merge the assignments to fp->a and fp->b, but that is OK
-> >because both locks are held, presumably preventing other assignments or
-> >references to fp->a and fp->b.
-> >
-> >On the other hand, if either fp->a or fp->b are referenced outside of
-> >their
-> >respective locks, even once, then this last code fragment would still
-> >need
-> >ACCESS_ONCE() as follows:
-> >
-> >	spin_lock(fp->lock_a);
-> >	spin_lock(fp->lock_b);
-> >	ACCESS_ONCE(fp->a) = 1;
-> >	ACCESS_ONCE(fp->b) = 1;
-> >	spin_unlock(fp->lock_a);
-> >	spin_unlock(fp->lock_b);
-> >
-> >Does that cover it?  If so, I will update memory-barriers.txt
-> >accordingly.
-> >
-> >							Thanx, Paul
-> 
-> -- 
-> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
-> 
+And really, if the f2fs changes look biggish, it's mostly because the
+rest is pretty small.
 
+Let's hope it all stays calm. I do note that neither Greg nor Davem
+ended up sending me anything for rc4, which is probably the _real_
+reason why it's pretty calm and small.
+
+             Linus
+
+---
+
+Al Viro (2):
+      get rid of propagate_umount() mistakenly treating slaves as busy.
+      fix EBUSY on umount() from MNT_SHRINKABLE
+
+Alexandre Belloni (2):
+      ARM: at91: rm9200: fix clock registration
+      ARM: at91/dt: rm9200: fix usb clock definition
+
+Alexandre Courbot (1):
+      Documentation: gpio: documentation for optional getters functions
+
+Alexey Khoroshilov (1):
+      ufs: fix deadlocks introduced by sb mutex merge
+
+Andreas Färber (2):
+      regulator: tps65090: Fix tps65090 typos in example
+      ASoC: axi: Fix ADI AXI SPDIF specification
+
+Anton Altaparmakov (1):
+      Export sync_filesystem() for modular ->remount_fs() use
+
+Bard Liao (1):
+      ASoC: rt5677: correct mismatch widget name
+
+Ben Skeggs (1):
+      drm/nouveau/core: don't leak oclass type bits to user
+
+Benjamin Tissoires (1):
+      platform/x86: toshiba: re-enable acpi hotkeys after suspend to disk
+
+Boris BREZILLON (1):
+      mtd: nand: fix DocBook warnings on nand_sdr_timings doc
+
+Brian Foster (2):
+      xfs: don't log inode unless extent shift makes extent modifications
+      xfs: trim eofblocks before collapse range
+
+Brian Norris (1):
+      mtd: cfi_cmdset_0002: check return code for get_chip()
+
+Catalin Marinas (1):
+      arm64: Add brackets around user_stack_pointer()
+
+Chao Yu (4):
+      f2fs: fix incorrect calculation with total/free inode num
+      f2fs: introduce need_do_checkpoint for readability
+      f2fs: use macro for code readability
+      f2fs: reposition unlock_new_inode to prevent accessing invalid inode
+
+Chen-Yu Tsai (1):
+      i2c: mv64xxx: continue probe when clock-frequency is missing
+
+Chris Mason (1):
+      xfs: don't zero partial page cache pages during O_DIRECT writes
+
+Christian Borntraeger (4):
+      KVM: s390: Fix user triggerable bug in dead code
+      KVM: s390/mm: try a cow on read only pages for key ops
+      KVM: s390/mm: Fix storage key corruption during swapping
+      KVM: s390/mm: Fix guest storage key corruption in ptep_set_access_flags
+
+Christoffer Dall (1):
+      arm/arm64: KVM: Complete WFI/WFE instructions
+
+Colin Ian King (1):
+      arm64/crypto: remove redundant update of data
+
+Dan Carpenter (2):
+      f2fs: simplify by using a literal
+      toshiba_acpi: fix and cleanup toshiba_kbd_bl_mode_store()
+
+Darren Hart (1):
+      MAINTAINERS: Update platform-drivers-x86 maintainer and tree
+
+Dave Airlie (1):
+      drm/i915: handle G45/GM45 pulse detection connected state.
+
+Dave Chinner (4):
+      xfs: don't dirty buffers beyond EOF
+      xfs: don't zero partial page cache pages during O_DIRECT writes
+      xfs: use ranged writeback and invalidation for direct IO
+      xfs: xfs_file_collapse_range is delalloc challenged
+
+David Howells (3):
+      KEYS: Fix public_key asymmetric key subtype name
+      KEYS: Fix use-after-free in assoc_array_gc()
+      PEFILE: Relax the check on the length of the PKCS#7 cert
+
+Dmitry Torokhov (2):
+      Input: fix used slots detection breakage
+      Input: ALPS - suppress message about 'Unknown touchpad'
+
+Felipe Balbi (1):
+      ARM: dts: am4372: fix USB regs size
+
+Frederic Weisbecker (1):
+      nohz: Restore NMI safe local irq work for local nohz kick
+
+Gabriele Mazzotta (1):
+      cpufreq: intel_pstate: Remove unneeded variable
+
+Gaël PORTAY (1):
+      ARM: at91/dt: sam9g20: set at91sam9g20 pllb driver
+
+Geert Uytterhoeven (4):
+      regulator: Proofread documentation
+      m68k: Wire up getrandom
+      m68k: Wire up memfd_create
+      PM / domains: Make generic_pm_domain.name const
+
+Geoff Levand (1):
+      arm64: Remove unused variable in head.S
+
+Gu Zheng (1):
+      aio: block exit_aio() until all context requests are completed
+
+Hans de Goede (4):
+      Revert "ideapad-laptop: Disable touchpad interface on Yoga models"
+      ACPI / video: Fix use_native_backlight selection logic
+      ACPI / video: Add a disable_native_backlight quirk
+      ACPI / video: Disable native_backlight on HP ENVY 15 Notebook PC
+
+Jacob Pan (1):
+      powercap / RAPL: change domain detection message
+
+Jaegeuk Kim (22):
+      f2fs: should convert inline_data during the mkwrite
+      f2fs: make clear on test condition and return types
+      f2fs: fix the initial inode page for recovery
+      f2fs: clear FI_INC_LINK during the recovery
+      f2fs: should clear the inline_xattr flag
+      f2fs: fix to recover inline_xattr/data and blocks
+      f2fs: avoid bug_on when error is occurred
+      f2fs: don't skip checkpoint if there is no dirty node pages
+      f2fs: trigger release_dirty_inode in f2fs_put_super
+      f2fs: give a chance to mount again when encountering errors
+      f2fs: introduce f2fs_cp_error for readability
+      f2fs: unlock_page when node page is redirtied out
+      f2fs: check s_dirty under cp_mutex
+      f2fs: handle EIO not to break fs consistency
+      f2fs: add WARN_ON in f2fs_bug_on
+      f2fs: prevent checkpoint during roll-forward
+      f2fs: avoid double lock in truncate_blocks
+      f2fs: remove rewrite_node_page
+      f2fs: skip if inline_data was converted already
+      f2fs: remove rename and use rename2
+      f2fs: truncate stale block for inline_data
+      f2fs: fix wrong casting for dentry name
+
+Jarkko Nikula (1):
+      ASoC: rt5640: Do not allow regmap to use bulk read-write operations
+
+Jason Baron (1):
+      powercap / RAPL: add support for CPU model 0x3f
+
+Jeff Moyer (1):
+      aio: add missing smp_rmb() in read_events_ring
+
+Jiri Kosina (2):
+      Revert "leds: convert blink timer to workqueue"
+      ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
+
+Johannes Weiner (1):
+      mm: memcontrol: revert use of root_mem_cgroup res_counter
+
+Jose Manuel Alarcon Roldan (1):
+      Documentation: i2c: rename variable "register" to "reg"
+
+Lan Tianyu (1):
+      ACPI / EC: Add msi quirk for Clevo W350etq
+
+Lars-Peter Clausen (3):
+      ASoC: Use dev_set_name() instead of init_name
+      ASoC: rcar: Use && instead of & for boolean expressions
+      regmap: Fix regcache debugfs initialization
+
+Laurent Dufour (1):
+      powerpc/kvm/cma: Fix panic introduces by signed shift operation
+
+Leo Yan (1):
+      arm64: fix bug for reloading FPSIMD state after cpu power off
+
+Linus Torvalds (1):
+      Linux 3.17-rc4
+
+Linus Walleij (2):
+      gpio: move varargs hack outside #ifdef GPIOLIB
+      ARM: ux500: disable msp2 node on Snowball
+
+Lokesh Vutla (1):
+      ARM: dts: dra7-evm: Add vtt regulator support
+
+Marek Roszko (1):
+      i2c: at91: add bound checking on SMBus block length bytes
+
+Mark Brown (2):
+      regmap: Fix handling of volatile registers for format_write() chips
+      regmap: Don't attempt block writes when syncing cache on single_rw devices
+
+Masanari Iida (1):
+      Documentation: misc-devices: Rename freefall.c from hpfall.c in lis2lv02d
+
+Mathias Krause (2):
+      drm/i915: Remove bogus __init annotation from DMI callbacks
+      ideapad-laptop: Constify DMI table for real!
+
+Michael Auchter (1):
+      gpio: bt8xx: fix release of managed resources
+
+Mika Westerberg (1):
+      ACPICA: ACPI 5.1: Add support for runtime validation of _DSD package.
+
+Nick Dyer (1):
+      Input: atmel_mxt_ts - improve description of gpio-keymap property
+
+Nishanth Menon (2):
+      ARM: dts: am437x-gp: switch i2c0 to 100KHz
+      ARM: dts: dra7-evm: Fix spi1 mux documentation
+
+Noam Camus (1):
+      ARC: [mm] Fix compilation breakage
+
+Paul Bolle (1):
+      Documentation: NFS/RDMA: Document separate Kconfig symbols
+
+Paul Handrigan (2):
+      ASoC: cs4265: Fix clock rates in clock map table
+      ASoC: cs4265: Fix setting of functional mode and clock divider
+
+Paulo Zanoni (1):
+      drm/i915: fix plane/cursor handling when runtime suspended
+
+Pawel Moll (1):
+      bus: arm-ccn: Move event cleanup routine
+
+Peter Ujfalusi (2):
+      ARM: edma: Fix configuration parsing for SoCs with multiple eDMA3 CC
+      ASoC: omap-twl4030: Fix typo in 2nd dai link's platform_name
+
+Pranavkumar Sawargaonkar (1):
+      ARM/ARM64: KVM: Nuke Hyp-mode tlbs before enabling MMU
+
+Pranith Kumar (1):
+      rcu: Make nocb leader kthreads process pending callbacks after spawning
+
+Rafael J. Wysocki (1):
+      PM / sleep: Fix test_suspend= command line option
+
+Randy Dunlap (1):
+      regulator: fix kernel-doc warnings in header files
+
+Rasmus Villemoes (2):
+      ASoC: da732x: Fix typo in include guard
+      ASoC: tegra: Fix typo in include guard
+
+Rob Jones (1):
+      Documentation: seq_file: Document seq_open_private(),
+seq_release_private()
+
+Robert Coulson (1):
+      hwmon: (ds1621) Update zbits after conversion rate change
+
+Roger Quadros (8):
+      ARM: dts: dra7-evm: Fix i2c3 pinmux and frequency
+      ARM: dts: dra7-evm: Fix 8th NAND partition's name
+      ARM: dts: am43x-epos-evm: Use BCH16 ECC scheme instead of BCH8
+      ARM: dts: am437x-gp-evm: Use BCH16 ECC scheme instead of BCH8
+      ARM: dts: am437x-gp-evm: Don't use read/write wait monitoring
+      ARM: dts: am43xx-epos-evm: Don't use read/write wait monitoring
+      ARM: OMAP2+: gpmc: Don't complain if wait pin is used without
+r/w monitoring
+      ARM: dts: am43x-epos-evm: Disable QSPI to prevent conflict with GPMC-NAND
+
+Sachin Kamat (1):
+      PCI: spear: Remove module option
+
+Scot Doyle (2):
+      drm/i915: Ignore VBT backlight presence check on Acer C720 (4005U)
+      drm/i915: don't warn if backlight unexpectedly enabled
+
+Sergei Shtylyov (2):
+      i2c: rcar: fix MNR interrupt handling
+      Revert "i2c: rcar: remove spinlock"
+
+Simon Lindgren (1):
+      i2c: at91: Fix a race condition during signal handling in
+at91_do_twi_xfer.
+
+Stefan Herbrechtsmeier (1):
+      ARM: dts: set 'ti,set-rate-parent' for dpll4_m5x2 clock
+
+Steve Dickson (1):
+      KEYS: Increase root_maxkeys and root_maxbytes sizes
+
+Subhransu S. Prusty (1):
+      ASoC: core: fix .info for SND_SOC_BYTES_TLV
+
+Sudip Mukherjee (1):
+      Documentation: new page link in SubmittingPatches
+
+Takashi Iwai (2):
+      ALSA: hda - Fix digital mic on Acer Aspire 3830TG
+      ALSA: hda - Fix COEF setups for ALC1150 codec
+
+Takashi Sakamoto (2):
+      ALSA: dice: fix wrong channel mappping at higher sampling rate
+      ALSA: firewire-lib/dice: add arrangements of PCM pointer and
+interrupts for Dice quirk
+
+Thomas Gleixner (2):
+      compat: nanosleep: Clarify error handling
+      timekeeping: Update timekeeper before updating vsyscall and pvclock
+
+Thomas Hellstrom (2):
+      drm/vmwgfx: Fix an incorrect OOM return value
+      drm/vmwgfx: Fix a potential infinite spin waiting for fifo idle
+
+Ulrik De Bie (2):
+      Input: elantech - reset the device when elantech probe fails
+      Input: elantech - add support for trackpoint found on some v3 models
+
+Ville Syrjälä (2):
+      drm/i915: Move intel_ddi_set_vc_payload_alloc(false) to
+haswell_crtc_disable()
+      drm/i915: Fix lock dropping in intel_tv_detect()
+
+Vincent Stehlé (2):
+      Input: sparc - i8042-sparcio.h: fix unused kbd_res warning
+      irq: Export handle_fasteoi_irq
+
+Will Deacon (5):
+      arm64: ptrace: fix compat hardware watchpoint reporting
+      arm64: ptrace: fix compat reg getter/setter return values
+      arm64: perf: don't rely on layout of pt_regs when grabbing sp or pc
+      arm64: report correct stack pointer in KSTK_ESP for compat tasks
+      Revert "arm64: cpuinfo: print info for all CPUs"
+
+Xiubo Li (1):
+      ASoC: simple-card: Fix bug of wrong decrement DT node's refcount
+
+Yasuaki Ishimatsu (1):
+      ACPI / scan: not cache _SUN value in struct acpi_device_pnp
+
+addy ke (1):
+      i2c: rk3x: fix bug that cause transfer fails in master receive mode
+
+arter97 (1):
+      f2fs: fix typo
