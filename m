@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaIGHnD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 03:43:03 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62605 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbaIGHnB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 03:43:01 -0400
+	id S1751576AbaIGH4T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 03:56:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822AbaIGH4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 03:56:16 -0400
+Date: Sun, 7 Sep 2014 09:56:08 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Piotr Karbowski <piotr.karbowski@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: /proc/<pid>/exe symlink behavior change in >=3.15.
+Message-ID: <20140907075607.GA11240@mguzik>
+References: <540B8040.5010206@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1409907054-17596-1-git-send-email-johannes@sipsolutions.net>
-References: <1409907054-17596-1-git-send-email-johannes@sipsolutions.net>
-From: Arik Nemtsov <arik@wizery.com>
-Date: Sun, 7 Sep 2014 10:42:45 +0300
-X-Google-Sender-Auth: fjEilUARGZP-ZMd6e9GNSW2ai1w
-Message-ID: <CA+XVXfeA=sakSDwgYqziJ2cyLTximvcWKvj8JiZf9ic1efK+wQ@mail.gmail.com>
-Subject: Re: [RFC v2] device coredump: add new device coredump class
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Luciano Coelho <luca@coelho.fi>, Kalle Valo <kvalo@adurom.com>,
-        dri-devel@lists.freedesktop.org,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <540B8040.5010206@gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 5, 2014 at 11:50 AM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
->
-> Many devices run firmware and/or complex hardware, and most of that
-> can have bugs. When it misbehaves, however, it is often much harder
-> to debug than software running on the host.
->
+On Sat, Sep 06, 2014 at 11:44:32PM +0200, Piotr Karbowski wrote:
+> Hi,
+> 
+> Starting with kernel 3.15 the 'exe' symlink under /proc/<pid>/ acts diffrent
+> than it used to in all the pre-3.15 kernels.
+> 
+> The usecase:
+> 
+> run /root/testbin (app that just sleeps)
+> cp /root/testbin /root/testbin.new
+> mv /root/testbin.new /root/testbin
+> ls -al /proc/`pidof testbin`/exe
+> 
+> <=3.14: /root/testbin (deleted)
+> >=3.15: /root/testbin.new (deleted)
+> 
+> Was the change intentional? It does render my system unusable and I failed
+> to find a information about such change in the ChangeLog.
+> 
 
-Very nice concept IMO :)
+It looks like this was already broken for "long" (> DNAME_INLINE_LEN)
+names.
 
-[....]
-> +void dev_coredumpm(struct device *dev, struct module *owner,
-> +                  const void *data, size_t datalen, gfp_t gfp,
-> +                  ssize_t (*read)(char *buffer, loff_t offset, size_t count,
-> +                                  const void *data, size_t datalen),
-> +                  void (*free)(const void *data))
-> +{
-> +       static atomic_t devcd_count = ATOMIC_INIT(0);
-> +       struct devcd_entry *devcd;
-> +       struct device *existing;
-> +
-> +       existing = class_find_device(&devcd_class, NULL, dev,
-> +                                    devcd_match_failing);
-> +       if (existing) {
-> +               put_device(existing);
-> +               return;
-> +       }
-> +
-> +       if (!try_module_get(owner))
-> +               return;
-> +
-> +       devcd = kzalloc(sizeof(*devcd), gfp);
-> +       if (!devcd)
-> +               goto put_module;
-> +
-> +       devcd->owner = owner;
-> +       devcd->data = data;
-> +       devcd->datalen = datalen;
-> +       devcd->read = read;
-> +       devcd->free = free;
-> +       devcd->failing_dev = get_device(dev);
-> +
-> +       device_initialize(&devcd->devcd_dev);
-> +
-> +       dev_set_name(&devcd->devcd_dev, "devcd%d",
-> +                    atomic_inc_return(&devcd_count));
-> +       devcd->devcd_dev.class = &devcd_class;
-> +
-> +       if (device_add(&devcd->devcd_dev))
-> +               goto put_device;
-> +
-> +       if (sysfs_create_link(&devcd->devcd_dev.kobj, &dev->kobj,
-> +                             "failing_device"))
-> +               /* nothing - symlink will be missing */;
-> +
-> +       if (sysfs_create_link(&dev->kobj, &devcd->devcd_dev.kobj,
-> +                             "dev_coredump"))
-> +               /* nothing - symlink will be missing */;
+Short names share the problem since da1ce0670c14d8 "vfs: add
+cross-rename".
 
-Aren't you confusing the compiler here and above, doing the
-INIT_DELAYED_WORK only when link creation failed? I would have thought
-some braces are necessary..
+The following change to switch_names is the culprit:
 
-> +
-> +       INIT_DELAYED_WORK(&devcd->del_wk, devcd_del);
-> +       schedule_delayed_work(&devcd->del_wk, DEVCD_TIMEOUT);
-> +
-> +       return;
-> + put_device:
-> +       put_device(&devcd->devcd_dev);
-> + put_module:
-> +       module_put(owner);
-> +}
-> +EXPORT_SYMBOL(dev_coredumpm);
+-       memcpy(dentry->d_iname, target->d_name.name,
+-                   target->d_name.len + 1);
+-       dentry->d_name.len = target->d_name.len;
+-       return;
++       unsigned int i;
++       BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
++       for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
++     		  swap(((long *) &dentry->d_iname)[i],
++  			((long *) &target->d_iname)[i]);
++       }
+
+
+Dentries can have names from embedded structure or from an external buffer.
+
+If you take a look around you will see the code just swaps pointers for
+"both external" case. But this results in the same behavoiur you are seeing.
+
+Not sure how to fix it. Name in 'target' needs to be preserved, but memory
+allocation which may be needed for this purpose can fail and switch_names
+returns void, just like its callers (not to mention locks held around this).
+
+One crap idea would be to have external buffers with a reference counter.
+d_inode would still be set to the buffer and freeing funcs would use
+container_of to get to the counter.
+
+I can implement that later if it sounds sane enough.
+
+Note this behaviour seems to be a requirement for cross-rename to work.
+
+At least restoring previous behaviour while keeping cross-rename is not hard,
+I can write it later.
+
+-- 
+Mateusz Guzik
