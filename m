@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaIGLia (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 07:38:30 -0400
-Received: from www.augenpunkt.de ([213.239.207.9]:34471 "EHLO
-	www.augenpunkt.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaIGLiM (ORCPT
+	id S1752575AbaIGLnr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 07:43:47 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:46333 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873AbaIGLnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 07:38:12 -0400
-From: Stefan Wahren <info@lategoodbye.de>
-To: lgirdwood@gmail.com, broonie@kernel.org, shawn.guo@linaro.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Cc: festevam@gmail.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        stefan.wahren@i2se.com, Stefan Wahren <info@lategoodbye.de>
-Subject: [PATCH RFC 3/3] DT: ARM: mxs: enable regulator support for i.MX28
-Date: Sun,  7 Sep 2014 13:37:49 +0200
-Message-Id: <1410089869-6611-4-git-send-email-info@lategoodbye.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
-References: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
+	Sun, 7 Sep 2014 07:43:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1409963352-2193-1-git-send-email-kys@microsoft.com>
+References: <1409963352-2193-1-git-send-email-kys@microsoft.com>
+Date: Sun, 7 Sep 2014 19:43:45 +0800
+Message-ID: <CAFeW=paZ23VF6QTapGb6jR2-A_bkUYRTaOL9y_TULtASpj+2fw@mail.gmail.com>
+Subject: Re: [PATCH V2 1/1] Drivers: hv: vmbus: Enable interrupt driven flow control
+From: Amos Kong <kongjianjun@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, open list <linux-kernel@vger.kernel.org>,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        Jason Wang <jasowang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables the regulator support for i.MX28.
+On Sat, Sep 6, 2014 at 8:29 AM, K. Y. Srinivasan <kys@microsoft.com> wrote:
+>
+> In win8 we have a feature that allows for interrupt driven flow management
+> for host/guest communication. For instance, if the host were blocked because
+> there was no space available in the ringbuffer, the host could request that the
+> guest send an interrupt when space becomes available in the ringbuffer (when
+> the guest drains the ringbuffer).
+>
+> While this feature was implemented in the guest a while ago, we had not
+> advertised that the guest supported this feature. This patch advertises
+> the support to the host.
+>
+> For pre-win8 hosts, this has no effect since the size of the ringbuffer
+> control structure has not changed and all changes have been backward
+> compatible - unused/reserved space has been used to implement this
+> feature.
+>
+> In this version of the patch I have cleaned up the commit log based on
+> feedback from Greg KH.
+>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/hv/ring_buffer.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
+> index 15db66b..6361d12 100644
+> --- a/drivers/hv/ring_buffer.c
+> +++ b/drivers/hv/ring_buffer.c
+> @@ -361,6 +361,11 @@ int hv_ringbuffer_init(struct hv_ring_buffer_info *ring_info,
+>         ring_info->ring_buffer->read_index =
+>                 ring_info->ring_buffer->write_index = 0;
+>
+> +       /*
+> +        * Set the feature bit for enabling flow control.
+> +        */
+> +       ring_info->ring_buffer->feature_bits.value = 1;
+> +
 
-Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
----
- arch/arm/boot/dts/imx28.dtsi | 50 +++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 49 insertions(+), 1 deletion(-)
+This feature is enabled, do we need to reset  pending_send_sz and
+reserved1[12], reserved1[4028] here?
 
-diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-index a95cc53..10c7cdf 100644
---- a/arch/arm/boot/dts/imx28.dtsi
-+++ b/arch/arm/boot/dts/imx28.dtsi
-@@ -979,8 +979,56 @@
- 			};
- 
- 			power: power@80044000 {
-+				compatible = "fsl,imx28-power";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
- 				reg = <0x80044000 0x2000>;
--				status = "disabled";
-+
-+				/*
-+				reg_curr: regulator-overall_current@80044010 {
-+					reg = <0x80044010>;
-+					compatible = "fsl,mxs-regulator";
-+					regulator-name = "overall_current";
-+					regulator-min-microvolt = <>;
-+					regulator-max-microvolt = <>;
-+					regulator-min-microamp = <>;
-+					regulator-max-microamp = <>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+				*/
-+
-+				reg_vddd: regulator-vddd@80044040 {
-+					reg = <0x80044040>;
-+					compatible = "fsl,mxs-regulator";
-+					regulator-name = "vddd";
-+					regulator-min-microvolt = <800000>;
-+					regulator-max-microvolt = <1575000>;
-+					regulator-always-on;
-+					mxs-max-reg-val = <0x1f>;
-+				};
-+
-+				reg_vdda: regulator-vdda@80044050 {
-+					reg = <0x80044050>;
-+					compatible = "fsl,mxs-regulator";
-+					regulator-name = "vdda";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <2275000>;
-+					regulator-always-on;
-+					mxs-max-reg-val = <0x1f>;
-+				};
-+
-+				reg_vddio: regulator-vddio@80044060 {
-+					reg = <0x80044060>;
-+					compatible = "fsl,mxs-regulator";
-+					regulator-name = "vddio";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <3600000>;
-+					regulator-microvolt-offset = <80000>;
-+					regulator-always-on;
-+					mxs-max-reg-val = <0x10>;
-+					mxs-default-microvolt = <3300000>;
-+				};
- 			};
- 
- 			saif1: saif@80046000 {
--- 
-1.8.1.4
-
+>         ring_info->ring_size = buflen;
+>         ring_info->ring_datasize = buflen - sizeof(struct hv_ring_buffer);
+>
+> --
+> 1.7.4.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
