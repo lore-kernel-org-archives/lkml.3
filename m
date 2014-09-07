@@ -1,47 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaIGSxD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 14:53:03 -0400
-Received: from verein.lst.de ([213.95.11.211]:41981 "EHLO newverein.lst.de"
+	id S1752787AbaIGSxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 14:53:40 -0400
+Received: from verein.lst.de ([213.95.11.211]:42017 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805AbaIGSxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 14:53:02 -0400
-Date: Sun, 7 Sep 2014 20:52:59 +0200
+	id S1751354AbaIGSxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 14:53:39 -0400
+Date: Sun, 7 Sep 2014 20:53:38 +0200
 From: Christoph Hellwig <hch@lst.de>
 To: Ming Lei <ming.lei@canonical.com>
 Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 4/6] virtio-blk: implement init_flush_rq
-Message-ID: <20140907185259.GC23026@lst.de>
-References: <1410079162-9872-1-git-send-email-ming.lei@canonical.com> <1410079162-9872-5-git-send-email-ming.lei@canonical.com>
+        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 5/6] scsi-lib: implement init_flush_rq and its pair
+Message-ID: <20140907185338.GD23026@lst.de>
+References: <1410079162-9872-1-git-send-email-ming.lei@canonical.com> <1410079162-9872-6-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410079162-9872-5-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1410079162-9872-6-git-send-email-ming.lei@canonical.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple comments not directly related to this patch, it's just
-a convenient vehicle for my rants :)
+> +static int __scsi_init_request(struct request *rq, int numa_node)
 
-> @@ -556,6 +555,19 @@ static int virtblk_init_request(void *data, struct request *rq,
->  	struct virtio_blk *vblk = data;
->  	struct virtblk_req *vbr = blk_mq_rq_to_pdu(rq);
->  
-> +	vbr->req = rq;
-
-I really hate how we need these backpointers in most drivers.  Given
-that struct request and the driver privata data are allocated together
-we should be able to do this with simple pointer arithmetics.
-
-> +	sg_init_table(vbr->sg, vblk->sg_elems);
-
-Jens, what do you think about moving of the SG list handling to the
-core block layer?  I'd really like to have the S/G list in struct request,
-and if we do that we could also take the scsi-mq code that allows small
-S/G lists preallocated in blk-mq and allocating larger ones at runtime
-there, avoiding the need to duplicate that code and the whole mempool
-magic it requires in drivers that want to make use of it.
+Nitpick: Please use a sane name here, e.g. scsi_mq_alloc/free_sense_buffer.
 
