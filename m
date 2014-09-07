@@ -1,288 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaIGXkv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 19:40:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48446 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114AbaIGXks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 19:40:48 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140907233655.GR5001@linux.vnet.ibm.com>
-References: <5408C0AB.6050801@hurleysoftware.com> <20140905001751.GL5001@linux.vnet.ibm.com> <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com> <20140905040645.GO5001@linux.vnet.ibm.com> <1410066442.12512.13.camel@jarvis.lan> <20140907162146.GK5001@linux.vnet.ibm.com> <1410116687.2027.19.camel@jarvis.lan> <20140907230019.GO5001@linux.vnet.ibm.com> <6092b453-e0c9-4f6d-922b-48bce988f774@email.android.com> <20140907233655.GR5001@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: bit fields && data tearing
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 07 Sep 2014 16:39:57 -0700
-To: paulmck@linux.vnet.ibm.com
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Message-ID: <154b540a-df47-4f3e-bdda-ab5d2e72723a@email.android.com>
+	id S1752886AbaIGXlO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 19:41:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56841 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaIGXlL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 19:41:11 -0400
+Date: Sun, 07 Sep 2014 16:41:09 -0700 (PDT)
+Message-Id: <20140907.164109.1944849896872238507.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-2
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 07 Sep 2014 16:41:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How many PARISC systems do we have that actually do real work on Linux?
 
-On September 7, 2014 4:36:55 PM PDT, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
->On Sun, Sep 07, 2014 at 04:17:30PM -0700, H. Peter Anvin wrote:
->> I'm confused why storing 0x0102 would be a problem.  I think gcc does
->that even on other cpus.
->> 
->> More atomicity can't hurt, can it?
->
->I must defer to James for any additional details on why PARISC systems
->don't provide atomicity for partially overlapping stores.  ;-)
->
->							Thanx, Paul
->
->> On September 7, 2014 4:00:19 PM PDT, "Paul E. McKenney"
-><paulmck@linux.vnet.ibm.com> wrote:
->> >On Sun, Sep 07, 2014 at 12:04:47PM -0700, James Bottomley wrote:
->> >> On Sun, 2014-09-07 at 09:21 -0700, Paul E. McKenney wrote:
->> >> > On Sat, Sep 06, 2014 at 10:07:22PM -0700, James Bottomley wrote:
->> >> > > On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
->> >> > > > On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley
->wrote:
->> >> > > > > Hi James,
->> >> > > > > 
->> >> > > > > On 09/04/2014 10:11 PM, James Bottomley wrote:
->> >> > > > > > On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney
->wrote:
->> >> > > > > >> +And there are anti-guarantees:
->> >> > > > > >> +
->> >> > > > > >> + (*) These guarantees do not apply to bitfields,
->because
->> >compilers often
->> >> > > > > >> +     generate code to modify these using non-atomic
->> >read-modify-write
->> >> > > > > >> +     sequences.  Do not attempt to use bitfields to
->> >synchronize parallel
->> >> > > > > >> +     algorithms.
->> >> > > > > >> +
->> >> > > > > >> + (*) Even in cases where bitfields are protected by
->> >locks, all fields
->> >> > > > > >> +     in a given bitfield must be protected by one
->lock. 
->> >If two fields
->> >> > > > > >> +     in a given bitfield are protected by different
->> >locks, the compiler's
->> >> > > > > >> +     non-atomic read-modify-write sequences can cause
->an
->> >update to one
->> >> > > > > >> +     field to corrupt the value of an adjacent field.
->> >> > > > > >> +
->> >> > > > > >> + (*) These guarantees apply only to properly aligned
->and
->> >sized scalar
->> >> > > > > >> +     variables.  "Properly sized" currently means
->"int"
->> >and "long",
->> >> > > > > >> +     because some CPU families do not support loads
->and
->> >stores of
->> >> > > > > >> +     other sizes.  ("Some CPU families" is currently
->> >believed to
->> >> > > > > >> +     be only Alpha 21064.  If this is actually the
->case,
->> >a different
->> >> > > > > >> +     non-guarantee is likely to be formulated.)
->> >> > > > > > 
->> >> > > > > > This is a bit unclear.  Presumably you're talking about
->> >definiteness of
->> >> > > > > > the outcome (as in what's seen after multiple stores to
->the
->> >same
->> >> > > > > > variable).
->> >> > > > > 
->> >> > > > > No, the last conditions refers to adjacent byte stores
->from
->> >different
->> >> > > > > cpu contexts (either interrupt or SMP).
->> >> > > > > 
->> >> > > > > > The guarantees are only for natural width on Parisc as
->> >well,
->> >> > > > > > so you would get a mess if you did byte stores to
->adjacent
->> >memory
->> >> > > > > > locations.
->> >> > > > > 
->> >> > > > > For a simple test like:
->> >> > > > > 
->> >> > > > > struct x {
->> >> > > > > 	long a;
->> >> > > > > 	char b;
->> >> > > > > 	char c;
->> >> > > > > 	char d;
->> >> > > > > 	char e;
->> >> > > > > };
->> >> > > > > 
->> >> > > > > void store_bc(struct x *p) {
->> >> > > > > 	p->b = 1;
->> >> > > > > 	p->c = 2;
->> >> > > > > }
->> >> > > > > 
->> >> > > > > on parisc, gcc generates separate byte stores
->> >> > > > > 
->> >> > > > > void store_bc(struct x *p) {
->> >> > > > >    0:	34 1c 00 02 	ldi 1,ret0
->> >> > > > >    4:	0f 5c 12 08 	stb ret0,4(r26)
->> >> > > > >    8:	34 1c 00 04 	ldi 2,ret0
->> >> > > > >    c:	e8 40 c0 00 	bv r0(rp)
->> >> > > > >   10:	0f 5c 12 0a 	stb ret0,5(r26)
->> >> > > > > 
->> >> > > > > which appears to confirm that on parisc adjacent byte data
->> >> > > > > is safe from corruption by concurrent cpu updates; that
->is,
->> >> > > > > 
->> >> > > > > CPU 0                | CPU 1
->> >> > > > >                      |
->> >> > > > > p->b = 1             | p->c = 2
->> >> > > > >                      |
->> >> > > > > 
->> >> > > > > will result in p->b == 1 && p->c == 2 (assume both values
->> >> > > > > were 0 before the call to store_bc()).
->> >> > > > 
->> >> > > > What Peter said.  I would ask for suggestions for better
->> >wording, but
->> >> > > > I would much rather be able to say that single-byte reads
->and
->> >writes
->> >> > > > are atomic and that aligned-short reads and writes are also
->> >atomic.
->> >> > > > 
->> >> > > > Thus far, it looks like we lose only very old Alpha systems,
->so
->> >unless
->> >> > > > I hear otherwise, I update my patch to outlaw these very old
->> >systems.
->> >> > > 
->> >> > > This isn't universally true according to the architecture
->manual.
->> > The
->> >> > > PARISC CPU can make byte to long word stores atomic against
->the
->> >memory
->> >> > > bus but not against the I/O bus for instance.  Atomicity is a
->> >property
->> >> > > of the underlying substrate, not of the CPU.  Implying that
->> >atomicity is
->> >> > > a CPU property is incorrect.
->> >> > 
->> >> > OK, fair point.
->> >> > 
->> >> > But are there in-use-for-Linux PARISC memory fabrics (for normal
->> >memory,
->> >> > not I/O) that do not support single-byte and double-byte stores?
->> >> 
->> >> For aligned access, I believe that's always the case for the
->memory
->> >bus
->> >> (on both 32 and 64 bit systems).  However, it only applies to
->machine
->> >> instruction loads and stores of the same width..  If you mix the
->> >widths
->> >> on the loads and stores, all bets are off.  That means you have to
->> >> beware of the gcc penchant for coalescing loads and stores: if it
->> >sees
->> >> two adjacent byte stores it can coalesce them into a short store
->> >> instead ... that screws up the atomicity guarantees.
->> >
->> >OK, that means that to make PARISC work reliably, we need to use
->> >ACCESS_ONCE() for loads and stores that could have racing accesses.
->> >If I understand correctly, this will -not- be needed for code
->guarded
->> >by locks, even with Peter's examples.
->> >
->> >So if we have something like this:
->> >
->> >	struct foo {
->> >		char a;
->> >		char b;
->> >	};
->> >	struct foo *fp;
->> >
->> >then this code would be bad:
->> >
->> >	fp->a = 1;
->> >	fp->b = 2;
->> >
->> >The reason is (as you say) that GCC would be happy to store 0x0102
->> >(or vice versa, depending on endianness) to the pair.  We instead
->> >need:
->> >
->> >	ACCESS_ONCE(fp->a) = 1;
->> >	ACCESS_ONCE(fp->b) = 2;
->> >
->> >However, if the code is protected by locks, no problem:
->> >
->> >	struct foo {
->> >		spinlock_t lock_a;
->> >		spinlock_t lock_b;
->> >		char a;
->> >		char b;
->> >	};
->> >
->> >Then it is OK to do the following:
->> >
->> >	spin_lock(fp->lock_a);
->> >	fp->a = 1;
->> >	spin_unlock(fp->lock_a);
->> >	spin_lock(fp->lock_b);
->> >	fp->b = 1;
->> >	spin_unlock(fp->lock_b);
->> >
->> >Or even this, assuming ->lock_a precedes ->lock_b in the locking
->> >hierarchy:
->> >
->> >	spin_lock(fp->lock_a);
->> >	spin_lock(fp->lock_b);
->> >	fp->a = 1;
->> >	fp->b = 1;
->> >	spin_unlock(fp->lock_a);
->> >	spin_unlock(fp->lock_b);
->> >
->> >Here gcc might merge the assignments to fp->a and fp->b, but that is
->OK
->> >because both locks are held, presumably preventing other assignments
->or
->> >references to fp->a and fp->b.
->> >
->> >On the other hand, if either fp->a or fp->b are referenced outside
->of
->> >their
->> >respective locks, even once, then this last code fragment would
->still
->> >need
->> >ACCESS_ONCE() as follows:
->> >
->> >	spin_lock(fp->lock_a);
->> >	spin_lock(fp->lock_b);
->> >	ACCESS_ONCE(fp->a) = 1;
->> >	ACCESS_ONCE(fp->b) = 1;
->> >	spin_unlock(fp->lock_a);
->> >	spin_unlock(fp->lock_b);
->> >
->> >Does that cover it?  If so, I will update memory-barriers.txt
->> >accordingly.
->> >
->> >							Thanx, Paul
->> 
->> -- 
->> Sent from my mobile phone.  Please pardon brevity and lack of
->formatting.
->> 
+1) Fix skb leak in mac802154, from Martin Townsend.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+2) Use select not depends on NF_NAT for NFT_NAT, from Pablo Neira Ayuso.
+
+3) Fix union initializer bogosity in vxlan, from Gerhard Stenzel.
+
+4) Fix RX checksum configuration in stmmac driver, from Giuseppe
+   CAVALLARO.
+
+5) Fix TSO with non-accelerated VLANs in e1000, e1000e, bna, ehea, i40e,
+   i40evf, mvneta, and qlge, from Vlad Yasevich.
+
+6) Fix capability checks in phy_init_eee(), from Giuseppe CAVALLARO.
+
+7) Try high order allocations more sanely for SKBs, specifically if a high
+   order allocation fails, fall back directly to zero order pages rather than
+   iterating down one order at a time.  From Eric Dumazet.
+
+8) Fix a memory leak in openvswitch, from Li RongQing.
+
+9) amd-xgbe initializes wrong spinlock, from Thomas Lendacky.
+
+10) RTNL locking was busted in setsockopt for anycast and multicast, fix
+    from Sabrina Dubroca.
+
+11) Fix peer address refcount leak in ipv6, from Nicolas Dichtel.
+
+12) DocBook typo fixes, from Masanari Iida.
+
+Please pull, thanks a lot!
+
+The following changes since commit 451fd72219dd6f3355e2d036c598544c760ee532:
+
+  Merge tag 'pwm/for-3.17-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/thierry.reding/linux-pwm (2014-08-22 14:50:21 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
+
+for you to fetch changes up to 45ce829dd010668c3839a61b25843590eb4677dc:
+
+  Merge tag 'master-2014-09-04' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless (2014-09-07 16:11:10 -0700)
+
+----------------------------------------------------------------
+
+Alexander Aring (2):
+      ieee802154: 6lowpan_rtnl: fix correct errno value
+      ieee802154: 6lowpan: ensure of sending 1280 packets
+
+Alexander Y. Fomichev (1):
+      net: prevent of emerging cross-namespace symlinks
+
+Alexey Khoroshilov (1):
+      at76c50x-usb: fix use after free on failure path in at76_probe()
+
+Andy King (1):
+      VMXNET3: Check for map error in vmxnet3_set_mc
+
+Anish Bhatt (1):
+      cnic : Cleanup CONFIG_IPV6 & VLAN check
+
+Bartlomiej Zolnierkiewicz (2):
+      net: sh_eth: fix driver dependencies
+      net: calxedaxgmac: fix driver dependencies
+
+Bob Copeland (1):
+      mac80211: mesh_plink: handle confirm frames with new plid
+
+Chen Gang (1):
+      drivers/net/fddi/skfp/h/skfbi.h: Remove useless PCI_BASE_2ND macros
+
+Daniel Borkmann (2):
+      netfilter: x_tables: allow to use default cgroup match
+      net: sctp: fix ABI mismatch through sctp_assoc_to_state helper
+
+Daniel Hellstrom (1):
+      greth: moved TX ring cleaning to NAPI rx poll func
+
+David S. Miller (10):
+      Merge branch 'tso_fix'
+      mvneta: Add missing if_vlan.h include.
+      Merge branch 'mlx4-net'
+      Merge branch 'stmmac-eee'
+      Merge tag 'master-2014-08-25' of git://git.kernel.org/.../linville/wireless
+      Merge branch 'amd-xgbe-net'
+      Merge branch 'cxgb4'
+      Merge git://git.kernel.org/.../pablo/nf
+      Merge branch 'amd-xgbe-net'
+      Merge tag 'master-2014-09-04' of git://git.kernel.org/.../linville/wireless
+
+Denton Gentry (1):
+      mac80211: fix start_seq_num in Rx reorder offload
+
+Eliad Peller (1):
+      regulatory: add NUL to alpha2
+
+Emmanuel Grumbach (2):
+      Revert "iwlwifi: dvm: don't enable CTS to self"
+      iwlwifi: bump firmware API version to 10 for 7000 and 8000
+
+Eric Dumazet (1):
+      net: attempt a single high order allocation
+
+Eugene Crosser (1):
+      qeth: don't query for info if hardware not ready.
+
+Felix Fietkau (2):
+      mac80211: ignore AP_VLAN in ieee80211_recalc_chanctx_chantype
+      mac80211: fix smps mode check for AP_VLAN
+
+Geert Uytterhoeven (1):
+      drivers: net: NET_XGENE should depend on HAS_DMA
+
+Gerhard Stenzel (1):
+      vxlan: fix incorrect initializer in union vxlan_addr
+
+Giuseppe CAVALLARO (11):
+      stmmac: fix rx checksum programming
+      stmmac: set ptp_clock to NULL while unregister
+      phy: fix EEE checks inside the phy_init_eee.
+      stmmac: prevent false carrier sense detection
+      stmmac: fix tipo on mmc crc error
+      stmmac: ptp: fix the reference clock
+      stmmac: fix dma api misuse
+      stmmac: never check EEE in case of a switch is attached
+      stmmac: fix PLS bit setting when EEE is active
+      stmmac: fix the rx csum feature
+      stmmac: only remove RXCSUM feature if no rx coe is available
+
+Guillaume Nault (1):
+      l2tp: fix race while getting PMTU on PPP pseudo-wire
+
+Hariprasad Shenai (6):
+      cxgb4: Fix for handling 1Gb/s SFP+ Transceiver Modules
+      cxgb4: Fixed the code to use correct length for part number
+      cxgb4: Fix T5 adapter accessing T4 adapter registers
+      cxgb4: Detect and display firmware reported errors
+      cxgb4: Avoid dumping Write-only registers in register dump
+      cxgb4: Issue mbox commands on correct mbox
+
+Hauke Mehrtens (1):
+      bcma: add PCI ID for spromless BCM43217
+
+Himangi Saraogi (1):
+      rtlwifi: btcoexist: adjust double test
+
+Ivan Vecera (1):
+      tg3: prevent ifup/ifdown during PCI error recovery
+
+Johan Hedberg (1):
+      Bluetooth: Fix hci_conn reference counting for auto-connections
+
+Johannes Berg (2):
+      Revert "mac80211: disable uAPSD if all ACs are under ACM"
+      mac80211: fix agg_status debugfs file alignment
+
+John W. Linville (3):
+      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
+      Merge tag 'mac80211-for-john-2014-08-29' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+
+Jonas Jensen (4):
+      net: moxa: clear DESC1 on ndo_start_xmit()
+      net: moxa: replace build_skb() with netdev_alloc_skb_ip_align() / memcpy()
+      net: moxa: synchronize DMA memory
+      net: moxa: continue loop on skb allocation failure
+
+Julian Anastasov (2):
+      ipvs: properly declare tunnel encapsulation
+      ipvs: fix ipv6 hook registration for local replies
+
+Larry Finger (1):
+      rtlwifi: rtl8192cu: Add new ID
+
+Lendacky, Thomas (7):
+      amd-xgbe: Check for Tx hardware queue flushing support
+      amd-xgbe: Reported fifo size from hardware is not correct
+      amd-xgbe: Fix the xpcs mmd debugfs support
+      amd-xgbe: Use the Tx queue count for Tx flow control support
+      amd-xgbe: Fix initialization of the wrong spin lock
+      amd-xgbe: Treat certain counter registers as 64 bit
+      amd-xgbe: Enable interrupts for all management counters
+
+Li RongQing (2):
+      openvswitch: fix a memory leak
+      openvswitch: distinguish between the dropped and consumed skb
+
+Maks Naumov (1):
+      ath9k: fix wrong string size for strncmp in write_file_spec_scan_ctl()
+
+Manish Chopra (1):
+      bnx2x: Configure device endianity on driver load and reset endianity on removal.
+
+Marcel Holtmann (1):
+      iwlwifi: Remove module build requirement for Intel Wireless WiFi
+
+Martin Townsend (3):
+      mac802154: fixed potential skb leak with mac802154_parse_frame_start
+      ieee802154: mac802154: handle the reserved dest mode by dropping the packet
+      ieee802154: 6lowpan: ensure MTU of 1280 for 6lowpan
+
+Masanari Iida (1):
+      net: treewide: Fix typo found in DocBook/networking.xml
+
+Michal Kubeèek (1):
+      net: fix checksum features handling in netif_skb_features()
+
+Mika Westerberg (1):
+      net: rfkill: gpio: Add more Broadcom bluetooth ACPI IDs
+
+Neil Horman (1):
+      3c59x: avoid panic in boomerang_start_xmit when finding page address:
+
+Nicolas Dichtel (2):
+      ipv6: fix a refcnt leak with peer addr
+      ipv6: use addrconf_get_prefix_route() to remove peer addr
+
+Or Gerlitz (2):
+      net/mlx4: Move the tunnel steering helper function to mlx4_core
+      mlx4: Set user-space raw Ethernet QPs to properly handle VXLAN traffic
+
+Pablo Neira (1):
+      netfilter: fix missing dependencies in NETFILTER_XT_TARGET_LOG
+
+Pablo Neira Ayuso (4):
+      netfilter: move NAT Kconfig switches out of the iptables scope
+      netfilter: nf_tables: nat expression must select CONFIG_NF_NAT
+      netfilter: NETFILTER_XT_TARGET_LOG selects NF_LOG_*
+      netfilter: add explicit Kconfig for NETFILTER_XT_NAT
+
+Roland Stigge (1):
+      net: lpc_eth: Fix crash on ip link up
+
+Sabrina Dubroca (1):
+      ipv6: fix rtnl locking in setsockopt for anycast and multicast
+
+Vlad Yasevich (8):
+      e1000e: Fix TSO with non-accelerated vlans
+      e1000: Fix TSO for non-accelerated vlan traffic
+      bna: Support TSO and partial checksum with non-accelerated vlans.
+      ehea: Fix TSO and hw checksums with non-accelerated vlan packets.
+      i40e: Fix TSO and hw checksums for non-accelerated vlan packets.
+      i40evf: Fix TSO and hw checksums for non-accelerated vlan packets.
+      mvneta: Fix TSO and checksum for non-acceleration vlan traffic
+      qlge: Fix TSO for non-accelerated vlan traffic
+
+WANG Cong (1):
+      ipv6: restore the behavior of ipv6_sock_ac_drop()
+
+Wei Liu (1):
+      xen-netback: move netif_napi_add before binding interrupt
+
+Willem de Bruijn (1):
+      net-timestamp: only report sw timestamp if reporting bit is set
+
+Yaniv Rosner (1):
+      bnx2x: Fix link problems for 1G SFP RJ45 module
+
+Zhouyi Zhou (1):
+      netfilter: HAVE_JUMP_LABEL instead of CONFIG_JUMP_LABEL
+
+nandini sharma (2):
+      stmmac: fix the EEE LPI Macro definitions.
+      stmmac: fix LPI TW timer value to 20.5us.
+
+Álvaro Fernández Rojas (1):
+      ssb: add PCI ID 0x4351
+
+ Documentation/devicetree/bindings/net/stmmac.txt      |   4 ++
+ drivers/bcma/host_pci.c                               |   1 +
+ drivers/infiniband/hw/mlx4/main.c                     |  30 +++++++++
+ drivers/infiniband/hw/mlx4/qp.c                       |   8 ++-
+ drivers/net/ethernet/3com/3c59x.c                     |   8 +--
+ drivers/net/ethernet/aeroflex/greth.c                 |  86 +++++++++++++-----------
+ drivers/net/ethernet/aeroflex/greth.h                 |   2 +-
+ drivers/net/ethernet/amd/xgbe/xgbe-debugfs.c          |   8 +--
+ drivers/net/ethernet/amd/xgbe/xgbe-dev.c              | 209 +++++++++++++++++++++++++++++++++------------------------
+ drivers/net/ethernet/amd/xgbe/xgbe-drv.c              |   2 +
+ drivers/net/ethernet/amd/xgbe/xgbe-ethtool.c          |   7 +-
+ drivers/net/ethernet/amd/xgbe/xgbe-main.c             |   2 +-
+ drivers/net/ethernet/amd/xgbe/xgbe.h                  |   4 ++
+ drivers/net/ethernet/apm/xgene/Kconfig                |   1 +
+ drivers/net/ethernet/broadcom/Kconfig                 |   2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_hsi.h       |   7 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c      |  74 +++++++++++---------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.h      |   5 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c      |  57 +++++++++++-----
+ drivers/net/ethernet/broadcom/cnic.c                  |   4 +-
+ drivers/net/ethernet/broadcom/tg3.c                   |  16 +++++
+ drivers/net/ethernet/broadcom/tg3.h                   |   1 +
+ drivers/net/ethernet/brocade/bna/bnad.c               |   7 +-
+ drivers/net/ethernet/calxeda/Kconfig                  |   1 +
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c       |  16 +++--
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c            |  79 ++++++++++++++++++----
+ drivers/net/ethernet/chelsio/cxgb4/t4_regs.h          |   2 +
+ drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h         |   4 ++
+ drivers/net/ethernet/ibm/ehea/ehea_main.c             |   2 +-
+ drivers/net/ethernet/intel/e1000/e1000_main.c         |  19 +++---
+ drivers/net/ethernet/intel/e1000e/netdev.c            |  21 +++---
+ drivers/net/ethernet/intel/i40e/i40e_txrx.c           |   2 +-
+ drivers/net/ethernet/intel/i40evf/i40e_txrx.c         |   2 +-
+ drivers/net/ethernet/marvell/mvneta.c                 |   8 ++-
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c        |  31 +--------
+ drivers/net/ethernet/mellanox/mlx4/mcg.c              |  38 +++++++++++
+ drivers/net/ethernet/moxa/moxart_ether.c              |  34 +++++-----
+ drivers/net/ethernet/nxp/lpc_eth.c                    |   3 +
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c          |   5 +-
+ drivers/net/ethernet/renesas/Kconfig                  |   1 +
+ drivers/net/ethernet/stmicro/stmmac/chain_mode.c      |  14 ++--
+ drivers/net/ethernet/stmicro/stmmac/common.h          |  13 ++--
+ drivers/net/ethernet/stmicro/stmmac/dwmac1000.h       |   2 +-
+ drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c  |   6 +-
+ drivers/net/ethernet/stmicro/stmmac/mmc.h             |   2 +-
+ drivers/net/ethernet/stmicro/stmmac/mmc_core.c        |   2 +-
+ drivers/net/ethernet/stmicro/stmmac/ring_mode.c       |  15 +++--
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h          |   9 ++-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c  |   2 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 142 +++++++++++++++++++++++++++++----------
+ drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.c      |   1 +
+ drivers/net/ethernet/stmicro/stmmac/stmmac_ptp.h      |   2 -
+ drivers/net/fddi/skfp/h/skfbi.h                       |   5 --
+ drivers/net/phy/phy.c                                 |  18 ++---
+ drivers/net/vmxnet3/vmxnet3_drv.c                     |  15 +++--
+ drivers/net/vmxnet3/vmxnet3_int.h                     |   4 +-
+ drivers/net/vxlan.c                                   |   8 +--
+ drivers/net/wireless/at76c50x-usb.c                   |   3 +-
+ drivers/net/wireless/ath/ath9k/spectral.c             |   2 +-
+ drivers/net/wireless/iwlwifi/Kconfig                  |   2 -
+ drivers/net/wireless/iwlwifi/dvm/rxon.c               |  12 ++++
+ drivers/net/wireless/iwlwifi/iwl-7000.c               |   4 +-
+ drivers/net/wireless/iwlwifi/iwl-8000.c               |   2 +-
+ drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c |   2 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c           |   1 +
+ drivers/net/xen-netback/interface.c                   |   6 +-
+ drivers/s390/net/qeth_core.h                          |   1 +
+ drivers/s390/net/qeth_core_main.c                     |  16 ++++-
+ drivers/s390/net/qeth_l2_sys.c                        |   7 +-
+ drivers/ssb/b43_pci_bridge.c                          |   1 +
+ include/linux/mlx4/device.h                           |   3 +
+ include/linux/netdevice.h                             |   4 +-
+ include/linux/netfilter.h                             |   5 +-
+ include/net/bluetooth/hci_core.h                      |   2 +
+ include/net/netns/ieee802154_6lowpan.h                |   1 -
+ include/net/regulatory.h                              |   2 +-
+ include/net/sctp/sctp.h                               |  13 ++++
+ include/net/sock.h                                    |   4 +-
+ include/net/wimax.h                                   |   2 +-
+ include/trace/events/irq.h                            |   4 +-
+ net/bluetooth/hci_conn.c                              |   8 +++
+ net/bluetooth/hci_core.c                              |  14 +++-
+ net/bluetooth/hci_event.c                             |  17 ++++-
+ net/core/datagram.c                                   |   2 +-
+ net/core/dev.c                                        |  77 +++++++++++++++++++--
+ net/core/gen_estimator.c                              |   2 +-
+ net/core/gen_stats.c                                  |   2 +-
+ net/core/skbuff.c                                     |   4 +-
+ net/core/sock.c                                       |  34 +++++-----
+ net/ieee802154/6lowpan_rtnl.c                         |   4 +-
+ net/ieee802154/reassembly.c                           |  15 +----
+ net/ipv4/netfilter/Kconfig                            | 102 +++++++++++++++-------------
+ net/ipv4/netfilter/Makefile                           |   2 +-
+ net/ipv6/addrconf.c                                   |  29 +++-----
+ net/ipv6/anycast.c                                    |  10 +++
+ net/ipv6/mcast.c                                      |  14 ++++
+ net/ipv6/netfilter/Kconfig                            |  28 +++++---
+ net/ipv6/netfilter/Makefile                           |   2 +-
+ net/l2tp/l2tp_ppp.c                                   |   3 +-
+ net/mac80211/chan.c                                   |   2 +
+ net/mac80211/debugfs_sta.c                            |   2 +-
+ net/mac80211/iface.c                                  |   4 +-
+ net/mac80211/mesh_plink.c                             |   7 +-
+ net/mac80211/mlme.c                                   |   3 +-
+ net/mac80211/sta_info.c                               |   7 +-
+ net/mac802154/wpan.c                                  |   6 +-
+ net/netfilter/Kconfig                                 |  14 +++-
+ net/netfilter/Makefile                                |   2 +-
+ net/netfilter/core.c                                  |   6 +-
+ net/netfilter/ipvs/ip_vs_core.c                       |   2 +-
+ net/netfilter/ipvs/ip_vs_xmit.c                       |  20 ++++--
+ net/netfilter/xt_cgroup.c                             |   2 +-
+ net/openvswitch/datapath.c                            |  11 ++-
+ net/rfkill/rfkill-gpio.c                              |   1 +
+ net/sctp/socket.c                                     |   2 +-
+ net/socket.c                                          |   5 +-
+ 116 files changed, 1082 insertions(+), 555 deletions(-)
