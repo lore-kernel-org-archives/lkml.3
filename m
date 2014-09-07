@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaIGRJg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 13:09:36 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:34543 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583AbaIGRJf (ORCPT
+	id S1752698AbaIGRLK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 13:11:10 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:38888 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583AbaIGRLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 13:09:35 -0400
+	Sun, 7 Sep 2014 13:11:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140828191203.GA26955@linux.vnet.ibm.com>
-References: <20140828191203.GA26955@linux.vnet.ibm.com>
+In-Reply-To: <1409249550-23313-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140828181208.GA22865@linux.vnet.ibm.com> <1409249550-23313-1-git-send-email-paulmck@linux.vnet.ibm.com>
 From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Sun, 7 Sep 2014 13:09:02 -0400
-Message-ID: <CAJhHMCBcwOyyTjebOp23WtA2PMfWWGDrwZqU9qCttgXSU-hJQQ@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 0/11] Torture-test changes for 3.18
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Date: Sun, 7 Sep 2014 13:10:37 -0400
+Message-ID: <CAJhHMCBRRtKwytqM4uj5_O38yR1XBQ5vquJHF=b1s8cXs=5UyA@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 1/3] memory-barriers: Fix control-ordering
+ no-transitivity example
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Dipankar Sarma <dipankar@in.ibm.com>,
@@ -33,70 +34,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 28, 2014 at 3:12 PM, Paul E. McKenney
+On Thu, Aug 28, 2014 at 2:12 PM, Paul E. McKenney
 <paulmck@linux.vnet.ibm.com> wrote:
-> Hello!
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 >
-> This series contains torture-test updates:
+> The control-ordering example demonstrating lack of transitivity had
+> multiple problems.  This commit fixes them.
 >
-> 1.      Fix sparse warning by making boost_mutex static, courtesy of
->         Pranith Kumar.
->
-> 2.      Use bash shell for all torture test scripts, courtesy of Pranith
->         Kumar.
->
-> 3.      Set executable flags on scripts and invoke by name, courtesy
->         of Pranith Kumar.
->
-> 4.      Add "cd" step to initrd documentation.
->
-> 5.      Test partial nohz_full= configuration to increased test coverage.
->
-> 6.      Specify MAXSMP=y for TREE01 to increase test coverage.
->
-> 7.      Specify CONFIG_CPUMASK_OFFSTACK=y for TREE07 to increase test
->         coverage.
->
-> 8.      Use pr_alert/pr_cont when printing to avoid large buffers,
->         courtesy of Joe Perches.
->
-> 9.      Add a callback-flood test to increase test coverage.
->
-> 10.     Print PID in hung-kernel diagnostic message.
->
-> 11.     Check for nul bytes in console output.
->
->                                                         Thanx, Paul
-
+> Reported-by: Nikolay Samofatov <nikolay.samofatov@gmail.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
 Reviewed-by: Pranith Kumar <bobby.prani@gmail.com>
 
+> ---
+>  Documentation/memory-barriers.txt | 28 +++++++++++++++++-----------
+>  1 file changed, 17 insertions(+), 11 deletions(-)
 >
-> ------------------------------------------------------------------------
+> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> index a4de88fb55f0..d67c508eb660 100644
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -697,30 +697,36 @@ should do something like the following:
+>         }
 >
->  b/Documentation/kernel-parameters.txt                        |   18
->  b/include/linux/torture.h                                    |    2
->  b/kernel/rcu/rcutorture.c                                    |  215 +++++++----
->  b/kernel/torture.c                                           |   16
->  b/tools/testing/selftests/rcutorture/bin/config2frag.sh      |    6
->  b/tools/testing/selftests/rcutorture/bin/configcheck.sh      |    6
->  b/tools/testing/selftests/rcutorture/bin/configinit.sh       |    6
->  b/tools/testing/selftests/rcutorture/bin/functions.sh        |   20 +
->  b/tools/testing/selftests/rcutorture/bin/kvm-build.sh        |    4
->  b/tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh |    4
->  b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh  |    4
->  b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh      |    4
->  b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh   |    7
->  b/tools/testing/selftests/rcutorture/bin/kvm.sh              |    8
->  b/tools/testing/selftests/rcutorture/bin/parse-build.sh      |    7
->  b/tools/testing/selftests/rcutorture/bin/parse-console.sh    |   11
->  b/tools/testing/selftests/rcutorture/bin/parse-torture.sh    |    7
->  b/tools/testing/selftests/rcutorture/configs/rcu/TREE01      |    4
->  b/tools/testing/selftests/rcutorture/configs/rcu/TREE01.boot |    2
->  b/tools/testing/selftests/rcutorture/configs/rcu/TREE07      |    3
->  b/tools/testing/selftests/rcutorture/configs/rcu/TREE07.boot |    1
->  b/tools/testing/selftests/rcutorture/doc/initrd.txt          |    1
->  22 files changed, 233 insertions(+), 123 deletions(-)
+>  Finally, control dependencies do -not- provide transitivity.  This is
+> -demonstrated by two related examples:
+> +demonstrated by two related examples, with the initial values of
+> +x and y both being zero:
+>
+>         CPU 0                     CPU 1
+>         =====================     =====================
+>         r1 = ACCESS_ONCE(x);      r2 = ACCESS_ONCE(y);
+> -       if (r1 >= 0)              if (r2 >= 0)
+> +       if (r1 > 0)               if (r2 > 0)
+>           ACCESS_ONCE(y) = 1;       ACCESS_ONCE(x) = 1;
+>
+>         assert(!(r1 == 1 && r2 == 1));
+>
+>  The above two-CPU example will never trigger the assert().  However,
+>  if control dependencies guaranteed transitivity (which they do not),
+> -then adding the following two CPUs would guarantee a related assertion:
+> +then adding the following CPU would guarantee a related assertion:
+>
+> -       CPU 2                     CPU 3
+> -       =====================     =====================
+> -       ACCESS_ONCE(x) = 2;       ACCESS_ONCE(y) = 2;
+> +       CPU 2
+> +       =====================
+> +       ACCESS_ONCE(x) = 2;
+> +
+> +       assert(!(r1 == 2 && r2 == 1 && x == 2)); /* FAILS!!! */
+>
+> -       assert(!(r1 == 2 && r2 == 2 && x == 1 && y == 1)); /* FAILS!!! */
+> +But because control dependencies do -not- provide transitivity, the above
+> +assertion can fail after the combined three-CPU example completes.  If you
+> +need the three-CPU example to provide ordering, you will need smp_mb()
+> +between the loads and stores in the CPU 0 and CPU 1 code fragments,
+> +that is, just before or just after the "if" statements.
+>
+> -But because control dependencies do -not- provide transitivity, the
+> -above assertion can fail after the combined four-CPU example completes.
+> -If you need the four-CPU example to provide ordering, you will need
+> -smp_mb() between the loads and stores in the CPU 0 and CPU 1 code fragments.
+> +These two examples are the LB and WWC litmus tests from this paper:
+> +http://www.cl.cam.ac.uk/users/pes20/ppc-supplemental/test6.pdf and this
+> +site: https://www.cl.cam.ac.uk/~pes20/ppcmem/index.html.
+>
+>  In summary:
+>
+> --
+> 1.8.1.5
 >
 
 
