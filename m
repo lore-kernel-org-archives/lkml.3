@@ -1,74 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaIGS7b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 14:59:31 -0400
-Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:43370 "EHLO
-	dhcp-27-160.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752447AbaIGS7a (ORCPT
+	id S1752605AbaIGTEx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 15:04:53 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33023 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751805AbaIGTEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 14:59:30 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 0/3] PCI/MSI: Remove arch_msi_check_device()
-Date: Sun,  7 Sep 2014 20:57:52 +0200
-Message-Id: <cover.1410078503.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.9.3
+	Sun, 7 Sep 2014 15:04:49 -0400
+Message-ID: <1410116687.2027.19.camel@jarvis.lan>
+Subject: Re: bit fields && data tearing
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Hurley <peter@hurleysoftware.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Date: Sun, 07 Sep 2014 12:04:47 -0700
+In-Reply-To: <20140907162146.GK5001@linux.vnet.ibm.com>
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>
+	 <20140904090952.GW17454@tucnak.redhat.com>
+	 <540859EC.5000407@hurleysoftware.com>
+	 <20140904175044.4697aee4@alan.etchedpixels.co.uk>
+	 <5408C0AB.6050801@hurleysoftware.com>
+	 <20140905001751.GL5001@linux.vnet.ibm.com>
+	 <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com>
+	 <20140905040645.GO5001@linux.vnet.ibm.com>
+	 <1410066442.12512.13.camel@jarvis.lan>
+	 <20140907162146.GK5001@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, 2014-09-07 at 09:21 -0700, Paul E. McKenney wrote:
+> On Sat, Sep 06, 2014 at 10:07:22PM -0700, James Bottomley wrote:
+> > On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
+> > > On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
+> > > > Hi James,
+> > > > 
+> > > > On 09/04/2014 10:11 PM, James Bottomley wrote:
+> > > > > On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
+> > > > >> +And there are anti-guarantees:
+> > > > >> +
+> > > > >> + (*) These guarantees do not apply to bitfields, because compilers often
+> > > > >> +     generate code to modify these using non-atomic read-modify-write
+> > > > >> +     sequences.  Do not attempt to use bitfields to synchronize parallel
+> > > > >> +     algorithms.
+> > > > >> +
+> > > > >> + (*) Even in cases where bitfields are protected by locks, all fields
+> > > > >> +     in a given bitfield must be protected by one lock.  If two fields
+> > > > >> +     in a given bitfield are protected by different locks, the compiler's
+> > > > >> +     non-atomic read-modify-write sequences can cause an update to one
+> > > > >> +     field to corrupt the value of an adjacent field.
+> > > > >> +
+> > > > >> + (*) These guarantees apply only to properly aligned and sized scalar
+> > > > >> +     variables.  "Properly sized" currently means "int" and "long",
+> > > > >> +     because some CPU families do not support loads and stores of
+> > > > >> +     other sizes.  ("Some CPU families" is currently believed to
+> > > > >> +     be only Alpha 21064.  If this is actually the case, a different
+> > > > >> +     non-guarantee is likely to be formulated.)
+> > > > > 
+> > > > > This is a bit unclear.  Presumably you're talking about definiteness of
+> > > > > the outcome (as in what's seen after multiple stores to the same
+> > > > > variable).
+> > > > 
+> > > > No, the last conditions refers to adjacent byte stores from different
+> > > > cpu contexts (either interrupt or SMP).
+> > > > 
+> > > > > The guarantees are only for natural width on Parisc as well,
+> > > > > so you would get a mess if you did byte stores to adjacent memory
+> > > > > locations.
+> > > > 
+> > > > For a simple test like:
+> > > > 
+> > > > struct x {
+> > > > 	long a;
+> > > > 	char b;
+> > > > 	char c;
+> > > > 	char d;
+> > > > 	char e;
+> > > > };
+> > > > 
+> > > > void store_bc(struct x *p) {
+> > > > 	p->b = 1;
+> > > > 	p->c = 2;
+> > > > }
+> > > > 
+> > > > on parisc, gcc generates separate byte stores
+> > > > 
+> > > > void store_bc(struct x *p) {
+> > > >    0:	34 1c 00 02 	ldi 1,ret0
+> > > >    4:	0f 5c 12 08 	stb ret0,4(r26)
+> > > >    8:	34 1c 00 04 	ldi 2,ret0
+> > > >    c:	e8 40 c0 00 	bv r0(rp)
+> > > >   10:	0f 5c 12 0a 	stb ret0,5(r26)
+> > > > 
+> > > > which appears to confirm that on parisc adjacent byte data
+> > > > is safe from corruption by concurrent cpu updates; that is,
+> > > > 
+> > > > CPU 0                | CPU 1
+> > > >                      |
+> > > > p->b = 1             | p->c = 2
+> > > >                      |
+> > > > 
+> > > > will result in p->b == 1 && p->c == 2 (assume both values
+> > > > were 0 before the call to store_bc()).
+> > > 
+> > > What Peter said.  I would ask for suggestions for better wording, but
+> > > I would much rather be able to say that single-byte reads and writes
+> > > are atomic and that aligned-short reads and writes are also atomic.
+> > > 
+> > > Thus far, it looks like we lose only very old Alpha systems, so unless
+> > > I hear otherwise, I update my patch to outlaw these very old systems.
+> > 
+> > This isn't universally true according to the architecture manual.  The
+> > PARISC CPU can make byte to long word stores atomic against the memory
+> > bus but not against the I/O bus for instance.  Atomicity is a property
+> > of the underlying substrate, not of the CPU.  Implying that atomicity is
+> > a CPU property is incorrect.
+> 
+> OK, fair point.
+> 
+> But are there in-use-for-Linux PARISC memory fabrics (for normal memory,
+> not I/O) that do not support single-byte and double-byte stores?
 
-This is a cleanup effort to get rid of arch_msi_check_device() function.
+For aligned access, I believe that's always the case for the memory bus
+(on both 32 and 64 bit systems).  However, it only applies to machine
+instruction loads and stores of the same width..  If you mix the widths
+on the loads and stores, all bets are off.  That means you have to
+beware of the gcc penchant for coalescing loads and stores: if it sees
+two adjacent byte stores it can coalesce them into a short store
+instead ... that screws up the atomicity guarantees.
 
-I am sending v2 series, since kbuild for v1 reports compile errors on
-ppc4xx and Armada 370. Still, I have not checked the fixes on these
-platforms.
+James
 
-Changes since v1:
-  - patch 1: 'pdev' undeclared compile error fixed on ppc4xx. I updated
-             changelog and removed ACK from this patch in case there are
-             any objections;
-
-  - patch 2: 'struct msi_chip' has no 'check_device' error fixed on
-             Armada 370 - armada_370_xp_check_msi_device() hook removed;
-
-  - patch 3: msi_check_device() renamed to pci_msi_supported(). This is
-             the very same patch I sent earlier;
-
-Thanks!
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-pci@vger.kernel.org
-
-Alexander Gordeev (3):
-  patch 1 - PCI/MSI/PPC: Remove arch_msi_check_device()
-  patch 2 - PCI/MSI/Armada-370-xp: Remove arch_msi_check_device()
-  patch 3 - PCI/MSI: Remove arch_msi_check_device()
-
- arch/powerpc/include/asm/machdep.h     |  2 --
- arch/powerpc/kernel/msi.c              | 12 +--------
- arch/powerpc/platforms/cell/axon_msi.c |  9 -------
- arch/powerpc/platforms/powernv/pci.c   | 19 ++++---------
- arch/powerpc/platforms/pseries/msi.c   | 42 +++++++++++------------------
- arch/powerpc/sysdev/fsl_msi.c          | 12 +++------
- arch/powerpc/sysdev/mpic_pasemi_msi.c  | 11 ++------
- arch/powerpc/sysdev/mpic_u3msi.c       | 28 ++++++++-----------
- arch/powerpc/sysdev/ppc4xx_hsta_msi.c  | 18 +++++--------
- arch/powerpc/sysdev/ppc4xx_msi.c       | 19 +++++--------
- drivers/irqchip/irq-armada-370-xp.c    | 14 +++-------
- drivers/pci/msi.c                      | 49 +++++++++-------------------------
- include/linux/msi.h                    |  3 ---
- 13 files changed, 67 insertions(+), 171 deletions(-)
-
--- 
-1.9.3
 
