@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428AbaIHPvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:51:52 -0400
-Received: from ozlabs.org ([103.22.144.67]:44266 "EHLO ozlabs.org"
+	id S1754381AbaIHPxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:53:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37891 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753681AbaIHPvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:51:51 -0400
-Date: Tue, 9 Sep 2014 01:51:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Sep 8
-Message-ID: <20140909015143.0eb18145@canb.auug.org.au>
-In-Reply-To: <20140908195309.1d883a30@canb.auug.org.au>
-References: <20140908195309.1d883a30@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753788AbaIHPxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:53:02 -0400
+Message-ID: <540DD0CF.4000501@ti.com>
+Date: Mon, 8 Sep 2014 11:52:47 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/x.uMqznq36WNy0QW5yLa0xq"; protocol="application/pgp-signature"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] PCI: keystone: update to support multiple pci ports
+References: <1409938782-31460-1-git-send-email-m-karicheri2@ti.com> <3654923.JrIGV2dJ70@wuerfel> <540A1F05.80706@ti.com> <5769746.NkKjYOOUiv@wuerfel>
+In-Reply-To: <5769746.NkKjYOOUiv@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/x.uMqznq36WNy0QW5yLa0xq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-On Mon, 8 Sep 2014 19:53:09 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+On 09/05/2014 05:11 PM, Arnd Bergmann wrote:
+> On Friday 05 September 2014 16:37:25 Murali Karicheri wrote:
+>> On 09/05/2014 03:00 PM, Arnd Bergmann wrote:
+>>> On Friday 05 September 2014 14:33:54 Murali Karicheri wrote:
+>>>>> This looks like it's a shared register of some sort that doesn't
+>>>>> really belong into the registers of a particular port. Could it
+>>>>> be that it's actually for the PHY?
+>>>>>
+>>>> This a shared device configuration register between the two ports the
+>>>> desciption states it is bootstrap configuration of the PCIe module as
+>>>> Endpoint or Root complex and Not Phy. Hope below text will help.
+>>>
+>>> Ok. Why do you want to have this user-selectable though? Can't it
+>>> just be set by the boot loader before starting Linux?
+>>
+>> Arnd,
+>>
+>> As the driver is responsible for configuring the device to support the
+>> device functionality, it make sense to do this in the device driver. The
+>> driver enables clock to the IP and this is an addition thing to be
+>> configured so that when the device is powered up, it should function as
+>> RC. The IP can be configured to work as Root Complex or Endpoint. So not
+>> sure why you want to me to move this functionality to boot loader.
 >
-> Changes since 20140905:
+> But the driver can only do root complex mode, and we would probably
+> want a completely different driver if we were to start supporting
+> endpoint mode.
+>
+Arnd,
 
-In my haste to get home for dinner, I forgot to thank Mark Brown for
-stepping in again last week - the break was much appreciated.
+Good point! I will drop index#2 handling in the driver code and will 
+handle the same in boot loader. But I have a question though. The 
+original driver which is queued up for merge to v3.18 has index #2 for 
+this reg offset and is documented in the DT documentation as
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+	index 2 is the base address and length of PCI mode configuration
+	register.
+	index 3 is the base address and length of PCI device ID register.
 
---Sig_/x.uMqznq36WNy0QW5yLa0xq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Will this create any issue in terms of backward compatibility if I 
+remove it and move index3 to index2 and update the code for the same? I 
+assume since this patch also will likely be on the next branch soon, and 
+gets merged together with original driver to v3.18, this should be fine. 
+But for some reason, if this patch doesn't make to v3.18, then won't 
+this break the backward compatibility?
 
-iQIcBAEBCAAGBQJUDdCVAAoJEMDTa8Ir7ZwVwhYP/3gaHcCIzegZsqeUFcRgQ8uC
-FDc5RXNhfK6kYyIGaJNrDVa4l9Bzd2JaELXW/r+sh2EW2udqxITZyrPOjL5/L+mC
-HLSC77jVFzX724/4kNCA366Yfgs/UaTxC2ZFtGDjA0QQXAxY9rgbm7h28ddRBpSb
-x6nxJ79kOKool2OjTMvA7zOKUFd/qmbEpG8D+izgZ27CD9/3Z/pYHolWWumDPhRK
-Cbp9OBL51s/VpSJdw8LjZwH5Ty5dfcBV1epPbibHkFpkxokfdFhwzN2/u6miyClV
-xwfR706hA8/SJip4VYuxrr2TpVzSp0NdAK3xj1u94OGBEBOBQxZqDRxblIlghiWY
-r1uCoYvhMl7Lq9jTBte3duPIPNFIfHx9YkuDHmFLH0r0jyTJZGEM4tAan55YSS4O
-E8IXJxdYLI++C3kxpkdKQE2WbJ419DbZ/6uZ/A9sfENl4aQBPJK/KxxmZ7ui4U6a
-Pkr736qZxsLQwGtCoxvrD95HQohvyLY9ja+dXqnHEFClKcMiIJiA9B4LVddp3VPt
-UKvPtPy1SmOMJ0v/kcMdJ4125YWeojtOWioZLhhsT73HXvvv2RfNtYIb5wIScGD6
-spC2YgZrL2AjFZvZgDgstZZJbhHOiFQKv8b0J/tt7PfGwpFfk5FUo5qnbCZZKeyX
-FkR2Tu2rObivBjsij2tt
-=6cCa
------END PGP SIGNATURE-----
+I think the other option is document index2 as obsolete and update the 
+document and remove the code for handling it. Any suggestion?
 
---Sig_/x.uMqznq36WNy0QW5yLa0xq--
+Thanks
+
+Murali
+
+> This also implies that the firmware has to pass a different DT for
+> endpoint mode, so it should be responsible for setting up the hardware
+> to match the DT.
+>
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
