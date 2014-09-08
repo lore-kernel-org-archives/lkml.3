@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708AbaIHROR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:14:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45245 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658AbaIHRON (ORCPT
+	id S1754751AbaIHRPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:15:11 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43993 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753826AbaIHRPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:14:13 -0400
-Message-ID: <540DE3E3.8090700@codeaurora.org>
-Date: Mon, 08 Sep 2014 10:14:11 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 8 Sep 2014 13:15:08 -0400
 MIME-Version: 1.0
-To: Steve Capper <steve.capper@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-CC: "zhichang.yuan" <zhichang.yuan@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Some questions about DEBUG_PAGEALLOC on ARMv8
-References: <53F739C2.8070809@linaro.org> <20140904094152.GB16169@arm.com> <20140908105530.GB4866@e103986-lin>
-In-Reply-To: <20140908105530.GB4866@e103986-lin>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140908163058.GF9560@localhost>
+References: <1409930279-1382-1-git-send-email-octavian.purdila@intel.com>
+	<1409930279-1382-3-git-send-email-octavian.purdila@intel.com>
+	<20140908144447.GD9560@localhost>
+	<CAE1zot+R25OAu9d9WB2tOFqO9J9m-Vwo25msn6TD2HxseBTUzQ@mail.gmail.com>
+	<20140908163058.GF9560@localhost>
+Date: Mon, 8 Sep 2014 20:15:07 +0300
+Message-ID: <CAE1zotJomxwAJA3aXm9MHnHd5Pg9V=K7XaptOPWkArV0jio4DQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] i2c: add support for Diolan DLN-2 USB-I2C adapter
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/8/2014 3:55 AM, Steve Capper wrote:
-> On Thu, Sep 04, 2014 at 10:41:52AM +0100, Catalin Marinas wrote:
->> Hi Zhichang,
+On Mon, Sep 8, 2014 at 7:30 PM, Johan Hovold <johan@kernel.org> wrote:
+> On Mon, Sep 08, 2014 at 06:57:29PM +0300, Octavian Purdila wrote:
+>> On Mon, Sep 8, 2014 at 5:44 PM, Johan Hovold <johan@kernel.org> wrote:
 >>
->> (cc'ing Steve Capper for the huge page stuff)
+>> <snip>
 >>
->> On Fri, Aug 22, 2014 at 01:38:26PM +0100, zhichang.yuan wrote:
->>> I am working to implement the DEBUG_PAGEALLOC on ARMv8.
+>> Hi Johan,
 >>
->> I assume that's the arm64 kernel.
+>> Again, thanks for the detailed review, I am addressing your review
+>> comments as we speak. Some questions below.
 >>
->>> After i investigated the DEBUG_PAGEALLOC implementation on x86 arch,
->>> some questions are standing in the way to start coding.
->>>
->>> 1. How to handle the large page when DEBUG_PAGEALLOC is enabled In
->>> ARMv8, the kernel direct memory page table entries will set the block
->>> flag for better performance. When DEBUG_PAGEALLOC is configured, if
->>> the size of freed page is not multiply of page block size, there is no
->>> corresponding page table entry. In the old x86 kernel version, the
->>> large page to be freed will be split into normal page size and build
->>> the corresponding PTEs. And afterwards, someone done a patch to remove
->>> the splitting process. It will make the code simpler and easily
->>> stable.
+>> <snip>
 >>
->> Initially, you could either map everything as pages or implement
->> splitting of huge pages (if for example the huge page is at the pmd
->> level, you allocate and populate a pte).
+>> > > +     int ret, len;
+>> > > +     struct tx_data {
+>> > > +             u8 port;
+>> > > +             u8 addr;
+>> > > +             u8 mem_addr_len;
+>> > > +             __le32 mem_addr;
+>> > > +             __le16 buf_len;
+>> > > +             u8 buf[DLN2_I2C_MAX_XFER_SIZE];
+>> > > +     } __packed tx;
+>> >
+>> > Allocate these buffers dynamically (possibly at probe).
+>> >
 >>
->>> I prefer the current design in x86, what are your thoughts here?
+>> I double checked this, and DLN2_I2C_MAX_XFER_SIZE should actually be <
+>> 64 as the USB endpoint configuration max packet size is 64. In this
+>> case, can we keep it on the stack?
+>
+> It's better to lift that restriction and allocate it dynamically. Using
+> larger buffers (> EP size) is also more efficient.
+>
+>> <snip>
 >>
->> I haven't looked at it yet.
+>> > > +     int ret, buf_len, rx_len = sizeof(rx);
+>> >
+>> > Again, one declaration per line.
 >>
->>> 2. Does ARMv8 support HIBERNATION?
->>
->> Not yet.
->>
->>> The HIBERNATION has some dependency on DEBUG_PAGEALLOC.
->>
->> Like in DEBUG_PAGEALLOC "depends on !HIBERNATION"?
->>
->>> 3. Is the hypothesis of DEBUG_PAGEALLOC always true?
->>
->> Which hypothesis?
->>
->>> From the x86 code, DEBUG_PAGEALLOC use the invalid page table entries
->>> to catch the accesses to free pages. This mechanism is based on the
->>> hypothesis that all the corresponding page table entries that are
->>> corresponding to the free pages are cleared correctly. Supposed this
->>> condition is always true, what we need to do is just to clear the
->>> kernel linear mapping page entries, since those page tables are
->>> fixable after initialization. DEBUG_PAGEALLOC on x86 seems to do like
->>> that.
->>
->> I guess that's the ARCH_SUPPORTS_DEBUG_PAGEALLOC rather than just the
->> simple DEBUG_PAGEALLOC which can be enabled on arm64 as well, you just
->> get page poisoning rather than invalid mappings.
->>
->> It could be done on arm64 as well but you need to sort out huge page
->> splitting or just map everything as pages when the option is enabled.
->>
-> 
-> (cc'ing Laura Abbott for info...)
-> 
-> Hi,
-> There is support for splitting pmd's and pud's in the direct kernel
-> mapping in the following series from Laura Abbott:
-> 
-> "[PATCHv3 7/7] arm64: add better page protections to arm64"
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-August/280782.html
-> 
-> Perhaps some of the splitting logic there could be used by the
-> kernel_map_pages arm64 implementation for ARCH_SUPPORTS_DEBUG_PAGEALLOC?
-> 
-> Cheers,
-> 
+>> AFAICS there are many places where declaration on the same line
+>> (initialization included) are used. When did this became a coding
+>> style issue?
+>
+> It's ugly, hurts readability, and can also obfuscate the fact that your
+> function really needs to be refactored.
+>
+> And it's in the CodingStyle:
+>
+>         "To this end, use just one data declaration per line (no commas
+>         for multiple data declarations)."
+>
 
-The page splitting was originally written for a out of tree implementation
-of something similar to ARCH_SUPPORTS_DEBUG_PAGEALLOC for both arm and
-arm64 so yes it could be used. The approach taken was 
-	- map all memory with sections initially
-	- walk all memblock and remap as 4K pages
+OK, I always thought that was for when declaring structures/unions.
+Just one more question on this subject: is the following allowed:
 
-There is a performance hit involved but for some issues the benefits certainly
-outweigh the costs (One person described it as 'the best feature since
-CONFIG_SLUB_DEBUG'). 
+int ret, len;
 
-If there is interest, I can clean up the patches and submit them as a proof
-of concept. The approach probably won't cover 64K/THP but it might be a
-starting point.
+or should it be:
 
-Thanks,
-Laura
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+int ret;
+int len;
