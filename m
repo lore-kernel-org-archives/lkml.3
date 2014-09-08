@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816AbaIHOaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:30:06 -0400
-Received: from [65.55.169.124] ([65.55.169.124]:30895 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751982AbaIHOaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:30:04 -0400
-X-Greylist: delayed 859 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 10:30:04 EDT
-Message-ID: <540DB995.7040406@freescale.com>
-Date: Mon, 8 Sep 2014 17:13:41 +0300
-From: Laurentiu Tudor <b10716@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754113AbaIHOak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:30:40 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46215 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817AbaIHOai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:30:38 -0400
+Message-ID: <540DBD62.5040605@oracle.com>
+Date: Mon, 08 Sep 2014 10:29:54 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-CC: Laurentiu Tudor <Laurentiu.Tudor@freescale.com>
-Subject: Re: [PATCH] of: make sure of_alias is initialized before accessing
- it
-References: <53FDE6A3.3080303@freescale.com> <20140908132956.646FEC40AE5@trevor.secretlab.ca>
-In-Reply-To: <20140908132956.646FEC40AE5@trevor.secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.88.166.1]
-X-ClientProxiedBy: DB4PR05CA0037.eurprd05.prod.outlook.com (25.160.40.47) To
- BLUPR03MB312.namprd03.prod.outlook.com (10.141.48.28)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 03283976A6
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019017)(6009001)(6049001)(24454002)(41574002)(199003)(189002)(377454003)(479174003)(92726001)(2201001)(59896002)(87976001)(106356001)(102836001)(77096002)(107046002)(90102001)(105586002)(4396001)(85852003)(83072002)(64126003)(99396002)(92566001)(81542001)(50986999)(23756003)(77982001)(65816999)(85306004)(36756003)(95666004)(21056001)(76482001)(101416001)(74662001)(31966008)(74502001)(66066001)(80022001)(46102001)(65956001)(20776003)(83506001)(47776003)(97736003)(19580405001)(50466002)(54356999)(79102001)(87266999)(81342001)(76176999)(83322001)(33656002)(80316001)(19580395003)(42186005)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB312;H:[10.171.73.112];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+To: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: "mm: introduce dump_vma fix 2" still broken
+References: <2815658.dHHBXc7oHP@wuerfel>
+In-Reply-To: <2815658.dHHBXc7oHP@wuerfel>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 04:29 PM, Grant Likely wrote:
-> On Wed, 27 Aug 2014 17:09:39 +0300, Laurentiu Tudor <b10716@freescale.com> wrote:
->> Simply swap of_alias and of_chosen initialization so
->> that of_alias ends up read first. This must be done
->> because it is accessed couple of lines below when
->> trying to initialize the of_stdout using the alias
->> based legacy method.
->>
->> [Fixes a752ee5 - tty: Update hypervisor tty drivers to                          
->> use core stdout parsing code]
->>
->> Signed-off-by: Laurentiu Tudor <Laurentiu.Tudor@freescale.com>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> ---
->>  drivers/of/base.c | 8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/of/base.c b/drivers/of/base.c
->> index d8574ad..52f8506 100644
->> --- a/drivers/of/base.c
->> +++ b/drivers/of/base.c
->> @@ -1847,6 +1847,10 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
->>  {
->>  	struct property *pp;
->>  
->> +	of_aliases = of_find_node_by_path("/aliases");
->> +	if (!of_aliases)
->> +		return;
->> +
->>  	of_chosen = of_find_node_by_path("/chosen");
->>  	if (of_chosen == NULL)
->>  		of_chosen = of_find_node_by_path("/chosen@0");
->> @@ -1862,10 +1866,6 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
->>  			of_stdout = of_find_node_by_path(name);
->>  	}
->>  
->> -	of_aliases = of_find_node_by_path("/aliases");
->> -	if (!of_aliases)
->> -		return;
->> -
+On 09/08/2014 07:02 AM, Arnd Bergmann wrote:
 > 
-> Close, but not quite. The 'if (!of_aliases)' test should not be moved.
-> Only the search for of_find_node_by_path().
+> I saw this commit today in linux-next, which fixes a build error, but introduces
+> a new warning:
+> 
+> commit a60224c708f880dd937b352b7461cbf14e93012d
+> Author: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date:   Mon Sep 8 19:41:54 2014 +1000
+> 
+>     mm: introduce dump_vma fix 2
+>     
+>     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index cb510c08073b..0de60769bcf6 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -6739,7 +6739,7 @@ void dump_vma(const struct vm_area_struct *vma)
+>                 "prot %lx anon_vma %p vm_ops %p\n"
+>                 "pgoff %lx file %p private_data %p\n",
+>                 vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
+> -               vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
+> +               vma->vm_prev, vma->vm_mm, pgprot_val(vma->vm_page_prot),
+>                 vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
+>                 vma->vm_file, vma->vm_private_data);
+>         dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
+> 
+> 
+> /git/arm-soc/mm/page_alloc.c: In function 'dump_vma':
+> /git/arm-soc/mm/page_alloc.c:6744:3: warning: format '%lx' expects argument of type 'long unsigned int', but argument 8 has type 'pgprot_t' [-Wformat=]
+>    vma->vm_file, vma->vm_private_data);
+>    ^
+> 
+> This happens on machines that use ARM LPAE, where pgprot_t is in fact
+> a 64-bit integer. The simplest fix I see would be add a cast to u64
+> and always print this as a 64bit value.
 
-Eek, completely missed this. Sorry.
+Hi Arnd,
 
-> I've fixed it up and applied.
- 
-Thanks!
+The fix for the original issue would be:
 
----
-Best Regards, Laurentiu
+	http://ozlabs.org/~akpm/mmots/broken-out/introduce-dump_vma-fix-2.patch
+
+Which includes the casting that Stephen's patch didn't have.
+
+Stephen, in the future, is there a way to get build fixes faster to you? From
+what I understand -mm syncs up only once in a couple of days. It might make
+everyone’s life much easier if build errors wouldn't drag over a week.
+
+
+Thanks,
+Sasha
