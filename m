@@ -1,127 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaIHLzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:55:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46094 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221AbaIHLzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:55:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="599622614"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        "kan.liang\@intel.com" <kan.liang@intel.com>,
-        Michael Williams <Michael.Williams@arm.com>,
-        "ralf\@linux-mips.org" <ralf@linux-mips.org>,
-        Al Grant <Al.Grant@arm.com>, Deepak Saxena <dsaxena@linaro.org>
-Subject: Re: [PATCH v4 00/22] perf: Add infrastructure and support for Intel PT
-In-Reply-To: <CANLsYkwdRBfOFb5c6=nb+1qzt1R=MJ4NbPWymgp5J6iRs02KDQ@mail.gmail.com>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <20140901163039.GV27892@worktop.ger.corp.intel.com> <1409591843.4343.65.camel@hornet> <CANLsYky0vuwo7MwKbiGXypkLkrX7k6BOEf2uej3-Z3-HZHKd7w@mail.gmail.com> <20140904082656.GM3190@worktop.ger.corp.intel.com> <CANLsYkwdRBfOFb5c6=nb+1qzt1R=MJ4NbPWymgp5J6iRs02KDQ@mail.gmail.com>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 08 Sep 2014 14:55:34 +0300
-Message-ID: <87iokyuy15.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1753518AbaIHL4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:56:34 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:57098 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753060AbaIHL4c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 07:56:32 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <540D9A3F.2000807@smartplayin.com>
+Date: Mon, 08 Sep 2014 17:29:59 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 00/15] Krait clocks + Krait CPUfreq
+References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <540D7A18.4030201@smartplayin.com>
+In-Reply-To: <540D7A18.4030201@smartplayin.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Poirier <mathieu.poirier@linaro.org> writes:
+Sorry Stephen for spaming.
+I read the full patch cover letter and found your note. Somehow I missed
+on that.
 
-> On 4 September 2014 02:26, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Tue, Sep 02, 2014 at 02:18:16PM -0600, Mathieu Poirier wrote:
->>> Pawell, many thanks for looping me in.
->>>
->>> I am definitely not a perf-internal guru and as such won't be able to
->>> comment on the implementation.  On the flip side it is easy for me to see
->>> how the work on coresight done at Linaro can be made to tie-in what
->>> Alexander is proposing.  Albeit not at the top of the priority list at this
->>> time, integration with perf (and ftrace) is definitely on the roadmap.
->>>
->>> Powell is correct in his statement that Linaro's work in HW trace decoding
->>> is (currently) mainly focused on processor tracing but that will change
->>> when we have the basic infrastructure upstreamed.
->>>
->>> Last but not least it would be interesting to have more information on the
->>> "sideband data".  With coresight we have something called "metadata", also
->>> related to how the trace source was configured and instrumental to proper
->>> trace decoding.  I'm pretty sure we are facing the same problems.
+Thanks
+Pramod
+On Monday 08 September 2014 03:12 PM, Pramod Gurav wrote:
+> Hi Stephen,
+> Looks like one patch is missing from v1. Is this removed from v2
+> patchset from some reason?
+> 	ARM: Add Krait L2 register accessor functions
+> 
+> But there are references to this in v2 set and build fails while
+> compiling drivers/clk/qcom/clk-krait.c.
+> 
+> Thanks and Regards
+> Pramod
+> 
+> On Saturday 06 September 2014 04:17 AM, Stephen Boyd wrote:
+>> These patches provide cpufreq scaling on devices with Krait CPUs.
+>> In Krait CPU designs there's one PLL and two muxes per CPU, allowing
+>> us to switch CPU frequencies independently.
 >>
->> So we use the sideband or AUX data stream to export the 'big' data
->> stream generated by the CPU in an opaque manner. For every AUX data
->> block 'posted' we issue an event into the regular data buffer that
->> describes it.
->
-> In the context of "describe it" written above, what kind of
-> information one would typically find in that description?
-
-It's like "got a chunk of AUX data in the AUX buffer, starting at offset
-$X, length $Y".
-
+>> 				 secondary
+>> 	 +-----+                    +
+>> 	 | QSB |-------+------------|\
+>> 	 +-----+       |            | |-+
+>> 		       |    +-------|/  |
+>> 		       |    |       +   |
+>> 	 +-----+       |    |           |
+>> 	 | PLL |----+-------+           |   primary
+>> 	 +-----+    |  |                |     +
+>> 		    |  |                +-----|\       +------+
+>> 	 +-------+  |  |                      | \      |      |
+>> 	 | HFPLL |----------+-----------------|  |-----| CPU0 |
+>> 	 +-------+  |  |    |                 |  |     |      |
+>> 		    |  |    | +-----+         | /      +------+
+>> 		    |  |    +-| / 2 |---------|/
+>> 		    |  |      +-----+         +
+>> 		    |  |         secondary
+>> 		    |  |            +
+>> 		    |  +------------|\
+>> 		    |               | |-+
+>> 		    +---------------|/  |   primary
+>> 				    +   |     +
+>> 					+-----|\       +------+
+>> 	 +-------+                            | \      |      |
+>> 	 | HFPLL |----------------------------|  |-----| CPU1 |
+>> 	 +-------+          |                 |  |     |      |
+>> 			    | +-----+         | /      +------+
+>> 			    +-| / 2 |---------|/
+>> 			      +-----+         +
 >>
->> I was assuming that both ARM and MIPS would generate a single data
->> stream as well. So please do tell more about your meta-data; is that a
->> one time thing or a second continuous stream of data, albeit smaller
->> than the main stream?
->
-> Coresight does indeed generate a single steam of compressed data.
-> Depending on the tracing specifics that were requested by the use case
-> (trace engine configuration) the format of the packets in the
-> compressed stream will change.  Since the compressed stream itself
-> doesn't carry clues about the formatting information, knowledge of how
-> the trace engine was configured is mandatory for the proper decoding
-> of the trace stream.
-
-Ok, in perf the trace configuration would be part of 'session'
-information, so the way the tracing was configured by userspace will be
-saved to the resulting trace file (perf.data) by the userspace.
-We have that with Intel PT as well.
-
-> Metadata refer to exactly that - the configuration of the trace
-> engine.  It has to be somehow lumped with the trace stream for off
-> target analysis.
-
-What we call sideband data in our code is more like runtime metadata,
-such as executable mappings (so that you know what is mapped to which
-addresses, iirc ETM/PTM also deals in virtual addresses, so you'll need
-this information to make sense of the trace, right?) and context
-switches.
-
-One of the great things about perf here is that it provides all this
-information practically for free.
-
+>> To support this in the common clock framework we model the muxes,
+>> dividers, and PLLs as different clocks. CPUfreq only interacts
+>> with the primary mux (farthest right in the diagram). When CPUfreq
+>> sets a rate, the mux code finds the best parent that can provide the rate.
+>> Due to the design, QSB and the top PLL are always a fixed rate and thus
+>> only support one frequency each. These sources provide the lowest
+>> frequencies for the CPUs. The HFPLLs are where we can make the CPU go
+>> faster (GHz range). Sometimes we need to run the HFPLL twice as
+>> fast and divide it by two to get a particular frequency.
 >>
->> The way I read your explanation it is a one time blob generated once you
->> setup the hardware.
->
-> Correct.
->
->> I suppose we could either dump it once into the
->> normal data stream or maybe dump it once every time we generate an AUX
->> buffer event into the normal data stream -- if its not too big.
->
-> Right, there is a set of meta-data to be generated with each trace
-> run.  With the current implementation a "trace run" pertains to all
-> the information collected between the beginning and end of a trace
-> scenario.  Future work involve triggering a DMA transfer of the full
-> coresight buffer to a kernel memory area, something that is probably
-> close to the "buffer event" you are referring to.
-
-Again correct me if I'm wrong, but the TMC(?) controller can be
-configured to direct ETM/PTM output right into system memory by means of
-a scatter-gather table. This is what we call AUX area, it's basically a
-circular buffer with trace data. Trace output is sent to the system
-memory, which is also mmap()ed to the userspace tracing tool (perf), so
-that it can capture it in real time. Well, that's one of the scenarios.
-
-Regards,
---
-Alex
+>> When switching rates we can't leave the CPU clocked by the HFPLL because
+>> we need to turn off the output of the PLL when changing its frequency.
+>> This means we have to switch over to the secondary mux and use one of the
+>> fixed sources. This is why we need something like the safe parent patch.
+>>
+>> I plan to submit the DTS changes through arm-soc, but I've included everything
+>> here to make it easier to pick things up for testing, etc. Please note
+>> that these patches rely on the Krait L2 accessor patch I posted a while back
+>> in another series[1]. This also relies on the cpufreq-generic patchset from
+>> Viresh[2]. If anything can be picked up right now it would be better
+>> to reduce the churn over time as other pieces settle. The series gets
+>> progressively more controversial as it goes on, so I hope that things
+>> near the beggining will be picked up earlier.
+>>
+>> Changes since v1:
+>>  * Added IPQ and APQ8064 support
+>>  * Switched to cpufreq-generic
+>>  * Added OPP parsing from DT (need to write binding though)
+>>  * New patches to make clk-generic.c go away
+>>   * Made mux and divider reusable for non-MMIO devices
+>>   * Added a mux_determine_rate_closest (not sure if this is really needed)
+>>   * Added unregistration of muxes
+>>  * New patch to avoid sending high frequencies down to devices using clocks
+>>
+>> TODO:
+>>  * Add Krait regulator voltage scaling (not strictly necessary)
+>>  * Document DT bindings
+>>  * Use a new efuse/eeprom API instead of hardcoding the location in the driver
+>>  * Add some thermal awareness
+>>
+>>
+>> Stephen Boyd (15):
+>>   clk: mux: Add unregistration API
+>>   clk: mux: Split out register accessors for reuse
+>>   clk: Add __clk_mux_determine_rate_closest
+>>   clk: divider: Make generic for usage elsewhere
+>>   clk: Add safe switch hook
+>>   clk: Avoid sending high rates to downstream clocks during set_rate
+>>   clk: qcom: Add support for High-Frequency PLLs (HFPLLs)
+>>   clk: qcom: Add HFPLL driver
+>>   clk: qcom: Add MSM8960/APQ8064's HFPLLs
+>>   clk: qcom: Add IPQ806X's HFPLLs
+>>   clk: qcom: Add support for Krait clocks
+>>   clk: qcom: Add KPSS ACC/GCC driver
+>>   clk: qcom: Add Krait clock controller driver
+>>   cpufreq: Add module to register cpufreq on Krait CPUs
+>>   ARM: dts: qcom: Add necessary DT data for Krait cpufreq
+>>
+>>  arch/arm/boot/dts/qcom-apq8064.dtsi          | 230 +++++++++++++++++
+>>  arch/arm/boot/dts/qcom-msm8960.dtsi          |  49 ++++
+>>  arch/arm/boot/dts/qcom-msm8974.dtsi          | 311 ++++++++++++++++++++++-
+>>  drivers/clk/clk-divider.c                    | 197 +++++++++------
+>>  drivers/clk/clk-mux.c                        |  91 ++++---
+>>  drivers/clk/clk.c                            | 133 +++++++---
+>>  drivers/clk/qcom/Kconfig                     |  28 +++
+>>  drivers/clk/qcom/Makefile                    |   5 +
+>>  drivers/clk/qcom/clk-hfpll.c                 | 253 +++++++++++++++++++
+>>  drivers/clk/qcom/clk-hfpll.h                 |  54 ++++
+>>  drivers/clk/qcom/clk-krait.c                 | 166 +++++++++++++
+>>  drivers/clk/qcom/clk-krait.h                 |  49 ++++
+>>  drivers/clk/qcom/gcc-ipq806x.c               |  83 +++++++
+>>  drivers/clk/qcom/gcc-msm8960.c               | 172 +++++++++++++
+>>  drivers/clk/qcom/hfpll.c                     | 110 +++++++++
+>>  drivers/clk/qcom/kpss-xcc.c                  |  94 +++++++
+>>  drivers/clk/qcom/krait-cc.c                  | 357 +++++++++++++++++++++++++++
+>>  drivers/cpufreq/Kconfig.arm                  |   9 +
+>>  drivers/cpufreq/Makefile                     |   1 +
+>>  drivers/cpufreq/qcom-cpufreq.c               | 199 +++++++++++++++
+>>  include/dt-bindings/clock/qcom,gcc-msm8960.h |   2 +
+>>  include/linux/clk-private.h                  |   2 +
+>>  include/linux/clk-provider.h                 |  32 ++-
+>>  23 files changed, 2486 insertions(+), 141 deletions(-)
+>>  create mode 100644 drivers/clk/qcom/clk-hfpll.c
+>>  create mode 100644 drivers/clk/qcom/clk-hfpll.h
+>>  create mode 100644 drivers/clk/qcom/clk-krait.c
+>>  create mode 100644 drivers/clk/qcom/clk-krait.h
+>>  create mode 100644 drivers/clk/qcom/hfpll.c
+>>  create mode 100644 drivers/clk/qcom/kpss-xcc.c
+>>  create mode 100644 drivers/clk/qcom/krait-cc.c
+>>  create mode 100644 drivers/cpufreq/qcom-cpufreq.c
+>>
+>> [1] http://lkml.iu.edu/hypermail/linux/kernel/1404.0/02636.html
+>> [2] git://git.linaro.org/people/viresh.kumar/linux cpufreq/cpu0-krait-v3
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
