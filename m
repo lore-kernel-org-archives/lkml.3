@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955AbaIHWTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:19:54 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38363 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaIHWTx (ORCPT
+	id S1755119AbaIHWWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:22:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24297 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059AbaIHWWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:19:53 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19H1YPiCD2gVEJZmUuSgu0P
-Date: Mon, 8 Sep 2014 15:19:48 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL 1/2] ARM: OMAP 4+: powerdomain fixes
-Message-ID: <20140908221947.GM3238@atomide.com>
-References: <1410195620-6347-1-git-send-email-nm@ti.com>
+	Mon, 8 Sep 2014 18:22:11 -0400
+Date: Tue, 9 Sep 2014 01:21:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Hugues <morisset.hugues@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] staging: lustre: fix coding style issues
+Message-ID: <20140908222155.GM6600@mwanda>
+References: <540E27FB.2070206@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410195620-6347-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <540E27FB.2070206@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140908 10:00]:
-> Hi Tony,
-> Please pull the following changes.
-> Series discussed in:
-> http://marc.info/?l=linux-kernel&m=140871554106082&w=2
-> Includes (v2 patch) https://patchwork.kernel.org/patch/4790541/
-> Status: Acked by Santosh and Reviewed-by Kevin	
-> 
-> These could go into your tree for the branch omap-for-v3.18/fixes-not-urgent
+Fix your email "From" header to say your full name instead of just
+From: Hugues <morisset.hugues@gmail.com>
 
-Thanks pulling them there.
+All the subjects are the same so redo these patches.  Also don't pick
+the most vague subject you can think of.  Mention "long lines", for
+example.
 
-Tony
- 
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> 
->   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> 
-> are available in the git repository at:
-> 
->   https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/powerdomain-fixes
-> 
-> for you to fetch changes up to 3e6a1c945950140926dd6e2cc667893de0a7fe3b:
-> 
->   ARM: OMAP4+: PM: Use only valid low power state for CPU hotplug (2014-09-08 11:22:43 -0500)
-> 
-> ----------------------------------------------------------------
-> Nishanth Menon (7):
->       ARM: OMAP: DRA7: powerdomain data: fix powerdomain powerstate
->       ARM: OMAP5: powerdomain data: fix powerdomain powerstate
->       ARM: OMAP2+: powerdomain: pwrdm_for_each_clkdm iterate only valid clkdms
->       ARM: OMAP2+: powerdomain: introduce logic for finding valid power domain
->       ARM: OMAP4+: PM: Make logic state programmable
->       ARM: OMAP4+: PM: use only valid low power state for suspend
->       ARM: OMAP4+: PM: Use only valid low power state for CPU hotplug
-> 
->  arch/arm/mach-omap2/omap-mpuss-lowpower.c   |    4 ++
->  arch/arm/mach-omap2/pm44xx.c                |    9 ++-
->  arch/arm/mach-omap2/powerdomain.c           |   79 ++++++++++++++++++++++++++-
->  arch/arm/mach-omap2/powerdomain.h           |    4 ++
->  arch/arm/mach-omap2/powerdomains54xx_data.c |   12 ++--
->  arch/arm/mach-omap2/powerdomains7xx_data.c  |   14 ++---
->  6 files changed, 106 insertions(+), 16 deletions(-)
-> 
-> Regards,
-> Nishanth Menon
-> 
+On Tue, Sep 09, 2014 at 12:04:43AM +0200, Hugues wrote:
+> Fix coding style issues:
+> * limit the length of changed lines to 80 columns.
+
+Send the patch inline and not as an attachment.
+
+Most of these changes are improvements, but I have some additional
+comments inline.
+
+> --- a/drivers/staging/lustre/lustre/include/obd.h
+> +++ b/drivers/staging/lustre/lustre/include/obd.h
+> @@ -101,7 +101,8 @@ struct lov_stripe_md {
+>  		__u32 lw_magic;
+>  		__u32 lw_stripe_size;      /* size of the stripe */
+>  		__u32 lw_pattern;	  /* striping pattern (RAID0, RAID1) */
+> -		__u16 lw_stripe_count;  /* number of objects being striped over */
+> +		__u16 lw_stripe_count;
+> +			/* number of objects being striped over */
+
+The comment goes on the line before the data so now it looks like it
+goes with lw_layout_gen.
+
+>  		__u16 lw_layout_gen;       /* generation of the layout */
+>  		char  lw_pool_name[LOV_MAXPOOLNAME]; /* pool name */
+> @@ -639,7 +640,8 @@ struct niobuf_local {
+>  #define LUSTRE_LWP_NAME		"lwp"
+>  
+>  /* obd device type names */
+> - /* FIXME all the references to LUSTRE_MDS_NAME should be swapped with LUSTRE_MDT_NAME */
+> + /* FIXME all the references to LUSTRE_MDS_NAME
+> +    should be swapped with LUSTRE_MDT_NAME */
+
+This comment is not in kernel style.  Read Documentation/CodingStyle
+
+> @@ -733,6 +735,7 @@ static inline void oti_init(struct obd_trans_info *oti,
+>  	if (req->rq_reqmsg != NULL &&
+>  	    lustre_msg_get_flags(req->rq_reqmsg) & MSG_REPLAY) {
+>  		__u64 *pre_version = lustre_msg_get_versions(req->rq_reqmsg);
+> +
+>  		oti->oti_pre_version = pre_version ? pre_version[0] : 0;
+
+This is unrelated to long lines.
+
+>  		oti->oti_transno = lustre_msg_get_transno(req->rq_reqmsg);
+>  	}
+> @@ -847,14 +850,15 @@ struct obd_device {
+>  		      obd_recovering:1,    /* there are recoverable clients */
+>  		      obd_abort_recovery:1,/* recovery expired */
+>  		      obd_version_recov:1, /* obd uses version checking */
+> -		      obd_replayable:1,    /* recovery is enabled; inform clients */
+> -		      obd_no_transno:1,    /* no committed-transno notification */
+> +		      obd_replayable:1,    /* recovery is enabled;
+> +					      inform clients */
+> +		      obd_no_transno:1,	/* no committed-transno notification */
+
+Sometimes the code looks better if you just go past the 80 character
+limit.  The columns line up nicer.  Remember, checkpatch.pl serves you;
+you are not the servant to it.
+
+> @@ -909,9 +913,9 @@ struct obd_device {
+>  	int			      obd_requests_queued_for_recovery;
+>  	wait_queue_head_t		      obd_next_transno_waitq;
+>  	/* protected by obd_recovery_task_lock */
+> -	struct timer_list	      obd_recovery_timer;
+> -	time_t			   obd_recovery_start; /* seconds */
+> -	time_t			   obd_recovery_end; /* seconds, for lprocfs_status */
+> +	struct timer_list	obd_recovery_timer;
+> +	time_t			obd_recovery_start; /* seconds */
+> +	time_t		obd_recovery_end; /* seconds, for lprocfs_status */
+
+Random alignment.
+
+regards,
+dan carpenter
+
+
