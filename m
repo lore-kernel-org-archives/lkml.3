@@ -1,133 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296AbaIHWcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:32:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42925 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755190AbaIHWcc (ORCPT
+	id S1755337AbaIHWck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:32:40 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:61237 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755186AbaIHWci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:32:32 -0400
-Date: Mon, 8 Sep 2014 15:32:27 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Zhang Rui <rui.zhang@intel.com>, Darren Hart <dvhart@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Dirk Griesbach <spamthis@freenet.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device
- objects
-Message-ID: <20140908223226.GA5645@vmdeb7>
-References: <5487060.QsgluucUH4@vostro.rjw.lan>
- <3770704.uNPCcL4EDK@vostro.rjw.lan>
- <1408807277.3315.43.camel@rzhang1-toshiba>
- <1786905.chzpd7cfQ3@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1786905.chzpd7cfQ3@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Sep 2014 18:32:38 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: lustre: Fix "space prohibited after that open parenthesis '('" errors
+Date: Mon,  8 Sep 2014 17:32:08 -0500
+Message-Id: <1410215528-22856-1-git-send-email-gdonald@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 12:14:04AM +0200, Rafael J. Wysocki wrote:
-> On Saturday, August 23, 2014 11:21:17 PM Zhang Rui wrote:
-> 
-> [cut]
-> 
-> Darren, would there be any problems if I took the patch below from Rui for 3.18?
-> 
+Fix checkpatch.pl "space prohibited after that open parenthesis '('" errors
 
-No objection.
+Signed-off-by: Greg Donald <gdonald@gmail.com>
+---
+ .../lustre/lustre/obdclass/linux/linux-module.c    |  4 ++--
+ drivers/staging/lustre/lustre/obdclass/obdo.c      | 28 +++++++++++-----------
+ 2 files changed, 16 insertions(+), 16 deletions(-)
 
-Acked-by: Darren Hart <dvhart@linux.intel.com>
-
-> > 
-> > So I guess the following patch can be upstream candidate, right?
-> > 
-> > From e32c2de37750d622dae6ef9d2f5c448a528a7edb Mon Sep 17 00:00:00 2001
-> > From: Zhang Rui <rui.zhang@intel.com>
-> > Date: Fri, 22 Aug 2014 09:06:10 +0800
-> > Subject: [PATCH] ACPI: remove Fujitsu backlight and hotkey device ID from ACPI
-> >  PNP id list
-> > 
-> > Fujitsu backlight and hotkey devices have ACPI drivers.
-> > The PNP MODULE_DEVICE_TABLE in fujitsu-laptop driver is just used as an
-> > indicator for module autoloading. But this is wrong because what we need is
-> > ACPI module device table instead because the driver is probing ACPI devices.
-> > 
-> > Thus remove those ids from ACPI PNP scan handler list as we don't
-> > have PNP driver for them, and convert the fujitsu-laptop PNP
-> > MODULE_DEVICE_TABLE to ACPI MODULE_DEVICE_TABLE.
-> > 
-> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=81971
-> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > Tested-by: Dirk Griesbach <spamthis@freenet.de>
-> > ---
-> >  drivers/acpi/acpi_pnp.c               |  4 ----
-> >  drivers/platform/x86/fujitsu-laptop.c | 16 +++++++---------
-> >  2 files changed, 7 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
-> > index 1f8b204..b193f84 100644
-> > --- a/drivers/acpi/acpi_pnp.c
-> > +++ b/drivers/acpi/acpi_pnp.c
-> > @@ -130,10 +130,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
-> >  	{"PNP0401"},		/* ECP Printer Port */
-> >  	/* apple-gmux */
-> >  	{"APP000B"},
-> > -	/* fujitsu-laptop.c */
-> > -	{"FUJ02bf"},
-> > -	{"FUJ02B1"},
-> > -	{"FUJ02E3"},
-> >  	/* system */
-> >  	{"PNP0c02"},		/* General ID for reserving resources */
-> >  	{"PNP0c01"},		/* memory controller */
-> > diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-> > index 87aa28c..2655d4a 100644
-> > --- a/drivers/platform/x86/fujitsu-laptop.c
-> > +++ b/drivers/platform/x86/fujitsu-laptop.c
-> > @@ -1050,6 +1050,13 @@ static struct acpi_driver acpi_fujitsu_hotkey_driver = {
-> >  		},
-> >  };
-> >  
-> > +static const struct acpi_device_id fujitsu_ids[] __used = {
-> > +	{ACPI_FUJITSU_HID, 0},
-> > +	{ACPI_FUJITSU_HOTKEY_HID, 0},
-> > +	{"", 0}
-> > +};
-> > +MODULE_DEVICE_TABLE(acpi, fujitsu_ids);
-> > +
-> >  static int __init fujitsu_init(void)
-> >  {
-> >  	int ret, result, max_brightness;
-> > @@ -1208,12 +1215,3 @@ MODULE_LICENSE("GPL");
-> >  MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1D3:*:cvrS6410:*");
-> >  MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1E6:*:cvrS6420:*");
-> >  MODULE_ALIAS("dmi:*:svnFUJITSU:*:pvr:rvnFUJITSU:rnFJNB19C:*:cvrS7020:*");
-> > -
-> > -static struct pnp_device_id pnp_ids[] __used = {
-> > -	{.id = "FUJ02bf"},
-> > -	{.id = "FUJ02B1"},
-> > -	{.id = "FUJ02E3"},
-> > -	{.id = ""}
-> > -};
-> > -
-> > -MODULE_DEVICE_TABLE(pnp, pnp_ids);
-> > 
-> 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+diff --git a/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c b/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
+index 9ce3d36..50256a9 100644
+--- a/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
++++ b/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
+@@ -84,7 +84,7 @@ int obd_ioctl_getdata(char **buf, int *len, void *arg)
+ 	int offset = 0;
+ 
+ 	err = copy_from_user(&hdr, (void *)arg, sizeof(hdr));
+-	if ( err )
++	if (err)
+ 		return err;
+ 
+ 	if (hdr.ioc_version != OBD_IOCTL_VERSION) {
+@@ -118,7 +118,7 @@ int obd_ioctl_getdata(char **buf, int *len, void *arg)
+ 	data = (struct obd_ioctl_data *)*buf;
+ 
+ 	err = copy_from_user(*buf, (void *)arg, hdr.ioc_len);
+-	if ( err ) {
++	if (err) {
+ 		OBD_FREE_LARGE(*buf, hdr.ioc_len);
+ 		return err;
+ 	}
+diff --git a/drivers/staging/lustre/lustre/obdclass/obdo.c b/drivers/staging/lustre/lustre/obdclass/obdo.c
+index bdc00ea..d170b14 100644
+--- a/drivers/staging/lustre/lustre/obdclass/obdo.c
++++ b/drivers/staging/lustre/lustre/obdclass/obdo.c
+@@ -161,35 +161,35 @@ int obdo_cmp_md(struct obdo *dst, struct obdo *src, u32 compare)
+ {
+ 	int res = 0;
+ 
+-	if ( compare & OBD_MD_FLATIME )
++	if (compare & OBD_MD_FLATIME)
+ 		res = (res || (dst->o_atime != src->o_atime));
+-	if ( compare & OBD_MD_FLMTIME )
++	if (compare & OBD_MD_FLMTIME)
+ 		res = (res || (dst->o_mtime != src->o_mtime));
+-	if ( compare & OBD_MD_FLCTIME )
++	if (compare & OBD_MD_FLCTIME)
+ 		res = (res || (dst->o_ctime != src->o_ctime));
+-	if ( compare & OBD_MD_FLSIZE )
++	if (compare & OBD_MD_FLSIZE)
+ 		res = (res || (dst->o_size != src->o_size));
+-	if ( compare & OBD_MD_FLBLOCKS ) /* allocation of space */
++	if (compare & OBD_MD_FLBLOCKS) /* allocation of space */
+ 		res = (res || (dst->o_blocks != src->o_blocks));
+-	if ( compare & OBD_MD_FLBLKSZ )
++	if (compare & OBD_MD_FLBLKSZ)
+ 		res = (res || (dst->o_blksize != src->o_blksize));
+-	if ( compare & OBD_MD_FLTYPE )
++	if (compare & OBD_MD_FLTYPE)
+ 		res = (res || (((dst->o_mode ^ src->o_mode) & S_IFMT) != 0));
+-	if ( compare & OBD_MD_FLMODE )
++	if (compare & OBD_MD_FLMODE)
+ 		res = (res || (((dst->o_mode ^ src->o_mode) & ~S_IFMT) != 0));
+-	if ( compare & OBD_MD_FLUID )
++	if (compare & OBD_MD_FLUID)
+ 		res = (res || (dst->o_uid != src->o_uid));
+-	if ( compare & OBD_MD_FLGID )
++	if (compare & OBD_MD_FLGID)
+ 		res = (res || (dst->o_gid != src->o_gid));
+-	if ( compare & OBD_MD_FLFLAGS )
++	if (compare & OBD_MD_FLFLAGS)
+ 		res = (res || (dst->o_flags != src->o_flags));
+-	if ( compare & OBD_MD_FLNLINK )
++	if (compare & OBD_MD_FLNLINK)
+ 		res = (res || (dst->o_nlink != src->o_nlink));
+-	if ( compare & OBD_MD_FLFID ) {
++	if (compare & OBD_MD_FLFID) {
+ 		res = (res || (dst->o_parent_seq != src->o_parent_seq));
+ 		res = (res || (dst->o_parent_ver != src->o_parent_ver));
+ 	}
+-	if ( compare & OBD_MD_FLGENER )
++	if (compare & OBD_MD_FLGENER)
+ 		res = (res || (dst->o_parent_oid != src->o_parent_oid));
+ 	/* XXX Don't know if these should be included here - wasn't previously
+ 	if ( compare & OBD_MD_FLINLINE )
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.9.1
+
