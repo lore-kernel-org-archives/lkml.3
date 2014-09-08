@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485AbaIHOJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:09:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3269 "EHLO mga01.intel.com"
+	id S1754053AbaIHOLD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:11:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62248 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878AbaIHOJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:09:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="476068800"
-From: Irina Tirdea <irina.tirdea@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Beomho Seo <beomho.seo@samsung.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v2] iio: magn: ak8975: fix unnecessary casting between char* and const char*
-Date: Mon,  8 Sep 2014 17:18:08 +0300
-Message-Id: <1410185888-18622-1-git-send-email-irina.tirdea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753500AbaIHOLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:11:01 -0400
+Date: Mon, 8 Sep 2014 10:10:36 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Rui Wang <ruiv.wang@gmail.com>
+Subject: Re: [PATCH 2/2] sb_edac: Claim a different PCI device
+Message-ID: <20140908141035.GK22290@redhat.com>
+References: <cover.1408051536.git.luto@amacapital.net>
+ <59f55d679cc596731589516a71075b6059fcaaa5.1408051536.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <59f55d679cc596731589516a71075b6059fcaaa5.1408051536.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use const char* instead of casting const char* to char*.
+On Thu, Aug 14, 2014 at 02:45:41PM -0700, Andy Lutomirski wrote:
+> sb_edac controls a large number of different PCI functions.  Rather
+> than registering as a normal PCI driver for all of them, it
+> registers for just one so that it gets probed and, at probe time, it
+> looks for all the others.
+> 
+> Coincidentally, the device it registers for also contains the SMBUS
+> registers, so the PCI core will refuse to probe both sb_edac and a
+> future iMC SMBUS driver.  The drivers don't actually conflict, so
+> just change sb_edac's device table to probe a different device.
+> 
+> An alternative fix would be to merge the two drivers, but sb_edac
+> will also refuse to load on non-ECC systems, whereas i2c_imc would
+> still be useful without ECC.
+> 
+> The only user-visible change should be that sb_edac appears to bind
+> a different device.
+> 
+> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> Cc: Rui Wang <ruiv.wang@gmail.com>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  drivers/edac/sb_edac.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> index a2597e9313c6..e3bc2cced580 100644
+> --- a/drivers/edac/sb_edac.c
+> +++ b/drivers/edac/sb_edac.c
+> @@ -432,7 +432,7 @@ static const struct pci_id_table pci_dev_descr_ibridge_table[] = {
+>   *	pci_device_id	table for which devices we are looking for
+>   */
+>  static const struct pci_device_id sbridge_pci_tbl[] = {
+> -	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA)},
+> +	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0)},
+>  	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA)},
+>  	{0,}			/* 0 terminated list. */
+>  };
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
+Acked-by: Aristeu Rozanski <aris@redhat.com>
 
-Changes in v2:
- - fixed identation as Hartmut Knaack suggested
-
- drivers/iio/magnetometer/ak8975.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/iio/magnetometer/ak8975.c b/drivers/iio/magnetometer/ak8975.c
-index a235792..bf5ef07 100644
---- a/drivers/iio/magnetometer/ak8975.c
-+++ b/drivers/iio/magnetometer/ak8975.c
-@@ -477,8 +477,8 @@ static const struct acpi_device_id ak_acpi_match[] = {
- };
- MODULE_DEVICE_TABLE(acpi, ak_acpi_match);
- 
--static char *ak8975_match_acpi_device(struct device *dev,
--				enum asahi_compass_chipset *chipset)
-+static const char *ak8975_match_acpi_device(struct device *dev,
-+					    enum asahi_compass_chipset *chipset)
- {
- 	const struct acpi_device_id *id;
- 
-@@ -487,7 +487,7 @@ static char *ak8975_match_acpi_device(struct device *dev,
- 		return NULL;
- 	*chipset = (int)id->driver_data;
- 
--	return (char *)dev_name(dev);
-+	return dev_name(dev);
- }
- 
- static int ak8975_probe(struct i2c_client *client,
-@@ -497,7 +497,7 @@ static int ak8975_probe(struct i2c_client *client,
- 	struct iio_dev *indio_dev;
- 	int eoc_gpio;
- 	int err;
--	char *name = NULL;
-+	const char *name = NULL;
- 
- 	/* Grab and set up the supplied GPIO. */
- 	if (client->dev.platform_data)
-@@ -539,7 +539,7 @@ static int ak8975_probe(struct i2c_client *client,
- 	if (id) {
- 		data->chipset =
- 			(enum asahi_compass_chipset)(id->driver_data);
--		name = (char *) id->name;
-+		name = id->name;
- 	} else if (ACPI_HANDLE(&client->dev))
- 		name = ak8975_match_acpi_device(&client->dev, &data->chipset);
- 	else
 -- 
-1.7.9.5
+Aristeu
 
