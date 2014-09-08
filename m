@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563AbaIHTSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:18:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59210 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753983AbaIHTSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 15:18:36 -0400
-Message-ID: <540DFFB2.9040101@zytor.com>
-Date: Mon, 08 Sep 2014 12:12:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754455AbaIHTUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:20:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44494 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289AbaIHTUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 15:20:08 -0400
+From: Mugunthan V N <mugunthanvnm@ti.com>
+To: <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
+Subject: [resend PATCH 0/3] Add DRA7xx CPSW Ethernet support in Device Tree
+Date: Tue, 9 Sep 2014 00:49:55 +0530
+Message-ID: <1410203998-8700-1-git-send-email-mugunthanvnm@ti.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: paulmck@linux.vnet.ibm.com, Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <5408C0AB.6050801@hurleysoftware.com>		 <20140905001751.GL5001@linux.vnet.ibm.com>		 <1409883098.5078.14.camel@jarvis.lan>	 <5409243C.4080704@hurleysoftware.com>		 <20140905040645.GO5001@linux.vnet.ibm.com>		 <1410066442.12512.13.camel@jarvis.lan>		 <20140907162146.GK5001@linux.vnet.ibm.com>		 <1410116687.2027.19.camel@jarvis.lan>		 <20140907230019.GO5001@linux.vnet.ibm.com>		 <6092b453-e0c9-4f6d-922b-48bce988f774@email.android.com>		 <20140907233655.GR5001@linux.vnet.ibm.com>		 <154b540a-df47-4f3e-bdda-ab5d2e72723a@email.android.com>	 <1410155802.2027.36.camel@jarvis.lan> <540DF17C.9080509@zytor.com> <1410203369.2027.56.camel@jarvis.lan>
-In-Reply-To: <1410203369.2027.56.camel@jarvis.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 12:09 PM, James Bottomley wrote:
-> 
-> Um, I think you need to re-read the thread; that's not what I said at
-> all. It's even written lower down: "PA can't do atomic bit sets (no
-> atomic RMW except the ldcw operation) it can do atomic writes to
-> fundamental sizes (byte, short, int, long) provided gcc emits the
-> correct primitive".  The original question was whether atomicity
-> required native bus width access, which we currently assume, so there's
-> no extant problem.
-> 
+Adding device tree entry for CPSW to make it work in Dual EMAC mode.
 
-The issue at hand was whether or not partially overlapped (but natually
-aligned) writes can pass each other.  *This* is the aggressive
-relaxation to which I am referring.
+These patches were tested with DRA7 hwmod patches on top of linux-next.
+The patches were already reviewed [1] and has been waiting for cross bar
+and hwmod to be pulled in. Now since all dependent patches has already
+pulled in, so reposting the patches again.
 
-I would guess that that is a very unusual constraint.
+Patches are tested on linux-next, the boot logs on DRA7xx EVM [2]
 
-	-hpa
+[1] https://lkml.org/lkml/2014/5/13/89
+[2] http://slexy.org/view/s2YqO0Wj9b 
+
+Mugunthan V N (3):
+  pinctrl: dra7: dt-bindings: add pin off modes for dra7 SoC
+  arm/dts: dra7xx: Add CPSW and MDIO module nodes for dra7xx
+  arm/dts: dra7xx: Enable CPSW and MDIO for dra7xx EVM
+
+ arch/arm/boot/dts/dra7-evm.dts    | 107 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/dra7.dtsi       |  59 +++++++++++++++++++++
+ include/dt-bindings/pinctrl/dra.h |   8 +++
+ 3 files changed, 174 insertions(+)
+
+-- 
+2.1.0
 
