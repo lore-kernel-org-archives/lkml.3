@@ -1,132 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaIHPKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:10:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48571 "EHLO mga09.intel.com"
+	id S1753930AbaIHPLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:11:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16054 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752665AbaIHPKS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:10:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="570017826"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "acme@kernel.org" <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH v4 3/3] perf tools: Add support to new style format of
- kernel PMU event
-Thread-Topic: [PATCH v4 3/3] perf tools: Add support to new style format of
- kernel PMU event
-Thread-Index: AQHPxsQCjueenvIII06f2A4h+b3p0pv0ANmAgANMVqA=
-Date: Mon, 8 Sep 2014 15:09:41 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077015ADE71@SHSMSX103.ccr.corp.intel.com>
-References: <1409671770-17260-1-git-send-email-kan.liang@intel.com>
- <1409671770-17260-3-git-send-email-kan.liang@intel.com>
- <20140906193917.GF6059@krava.brq.redhat.com>
-In-Reply-To: <20140906193917.GF6059@krava.brq.redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751781AbaIHPLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:11:10 -0400
+Date: Mon, 8 Sep 2014 17:10:17 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
+Message-ID: <20140908151016.GH17728@krava.brq.redhat.com>
+References: <1409781604-16778-1-git-send-email-acme@kernel.org>
+ <1409781604-16778-5-git-send-email-acme@kernel.org>
+ <54085BC8.40403@intel.com>
+ <20140904151902.GE2997@kernel.org>
+ <54097793.4050201@intel.com>
+ <20140905140756.GD30520@kernel.org>
+ <20140906203915.GA9843@krava.brq.redhat.com>
+ <20140908134615.GD2773@kernel.org>
+ <20140908140454.GF17728@krava.brq.redhat.com>
+ <20140908143317.GE2773@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908143317.GE2773@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> On Tue, Sep 02, 2014 at 11:29:30AM -0400, kan.liang@intel.com wrote:
-> > From: Kan Liang <kan.liang@intel.com>
-> 
-> SNIP
-> 
-> >  }
-> > +|
-> > +PE_KERNEL_PMU_EVENT
-> > +{
-> > +	struct parse_events_evlist *data = _data;
-> > +	struct list_head *head = malloc(sizeof(*head));
-> > +	struct parse_events_term *term;
-> > +	struct list_head *list;
-> > +
-> > +	ABORT_ON(parse_events_term__num(&term,
-> PARSE_EVENTS__TERM_TYPE_USER,
-> > +					$1, 1));
-> > +	ABORT_ON(!head);
-> > +	INIT_LIST_HEAD(head);
-> > +	list_add_tail(&term->list, head);
-> > +
-> > +	ALLOC_LIST(list);
-> > +	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
-> > +	parse_events__free_terms(head);
-> > +	$$ = list;
-> > +}
-> > +|
-> > +PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF
-> 
-> so, how about the event alias has more than 2 parts a-b-c ?
-> 
+On Mon, Sep 08, 2014 at 11:33:17AM -0300, Arnaldo Carvalho de Melo wrote:
 
-Currently, the patch only handle the format for "a-b" or "a". I think it's enough for current usage.
-The event alias with more than 2 parts a-b-c are already handled by hardcode in the lexer.
-So I don't think we really need to support a-b-c format now.
-
-> if I remove 'stalled-cycles-frontend' from lexer (patch attached), I'll get error
-> parsing it with this code:
-> 
-> ---
-> [jolsa@krava perf]$ ls -l /sys/devices/cpu/events/stalled-cycles-frontend
-> -r--r--r-- 1 root root 4096 Sep  6 21:17 /sys/devices/cpu/events/stalled-
-> cycles-frontend
-> [jolsa@krava perf]$ ./perf record -e stalled-cycles-frontend ls invalid or
-> unsupported event: 'stalled-cycles-frontend'
-> Run 'perf list' for a list of valid events
-> 
->  usage: perf record [<options>] [<command>]
->     or: perf record [<options>] -- <command> [<options>]
-> 
->     -e, --event <event>   event selector. use 'perf list' to list available events
-> ---
-> 
-> and.. if we will actually handle this correctly, I think maybe we want to
-> remove all the equivalents?
-
-Yes, there will be error if 'stalled-cycles-frontend' from lexer is removed. It's because not only the unsupported a-b-c format but also the middle name cycles. (Cycles could be individual event name or prefix/suffix of many event names. Lexer cannot distinguish them.)
-However, why we want to remove it?
-The current codes work well. PERF_TYPE_HARDWARE events are seldom changed. So I think it's OK to keep them unchanged.
-We only need to handle possible extended events. (Actually, the new PMU events are not frequently added. I think "a-b" format is enough.)
-
-Thanks,
-Kan
-
+SNIP
 
 > 
-> thanks,
-> jirka
+> So what you're saying is that we should have been polling all the fds
+> all the time?
 > 
+> Because after all we end up trying to consume everything in all the ring
+> buffers when just one of them gets a POLLRD anyway...
 > 
-> ---
-> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-> index 4dd7f0467dd1..c1a354f651ca 100644
-> --- a/tools/perf/util/parse-events.l
-> +++ b/tools/perf/util/parse-events.l
-> @@ -176,8 +176,6 @@ branch_type		{ return term(yyscanner,
-> PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE
->  }
+> > > I'll look at the kernel code for that...
+> > >  
+> > > > > I.e. when we ask the kernel to point fd B to fd A's mmap (what you
+> > > > > called set-output) and fd B inserts an event into fd A's mmap ring
+> > > > > buffer, we get fd A poll return as POLLRD, no?
+> > > 
+> > > > > Have to check... Otherwise we would have to poll all fds all the time,
+> > > > > not just the ones mmaping, right?
+> > > 
+> > > > > > I think Jiri's patchset changed pollfds to include all fds for that reason.
+> > > 
+> > > > hm, I did not think of that.. ;-) I needed more grained feedback
+> > > > for future features like cpu hotplug
+> > > 
+> > > So this is good for something you didn't tried to fix (and document) but
+> > > good for something that may be nice in the future? Grumpf, we have
+> > > already way too much stuff that will be eventually used but is not used
+> > > right now :-\
+>  
+> > IMO it's more clear to poll pm all event FDs.. and now with the
+> > case Adrian described it seems necessary anyway
 > 
->  cpu-cycles|cycles				{ return sym(yyscanner,
-> PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-> -stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner,
-> PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-> -stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner,
-> PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
->  instructions					{ return sym(yyscanner,
-> PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
->  cache-references				{ return sym(yyscanner,
-> PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
->  cache-misses					{ return sym(yyscanner,
-> PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
+> I would have to check why was that we were polling just the one where
+> the mmap is done, I don't recall being the one to do it, probably who
+> did it thought that since the ring buffer is there, it was enough (and
+> possibly scaled better, dunno) to do the polling in just one of them.
+
+for read notification it's ok to poll just for one event, because they
+all share same ringbuffer and perf_poll checks if there's ANY new data
+
+for the hup notification I think we need to poll all of them
+
+jirka
