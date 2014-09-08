@@ -1,125 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117AbaIHVhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:37:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755087AbaIHVhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:37:52 -0400
-Date: Mon, 8 Sep 2014 17:37:41 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v3 2/6] mm/hugetlb: take page table lock in
- follow_huge_(addr|pmd|pud)()
-Message-ID: <20140908213741.GA6866@nhori.bos.redhat.com>
-References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1409276340-7054-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.LSU.2.11.1409031243420.9023@eggly.anvils>
- <20140905052751.GA6883@nhori.redhat.com>
- <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
+	id S1755174AbaIHVjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:39:00 -0400
+Received: from mail-bn1bn0100.outbound.protection.outlook.com ([157.56.110.100]:8384
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754843AbaIHVi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:38:58 -0400
+X-Greylist: delayed 1935 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 17:38:58 EDT
+Date: Mon, 8 Sep 2014 16:00:54 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Pavel Machek <pavel@denx.de>
+CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <broonie@kernel.org>, <philip@balister.org>,
+        <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH 0/3] Yet another stab at a fpga framework
+In-Reply-To: <20140907185700.GA26553@amd>
+Message-ID: <alpine.DEB.2.02.1409081559320.3201@atx-linux-37>
+References: <1406932118-13885-1-git-send-email-atull@opensource.altera.com> <20140907185700.GA26553@amd>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: DM2PR04CA024.namprd04.prod.outlook.com (10.141.154.142) To
+ BLUPR03MB312.namprd03.prod.outlook.com (10.141.48.28)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 03283976A6
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009018)(6009001)(51704005)(189002)(199003)(24454002)(51914003)(164054003)(15975445006)(101416001)(46102001)(66066001)(80022001)(79102001)(31966008)(15202345003)(74502001)(74662001)(77982001)(50986999)(76482001)(95666004)(85306004)(21056001)(97736003)(50466002)(64706001)(19580395003)(54356999)(42186005)(81342001)(83322001)(20776003)(76176999)(69596002)(83506001)(33716001)(81542001)(53416004)(77096002)(102836001)(107046002)(23726002)(92726001)(106356001)(81156004)(46406003)(87976001)(99396002)(92566001)(86362001)(110136001)(90102001)(4396001)(83072002)(105586002)(85852003)(86152002)(3556765001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB312;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 12:13:16AM -0700, Hugh Dickins wrote:
-> On Fri, 5 Sep 2014, Naoya Horiguchi wrote:
-> > On Wed, Sep 03, 2014 at 02:17:41PM -0700, Hugh Dickins wrote:
-> > > On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
-> > > > 
-> > > > Reported-by: Hugh Dickins <hughd@google.com>
-> > > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > > Cc: <stable@vger.kernel.org>  # [3.12+]
-> > > 
-> > > No ack to this one yet, I'm afraid.
+On Sun, 7 Sep 2014, Pavel Machek wrote:
+
+> Hi!
+> 
+> > [resend with fixed email settings]
 > > 
-> > OK, I defer Reported-by until all the problems in this patch are solved.
-> > I added this Reported-by because Andrew asked how In found this problem,
-> > and advised me to show the reporter.
-> > And I didn't intend by this Reported-by that you acked the patch.
-> > In this case, should I have used some unofficial tag like
-> > "Not-yet-Reported-by:" to avoid being rude?
-> 
-> Sorry, misunderstanding, I chose that position to write "No ack to this
-> one yet" because that is where I would insert my "Acked-by" to the patch
-> when ready.  I just meant that I cannot yet give you my "Acked-by".
-
-I see my understanding, thanks.
-
-> You were not being rude to me at all, quite the reverse.
-> 
-> I have no objection to your writing "Reported-by: Hugh...": you are
-> being polite to acknowledge me, and I was not objecting to that.
-
-Great.
-
-> Although usually, we save "Reported-by"s for users who have
-> reported a problem they saw in practice, rather than for fellow
-> developers who have looked at the code and seen a potential bug -
-> so I won't mind at all if you end up taking it out.
-> 
+> > The idea of the framework is to provide consistent ways of
+> > programming raw images into FPGA's.
 > > 
-> > > One subtlety to take care over: it's a long time since I've had to
-> > > worry about pmd folding and pud folding (what happens when you only
-> > > have 2 or 3 levels of page table instead of the full 4): macros get
-> > > defined to each other, and levels get optimized out (perhaps
-> > > differently on different architectures).
-> > > 
-> > > So although at first sight the lock to take in follow_huge_pud()
-> > > would seem to be mm->page_table_lock, I am not at this point certain
-> > > that that's necessarily so - sometimes pud_huge might be pmd_huge,
-> > > and the size PMD_SIZE, and pmd_lockptr appropriate at what appears
-> > > to be the pud level.  Maybe: needs checking through the architectures
-> > > and their configs, not obvious to me.
+> > Programming from device tree overlays is supported.
 > > 
-> > I think that every architecture uses mm->page_table_lock for pud-level
-> > locking at least for now, but that could be changed in the future,
-> > for example when 1GB hugepages or pud-based hugepages become common and
-> > someone are interested in splitting lock for pud level.
+> > The core (fpga-mgr.c) does not include a userspace interface
+> > and just exports kernel functions.
+> > 
+> > This approach separates the core from the interfaces.
+> > 
+> > Each interface can be enabled or disabled in the defconfig.
+> > In some production contexts, interfaces that might be used
+> > during development can be disabled.
+> > 
+> > The core exports kernel functions to:
+> >   * write the fpga from a buffer or using the firmware layer
+> >   * get fpga status
+> >   * find a particular fpga manager from a device tree phandle
+> >   * register/unregister lower level fpga drivers.
+> > 
+> > The bus allows us to:
+> >   * program fpga from a device tree overlay using firmware.
+> >   * automatically reload firmware and reprogram fpga during resume.
+> > 
+> > The sysfs interface:
+> >   * read only, get the name and status of fpga manager.
+> > 
+> > I have a configfs interface patch which I haven't included,
+> > adds configfs as a separate file.
 > 
-> I'm not convinced by your answer, that you understand the (perhaps
-> imaginary!) issue I'm referring to.  Try grep for __PAGETABLE_P.D_FOLDED.
+> Thanks for the patches... is there new version? Is that corresponding
+> socfpga code?
 > 
-> Our infrastructure allows for 4 levels of pagetable, pgd pud pmd pte,
-> but many architectures/configurations support only 2 or 3 levels.
-> What pud functions and pmd functions work out to be in those
-> configs is confusing, and varies from architecture to architecture.
+> I'd like to configure fpga with .rbf file on board similar to SocKit.
 > 
-> In particular, pud and pmd may be different expressions of the same
-> thing (with 1 pmd per pud, instead of say 512).  In that case PUD_SIZE
-> will equal PMD_SIZE: and then at the pud level huge_pte_lockptr()
-> will be using split locking instead of mm->page_table_lock.
+> Thanks,
+> 								Pavel
 
-Is it a possible problem? It seems to me that in such system no one
-can create pud-based hugepages and care about pud level locking.
+Yes, hopefully next week.
 
-> Many of the hugetlb architectures have a pud_huge() which just returns
-> 0, and we need not worry about those, nor the follow_huge_addr() powerpc.
-> But arm64, mips, tile, x86 look more interesting.
-> 
-> Frankly, I find myself too dumb to be sure of the right answer for all:
-> and think that when we put the proper locking into follow_huge_pud(),
-> we shall have to include a PUD_SIZE == PMD_SIZE test, to let the
-> compiler decide for us which is the appropriate locking to match
-> huge_pte_lockptr().
+Regards,
+Alan
 
-Yes, both should be done at the same time.
 
 > 
-> Unless Kirill can illuminate: I may be afraid of complications
-> where actually there are none.
-
-Yes. What we need now is to fix follow_huge_pmd(), and combining
-non-urgent things with it is not easy for me.
-
-Thanks,
-Naoya Horiguchi
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> 
