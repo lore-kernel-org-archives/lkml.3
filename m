@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbaIHJiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:38:46 -0400
-Received: from mail-bn1on0062.outbound.protection.outlook.com ([157.56.110.62]:43088
+	id S1753899AbaIHJi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:38:56 -0400
+Received: from mail-bn1on0089.outbound.protection.outlook.com ([157.56.110.89]:12512
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753315AbaIHJim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:38:42 -0400
+	id S1753315AbaIHJiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:38:52 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v3 20/29] nios2: Device tree support
-Date: Mon, 8 Sep 2014 17:22:31 +0800
-Message-ID: <1410168160-3624-21-git-send-email-lftan@altera.com>
+Subject: [PATCH v3 06/29] nios2: Memory management
+Date: Mon, 8 Sep 2014 17:22:17 +0800
+Message-ID: <1410168160-3624-7-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
 References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(979002)(6009001)(199003)(22564002)(189002)(74502001)(76482001)(74662001)(77096002)(85852003)(33646002)(68736004)(50466002)(93916002)(2201001)(92566001)(77156001)(107046002)(229853001)(92726001)(89996001)(46102001)(31966008)(95666004)(90102001)(88136002)(15975445006)(50986999)(87936001)(85306004)(575784001)(79102001)(87286001)(86362001)(4396001)(106466001)(104166001)(64706001)(105596002)(44976005)(77982001)(81542001)(42186005)(47776003)(48376002)(83072002)(80022001)(62966002)(84676001)(20776003)(36756003)(6806004)(50226001)(102836001)(83322001)(76176999)(19580395003)(81342001)(21056001)(99396002)(97736003)(15202345003)(19580405001)(2004002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB047;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(19580405001)(86362001)(575784001)(87936001)(88136002)(85852003)(85306004)(99396002)(104166001)(87286001)(42186005)(46102001)(92726001)(79102001)(20776003)(74502001)(33646002)(47776003)(48376002)(44976005)(19580395003)(6806004)(31966008)(50226001)(106466001)(84676001)(97736003)(92566001)(36756003)(74662001)(105596002)(77982001)(68736004)(4396001)(93916002)(89996001)(77156001)(81342001)(90102001)(2201001)(83322001)(102836001)(80022001)(62966002)(76176999)(83072002)(50986999)(81542001)(95666004)(107046002)(50466002)(77096002)(229853001)(76482001)(21056001)(21314002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB043;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 03283976A6
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,436 +31,715 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support to arch/nios2.
+This patch contains the initialisation of the memory blocks, MMU
+attributes and the memory map.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- Documentation/devicetree/bindings/nios2/nios2.txt |  62 ++++++++
- Documentation/devicetree/bindings/nios2/timer.txt |  19 +++
- arch/nios2/boot/dts/3c120_devboard.dts            | 164 ++++++++++++++++++++++
- arch/nios2/boot/linked_dtb.S                      |  19 +++
- arch/nios2/kernel/prom.c                          |  66 +++++++++
- arch/nios2/platform/platform.c                    |  46 ++++++
- 6 files changed, 376 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/nios2/nios2.txt
- create mode 100644 Documentation/devicetree/bindings/nios2/timer.txt
- create mode 100644 arch/nios2/boot/dts/3c120_devboard.dts
- create mode 100644 arch/nios2/boot/linked_dtb.S
- create mode 100644 arch/nios2/kernel/prom.c
- create mode 100644 arch/nios2/platform/platform.c
+ arch/nios2/include/asm/mmu.h     |  16 +++
+ arch/nios2/include/asm/page.h    | 111 +++++++++++++++++++
+ arch/nios2/include/asm/uaccess.h | 231 +++++++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/init.c             | 142 ++++++++++++++++++++++++
+ arch/nios2/mm/uaccess.c          | 162 +++++++++++++++++++++++++++
+ 5 files changed, 662 insertions(+)
+ create mode 100644 arch/nios2/include/asm/mmu.h
+ create mode 100644 arch/nios2/include/asm/page.h
+ create mode 100644 arch/nios2/include/asm/uaccess.h
+ create mode 100644 arch/nios2/mm/init.c
+ create mode 100644 arch/nios2/mm/uaccess.c
 
-diff --git a/Documentation/devicetree/bindings/nios2/nios2.txt b/Documentation/devicetree/bindings/nios2/nios2.txt
+diff --git a/arch/nios2/include/asm/mmu.h b/arch/nios2/include/asm/mmu.h
 new file mode 100644
-index 0000000..d6d0a94
+index 0000000..d9c0b10
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/nios2/nios2.txt
-@@ -0,0 +1,62 @@
-+* Nios II Processor Binding
-+
-+This binding specifies what properties available in the device tree
-+representation of a Nios II Processor Core.
-+
-+Users can use sopc2dts tool for generating device tree sources (dts) from a
-+Qsys system. See more detail in: http://www.alterawiki.com/wiki/Sopc2dts
-+
-+Required properties:
-+
-+- compatible: Compatible property value should be "altr,nios2-1.0".
-+- reg: Contains CPU index.
-+- interrupt-controller: Specifies that the node is an interrupt controller
-+- #interrupt-cells: Specifies the number of cells needed to encode an
-+		interrupt source, should be 1.
-+- clock-frequency: Contains the clock frequency for CPU, in Hz.
-+- dcache-line-size: Contains data cache line size.
-+- icache-line-size: Contains instruction line size.
-+- dcache-size: Contains data cache size.
-+- icache-size: Contains instruction cache size.
-+- altr,pid-num-bits: Specifies the number of bits to use to represent the process
-+		identifier (PID).
-+- altr,tlb-num-ways: Specifies the number of set-associativity ways in the TLB.
-+- altr,tlb-num-entries: Specifies the number of entries in the TLB.
-+- altr,tlb-ptr-sz: Specifies size of TLB pointer.
-+- altr,has-mul: Specifies CPU hardware multipy support, should be 1.
-+- altr,has-mmu: Specifies CPU support MMU support, should be 1.
-+- altr,has-initda: Specifies CPU support initda instruction, should be 1.
-+- altr,reset-addr: Specifies CPU reset address
-+- altr,fast-tlb-miss-addr: Specifies CPU fast TLB miss exception address
-+- altr,exception-addr: Specifies CPU exception address
-+
-+Optional properties:
-+- altr,has-div: Specifies CPU hardware divide support
-+- altr,implementation: Nios II core implementation, this should be "fast";
-+
-+Example:
-+
-+cpu@0x0 {
-+	device_type = "cpu";
-+	compatible = "altr,nios2-1.0";
-+	reg = <0>;
-+	interrupt-controller;
-+	#interrupt-cells = <1>;
-+	clock-frequency = <125000000>;
-+	dcache-line-size = <32>;
-+	icache-line-size = <32>;
-+	dcache-size = <32768>;
-+	icache-size = <32768>;
-+	altr,implementation = "fast";
-+	altr,pid-num-bits = <8>;
-+	altr,tlb-num-ways = <16>;
-+	altr,tlb-num-entries = <128>;
-+	altr,tlb-ptr-sz = <7>;
-+	altr,has-div = <1>;
-+	altr,has-mul = <1>;
-+	altr,reset-addr = <0xc2800000>;
-+	altr,fast-tlb-miss-addr = <0xc7fff400>;
-+	altr,exception-addr = <0xd0000020>;
-+	altr,has-initda = <1>;
-+	altr,has-mmu = <1>;
-+};
-diff --git a/Documentation/devicetree/bindings/nios2/timer.txt b/Documentation/devicetree/bindings/nios2/timer.txt
-new file mode 100644
-index 0000000..904a584
---- /dev/null
-+++ b/Documentation/devicetree/bindings/nios2/timer.txt
-@@ -0,0 +1,19 @@
-+Altera Timer
-+
-+Required properties:
-+
-+- compatible : should be "altr,timer-1.0"
-+- reg : Specifies base physical address and size of the registers.
-+- interrupt-parent: phandle of the interrupt controller
-+- interrupts : Should contain the timer interrupt number
-+- clock-frequency : The frequency of the clock that drives the counter, in Hz.
-+
-+Example:
-+
-+timer {
-+	compatible = "altr,timer-1.0";
-+	reg = <0x00400000 0x00000020>;
-+	interrupt-parent = <&cpu>;
-+	interrupts = <11>;
-+	clock-frequency = <125000000>;
-+};
-diff --git a/arch/nios2/boot/dts/3c120_devboard.dts b/arch/nios2/boot/dts/3c120_devboard.dts
-new file mode 100644
-index 0000000..31c51f9
---- /dev/null
-+++ b/arch/nios2/boot/dts/3c120_devboard.dts
-@@ -0,0 +1,164 @@
++++ b/arch/nios2/include/asm/mmu.h
+@@ -0,0 +1,16 @@
 +/*
-+ *  Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * This file is generated by sopc2dts.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+/dts-v1/;
++#ifndef _ASM_NIOS2_MMU_H
++#define _ASM_NIOS2_MMU_H
 +
-+/ {
-+	model = "altr,qsys_ghrd_3c120";
-+	compatible = "altr,qsys_ghrd_3c120";
-+	#address-cells = <1>;
-+	#size-cells = <1>;
++/* Default "unsigned long" context */
++typedef unsigned long mm_context_t;
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu: cpu@0x0 {
-+			device_type = "cpu";
-+			compatible = "altr,nios2-1.0";
-+			reg = <0x00000000>;
-+			interrupt-controller;
-+			#interrupt-cells = <1>;
-+			clock-frequency = <125000000>;
-+			dcache-line-size = <32>;
-+			icache-line-size = <32>;
-+			dcache-size = <32768>;
-+			icache-size = <32768>;
-+			altr,implementation = "fast";
-+			altr,pid-num-bits = <8>;
-+			altr,tlb-num-ways = <16>;
-+			altr,tlb-num-entries = <128>;
-+			altr,tlb-ptr-sz = <7>;
-+			altr,has-div = <1>;
-+			altr,has-mul = <1>;
-+			altr,reset-addr = <0xc2800000>;
-+			altr,fast-tlb-miss-addr = <0xc7fff400>;
-+			altr,exception-addr = <0xd0000020>;
-+			altr,has-initda = <1>;
-+			altr,has-mmu = <1>;
-+		};
-+	};
-+
-+	memory@0 {
-+		device_type = "memory";
-+		reg = <0x10000000 0x08000000>,
-+			<0x07fff400 0x00000400>;
-+	};
-+
-+	sopc@0 {
-+		device_type = "soc";
-+		ranges;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "altr,avalon", "simple-bus";
-+		bus-frequency = <125000000>;
-+
-+		pb_cpu_to_io: bridge@0x8000000 {
-+			compatible = "simple-bus";
-+			reg = <0x08000000 0x00800000>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges = <0x00002000 0x08002000 0x00002000>,
-+				<0x00004000 0x08004000 0x00000400>,
-+				<0x00004400 0x08004400 0x00000040>,
-+				<0x00004800 0x08004800 0x00000040>,
-+				<0x00004c80 0x08004c80 0x00000020>,
-+				<0x00004d50 0x08004d50 0x00000008>,
-+				<0x00008000 0x08008000 0x00000020>,
-+				<0x00400000 0x08400000 0x00000020>;
-+
-+			timer_1ms: timer@0x400000 {
-+				compatible = "altr,timer-1.0";
-+				reg = <0x00400000 0x00000020>;
-+				interrupt-parent = <&cpu>;
-+				interrupts = <11>;
-+				clock-frequency = <125000000>;
-+			};
-+
-+			timer_0: timer@0x8000 {
-+				compatible = "altr,timer-1.0";
-+				reg = < 0x00008000 0x00000020 >;
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 5 >;
-+				clock-frequency = < 125000000 >;
-+			};
-+
-+			jtag_uart: serial@0x4d50 {
-+				compatible = "altr,juart-1.0";
-+				reg = <0x00004d50 0x00000008>;
-+				interrupt-parent = <&cpu>;
-+				interrupts = <1>;
-+			};
-+
-+			tse_mac: ethernet@0x4000 {
-+				compatible = "altr,tse-1.0";
-+				reg = <0x00004000 0x00000400>,
-+					<0x00004400 0x00000040>,
-+					<0x00004800 0x00000040>,
-+					<0x00002000 0x00002000>;
-+				reg-names = "control_port", "rx_csr", "tx_csr", "s1";
-+				interrupt-parent = <&cpu>;
-+				interrupts = <2 3>;
-+				interrupt-names = "rx_irq", "tx_irq";
-+				rx-fifo-depth = <8192>;
-+				tx-fifo-depth = <8192>;
-+				max-frame-size = <1518>;
-+				local-mac-address = [ 00 00 00 00 00 00 ];
-+				phy-mode = "rgmii-id";
-+				phy-handle = <&phy0>;
-+				tse_mac_mdio: mdio {
-+					compatible = "altr,tse-mdio";
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+					phy0: ethernet-phy@18 {
-+						reg = <18>;
-+						device_type = "ethernet-phy";
-+					};
-+				};
-+			};
-+
-+			uart: serial@0x4c80 {
-+				compatible = "altr,uart-1.0";
-+				reg = <0x00004c80 0x00000020>;
-+				interrupt-parent = <&cpu>;
-+				interrupts = <10>;
-+				current-speed = <115200>;
-+				clock-frequency = <62500000>;
-+			};
-+		};
-+
-+		cfi_flash_64m: flash@0x0 {
-+			compatible = "cfi-flash";
-+			reg = <0x00000000 0x04000000>;
-+			bank-width = <2>;
-+			device-width = <1>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			partition@800000 {
-+				reg = <0x00800000 0x01e00000>;
-+				label = "JFFS2 Filesystem";
-+			};
-+		};
-+	};
-+
-+	chosen {
-+		bootargs = "debug console=ttyJ0,115200";
-+	};
-+};
-diff --git a/arch/nios2/boot/linked_dtb.S b/arch/nios2/boot/linked_dtb.S
++#endif /* _ASM_NIOS2_MMU_H */
+diff --git a/arch/nios2/include/asm/page.h b/arch/nios2/include/asm/page.h
 new file mode 100644
-index 0000000..071f922
+index 0000000..7a0d9bd
 --- /dev/null
-+++ b/arch/nios2/boot/linked_dtb.S
-@@ -0,0 +1,19 @@
++++ b/arch/nios2/include/asm/page.h
+@@ -0,0 +1,111 @@
 +/*
-+ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * MMU support based on asm/page.h from mips which is:
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * Copyright (C) 1994 - 1999, 2000, 03 Ralf Baechle
++ * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
-+.section .dtb.init.rodata,"a"
-+.incbin "arch/nios2/boot/system.dtb"
-diff --git a/arch/nios2/kernel/prom.c b/arch/nios2/kernel/prom.c
-new file mode 100644
-index 0000000..8b1ac14
---- /dev/null
-+++ b/arch/nios2/kernel/prom.c
-@@ -0,0 +1,66 @@
++
++#ifndef _ASM_NIOS2_PAGE_H
++#define _ASM_NIOS2_PAGE_H
++
++#include <linux/pfn.h>
++#include <linux/const.h>
++
 +/*
-+ * Device tree support
++ * PAGE_SHIFT determines the page size
++ */
++#define PAGE_SHIFT	12
++#define PAGE_SIZE	(_AC(1, UL) << PAGE_SHIFT)
++#define PAGE_MASK	(~(PAGE_SIZE - 1))
++
++/*
++ * PAGE_OFFSET -- the first address of the first page of memory.
++ */
++#define PAGE_OFFSET	\
++	(CONFIG_NIOS2_MEM_BASE + CONFIG_NIOS2_KERNEL_REGION_BASE)
++
++#ifndef __ASSEMBLY__
++
++/*
++ * This gives the physical RAM offset.
++ */
++#define PHYS_OFFSET		CONFIG_NIOS2_MEM_BASE
++
++/*
++ * It's normally defined only for FLATMEM config but it's
++ * used in our early mem init code for all memory models.
++ * So always define it.
++ */
++#define ARCH_PFN_OFFSET		PFN_UP(PHYS_OFFSET)
++
++#define clear_page(page)	memset((page), 0, PAGE_SIZE)
++#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
++
++struct page;
++
++extern void clear_user_page(void *addr, unsigned long vaddr, struct page *page);
++extern void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++				struct page *to);
++
++extern unsigned long shm_align_mask;
++
++/*
++ * These are used to make use of C type-checking.
++ */
++typedef struct page *pgtable_t;
++typedef struct { unsigned long pte; } pte_t;
++typedef struct { unsigned long pgd; } pgd_t;
++typedef struct { unsigned long pgprot; } pgprot_t;
++
++#define pte_val(x)	((x).pte)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)	((x).pgprot)
++
++#define __pte(x)	((pte_t) { (x) })
++#define __pgd(x)	((pgd_t) { (x) })
++#define __pgprot(x)	((pgprot_t) { (x) })
++
++extern unsigned long memory_start;
++extern unsigned long memory_end;
++extern unsigned long memory_size;
++
++extern struct page *mem_map;
++
++#endif /* !__ASSEMBLY__ */
++
++# define __pa(x)		\
++	((unsigned long)(x) - PAGE_OFFSET + PHYS_OFFSET)
++# define __va(x)		\
++	((void *)((unsigned long)(x) + PAGE_OFFSET - PHYS_OFFSET))
++
++#define page_to_virt(page)	\
++	((((page) - mem_map) << PAGE_SHIFT) + PAGE_OFFSET)
++
++# define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
++# define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET &&	\
++					(pfn) < max_mapnr)
++
++# define virt_to_page(vaddr)	pfn_to_page(PFN_DOWN(virt_to_phys(vaddr)))
++# define virt_addr_valid(vaddr)	pfn_valid(PFN_DOWN(virt_to_phys(vaddr)))
++
++# define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
++				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++# define UNCAC_ADDR(addr)	\
++	((void *)((unsigned)(addr) | CONFIG_NIOS2_IO_REGION_BASE))
++# define CAC_ADDR(addr)		\
++	((void *)(((unsigned)(addr) & ~CONFIG_NIOS2_IO_REGION_BASE) |	\
++		CONFIG_NIOS2_KERNEL_REGION_BASE))
++
++#include <asm-generic/memory_model.h>
++
++#include <asm-generic/getorder.h>
++
++#endif /* _ASM_NIOS2_PAGE_H */
+diff --git a/arch/nios2/include/asm/uaccess.h b/arch/nios2/include/asm/uaccess.h
+new file mode 100644
+index 0000000..acedc0a
+--- /dev/null
++++ b/arch/nios2/include/asm/uaccess.h
+@@ -0,0 +1,231 @@
++/*
++ * User space memory access functions for Nios II
 + *
++ * Copyright (C) 2010-2011, Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009, Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_UACCESS_H
++#define _ASM_NIOS2_UACCESS_H
++
++#include <linux/errno.h>
++#include <linux/thread_info.h>
++#include <linux/string.h>
++
++#include <asm/page.h>
++
++#define VERIFY_READ	0
++#define VERIFY_WRITE	1
++
++/*
++ * The exception table consists of pairs of addresses: the first is the
++ * address of an instruction that is allowed to fault, and the second is
++ * the address at which the program should continue.  No registers are
++ * modified, so it is entirely up to the continuation code to figure out
++ * what to do.
++ *
++ * All the routines below use bits of fixup code that are out of line
++ * with the main instruction path.  This means when everything is well,
++ * we don't even have to jump over them.  Further, they do not intrude
++ * on our cache or tlb entries.
++ */
++struct exception_table_entry {
++	unsigned long insn;
++	unsigned long fixup;
++};
++
++extern int fixup_exception(struct pt_regs *regs);
++
++/*
++ * Segment stuff
++ */
++#define MAKE_MM_SEG(s)		((mm_segment_t) { (s) })
++#define USER_DS			MAKE_MM_SEG(0x80000000UL)
++#define KERNEL_DS		MAKE_MM_SEG(0)
++
++#define get_ds()		(KERNEL_DS)
++
++#define get_fs()		(current_thread_info()->addr_limit)
++#define set_fs(seg)		(current_thread_info()->addr_limit = (seg))
++
++#define segment_eq(a, b)	((a).seg == (b).seg)
++
++#define __access_ok(addr, len)			\
++	(((signed long)(((long)get_fs().seg) &	\
++		((long)(addr) | (((long)(addr)) + (len)) | (len)))) == 0)
++
++#define access_ok(type, addr, len)		\
++	likely(__access_ok((unsigned long)(addr), (unsigned long)(len)))
++
++# define __EX_TABLE_SECTION	".section __ex_table,\"a\"\n"
++
++/*
++ * Zero Userspace
++ */
++
++static inline unsigned long __must_check __clear_user(void __user *to,
++						      unsigned long n)
++{
++	__asm__ __volatile__ (
++		"1:     stb     zero, 0(%1)\n"
++		"       addi    %0, %0, -1\n"
++		"       addi    %1, %1, 1\n"
++		"       bne     %0, zero, 1b\n"
++		"2:\n"
++		__EX_TABLE_SECTION
++		".word  1b, 2b\n"
++		".previous\n"
++		: "=r" (n), "=r" (to)
++		: "0" (n), "1" (to)
++	);
++
++	return n;
++}
++
++static inline unsigned long __must_check clear_user(void __user *to,
++						    unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __clear_user(to, n);
++}
++
++extern long __copy_from_user(void *to, const void __user *from,
++				unsigned long n);
++extern long __copy_to_user(void __user *to, const void *from, unsigned long n);
++
++static inline long copy_from_user(void *to, const void __user *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_READ, from, n))
++		return n;
++	return __copy_from_user(to, from, n);
++}
++
++static inline long copy_to_user(void __user *to, const void *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __copy_to_user(to, from, n);
++}
++
++extern long strncpy_from_user(char *__to, const char __user *__from,
++				long __len);
++extern long strnlen_user(const char __user *s, long n);
++
++#define __copy_from_user_inatomic	__copy_from_user
++#define __copy_to_user_inatomic		__copy_to_user
++
++/* Optimized macros */
++#define __get_user_asm(val, insn, addr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous"						\
++	: "=&r" (err), "=r" (val)					\
++	: "r" (addr), "i" (-EFAULT));					\
++}
++
++#define __get_user_unknown(val, size, ptr, err) do {			\
++	err = 0;							\
++	if (copy_from_user(&(val), ptr, size)) {			\
++		err = -EFAULT;						\
++	}								\
++	} while (0)
++
++#define __get_user_common(val, size, ptr, err)				\
++do {									\
++	switch (size) {							\
++	case 1:								\
++		__get_user_asm(val, "ldbu", ptr, err);			\
++		break;							\
++	case 2:								\
++		__get_user_asm(val, "ldhu", ptr, err);			\
++		break;							\
++	case 4:								\
++		__get_user_asm(val, "ldw", ptr, err);			\
++		break;							\
++	default:							\
++		__get_user_unknown(val, size, ptr, err);		\
++		break;							\
++	}								\
++} while (0)
++
++#define __get_user(x, ptr)						\
++	({								\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val;						\
++	__get_user_common(__gu_val, sizeof(*(ptr)), __gu_ptr, __gu_err);\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++	})
++
++#define get_user(x, ptr)						\
++({									\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val = 0;					\
++	if (access_ok(VERIFY_READ,  __gu_ptr, sizeof(*__gu_ptr)))	\
++		__get_user_common(__gu_val, sizeof(*__gu_ptr),		\
++			__gu_ptr, __gu_err);				\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++})
++
++#define __put_user_asm(val, insn, ptr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous\n"						\
++	: "=&r" (err)							\
++	: "r" (val), "r" (ptr), "i" (-EFAULT));				\
++}
++
++#define put_user(x, ptr)						\
++({									\
++	long __pu_err = -EFAULT;					\
++	__typeof__(*(ptr)) __user *__pu_ptr = (ptr);			\
++	__typeof__(*(ptr)) __pu_val = (__typeof(*ptr))(x);		\
++	if (access_ok(VERIFY_WRITE, __pu_ptr, sizeof(*__pu_ptr))) {	\
++		switch (sizeof(*__pu_ptr)) {				\
++		case 1:							\
++			__put_user_asm(__pu_val, "stb", __pu_ptr, __pu_err); \
++			break;						\
++		case 2:							\
++			__put_user_asm(__pu_val, "sth", __pu_ptr, __pu_err); \
++			break;						\
++		case 4:							\
++			__put_user_asm(__pu_val, "stw", __pu_ptr, __pu_err); \
++			break;						\
++		default:						\
++			/* XXX: This looks wrong... */			\
++			__pu_err = 0;					\
++			if (copy_to_user(__pu_ptr, &(__pu_val),		\
++				sizeof(*__pu_ptr)))			\
++				__pu_err = -EFAULT;			\
++			break;						\
++		}							\
++	}								\
++	__pu_err;							\
++})
++
++#define __put_user(x, ptr) put_user(x, ptr)
++
++#endif /* _ASM_NIOS2_UACCESS_H */
+diff --git a/arch/nios2/mm/init.c b/arch/nios2/mm/init.c
+new file mode 100644
+index 0000000..e75c75d
+--- /dev/null
++++ b/arch/nios2/mm/init.c
+@@ -0,0 +1,142 @@
++/*
 + * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2004 Microtronix Datacom Ltd
 + *
-+ * Based on MIPS support for CONFIG_OF device tree support
++ * based on arch/m68k/mm/init.c
 + *
-+ * Copyright (C) 2010 Cisco Systems Inc. <dediao@cisco.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+#include <linux/init.h>
++#include <linux/signal.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/string.h>
 +#include <linux/types.h>
++#include <linux/ptrace.h>
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <linux/init.h>
++#include <linux/pagemap.h>
 +#include <linux/bootmem.h>
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/binfmts.h>
 +
++#include <asm/setup.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
 +#include <asm/sections.h>
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
++#include <asm/cpuinfo.h>
++#include <asm/processor.h>
 +
-+void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-+{
-+	u64 kernel_start = (u64)virt_to_phys(_text);
++pgd_t *pgd_current;
 +
-+	if (!memory_size &&
-+	    (kernel_start >= base) && (kernel_start < (base + size)))
-+		memory_size = size;
-+
-+	return;
-+}
-+
-+void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-+{
-+	return alloc_bootmem_align(size, align);
-+}
-+
-+void __init early_init_devtree(void *params)
-+{
-+	__be32 *dtb = (u32*)__dtb_start;
-+#if defined(CONFIG_NIOS2_DTB_AT_PHYS_ADDR)
-+	if (be32_to_cpup((__be32 *)CONFIG_NIOS2_DTB_PHYS_ADDR) ==
-+		 OF_DT_HEADER) {
-+		params = (void *)CONFIG_NIOS2_DTB_PHYS_ADDR;
-+		early_init_dt_scan(params);
-+		return;
-+	}
-+#endif
-+	if (be32_to_cpu((__be32) *dtb) == OF_DT_HEADER)
-+		params = (void *)__dtb_start;
-+
-+	early_init_dt_scan(params);
-+}
-diff --git a/arch/nios2/platform/platform.c b/arch/nios2/platform/platform.c
-new file mode 100644
-index 0000000..d478773
---- /dev/null
-+++ b/arch/nios2/platform/platform.c
-@@ -0,0 +1,46 @@
 +/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011 Thomas Chou
-+ * Copyright (C) 2011 Walter Goossens
++ * paging_init() continues the virtual memory environment setup which
++ * was begun by the code in arch/head.S.
++ * The parameters are pointers to where to stick the starting and ending
++ * addresses of available kernel virtual memory.
++ */
++void __init paging_init(void)
++{
++	unsigned long zones_size[MAX_NR_ZONES];
++
++	memset(zones_size, 0, sizeof(zones_size));
++
++	pagetable_init();
++	pgd_current = swapper_pg_dir;
++
++	zones_size[ZONE_NORMAL] = max_mapnr;
++
++	/* pass the memory from the bootmem allocator to the main allocator */
++	free_area_init(zones_size);
++
++	flush_dcache_range((unsigned long)empty_zero_page,
++			(unsigned long)empty_zero_page + PAGE_SIZE);
++}
++
++void __init mem_init(void)
++{
++	unsigned long end_mem   = memory_end; /* this must not include
++						kernel stack at top */
++
++	pr_debug("mem_init: start=%lx, end=%lx\n", memory_start, memory_end);
++
++	end_mem &= PAGE_MASK;
++	high_memory = __va(end_mem);
++
++	/* this will put all memory onto the freelists */
++	free_all_bootmem();
++	mem_init_print_info(NULL);
++}
++
++void __init mmu_init(void)
++{
++	flush_tlb_all();
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init free_initrd_mem(unsigned long start, unsigned long end)
++{
++	free_reserved_area((void *)start, (void *)end, -1, "initrd");
++}
++#endif
++
++void __init_refok free_initmem(void)
++{
++	free_initmem_default(-1);
++}
++
++#define __page_aligned(order) __aligned(PAGE_SIZE << (order))
++pgd_t swapper_pg_dir[PTRS_PER_PGD] __page_aligned(PGD_ORDER);
++pte_t invalid_pte_table[PTRS_PER_PTE] __page_aligned(PTE_ORDER);
++static struct page *kuser_page[1];
++
++static int alloc_kuser_page(void)
++{
++	extern char __kuser_helper_start[], __kuser_helper_end[];
++	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++	unsigned long vpage;
++
++	vpage = get_zeroed_page(GFP_ATOMIC);
++	if (!vpage)
++		return -ENOMEM;
++
++	/* Copy kuser helpers */
++	memcpy((void *)vpage, __kuser_helper_start, kuser_sz);
++
++	flush_icache_range(vpage, vpage + KUSER_SIZE);
++	kuser_page[0] = virt_to_page(vpage);
++
++	return 0;
++}
++arch_initcall(alloc_kuser_page);
++
++int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++{
++	struct mm_struct *mm = current->mm;
++	int ret;
++
++	down_write(&mm->mmap_sem);
++
++	/* Map kuser helpers to user space address */
++	ret = install_special_mapping(mm, KUSER_BASE, KUSER_SIZE,
++				      VM_READ | VM_EXEC | VM_MAYREAD |
++				      VM_MAYEXEC, kuser_page);
++
++	up_write(&mm->mmap_sem);
++
++	return ret;
++}
++
++const char *arch_vma_name(struct vm_area_struct *vma)
++{
++	return (vma->vm_start == KUSER_BASE) ? "[kuser]" : NULL;
++}
+diff --git a/arch/nios2/mm/uaccess.c b/arch/nios2/mm/uaccess.c
+new file mode 100644
+index 0000000..4a38ad3
+--- /dev/null
++++ b/arch/nios2/mm/uaccess.c
+@@ -0,0 +1,162 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License. See the file COPYING in the main directory of this
-+ * archive for more details.
++ * Copyright (C) 2009, Wind River Systems Inc
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + */
 +
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_address.h>
-+#include <linux/of_fdt.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/sys_soc.h>
-+#include <linux/io.h>
++#include <linux/export.h>
++#include <linux/uaccess.h>
 +
-+static int __init nios2_soc_device_init(void)
++asm(".global	__copy_from_user\n"
++	"   .type __copy_from_user, @function\n"
++	"__copy_from_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   stb   r2,0(r3)\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3:\n"
++	"   addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"9: ldhu  r2,0(r5)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r5,r5,2\n"
++	"   sth   r2,0(r3)\n"
++	"   addi  r3,r3,2\n"
++	"6: bge   r7,r6,1b\n"
++	"10:ldw   r2,0(r5)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r5,r5,4\n"
++	"   stw   r2,0(r3)\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"   stb   r2,0(r4)\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 2b,3b\n"
++	".word 9b,13b\n"
++	".word 10b,13b\n"
++	".word 7b,13b\n"
++	".previous\n"
++	);
++EXPORT_SYMBOL(__copy_from_user);
++
++asm(
++	"   .global __copy_to_user\n"
++	"   .type __copy_to_user, @function\n"
++	"__copy_to_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	/* Bail if we try to copy zero bytes  */
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	/* Copy byte by byte for small copies and if src^dst != 0 */
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"9: stb   r2,0(r3)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3: addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	/*  If 'to' is an odd address byte copy */
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	/* If 'to' is not divideable by four copy halfwords */
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"   ldhu  r2,0(r5)\n"
++	"   addi  r5,r5,2\n"
++	"10:sth   r2,0(r3)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r3,r3,2\n"
++	/* Copy words */
++	"6: bge   r7,r6,1b\n"
++	"   ldw   r2,0(r5)\n"
++	"   addi  r5,r5,4\n"
++	"11:stw   r2,0(r3)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	/* Copy remaining bytes */
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"12: stb  r2,0(r4)\n"
++	"   addi  r6,r6,-1\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 9b,3b\n"
++	".word 10b,13b\n"
++	".word 11b,13b\n"
++	".word 12b,13b\n"
++	".previous\n");
++EXPORT_SYMBOL(__copy_to_user);
++
++long strncpy_from_user(char *__to, const char __user *__from, long __len)
 +{
-+	struct soc_device *soc_dev;
-+	struct soc_device_attribute *soc_dev_attr;
-+	const char *machine;
++	int l = strnlen_user(__from, __len);
++	int is_zt = 1;
 +
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (soc_dev_attr) {
-+		machine = of_flat_dt_get_machine_name();
-+		if (machine)
-+			soc_dev_attr->machine = kasprintf(GFP_KERNEL, "%s",
-+						machine);
-+
-+		soc_dev_attr->family = "Nios II";
-+
-+		soc_dev = soc_device_register(soc_dev_attr);
-+		if (IS_ERR(soc_dev)) {
-+			kfree(soc_dev_attr->machine);
-+			kfree(soc_dev_attr);
-+		}
++	if (l > __len) {
++		is_zt = 0;
++		l = __len;
 +	}
 +
-+	return of_platform_populate(NULL, of_default_bus_match_table,
-+		NULL, NULL);
++	if (l == 0 || copy_from_user(__to, __from, l))
++		return -EFAULT;
++
++	if (is_zt)
++		l--;
++	return l;
 +}
 +
-+device_initcall(nios2_soc_device_init);
++long strnlen_user(const char __user *s, long n)
++{
++	long i;
++
++	for (i = 0; i < n; i++) {
++		char c;
++		if (get_user(c, s + i) == -EFAULT)
++			return 0;
++		if (c == 0)
++			return i + 1;
++	}
++	return n + 1;
++}
 -- 
 1.8.2.1
 
