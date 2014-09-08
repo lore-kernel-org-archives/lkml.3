@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaIHOhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:37:08 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:60142 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaIHOhG (ORCPT
+	id S1754211AbaIHOiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:38:25 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56065 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753289AbaIHOiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:37:06 -0400
-Date: Mon, 8 Sep 2014 15:37:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix TSC resume
-Message-ID: <20140908143700.GE30307@lee--X1>
-References: <20140908132842.GA17443@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140908132842.GA17443@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Sep 2014 10:38:24 -0400
+X-Sasl-enc: k+34tBvFY6VRTvMQj1TJ2bJ9gxUqpR00QTB/cwcXRz/W 1410187103
+From: Ilja Sidoroff <ilja.sidoroff@iki.fi>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, Ilja Sidoroff <ilja.sidoroff@iki.fi>
+Subject: [PATCH v2] Staging: wlan-ng: Remove redundant break/goto statements in hfa384x_usb.c
+Date: Mon,  8 Sep 2014 17:37:53 +0300
+Message-Id: <1410187073-12576-1-git-send-email-ilja.sidoroff@iki.fi>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410184074.12560.6.camel@joe-AO725>
+References: <1410184074.12560.6.camel@joe-AO725>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Sep 2014, Sebastian Andrzej Siewior wrote:
+This patch removes redundant goto or break statements in hfa384x_usb.c as found by checkpatch.pl
 
-> In the resume path, the ADC invokes am335x_tsc_se_set_cache() with 0 as
-> the steps argument if continous mode is not in use. This in turn disables
-> all steps and so the TSC is not working until one ADC sampling is
-> performed.
-> 
-> This patch fixes it by writing the current cached mask instead of the
-> passed steps.
-> 
-> Fixes: 7ca6740cd1cd ("mfd: input: iio: ti_amm335x: Rework TSC/ADCA
-> synchronization")
-> Cc: stable@vger.kernel.org # v3.13+
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/mfd/ti_am335x_tscadc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Signed-off-by: Ilja Sidoroff <ilja.sidoroff@iki.fi>
+---
+Changes in v2:
+   * replaced goto with break and so got rid of a label
 
-Applied, thanks.
+ drivers/staging/wlan-ng/hfa384x_usb.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-> diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-> index e3076afe6b3c..e87a2485468f 100644
-> --- a/drivers/mfd/ti_am335x_tscadc.c
-> +++ b/drivers/mfd/ti_am335x_tscadc.c
-> @@ -58,7 +58,7 @@ void am335x_tsc_se_set_cache(struct ti_tscadc_dev *tsadc, u32 val)
->  	if (tsadc->adc_waiting)
->  		wake_up(&tsadc->reg_se_wait);
->  	else if (!tsadc->adc_in_use)
-> -		tscadc_writel(tsadc, REG_SE, val);
-> +		tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
->  
->  	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
->  }
-
+diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
+index 2f63e0c..cac55c6 100644
+--- a/drivers/staging/wlan-ng/hfa384x_usb.c
++++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+@@ -3474,7 +3474,7 @@ static void hfa384x_usbin_rx(wlandevice_t *wlandev, struct sk_buff *skb)
+ 		/* If exclude and we receive an unencrypted, drop it */
+ 		if ((wlandev->hostwep & HOSTWEP_EXCLUDEUNENCRYPTED) &&
+ 		    !WLAN_GET_FC_ISWEP(fc)) {
+-			goto done;
++			break;
+ 		}
+ 
+ 		data_len = le16_to_cpu(usbin->rxfrm.desc.data_len);
+@@ -3528,11 +3528,9 @@ static void hfa384x_usbin_rx(wlandevice_t *wlandev, struct sk_buff *skb)
+ 		netdev_warn(hw->wlandev->netdev, "Received frame on unsupported port=%d\n",
+ 			    HFA384x_RXSTATUS_MACPORT_GET(
+ 				    usbin->rxfrm.desc.status));
+-		goto done;
+ 		break;
+ 	}
+ 
+-done:
+ 	return;
+ }
+ 
+@@ -4127,7 +4125,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
+ 	case HFA384x_PDR_HFA3861_MANF_TESTI:
+ 		/* code is OK */
+ 		return 1;
+-		break;
+ 	default:
+ 		if (pdrcode < 0x1000) {
+ 			/* code is OK, but we don't know exactly what it is */
+@@ -4140,7 +4137,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
+ 				 pdrcode);
+ 			return 0;
+ 		}
+-		break;
+ 	}
+ 	return 0;		/* avoid compiler warnings */
+ }
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
