@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaIHRDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:03:38 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34395 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306AbaIHRDg (ORCPT
+	id S1754579AbaIHREk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:04:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40260 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095AbaIHREj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:03:36 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <jgunthorpe@obsidianresearch.com>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH - v4] PCI: keystone: add a pci quirk to limit mrrs
-Date: Mon, 8 Sep 2014 13:03:34 -0400
-Message-ID: <1410195814-30414-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 8 Sep 2014 13:04:39 -0400
+Message-ID: <540DE1A3.7080302@infradead.org>
+Date: Mon, 08 Sep 2014 10:04:35 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+CC: akpm@linux-foundation.org
+Subject: Re: [PATCH][trivial] Documentation: Docbook: Fix typo in DocBook/kernel-api.xml
+References: <1410193643-29232-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1410193643-29232-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keystone PCI controller has a limitation that memory read request
-size must not exceed 256 bytes. This is a hardware limitation and
-add a quirk to force this limit on all downstream devices by
-updating mrrs.
+On 09/08/14 09:27, Masanari Iida wrote:
+> This patch fix spelling typo found in DocBook/kernel-api.xml.
+> It is because the file is generated from the source comments,
+> I have to fix the comments in source codes.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
-  -v4: re-send removing extra lines
-  -v3: added check for vendor id and use pci_matc_id() to do matching
-  -v2: made the quirk happens after tuning
-  -v1: changed printk to indicate PCI bdf
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
- drivers/pci/host/pci-keystone.c |   45 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+Thanks.
 
-diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-index c1cfaef..ff8ed25 100644
---- a/drivers/pci/host/pci-keystone.c
-+++ b/drivers/pci/host/pci-keystone.c
-@@ -42,8 +42,53 @@
- /* DEV_STAT_CTRL */
- #define PCIE_CAP_BASE		0x70
- 
-+/* PCIE controller device IDs */
-+#define PCIE_RC_K2HK		0xb008
-+#define PCIE_RC_K2E		0xb009
-+#define PCIE_RC_K2L		0xb00a
-+
- #define to_keystone_pcie(x)	container_of(x, struct keystone_pcie, pp)
- 
-+static void quirk_limit_mrrs(struct pci_dev *dev)
-+{
-+	struct pci_bus *bus = dev->bus;
-+	struct pci_dev *bridge = bus->self;
-+	static const struct pci_device_id rc_pci_devids[] = {
-+		{ PCI_DEVICE(PCI_VENDOR_ID_TI, PCIE_RC_K2HK),
-+		 .class = PCI_CLASS_BRIDGE_PCI << 8, .class_mask = ~0, },
-+		{ PCI_DEVICE(PCI_VENDOR_ID_TI, PCIE_RC_K2E),
-+		 .class = PCI_CLASS_BRIDGE_PCI << 8, .class_mask = ~0, },
-+		{ PCI_DEVICE(PCI_VENDOR_ID_TI, PCIE_RC_K2L),
-+		 .class = PCI_CLASS_BRIDGE_PCI << 8, .class_mask = ~0, },
-+		{ 0, },
-+	};
-+
-+	if (pci_is_root_bus(bus))
-+		return;
-+
-+	/* look for the host bridge */
-+	while (!pci_is_root_bus(bus)) {
-+		bridge = bus->self;
-+		bus = bus->parent;
-+	}
-+
-+	if (bridge) {
-+		/*
-+		 * Keystone PCI controller has a h/w limitation of
-+		 * 256 bytes maximum read request size. It can't handle
-+		 * anything higher than this. So force this limit on
-+		 * all downstream devices
-+		 */
-+		if (pci_match_id(rc_pci_devids, bridge)) {
-+			if (pcie_get_readrq(dev) > 256) {
-+				dev_info(&dev->dev, "limiting mrrs to 256\n");
-+				pcie_set_readrq(dev, 256);
-+			}
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_ENABLE(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_mrrs);
-+
- static int ks_pcie_establish_link(struct keystone_pcie *ks_pcie)
- {
- 	struct pcie_port *pp = &ks_pcie->pp;
+> ---
+>  block/blk-core.c      | 8 ++++----
+>  block/genhd.c         | 2 +-
+>  include/linux/clk.h   | 2 +-
+>  include/linux/kfifo.h | 2 +-
+>  ipc/util.c            | 6 +++---
+>  kernel/auditsc.c      | 2 +-
+>  lib/bitmap.c          | 4 ++--
+>  lib/idr.c             | 2 +-
+>  lib/vsprintf.c        | 2 +-
+>  mm/filemap.c          | 2 +-
+>  security/inode.c      | 2 +-
+>  11 files changed, 17 insertions(+), 17 deletions(-)
+
+
 -- 
-1.7.9.5
-
+~Randy
