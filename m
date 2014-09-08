@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751AbaIHRPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:15:11 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:43993 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826AbaIHRPI (ORCPT
+	id S1754788AbaIHRPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:15:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45613 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040AbaIHRPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:15:08 -0400
+	Mon, 8 Sep 2014 13:15:48 -0400
+Message-ID: <540DE442.6060505@codeaurora.org>
+Date: Mon, 08 Sep 2014 13:15:46 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20140908163058.GF9560@localhost>
-References: <1409930279-1382-1-git-send-email-octavian.purdila@intel.com>
-	<1409930279-1382-3-git-send-email-octavian.purdila@intel.com>
-	<20140908144447.GD9560@localhost>
-	<CAE1zot+R25OAu9d9WB2tOFqO9J9m-Vwo25msn6TD2HxseBTUzQ@mail.gmail.com>
-	<20140908163058.GF9560@localhost>
-Date: Mon, 8 Sep 2014 20:15:07 +0300
-Message-ID: <CAE1zotJomxwAJA3aXm9MHnHd5Pg9V=K7XaptOPWkArV0jio4DQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] i2c: add support for Diolan DLN-2 USB-I2C adapter
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v2 14/15] cpufreq: Add module to register cpufreq on Krait
+ CPUs
+References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <1409957256-23729-16-git-send-email-sboyd@codeaurora.org> <CAKohpokLFMMK-h2657=_BCBr3oXCTiQDA+C-rDgorxfrPR-9YQ@mail.gmail.com>
+In-Reply-To: <CAKohpokLFMMK-h2657=_BCBr3oXCTiQDA+C-rDgorxfrPR-9YQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 7:30 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Mon, Sep 08, 2014 at 06:57:29PM +0300, Octavian Purdila wrote:
->> On Mon, Sep 8, 2014 at 5:44 PM, Johan Hovold <johan@kernel.org> wrote:
->>
->> <snip>
->>
->> Hi Johan,
->>
->> Again, thanks for the detailed review, I am addressing your review
->> comments as we speak. Some questions below.
->>
->> <snip>
->>
->> > > +     int ret, len;
->> > > +     struct tx_data {
->> > > +             u8 port;
->> > > +             u8 addr;
->> > > +             u8 mem_addr_len;
->> > > +             __le32 mem_addr;
->> > > +             __le16 buf_len;
->> > > +             u8 buf[DLN2_I2C_MAX_XFER_SIZE];
->> > > +     } __packed tx;
->> >
->> > Allocate these buffers dynamically (possibly at probe).
->> >
->>
->> I double checked this, and DLN2_I2C_MAX_XFER_SIZE should actually be <
->> 64 as the USB endpoint configuration max packet size is 64. In this
->> case, can we keep it on the stack?
->
-> It's better to lift that restriction and allocate it dynamically. Using
-> larger buffers (> EP size) is also more efficient.
->
->> <snip>
->>
->> > > +     int ret, buf_len, rx_len = sizeof(rx);
->> >
->> > Again, one declaration per line.
->>
->> AFAICS there are many places where declaration on the same line
->> (initialization included) are used. When did this became a coding
->> style issue?
->
-> It's ugly, hurts readability, and can also obfuscate the fact that your
-> function really needs to be refactored.
->
-> And it's in the CodingStyle:
->
->         "To this end, use just one data declaration per line (no commas
->         for multiple data declarations)."
->
+On 09/08/2014 12:46 AM, Viresh Kumar wrote:
+> On 6 September 2014 04:17, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> 
+>> diff --git a/drivers/cpufreq/qcom-cpufreq.c b/drivers/cpufreq/qcom-cpufreq.c
+>> new file mode 100644
+>> index 000000000000..aa8eb97144b6
+>> --- /dev/null
+>> +++ b/drivers/cpufreq/qcom-cpufreq.c
+>> @@ -0,0 +1,199 @@
+>> +/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> 
+> Shouldn't this have Qcom instead?
 
-OK, I always thought that was for when declaring structures/unions.
-Just one more question on this subject: is the following allowed:
+No. The copyright has been transferred.
 
-int ret, len;
+Christopher
 
-or should it be:
-
-int ret;
-int len;
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
