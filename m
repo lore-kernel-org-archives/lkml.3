@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbaIHOe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:34:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60537 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835AbaIHOez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:34:55 -0400
-Message-ID: <540DBE43.50403@ti.com>
-Date: Mon, 8 Sep 2014 20:03:39 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754115AbaIHOgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:36:04 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:51310 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938AbaIHOgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:36:01 -0400
+Date: Mon, 8 Sep 2014 15:35:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
+        David Paris <david.paris@st.com>
+Subject: Re: [PATCH 4/4] watchdog: st_wdt: Add new driver for ST's LPC
+ Watchdog
+Message-ID: <20140908143554.GD30307@lee--X1>
+References: <1409841592-18890-1-git-send-email-lee.jones@linaro.org>
+ <1409841592-18890-6-git-send-email-lee.jones@linaro.org>
+ <20140905155811.GA12374@roeck-us.net>
+ <20140908123246.GB26284@lee--X1>
+ <540DAFBC.1010502@roeck-us.net>
 MIME-Version: 1.0
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        alexandre torgue <alexandre.torgue@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v2 1/8] phy: miphy28lp: Add Device Tree bindings for the
- MiPHY28lp
-References: <1409758637-28654-1-git-send-email-gabriel.fernandez@linaro.org> <1409758637-28654-2-git-send-email-gabriel.fernandez@linaro.org>
-In-Reply-To: <1409758637-28654-2-git-send-email-gabriel.fernandez@linaro.org>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <540DAFBC.1010502@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 08 Sep 2014, Guenter Roeck wrote:
 
-On Wednesday 03 September 2014 09:07 PM, Gabriel FERNANDEZ wrote:
-> The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
-> or USB3 devices.
+> On 09/08/2014 05:32 AM, Lee Jones wrote:
+> >On Fri, 05 Sep 2014, Guenter Roeck wrote:
+> ...
+> >>>+
+> >>>+static struct st_wdog_syscfg stid127_syscfg = {
+> >>>+	.type_mask	= BIT(2),
+> >>>+	.enable_mask	= BIT(2),
+> >>>+};
+> >>>+
+> >>>+static struct st_wdog_syscfg stih415_syscfg = {
+> >>>+	.type_mask	= BIT(6),
+> >>>+	.enable_mask	= BIT(7),
+> >>>+};
+> >>>+
+> >>>+static struct st_wdog_syscfg stih416_syscfg = {
+> >>>+	.type_mask	= BIT(6),
+> >>>+	.enable_mask	= BIT(7),
+> >>>+};
+> >>>+
+> >>>+static struct st_wdog_syscfg stih407_syscfg = {
+> >>>+	.enable_mask	= BIT(19),
+> >>>+};
+> >>>+
+> ...
 > 
-> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> ---
->  .../devicetree/bindings/phy/phy-miphy28lp.txt      | 126 +++++++++++++++++++++
->  1 file changed, 126 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-> new file mode 100644
-> index 0000000..5e307af
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-> @@ -0,0 +1,126 @@
-> +STMicroelectronics STi MIPHY28LP PHY binding
-> +============================================
-> +
-> +This binding describes a miphy device that is used to control PHY hardware
-> +for SATA, PCIe or USB3.
-> +
-> +Required properties (controller (parent) node):
-> +- compatible	: Should be "st,miphy28lp-phy"
-> +- st,syscfg	: Should be a phandle of the system configuration register group
-> +		  which contain the SATA, PCIe or USB3 mode setting bits
-> +
-> +Required nodes	:  A sub-node is required for each channel the controller
-> +		   provides. Address range information including the usual
-> +		   'reg' and 'reg-names' properties are used inside these
-> +		   nodes to describe the controller's topology. These nodes
-> +		   are translated by the driver's .xlate() function.
-> +
-> +Required properties (port (child) node):
-> +- #phy-cells	: Should be 1 (See second example)
-> +		  Cell after port phandle is device type from:
-> +			- MIPHY_TYPE_SATA
-> +			- MIPHY_TYPE_PCI
-> +			- MIPHY_TYPE_USB3
-> +- reg		: Address and length of the register set for the device
-> +- reg-names	: The names of the register addresses corresponding to the registers
-> +		  filled in "reg". Is can also contain the offset of the system configuration
+> >>>+	/* Mask/unmask watchdog reset */
+> >>>+	regmap_update_bits(st_wdog->syscfg->regmap,
+> >>>+			   st_wdog->syscfg->enable_reg,
+> >>>+			   st_wdog->syscfg->enable_mask,
+> >>>+			   !enable);
+> >>
+> >>enable is a bool, but is supposed to provide the value to be put into the
+> >>register, masked with enable_mask. Unless I am missing something, the value
+> >>is not shifted in regmap_update_bits. So I don't think this can work, but
+> >>effectively always writes zero into the mask unless the mask happens to be
+> >>at bit position 0 - which never happens.
+> >>
+> >>Same is true for warm_reset above, which also has values 0 or 1.
+> >>
+> >>I know it does not really matter in C (at least when it comes to handling
+> >>0 and 1), but I would suggest to avoid mixing booleans with bit masks.
+> >
+> >You're right of course, great spot.
+> >
+> >How about?
+> >
+> >   !enable << ffs(st_wdog->syscfg->enable_mask).
+> >
+> Seems to add a lot of complexity (as in 'makes it difficult to understand')
+> to avoid a conditional, and assumes that enable_mask will never have more
+> than one bit set. I would go with
+> 	enable ? st_wdog->syscfg->enable_mask : 0
+> to avoid confusion, but your call.
 
-%s/Is/It
+Actually, it would be the other way round, but the implementation is
+nice.  I'll use that instead.
 
-Thanks
-Kishon
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
