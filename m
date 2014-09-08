@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304AbaIHWYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:24:55 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:64924 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218AbaIHWYw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:24:52 -0400
-Date: Tue, 9 Sep 2014 07:24:47 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: linux-ide@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH v4 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host
- controller driver
-Message-ID: <20140908222447.GC3806@mtj.dyndns.org>
-References: <1410194390-29007-1-git-send-email-galak@codeaurora.org>
- <1410194390-29007-2-git-send-email-galak@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410194390-29007-2-git-send-email-galak@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755331AbaIHWZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:25:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5801 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755132AbaIHWYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 18:24:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="383220295"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 3/4] regulator/axp20x: use axp2xx consolidated header
+Date: Mon,  8 Sep 2014 15:24:05 -0700
+Message-Id: <1410215046-31751-4-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410215046-31751-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1410215046-31751-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 11:39:49AM -0500, Kumar Gala wrote:
-> Add support for the Qualcomm AHCI SATA controller that exists on several
-> SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
-> requires the associated IPQ806x SATA PHY Driver to be enabled as well.
-> 
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+AXP20x driver has been extended to support axp288 variant. Header file
+and common data structures has also been renamed to suit the new
+scope of devices supported.
 
-Please cc Hans de Goede <hdegoede@redhat.com> on all ahci_platform
-related changes.
+This patch makes use of the renamed header and structure.
 
-Thanks.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ drivers/regulator/axp20x-regulator.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
+index 004aadb..c9b6803 100644
+--- a/drivers/regulator/axp20x-regulator.c
++++ b/drivers/regulator/axp20x-regulator.c
+@@ -20,7 +20,7 @@
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
+-#include <linux/mfd/axp20x.h>
++#include <linux/mfd/axp2xx.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/of_regulator.h>
+ 
+@@ -161,7 +161,7 @@ static struct of_regulator_match axp20x_matches[] = {
+ 
+ static int axp20x_set_dcdc_freq(struct platform_device *pdev, u32 dcdcfreq)
+ {
+-	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
++	struct axp2xx_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
+ 
+ 	if (dcdcfreq < 750) {
+ 		dcdcfreq = 750;
+@@ -232,7 +232,7 @@ static int axp20x_set_dcdc_workmode(struct regulator_dev *rdev, int id, u32 work
+ static int axp20x_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct regulator_dev *rdev;
+-	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
++	struct axp2xx_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
+ 	struct regulator_config config = { };
+ 	struct regulator_init_data *init_data;
+ 	int ret, i;
 -- 
-tejun
+1.9.1
+
