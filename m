@@ -1,144 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaIHSft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:35:49 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:65234 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289AbaIHSfs (ORCPT
+	id S1754109AbaIHSiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:38:24 -0400
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:64200 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147AbaIHSiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:35:48 -0400
+	Mon, 8 Sep 2014 14:38:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140908105307.GF26030@arm.com>
-References: <1409959460-15989-1-git-send-email-behanw@converseincode.com>
-	<20140908105307.GF26030@arm.com>
-Date: Mon, 8 Sep 2014 11:35:47 -0700
-Message-ID: <CAFzeTN2Q-RkOeDx4jG5jiEtiN7i+gkfmyvBC1b3B1wpDPUDdxw@mail.gmail.com>
-Subject: Re: [PATCH] arm64: LLVMLinux: Fix inline arm64 assembly for use with clang
-From: Mark Charlebois <charlebm@gmail.com>
+In-Reply-To: <20140908103959.GD26030@arm.com>
+References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+	<1409781429-27593-4-git-send-email-keescook@chromium.org>
+	<20140904170349.GL7156@arm.com>
+	<CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
+	<20140904172748.GO7156@arm.com>
+	<CAGXu5jJVJ1F=6Q909ppuKoWPdSoz7bTLLxBiY_5eQ=nQQiCHmw@mail.gmail.com>
+	<20140908103959.GD26030@arm.com>
+Date: Mon, 8 Sep 2014 11:38:21 -0700
+X-Google-Sender-Auth: TwSjwrxUeoo_Z5aqq1CZdCfkgJ8
+Message-ID: <CAGXu5jJGaY1pY8UHAe7-VL=R8pRoDkLL_WLBcWMTUkfmtdid1Q@mail.gmail.com>
+Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+From: Kees Cook <keescook@chromium.org>
 To: Will Deacon <will.deacon@arm.com>
-Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
-        "anderson@redhat.com" <anderson@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "cl@linux.com" <cl@linux.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "jays.lee@samsung.com" <jays.lee@samsung.com>,
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
+        Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
         "msalter@redhat.com" <msalter@redhat.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "acme@kernel.org" <acme@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Matthew Leach <Matthew.Leach@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "paulus@samba.org" <paulus@samba.org>
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I compile
-
-int main()
-{
-        u64 foo, tmp;
-
-        // This works for both clang and gcc
-        asm volatile(
-        "       mrs     %0, mair_el1\n"
-        "       bfi     %0, %1, %2, #8\n"
-        "       msr     mair_el1, %0\n"
-        "       isb\n"
-        : "=&r" (tmp)
-        : "r" (foo), "i" (MT_NORMAL * 8));
-}
-
-with clang I get:
-
-00000000004004f0 <main>:
-  4004f0: d538a208 mrs x8, mair_el1
-  4004f4: b3601d08 bfi x8, x8, #32, #8
-  4004f8: d518a208 msr mair_el1, x8
-  4004fc: d5033fdf isb
-  400500: 2a1f03e0 mov w0, wzr
-  400504: d65f03c0 ret
-
-When I compile it with GCC I get:
-
-0000000000400510 <main>:
-  400510: d10043ff sub sp, sp, #0x10
-  400514: f94003e1 ldr x1, [sp]
-  400518: d538a200 mrs x0, mair_el1
-  40051c: b3601c20 bfi x0, x1, #32, #8
-  400520: d518a200 msr mair_el1, x0
-  400524: d5033fdf isb
-  400528: f90007e0 str x0, [sp,#8]
-  40052c: 910043ff add sp, sp, #0x10
-  400530: d65f03c0 ret
-
-When I compile
-
-int main()
-{
-        u64 foo, tmp;
-
-       // This fails for clang but not gcc
-        asm volatile(
-        "       mrs     %0, mair_el1\n"
-        "       bfi     %0, %1, #%2, #8\n"
-        "       msr     mair_el1, %0\n"
-        "       isb\n"
-        : "=&r" (tmp)
-        : "r" (foo), "i" (MT_NORMAL * 8));
-}
-
-Clang fails and GCC generates:
-
-00000000004004f0 <main>:
-  4004f0: d538a208 mrs x8, mair_el1
-  4004f4: b3601d08 bfi x8, x8, #32, #8
-  4004f8: d518a208 msr mair_el1, x8
-  4004fc: d5033fdf isb
-  400500: 2a1f03e0 mov w0, wzr
-  400504: d65f03c0 ret
-
-On Mon, Sep 8, 2014 at 3:53 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Sat, Sep 06, 2014 at 12:24:20AM +0100, behanw@converseincode.com wrote:
->> From: Mark Charlebois <charlebm@gmail.com>
+On Mon, Sep 8, 2014 at 3:39 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Fri, Sep 05, 2014 at 08:41:08PM +0100, Kees Cook wrote:
+>> On Thu, Sep 4, 2014 at 10:27 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Thu, Sep 04, 2014 at 06:23:42PM +0100, Kees Cook wrote:
+>> >> On Thu, Sep 4, 2014 at 10:03 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> >> > Hi Kees,
+>> >> >
+>> >> > On Wed, Sep 03, 2014 at 10:57:04PM +0100, Kees Cook wrote:
+>> >> >> This is used from set_fixmap() and clear_fixmap() via asm-generic/fixmap.h.
+>> >> >> Also makes sure that the fixmap allocation fits into the expected range.
+>> >> >>
+>> >> >> Based on patch by Rabin Vincent.
+>> >> >
+>> >> > [...]
+>> >> >
+>> >> >> +void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot)
+>> >> >> +{
+>> >> >> +     unsigned long vaddr = __fix_to_virt(idx);
+>> >> >> +     pte_t *pte = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
+>> >> >> +
+>> >> >> +     /* Make sure fixmap region does not exceed available allocation. */
+>> >> >> +     BUILD_BUG_ON(FIXADDR_START + (__end_of_fixed_addresses * PAGE_SIZE) >
+>> >> >> +                  FIXADDR_END);
+>> >> >> +     BUG_ON(idx >= __end_of_fixed_addresses);
+>> >> >> +
+>> >> >> +     if (pgprot_val(prot))
+>> >> >> +             set_pte_at(NULL, vaddr, pte,
+>> >> >> +                     pfn_pte(phys >> PAGE_SHIFT, prot));
+>> >> >> +     else
+>> >> >> +             pte_clear(NULL, vaddr, pte);
+>> >> >> +
+>> >> >> +     /*
+>> >> >> +      * Given the potential a15 tlbi errata, we can only do tlb flushes
+>> >> >> +      * with interrupts disabled. Callers must have taken care of this.
+>> >> >> +      */
+>> >> >> +     WARN_ON_ONCE(!irqs_disabled());
+>> >> >> +     flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
+>> >> >
+>> >> > Aha, this explains why we were confusing each other! The issue is that
+>> >> > interrupts must be *enabled*, so this code does the exact opposite of
+>> >> > what we need.
+>> >> >
+>> >> > I think this got lost in a sea of double negatives during the last round
+>> >> > of review.
+>> >>
+>> >> Ah! If this is the case, perhaps we can get away with
+>> >> local_flush_tlb_kernel_range() then?
+>> >
+>> > That's a bit tricky, since you need to ensure that preemption is disabled
+>> > until the mapping is put back like it was.
 >>
->> Fix variable types for 64-bit inline assembly.
+>> Even with CONFIG_ARM_ERRATA_798181 enabled, I don't see a problem here
+>> using flush_tlb_kernel_range(). When doing the ftrace work, this was
+>> trivial to trip over, so I think we're in a good state here.
 >>
->> This patch now works with both gcc and clang.
+>> I've tested this on real hardware now too, and nothing falls over.
+>> I'll get rid of the comment and the WARN_ON_ONCE, but AFAICT, this is
+>> safe.
 >
-> Really? This looks like something the clang needs to do better on, as I
-> really don't see people adding these casts to future code. They're ugly and
-> redundant (or GCC).
+> But was that hardware actually affected by the erratum? There is a runtime
+> check which will avoid the cross-call if not.
 >
-> This hunk:
+>> Do you have a suggestion about what needs fixing?
 >
->> diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
->> index c555672..6894ef3 100644
->> --- a/arch/arm64/mm/mmu.c
->> +++ b/arch/arm64/mm/mmu.c
->> @@ -94,7 +94,7 @@ static int __init early_cachepolicy(char *p)
->>        */
->>       asm volatile(
->>       "       mrs     %0, mair_el1\n"
->> -     "       bfi     %0, %1, #%2, #8\n"
->> +     "       bfi     %0, %1, %2, #8\n"
->>       "       msr     mair_el1, %0\n"
->>       "       isb\n"
->>       : "=&r" (tmp)
->
-> also looks fishy. Does gas accept that without the '#' prefix?
->
-> Will
+> The easiest thing to do would be ensuring that __set_fixmap is always called
+> with interrupts enabled. If you can guarantee that, then you need to rework
+> the locking so that interrupts aren't disabled. I admit that I've lost a
+> fair amount of the context here, but that's the fundamental issue.
+
+In retesting, it hit the problem. Ugh. I will investigate what can be done.
+
+Thanks,
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
