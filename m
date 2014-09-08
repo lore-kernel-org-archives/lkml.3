@@ -1,135 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581AbaIHXif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:38:35 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:44434 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295AbaIHXid (ORCPT
+	id S1755605AbaIHXjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:39:40 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57814 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753827AbaIHXjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:38:33 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org
-Subject: [PATCH v2 3/3] x86: use __memblock_alloc_base() and memblock_alloc_base()
-Date: Tue,  9 Sep 2014 08:38:04 +0900
-Message-Id: <1410219484-8038-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410219484-8038-1-git-send-email-akinobu.mita@gmail.com>
-References: <1410219484-8038-1-git-send-email-akinobu.mita@gmail.com>
+	Mon, 8 Sep 2014 19:39:39 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Date: Tue, 09 Sep 2014 01:59:06 +0200
+Message-ID: <4394731.dfhKV5T3ox@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAM_iQpXwEEoCTqksFEyJ7UigOJkf6g5UHnddEHcMDjwKz6K-DQ@mail.gmail.com>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <4809128.C6aPga5IjQ@vostro.rjw.lan> <CAM_iQpXwEEoCTqksFEyJ7UigOJkf6g5UHnddEHcMDjwKz6K-DQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__memblock_alloc_base() is equivalent to memblock_find_in_range() with
-the range starting from 0 and subsequent memblock_reserve() call.
-memblock_alloc_base() is similar to __memblock_alloc_base(), but it
-calls panic if the allocation fails.  Convert to use these functions
-where possible.
+On Monday, September 08, 2014 04:29:24 PM Cong Wang wrote:
+> On Mon, Sep 8, 2014 at 4:42 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Monday, September 08, 2014 04:16:15 PM Cong Wang wrote:
+> >> On Mon, Sep 8, 2014 at 4:23 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> >> >
+> >> > The reason why it matters for the suspend-time freezing is that we freeze tasks
+> >> > to take them out of the picture entirely until they are thawed.  Therefore we
+> >> > can't allow them to go back to the picture just for a while until they are
+> >> > killed.  Frozen tasks are not supposed to get back to the picture at all.
+> >> >
+> >>
+> >>
+> >> Ok, then checking TIF_MEMDIE is unsafe for PM freeze, we should
+> >> keep the cgroup_freezing() test to make sure freeze request is from
+> >> cgroup not PM. Question got answered. :)
+> >
+> > Do I think correctly that cgroups freezing and system suspend are
+> > mutually exclusive?  If not, then this still is problematic.
+> 
+> Good point! Although rare, but it is possible we freeze a process both from
+> cgroup and PM. Hmm, this means we have to explicitly exclude PM rather
+> just checking cgroup freeze?
 
-This is mainly a cleanup.  Also, memblock_alloc_base() and its variants
-call kmemleak_alloc() for allocated memory block with min_count of 0, so
-that it is never reported as leaks.
+There's no way to do that currently as PM freezing is all-inclusive.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-mm@kvack.org
----
-* v2: split from membloc_alloc_range() conversions, and avoid unexpected
-  panic on allocation failure.
+> Interesting, but I am not familiar with PM.
 
- arch/x86/kernel/setup.c      | 9 ++-------
- arch/x86/mm/numa.c           | 4 +---
- arch/x86/mm/numa_emulation.c | 5 ++---
- arch/x86/realmode/init.c     | 5 +----
- 4 files changed, 6 insertions(+), 17 deletions(-)
+I'm wondering if the OOM killer might avoid killing frozen tasks instead?
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 7d32406..d3b1da5 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -327,16 +327,11 @@ static void __init relocate_initrd(void)
- 	char *p, *q;
- 
- 	/* We need to move the initrd down into directly mapped mem */
--	relocated_ramdisk = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
--						   area_size, PAGE_SIZE);
--
--	if (!relocated_ramdisk)
--		panic("Cannot find place for new RAMDISK of size %lld\n",
--		      ramdisk_size);
-+	relocated_ramdisk = memblock_alloc_base(area_size, PAGE_SIZE,
-+						PFN_PHYS(max_pfn_mapped));
- 
- 	/* Note: this includes all the mem currently occupied by
- 	   the initrd, we rely on that fact to keep the data intact. */
--	memblock_reserve(relocated_ramdisk, area_size);
- 	initrd_start = relocated_ramdisk + PAGE_OFFSET;
- 	initrd_end   = initrd_start + ramdisk_size;
- 	printk(KERN_INFO "Allocated new RAMDISK: [mem %#010llx-%#010llx]\n",
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a32b706..5deaa9b 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -375,15 +375,13 @@ static int __init numa_alloc_distance(void)
- 	cnt++;
- 	size = cnt * cnt * sizeof(numa_distance[0]);
- 
--	phys = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
--				      size, PAGE_SIZE);
-+	phys = __memblock_alloc_base(size, PAGE_SIZE, PFN_PHYS(max_pfn_mapped));
- 	if (!phys) {
- 		pr_warning("NUMA: Warning: can't allocate distance table!\n");
- 		/* don't retry until explicitly reset */
- 		numa_distance = (void *)1LU;
- 		return -ENOMEM;
- 	}
--	memblock_reserve(phys, size);
- 
- 	numa_distance = __va(phys);
- 	numa_distance_cnt = cnt;
-diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
-index a8f90ce..4dc3405 100644
---- a/arch/x86/mm/numa_emulation.c
-+++ b/arch/x86/mm/numa_emulation.c
-@@ -357,13 +357,12 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
- 	if (numa_dist_cnt) {
- 		u64 phys;
- 
--		phys = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
--					      phys_size, PAGE_SIZE);
-+		phys = __memblock_alloc_base(phys_size, PAGE_SIZE,
-+					     PFN_PHYS(max_pfn_mapped));
- 		if (!phys) {
- 			pr_warning("NUMA: Warning: can't allocate copy of distance table, disabling emulation\n");
- 			goto no_emu;
- 		}
--		memblock_reserve(phys, phys_size);
- 		phys_dist = __va(phys);
- 
- 		for (i = 0; i < numa_dist_cnt; i++)
-diff --git a/arch/x86/realmode/init.c b/arch/x86/realmode/init.c
-index bad628a..c6c212a 100644
---- a/arch/x86/realmode/init.c
-+++ b/arch/x86/realmode/init.c
-@@ -15,12 +15,9 @@ void __init reserve_real_mode(void)
- 	size_t size = PAGE_ALIGN(real_mode_blob_end - real_mode_blob);
- 
- 	/* Has to be under 1M so we can execute real-mode AP code. */
--	mem = memblock_find_in_range(0, 1<<20, size, PAGE_SIZE);
--	if (!mem)
--		panic("Cannot allocate trampoline\n");
-+	mem = memblock_alloc_base(size, PAGE_SIZE, 1 << 20);
- 
- 	base = __va(mem);
--	memblock_reserve(mem, size);
- 	real_mode_header = (struct real_mode_header *) base;
- 	printk(KERN_DEBUG "Base memory trampoline at [%p] %llx size %zu\n",
- 	       base, (unsigned long long)mem, size);
+Or there might be a "suspend" operation for the OOM killer that would be
+run from a PM notifier to guaratee that the OOM killer would not mess up
+with things during the entire system suspend (which surely is not quite
+useful anyway).
+
 -- 
-1.9.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
