@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaIHPWM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:22:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39788 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891AbaIHPWL (ORCPT
+	id S1754137AbaIHPWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:22:47 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:56809 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867AbaIHPWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:22:11 -0400
-Date: Mon, 8 Sep 2014 17:22:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf: Do not check PERF_EVENT_STATE_EXIT on syscall read
- path
-Message-ID: <20140908152206.GH6758@twins.programming.kicks-ass.net>
-References: <CABPqkBRREcix0TtLLUgiq8uabUqG=m2un79WKLqPXF=LccSQbw@mail.gmail.com>
- <20140908124945.GD17728@krava.brq.redhat.com>
- <CABPqkBRPWh+=CfXBYaYW=P6FJke3KB-7y-U1ky8JAKjDY3JaEg@mail.gmail.com>
- <20140908143107.GG17728@krava.brq.redhat.com>
+	Mon, 8 Sep 2014 11:22:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: pcf8563: fix uninitialized use warning
+Date: Mon, 08 Sep 2014 17:22:40 +0200
+Message-ID: <10094879.uvjB4Q3B81@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540D8CA8.5020104@cogentembedded.com>
+References: <3640058.m4Rfp1dmTJ@wuerfel> <540D8CA8.5020104@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="S0bejtPoMQWM2IlW"
-Content-Disposition: inline
-In-Reply-To: <20140908143107.GG17728@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5fevMeS9DMcv5QoUX80g2EkCvmofzTn1Vl3YguTl52l
+ QC6Js5zNV5GBVoU3ALY5YV8FwlTjtWDa9wV/rHhnp6k4DTj5QF
+ EoaMuoZzRqt7juoRQbRb+0IWIIE1YstaeObTrYSrz1+OI4WIPd
+ w+cPR0ZH6cAixSiXO1lnpp58sP0Qu1FByisu2wVwm8586IMHIf
+ lqJV8pc9u5oEMxuyTdrfFMUocJZO4NR3Px1uHb9Yd+YKEDfN/W
+ lR6au/MTaddMJuUpNokW+AObj9p8+fnK+2xkTL3tve1t0RmP5w
+ 8e0Y2Er9P3FQB1mpd3aPnZ8uUYpBtQaMPVGBRTX+PRB459jAgr
+ P9vd7nvi56kKItQytWmM=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 08 September 2014 15:02:00 Sergei Shtylyov wrote:
+> > diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
+> > index 5a197d9dc7e7..3a6f994c4da8 100644
+> > --- a/drivers/rtc/rtc-pcf8563.c
+> > +++ b/drivers/rtc/rtc-pcf8563.c
+> > @@ -167,7 +167,7 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
+> >       char pending;
+> >
+> >       err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
+> > -     if (err < 0)
+> > +     if (err)
+> >               return err;
+> 
+>     Returning negative values from the IRQ handler doesn't seem valid.
+> Arbitrary positive value aren't good either. Perhaps should return IRQ_NONE 
+> instead?
 
---S0bejtPoMQWM2IlW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good point. This is unrelated to the problem I was trying to fix, but it
+seems like a good idea to fix both.
 
-On Mon, Sep 08, 2014 at 04:31:07PM +0200, Jiri Olsa wrote:
-> Revert PERF_EVENT_STATE_EXIT check on read syscall path.
-> It breaks standard way to read counter, which is to open
-> the counter, wait for the monitored process to die and
-> read the counter.
->=20
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Acked-by: Stephane Eranian <eranian@google.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-
-Thanks!=20
-
-> ---
->  kernel/events/core.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->=20
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index d8cb4d21a346..6d1c9ce1643e 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3600,8 +3600,7 @@ perf_read_hw(struct perf_event *event, char __user =
-*buf, size_t count)
->  	 * error state (i.e. because it was pinned but it couldn't be
->  	 * scheduled on to the CPU at some point).
->  	 */
-> -	if ((event->state =3D=3D PERF_EVENT_STATE_ERROR) ||
-> -	    (event->state =3D=3D PERF_EVENT_STATE_EXIT))
-> +	if (event->state =3D=3D PERF_EVENT_STATE_ERROR)
->  		return 0;
-> =20
->  	if (count < event->read_size)
-> --=20
-> 1.8.3.1
->=20
-
---S0bejtPoMQWM2IlW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUDcmeAAoJEHZH4aRLwOS6ZUoP/25pdLuvNdcqTb53Q7PkRkER
-lAr2aVjD9ub18F6BF/vzE3xdpaf6o/i6dC5FkonoGNS3IFCrTNzUyIrufX0ouO0G
-Tiich/z/bmiLNezvSLG7qTGRxhY3B7dxAQ1dcj+lVPfpwIgUQoG0TGuZRJxCJaFf
-lKL8gXSe2OP7afT0lF6HX5Jllum0eg/e4TBbd5cCkOvZbMKGh5mzzGRsD5F0i/eO
-a0NxXk2Lm+cUqBxqqr0chRvHqBvxTAMzKq0XgtaIYUdd75Curk0U/WjOSkbm5QIR
-YS812DLTGD/whVr3a6VVhWDDdALc9MXk2TRPp7krNWa63CbsHyEUYKVQ++vpTcQZ
-KVoA53iEnJsI4+ZNJT3YiRgK2ESh4p+bQ0yNpU38DN2xxG1aHCzmdEiC9Ql6qA6o
-7YYOYQm1z7lXr+IUvg7kGH9Z6SRHZbJcgOBHPZ45CDe3otwA6RaJlu6Ez8EGJUpB
-+T8282WcVX72EKpJV3DVFVbbtiSZM1Vq+Oaa1gu+ftu4gNcdEpfewGrlCM68uvPZ
-ZmwNDc8L9OZe9/M3Nd8v5lXoVIgBb+xOGvUVaREeMezEhBcHD1t9VIRgx+fnb+O6
-po0n9CKgJbHOMhvs8ijy5ET65jblzuYOxRLBkAVhlmnUWeIT0tef8OvHOppQGuwm
-KyXgtVlWCRJa4vE60msw
-=s9gD
------END PGP SIGNATURE-----
-
---S0bejtPoMQWM2IlW--
+	Arnd
