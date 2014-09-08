@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaIHRIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:08:09 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:63890 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304AbaIHRIG (ORCPT
+	id S1754520AbaIHRN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:13:56 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:54142 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907AbaIHRNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:08:06 -0400
-Date: Mon, 8 Sep 2014 11:08:01 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Ethan Zhao <ethan.zhao@oracle.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, gleb@kernel.org,
-        pbonzini@redhat.com, kvm@vger.kernel.org, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org, alex.williamson@redhat.com,
-        alexander.h.duyck@intel.com, ethan.kernel@gmail.com
-Subject: Re: [PATCH v3 0/4 resend] Introduce device assignment flag operation
- helper function
-Message-ID: <20140908170801.GP8080@google.com>
-References: <1407476167-18935-1-git-send-email-ethan.zhao@oracle.com>
- <20140905171522.GA8080@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905171522.GA8080@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Sep 2014 13:13:54 -0400
+From: Nitin Kuppelur <nitinkuppelur@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Nitin Kuppelur <nitinkuppelur@gmail.com>
+Subject: [PATCH] Staging: octeon-hcd: removed unwanted return from void functions
+Date: Mon,  8 Sep 2014 19:13:15 +0200
+Message-Id: <1410196395-4595-1-git-send-email-nitinkuppelur@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 11:15:22AM -0600, Bjorn Helgaas wrote:
-> On Fri, Aug 08, 2014 at 01:36:03PM +0800, Ethan Zhao wrote:
-> > This patch set introduces three PCI device flag operation helper functions
-> > when set pci device PF/VF to assigned or deassigned status also check it.
-> > and patch 2,3,4 apply these helper functions to KVM,XEN and PCI.
-> > 
-> > v2: simplify unnecessory ternary operation in function pci_is_dev_assigned().
-> > v3: amend helper function naming.
-> > 
-> > Appreciate suggestion from
-> > alex.williamson@redhat.com,
-> > david.vrabel@citrix.com,
-> > alexander.h.duyck@intel.com
-> > 
-> > Resend for v3.16 building.
-> > 
-> > Thanks,
-> > Ethan
-> > ---
-> > Ethan Zhao (4):
-> >   PCI: introduce helper functions for device flag operation
-> >   KVM: use pci device flag operation helper functions
-> >   xen-pciback: use pci device flag operation helper function
-> >   PCI: use device flag operation helper function in iov.c
-> > 
-> >  drivers/pci/iov.c                  |    2 +-
-> >  drivers/xen/xen-pciback/pci_stub.c |    4 ++--
-> >  include/linux/pci.h                |   13 +++++++++++++
-> >  virt/kvm/assigned-dev.c            |    2 +-
-> >  virt/kvm/iommu.c                   |    4 ++--
-> >  5 files changed, 19 insertions(+), 6 deletions(-)
-> > 
-> 
-> Applied to pci/virtualization for v3.18, thanks!
+This is a patch to the octeon-hcd.c file that fixes checkpatch.pl warning by removing return statement from void functions.
 
-I dropped these because of build errors from the kbuild-test robot.  Fix
-and resend if you still want them.
+Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
+---
+ drivers/staging/octeon-usb/octeon-hcd.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-Bjorn
+diff --git a/drivers/staging/octeon-usb/octeon-hcd.c b/drivers/staging/octeon-usb/octeon-hcd.c
+index 3a5feb4..8a80982 100644
+--- a/drivers/staging/octeon-usb/octeon-hcd.c
++++ b/drivers/staging/octeon-usb/octeon-hcd.c
+@@ -1332,8 +1332,6 @@ static void __cvmx_usb_poll_rx_fifo(struct cvmx_usb_state *usb)
+ 		bytes -= 4;
+ 	}
+ 	CVMX_SYNCW;
+-
+-	return;
+ }
+ 
+ 
+@@ -1437,8 +1435,6 @@ static void __cvmx_usb_poll_tx_fifo(struct cvmx_usb_state *usb)
+ 					union cvmx_usbcx_gintmsk,
+ 					nptxfempmsk, 0);
+ 	}
+-
+-	return;
+ }
+ 
+ 
+@@ -1490,8 +1486,6 @@ static void __cvmx_usb_fill_tx_fifo(struct cvmx_usb_state *usb, int channel)
+ 		fifo->head = 0;
+ 
+ 	__cvmx_usb_poll_tx_fifo(usb);
+-
+-	return;
+ }
+ 
+ /**
+@@ -1640,7 +1634,6 @@ static void __cvmx_usb_start_channel_control(struct cvmx_usb_state *usb,
+ 
+ 	__cvmx_usb_write_csr32(usb, CVMX_USBCX_HCTSIZX(channel, usb->index),
+ 			       usbc_hctsiz.u32);
+-	return;
+ }
+ 
+ 
+@@ -1987,7 +1980,6 @@ static void __cvmx_usb_start_channel(struct cvmx_usb_state *usb,
+ 			union cvmx_usbcx_hccharx, chena, 1);
+ 	if (usb->init_flags & CVMX_USB_INITIALIZE_FLAGS_NO_DMA)
+ 		__cvmx_usb_fill_tx_fifo(usb, channel);
+-	return;
+ }
+ 
+ 
+@@ -2116,7 +2108,6 @@ done:
+ 	}
+ 	USB_SET_FIELD32(CVMX_USBCX_GINTMSK(usb->index),
+ 			union cvmx_usbcx_gintmsk, sofmsk, need_sof);
+-	return;
+ }
+ 
+ static inline struct octeon_hcd *cvmx_usb_to_octeon(struct cvmx_usb_state *p)
+-- 
+1.9.1
+
