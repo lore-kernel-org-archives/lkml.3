@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaIHRBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:01:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754227AbaIHRBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:01:47 -0400
-From: Mark Salter <msalter@redhat.com>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, matt.fleming@intel.com,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Mark Salter <msalter@redhat.com>
-Subject: [PATCH v2] efi/arm64: fix fdt-related memory reservation
-Date: Mon,  8 Sep 2014 13:01:08 -0400
-Message-Id: <1410195668-9975-1-git-send-email-msalter@redhat.com>
-In-Reply-To: <1410183102-6969-1-git-send-email-msalter@redhat.com>
-References: <1410183102-6969-1-git-send-email-msalter@redhat.com>
+	id S1754733AbaIHRDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:03:09 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:37900 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907AbaIHRDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 13:03:07 -0400
+Date: Mon, 8 Sep 2014 22:32:44 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+Cc: "Kershner, David A" <David.Kershner@unisys.com>,
+        *S-Par-Maintainer <SParMaintainer@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Message-ID: <20140908170244.GA9392@fool>
+References: <1409908966-23148-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E1@USEA-EXCH7.na.uis.unisys.com>
+ <20140908162714.GA5497@fool>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E3@USEA-EXCH7.na.uis.unisys.com>
+ <20140908163852.GA5995@fool>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E4@USEA-EXCH7.na.uis.unisys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C97001BC43954D438ACB059713BA5CDFC97127E0E4@USEA-EXCH7.na.uis.unisys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 86c8b27a01cf:
- "arm64: ignore DT memreserve entries when booting in UEFI mode
+On Mon, Sep 08, 2014 at 11:48:44AM -0500, Romer, Benjamin M wrote:
+> On Mon, 2014-09-08 at 22:08 +0530, Sudip Mukherjee wrote:
+> > Hi Ben,
+> > sorry to disturb you again. i got confused , which one is perfect one combined patch or 
+> > separate patches?
+> > 
+> > thanks
+> > sudip
+> 
+> Two patches, as you preferred.
+> 
+> -- Ben
+> 
+> 
+ok. and if you get time can you please also have a look at :
+[PATCH v4] staging: unisys: uislib: uisqueue.c: rewrite of do_locked_client_insert
+Dan Carpenter has already reviwed it.
 
-prevents early_init_fdt_scan_reserved_mem() from being called for
-arm64 kernels booting via UEFI. This was done because the kernel
-will use the UEFI memory map to determine reserved memory regions.
-That approach has problems in that early_init_fdt_scan_reserved_mem()
-also reserves the FDT itself and any node-specific reserved memory.
-By chance of some kernel configs, the FDT may be overwritten before
-it can be unflattened and the kernel will fail to boot. More subtle
-problems will result if the FDT has node specific reserved memory
-which is not really reserved.
-
-This patch has the UEFI stub remove the memory reserve map entries
-from the FDT as it does with the memory nodes. This allows
-early_init_fdt_scan_reserved_mem() to be called unconditionally
-so that the other needed reservations are made.
-
-Change from v1:
-  * Acks added
-  * Fixed loop logic to remove reserved regions
-
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
----
- arch/arm64/mm/init.c               |  3 +--
- drivers/firmware/efi/libstub/fdt.c | 10 +++++++++-
- 2 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 5472c24..a83061f 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -149,8 +149,7 @@ void __init arm64_memblock_init(void)
- 		memblock_reserve(__virt_to_phys(initrd_start), initrd_end - initrd_start);
- #endif
- 
--	if (!efi_enabled(EFI_MEMMAP))
--		early_init_fdt_scan_reserved_mem();
-+	early_init_fdt_scan_reserved_mem();
- 
- 	/* 4GB maximum for 32-bit only capable devices */
- 	if (IS_ENABLED(CONFIG_ZONE_DMA))
-diff --git a/drivers/firmware/efi/libstub/fdt.c b/drivers/firmware/efi/libstub/fdt.c
-index a56bb35..c846a96 100644
---- a/drivers/firmware/efi/libstub/fdt.c
-+++ b/drivers/firmware/efi/libstub/fdt.c
-@@ -22,7 +22,7 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
- 			unsigned long map_size, unsigned long desc_size,
- 			u32 desc_ver)
- {
--	int node, prev;
-+	int node, prev, num_rsv;
- 	int status;
- 	u32 fdt_val32;
- 	u64 fdt_val64;
-@@ -73,6 +73,14 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
- 		prev = node;
- 	}
- 
-+	/*
-+	 * Delete all memory reserve map entries. When booting via UEFI,
-+	 * kernel will use the UEFI memory map to find reserved regions.
-+	 */
-+	num_rsv = fdt_num_mem_rsv(fdt);
-+	while (num_rsv-- > 0)
-+		fdt_del_mem_rsv(fdt, num_rsv);
-+
- 	node = fdt_subnode_offset(fdt, 0, "chosen");
- 	if (node < 0) {
- 		node = fdt_add_subnode(fdt, 0, "chosen");
--- 
-1.8.3.1
+thanks
+sudip
 
