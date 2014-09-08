@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627AbaIHLCu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:02:50 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:63075 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487AbaIHLCo (ORCPT
+	id S1753729AbaIHLD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:03:59 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:58656 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163AbaIHLD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:02:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: "mm: introduce dump_vma fix 2" still broken
-Date: Mon, 08 Sep 2014 13:02:33 +0200
-Message-ID: <2815658.dHHBXc7oHP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+	Mon, 8 Sep 2014 07:03:57 -0400
+Message-ID: <540D8D1F.5000804@linaro.org>
+Date: Mon, 08 Sep 2014 12:03:59 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:zuka6K9IRPvXw1rMt0t9D130i1S+j2LLvPlezC5Ir4x
- gskJerYAYmG3UytxRaVaQsH3BVoJbsjFyeyctPDDliOCDbV5jc
- zT91/YSoBKxFU4QeSpI8GoO3kxes6jGMMlRYgbwKUQlfk2VgWa
- qIqFY6WiARwizXU9TV8FJVxSqQzWNv046xG/Kjp3lllJV1l92R
- N+jzihCqURz3vEdRbgEeJ43cYB4Ch/LvaATXZYBsp0g8uRk417
- EfhWG4wkSra0GC9ylidZLltZlIQXmLapKgRC4KmqeavnSa9cIY
- HUyFi2wKsZYhI1CG+zoLIPbuBMiRYyNsLhijQeV7PArN4ZD8Dm
- XlsdaFDeTzvo6QCABph4=
-X-UI-Out-Filterresults: notjunk:1;
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 4/5] arm64: Introduce dummy version of asm/fiq.h
+References: <1409846620-14542-1-git-send-email-daniel.thompson@linaro.org> <1409931198-22600-1-git-send-email-daniel.thompson@linaro.org> <1409931198-22600-5-git-send-email-daniel.thompson@linaro.org> <20140905165033.GD10976@arm.com>
+In-Reply-To: <20140905165033.GD10976@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/09/14 17:50, Catalin Marinas wrote:
+> On Fri, Sep 05, 2014 at 04:33:17PM +0100, Daniel Thompson wrote:
+>> Drivers that are shared between arm and arm64 and which employ
+>> FIQ on arm cannot include asm/fiq.h without #ifdef'ing. This patch
+>> introduces a dummy version of asm/fiq.h to arm64 to avoid this.
+>>
+>> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>> Cc: Will Deacon <will.deacon@arm.com>
+>> ---
+>>  arch/arm64/include/asm/fiq.h | 18 ++++++++++++++++++
+>>  1 file changed, 18 insertions(+)
+>>  create mode 100644 arch/arm64/include/asm/fiq.h
+>>
+>> diff --git a/arch/arm64/include/asm/fiq.h b/arch/arm64/include/asm/fiq.h
+>> new file mode 100644
+>> index 0000000..909ec54
+>> --- /dev/null
+>> +++ b/arch/arm64/include/asm/fiq.h
+>> @@ -0,0 +1,18 @@
+>> +/*
+>> + * arch/arm64/include/asm/fiq.h
+>> + *
+>> + * Placeholder to reduce #ifdef'ing in shared arm/arm64 drivers.
+>> + */
+>> +
+>> +#ifndef __ASM_FIQ_H
+>> +#define __ASM_FIQ_H
+>> +
+>> +/*
+>> + * This placeholder allows code of the following form to be simplified:
+>> + *
+>> + * #ifdef CONFIG_FIQ
+>> + * #include <asm/fiq.h>
+>> + * #endif
+>> + */
+>> +
+>> +#endif
+> 
+> OK, we add a dummy file, but please keep it simple. Comments are fine
+> but no need for header guards (nor the file name, on arm64 we try to get
+> rid of them, though some still slip through).
 
-I saw this commit today in linux-next, which fixes a build error, but introduces
-a new warning:
+Ok. I'll fix this.
 
-commit a60224c708f880dd937b352b7461cbf14e93012d
-Author: Stephen Rothwell <sfr@canb.auug.org.au>
-Date:   Mon Sep 8 19:41:54 2014 +1000
-
-    mm: introduce dump_vma fix 2
-    
-    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index cb510c08073b..0de60769bcf6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6739,7 +6739,7 @@ void dump_vma(const struct vm_area_struct *vma)
-                "prot %lx anon_vma %p vm_ops %p\n"
-                "pgoff %lx file %p private_data %p\n",
-                vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
--               vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
-+               vma->vm_prev, vma->vm_mm, pgprot_val(vma->vm_page_prot),
-                vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
-                vma->vm_file, vma->vm_private_data);
-        dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
-
-
-/git/arm-soc/mm/page_alloc.c: In function 'dump_vma':
-/git/arm-soc/mm/page_alloc.c:6744:3: warning: format '%lx' expects argument of type 'long unsigned int', but argument 8 has type 'pgprot_t' [-Wformat=]
-   vma->vm_file, vma->vm_private_data);
-   ^
-
-This happens on machines that use ARM LPAE, where pgprot_t is in fact
-a 64-bit integer. The simplest fix I see would be add a cast to u64
-and always print this as a 64bit value.
-
-	Arnd
