@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbaIHNgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:36:13 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45760 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708AbaIHNgK (ORCPT
+	id S1754114AbaIHNgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:36:39 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:58873 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811AbaIHNgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:36:10 -0400
-Message-ID: <540DB0BE.2050505@roeck-us.net>
-Date: Mon, 08 Sep 2014 06:35:58 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Xuetao Guan <gxt@pku.edu.cn>
-CC: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFJlOiDlm57lpI3vvJogUmU6IOWbnuWkje+8miA=?=
- =?UTF-8?B?UmU6IOWbnuWkje+8miBSZTog5Zue5aSN77yaIFN0YXR1cyBvZiAndW5pY29yZTM=?=
- =?UTF-8?B?MicgYXJjaGl0ZWN0dXJlIGluIExpbnV4IGtlcm5lbA==?=
-References: <174974381.13596.1410181022043.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <174974381.13596.1410181022043.JavaMail.root@bj-mail03.pku.edu.cn>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.540DB0CA.0009,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 11
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 8 Sep 2014 09:36:00 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH/RFC 1/5] PM / Domains: Add DT bindings for power-on/off latencies
+Date: Mon,  8 Sep 2014 15:35:40 +0200
+Message-Id: <1410183344-14756-2-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410183344-14756-1-git-send-email-geert+renesas@glider.be>
+References: <1410183344-14756-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 05:57 AM, Xuetao Guan  wrote:
->
-> ----- Guenter Roeck <linux@roeck-us.net> 写道：
->> On 09/04/2014 11:13 PM, Xuetao Guan  wrote:
->> Hi,
->>
->> I made everything I have available at http://server.roeck-us.net/qemu/unicore32/.
->> I tried multiple variants for creating the root file system, including the one
->> on https://github.com/gxt/UniCore32.git and the one using mkrootfs.sh in
->> the link above. No difference - I always see the same crash. Note that the
->> 'init' program is loading, but crashes with above error (0x0000000b is SIGSEGV
->> unless I am missing something).
->>
->> Note that I used the latest qemu for unicore from upstream sources; I was unable
->> to compile it from git@github.com:gxt/QEMU.git. Qemu configuration did not seem
->> to make a difference. The toolchain was extracted from uc4-1.0.5-hard.tgz.
->>
->> Hope this helps,
->> Guenter
->>
-> I guess you used the newest kernel to run busybox.
-> However, as for unicore32, the newest kernel uses different ABI with uc4-1.0.5 toolchain.
-> I'm sorry to make it so confusing.
-> I'll update and submit another-ABI patches asap.
->
+PM domain power on/off-latencies are properties of the hardware.
+In legacy code, they're specified from platform code.
+On DT platforms, their values should come from DT.
 
-Whatever is more recent. Guess you'll have to either update the toolchain
-or the kernel. If the plan is to update the kernel, can you send me a patch
-to do that so I can test it ?
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ Documentation/devicetree/bindings/power/power_domain.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Thanks,
-Guenter
+diff --git a/Documentation/devicetree/bindings/power/power_domain.txt b/Documentation/devicetree/bindings/power/power_domain.txt
+index 98c16672ab5f..7bc421d84367 100644
+--- a/Documentation/devicetree/bindings/power/power_domain.txt
++++ b/Documentation/devicetree/bindings/power/power_domain.txt
+@@ -19,12 +19,18 @@ Required properties:
+    providing multiple PM domains (e.g. power controllers), but can be any value
+    as specified by device tree binding documentation of particular provider.
+ 
++Optional properties:
++ - power-on-latency: Power-on latency of the PM domain, in ns,
++ - power-off-latency: Power-off latency of the PM domain, in ns.
++
+ Example:
+ 
+ 	power: power-controller@12340000 {
+ 		compatible = "foo,power-controller";
+ 		reg = <0x12340000 0x1000>;
+ 		#power-domain-cells = <1>;
++		power-on-latency = <250000>;
++		power-off-latency = <250000>;
+ 	};
+ 
+ The node above defines a power controller that is a PM domain provider and
+-- 
+1.9.1
 
