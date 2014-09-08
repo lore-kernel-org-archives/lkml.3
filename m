@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbaIHTen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:34:43 -0400
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:52663
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752755AbaIHTem convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754728AbaIHTe4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:34:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52934 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753253AbaIHTem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Sep 2014 15:34:42 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>
-CC: "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] staging: comedi: amplc_pci230: fix DACOUT write
-Thread-Topic: [PATCH] staging: comedi: amplc_pci230: fix DACOUT write
-Thread-Index: AQHPy5kokniDf1CzRUuzS8NokCs3fJv3n8dA
-Date: Mon, 8 Sep 2014 19:34:40 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F903DB@P3PWEX4MB008.ex4.secureserver.net>
-References: <1408447956-10139-1-git-send-email-abbotti@mev.co.uk>
- <20140908191445.GA32320@kroah.com>
-In-Reply-To: <20140908191445.GA32320@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Date: Mon, 8 Sep 2014 14:34:40 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+CC: <bcousson@baylibre.com>, <tony@atomide.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [resend PATCH 0/3] Add DRA7xx CPSW Ethernet support in Device
+ Tree
+Message-ID: <20140908193440.GC12150@kahuna>
+References: <1410203998-8700-1-git-send-email-mugunthanvnm@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1410203998-8700-1-git-send-email-mugunthanvnm@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 08, 2014 12:15 PM, Greg Kroah-Hartman wrote:
-> On Tue, Aug 19, 2014 at 12:32:36PM +0100, Ian Abbott wrote:
->> Commit 4f9c63fe5333b27ab23ed399830c7977f6970744 ("staging: comedi:
->> amplc_pci230: refactor iobase addresses") removed some parentheses
->> (presumably to keep the line withing 80 chars) in
->> `pci230_ao_write_nofifo()` when writing to the DACOUT1 or DACOUT2
->> registers, but it removed the wrong parentheses.  Fix it.
->> 
->> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
->> ---
->> This bug is in linux-next master and staging-next.
->> ---
->>  drivers/staging/comedi/drivers/amplc_pci230.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
->> index 0fd212f..dd69e47 100644
->> --- a/drivers/staging/comedi/drivers/amplc_pci230.c
->> +++ b/drivers/staging/comedi/drivers/amplc_pci230.c
->> @@ -628,7 +628,7 @@ static inline void pci230_ao_write_nofifo(struct comedi_device *dev,
->>  
->>  	/* Write mangled datum to appropriate DACOUT register. */
->>  	outw(pci230_ao_mangle_datum(dev, datum),
->> -	     devpriv->daqio + ((chan) == 0) ? PCI230_DACOUT1 : PCI230_DACOUT2);
->> +	     devpriv->daqio + (chan == 0 ? PCI230_DACOUT1 : PCI230_DACOUT2));
->>  }
->>  
->>  static inline void pci230_ao_write_fifo(struct comedi_device *dev,
->> -- 
->> 2.0.4
->
-> This doesn't apply to my tree anymore, is it still needed?
+On 00:49-20140909, Mugunthan V N wrote:
+> Adding device tree entry for CPSW to make it work in Dual EMAC mode.
+> 
+> These patches were tested with DRA7 hwmod patches on top of linux-next.
+> The patches were already reviewed [1] and has been waiting for cross bar
+> and hwmod to be pulled in. Now since all dependent patches has already
+> pulled in, so reposting the patches again.
+> 
+> Patches are tested on linux-next, the boot logs on DRA7xx EVM [2]
+> 
+> [1] https://lkml.org/lkml/2014/5/13/89
+> [2] http://slexy.org/view/s2YqO0Wj9b 
 
-Looks like you already applied a similar patch from Dan Carpenter:
+Sorry this is now blocked inside TI. could you explain the testing done
+for sleep state? did you attempt sleep mode before testing this?
 
-commit 94254d1baec765b22cc5df3a9a16a8cc9a79d406
-Author: Dan Carpenter <dan.carpenter@oracle.com>
-Date:   Tue Aug 26 10:55:51 2014 +0300
-
-    staging: comedi: amplc_pci230: fix a precedence bug
-
+> 
+> Mugunthan V N (3):
+>   pinctrl: dra7: dt-bindings: add pin off modes for dra7 SoC
+>   arm/dts: dra7xx: Add CPSW and MDIO module nodes for dra7xx
+>   arm/dts: dra7xx: Enable CPSW and MDIO for dra7xx EVM
+> 
+>  arch/arm/boot/dts/dra7-evm.dts    | 107 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/dra7.dtsi       |  59 +++++++++++++++++++++
+>  include/dt-bindings/pinctrl/dra.h |   8 +++
+>  3 files changed, 174 insertions(+)
+> 
+-- 
 Regards,
-Hartley
-
+Nishanth Menon
