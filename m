@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaIHHCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:02:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38346 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618AbaIHHCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:02:53 -0400
-Date: Mon, 8 Sep 2014 09:02:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 02/22] perf: Add AUX area to ring buffer for raw data
- streams
-Message-ID: <20140908070242.GS19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1752805AbaIHHHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:07:09 -0400
+Received: from ozlabs.org ([103.22.144.67]:44765 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751404AbaIHHHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 03:07:07 -0400
+Date: Mon, 8 Sep 2014 17:06:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>, Yegor Yefremov <yegorslists@googlemail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Philippe Reynes <tremyfr@gmail.com>
+Subject: linux-next: manual merge of the usb-gadget tree with Linus' tree
+Message-ID: <20140908170659.1ec79726@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wwupbN87Vo8OarNr"
-Content-Disposition: inline
-In-Reply-To: <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8_ECue.VeiFsHT.TH9Ht3ja"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---wwupbN87Vo8OarNr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--Sig_/8_ECue.VeiFsHT.TH9Ht3ja
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Aug 20, 2014 at 03:35:59PM +0300, Alexander Shishkin wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
->=20
-> This patch introduces "AUX space" in the perf mmap buffer, intended for
-> exporting high bandwidth data streams to userspace, such as instruction
-> flow traces.
->=20
-> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
-> user_page structure, and read/write pointers aux_{head,tail}, which abide
-> by the same rules as data_* counterparts of the main perf buffer.
->=20
-> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
-> such an offset that will be greater than data_offset+data_size and
-> aux_size to be the desired buffer size. Both need to be page aligned.
-> Then, same aux_offset and aux_size should be passed to mmap() call and
-> if everything adds up, you should have an AUX buffer as a result.
->=20
-> Pages that are mapped into this buffer also come out of user's mlock
-> rlimit plus perf_event_mlock_kb allowance.
->=20
-> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-> ---
+Hi Felipe,
 
-> +void rb_free_aux(struct ring_buffer *rb, struct perf_event *event)
-> +{
-> +	struct perf_event *iter;
-> +	int pg;
-> +
-> +	if (rb->aux_priv) {
-> +		/* disable all potential writers before freeing */
-> +		rcu_read_lock();
-> +		list_for_each_entry_rcu(iter, &rb->event_list, rb_entry)
-> +			perf_event_disable(iter);
-> +		rcu_read_unlock();
+Today's linux-next merge of the usb-gadget tree got conflicts in
+drivers/usb/gadget/Makefile, drivers/usb/gadget/legacy/Makefile and
+drivers/usb/gadget/function/Makefile between commit 5d19703822da ("usb:
+gadget: remove $(PWD) in ccflags-y") from Linus' tree and commit
+fa31409a82ee ("usb: gadget: use $(srctree) instead of $(PWD) for
+includes") from the usb-gadget tree.
 
-Hmm, I cannot remember this from the last time; and its not explained
-why this was added.
+I fixed it up (I used the version from the usb-gadget tree) and can
+carry the fix as necessary (no action is required).
 
-This would change semantics between munmap of a buffer with and without
-AUX bits in.=20
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +
-> +		event->pmu->free_aux(rb->aux_priv);
-> +		rb->aux_priv =3D NULL;
-> +	}
-> +
-> +	for (pg =3D 0; pg < rb->aux_nr_pages; pg++)
-> +		free_page((unsigned long)rb->aux_pages[pg]);
-> +
-> +	kfree(rb->aux_pages);
-> +	rb->aux_nr_pages =3D 0;
-> +}
-
---wwupbN87Vo8OarNr
-Content-Type: application/pgp-signature
+--Sig_/8_ECue.VeiFsHT.TH9Ht3ja
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUDVSSAAoJEHZH4aRLwOS6VuYQAJgSXdIATW2N2PgSpLslHyxI
-aWvJneb049InLpXvmbeN+bqXgRUG99yuxgyaVu8r1Pkhak5jwXqpEph5+fnaBttY
-A/6ZklFXlNOQb7LVmSyrRCChu8O1eiVH/HtBm0EiuvrI8nphxum5QpWkeOj1nBTH
-F/3JzrGroQeKX2EaSUSj51pw4EKLb5PlwI3+wz52Eu9FyoxRCizUwK5HAy2KedsL
-TfLRfEvjBQu0y/jjLpxZBx4zYC+J+137vXdZewtZ0dF6RM/j7GhPylyA1tx2JrDn
-au8VAf6VLZLs2Xfgc4v9OP9E4AkEh1yPKGuHWNI0cgSYa+NDP3kmN4H3wLQkAsck
-u0PvC3a2S+6cAx55mH/ke+kQ8Ua02b9jEcvJhP6f2vaRQKPVibFwIU6LSOaH7lys
-ZQuC3gY6MbarGRADo7EotJNA+neMb4qcVGK30BCS2OcOwZDUiSrYdE9EH/D09Lpn
-/q4Rm/of8sca8EaAw6qdTEscoX8PcVcJosTTINk1oCYzJgrD7IIPxHj+4FkxGKux
-qbxU54NQCnOuJw72MDzBOPcBM/RWSjD9MfDr9zT9Lsqthu9O39PGmDotxB6mbGii
-KoI/WnZjJfdbiVNoXtY5FPfgX51s7+uj9qEqU04J8dZMfzywQtinff66GrS7GmtJ
-y0WnT9AC9hIPt+KAKCsP
-=61rC
+iQIcBAEBCAAGBQJUDVWXAAoJEMDTa8Ir7ZwVhlwP/1ydk5G1YHyOh/Aa1twGYBSE
+Q6ahr5sdngs1BLiBQZ8vZXOA7E7CsPDfmp6/pAW7FvXCQ6gjBX+5M/zaBFHYc24M
+TzLlwJO/oHUaVtvSjUlmnMjgCCHu2t7S6BmTjV0X1bCgaeyfkDhPc6+F+bvDOm7n
+Y62QfsJxKd6dGsnvkWxYuz4hc2b85JjqMaOaFnRS4E+6txoH9ETXs2hlRRRbOifp
+xUOZswRkKnbCmnGr8FaDPCkNMv6cJcQVGDwUA2u1E91EfM/PCRq6a6OfLpKeGEPW
+Z9kcUnuE5SUCknWWIiFnX5CeDbRsmJzGypM+ZMncuLSLOZH8siEbq/+a0WrW53Kz
+sIiCEEfHnX/8Yac7OHgN58s7pcEvyonZYZRR+GLU392I3nL1VPu13Pqh+P/tlDeR
+HSLXHmfaPHVTekPrRIX6bCVU7jDE3MNv5WMQXCL49Kp7O9tr3hHWf2s4PK2ORvUn
+Bk5APRwX8Nhh2SNoJBCUD/rlrkT73LPGgbCRFEcyWWwIbSzLFbYu8uxCniGreZJK
+hQTx8dGks0EdUp/a5+qQ/XL783/doT9L4twqVxlbt6E0P1pKVlDby16ukkkKdGko
+tnoWaMFIeXyNqBfirvp5fJQH9+TjmAJM/nVqQYG/DsbGKFiqhJ4tGnTJ1LIO71lF
+8+NuftWRLyH5FH4p7RnD
+=agzU
 -----END PGP SIGNATURE-----
 
---wwupbN87Vo8OarNr--
+--Sig_/8_ECue.VeiFsHT.TH9Ht3ja--
