@@ -1,713 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798AbaIHRSW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:18:22 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:64238 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609AbaIHRST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:18:19 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: au88x0: printk replacement
-Date: Mon,  8 Sep 2014 22:48:03 +0530
-Message-Id: <1410196683-25563-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1754815AbaIHRTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:19:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59850 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754449AbaIHRS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 13:18:58 -0400
+Date: Mon, 8 Sep 2014 18:18:53 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+Message-ID: <20140908171853.GN17501@suse.de>
+References: <53DD5F20.8010507@oracle.com>
+ <alpine.LSU.2.11.1408040418500.3406@eggly.anvils>
+ <20140805144439.GW10819@suse.de>
+ <alpine.LSU.2.11.1408051649330.6591@eggly.anvils>
+ <53E17F06.30401@oracle.com>
+ <53E989FB.5000904@oracle.com>
+ <53FD4D9F.6050500@oracle.com>
+ <20140827152622.GC12424@suse.de>
+ <540127AC.4040804@oracle.com>
+ <54082B25.9090600@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <54082B25.9090600@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-as pr_* macros are more preffered over printk, so printk replaced 
-with corresponding pr_* macros.
-this patch will generate warning from checkpatch as it only did printk
-replacement and didnot fixed other style issues.
+On Thu, Sep 04, 2014 at 05:04:37AM -0400, Sasha Levin wrote:
+> On 08/29/2014 09:23 PM, Sasha Levin wrote:
+> > On 08/27/2014 11:26 AM, Mel Gorman wrote:
+> >> > diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+> >> > index 281870f..ffea570 100644
+> >> > --- a/include/asm-generic/pgtable.h
+> >> > +++ b/include/asm-generic/pgtable.h
+> >> > @@ -723,6 +723,9 @@ static inline pte_t pte_mknuma(pte_t pte)
+> >> >  
+> >> >  	VM_BUG_ON(!(val & _PAGE_PRESENT));
+> >> >  
+> >> > +	/* debugging only, specific to x86 */
+> >> > +	VM_BUG_ON(val & _PAGE_PROTNONE);
+> >> > +
+> >> >  	val &= ~_PAGE_PRESENT;
+> >> >  	val |= _PAGE_NUMA;
+> > Triggered again, the first VM_BUG_ON got hit, the second one never did.
+> 
+> Okay, this bug has reproduced quite a few times since then that I no longer
+> suspect it's random memory corruption. I'd be happy to try out more debug
+> patches if you have any leads.
+> 
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+The fact the second one doesn't trigger makes me think that this is not
+related to how the helpers are called and is instead relating to timing.
+I tried reproducing this but got nothing after 3 hours. How long does it
+typically take to reproduce in a given run? You mentioned that it takes a
+few weeks to hit but maybe the frequency has changed since. I tried todays
+linux-next kernel but it didn't even boot so next-20140826 to match your
+original report but got nothing. Can you also send me the config you used
+in case that's a factor.
 
-The replacement was done by a bash script to avoid copy paste error. The script is as follows :
+I had one hunch that this may somehow be related to a collision between
+pagetable teardown during exit and the scanner but I could not find a
+way that could actually happen. During teardown there should be only one
+user of the mm and it can't race with itself.
 
-OLD1="[^_//]printk(KERN_DEBUG"
-OLD2="[^_//]printk(KERN_ERR"
-OLD3="[^_//]printk(KERN_INFO"
-OLD4="[^_//]printk(KERN_WARNING"
-OLD5="[^_//]printk(KERN_ALERT"
-NEW1="pr_debug("
-NEW2="pr_err("
-NEW3="pr_info("
-NEW4="pr_warn("
-NEW5="pr_alert("
-TFILE="/tmp/out.tmp.$$"
-for f in *.c
-do
-sed -e "s/$OLD1/$NEW1/g" -e "s/$OLD2/$NEW2/g" -e "s/$OLD3/$NEW3/g" -e "s/$OLD4/$NEW4/g" -e "s/$OLD5/$NEW5/g" "$f" > $TFILE && mv $TFILE "$f"
-done
+A worse possibility is that somehow the lock is getting corrupted but
+that's also a tough sell considering that the locks should be allocated
+from a dedicated cache. I guess I could try breaking that to allocate
+one page per lock so DEBUG_PAGEALLOC triggers but I'm not very
+optimistic.
 
-Frankly speaking this script has missed few  instances of printk(warning) which was edited manually.
-
- sound/pci/au88x0/au88x0.c        | 22 ++++++------
- sound/pci/au88x0/au88x0_a3d.c    | 10 +++---
- sound/pci/au88x0/au88x0_core.c   | 76 ++++++++++++++++++++--------------------
- sound/pci/au88x0/au88x0_eq.c     |  2 +-
- sound/pci/au88x0/au88x0_game.c   |  2 +-
- sound/pci/au88x0/au88x0_mpu401.c |  2 +-
- sound/pci/au88x0/au88x0_pcm.c    |  8 ++---
- sound/pci/au88x0/au88x0_synth.c  | 26 +++++++-------
- 8 files changed, 74 insertions(+), 74 deletions(-)
-
-diff --git a/sound/pci/au88x0/au88x0.c b/sound/pci/au88x0/au88x0.c
-index afb1b44..8e40153 100644
---- a/sound/pci/au88x0/au88x0.c
-+++ b/sound/pci/au88x0/au88x0.c
-@@ -48,10 +48,10 @@ static void vortex_fix_latency(struct pci_dev *vortex)
- {
- 	int rc;
- 	if (!(rc = pci_write_config_byte(vortex, 0x40, 0xff))) {
--			printk(KERN_INFO CARD_NAME
-+			pr_info( CARD_NAME
- 			       ": vortex latency is 0xff\n");
- 	} else {
--		printk(KERN_WARNING CARD_NAME
-+		pr_warn( CARD_NAME
- 				": could not set vortex latency: pci error 0x%x\n", rc);
- 	}
- }
-@@ -70,10 +70,10 @@ static void vortex_fix_agp_bridge(struct pci_dev *via)
- 	if (!(rc = pci_read_config_byte(via, 0x42, &value))
- 			&& ((value & 0x10)
- 				|| !(rc = pci_write_config_byte(via, 0x42, value | 0x10)))) {
--		printk(KERN_INFO CARD_NAME
-+		pr_info( CARD_NAME
- 				": bridge config is 0x%x\n", value | 0x10);
- 	} else {
--		printk(KERN_WARNING CARD_NAME
-+		pr_warn( CARD_NAME
- 				": could not set vortex latency: pci error 0x%x\n", rc);
- 	}
- }
-@@ -97,7 +97,7 @@ static void snd_vortex_workaround(struct pci_dev *vortex, int fix)
- 					PCI_DEVICE_ID_AMD_FE_GATE_7007, NULL);
- 		}
- 		if (via) {
--			printk(KERN_INFO CARD_NAME ": Activating latency workaround...\n");
-+			pr_info( CARD_NAME ": Activating latency workaround...\n");
- 			vortex_fix_latency(vortex);
- 			vortex_fix_agp_bridge(via);
- 		}
-@@ -153,7 +153,7 @@ snd_vortex_create(struct snd_card *card, struct pci_dev *pci, vortex_t ** rchip)
- 		return err;
- 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(32)) < 0 ||
- 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32)) < 0) {
--		printk(KERN_ERR "error to set DMA mask\n");
-+		pr_err( "error to set DMA mask\n");
- 		pci_disable_device(pci);
- 		return -ENXIO;
- 	}
-@@ -182,7 +182,7 @@ snd_vortex_create(struct snd_card *card, struct pci_dev *pci, vortex_t ** rchip)
- 
- 	chip->mmio = pci_ioremap_bar(pci, 0);
- 	if (!chip->mmio) {
--		printk(KERN_ERR "MMIO area remap failed.\n");
-+		pr_err( "MMIO area remap failed.\n");
- 		err = -ENOMEM;
- 		goto ioremap_out;
- 	}
-@@ -191,14 +191,14 @@ snd_vortex_create(struct snd_card *card, struct pci_dev *pci, vortex_t ** rchip)
- 	 * This must be done before we do request_irq otherwise we can get spurious
- 	 * interrupts that we do not handle properly and make a mess of things */
- 	if ((err = vortex_core_init(chip)) != 0) {
--		printk(KERN_ERR "hw core init failed\n");
-+		pr_err( "hw core init failed\n");
- 		goto core_out;
- 	}
- 
- 	if ((err = request_irq(pci->irq, vortex_interrupt,
- 			       IRQF_SHARED, KBUILD_MODNAME,
- 	                       chip)) != 0) {
--		printk(KERN_ERR "cannot grab irq\n");
-+		pr_err( "cannot grab irq\n");
- 		goto irq_out;
- 	}
- 	chip->irq = pci->irq;
-@@ -342,10 +342,10 @@ snd_vortex_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
- 	chip->rev = pci->revision;
- #ifdef CHIP_AU8830
- 	if ((chip->rev) != 0xfe && (chip->rev) != 0xfa) {
--		printk(KERN_ALERT
-+		pr_alert(
- 		       "vortex: The revision (%x) of your card has not been seen before.\n",
- 		       chip->rev);
--		printk(KERN_ALERT
-+		pr_alert(
- 		       "vortex: Please email the results of 'lspci -vv' to openvortex-dev@nongnu.org.\n");
- 		snd_card_free(card);
- 		err = -ENODEV;
-diff --git a/sound/pci/au88x0/au88x0_a3d.c b/sound/pci/au88x0/au88x0_a3d.c
-index aad831a..a5d6752 100644
---- a/sound/pci/au88x0/au88x0_a3d.c
-+++ b/sound/pci/au88x0/au88x0_a3d.c
-@@ -463,7 +463,7 @@ static void a3dsrc_ZeroSliceIO(a3dsrc_t * a)
- static void a3dsrc_ZeroState(a3dsrc_t * a)
- {
- 	/*
--	printk(KERN_DEBUG "vortex: ZeroState slice: %d, source %d\n",
-+	pr_debug( "vortex: ZeroState slice: %d, source %d\n",
- 	       a->slice, a->source);
- 	*/
- 	a3dsrc_SetAtmosState(a, 0, 0, 0, 0);
-@@ -489,7 +489,7 @@ static void a3dsrc_ZeroStateA3D(a3dsrc_t * a)
- 	int i, var, var2;
- 
- 	if ((a->vortex) == NULL) {
--		printk(KERN_ERR "vortex: ZeroStateA3D: ERROR: a->vortex is NULL\n");
-+		pr_err( "vortex: ZeroStateA3D: ERROR: a->vortex is NULL\n");
- 		return;
- 	}
- 
-@@ -628,14 +628,14 @@ static void vortex_Vort3D_connect(vortex_t * v, int en)
- 	v->mixxtlk[0] =
- 	    vortex_adb_checkinout(v, v->fixed_res, en, VORTEX_RESOURCE_MIXIN);
- 	if (v->mixxtlk[0] < 0) {
--		printk
-+		pr_warn
- 		    ("vortex: vortex_Vort3D: ERROR: not enough free mixer resources.\n");
- 		return;
- 	}
- 	v->mixxtlk[1] =
- 	    vortex_adb_checkinout(v, v->fixed_res, en, VORTEX_RESOURCE_MIXIN);
- 	if (v->mixxtlk[1] < 0) {
--		printk
-+		pr_warn
- 		    ("vortex: vortex_Vort3D: ERROR: not enough free mixer resources.\n");
- 		return;
- 	}
-@@ -679,7 +679,7 @@ static void vortex_Vort3D_connect(vortex_t * v, int en)
- static void vortex_Vort3D_InitializeSource(a3dsrc_t * a, int en)
- {
- 	if (a->vortex == NULL) {
--		printk
-+		pr_warn
- 		    ("vortex: Vort3D_InitializeSource: A3D source not initialized\n");
- 		return;
- 	}
-diff --git a/sound/pci/au88x0/au88x0_core.c b/sound/pci/au88x0/au88x0_core.c
-index ae59dba..4014a02 100644
---- a/sound/pci/au88x0/au88x0_core.c
-+++ b/sound/pci/au88x0/au88x0_core.c
-@@ -285,7 +285,7 @@ vortex_mixer_addWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
- 		temp = hwread(vortex->mmio, prev);
- 		//printk(KERN_INFO "vortex: mixAddWTD: while addr=%x, val=%x\n", prev, temp);
- 		if ((++lifeboat) > 0xf) {
--			printk(KERN_ERR
-+			pr_err(
- 			       "vortex_mixer_addWTD: lifeboat overflow\n");
- 			return 0;
- 		}
-@@ -303,7 +303,7 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
- 
- 	eax = hwread(vortex->mmio, VORTEX_MIXER_SR);
- 	if (((1 << ch) & eax) == 0) {
--		printk(KERN_ERR "mix ALARM %x\n", eax);
-+		pr_err( "mix ALARM %x\n", eax);
- 		return 0;
- 	}
- 	ebp = VORTEX_MIXER_CHNBASE + (ch << 2);
-@@ -324,7 +324,7 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
- 			//printk(KERN_INFO "vortex: mixdelWTD: 1 addr=%x, val=%x, src=%x\n", ebx, edx, src);
- 			while ((edx & 0xf) != mix) {
- 				if ((esi) > 0xf) {
--					printk(KERN_ERR
-+					pr_err(
- 					       "vortex: mixdelWTD: error lifeboat overflow\n");
- 					return 0;
- 				}
-@@ -492,7 +492,7 @@ vortex_src_persist_convratio(vortex_t * vortex, unsigned char src, int ratio)
- 		hwwrite(vortex->mmio, VORTEX_SRC_CONVRATIO + (src << 2), ratio);
- 		temp = hwread(vortex->mmio, VORTEX_SRC_CONVRATIO + (src << 2));
- 		if ((++lifeboat) > 0x9) {
--			printk(KERN_ERR "Vortex: Src cvr fail\n");
-+			pr_err( "Vortex: Src cvr fail\n");
- 			break;
- 		}
- 	}
-@@ -545,7 +545,7 @@ vortex_src_checkratio(vortex_t * vortex, unsigned char src,
- 		hwwrite(vortex->mmio, VORTEX_SRC_CONVRATIO + (src << 2), desired_ratio);
- 
- 		if ((lifeboat++) > 15) {
--			printk(KERN_ERR "Vortex: could not set src-%d from %d to %d\n",
-+			pr_err( "Vortex: could not set src-%d from %d to %d\n",
- 			       src, hw_ratio, desired_ratio);
- 			break;
- 		}
-@@ -684,7 +684,7 @@ vortex_src_addWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
- 		temp = hwread(vortex->mmio, prev);
- 		//printk(KERN_INFO "vortex: srcAddWTD: while addr=%x, val=%x\n", prev, temp);
- 		if ((++lifeboat) > 0xf) {
--			printk(KERN_ERR
-+			pr_err(
- 			       "vortex_src_addWTD: lifeboat overflow\n");
- 			return 0;
- 		}
-@@ -703,7 +703,7 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
- 
- 	eax = hwread(vortex->mmio, VORTEX_SRCBLOCK_SR);
- 	if (((1 << ch) & eax) == 0) {
--		printk(KERN_ERR "src alarm\n");
-+		pr_err( "src alarm\n");
- 		return 0;
- 	}
- 	ebp = VORTEX_SRC_CHNBASE + (ch << 2);
-@@ -724,7 +724,7 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
- 			//printk(KERN_INFO "vortex: srcdelWTD: 1 addr=%x, val=%x, src=%x\n", ebx, edx, src);
- 			while ((edx & 0xf) != src) {
- 				if ((esi) > 0xf) {
--					printk
-+					pr_warn
- 					    ("vortex: srcdelWTD: error, lifeboat overflow\n");
- 					return 0;
- 				}
-@@ -819,7 +819,7 @@ vortex_fifo_setadbctrl(vortex_t * vortex, int fifo, int stereo, int priority,
- 	do {
- 		temp = hwread(vortex->mmio, VORTEX_FIFO_ADBCTRL + (fifo << 2));
- 		if (lifeboat++ > 0xbb8) {
--			printk(KERN_ERR
-+			pr_err(
- 			       "Vortex: vortex_fifo_setadbctrl fail\n");
- 			break;
- 		}
-@@ -915,7 +915,7 @@ vortex_fifo_setwtctrl(vortex_t * vortex, int fifo, int ctrl, int priority,
- 	do {
- 		temp = hwread(vortex->mmio, VORTEX_FIFO_WTCTRL + (fifo << 2));
- 		if (lifeboat++ > 0xbb8) {
--			printk(KERN_ERR "Vortex: vortex_fifo_setwtctrl fail\n");
-+			pr_err( "Vortex: vortex_fifo_setwtctrl fail\n");
- 			break;
- 		}
- 	}
-@@ -970,7 +970,7 @@ vortex_fifo_setwtctrl(vortex_t * vortex, int fifo, int ctrl, int priority,
-     do {
- 		temp = hwread(vortex->mmio, VORTEX_FIFO_WTCTRL + (fifo << 2));
- 		if (lifeboat++ > 0xbb8) {
--			printk(KERN_ERR "Vortex: vortex_fifo_setwtctrl fail (hanging)\n");
-+			pr_err( "Vortex: vortex_fifo_setwtctrl fail (hanging)\n");
- 			break;
- 		}
-     } while ((temp & FIFO_RDONLY)&&(temp & FIFO_VALID)&&(temp != 0xFFFFFFFF));
-@@ -1042,7 +1042,7 @@ static void vortex_fifo_init(vortex_t * vortex)
- 	for (x = NR_ADB - 1; x >= 0; x--) {
- 		hwwrite(vortex->mmio, addr, (FIFO_U0 | FIFO_U1));
- 		if (hwread(vortex->mmio, addr) != (FIFO_U0 | FIFO_U1))
--			printk(KERN_ERR "bad adb fifo reset!");
-+			pr_err( "bad adb fifo reset!");
- 		vortex_fifo_clearadbdata(vortex, x, FIFO_SIZE);
- 		addr -= 4;
- 	}
-@@ -1053,7 +1053,7 @@ static void vortex_fifo_init(vortex_t * vortex)
- 	for (x = NR_WT - 1; x >= 0; x--) {
- 		hwwrite(vortex->mmio, addr, FIFO_U0);
- 		if (hwread(vortex->mmio, addr) != FIFO_U0)
--			printk(KERN_ERR
-+			pr_err(
- 			       "bad wt fifo reset (0x%08x, 0x%08x)!\n",
- 			       addr, hwread(vortex->mmio, addr));
- 		vortex_fifo_clearwtdata(vortex, x, FIFO_SIZE);
-@@ -1136,7 +1136,7 @@ vortex_adbdma_setbuffers(vortex_t * vortex, int adbdma,
- 		break;
- 	}
- 	/*
--	printk(KERN_DEBUG "vortex: cfg0 = 0x%x\nvortex: cfg1=0x%x\n",
-+	pr_debug( "vortex: cfg0 = 0x%x\nvortex: cfg1=0x%x\n",
- 	       dma->cfg0, dma->cfg1);
- 	*/
- 	hwwrite(vortex->mmio, VORTEX_ADBDMA_BUFCFG0 + (adbdma << 3), dma->cfg0);
-@@ -1213,7 +1213,7 @@ static int vortex_adbdma_bufshift(vortex_t * vortex, int adbdma)
- 	if (dma->period_virt >= dma->nr_periods)
- 		dma->period_virt -= dma->nr_periods;
- 	if (delta != 1)
--		printk(KERN_INFO "vortex: %d virt=%d, real=%d, delta=%d\n",
-+		pr_info( "vortex: %d virt=%d, real=%d, delta=%d\n",
- 		       adbdma, dma->period_virt, dma->period_real, delta);
- 
- 	return delta;
-@@ -1482,7 +1482,7 @@ static int vortex_wtdma_bufshift(vortex_t * vortex, int wtdma)
- 	dma->period_real = page;
- 
- 	if (delta != 1)
--		printk(KERN_WARNING "vortex: wt virt = %d, delta = %d\n",
-+		pr_warn( "vortex: wt virt = %d, delta = %d\n",
- 		       dma->period_virt, delta);
- 
- 	return delta;
-@@ -1667,7 +1667,7 @@ vortex_adb_addroutes(vortex_t * vortex, unsigned char channel,
- 		    hwread(vortex->mmio,
- 			   VORTEX_ADB_RTBASE + (temp << 2)) & ADB_MASK;
- 		if ((lifeboat++) > ADB_MASK) {
--			printk(KERN_ERR
-+			pr_err(
- 			       "vortex_adb_addroutes: unending route! 0x%x\n",
- 			       *route);
- 			return;
-@@ -1703,7 +1703,7 @@ vortex_adb_delroutes(vortex_t * vortex, unsigned char channel,
- 		    hwread(vortex->mmio,
- 			   VORTEX_ADB_RTBASE + (prev << 2)) & ADB_MASK;
- 		if (((lifeboat++) > ADB_MASK) || (temp == ADB_MASK)) {
--			printk(KERN_ERR
-+			pr_err(
- 			       "vortex_adb_delroutes: route not found! 0x%x\n",
- 			       route0);
- 			return;
-@@ -1967,7 +1967,7 @@ vortex_connect_codecplay(vortex_t * vortex, int en, unsigned char mixers[])
- 					  ADB_CODECOUT(0 + 4));
- 		vortex_connection_mix_adb(vortex, en, 0x11, mixers[3],
- 					  ADB_CODECOUT(1 + 4));
--		/* printk(KERN_DEBUG "SDAC detected "); */
-+		/* pr_debug( "SDAC detected "); */
- 	}
- #else
- 	// Use plain direct output to codec.
-@@ -2022,7 +2022,7 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
- 				else
- 					vortex->dma_adb[i].resources[restype] |= (1 << i);
- 				/*
--				printk(KERN_DEBUG
-+				pr_debug(
- 				       "vortex: ResManager: type %d out %d\n",
- 				       restype, i);
- 				*/
-@@ -2037,7 +2037,7 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
- 			if (resmap[restype] & (1 << i)) {
- 				resmap[restype] &= ~(1 << i);
- 				/*
--				printk(KERN_DEBUG
-+				pr_debug(
- 				       "vortex: ResManager: type %d in %d\n",
- 				       restype, i);
- 				*/
-@@ -2045,7 +2045,7 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
- 			}
- 		}
- 	}
--	printk(KERN_ERR "vortex: FATAL: ResManager: resource type %d exhausted.\n", restype);
-+	pr_err( "vortex: FATAL: ResManager: resource type %d exhausted.\n", restype);
- 	return -ENOMEM;
- }
- 
-@@ -2173,7 +2173,7 @@ vortex_adb_allocroute(vortex_t *vortex, int dma, int nr_ch, int dir,
- 				memset(stream->resources, 0,
- 				       sizeof(unsigned char) *
- 				       VORTEX_RESOURCE_LAST);
--				printk(KERN_ERR "vortex: out of A3D sources. Sorry\n");
-+				pr_err( "vortex: out of A3D sources. Sorry\n");
- 				return -EBUSY;
- 			}
- 			/* (De)Initialize A3D hardware source. */
-@@ -2421,7 +2421,7 @@ static irqreturn_t vortex_interrupt(int irq, void *dev_id)
- 	hwread(vortex->mmio, VORTEX_IRQ_SOURCE);
- 	// Is at least one IRQ flag set?
- 	if (source == 0) {
--		printk(KERN_ERR "vortex: missing irq source\n");
-+		pr_err( "vortex: missing irq source\n");
- 		return IRQ_NONE;
- 	}
- 
-@@ -2429,19 +2429,19 @@ static irqreturn_t vortex_interrupt(int irq, void *dev_id)
- 	// Attend every interrupt source.
- 	if (unlikely(source & IRQ_ERR_MASK)) {
- 		if (source & IRQ_FATAL) {
--			printk(KERN_ERR "vortex: IRQ fatal error\n");
-+			pr_err( "vortex: IRQ fatal error\n");
- 		}
- 		if (source & IRQ_PARITY) {
--			printk(KERN_ERR "vortex: IRQ parity error\n");
-+			pr_err( "vortex: IRQ parity error\n");
- 		}
- 		if (source & IRQ_REG) {
--			printk(KERN_ERR "vortex: IRQ reg error\n");
-+			pr_err( "vortex: IRQ reg error\n");
- 		}
- 		if (source & IRQ_FIFO) {
--			printk(KERN_ERR "vortex: IRQ fifo error\n");
-+			pr_err( "vortex: IRQ fifo error\n");
- 		}
- 		if (source & IRQ_DMA) {
--			printk(KERN_ERR "vortex: IRQ dma error\n");
-+			pr_err( "vortex: IRQ dma error\n");
- 		}
- 		handled = 1;
- 	}
-@@ -2489,7 +2489,7 @@ static irqreturn_t vortex_interrupt(int irq, void *dev_id)
- 	}
- 
- 	if (!handled) {
--		printk(KERN_ERR "vortex: unknown irq source %x\n", source);
-+		pr_err( "vortex: unknown irq source %x\n", source);
- 	}
- 	return IRQ_RETVAL(handled);
- }
-@@ -2546,7 +2546,7 @@ vortex_codec_write(struct snd_ac97 * codec, unsigned short addr, unsigned short
- 	while (!(hwread(card->mmio, VORTEX_CODEC_CTRL) & 0x100)) {
- 		udelay(100);
- 		if (lifeboat++ > POLL_COUNT) {
--			printk(KERN_ERR "vortex: ac97 codec stuck busy\n");
-+			pr_err( "vortex: ac97 codec stuck busy\n");
- 			return;
- 		}
- 	}
-@@ -2572,7 +2572,7 @@ static unsigned short vortex_codec_read(struct snd_ac97 * codec, unsigned short
- 	while (!(hwread(card->mmio, VORTEX_CODEC_CTRL) & 0x100)) {
- 		udelay(100);
- 		if (lifeboat++ > POLL_COUNT) {
--			printk(KERN_ERR "vortex: ac97 codec stuck busy\n");
-+			pr_err( "vortex: ac97 codec stuck busy\n");
- 			return 0xffff;
- 		}
- 	}
-@@ -2586,7 +2586,7 @@ static unsigned short vortex_codec_read(struct snd_ac97 * codec, unsigned short
- 		udelay(100);
- 		data = hwread(card->mmio, VORTEX_CODEC_IO);
- 		if (lifeboat++ > POLL_COUNT) {
--			printk(KERN_ERR "vortex: ac97 address never arrived\n");
-+			pr_err( "vortex: ac97 address never arrived\n");
- 			return 0xffff;
- 		}
- 	} while ((data & VORTEX_CODEC_ADDMASK) !=
-@@ -2683,7 +2683,7 @@ static void vortex_spdif_init(vortex_t * vortex, int spdif_sr, int spdif_mode)
- static int vortex_core_init(vortex_t *vortex)
- {
- 
--	printk(KERN_INFO "Vortex: init.... ");
-+	pr_info( "Vortex: init.... ");
- 	/* Hardware Init. */
- 	hwwrite(vortex->mmio, VORTEX_CTRL, 0xffffffff);
- 	msleep(5);
-@@ -2728,7 +2728,7 @@ static int vortex_core_init(vortex_t *vortex)
- 	//vortex_enable_timer_int(vortex);
- 	//vortex_disable_timer_int(vortex);
- 
--	printk(KERN_INFO "done.\n");
-+	pr_info( "done.\n");
- 	spin_lock_init(&vortex->lock);
- 
- 	return 0;
-@@ -2737,7 +2737,7 @@ static int vortex_core_init(vortex_t *vortex)
- static int vortex_core_shutdown(vortex_t * vortex)
- {
- 
--	printk(KERN_INFO "Vortex: shutdown...");
-+	pr_info( "Vortex: shutdown...");
- #ifndef CHIP_AU8820
- 	vortex_eq_free(vortex);
- 	vortex_Vort3D_disable(vortex);
-@@ -2759,7 +2759,7 @@ static int vortex_core_shutdown(vortex_t * vortex)
- 	msleep(5);
- 	hwwrite(vortex->mmio, VORTEX_IRQ_SOURCE, 0xffff);
- 
--	printk(KERN_INFO "done.\n");
-+	pr_info( "done.\n");
- 	return 0;
- }
- 
-@@ -2793,7 +2793,7 @@ static int vortex_alsafmt_aspfmt(int alsafmt)
- 		break;
- 	default:
- 		fmt = 0x8;
--		printk(KERN_ERR "vortex: format unsupported %d\n", alsafmt);
-+		pr_err( "vortex: format unsupported %d\n", alsafmt);
- 		break;
- 	}
- 	return fmt;
-diff --git a/sound/pci/au88x0/au88x0_eq.c b/sound/pci/au88x0/au88x0_eq.c
-index e722053..13ac919 100644
---- a/sound/pci/au88x0/au88x0_eq.c
-+++ b/sound/pci/au88x0/au88x0_eq.c
-@@ -845,7 +845,7 @@ snd_vortex_peaks_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *u
- 
- 	vortex_Eqlzr_GetAllPeaks(vortex, peaks, &count);
- 	if (count != 20) {
--		printk(KERN_ERR "vortex: peak count error 20 != %d \n", count);
-+		pr_err( "vortex: peak count error 20 != %d \n", count);
- 		return -1;
- 	}
- 	for (i = 0; i < 20; i++)
-diff --git a/sound/pci/au88x0/au88x0_game.c b/sound/pci/au88x0/au88x0_game.c
-index 280f86d..47485ec 100644
---- a/sound/pci/au88x0/au88x0_game.c
-+++ b/sound/pci/au88x0/au88x0_game.c
-@@ -98,7 +98,7 @@ static int vortex_gameport_register(vortex_t *vortex)
- 
- 	vortex->gameport = gp = gameport_allocate_port();
- 	if (!gp) {
--		printk(KERN_ERR "vortex: cannot allocate memory for gameport\n");
-+		pr_err( "vortex: cannot allocate memory for gameport\n");
- 		return -ENOMEM;
- 	}
- 
-diff --git a/sound/pci/au88x0/au88x0_mpu401.c b/sound/pci/au88x0/au88x0_mpu401.c
-index 29e5945..f929c20 100644
---- a/sound/pci/au88x0/au88x0_mpu401.c
-+++ b/sound/pci/au88x0/au88x0_mpu401.c
-@@ -73,7 +73,7 @@ static int snd_vortex_midi(vortex_t *vortex)
- 	/* Check if anything is OK. */
- 	temp = hwread(vortex->mmio, VORTEX_MIDI_DATA);
- 	if (temp != MPU401_ACK /*0xfe */ ) {
--		printk(KERN_ERR "midi port doesn't acknowledge!\n");
-+		pr_err( "midi port doesn't acknowledge!\n");
- 		return -ENODEV;
- 	}
- 	/* Enable MPU401 interrupts. */
-diff --git a/sound/pci/au88x0/au88x0_pcm.c b/sound/pci/au88x0/au88x0_pcm.c
-index 9fb03b4..d992e9b 100644
---- a/sound/pci/au88x0/au88x0_pcm.c
-+++ b/sound/pci/au88x0/au88x0_pcm.c
-@@ -227,11 +227,11 @@ snd_vortex_pcm_hw_params(struct snd_pcm_substream *substream,
- 	err =
- 	    snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
- 	if (err < 0) {
--		printk(KERN_ERR "Vortex: pcm page alloc failed!\n");
-+		pr_err( "Vortex: pcm page alloc failed!\n");
- 		return err;
- 	}
- 	/*
--	   printk(KERN_INFO "Vortex: periods %d, period_bytes %d, channels = %d\n", params_periods(hw_params),
-+	   pr_info( "Vortex: periods %d, period_bytes %d, channels = %d\n", params_periods(hw_params),
- 	   params_period_bytes(hw_params), params_channels(hw_params));
- 	 */
- 	spin_lock_irq(&chip->lock);
-@@ -371,7 +371,7 @@ static int snd_vortex_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
- 		}
- #ifndef CHIP_AU8810
- 		else {
--			printk(KERN_INFO "vortex: wt start %d\n", dma);
-+			pr_info( "vortex: wt start %d\n", dma);
- 			vortex_wtdma_startfifo(chip, dma);
- 		}
- #endif
-@@ -384,7 +384,7 @@ static int snd_vortex_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
- 			vortex_adbdma_stopfifo(chip, dma);
- #ifndef CHIP_AU8810
- 		else {
--			printk(KERN_INFO "vortex: wt stop %d\n", dma);
-+			pr_info( "vortex: wt stop %d\n", dma);
- 			vortex_wtdma_stopfifo(chip, dma);
- 		}
- #endif
-diff --git a/sound/pci/au88x0/au88x0_synth.c b/sound/pci/au88x0/au88x0_synth.c
-index 922a84b..1bf060c 100644
---- a/sound/pci/au88x0/au88x0_synth.c
-+++ b/sound/pci/au88x0/au88x0_synth.c
-@@ -90,7 +90,7 @@ static int vortex_wt_allocroute(vortex_t * vortex, int wt, int nr_ch)
- 	hwwrite(vortex->mmio, WT_PARM(wt, 2), 0);
- 
- 	temp = hwread(vortex->mmio, WT_PARM(wt, 3));
--	printk(KERN_DEBUG "vortex: WT PARM3: %x\n", temp);
-+	pr_debug( "vortex: WT PARM3: %x\n", temp);
- 	//hwwrite(vortex->mmio, WT_PARM(wt, 3), temp);
- 
- 	hwwrite(vortex->mmio, WT_DELAY(wt, 0), 0);
-@@ -98,7 +98,7 @@ static int vortex_wt_allocroute(vortex_t * vortex, int wt, int nr_ch)
- 	hwwrite(vortex->mmio, WT_DELAY(wt, 2), 0);
- 	hwwrite(vortex->mmio, WT_DELAY(wt, 3), 0);
- 
--	printk(KERN_DEBUG "vortex: WT GMODE: %x\n", hwread(vortex->mmio, WT_GMODE(wt)));
-+	pr_debug( "vortex: WT GMODE: %x\n", hwread(vortex->mmio, WT_GMODE(wt)));
- 
- 	hwwrite(vortex->mmio, WT_PARM(wt, 2), 0xffffffff);
- 	hwwrite(vortex->mmio, WT_PARM(wt, 3), 0xcff1c810);
-@@ -106,7 +106,7 @@ static int vortex_wt_allocroute(vortex_t * vortex, int wt, int nr_ch)
- 	voice->parm0 = voice->parm1 = 0xcfb23e2f;
- 	hwwrite(vortex->mmio, WT_PARM(wt, 0), voice->parm0);
- 	hwwrite(vortex->mmio, WT_PARM(wt, 1), voice->parm1);
--	printk(KERN_DEBUG "vortex: WT GMODE 2 : %x\n", hwread(vortex->mmio, WT_GMODE(wt)));
-+	pr_debug( "vortex: WT GMODE 2 : %x\n", hwread(vortex->mmio, WT_GMODE(wt)));
- 	return 0;
- }
- 
-@@ -196,14 +196,14 @@ vortex_wt_SetReg(vortex_t * vortex, unsigned char reg, int wt,
- 
- 	if ((reg == 5) || ((reg >= 7) && (reg <= 10)) || (reg == 0xc)) {
- 		if (wt >= (NR_WT / NR_WT_PB)) {
--			printk
-+			pr_warn
- 			    ("vortex: WT SetReg: bank out of range. reg=0x%x, wt=%d\n",
- 			     reg, wt);
- 			return 0;
- 		}
- 	} else {
- 		if (wt >= NR_WT) {
--			printk(KERN_ERR "vortex: WT SetReg: voice out of range\n");
-+			pr_err( "vortex: WT SetReg: voice out of range\n");
- 			return 0;
- 		}
- 	}
-@@ -214,42 +214,42 @@ vortex_wt_SetReg(vortex_t * vortex, unsigned char reg, int wt,
- 		/* Voice specific parameters */
- 	case 0:		/* running */
- 		/*
--		printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n",
-+		pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n",
- 		       WT_RUN(wt), (int)val);
- 		*/
- 		hwwrite(vortex->mmio, WT_RUN(wt), val);
- 		return 0xc;
- 	case 1:		/* param 0 */
- 		/*
--		printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n",
-+		pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n",
- 		       WT_PARM(wt,0), (int)val);
- 		*/
- 		hwwrite(vortex->mmio, WT_PARM(wt, 0), val);
- 		return 0xc;
- 	case 2:		/* param 1 */
- 		/*
--		printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n",
-+		pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n",
- 		       WT_PARM(wt,1), (int)val);
- 		*/
- 		hwwrite(vortex->mmio, WT_PARM(wt, 1), val);
- 		return 0xc;
- 	case 3:		/* param 2 */
- 		/*
--		printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n",
-+		pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n",
- 		       WT_PARM(wt,2), (int)val);
- 		*/
- 		hwwrite(vortex->mmio, WT_PARM(wt, 2), val);
- 		return 0xc;
- 	case 4:		/* param 3 */
- 		/*
--		printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n",
-+		pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n",
- 		       WT_PARM(wt,3), (int)val);
- 		*/
- 		hwwrite(vortex->mmio, WT_PARM(wt, 3), val);
- 		return 0xc;
- 	case 6:		/* mute */
- 		/*
--		printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n",
-+		pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n",
- 		       WT_MUTE(wt), (int)val);
- 		*/
- 		hwwrite(vortex->mmio, WT_MUTE(wt), val);
-@@ -257,7 +257,7 @@ vortex_wt_SetReg(vortex_t * vortex, unsigned char reg, int wt,
- 	case 0xb:
- 			/* delay */
- 		/*
--		printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n",
-+		pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n",
- 		       WT_DELAY(wt,0), (int)val);
- 		*/
- 		hwwrite(vortex->mmio, WT_DELAY(wt, 3), val);
-@@ -285,7 +285,7 @@ vortex_wt_SetReg(vortex_t * vortex, unsigned char reg, int wt,
- 		return 0;
- 	}
- 	/*
--	printk(KERN_DEBUG "vortex: WT SetReg(0x%x) = 0x%08x\n", ecx, (int)val);
-+	pr_debug( "vortex: WT SetReg(0x%x) = 0x%08x\n", ecx, (int)val);
- 	*/
- 	hwwrite(vortex->mmio, ecx, val);
- 	return 1;
 -- 
-1.8.1.2
-
+Mel Gorman
+SUSE Labs
