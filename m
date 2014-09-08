@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaIHJic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:38:32 -0400
-Received: from mail-bl2on0081.outbound.protection.outlook.com ([65.55.169.81]:38656
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1753845AbaIHJik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:38:40 -0400
+Received: from mail-by2on0085.outbound.protection.outlook.com ([207.46.100.85]:31362
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753315AbaIHJi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:38:28 -0400
+	id S1753315AbaIHJih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:38:37 -0400
+X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 05:38:37 EDT
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v3 07/29] nios2: I/O Mapping
-Date: Mon, 8 Sep 2014 17:22:18 +0800
-Message-ID: <1410168160-3624-8-git-send-email-lftan@altera.com>
+Subject: [PATCH v3 02/29] nios2: Assembly macros and definitions
+Date: Mon, 8 Sep 2014 17:22:13 +0800
+Message-ID: <1410168160-3624-3-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
 References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(87936001)(47776003)(74502001)(77096002)(102836001)(83322001)(20776003)(86362001)(4396001)(19580405001)(80022001)(21056001)(81342001)(44976005)(92726001)(50466002)(107046002)(76482001)(77982001)(79102001)(90102001)(97736003)(104166001)(36756003)(87286001)(33646002)(89996001)(105596002)(93916002)(99396002)(19580395003)(77156001)(88136002)(85306004)(62966002)(76176999)(92566001)(83072002)(74662001)(31966008)(229853001)(68736004)(42186005)(50226001)(6806004)(84676001)(50986999)(81542001)(46102001)(48376002)(2201001)(85852003)(106466001)(95666004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB041;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(199003)(189002)(81542001)(102836001)(93916002)(2201001)(50986999)(229853001)(42186005)(106466001)(47776003)(79102001)(88136002)(48376002)(77982001)(62966002)(83322001)(68736004)(77096002)(85306004)(15202345003)(20776003)(95666004)(21056001)(50226001)(19580395003)(50466002)(107046002)(4396001)(36756003)(6806004)(77156001)(76176999)(44976005)(85852003)(33646002)(74662001)(31966008)(92726001)(46102001)(99396002)(89996001)(105596002)(81342001)(90102001)(87286001)(86362001)(19580405001)(76482001)(74502001)(104166001)(87936001)(83072002)(92566001)(15975445006)(97736003)(80022001)(84676001)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB048;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 03283976A6
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,444 +32,454 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds several definitions for I/O accessors and ioremap().
+This patch add assembly macros and definitions used in
+the .S files across arch/nios2/ and together with asm-offsets.c.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/io.h |  84 ++++++++++++++++++++
- arch/nios2/lib/io.c         | 138 ++++++++++++++++++++++++++++++++
- arch/nios2/mm/ioremap.c     | 186 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 408 insertions(+)
- create mode 100644 arch/nios2/include/asm/io.h
- create mode 100644 arch/nios2/lib/io.c
- create mode 100644 arch/nios2/mm/ioremap.c
+ arch/nios2/include/asm/asm-macros.h  | 309 +++++++++++++++++++++++++++++++++++
+ arch/nios2/include/asm/asm-offsets.h |  20 +++
+ arch/nios2/kernel/asm-offsets.c      |  88 ++++++++++
+ 3 files changed, 417 insertions(+)
+ create mode 100644 arch/nios2/include/asm/asm-macros.h
+ create mode 100644 arch/nios2/include/asm/asm-offsets.h
+ create mode 100644 arch/nios2/kernel/asm-offsets.c
 
-diff --git a/arch/nios2/include/asm/io.h b/arch/nios2/include/asm/io.h
+diff --git a/arch/nios2/include/asm/asm-macros.h b/arch/nios2/include/asm/asm-macros.h
 new file mode 100644
-index 0000000..c629226
+index 0000000..29fa2e4
 --- /dev/null
-+++ b/arch/nios2/include/asm/io.h
-@@ -0,0 +1,84 @@
++++ b/arch/nios2/include/asm/asm-macros.h
+@@ -0,0 +1,309 @@
 +/*
-+ * Copyright (C) 2014 Altera Corporation
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Macro used to simplify coding multi-line assembler.
++ * Some of the bit test macro can simplify down to one line
++ * depending on the mask value.
++ *
 + * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_IO_H
-+#define _ASM_NIOS2_IO_H
-+
-+#include <asm/pgtable-bits.h>
-+
-+/* PCI is not supported in nios2, set this to 0. */
-+#define IO_SPACE_LIMIT 0
-+
-+extern void outsb(unsigned long addr, const void *buf, int len);
-+extern void outsw(unsigned long addr, const void *buf, int len);
-+extern void outsl(unsigned long addr, const void *buf, int len);
-+extern void insb(unsigned long addr, void *buf, int len);
-+extern void insw(unsigned long addr, void *buf, int len);
-+extern void insl(unsigned long addr, void *buf, int len);
-+#define outsb outsb
-+#define outsw outsw
-+#define outsl outsl
-+#define insb insb
-+#define insw insw
-+#define insl insl
-+
-+#define readb_relaxed(addr)	readb(addr)
-+#define readw_relaxed(addr)	readw(addr)
-+#define readl_relaxed(addr)	readl(addr)
-+
-+#define writeb_relaxed(x, addr)	writeb(x, addr)
-+#define writew_relaxed(x, addr)	writew(x, addr)
-+#define writel_relaxed(x, addr)	writel(x, addr)
-+
-+#include <asm-generic/io.h>
-+
-+/*
-+ * PCI is not enabled in nios2. Provide dummy implementation to get 'allyesconfig'
-+ * to build successfully.
-+ */
-+#define inb(addr)	({ 0; })
-+#define inw(addr)	({ 0; })
-+#define inl(addr)	({ 0; })
-+#define outb(x, addr)	do { } while (0)
-+#define outw(x, addr)	do { } while (0)
-+#define outl(x, addr)	do { } while (0)
-+
-+extern void __iomem *__ioremap(unsigned long physaddr, unsigned long size,
-+			unsigned long cacheflag);
-+extern void __iounmap(void __iomem *addr);
-+
-+static inline void __iomem *ioremap(unsigned long physaddr, unsigned long size)
-+{
-+	return __ioremap(physaddr, size, 0);
-+}
-+
-+static inline void __iomem *ioremap_nocache(unsigned long physaddr,
-+						unsigned long size)
-+{
-+	return __ioremap(physaddr, size, 0);
-+}
-+
-+static inline void iounmap(void __iomem *addr)
-+{
-+	__iounmap(addr);
-+}
-+
-+/* Pages to physical address... */
-+# define page_to_phys(page)	virt_to_phys(page_to_virt(page))
-+# define page_to_bus(page)	page_to_virt(page)
-+
-+/* Macros used for converting between virtual and physical mappings. */
-+# define phys_to_virt(vaddr)	\
-+	((void *)((unsigned long)(vaddr) | CONFIG_NIOS2_KERNEL_REGION_BASE))
-+/* Clear top 3 bits */
-+# define virt_to_phys(vaddr)	\
-+	((unsigned long)((unsigned long)(vaddr) & ~0xE0000000))
-+
-+#endif /* _ASM_NIOS2_IO_H */
-diff --git a/arch/nios2/lib/io.c b/arch/nios2/lib/io.c
-new file mode 100644
-index 0000000..94db593
---- /dev/null
-+++ b/arch/nios2/lib/io.c
-@@ -0,0 +1,138 @@
-+/*
-+ * Copyright (C) 2014 Altera Corporation
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ * All rights reserved.
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+#include <linux/types.h>
-+#include <asm/io.h>
-+
-+
-+#ifndef CONFIG_CC_OPTIMIZE_FOR_SIZE
-+#define __IO_USE_DUFFS
-+#endif
-+
-+#ifdef __IO_USE_DUFFS
-+
-+/* Use "Duff's Device" to unroll the loops. */
-+#define __IO_OUT_LOOP(a, b, l)				\
-+	do {						\
-+		if (l > 0) {				\
-+			int _n = (l + 7) / 8;		\
-+			switch (l % 8) {		\
-+			case 0:				\
-+				do {			\
-+					*a = *b++;	\
-+			case 7:				\
-+					*a = *b++;	\
-+			case 6:				\
-+					*a = *b++;	\
-+			case 5:				\
-+					*a = *b++;	\
-+			case 4:				\
-+					*a = *b++;	\
-+			case 3:				\
-+					*a = *b++;	\
-+			case 2:				\
-+					*a = *b++;	\
-+			case 1:				\
-+					*a = *b++;	\
-+				} while (--_n > 0);	\
-+			}				\
-+		}					\
-+	} while (0)
-+
-+#define __IO_IN_LOOP(a, b, l)				\
-+	do {						\
-+		if (l > 0) {				\
-+			int _n = (l + 7) / 8;		\
-+			switch (l % 8) {		\
-+			case 0:				\
-+				do {			\
-+					*b++ = *a;	\
-+			case 7:				\
-+					*b++ = *a;	\
-+			case 6:				\
-+					*b++ = *a;	\
-+			case 5:				\
-+					*b++ = *a;	\
-+			case 4:				\
-+					*b++ = *a;	\
-+			case 3:				\
-+					*b++ = *a;	\
-+			case 2:				\
-+					*b++ = *a;	\
-+			case 1:				\
-+					*b++ = *a;	\
-+				} while (--_n > 0);	\
-+			}				\
-+		}					\
-+	} while (0)
-+
-+#else /* __IO_USE_DUFFS */
-+
-+/* Use simple loops. */
-+#define __IO_OUT_LOOP(a, b, l)				\
-+	do {						\
-+		while (l--)				\
-+			*a = *b++;			\
-+	} while (0)
-+
-+#define __IO_IN_LOOP(a, b, l)				\
-+	do {						\
-+		while (l--)				\
-+			*b++ = *a;			\
-+	} while (0)
-+
-+#endif /* __IO_USE_DUFFS */
-+
-+void outsb(unsigned long addr, const void *buf, int len)
-+{
-+	volatile unsigned char *ap = (volatile unsigned char *)addr;
-+	unsigned char *bp = (unsigned char *)buf;
-+	__IO_OUT_LOOP(ap, bp, len);
-+}
-+EXPORT_SYMBOL(outsb);
-+
-+void outsw(unsigned long addr, const void *buf, int len)
-+{
-+	volatile unsigned short *ap = (volatile unsigned short *)addr;
-+	unsigned short *bp = (unsigned short *)buf;
-+	__IO_OUT_LOOP(ap, bp, len);
-+}
-+EXPORT_SYMBOL(outsw);
-+
-+void outsl(unsigned long addr, const void *buf, int len)
-+{
-+	volatile unsigned int *ap = (volatile unsigned int *)addr;
-+	unsigned int *bp = (unsigned int *)buf;
-+	__IO_OUT_LOOP(ap, bp, len);
-+}
-+EXPORT_SYMBOL(outsl);
-+
-+void insb(unsigned long addr, void *buf, int len)
-+{
-+	volatile unsigned char *ap = (volatile unsigned char *)addr;
-+	unsigned char *bp = (unsigned char *)buf;
-+	__IO_IN_LOOP(ap, bp, len);
-+}
-+EXPORT_SYMBOL(insb);
-+
-+void insw(unsigned long addr, void *buf, int len)
-+{
-+	volatile unsigned short *ap = (volatile unsigned short *)addr;
-+	unsigned short *bp = (unsigned short *)buf;
-+	__IO_IN_LOOP(ap, bp, len);
-+}
-+EXPORT_SYMBOL(insw);
-+
-+void insl(unsigned long addr, void *buf, int len)
-+{
-+	volatile unsigned int *ap = (volatile unsigned int *)addr;
-+	unsigned int *bp = (unsigned int *)buf;
-+	__IO_IN_LOOP(ap, bp, len);
-+}
-+EXPORT_SYMBOL(insl);
-diff --git a/arch/nios2/mm/ioremap.c b/arch/nios2/mm/ioremap.c
-new file mode 100644
-index 0000000..a46bccf
---- /dev/null
-+++ b/arch/nios2/mm/ioremap.c
-@@ -0,0 +1,186 @@
-+/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ *
++ */
++#ifndef _ASM_NIOS2_ASMMACROS_H
++#define _ASM_NIOS2_ASMMACROS_H
++/*
++ * ANDs reg2 with mask and places the result in reg1.
++ *
++ * You cannnot use the same register for reg1 & reg2.
 + */
 +
-+#include <linux/export.h>
++.macro ANDI32	reg1, reg2, mask
++.if \mask & 0xffff
++	.if \mask & 0xffff0000
++		movhi	\reg1, %hi(\mask)
++		movui	\reg1, %lo(\mask)
++		and	\reg1, \reg1, \reg2
++	.else
++		andi	\reg1, \reg2, %lo(\mask)
++	.endif
++.else
++	andhi	\reg1, \reg2, %hi(\mask)
++.endif
++.endm
++
++/*
++ * ORs reg2 with mask and places the result in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro ORI32	reg1, reg2, mask
++.if \mask & 0xffff
++	.if \mask & 0xffff0000
++		orhi	\reg1, \reg2, %hi(\mask)
++		ori	\reg1, \reg2, %lo(\mask)
++	.else
++		ori	\reg1, \reg2, %lo(\mask)
++	.endif
++.else
++	orhi	\reg1, \reg2, %hi(\mask)
++.endif
++.endm
++
++/*
++ * XORs reg2 with mask and places the result in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro XORI32	reg1, reg2, mask
++.if \mask & 0xffff
++	.if \mask & 0xffff0000
++		xorhi	\reg1, \reg2, %hi(\mask)
++		xori	\reg1, \reg1, %lo(\mask)
++	.else
++		xori	\reg1, \reg2, %lo(\mask)
++	.endif
++.else
++	xorhi	\reg1, \reg2, %hi(\mask)
++.endif
++.endm
++
++/*
++ * This is a support macro for BTBZ & BTBNZ.  It checks
++ * the bit to make sure it is valid 32 value.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro BT	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and branches to label if the
++ * bit is zero.  The result of the bit test is stored in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTBZ	reg1, reg2, bit, label
++	BT	\reg1, \reg2, \bit
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and branches to label if the
++ * bit is non-zero.  The result of the bit test is stored in reg1.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTBNZ	reg1, reg2, bit, label
++	BT	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then compliments the bit in reg2.
++ * The result of the bit test is stored in reg1.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTC	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++		xori	\reg2, \reg2, (1 << \bit)
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++		xorhi	\reg2, \reg2, (1 << (\bit - 16))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and then sets the bit in reg2.
++ * The result of the bit test is stored in reg1.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTS	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++		ori	\reg2, \reg2, (1 << \bit)
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++		orhi	\reg2, \reg2, (1 << (\bit - 16))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and then resets the bit in reg2.
++ * The result of the bit test is stored in reg1.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTR	reg1, reg2, bit
++.if \bit > 31
++	.err
++.else
++	.if \bit < 16
++		andi	\reg1, \reg2, (1 << \bit)
++		andi	\reg2, \reg2, %lo(~(1 << \bit))
++	.else
++		andhi	\reg1, \reg2, (1 << (\bit - 16))
++		andhi	\reg2, \reg2, %lo(~(1 << (\bit - 16)))
++	.endif
++.endif
++.endm
++
++/*
++ * Tests the bit in reg2 and then compliments the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTCBZ	reg1, reg2, bit, label
++	BTC	\reg1, \reg2, \bit
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then compliments the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was non-zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTCBNZ	reg1, reg2, bit, label
++	BTC	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then sets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTSBZ	reg1, reg2, bit, label
++	BTS	\reg1, \reg2, \bit
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then sets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was non-zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTSBNZ	reg1, reg2, bit, label
++	BTS	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then resets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTRBZ	reg1, reg2, bit, label
++	BTR	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bit in reg2 and then resets the bit in reg2.
++ * The result of the bit test is stored in reg1.  If the
++ * original bit was non-zero it branches to label.
++ *
++ * It is NOT safe to use the same register for reg1 & reg2.
++ */
++
++.macro BTRBNZ	reg1, reg2, bit, label
++	BTR	\reg1, \reg2, \bit
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bits in mask against reg2 stores the result in reg1.
++ * If the all the bits in the mask are zero it branches to label.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro TSTBZ	reg1, reg2, mask, label
++	ANDI32	\reg1, \reg2, \mask
++	beq	\reg1, r0, \label
++.endm
++
++/*
++ * Tests the bits in mask against reg2 stores the result in reg1.
++ * If the any of the bits in the mask are 1 it branches to label.
++ *
++ * It is safe to use the same register for reg1 & reg2.
++ */
++
++.macro TSTBNZ	reg1, reg2, mask, label
++	ANDI32	\reg1, \reg2, \mask
++	bne	\reg1, r0, \label
++.endm
++
++/*
++ * Pushes reg onto the stack.
++ */
++
++.macro PUSH	reg
++	addi	sp, sp, -4
++	stw	\reg, 0(sp)
++.endm
++
++/*
++ * Pops the top of the stack into reg.
++ */
++
++.macro POP	reg
++	ldw	\reg, 0(sp)
++	addi	sp, sp, 4
++.endm
++
++
++#endif /* _ASM_NIOS2_ASMMACROS_H */
+diff --git a/arch/nios2/include/asm/asm-offsets.h b/arch/nios2/include/asm/asm-offsets.h
+new file mode 100644
+index 0000000..5b9f5e0
+--- /dev/null
++++ b/arch/nios2/include/asm/asm-offsets.h
+@@ -0,0 +1,20 @@
++/*
++ *  Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ *  Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include <generated/asm-offsets.h>
+diff --git a/arch/nios2/kernel/asm-offsets.c b/arch/nios2/kernel/asm-offsets.c
+new file mode 100644
+index 0000000..3852f5c
+--- /dev/null
++++ b/arch/nios2/kernel/asm-offsets.c
+@@ -0,0 +1,88 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include <linux/stddef.h>
 +#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
-+#include <linux/io.h>
++#include <linux/kernel_stat.h>
++#include <linux/ptrace.h>
++#include <linux/hardirq.h>
++#include <linux/thread_info.h>
++#include <linux/kbuild.h>
 +
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+
-+static inline void remap_area_pte(pte_t *pte, unsigned long address,
-+				unsigned long size, unsigned long phys_addr,
-+				unsigned long flags)
++int main(void)
 +{
-+	unsigned long end;
-+	unsigned long pfn;
-+	pgprot_t pgprot = __pgprot(_PAGE_GLOBAL | _PAGE_PRESENT | _PAGE_READ
-+				| _PAGE_WRITE | flags);
++	/* struct task_struct */
++	OFFSET(TASK_THREAD, task_struct, thread);
++	BLANK();
 +
-+	address &= ~PMD_MASK;
-+	end = address + size;
-+	if (end > PMD_SIZE)
-+		end = PMD_SIZE;
-+	if (address >= end)
-+		BUG();
-+	pfn = PFN_DOWN(phys_addr);
-+	do {
-+		if (!pte_none(*pte)) {
-+			pr_err("remap_area_pte: page already exists\n");
-+			BUG();
-+		}
-+		set_pte(pte, pfn_pte(pfn, pgprot));
-+		address += PAGE_SIZE;
-+		pfn++;
-+		pte++;
-+	} while (address && (address < end));
-+}
++	/* struct thread_struct */
++	OFFSET(THREAD_KSP, thread_struct, ksp);
++	OFFSET(THREAD_KPSR, thread_struct, kpsr);
++	BLANK();
 +
-+static inline int remap_area_pmd(pmd_t *pmd, unsigned long address,
-+				unsigned long size, unsigned long phys_addr,
-+				unsigned long flags)
-+{
-+	unsigned long end;
++	/* struct pt_regs */
++	OFFSET(PT_ORIG_R2, pt_regs, orig_r2);
++	OFFSET(PT_ORIG_R7, pt_regs, orig_r7);
 +
-+	address &= ~PGDIR_MASK;
-+	end = address + size;
-+	if (end > PGDIR_SIZE)
-+		end = PGDIR_SIZE;
-+	phys_addr -= address;
-+	if (address >= end)
-+		BUG();
-+	do {
-+		pte_t *pte = pte_alloc_kernel(pmd, address);
-+		if (!pte)
-+			return -ENOMEM;
-+		remap_area_pte(pte, address, end - address, address + phys_addr,
-+			flags);
-+		address = (address + PMD_SIZE) & PMD_MASK;
-+		pmd++;
-+	} while (address && (address < end));
++	OFFSET(PT_R1, pt_regs, r1);
++	OFFSET(PT_R2, pt_regs, r2);
++	OFFSET(PT_R3, pt_regs, r3);
++	OFFSET(PT_R4, pt_regs, r4);
++	OFFSET(PT_R5, pt_regs, r5);
++	OFFSET(PT_R6, pt_regs, r6);
++	OFFSET(PT_R7, pt_regs, r7);
++	OFFSET(PT_R8, pt_regs, r8);
++	OFFSET(PT_R9, pt_regs, r9);
++	OFFSET(PT_R10, pt_regs, r10);
++	OFFSET(PT_R11, pt_regs, r11);
++	OFFSET(PT_R12, pt_regs, r12);
++	OFFSET(PT_R13, pt_regs, r13);
++	OFFSET(PT_R14, pt_regs, r14);
++	OFFSET(PT_R15, pt_regs, r15);
++	OFFSET(PT_EA, pt_regs, ea);
++	OFFSET(PT_RA, pt_regs, ra);
++	OFFSET(PT_FP, pt_regs, fp);
++	OFFSET(PT_SP, pt_regs, sp);
++	OFFSET(PT_GP, pt_regs, gp);
++	OFFSET(PT_ESTATUS, pt_regs, estatus);
++	DEFINE(PT_REGS_SIZE, sizeof(struct pt_regs));
++	BLANK();
++
++	/* struct switch_stack */
++	OFFSET(SW_R16, switch_stack, r16);
++	OFFSET(SW_R17, switch_stack, r17);
++	OFFSET(SW_R18, switch_stack, r18);
++	OFFSET(SW_R19, switch_stack, r19);
++	OFFSET(SW_R20, switch_stack, r20);
++	OFFSET(SW_R21, switch_stack, r21);
++	OFFSET(SW_R22, switch_stack, r22);
++	OFFSET(SW_R23, switch_stack, r23);
++	OFFSET(SW_FP, switch_stack, fp);
++	OFFSET(SW_GP, switch_stack, gp);
++	OFFSET(SW_RA, switch_stack, ra);
++	DEFINE(SWITCH_STACK_SIZE, sizeof(struct switch_stack));
++	BLANK();
++
++	/* struct thread_info */
++	OFFSET(TI_TASK, thread_info, task);
++	OFFSET(TI_FLAGS, thread_info, flags);
++	OFFSET(TI_PREEMPT_COUNT, thread_info, preempt_count);
++	BLANK();
++
 +	return 0;
 +}
-+
-+static int remap_area_pages(unsigned long address, unsigned long phys_addr,
-+				unsigned long size, unsigned long flags)
-+{
-+	int error;
-+	pgd_t *dir;
-+	unsigned long end = address + size;
-+
-+	phys_addr -= address;
-+	dir = pgd_offset(&init_mm, address);
-+	flush_cache_all();
-+	if (address >= end)
-+		BUG();
-+	do {
-+		pud_t *pud;
-+		pmd_t *pmd;
-+
-+		error = -ENOMEM;
-+		pud = pud_alloc(&init_mm, dir, address);
-+		if (!pud)
-+			break;
-+		pmd = pmd_alloc(&init_mm, pud, address);
-+		if (!pmd)
-+			break;
-+		if (remap_area_pmd(pmd, address, end - address,
-+			phys_addr + address, flags))
-+			break;
-+		error = 0;
-+		address = (address + PGDIR_SIZE) & PGDIR_MASK;
-+		dir++;
-+	} while (address && (address < end));
-+	flush_tlb_all();
-+	return error;
-+}
-+
-+#define IS_MAPPABLE_UNCACHEABLE(addr) (addr < 0x20000000UL)
-+
-+/*
-+ * Map some physical address range into the kernel address space.
-+ */
-+void __iomem *__ioremap(unsigned long phys_addr, unsigned long size,
-+			unsigned long cacheflag)
-+{
-+	struct vm_struct *area;
-+	unsigned long offset;
-+	unsigned long last_addr;
-+	void *addr;
-+
-+	/* Don't allow wraparound or zero size */
-+	last_addr = phys_addr + size - 1;
-+
-+	if (!size || last_addr < phys_addr)
-+		return NULL;
-+
-+	/* Don't allow anybody to remap normal RAM that we're using */
-+	if (phys_addr > PHYS_OFFSET && phys_addr < virt_to_phys(high_memory)) {
-+		char *t_addr, *t_end;
-+		struct page *page;
-+
-+		t_addr = __va(phys_addr);
-+		t_end = t_addr + (size - 1);
-+		for (page = virt_to_page(t_addr);
-+			page <= virt_to_page(t_end); page++)
-+			if (!PageReserved(page))
-+				return NULL;
-+	}
-+
-+	/*
-+	 * Map uncached objects in the low part of address space to
-+	 * CONFIG_NIOS2_IO_REGION_BASE
-+	 */
-+	if (IS_MAPPABLE_UNCACHEABLE(phys_addr) &&
-+	    IS_MAPPABLE_UNCACHEABLE(last_addr) &&
-+	    !(cacheflag & _PAGE_CACHED))
-+		return (void __iomem *)(CONFIG_NIOS2_IO_REGION_BASE + phys_addr);
-+
-+	/* Mappings have to be page-aligned */
-+	offset = phys_addr & ~PAGE_MASK;
-+	phys_addr &= PAGE_MASK;
-+	size = PAGE_ALIGN(last_addr + 1) - phys_addr;
-+
-+	/* Ok, go for it */
-+	area = get_vm_area(size, VM_IOREMAP);
-+	if (!area)
-+		return NULL;
-+	addr = area->addr;
-+	if (remap_area_pages((unsigned long) addr, phys_addr, size,
-+		cacheflag)) {
-+		vunmap(addr);
-+		return NULL;
-+	}
-+	return (void __iomem *) (offset + (char *)addr);
-+}
-+EXPORT_SYMBOL(__ioremap);
-+
-+/*
-+ * __iounmap unmaps nearly everything, so be careful
-+ * it doesn't free currently pointer/page tables anymore but it
-+ * wasn't used anyway and might be added later.
-+ */
-+void __iounmap(void __iomem *addr)
-+{
-+	struct vm_struct *p;
-+
-+	if ((unsigned long) addr > CONFIG_NIOS2_IO_REGION_BASE)
-+		return;
-+
-+	p = remove_vm_area((void *) (PAGE_MASK & (unsigned long __force) addr));
-+	if (!p)
-+		pr_err("iounmap: bad address %p\n", addr);
-+	kfree(p);
-+}
-+EXPORT_SYMBOL(__iounmap);
 -- 
 1.8.2.1
 
