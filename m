@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349AbaIHLRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:17:08 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55197 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753238AbaIHLRH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:17:07 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/+3VSHjOBZnnlIzfwc5doFjC8fkhWkMB0=
-X-DKIM: OpenDKIM Filter v2.0.1 titan A3BD65DAF10
-Date: Mon, 8 Sep 2014 07:16:56 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Alexander Gordeev <agordeev@redhat.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] PCI/MSI/Armada-370-xp: Remove
- arch_msi_check_device()
-Message-ID: <20140908111656.GC30828@titan.lakedaemon.net>
-References: <cover.1410078503.git.agordeev@redhat.com>
- <9f3497a0f478f3ee7d4a16b9a4221d4377e5863d.1410078503.git.agordeev@redhat.com>
+	id S1753447AbaIHLRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:17:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63855 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753238AbaIHLRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 07:17:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
+   d="scan'208";a="596195168"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 02/22] perf: Add AUX area to ring buffer for raw data streams
+In-Reply-To: <20140908070242.GS19379@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com> <20140908070242.GS19379@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 08 Sep 2014 14:16:56 +0300
+Message-ID: <87lhpuuztj.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9f3497a0f478f3ee7d4a16b9a4221d4377e5863d.1410078503.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ free-electron's guys.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-On Sun, Sep 07, 2014 at 08:57:54PM +0200, Alexander Gordeev wrote:
-> Moving MSI checks from arch_msi_check_device() function to
-> arch_setup_msi_irqs() function makes code more compact and
-> allows removing unnecessary hook arch_msi_check_device()
-> from generic MSI code.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: linux-pci@vger.kernel.org
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  drivers/irqchip/irq-armada-370-xp.c | 14 ++++----------
->  1 file changed, 4 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-> index 574aba0..df60eab 100644
-> --- a/drivers/irqchip/irq-armada-370-xp.c
-> +++ b/drivers/irqchip/irq-armada-370-xp.c
-> @@ -136,6 +136,10 @@ static int armada_370_xp_setup_msi_irq(struct msi_chip *chip,
->  	struct msi_msg msg;
->  	int virq, hwirq;
->  
-> +	/* We support MSI, but not MSI-X */
-> +	if (desc->msi_attrib.is_msix)
-> +		return -EINVAL;
-> +
->  	hwirq = armada_370_xp_alloc_msi();
->  	if (hwirq < 0)
->  		return hwirq;
-> @@ -166,15 +170,6 @@ static void armada_370_xp_teardown_msi_irq(struct msi_chip *chip,
->  	armada_370_xp_free_msi(hwirq);
->  }
->  
-> -static int armada_370_xp_check_msi_device(struct msi_chip *chip, struct pci_dev *dev,
-> -					  int nvec, int type)
-> -{
-> -	/* We support MSI, but not MSI-X */
-> -	if (type == PCI_CAP_ID_MSI)
-> -		return 0;
-> -	return -EINVAL;
-> -}
-> -
->  static struct irq_chip armada_370_xp_msi_irq_chip = {
->  	.name = "armada_370_xp_msi_irq",
->  	.irq_enable = unmask_msi_irq,
-> @@ -213,7 +208,6 @@ static int armada_370_xp_msi_init(struct device_node *node,
->  
->  	msi_chip->setup_irq = armada_370_xp_setup_msi_irq;
->  	msi_chip->teardown_irq = armada_370_xp_teardown_msi_irq;
-> -	msi_chip->check_device = armada_370_xp_check_msi_device;
->  	msi_chip->of_node = node;
->  
->  	armada_370_xp_msi_domain =
-> -- 
-> 1.9.3
-> 
+> On Wed, Aug 20, 2014 at 03:35:59PM +0300, Alexander Shishkin wrote:
+>> From: Peter Zijlstra <peterz@infradead.org>
+>> 
+>> This patch introduces "AUX space" in the perf mmap buffer, intended for
+>> exporting high bandwidth data streams to userspace, such as instruction
+>> flow traces.
+>> 
+>> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
+>> user_page structure, and read/write pointers aux_{head,tail}, which abide
+>> by the same rules as data_* counterparts of the main perf buffer.
+>> 
+>> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
+>> such an offset that will be greater than data_offset+data_size and
+>> aux_size to be the desired buffer size. Both need to be page aligned.
+>> Then, same aux_offset and aux_size should be passed to mmap() call and
+>> if everything adds up, you should have an AUX buffer as a result.
+>> 
+>> Pages that are mapped into this buffer also come out of user's mlock
+>> rlimit plus perf_event_mlock_kb allowance.
+>> 
+>> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+>> ---
+>
+>> +void rb_free_aux(struct ring_buffer *rb, struct perf_event *event)
+>> +{
+>> +	struct perf_event *iter;
+>> +	int pg;
+>> +
+>> +	if (rb->aux_priv) {
+>> +		/* disable all potential writers before freeing */
+>> +		rcu_read_lock();
+>> +		list_for_each_entry_rcu(iter, &rb->event_list, rb_entry)
+>> +			perf_event_disable(iter);
+>> +		rcu_read_unlock();
+>
+> Hmm, I cannot remember this from the last time; and its not explained
+> why this was added.
+>
+> This would change semantics between munmap of a buffer with and without
+> AUX bits in. 
+
+Indeed, but this seems fair: if an event is generating AUX data while we
+unmap the AUX buffer, there is no reason to keep it on, because chances
+are, AUX data is the only thing this event is generating. The
+alternative would be to have a separate callback for this, but then
+again, that would race with other pmu callbacks, since it would be
+called from munmap() path. I should add an elaborate comment about this.
+
+Does this sound reasonable?
+
+Regards,
+--
+Alex
