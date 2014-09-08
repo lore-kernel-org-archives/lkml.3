@@ -1,168 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294AbaIHXsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:48:52 -0400
-Received: from mail-by2on0103.outbound.protection.outlook.com ([207.46.100.103]:29824
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753060AbaIHXsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:48:50 -0400
-X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 19:48:49 EDT
-X-WSS-ID: 0NBLUTJ-07-97F-02
-X-M-MSG: 
-Message-ID: <540E3639.5080807@amd.com>
-Date: Mon, 8 Sep 2014 18:05:29 -0500
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1754820AbaIHXzB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:55:01 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:33556 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651AbaIHXy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 19:54:59 -0400
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/2 V4] irqchip: gic: Add supports for ARM GICv2m MSI(-X)
-References: <1407942041-3291-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1407942041-3291-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20140814175525.GI24018@leverpostej>
-In-Reply-To: <20140814175525.GI24018@leverpostej>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019018)(6009001)(428002)(51704005)(24454002)(479174003)(199003)(377454003)(164054003)(189002)(80022001)(65806001)(64126003)(83322001)(68736004)(21056001)(80316001)(65956001)(64706001)(33656002)(47776003)(87936001)(19580395003)(19580405001)(20776003)(105586002)(81542001)(65816999)(59896002)(101416001)(106466001)(44976005)(81342001)(4396001)(76482001)(92726001)(86362001)(92566001)(85852003)(83072002)(85306004)(102836001)(36756003)(46102001)(97736003)(107046002)(31966008)(74502001)(74662001)(99396002)(84676001)(79102001)(54356999)(76176999)(83506001)(50986999)(87266999)(50466002)(77982001)(90102001)(95666004)(110136001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB033;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03283976A6
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <20140828014123.GF18016@ZenIV.linux.org.uk>
+References: <1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com>
+	<87ppfvrdux.fsf@x220.int.ebiederm.org>
+	<20140828014123.GF18016@ZenIV.linux.org.uk>
+Date: Mon, 8 Sep 2014 16:54:57 -0700
+Message-ID: <CAHQdGtSkHuw22tLecFmo+aRafMM3CXDME-tU_5xoWLgstEnEZw@mail.gmail.com>
+Subject: Re: [PATCH v2] nfs: fix kernel warning when removing proc entry
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Dan Aloni <dan@kernelim.com>
+Content-Type: multipart/mixed; boundary=089e0122a71ed81a550502968b44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/14/2014 12:55 PM, Mark Rutland wrote:
-> On Wed, Aug 13, 2014 at 04:00:40PM +0100, suravee.suthikulpanit@amd.com wrote:
->> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+--089e0122a71ed81a550502968b44
+Content-Type: text/plain; charset=UTF-8
+
+On Wed, Aug 27, 2014 at 6:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Aug 19, 2014 at 09:20:38PM -0700, Eric W. Biederman wrote:
+>> Cong Wang <xiyou.wangcong@gmail.com> writes:
 >>
->> ARM GICv2m specification extends GICv2 to support MSI(-X) with
->> a new set of register frame. This patch introduces support for
->> the non-secure GICv2m register frame. Currently, GICV2m is available
->> in certain version of GIC-400.
+>> > I saw the following kernel warning:
 >>
->> The patch introduces a new property in ARM gic binding, the v2m subnode.
->> It is optional.
+>> Cong thanks for finding and tracking this.  I was clearly asleep at the
+>> switch when I was testing my fix to the nfs client code :(
 >>
->> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->> Cc: Mark Rutland <Mark.Rutland@arm.com>
->> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
->> Cc: Will Deacon <Will.Deacon@arm.com>
->> ---
->>   Documentation/devicetree/bindings/arm/gic.txt |  32 ++++
->>   drivers/irqchip/Kconfig                       |   7 +
->>   drivers/irqchip/Makefile                      |   1 +
->>   drivers/irqchip/irq-gic-v2m.c                 | 215 ++++++++++++++++++++++++++
->>   drivers/irqchip/irq-gic.c                     |  75 +++++----
->>   drivers/irqchip/irq-gic.h                     |  48 ++++++
->>   6 files changed, 348 insertions(+), 30 deletions(-)
->>   create mode 100644 drivers/irqchip/irq-gic-v2m.c
->>   create mode 100644 drivers/irqchip/irq-gic.h
->>
->> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
->> index 5573c08..8a64179 100644
->> --- a/Documentation/devicetree/bindings/arm/gic.txt
->> +++ b/Documentation/devicetree/bindings/arm/gic.txt
->> @@ -95,3 +95,35 @@ Example:
->>                        <0x2c006000 0x2000>;
->>                  interrupts = <1 9 0xf04>;
->>          };
->> +
->> +
->> +* GICv2m extension for MSI/MSI-x support (Optional)
->> +
->> +Certain revision of GIC-400 supports MSI/MSI-x via V2M register frame.
->> +This is enabled by specifying v2m sub-node.
->> +
->> +Required properties:
->> +
->> +- msi-controller : Identifies the node as an MSI controller.
->> +
->> +- reg : GICv2m MSI interface register base and size
->> +
->> +Example:
->> +
->> +       interrupt-controller@e1101000 {
->> +               compatible = "arm,gic-400";
->> +               #interrupt-cells = <3>;
->> +               #address-cells = <2>;
->> +               #size-cells = <2>;
->> +               interrupt-controller;
->> +               interrupts = <1 8 0xf04>;
->> +               ranges = <0 0 0 0xe1100000 0 0x100000>;
->> +               reg = <0x0 0xe1110000 0 0x01000>,
->> +                     <0x0 0xe112f000 0 0x02000>,
->> +                     <0x0 0xe1140000 0 0x10000>,
->> +                     <0x0 0xe1160000 0 0x10000>;
->> +               v2m {
->> +                       msi-controller;
->> +                       reg = <0x0 0x80000 0 0x1000>;
->> +               };
->> +       };
+>> I have applied this patch and will push it to Linus after it has a
+>> little bit to sit in linux-next.
 >
-> [...]
->
->> @@ -1009,6 +1012,16 @@ gic_of_init(struct device_node *node, struct device_node *parent)
->>          if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
->>                  percpu_offset = 0;
->>
->> +       gic_data[gic_cnt].irq_chip = &gic_chip;
->> +
->> +       /* Currently, we only support one v2m subnode. */
->> +       child = of_get_child_by_name(node, "v2m");
->> +       if (child) {
->> +               ret = gicv2m_of_init(child, &gic_data[gic_cnt]);
->> +               if (ret)
->> +                       return ret;
->> +       }
->
-> I can't see how you'd sanely expand this to multiple children, which was
-> the main point of having a separate node for the M block.
->
-> Give the M block a compatible string and look for children with that
-> string.
+>         Why does that code wank with one-by-one remove_proc_entry(), BTW?
+> remove_proc_subtree("nfsfs", net->proc_net) will take care of the whole pile
+> just fine, TYVM...  While we are it, there's no need to keep ->proc_nfsfs
+> at all - just have it in a local variable in nfs_fs_proc_net_init().
 
-Mark,
+Since nobody sent me an updated version with the remove_proc_subtree
+fix, I went ahead and edited the patch myself (see attachment). Cong,
+please let me know if you disagree with that change, otherwise, that
+will be the final patch sent upstream and Cc: stable # 3.4+.
 
-I am making change in the struct gic_chip_data to contain "v2m_list" (instead of just
-a single struct v2m_data). This way, it is clear on how we should handle multiple v2m nodes
-within a GIC.
+I'll schedule cleanup patches to make the same changes to the original
+nfs_fs_proc_exit() and nfs_fs_proc_init() and to remove (struct
+nfs_net)->proc_nfsfs for merging in 3.18.
 
-As for the device tree binding, in order to handle multiple v2m nodes within a GIC,
-it should not require adding another compatibility ID as it seems too complicate
-to have GIC node with multiple compat IDs).
+-- 
+Trond Myklebust
 
-	v2m0 {
-		msi-controller;
-		reg = <0 0x80000 0 0x10000>;	
-	};
+Linux NFS client maintainer, PrimaryData
 
-	v2m1 {
-		msi-controller;
-		reg = <0 0x90000 0 0x10000>;
-	};
+trond.myklebust@primarydata.com
 
-This should work since the PCI controller uses "of_pci_find_msi_chip_by_node()" to locate the msi_chip,
-we can simply just use "v2m0" or "v2m1" to specify this.
+--089e0122a71ed81a550502968b44
+Content-Type: application/octet-stream; 
+	name="0001-nfs-fix-kernel-warning-when-removing-proc-entry.patch"
+Content-Disposition: attachment; 
+	filename="0001-nfs-fix-kernel-warning-when-removing-proc-entry.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hzugpdbn0
 
-Thanks,
-
-Suravee.
-
+RnJvbSAyMWU4MTAwMmY5Nzg4YTNhZjU5MTQxNmI2ZGVjNjBkN2I2N2YyZmIyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBDb25nIFdhbmcgPHhpeW91Lndhbmdjb25nQGdtYWlsLmNvbT4K
+RGF0ZTogTW9uLCA4IFNlcCAyMDE0IDE2OjE3OjU1IC0wNzAwClN1YmplY3Q6IFtQQVRDSF0gbmZz
+OiBmaXgga2VybmVsIHdhcm5pbmcgd2hlbiByZW1vdmluZyBwcm9jIGVudHJ5CgpJIHNhdyB0aGUg
+Zm9sbG93aW5nIGtlcm5lbCB3YXJuaW5nOgoKWyAxODUyLjMyMTIyMl0gLS0tLS0tLS0tLS0tWyBj
+dXQgaGVyZSBdLS0tLS0tLS0tLS0tClsgMTg1Mi4zMjY1MjddIFdBUk5JTkc6IENQVTogMCBQSUQ6
+IDExOCBhdCBmcy9wcm9jL2dlbmVyaWMuYzo1MjEgcmVtb3ZlX3Byb2NfZW50cnkrMHgxNTQvMHgx
+NmIoKQpbIDE4NTIuMzM1NjMwXSByZW1vdmVfcHJvY19lbnRyeTogcmVtb3Zpbmcgbm9uLWVtcHR5
+IGRpcmVjdG9yeSAnZnMvbmZzZnMnLCBsZWFraW5nIGF0IGxlYXN0ICd2b2x1bWVzJwpbIDE4NTIu
+MzQ0MDg0XSBDUFU6IDAgUElEOiAxMTggQ29tbToga3dvcmtlci91ODoyIE5vdCB0YWludGVkIDMu
+MTYuMCsgIzU0MApbIDE4NTIuMzUwMDM2XSBIYXJkd2FyZSBuYW1lOiBCb2NocyBCb2NocywgQklP
+UyBCb2NocyAwMS8wMS8yMDExClsgMTg1Mi4zNTQ5OTJdIFdvcmtxdWV1ZTogbmV0bnMgY2xlYW51
+cF9uZXQKWyAxODUyLjM1ODcwMV0gIDAwMDAwMDAwMDAwMDAwMDAgZmZmZjg4MDExNmYyZmJkMCBm
+ZmZmZmZmZjgxOWMwM2U5IGZmZmY4ODAxMTZmMmZjMTgKWyAxODUyLjM2NjQ3NF0gIGZmZmY4ODAx
+MTZmMmZjMDggZmZmZmZmZmY4MTA3NDRlZSBmZmZmZmZmZjgxMWUwZTZlIGZmZmY4ODAwZDRlOTYy
+MzgKWyAxODUyLjM3MzUwN10gIGZmZmZmZmZmODFkYmU2NjUgZmZmZjg4MDBkNDZhNTk0OCAwMDAw
+MDAwMDAwMDAwMDA1IGZmZmY4ODAxMTZmMmZjNjgKWyAxODUyLjM4MDIyNF0gQ2FsbCBUcmFjZToK
+WyAxODUyLjM4MTk3Nl0gIFs8ZmZmZmZmZmY4MTljMDNlOT5dIGR1bXBfc3RhY2srMHg0ZC8weDY2
+ClsgMTg1Mi4zODU0OTVdICBbPGZmZmZmZmZmODEwNzQ0ZWU+XSB3YXJuX3Nsb3dwYXRoX2NvbW1v
+bisweDdhLzB4OTMKWyAxODUyLjM4OTg2OV0gIFs8ZmZmZmZmZmY4MTFlMGU2ZT5dID8gcmVtb3Zl
+X3Byb2NfZW50cnkrMHgxNTQvMHgxNmIKWyAxODUyLjM5Mzk4N10gIFs8ZmZmZmZmZmY4MTA3NDU3
+Yj5dIHdhcm5fc2xvd3BhdGhfZm10KzB4NGMvMHg0ZQpbIDE4NTIuMzk3OTk5XSAgWzxmZmZmZmZm
+ZjgxMWUwZTZlPl0gcmVtb3ZlX3Byb2NfZW50cnkrMHgxNTQvMHgxNmIKWyAxODUyLjQwMjAzNF0g
+IFs8ZmZmZmZmZmY4MTI5YzczZD5dIG5mc19mc19wcm9jX25ldF9leGl0KzB4NTMvMHg1NgpbIDE4
+NTIuNDA2MTM2XSAgWzxmZmZmZmZmZjgxMmExMDNiPl0gbmZzX25ldF9leGl0KzB4MTIvMHgxZApb
+IDE4NTIuNDA5Nzc0XSAgWzxmZmZmZmZmZjgxNzg1YmM5Pl0gb3BzX2V4aXRfbGlzdCsweDQ0LzB4
+NTUKWyAxODUyLjQxMzUyOV0gIFs8ZmZmZmZmZmY4MTc4NjM4OT5dIGNsZWFudXBfbmV0KzB4ZWUv
+MHgxODIKWyAxODUyLjQxNzE5OF0gIFs8ZmZmZmZmZmY4MTA4OGM5ZT5dIHByb2Nlc3Nfb25lX3dv
+cmsrMHgyMDkvMHg0MGQKWyAxODUyLjUwMjMyMF0gIFs8ZmZmZmZmZmY4MTA4OGJmNz5dID8gcHJv
+Y2Vzc19vbmVfd29yaysweDE2Mi8weDQwZApbIDE4NTIuNTg3NjI5XSAgWzxmZmZmZmZmZjgxMDg5
+MGMxPl0gd29ya2VyX3RocmVhZCsweDFmMC8weDJjNwpbIDE4NTIuNjczMjkxXSAgWzxmZmZmZmZm
+ZjgxMDg4ZWQxPl0gPyBwcm9jZXNzX3NjaGVkdWxlZF93b3JrcysweDJmLzB4MmYKWyAxODUyLjc1
+OTQ3MF0gIFs8ZmZmZmZmZmY4MTA4ZTA3OT5dIGt0aHJlYWQrMHhjOS8weGQxClsgMTg1Mi44NDMw
+OTldICBbPGZmZmZmZmZmODEwOTQyN2Y+XSA/IGZpbmlzaF90YXNrX3N3aXRjaCsweDNhLzB4Y2UK
+WyAxODUyLjkyNjUxOF0gIFs8ZmZmZmZmZmY4MTA4ZGZiMD5dID8gX19rdGhyZWFkX3BhcmttZSsw
+eDYxLzB4NjEKWyAxODUzLjAwODU2NV0gIFs8ZmZmZmZmZmY4MTljYmVhYz5dIHJldF9mcm9tX2Zv
+cmsrMHg3Yy8weGIwClsgMTg1My4wNzY0NzddICBbPGZmZmZmZmZmODEwOGRmYjA+XSA/IF9fa3Ro
+cmVhZF9wYXJrbWUrMHg2MS8weDYxClsgMTg1My4xNDA2NTNdIC0tLVsgZW5kIHRyYWNlIDY5YzRj
+NjYxN2Y3OGUzMmQgXS0tLQoKSXQgbG9va3Mgd3JvbmcgdGhhdCB3ZSBhZGQgIi9wcm9jL25ldC9u
+ZnNmcyIgaW4gbmZzX2ZzX3Byb2NfbmV0X2luaXQoKQp3aGlsZSByZW1vdmUgIi9wcm9jL2ZzL25m
+c2ZzIiBpbiBuZnNfZnNfcHJvY19uZXRfZXhpdCgpLgoKRml4ZXM6IGNvbW1pdCA2NWIzODg1MWEx
+NyAoTkZTOiBGaXggL3Byb2MvZnMvbmZzZnMvc2VydmVycyBhbmQgL3Byb2MvZnMvbmZzZnMvdm9s
+dW1lcykKQ2M6IEVyaWMgVy4gQmllZGVybWFuIDxlYmllZGVybUB4bWlzc2lvbi5jb20+CkNjOiBU
+cm9uZCBNeWtsZWJ1c3QgPHRyb25kLm15a2xlYnVzdEBwcmltYXJ5ZGF0YS5jb20+CkNjOiBEYW4g
+QWxvbmkgPGRhbkBrZXJuZWxpbS5jb20+ClNpZ25lZC1vZmYtYnk6IENvbmcgV2FuZyA8eGl5b3Uu
+d2FuZ2NvbmdAZ21haWwuY29tPgpbVHJvbmQ6IHJlcGxhY2UgdXNlcyBvZiByZW1vdmVfcHJvY19l
+bnRyeSgpIHdpdGggcmVtb3ZlX3Byb2Nfc3VidHJlZSgpCmFzIHN1Z2dlc3RlZCBieSBBbCBWaXJv
+XQpDYzogc3RhYmxlQHZnZXIua2VybmVsLm9yZyAjIDMuNC54IDogNjViMzg4NTFhMTc6IE5GUzog
+Rml4IC9wcm9jL2ZzL25mc2ZzL3NlcnZlcnMKQ2M6IHN0YWJsZUB2Z2VyLmtlcm5lbC5vcmcgIyAz
+LjQueApTaWduZWQtb2ZmLWJ5OiBUcm9uZCBNeWtsZWJ1c3QgPHRyb25kLm15a2xlYnVzdEBwcmlt
+YXJ5ZGF0YS5jb20+Ci0tLQogZnMvbmZzL2NsaWVudC5jIHwgMTIgKysrLS0tLS0tLS0tCiAxIGZp
+bGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCA5IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBh
+L2ZzL25mcy9jbGllbnQuYyBiL2ZzL25mcy9jbGllbnQuYwppbmRleCAxYzVmZjZkNTgzODUuLjZh
+NGYzNjY2ZTI3MyAxMDA2NDQKLS0tIGEvZnMvbmZzL2NsaWVudC5jCisrKyBiL2ZzL25mcy9jbGll
+bnQuYwpAQCAtMTQxMiwyNCArMTQxMiwxOCBAQCBpbnQgbmZzX2ZzX3Byb2NfbmV0X2luaXQoc3Ry
+dWN0IG5ldCAqbmV0KQogCXAgPSBwcm9jX2NyZWF0ZSgidm9sdW1lcyIsIFNfSUZSRUd8U19JUlVH
+TywKIAkJCW5uLT5wcm9jX25mc2ZzLCAmbmZzX3ZvbHVtZV9saXN0X2ZvcHMpOwogCWlmICghcCkK
+LQkJZ290byBlcnJvcl8yOworCQlnb3RvIGVycm9yXzE7CiAJcmV0dXJuIDA7CiAKLWVycm9yXzI6
+Ci0JcmVtb3ZlX3Byb2NfZW50cnkoInNlcnZlcnMiLCBubi0+cHJvY19uZnNmcyk7CiBlcnJvcl8x
+OgotCXJlbW92ZV9wcm9jX2VudHJ5KCJmcy9uZnNmcyIsIE5VTEwpOworCXJlbW92ZV9wcm9jX3N1
+YnRyZWUoIm5mc2ZzIiwgbmV0LT5wcm9jX25ldCk7CiBlcnJvcl8wOgogCXJldHVybiAtRU5PTUVN
+OwogfQogCiB2b2lkIG5mc19mc19wcm9jX25ldF9leGl0KHN0cnVjdCBuZXQgKm5ldCkKIHsKLQlz
+dHJ1Y3QgbmZzX25ldCAqbm4gPSBuZXRfZ2VuZXJpYyhuZXQsIG5mc19uZXRfaWQpOwotCi0JcmVt
+b3ZlX3Byb2NfZW50cnkoInZvbHVtZXMiLCBubi0+cHJvY19uZnNmcyk7Ci0JcmVtb3ZlX3Byb2Nf
+ZW50cnkoInNlcnZlcnMiLCBubi0+cHJvY19uZnNmcyk7Ci0JcmVtb3ZlX3Byb2NfZW50cnkoImZz
+L25mc2ZzIiwgTlVMTCk7CisJcmVtb3ZlX3Byb2Nfc3VidHJlZSgibmZzZnMiLCBuZXQtPnByb2Nf
+bmV0KTsKIH0KIAogLyoKLS0gCjEuOS4zCgo=
+--089e0122a71ed81a550502968b44--
