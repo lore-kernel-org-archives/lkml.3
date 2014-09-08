@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbaIHSpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:45:34 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:41191 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249AbaIHSpd (ORCPT
+	id S1754147AbaIHSr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:47:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42131 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776AbaIHSr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:45:33 -0400
+	Mon, 8 Sep 2014 14:47:56 -0400
+Date: Mon, 8 Sep 2014 13:47:27 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 6/6] ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable
+Message-ID: <20140908184727.GA2103@kahuna>
+References: <1408716235-26164-1-git-send-email-nm@ti.com>
+ <1408716235-26164-7-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1410190888.12560.15.camel@joe-AO725>
-References: <1410184684.12560.11.camel@joe-AO725> <1410185794-16160-1-git-send-email-voytikd@gmail.com>
- <1410190888.12560.15.camel@joe-AO725>
-From: Dmitry Voytik <voytikd@gmail.com>
-Date: Mon, 8 Sep 2014 22:45:12 +0400
-Message-ID: <CAAX90H0idrjiFTxav6CJJkyALxnj_Fwwa7KKOW+ONyhh5vVvyA@mail.gmail.com>
-Subject: Re: [PATCH] staging: binder: fix coding style issues
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Brian Swetland <swetland@google.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1408716235-26164-7-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 7:41 PM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2014-09-08 at 18:16 +0400, Dmitry Voytik wrote:
->> Fix coding style issues:
->> * put braces in all if-else branches;
->> * limit the length of changed lines to 80 columns.
->> checkpatch.pl warning count reduces by 3.
->>
->> Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
->> Reviewed-by: Joe Perches <joe@perches.com>
->
-> Hi Dmitry.
->
-> I don't see any defect in your patch now but here's
-> a bit of trivia for you.
->
-> I didn't sign anything here.
->
-> Please don't add signatures from another person unless
-> or until specifically written by that other person.
+On 09:03-20140822, Nishanth Menon wrote:
+>  	status = "okay";
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&uart1_pins>;
+> +	interrupts-extended = <&gic GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH
+> +			       &dra7_pmx_core 0x3e0>;
+^^
+Thanks to Lee Jones pointing this out to me in a different context[1]
+I made the wrong usage. Fixing the syntax to stay in sync with
+Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
 
-Oops. Sorry about that.
-Thank you for the review and guiding!
+[1] http://marc.info/?l=linux-omap&m=140930980325273&w=2
 
+-----8<----
+>From c3c284ebd2b8d5535abf297ef7537b2caa7fe67b Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Fri, 6 Jun 2014 20:53:22 -0500
+Subject: [PATCH V2 6/6] ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable
 
-> cheers, Joe
->
+Mark rxd as wakeupcapable for 115200n8 no hardware-flow control
+configuration. If h/w flow control is being used, then rts/cts
+appropriately should be used.
 
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/boot/dts/dra7-evm.dts |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+index 50f8022..08434c7 100644
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -303,6 +303,8 @@
+ 	status = "okay";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&uart1_pins>;
++	interrupts-extended = <&gic GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>,
++			      <&dra7_pmx_core 0x3e0>;
+ };
+ 
+ &uart2 {
+-- 
+1.7.9.5
 
 
 -- 
-Best Regards,
-Dmitry Voytik.
-voytikd@gmail.com
+Regards,
+Nishanth Menon
