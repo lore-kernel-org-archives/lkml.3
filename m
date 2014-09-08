@@ -1,98 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaIHVQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:16:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35566 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724AbaIHVQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:16:28 -0400
-Date: Mon, 8 Sep 2014 14:16:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Darren Hart <dvhart@infradead.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] eeepc-laptop: remove disp attribute show function
-Message-ID: <20140908211627.GA23619@kroah.com>
-References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
- <1409814488.5546.63.camel@x220>
- <20140906021757.GA9197@vmdeb7>
- <7288841.ayNsq2yeGO@vostro.rjw.lan>
- <1410210762-2487-1-git-send-email-fransklaver@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410210762-2487-1-git-send-email-fransklaver@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754858AbaIHVSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:18:22 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38976 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754160AbaIHVSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:18:21 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/13] perf/core improvements and fixes
+Date: Mon,  8 Sep 2014 18:17:56 -0300
+Message-Id: <1410211089-28668-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 11:12:42PM +0200, Frans Klaver wrote:
-> The disp attribute is write-only. This is enforced by mimicking sysfs
-> behavior store_sys_acpi() and show_sys_acpi(), but this is not ideal.
-> Behaving like sysfs is better left to sysfs.
-> 
-> Remove the show function from the disp attribute. This ensures userspace
-> can only write to disp at all times. While at it, propagate any errors
-> produced in store_sys_acpi() and show_sys_acpi(), instead of overriding
-> them with -EIO.
-> 
-> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> ---
-> 
-> This patch applies on top of Paul's "eeepc-laptop: simplify parse_arg()".
-> Tested both patches separately, as well as combined. As far as I can see the
-> system behaves exactly like before.
-> 
->  drivers/platform/x86/eeepc-laptop.c | 19 ++++++++++++++++---
->  1 file changed, 16 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index 78515b8..03bcbed 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -281,7 +281,7 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
->  		return rv;
->  	value = set_acpi(eeepc, cm, value);
->  	if (value < 0)
-> -		return -EIO;
-> +		return value;
->  	return count;
->  }
->  
-> @@ -291,7 +291,7 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
->  	int value = get_acpi(eeepc, cm);
->  
->  	if (value < 0)
-> -		return -EIO;
-> +		return value;
->  	return sprintf(buf, "%d\n", value);
->  }
->  
-> @@ -318,7 +318,20 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
->  
->  EEEPC_CREATE_DEVICE_ATTR(camera, 0644, CM_ASL_CAMERA);
->  EEEPC_CREATE_DEVICE_ATTR(cardr, 0644, CM_ASL_CARDREADER);
-> -EEEPC_CREATE_DEVICE_ATTR(disp, 0200, CM_ASL_DISPLAYSWITCH);
-> +
-> +static ssize_t store_disp(struct device *dev,
-> +			  struct device_attribute *attr,
-> +			  const char *buf, size_t count)
-> +{
-> +	return store_sys_acpi(dev, CM_ASL_DISPLAYSWITCH, buf, count);
-> +}
-> +
-> +static struct device_attribute dev_attr_disp = {
-> +	.attr = {
-> +		.name = "disp",
-> +		.mode = 0200 },
-> +	.store  = store_disp,
-> +};
+Hi Ingo,
 
-DEVICE_ATTR()?
+	Please consider pulling,
 
+- Arnaldo
+
+The following changes since commit 39b5a56ec0be5effe9b7d0f18cb27724bf2e5d47:
+
+  Merge branch 'rfc/perf' into perf/core, because it's ready for inclusion (2014-08-24 22:35:42 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+
+for you to fetch changes up to fa3480cb0a96c8af9ded1a8c836c91bd5704bda1:
+
+  perf tools: Add perf_pmu__scan_file() (2014-09-08 17:16:06 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+User visible:
+
+o Add +field argument support for --sort option (Jiri Olsa)
+
+Infrastructure:
+
+o More intel PT prep work, from Adrian Hunter, including:
+
+  - Let a user specify a PMU event without any config terms
+  - Add perf-with-kcore script
+  - Build programs to copy 32-bit compatibility VDSOs
+  - Add support for 32-bit compatibility VDSOs
+  - Let default config be defined for a PMU
+  - Add perf_pmu__scan_file()
+
+o Add feature checks to .gitignore (Alexander Shishkin)
+
+o "perf kvm stat report" improvements by Alexander Yarygin:
+  o  Save pid string in opts.target.pid
+  o  Enable the target.system_wide flag
+  o  Unify the title bar output
+
+o Fix build issue on powerpc when DWARF support is disabled (Anton Blanchard)
+
+o Allow to specify lib compile variable for spec usage (Jiri Olsa)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Adrian Hunter (6):
+      perf tools: Let a user specify a PMU event without any config terms
+      perf tools: Add perf-with-kcore script
+      perf tools: Build programs to copy 32-bit compatibility VDSOs
+      perf tools: Add support for 32-bit compatibility VDSOs
+      perf tools: Let default config be defined for a PMU
+      perf tools: Add perf_pmu__scan_file()
+
+Alexander Shishkin (1):
+      perf tools: Add feature checks to .gitignore
+
+Alexander Yarygin (3):
+      perf kvm stat report: Save pid string in opts.target.pid
+      perf kvm stat report: Enable the target.system_wide flag
+      perf kvm stat report: Unify the title bar output
+
+Anton Blanchard (1):
+      perf tools powerpc: Fix build issue when DWARF support is disabled
+
+Jiri Olsa (2):
+      perf tools: Add +field argument support for --sort option
+      perf tools: Allow to specify lib compile variable for spec usage
+
+ tools/perf/.gitignore            |   2 +
+ tools/perf/Makefile.perf         |  42 ++++++-
+ tools/perf/arch/powerpc/Makefile |   2 +-
+ tools/perf/builtin-kvm.c         |  23 ++--
+ tools/perf/config/Makefile       |  33 ++++-
+ tools/perf/config/Makefile.arch  |   8 ++
+ tools/perf/perf-read-vdso.c      |  59 +++++++++
+ tools/perf/perf-with-kcore.sh    | 259 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/pmu.c           |   2 +-
+ tools/perf/util/kvm-stat.h       |   1 -
+ tools/perf/util/parse-events.c   |  13 +-
+ tools/perf/util/parse-events.y   |  10 ++
+ tools/perf/util/pmu.c            |  79 +++++++++---
+ tools/perf/util/pmu.h            |  12 +-
+ tools/perf/util/sort.c           |  37 +++++-
+ tools/perf/util/vdso.c           | 170 ++++++++++++++++++++++++-
+ tools/perf/util/vdso.h           |   4 +-
+ 17 files changed, 712 insertions(+), 44 deletions(-)
+ create mode 100644 tools/perf/perf-read-vdso.c
+ create mode 100644 tools/perf/perf-with-kcore.sh
