@@ -1,80 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001AbaIHHOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:14:19 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40822 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbaIHHOS (ORCPT
+	id S1753046AbaIHHQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:16:11 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50941 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183AbaIHHQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:14:18 -0400
-Date: Mon, 8 Sep 2014 09:14:09 +0200
-From: Robert Richter <rric@kernel.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>
-Subject: Re: [PATCH 2/6] dts, kbuild: Factor out dtbs install rules to
- Makefile.dtbinst
-Message-ID: <20140908071409.GV4703@rric.localhost>
-References: <1409899692-1455-1-git-send-email-rric@kernel.org>
- <1409899692-1455-3-git-send-email-rric@kernel.org>
- <CAL_Jsq+NYU9c0Jw8DX_iH6G5_9tom9DGcP548q4tKQsdkb-s0A@mail.gmail.com>
+	Mon, 8 Sep 2014 03:16:09 -0400
+Date: Mon, 8 Sep 2014 00:13:16 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 2/6] mm/hugetlb: take page table lock in
+ follow_huge_(addr|pmd|pud)()
+In-Reply-To: <20140905052751.GA6883@nhori.redhat.com>
+Message-ID: <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
+References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1409276340-7054-3-git-send-email-n-horiguchi@ah.jp.nec.com> <alpine.LSU.2.11.1409031243420.9023@eggly.anvils> <20140905052751.GA6883@nhori.redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+NYU9c0Jw8DX_iH6G5_9tom9DGcP548q4tKQsdkb-s0A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.09.14 07:48:30, Rob Herring wrote:
-> On Fri, Sep 5, 2014 at 1:48 AM, Robert Richter <rric@kernel.org> wrote:
-> > From: Robert Richter <rrichter@cavium.com>
-> >
-> > Move dtbs install rules to Makefile.dtbinst. This change is needed to
-> > implement support for dts vendor subdirs. The change makes Makefiles
-> > easier and smaller as no longer the dtbs_install rule needs to be
-> > defined. Another advantage is that install goals are not encoded in
-> > targets anymore (%.dtb_dtbinst_).
-> >
-> > Signed-off-by: Robert Richter <rrichter@cavium.com>
-> > ---
-> >  arch/arm/Makefile            |  6 +++++-
-> >  arch/arm/boot/dts/Makefile   |  2 --
-> >  arch/arm64/Makefile          |  6 +++++-
-> >  arch/arm64/boot/dts/Makefile |  2 --
-> >  scripts/Kbuild.include       |  6 ++++++
-> >  scripts/Makefile.dtbinst     | 38 ++++++++++++++++++++++++++++++++++++++
-> >  scripts/Makefile.lib         | 12 ------------
-> >  7 files changed, 54 insertions(+), 18 deletions(-)
-> >  create mode 100644 scripts/Makefile.dtbinst
-> >
-> > diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> > index 0ce9d0f71f2a..1963d9a9a2c4 100644
-> > --- a/arch/arm/Makefile
-> > +++ b/arch/arm/Makefile
-> > @@ -313,9 +313,13 @@ $(BOOT_TARGETS): vmlinux
-> >         $(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
-> >
-> >  PHONY += dtbs dtbs_install
-> > -dtbs dtbs_install: prepare scripts
-> > +
-> > +dtbs: prepare scripts
-> >         $(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
-> >
-> > +dtbs_install:
-> > +       $(Q)$(MAKE) $(dtbinst)=$(boot)/dts MACHINE=$(MACHINE)
+On Fri, 5 Sep 2014, Naoya Horiguchi wrote:
+> On Wed, Sep 03, 2014 at 02:17:41PM -0700, Hugh Dickins wrote:
+> > On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
+> > > 
+> > > Reported-by: Hugh Dickins <hughd@google.com>
+> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > Cc: <stable@vger.kernel.org>  # [3.12+]
+> > 
+> > No ack to this one yet, I'm afraid.
 > 
-> Can't you get rid of MACHINE here, too?
+> OK, I defer Reported-by until all the problems in this patch are solved.
+> I added this Reported-by because Andrew asked how In found this problem,
+> and advised me to show the reporter.
+> And I didn't intend by this Reported-by that you acked the patch.
+> In this case, should I have used some unofficial tag like
+> "Not-yet-Reported-by:" to avoid being rude?
 
-I moved this change to the end of this patch series to let maintainers
-the choise to drop the change if they are not fine with it.
+Sorry, misunderstanding, I chose that position to write "No ack to this
+one yet" because that is where I would insert my "Acked-by" to the patch
+when ready.  I just meant that I cannot yet give you my "Acked-by".
 
--Robert
+You were not being rude to me at all, quite the reverse.
+
+I have no objection to your writing "Reported-by: Hugh...": you are
+being polite to acknowledge me, and I was not objecting to that.
+
+Although usually, we save "Reported-by"s for users who have
+reported a problem they saw in practice, rather than for fellow
+developers who have looked at the code and seen a potential bug -
+so I won't mind at all if you end up taking it out.
+
+> 
+> > One subtlety to take care over: it's a long time since I've had to
+> > worry about pmd folding and pud folding (what happens when you only
+> > have 2 or 3 levels of page table instead of the full 4): macros get
+> > defined to each other, and levels get optimized out (perhaps
+> > differently on different architectures).
+> > 
+> > So although at first sight the lock to take in follow_huge_pud()
+> > would seem to be mm->page_table_lock, I am not at this point certain
+> > that that's necessarily so - sometimes pud_huge might be pmd_huge,
+> > and the size PMD_SIZE, and pmd_lockptr appropriate at what appears
+> > to be the pud level.  Maybe: needs checking through the architectures
+> > and their configs, not obvious to me.
+> 
+> I think that every architecture uses mm->page_table_lock for pud-level
+> locking at least for now, but that could be changed in the future,
+> for example when 1GB hugepages or pud-based hugepages become common and
+> someone are interested in splitting lock for pud level.
+
+I'm not convinced by your answer, that you understand the (perhaps
+imaginary!) issue I'm referring to.  Try grep for __PAGETABLE_P.D_FOLDED.
+
+Our infrastructure allows for 4 levels of pagetable, pgd pud pmd pte,
+but many architectures/configurations support only 2 or 3 levels.
+What pud functions and pmd functions work out to be in those
+configs is confusing, and varies from architecture to architecture.
+
+In particular, pud and pmd may be different expressions of the same
+thing (with 1 pmd per pud, instead of say 512).  In that case PUD_SIZE
+will equal PMD_SIZE: and then at the pud level huge_pte_lockptr()
+will be using split locking instead of mm->page_table_lock.
+
+Many of the hugetlb architectures have a pud_huge() which just returns
+0, and we need not worry about those, nor the follow_huge_addr() powerpc.
+But arm64, mips, tile, x86 look more interesting.
+
+Frankly, I find myself too dumb to be sure of the right answer for all:
+and think that when we put the proper locking into follow_huge_pud(),
+we shall have to include a PUD_SIZE == PMD_SIZE test, to let the
+compiler decide for us which is the appropriate locking to match
+huge_pte_lockptr().
+
+Unless Kirill can illuminate: I may be afraid of complications
+where actually there are none.
+
+> So it would be helpful to introduce pud_lockptr() which just returns
+> mm->page_table_lock now, so that developers never forget to update it
+> when considering splitting pud lock.
+> 
+> > 
+> > I realize that I am asking for you (or I) to do more work, when using
+> > huge_pte_lock(hstate_vma(vma),,) would work it out "automatically";
+> > but I do feel quite strongly that that's the right approach here
+> > (and I'm not just trying to avoid a few edits of "mm" to "vma").
+> 
+> Yes, I agree.
+> 
+> > Cc'ing Kirill, who may have a strong view to the contrary,
+> > or a good insight on where the problems if any might be.
+> > 
+> > Also Cc'ing Kirill because I'm not convinced that huge_pte_lockptr()
+> > necessarily does the right thing on follow_huge_addr() architectures,
+> > ia64 and powerpc.  Do they, for example, allocate the memory for their
+> > hugetlb entries in such a way that we can indeed use pmd_lockptr() to
+> > point to a useable spinlock, in the case when huge_page_size(h) just
+> > happens to equal PMD_SIZE?
+> > 
+> > I don't know if this was thought through thoroughly
+> > (now that's a satisfying phrase hugh thinks hugh never wrote before!)
+> > when huge_pte_lockptr() was invented or not.  I think it would be safer
+> > if huge_pte_lockptr() just gave mm->page_table_lock on follow_huge_addr()
+> > architectures.
+> 
+> Yes, this seems a real problem and is worth discussing with maintainers
+> of these architectures. Maybe we can do this as a separate work.
+
+Perhaps, but I'm hoping Kirill can say, whether it's something he
+considered and felt safe with, or something he overlooked at the
+time and would prefer to change now.
+
+I suspect that either the follow_huge_addr() architectures should be
+constrained to use mm->page_table_lock; or, when we do introduce the
+proper locking into find_huge_addr() (you appear to be backing away
+from making any change there for now: yes, it's not needed urgently),
+that one will have to take vma instead of mm, so that it can be sure
+to match huge_pte_lockptr().
+
+Hugh
