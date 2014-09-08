@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaIHOS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:18:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4409 "EHLO mx1.redhat.com"
+	id S1753626AbaIHOVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:21:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14718 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869AbaIHOS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:18:56 -0400
-Date: Mon, 8 Sep 2014 10:18:51 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sb_edac: avoid INTERNAL ERROR message in EDAC with
- unspecified channel
-Message-ID: <20140908141851.GL22290@redhat.com>
-References: <1409945327-17989-1-git-send-email-sjenning@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409945327-17989-1-git-send-email-sjenning@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751835AbaIHOVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:21:36 -0400
+Message-ID: <1410186065.27715.2.camel@deneb.redhat.com>
+Subject: Re: [PATCH] efi/arm64: fix fdt-related memory reservation
+From: Mark Salter <msalter@redhat.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Sep 2014 10:21:05 -0400
+In-Reply-To: <20140908140609.GI12081@leverpostej>
+References: <1410183102-6969-1-git-send-email-msalter@redhat.com>
+	 <20140908140609.GI12081@leverpostej>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 02:28:47PM -0500, Seth Jennings wrote:
-> Intel IA32 SDM Table 15-14 defines channel 0xf as 'not specified', but
-> EDAC doesn't know about this and returns and INTERNAL ERROR when the
-> channel is greater than NUM_CHANNELS:
+On Mon, 2014-09-08 at 15:06 +0100, Mark Rutland wrote:
+> Hi Mark,
 > 
-> kernel: [ 1538.886456] CPU 0: Machine Check Exception: 0 Bank 1: 940000000000009f
-> kernel: [ 1538.886669] TSC 2bc68b22e7e812 ADDR 46dae7000 MISC 0 PROCESSOR 0:306e4 TIME 1390414572 SOCKET 0 APIC 0
-> kernel: [ 1538.971948] EDAC MC1: INTERNAL ERROR: channel value is out of range (15 >= 4)
-> kernel: [ 1538.972203] EDAC MC1: 0 CE memory read error on unknown memory (slot:0 page:0x46dae7 offset:0x0 grain:0 syndrome:0x0 -  area:DRAM err_code:0000:009f socket:1 channel_mask:1 rank:0)
+> On Mon, Sep 08, 2014 at 02:31:42PM +0100, Mark Salter wrote:
+> > Commit 86c8b27a01cf:
+> >  "arm64: ignore DT memreserve entries when booting in UEFI mode
+> > 
+> > prevents early_init_fdt_scan_reserved_mem() from being called for
+> > arm64 kernels booting via UEFI. This was done because the kernel
+> > will use the UEFI memory map to determine reserved memory regions.
+> > That approach has problems in that early_init_fdt_scan_reserved_mem()
+> > also reserves the FDT itself and any node-specific reserved memory.
+> > By chance of some kernel configs, the FDT may be overwritten before
+> > it can be unflattened and the kernel will fail to boot. More subtle
+> > problems will result if the FDT has node specific reserved memory
+> > which is not really reserved.
 > 
-> This commit changes sb_edac to forward a channel of -1 to EDAC if the
-> channel is not specified.  edac_mc_handle_error() sets the channel to -1
-> internally after the error message anyway, so this commit should have no
-> effect other than avoiding the INTERNAL ERROR message when the channel
-> is not specified.
-> 
-> Signed-off-by: Seth Jennings <sjenning@redhat.com>
-> Cc: Aristeu Rozanski <aris@redhat.com>
-> Cc: linux-edac@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/edac/sb_edac.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-> index 0034c48..07efed4 100644
-> --- a/drivers/edac/sb_edac.c
-> +++ b/drivers/edac/sb_edac.c
-> @@ -283,8 +283,9 @@ static const u32 correrrthrsld[] = {
->   * sbridge structs
->   */
->  
-> -#define NUM_CHANNELS	4
-> -#define MAX_DIMMS	3		/* Max DIMMS per channel */
-> +#define NUM_CHANNELS		4
-> +#define MAX_DIMMS		3	/* Max DIMMS per channel */
-> +#define CHANNEL_UNSPECIFIED	0xf	/* Intel IA32 SDM 15-14 */
->  
->  enum type {
->  	SANDY_BRIDGE,
-> @@ -1991,6 +1992,9 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
->  
->  	/* FIXME: need support for channel mask */
->  
-> +	if (channel == CHANNEL_UNSPECIFIED)
-> +		channel = -1;
-> +
->  	/* Call the helper to output message */
->  	edac_mc_handle_error(tp_event, mci, core_err_cnt,
->  			     m->addr >> PAGE_SHIFT, m->addr & ~PAGE_MASK, 0,
+> That doesn't sound like fun; apologies for allowing such brokenness
+> through in the first place.
 
-Acked-by: Aristeu Rozanski <aris@redhat.com>
+Heh. It was obvious that DT unflattening was broken, but bisecting
+didn't help much because I kept finding patches which when reverted
+made the problem go away even though they obviously weren't the
+cause.
 
--- 
-Aristeu
+> 
+> [...]
+> 
+> > +	/*
+> > +	 * Delete all memory reserve map entries. When booting via UEFI,
+> > +	 * kernel will use the UEFI memory map to find reserved regions.
+> > +	 */
+> > +	num_rsv = fdt_num_mem_rsv(fdt);
+> > +	for (i = 0; i < num_rsv; i++)
+> > +		fdt_del_mem_rsv(fdt, i);
+> 
+> I don't think that's right. Won't the memreserve entries shift down by
+> one each time we call fdt_del_mem_rsv?
+> 
+> Shouldn't this be something like:
+> 
+> while (fdt_num_mem_rsv(fdt))
+> 	fdt_del_mem_rsv(fdt, 0);
+> 
+> Or we could count downwards.
+> 
+
+Sigh. Yes, you are right. I only tested with one reserved region.
+I think counting down would be the way to go. I'll send a fixed
+patch shortly.
+
 
