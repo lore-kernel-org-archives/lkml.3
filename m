@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaIHQLg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:11:36 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:63488 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaIHQLf (ORCPT
+	id S1754135AbaIHQPb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:15:31 -0400
+Received: from amersmtp1.software.dell.com ([12.106.87.226]:49627 "EHLO
+	amersmtp1.software.dell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753533AbaIHQP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:11:35 -0400
+	Mon, 8 Sep 2014 12:15:29 -0400
+From: Ted Percival <ted@tedp.id.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Christoph Lameter <cl@linux.com>, Ted Percival <ted@tedp.id.au>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+CC: "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, apic: Fix unmasked CPU initialization
+Date: Mon, 8 Sep 2014 10:15:37 -0600
+Message-ID: <1410192947-6830-1-git-send-email-ted@tedp.id.au>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-In-Reply-To: <1410191478.2027.28.camel@jarvis.lan>
-References: <Pine.LNX.4.44L0.1409081047420.1433-100000@iolanthe.rowland.org>
-	<1410191478.2027.28.camel@jarvis.lan>
-Date: Mon, 8 Sep 2014 11:11:32 -0500
-Message-ID: <CADT32eJtXmqg1qzMu+ri6K=5Gc5v_Td6k1-jKANKBvfvTFtvMQ@mail.gmail.com>
-Subject: Re: WARNING in block layer triggered in 3.17-rc3
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Mlf-Version: 7.4.4.8437
+X-Mlf-UniqueId: o201409081615290178841
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-see this issue/warning in 3.12 also.
+Commit 4ba2968420fa removed the application of the CPU mask resulting
+in a hang when initializing the first CPU at boot:
 
-On Mon, Sep 8, 2014 at 10:51 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Mon, 2014-09-08 at 10:51 -0400, Alan Stern wrote:
->> On Sun, 7 Sep 2014, Shirish Pargaonkar wrote:
->>
->> > I think the problem is, when a gendisk is detached, its request queue
->> > is not put in bypass mode
->> > cause when it is re-attached, code tries to put it out of bypass mode,
->> > hence the warning.
->> >
->> > So either of these should work, I have not tested it, just coded it up.
->>
->> I'm pretty sure that both of your solutions are wrong.
->>
->> Jens and James, it appears the problem is in blk_register_queue().  The
->> code does this:
->>
->>       /*
->>        * Initialization must be complete by now.  Finish the initial
->>        * bypass from queue allocation.
->>        */
->>       queue_flag_set_unlocked(QUEUE_FLAG_INIT_DONE, q);
->>       blk_queue_bypass_end(q);
->>
->> This doesn't work well if the queue is unregistered later and then
->> registered again -- which is what happens when the sd driver is unbound
->> from a device and then bound again.  It looks like the code should be:
->>
->>       if (!queue_flag_test_and_set(QUEUE_FLAG_INIT_DONE, q))
->>               blk_queue_bypass_end(q);
->>
->> Do you agree?  If so, I'll send in patch.
->
-> This looks like a nasty hack.  In theory the QUEUE_FLAG_INIT_DONE should
-> be unset on blk_unregister_queue() to match the teardown; it's only
-> accident it isn't.  del_gendisk() in sd_remove() is supposed to tear a
-> lot of queue stuff down.  However, the problem looks to be the mismatch
-> in assumptions.  The way SCSI binding works, the queue belongs to the
-> underlying device so we always assumed we could add and remove upper
-> drivers ... there's even a case for this if you don't want a disk but
-> want to attach sg instead.  However, it's not the common use case.
->
-> The block model now seems to tie a lot of queue set up and teardown to
-> add and remove of the gendisk which is counter to these assumptions.  As
-> long as we can go from del->add without calling the ->release function
-> on the queue, everything works.  Most of the operations seem
-> symmetrical, so perhaps this is only the bypass doing too much.
->
-> The ideal is that disk teardown only does as much as disk setup, so the
-> mid layer can still use the underlying queue on the device.
->
-> This bypass code is not very well documented.  However, your problem
-> seems to be caused by this change:
->
-> commit 776687bce42bb22cce48b5da950e48ebbb9a948f
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Tue Jul 1 10:29:17 2014 -0600
->
->     block, blk-mq: draining can't be skipped even if bypass_depth was
-> non-zero
->
-> Your hack seems to indicate that this doesn't work on the add->del->add
-> transtion of a gendisk.
->
-> James
->
->
->
+  x86: Booting SMP configuration
+  .... node  #0, CPUs:      #1_
+
+Fixes: 4ba2968420fa ("percpu: Resolve ambiguities in __get_cpu_var/cpumask_var_t")
+Signed-off-by: Ted Percival <ted@tedp.id.au>
+---
+ arch/x86/kernel/apic/x2apic_cluster.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+index 1f5d5f2..e658f21 100644
+--- a/arch/x86/kernel/apic/x2apic_cluster.c
++++ b/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -43,6 +43,7 @@ __x2apic_send_IPI_mask(const struct cpumask *mask, int vector, int apic_dest)
+ 	 * and be sure it's manipulated with irq off.
+ 	 */
+ 	ipi_mask_ptr = this_cpu_cpumask_var_ptr(ipi_mask);
++	cpumask_copy(ipi_mask_ptr, mask);
+ 
+ 	/*
+ 	 * The idea is to send one IPI per cluster.
+-- 
+1.9.1
+
