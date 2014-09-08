@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288AbaIHQPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:15:41 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:40961 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788AbaIHQPi (ORCPT
+	id S1754458AbaIHQQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:16:32 -0400
+Received: from resqmta-po-11v.sys.comcast.net ([96.114.154.170]:47744 "EHLO
+	resqmta-po-11v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753922AbaIHQQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:15:38 -0400
-Message-ID: <540DD627.5080900@cogentembedded.com>
-Date: Mon, 08 Sep 2014 20:15:35 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Kiran Raparthy <kiran.kumar@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [RFC v3 2/2] usb: phy: Temporarily hold timed wakeup source on
- charger and disconnect events
-References: <1410171049-14239-1-git-send-email-kiran.kumar@linaro.org>	<540D88B5.7020702@cogentembedded.com> <CA+RfmHbaf=FBD8jYbigoUKB=BE8pmRwjp2RFM9xoU4-dq9=3UA@mail.gmail.com>
-In-Reply-To: <CA+RfmHbaf=FBD8jYbigoUKB=BE8pmRwjp2RFM9xoU4-dq9=3UA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Sep 2014 12:16:31 -0400
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 12:16:31 EDT
+Date: Mon, 8 Sep 2014 11:10:22 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Mikulas Patocka <mpatocka@redhat.com>
+cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        kkolasa@winsoft.pl, dm-devel@redhat.com
+Subject: Re: [PATCH] slab: implement kmalloc guard
+In-Reply-To: <alpine.LRH.2.02.1409081041160.29432@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.DEB.2.11.1409081108190.20388@gentwo.org>
+References: <alpine.LRH.2.02.1409051833510.9790@file01.intranet.prod.int.rdu2.redhat.com> <alpine.DEB.2.11.1409080932490.20388@gentwo.org> <alpine.LRH.2.02.1409081041160.29432@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 8 Sep 2014, Mikulas Patocka wrote:
 
-On 9/8/2014 2:55 PM, Kiran Raparthy wrote:
+> I don't know what you mean. If someone allocates 10000 objects with sizes
+> from 1 to 10000, you can't have 10000 slab caches - you can't have a slab
+> cache for each used size. Also - you can't create a slab cache in
+> interrupt context.
 
->>>         From: Todd Poynor <toddpoynor@google.com <mailto:toddpoynor@google.com>>
+Oh you can create them up front on bootup. And I think only the small
+sizes matter. Allocations >=8K are pushed to the page allocator anyways.
 
->>>         usb: phy: Temporarily hold timed wakeup source on charger and disconnect
->>>         events
+> > We already have a redzone structure to check for writes over the end of
+> > the object. Lets use that.
+>
+> So, change all three slab subsystems to use that.
 
->>         No need to duplicate the summary.
-
->>>         It temporarily holds a timed wakeup source on USB disconnect events,
->>>         to allow
-
->>         What "it"?
-
-> I was referring to "This patch" ,if required,i can change the terminology.
-> Regards,
-> Kiran
-
-    Yes, please. Just write "Temporarily hold ...", no need for a noun.
-And please don't send HTML mails to the mailing list (it should bounce them 
-anyway).
-
-WBR, Sergei
+SLOB has no debugging features and I think that was intentional. We are
+trying to unify the debug checks etc. Some work on that would be
+appreciated. I think the kmalloc creation is already in slab_common.c
 
