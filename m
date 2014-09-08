@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaIHTZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:25:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42910 "EHLO mx1.redhat.com"
+	id S1754556AbaIHTZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:25:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54852 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121AbaIHTZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753604AbaIHTZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Sep 2014 15:25:48 -0400
 From: Aaron Tomlin <atomlin@redhat.com>
 To: peterz@infradead.org
@@ -14,50 +14,97 @@ Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
         x86@kernel.org, rostedt@goodmis.org, hannes@cmpxchg.org,
         aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
         akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
-Subject: [PATCH v2 0/3] sched: Always check the integrity of the canary
-Date: Mon,  8 Sep 2014 20:23:14 +0100
-Message-Id: <1410204197-31204-1-git-send-email-atomlin@redhat.com>
-In-Reply-To: <20140904161124.GD1436@atomlin.usersys.redhat.com>
+Subject: [PATCH 2/3] sched: Add helper for task stack page overrun checking
+Date: Mon,  8 Sep 2014 20:23:16 +0100
+Message-Id: <1410204197-31204-3-git-send-email-atomlin@redhat.com>
+In-Reply-To: <1410204197-31204-1-git-send-email-atomlin@redhat.com>
 References: <20140904161124.GD1436@atomlin.usersys.redhat.com>
+ <1410204197-31204-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently in the event of a stack overrun a call to schedule()
-does not check for this type of corruption. This corruption is
-often silent and can go unnoticed. However once the corrupted
-region is examined at a later stage, the outcome is undefined
-and often results in a sporadic page fault which cannot be
-handled.
+This facility is used in a few places so let's introduce
+a helper function to improve code readability.
 
-The first patch adds a canary to init_task's end of stack.
-While the second patch provides a helper to determine the
-integrity of the canary. The third checks for a stack
-overrun and takes appropriate action since the damage
-is already done, there is no point in continuing.
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+---
+ arch/powerpc/mm/fault.c    | 4 +---
+ arch/x86/mm/fault.c        | 4 +---
+ include/linux/sched.h      | 2 ++
+ kernel/trace/trace_stack.c | 2 +-
+ 4 files changed, 5 insertions(+), 7 deletions(-)
 
-Changes since v1:
-
- * Rebased against v3.17-rc4
- * Add a canary to init_task - Oleg Nesterov
- * Fix various code formatting issues - Peter Zijlstra
- * Introduce Kconfig option - Peter Zijlstra
-
-Aaron Tomlin (3):
-  init/main.c: Give init_task a canary
-  sched: Add helper for task stack page overrun checking
-  sched: BUG when stack end location is over written
-
- arch/powerpc/mm/fault.c    |  5 +----
- arch/x86/mm/fault.c        |  5 +----
- include/linux/sched.h      |  4 ++++
- init/main.c                |  1 +
- kernel/fork.c              | 12 +++++++++---
- kernel/sched/core.c        |  4 ++++
- kernel/trace/trace_stack.c |  4 +---
- lib/Kconfig.debug          | 12 ++++++++++++
- 8 files changed, 33 insertions(+), 14 deletions(-)
-
+diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+index 35d0760c..99b2f27 100644
+--- a/arch/powerpc/mm/fault.c
++++ b/arch/powerpc/mm/fault.c
+@@ -507,7 +507,6 @@ bail:
+ void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
+ {
+ 	const struct exception_table_entry *entry;
+-	unsigned long *stackend;
+ 
+ 	/* Are we prepared to handle this fault?  */
+ 	if ((entry = search_exception_tables(regs->nip)) != NULL) {
+@@ -536,8 +535,7 @@ void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
+ 	printk(KERN_ALERT "Faulting instruction address: 0x%08lx\n",
+ 		regs->nip);
+ 
+-	stackend = end_of_stack(current);
+-	if (*stackend != STACK_END_MAGIC)
++	if (task_stack_end_corrupted(current))
+ 		printk(KERN_ALERT "Thread overran stack, or stack corrupted\n");
+ 
+ 	die("Kernel access of bad area", regs, sig);
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index bc23a70..6240bc7 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -648,7 +648,6 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 	   unsigned long address, int signal, int si_code)
+ {
+ 	struct task_struct *tsk = current;
+-	unsigned long *stackend;
+ 	unsigned long flags;
+ 	int sig;
+ 
+@@ -708,8 +707,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 
+ 	show_fault_oops(regs, error_code, address);
+ 
+-	stackend = end_of_stack(tsk);
+-	if (*stackend != STACK_END_MAGIC)
++	if (task_stack_end_corrupted(tsk))
+ 		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
+ 
+ 	tsk->thread.cr2		= address;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4dee9d7..6e07cb9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2615,6 +2615,8 @@ static inline unsigned long *end_of_stack(struct task_struct *p)
+ }
+ 
+ #endif
++#define task_stack_end_corrupted(task) \
++		(*(end_of_stack(task)) != STACK_END_MAGIC)
+ 
+ static inline int object_is_on_stack(void *obj)
+ {
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index 1636e41..16eddb3 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -170,7 +170,7 @@ check_stack(unsigned long ip, unsigned long *stack)
+ 			i++;
+ 	}
+ 
+-	if (*end_of_stack(current) != STACK_END_MAGIC) {
++	if (task_stack_end_corrupted(current)) {
+ 		print_max_stack();
+ 		BUG();
+ 	}
 -- 
 1.9.3
 
