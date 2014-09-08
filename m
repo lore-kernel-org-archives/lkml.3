@@ -1,174 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaIHKic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 06:38:32 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:59954 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbaIHKia convert rfc822-to-8bit (ORCPT
+	id S1753513AbaIHKjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 06:39:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51532 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752950AbaIHKjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 06:38:30 -0400
-From: Mikael Pettersson <mikpelinux@gmail.com>
-X-Google-Original-From: "Mikael Pettersson" <mikpe@cascade>
+	Mon, 8 Sep 2014 06:39:40 -0400
+Date: Mon, 8 Sep 2014 11:39:59 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
+        Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+Message-ID: <20140908103959.GD26030@arm.com>
+References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+ <1409781429-27593-4-git-send-email-keescook@chromium.org>
+ <20140904170349.GL7156@arm.com>
+ <CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
+ <20140904172748.GO7156@arm.com>
+ <CAGXu5jJVJ1F=6Q909ppuKoWPdSoz7bTLLxBiY_5eQ=nQQiCHmw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Message-ID: <21517.34588.780807.738131@gargle.gargle.HOWL>
-Date: Mon, 8 Sep 2014 12:38:20 +0200
-To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-Cc: Mikael Pettersson <mikpelinux@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [BISECTED] 3.17-rc1 radeon screen corruption due to "Always flush
- the HDP cache before submitting a CS to the GPU"
-In-Reply-To: <540D7267.6040003@daenzer.net>
-References: <21505.55482.547592.906934@gargle.gargle.HOWL>
-	<540572EC.4070909@daenzer.net>
-	<21513.59790.188508.307463@gargle.gargle.HOWL>
-	<540D7267.6040003@daenzer.net>
-X-Mailer: VM 8.1.2 under 24.3.1 (x86_64-redhat-linux-gnu)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJVJ1F=6Q909ppuKoWPdSoz7bTLLxBiY_5eQ=nQQiCHmw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michel Dänzer writes:
- > On 06.09.2014 01:49, Mikael Pettersson wrote:
- > > Michel Dänzer writes:
- > >   > On 30.08.2014 22:59, Mikael Pettersson wrote:
- > >   > > Since 3.17-rc1 my radeon card (RV370 / X1050 card) causes screen corruption
- > >   > > after a while in X + firefox.  This still occurs with yesterday's HEAD
- > >   > > of Linus' repo.  3.16 and ealier kernels are fine.
- > >   > >
- > >   > > I ran a bisect, which identified:
- > >   > >
- > >   > > commit 72a9987edcedb89db988079a03c9b9c65b6ec9ac
- > >   > > Author: Michel DÃ¤nzer <michel.daenzer@amd.com>
- > >   > > Date:   Thu Jul 31 18:43:49 2014 +0900
- > >   > >
- > >   > >      drm/radeon: Always flush the HDP cache before submitting a CS to the GPU
- > >   > >
- > >   > > as the cause of my screen corruption.  Reverting this from 3.17-rc2
- > >   > > (which requires manual intervention due to subsequent changes in
- > >   > > radeon_ring_commit()) eliminates the screen corruption.
- > >   >
- > >   > Does the patch below help?
- > > 
- > > Tested, sorry no joy.  I first reconfirmed the screen corruption with 3.17-rc3.
- > > I then applied this and rebuilt/rebooted, and after a few minutes X had a hickup
- > > (screen went black, came back after a few seconds, but then no cursor or
- > > reaction to mouse events), but I was able to kill it via my Terminate_Server
- > > key binding.
- > 
- > I was afraid so, thanks for testing it.
- > 
- > 
- > I can't see any other option than the patch below then. Can you confirm that this
- > fixes the screen corruption?
+On Fri, Sep 05, 2014 at 08:41:08PM +0100, Kees Cook wrote:
+> On Thu, Sep 4, 2014 at 10:27 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Thu, Sep 04, 2014 at 06:23:42PM +0100, Kees Cook wrote:
+> >> On Thu, Sep 4, 2014 at 10:03 AM, Will Deacon <will.deacon@arm.com> wrote:
+> >> > Hi Kees,
+> >> >
+> >> > On Wed, Sep 03, 2014 at 10:57:04PM +0100, Kees Cook wrote:
+> >> >> This is used from set_fixmap() and clear_fixmap() via asm-generic/fixmap.h.
+> >> >> Also makes sure that the fixmap allocation fits into the expected range.
+> >> >>
+> >> >> Based on patch by Rabin Vincent.
+> >> >
+> >> > [...]
+> >> >
+> >> >> +void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot)
+> >> >> +{
+> >> >> +     unsigned long vaddr = __fix_to_virt(idx);
+> >> >> +     pte_t *pte = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
+> >> >> +
+> >> >> +     /* Make sure fixmap region does not exceed available allocation. */
+> >> >> +     BUILD_BUG_ON(FIXADDR_START + (__end_of_fixed_addresses * PAGE_SIZE) >
+> >> >> +                  FIXADDR_END);
+> >> >> +     BUG_ON(idx >= __end_of_fixed_addresses);
+> >> >> +
+> >> >> +     if (pgprot_val(prot))
+> >> >> +             set_pte_at(NULL, vaddr, pte,
+> >> >> +                     pfn_pte(phys >> PAGE_SHIFT, prot));
+> >> >> +     else
+> >> >> +             pte_clear(NULL, vaddr, pte);
+> >> >> +
+> >> >> +     /*
+> >> >> +      * Given the potential a15 tlbi errata, we can only do tlb flushes
+> >> >> +      * with interrupts disabled. Callers must have taken care of this.
+> >> >> +      */
+> >> >> +     WARN_ON_ONCE(!irqs_disabled());
+> >> >> +     flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
+> >> >
+> >> > Aha, this explains why we were confusing each other! The issue is that
+> >> > interrupts must be *enabled*, so this code does the exact opposite of
+> >> > what we need.
+> >> >
+> >> > I think this got lost in a sea of double negatives during the last round
+> >> > of review.
+> >>
+> >> Ah! If this is the case, perhaps we can get away with
+> >> local_flush_tlb_kernel_range() then?
+> >
+> > That's a bit tricky, since you need to ensure that preemption is disabled
+> > until the mapping is put back like it was.
+> 
+> Even with CONFIG_ARM_ERRATA_798181 enabled, I don't see a problem here
+> using flush_tlb_kernel_range(). When doing the ftrace work, this was
+> trivial to trip over, so I think we're in a good state here.
+> 
+> I've tested this on real hardware now too, and nothing falls over.
+> I'll get rid of the comment and the WARN_ON_ONCE, but AFAICT, this is
+> safe.
 
-I'll test this on Friday evening when I'm back home and have access to the
-affected machine.
+But was that hardware actually affected by the erratum? There is a runtime
+check which will avoid the cross-call if not.
 
-/Mikael
+> Do you have a suggestion about what needs fixing?
 
+The easiest thing to do would be ensuring that __set_fixmap is always called
+with interrupts enabled. If you can guarantee that, then you need to rework
+the locking so that interrupts aren't disabled. I admit that I've lost a
+fair amount of the context here, but that's the fundamental issue.
 
- > 
- > 
- > diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
- > index 4c5ec44..b0098e7 100644
- > --- a/drivers/gpu/drm/radeon/r100.c
- > +++ b/drivers/gpu/drm/radeon/r100.c
- > @@ -821,6 +821,20 @@ u32 r100_get_vblank_counter(struct radeon_device *rdev, int crtc)
- >  		return RREG32(RADEON_CRTC2_CRNT_FRAME);
- >  }
- >  
- > +/**
- > + * r100_ring_hdp_flush - flush Host Data Path via the ring buffer
- > + * rdev: radeon device structure
- > + * ring: ring buffer struct for emitting packets
- > + */
- > +static void r100_ring_hdp_flush(struct radeon_device *rdev, struct radeon_ring *ring)
- > +{
- > +	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
- > +	radeon_ring_write(ring, rdev->config.r100.hdp_cntl |
- > +				RADEON_HDP_READ_BUFFER_INVALIDATE);
- > +	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
- > +	radeon_ring_write(ring, rdev->config.r100.hdp_cntl);
- > +}
- > +
- >  /* Who ever call radeon_fence_emit should call ring_lock and ask
- >   * for enough space (today caller are ib schedule and buffer move) */
- >  void r100_fence_ring_emit(struct radeon_device *rdev,
- > @@ -1056,20 +1070,6 @@ void r100_gfx_set_wptr(struct radeon_device *rdev,
- >  	(void)RREG32(RADEON_CP_RB_WPTR);
- >  }
- >  
- > -/**
- > - * r100_ring_hdp_flush - flush Host Data Path via the ring buffer
- > - * rdev: radeon device structure
- > - * ring: ring buffer struct for emitting packets
- > - */
- > -void r100_ring_hdp_flush(struct radeon_device *rdev, struct radeon_ring *ring)
- > -{
- > -	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
- > -	radeon_ring_write(ring, rdev->config.r100.hdp_cntl |
- > -				RADEON_HDP_READ_BUFFER_INVALIDATE);
- > -	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
- > -	radeon_ring_write(ring, rdev->config.r100.hdp_cntl);
- > -}
- > -
- >  static void r100_cp_load_microcode(struct radeon_device *rdev)
- >  {
- >  	const __be32 *fw_data;
- > diff --git a/drivers/gpu/drm/radeon/radeon_asic.c b/drivers/gpu/drm/radeon/radeon_asic.c
- > index eeeeabe..2dd5847 100644
- > --- a/drivers/gpu/drm/radeon/radeon_asic.c
- > +++ b/drivers/gpu/drm/radeon/radeon_asic.c
- > @@ -185,7 +185,6 @@ static struct radeon_asic_ring r100_gfx_ring = {
- >  	.get_rptr = &r100_gfx_get_rptr,
- >  	.get_wptr = &r100_gfx_get_wptr,
- >  	.set_wptr = &r100_gfx_set_wptr,
- > -	.hdp_flush = &r100_ring_hdp_flush,
- >  };
- >  
- >  static struct radeon_asic r100_asic = {
- > @@ -332,7 +331,6 @@ static struct radeon_asic_ring r300_gfx_ring = {
- >  	.get_rptr = &r100_gfx_get_rptr,
- >  	.get_wptr = &r100_gfx_get_wptr,
- >  	.set_wptr = &r100_gfx_set_wptr,
- > -	.hdp_flush = &r100_ring_hdp_flush,
- >  };
- >  
- >  static struct radeon_asic r300_asic = {
- > diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
- > index 275a5dc..7756bc1 100644
- > --- a/drivers/gpu/drm/radeon/radeon_asic.h
- > +++ b/drivers/gpu/drm/radeon/radeon_asic.h
- > @@ -148,8 +148,7 @@ u32 r100_gfx_get_wptr(struct radeon_device *rdev,
- >  		      struct radeon_ring *ring);
- >  void r100_gfx_set_wptr(struct radeon_device *rdev,
- >  		       struct radeon_ring *ring);
- > -void r100_ring_hdp_flush(struct radeon_device *rdev,
- > -			 struct radeon_ring *ring);
- > +
- >  /*
- >   * r200,rv250,rs300,rv280
- >   */
- > diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
- > index a773830..ef5b60a 100644
- > --- a/drivers/gpu/drm/radeon/radeon_drv.c
- > +++ b/drivers/gpu/drm/radeon/radeon_drv.c
- > @@ -83,7 +83,7 @@
- >   *            CIK: 1D and linear tiling modes contain valid PIPE_CONFIG
- >   *   2.39.0 - Add INFO query for number of active CUs
- >   *   2.40.0 - Add RADEON_GEM_GTT_WC/UC, flush HDP cache before submitting
- > - *            CS to GPU
- > + *            CS to GPU on >= r600
- >   */
- >  #define KMS_DRIVER_MAJOR	2
- >  #define KMS_DRIVER_MINOR	40
- > 
- > 
- > 
- > -- 
- > Earthling Michel Dänzer            |                  http://www.amd.com
- > Libre software enthusiast          |                Mesa and X developer
-
--- 
+Will
