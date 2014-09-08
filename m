@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaIHHvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:51:24 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:56299 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941AbaIHHvX (ORCPT
+	id S1753126AbaIHHxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:53:07 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:58792 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874AbaIHHxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:51:23 -0400
-From: Bojan Prtvar <prtvar.b@gmail.com>
-To: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        davem@davemloft.net
-Cc: netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] netfilter: xtables:  Remove unnecessary initialization of struct ts_state
-Date: Mon,  8 Sep 2014 09:51:12 +0200
-Message-Id: <1410162672-5040-1-git-send-email-prtvar.b@gmail.com>
-X-Mailer: git-send-email 1.9.1.286.g5172cb3
+	Mon, 8 Sep 2014 03:53:06 -0400
+Message-ID: <1410160901.11338.16.camel@linux-fkkt.site>
+Subject: Re: [3.16.1 REGRESSION]: Simtec Entropy Key (cdc-acm) broken in
+ 3.16
+From: Oliver Neukum <oliver@neukum.org>
+To: Nix <nix@esperi.org.uk>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <8761h2nlk4.fsf@spindle.srvr.nix>
+References: <878um4tg09.fsf@spindle.srvr.nix>
+	 <1409569752.24385.12.camel@linux-fkkt.site>
+	 <874mwnosz1.fsf@spindle.srvr.nix> <1409903983.9532.0.camel@linux-fkkt.site>
+	 <8761h2nlk4.fsf@spindle.srvr.nix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Sep 2014 09:21:41 +0200
+Mime-Version: 1.0
+X-Mailer: Evolution 3.10.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The skb_find_text() accepts uninitialized textsearch state variable.
+On Fri, 2014-09-05 at 16:17 +0100, Nix wrote:
+> On 5 Sep 2014, Oliver Neukum verbalised:
+> 
+> > On Fri, 2014-09-05 at 00:40 +0100, Nix wrote:
+> >> I'm working around this confusing morass by rebooting into each test
+> >> kernel, unplugging and replugging the entropy key if it was fubared,
+> >> then rebooting into the same kernel again and seeing if it was still
+> >> fubared. But this is not terribly fast, particularly not on a headless
+> >> compact-flash-based Geode box which doesn't even complete booting
+> >> without the entropy source which this bug cuts off :) so it'll be
+> >> sometime tomorrow before I can get this bisection done, I'm afraid.
+> >
+> > Ugh. My sympathies. I cannot suggest a better method, I am afraid.
+> 
+> Well, that method doesn't work. I've found pairs of kernels (e.g.
+> 59a3d4c3631e553357b7305dc09db1990aa6757c and
+> b05d59dfceaea72565b1648af929b037b0f96d7f) where each kernel works on its
+> own (rebooting from that kernel into the same kernel keeps a working
+> key, so I would normally assume that each kernel is OK) but rebooting
+> from the first into the second yields a broken one if it was working
+> before (so one of them must, in fact, be broken, but I have no clue
+> which one).
+> 
+> So I can't figure out how to bisect this.
+> 
+> Any suggestions as to what failure-test I might use, or what other
+> methods I might use to figure out what's going wrong? Not knowing
+> anything about USB doesn't help here. I don't know for sure that this is
+> a cdc-acm problem -- bisecting just the cdc-acm driver was fruitless --
+> so it might be something more generally USBish.
+> 
 
-Signed-off-by: Bojan Prtvar <prtvar.b@gmail.com>
----
- net/netfilter/xt_string.c | 1 -
- 1 file changed, 1 deletion(-)
+Do your kernels work if you start with a known good kernel e.g.
+3.15 and then reboot?
 
-diff --git a/net/netfilter/xt_string.c b/net/netfilter/xt_string.c
-index d3c48b1..5699adb 100644
---- a/net/netfilter/xt_string.c
-+++ b/net/netfilter/xt_string.c
-@@ -29,7 +29,6 @@ string_mt(const struct sk_buff *skb, struct xt_action_param *par)
- 	struct ts_state state;
- 	bool invert;
- 
--	memset(&state, 0, sizeof(struct ts_state));
- 	invert = conf->u.v1.flags & XT_STRING_FLAG_INVERT;
- 
- 	return (skb_find_text((struct sk_buff *)skb, conf->from_offset,
--- 
-1.9.1.286.g5172cb3
+	Regards
+		Oliver
+
 
