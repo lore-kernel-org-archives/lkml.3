@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaIHSvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:51:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40947 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147AbaIHSvT (ORCPT
+	id S1754169AbaIHSwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:52:36 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:6955 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaIHSwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:51:19 -0400
-Date: Mon, 8 Sep 2014 20:51:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-Message-ID: <20140908185115.GI6758@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8S3Z05jHc5WjjFzN"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 8 Sep 2014 14:52:35 -0400
+Message-ID: <1410201722.28990.219.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 4/5] x86, mm: Add set_memory_wt() for WT
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Yigal Korman <yigal@plexistor.com>, Juergen Gross <jgross@suse.com>,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        akpm@linuxfoundation.org, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefan Bader <stefan.bader@canonical.com>
+Date: Mon, 08 Sep 2014 12:42:02 -0600
+In-Reply-To: <CALCETrV4fJT5jo6uOpyfeEExeLQREZjJY5SafuMHt_mbzE55eA@mail.gmail.com>
+References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
+	 <1409855739-8985-5-git-send-email-toshi.kani@hp.com>
+	 <CALCETrXjpoVmCi07zo0dKH9LrF+nz9F3GshNiQvmiueFFH=TUQ@mail.gmail.com>
+	 <1409857025.28990.125.camel@misato.fc.hp.com>
+	 <540C1C01.1000308@plexistor.com>
+	 <CALCETrX-jsDBbPTVBLE=TkrfO9dLJgpog7TVKqi-wxxj6saRjA@mail.gmail.com>
+	 <1410188863.28990.209.camel@misato.fc.hp.com>
+	 <CALCETrV4fJT5jo6uOpyfeEExeLQREZjJY5SafuMHt_mbzE55eA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-09-08 at 10:23 -0700, Andy Lutomirski wrote:
+> On Sep 8, 2014 8:18 AM, "Toshi Kani" <toshi.kani@hp.com> wrote:
+> >
+> > On Sun, 2014-09-07 at 09:49 -0700, Andy Lutomirski wrote:
+> > > On Sun, Sep 7, 2014 at 1:49 AM, Yigal Korman <yigal@plexistor.com> wrote:
+> > > > I think that what confused Andy (or at least me) is the documentation in Documentation/x86/pat.txt
+> > > > If it's possible, can you please update pat.txt as part of the patch?
+> > >
+> > > Indeed.  That file seems to indicate several times that the intended
+> > > use of set_memory_xyz is for RAM.
+> >
+> >
+> > Good point.  pat.txt is correct that the "intended" use of
+> > set_memory_xyz() is for RAM since there is no other way to set non-WB
+> > attribute for RAM.  For reserved memory, one should call ioremap_xyz()
+> > to map with the xyz attribute directly.  From the functionality POV,
+> > set_memory_xyz() works for reserved memory, but such usage is not
+> > intended.
+> >
+> > Should I drop the patch 4/5 until we can track the use of WT for RAM?
+> 
+> Probably not.  I can imagine someone ioremapping a huge chunk of
+> NV-DIMM and then wanting to change some of it to WT.  Unless I've
+> missed something (which is rather likely), the cleanest way to do this
+> is with set_memory_wt.
 
---8S3Z05jHc5WjjFzN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah, that sounds possible.
 
-On Mon, Sep 08, 2014 at 01:47:11PM -0400, Vince Weaver wrote:
-> Hello
->=20
-> so I finally had time to run my perf_fuzzer again and it has rapidly=20
-> turned up an alarming crash that instant-reboots my core2 test machine.
+> If that happens, someone should update pat.txt to indicate that it's allowed.
 
-Urgh, of course :/
+Since it is unlikely that someone will update pat.txt later, I will
+update it to:
+
+-------------------------------------------------------------------
+API                    |    RAM   |  ACPI,...  |  Reserved/Holes  |
+
+-----------------------|----------|------------|------------------|
+set_memory_wt          |    *1    |    --      |       WT         |
+ set_memory_wb         |          |            |                  |
 
 
+*1: -EINVAL due to the current limitation in reserve_memtype().
 
---8S3Z05jHc5WjjFzN
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
+-Toshi
 
-iQIcBAEBAgAGBQJUDfqeAAoJEHZH4aRLwOS6laEP/3iUeTu5NkIoe7jZC6W4Rl8k
-Qwk48C8n3J4HIei1aEnr+abmM8n/DoyDkcsXG0SDBWSeTXyR1FnGCzppGe/qkBZD
-aPYpUt6nabJJq0EkqhvBt4jhyx4RQjxSXNLPeQAXkP5cBAT6Qq/eg1FvpYgbAem5
-cnnxAZCb+27eypWfxxcD7Sw3MV2HgunWyL9hfnlYnlFH/E5r4U5DD3uJ4YLFMdXI
-kNUKxFkqDxQYv2nNp8TisdmJJdDWqRTQubrf7chkzkViYNUqHLz62BE7vrupbuHU
-JZbMy5zq/bmNlRZWkQkEoTyT6mcurWNxH2ZYZqnTi4tyyX1VQSqjtGnXhF0rzmxs
-3R65o4vLSNVh5B2SeeRIv2rXIDIPif8eujmvXmV6gdtCX2DtylR+0p64G8+ftWKk
-bvLMUdtqWy8Hq7ANdCP1UQhrkqL7rmvrkkA8VQjGFTf3TQDWoui8zRT2hAbbPmTK
-m6Z5fqjAVOiFGAjEdxrjN9qtVpOJvoUBe65F8bBwsNz2wyJGMbwU03D/9w6DdHNe
-iAgXzMxb5bx4aDDffNNZ5DG/a51MsojXV1ItFT744MBtr03z1YnovAb71YMnlyYO
-yO7uo3X0rJ3gWa252D083CD9rAkwtek+SRrYetGlg+dEQ2onxRqHeU0Crde1TepK
-/DU1+RdFGEw/TqAPLXqw
-=9p/H
------END PGP SIGNATURE-----
 
---8S3Z05jHc5WjjFzN--
