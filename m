@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778AbaIHTZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:25:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29413 "EHLO mx1.redhat.com"
+	id S1754640AbaIHTZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:25:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42910 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882AbaIHTZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753121AbaIHTZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Sep 2014 15:25:48 -0400
 From: Aaron Tomlin <atomlin@redhat.com>
 To: peterz@infradead.org
@@ -14,12 +14,11 @@ Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
         x86@kernel.org, rostedt@goodmis.org, hannes@cmpxchg.org,
         aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
         akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
-Subject: [PATCH 3/3] sched: BUG when stack end location is over written
-Date: Mon,  8 Sep 2014 20:23:17 +0100
-Message-Id: <1410204197-31204-4-git-send-email-atomlin@redhat.com>
-In-Reply-To: <1410204197-31204-1-git-send-email-atomlin@redhat.com>
+Subject: [PATCH v2 0/3] sched: Always check the integrity of the canary
+Date: Mon,  8 Sep 2014 20:23:14 +0100
+Message-Id: <1410204197-31204-1-git-send-email-atomlin@redhat.com>
+In-Reply-To: <20140904161124.GD1436@atomlin.usersys.redhat.com>
 References: <20140904161124.GD1436@atomlin.usersys.redhat.com>
- <1410204197-31204-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,54 +30,34 @@ region is examined at a later stage, the outcome is undefined
 and often results in a sporadic page fault which cannot be
 handled.
 
-This patch checks for a stack overrun and takes appropriate
-action since the damage is already done, there is no point
-in continuing.
+The first patch adds a canary to init_task's end of stack.
+While the second patch provides a helper to determine the
+integrity of the canary. The third checks for a stack
+overrun and takes appropriate action since the damage
+is already done, there is no point in continuing.
 
-Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
----
- kernel/sched/core.c |  4 ++++
- lib/Kconfig.debug   | 12 ++++++++++++
- 2 files changed, 16 insertions(+)
+Changes since v1:
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ec1a286..182b2d1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2660,6 +2660,10 @@ static noinline void __schedule_bug(struct task_struct *prev)
-  */
- static inline void schedule_debug(struct task_struct *prev)
- {
-+#ifdef CONFIG_SCHED_STACK_END_CHECK
-+	if (unlikely(task_stack_end_corrupted(prev)))
-+		BUG();
-+#endif
- 	/*
- 	 * Test if we are atomic. Since do_exit() needs to call into
- 	 * schedule() atomically, we ignore that path. Otherwise whine
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index a285900..2a8280a 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -824,6 +824,18 @@ config SCHEDSTATS
- 	  application, you can say N to avoid the very slight overhead
- 	  this adds.
- 
-+config SCHED_STACK_END_CHECK
-+	bool "Detect stack corruption on calls to schedule()"
-+	depends on DEBUG_KERNEL
-+	default y
-+	help
-+	  This option checks for a stack overrun on calls to schedule().
-+	  If the stack end location is found to be over written always panic as
-+	  the content of the corrupted region can no longer be trusted.
-+	  This is to ensure no erroneous behaviour occurs which could result in
-+	  data corruption or a sporadic crash at a later stage once the region
-+	  is examined. The runtime overhead introduced is minimal.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
+ * Rebased against v3.17-rc4
+ * Add a canary to init_task - Oleg Nesterov
+ * Fix various code formatting issues - Peter Zijlstra
+ * Introduce Kconfig option - Peter Zijlstra
+
+Aaron Tomlin (3):
+  init/main.c: Give init_task a canary
+  sched: Add helper for task stack page overrun checking
+  sched: BUG when stack end location is over written
+
+ arch/powerpc/mm/fault.c    |  5 +----
+ arch/x86/mm/fault.c        |  5 +----
+ include/linux/sched.h      |  4 ++++
+ init/main.c                |  1 +
+ kernel/fork.c              | 12 +++++++++---
+ kernel/sched/core.c        |  4 ++++
+ kernel/trace/trace_stack.c |  4 +---
+ lib/Kconfig.debug          | 12 ++++++++++++
+ 8 files changed, 33 insertions(+), 14 deletions(-)
+
 -- 
 1.9.3
 
