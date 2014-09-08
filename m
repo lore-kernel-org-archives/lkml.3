@@ -1,546 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476AbaIHJoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:44:37 -0400
-Received: from mail-by2on0082.outbound.protection.outlook.com ([207.46.100.82]:51775
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753904AbaIHJjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:39:00 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Subject: [PATCH v3 19/29] nios2: Library functions
-Date: Mon, 8 Sep 2014 17:22:30 +0800
-Message-ID: <1410168160-3624-20-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+	id S1754257AbaIHJqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:46:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:33309 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753639AbaIHJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:46:04 -0400
+Date: Mon, 8 Sep 2014 19:45:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140908194557.21b3fc2e@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(189002)(22564002)(199003)(6806004)(81342001)(89996001)(85306004)(4396001)(99396002)(87286001)(86362001)(95666004)(33646002)(80022001)(44976005)(19580405001)(68736004)(83322001)(19580395003)(90102001)(42186005)(36756003)(20776003)(47776003)(77096002)(92726001)(92566001)(79102001)(2201001)(62966002)(77156001)(87936001)(50226001)(88136002)(77982001)(93916002)(575784001)(46102001)(31966008)(74662001)(81542001)(74502001)(84676001)(76482001)(50986999)(104166001)(76176999)(15975445006)(48376002)(15202345003)(102836001)(83072002)(85852003)(107046002)(229853001)(21056001)(105596002)(50466002)(106466001)(97736003)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB035;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03283976A6
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-OriginatorOrg: altera.com
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/0B6ThQ0Bqv/j.cvOndC2d2z"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add optimised library functions for nios2.
+--Sig_/0B6ThQ0Bqv/j.cvOndC2d2z
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
+Hi Andrew,
+
+After merging the akpm tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+mm/page_alloc.c: In function 'dump_vma':
+mm/page_alloc.c:6742:46: error: request for member 'pgprot' in something no=
+t a structure or union
+   vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
+                                              ^
+
+Caused by commit d1305f0fa17f ("mm: introduce dump_vma").  pgprot_t on
+PPC is normally (i.e. unless STRICT_MM_TYPECHECKS is explicitly
+defined) just an "unsigned long" (see
+arch/powerpc/include/asm/page.h).  This is true for several other
+architectures as well.
+
+I added this fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 8 Sep 2014 19:41:54 +1000
+Subject: [PATCH] mm: introduce dump_vma fix 2
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- arch/nios2/include/asm/checksum.h |  78 +++++++++++++++
- arch/nios2/include/asm/string.h   |  24 +++++
- arch/nios2/lib/memcpy.c           | 199 ++++++++++++++++++++++++++++++++++++++
- arch/nios2/lib/memmove.c          |  82 ++++++++++++++++
- arch/nios2/lib/memset.c           |  81 ++++++++++++++++
- 5 files changed, 464 insertions(+)
- create mode 100644 arch/nios2/include/asm/checksum.h
- create mode 100644 arch/nios2/include/asm/string.h
- create mode 100644 arch/nios2/lib/memcpy.c
- create mode 100644 arch/nios2/lib/memmove.c
- create mode 100644 arch/nios2/lib/memset.c
+ mm/page_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/nios2/include/asm/checksum.h b/arch/nios2/include/asm/checksum.h
-new file mode 100644
-index 0000000..6bc1f0d
---- /dev/null
-+++ b/arch/nios2/include/asm/checksum.h
-@@ -0,0 +1,78 @@
-+/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS_CHECKSUM_H
-+#define _ASM_NIOS_CHECKSUM_H
-+
-+/* Take these from lib/checksum.c */
-+extern __wsum csum_partial(const void *buff, int len, __wsum sum);
-+extern __wsum csum_partial_copy(const void *src, void *dst, int len,
-+				__wsum sum);
-+extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
-+					int len, __wsum sum, int *csum_err);
-+#define csum_partial_copy_nocheck(src, dst, len, sum)	\
-+	csum_partial_copy((src), (dst), (len), (sum))
-+
-+extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
-+extern __sum16 ip_compute_csum(const void *buff, int len);
-+
-+/*
-+ * Fold a partial checksum
-+ */
-+static inline __sum16 csum_fold(__wsum sum)
-+{
-+	__asm__ __volatile__(
-+		"add	%0, %1, %0\n"
-+		"cmpltu	r8, %0, %1\n"
-+		"srli	%0, %0, 16\n"
-+		"add	%0, %0, r8\n"
-+		"nor	%0, %0, %0\n"
-+		: "=r" (sum)
-+		: "r" (sum << 16), "0" (sum)
-+		: "r8");
-+	return (__force __sum16) sum;
-+}
-+
-+/*
-+ * computes the checksum of the TCP/UDP pseudo-header
-+ * returns a 16-bit checksum, already complemented
-+ */
-+#define csum_tcpudp_nofold csum_tcpudp_nofold
-+static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
-+					unsigned short len,
-+					unsigned short proto,
-+					__wsum sum)
-+{
-+	__asm__ __volatile__(
-+		"add	%0, %1, %0\n"
-+		"cmpltu	r8, %0, %1\n"
-+		"add	%0, %0, r8\n"	/* add carry */
-+		"add	%0, %2, %0\n"
-+		"cmpltu	r8, %0, %2\n"
-+		"add	%0, %0, r8\n"	/* add carry */
-+		"add	%0, %3, %0\n"
-+		"cmpltu	r8, %0, %3\n"
-+		"add	%0, %0, r8\n"	/* add carry */
-+		: "=r" (sum), "=r" (saddr)
-+		: "r" (daddr), "r" ((ntohs(len) << 16) + (proto * 256)),
-+		  "0" (sum),
-+		  "1" (saddr)
-+		: "r8");
-+
-+	return sum;
-+}
-+
-+static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
-+					unsigned short len,
-+					unsigned short proto, __wsum sum)
-+{
-+	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
-+}
-+
-+#endif /* _ASM_NIOS_CHECKSUM_H */
-diff --git a/arch/nios2/include/asm/string.h b/arch/nios2/include/asm/string.h
-new file mode 100644
-index 0000000..14dd570
---- /dev/null
-+++ b/arch/nios2/include/asm/string.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_STRING_H
-+#define _ASM_NIOS2_STRING_H
-+
-+#ifdef __KERNEL__
-+
-+#define __HAVE_ARCH_MEMSET
-+#define __HAVE_ARCH_MEMCPY
-+#define __HAVE_ARCH_MEMMOVE
-+
-+extern void *memset(void *s, int c, size_t count);
-+extern void *memcpy(void *d, const void *s, size_t count);
-+extern void *memmove(void *d, const void *s, size_t count);
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* _ASM_NIOS2_STRING_H */
-diff --git a/arch/nios2/lib/memcpy.c b/arch/nios2/lib/memcpy.c
-new file mode 100644
-index 0000000..ac7eec4
---- /dev/null
-+++ b/arch/nios2/lib/memcpy.c
-@@ -0,0 +1,199 @@
-+/* Extracted from GLIBC memcpy.c and memcopy.h, which is:
-+   Copyright (C) 1991, 1992, 1993, 1997, 2004 Free Software Foundation, Inc.
-+   This file is part of the GNU C Library.
-+   Contributed by Torbjorn Granlund (tege@sics.se).
-+
-+   The GNU C Library is free software; you can redistribute it and/or
-+   modify it under the terms of the GNU Lesser General Public
-+   License as published by the Free Software Foundation; either
-+   version 2.1 of the License, or (at your option) any later version.
-+
-+   The GNU C Library is distributed in the hope that it will be useful,
-+   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+   Lesser General Public License for more details.
-+
-+   You should have received a copy of the GNU Lesser General Public
-+   License along with the GNU C Library; if not, see
-+   <http://www.gnu.org/licenses/>.  */
-+
-+#include <linux/types.h>
-+
-+/* Type to use for aligned memory operations.
-+   This should normally be the biggest type supported by a single load
-+   and store.  */
-+#define	op_t	unsigned long int
-+#define OPSIZ	(sizeof(op_t))
-+
-+/* Optimal type for storing bytes in registers.  */
-+#define	reg_char	char
-+
-+#define MERGE(w0, sh_1, w1, sh_2) (((w0) >> (sh_1)) | ((w1) << (sh_2)))
-+
-+/* Copy exactly NBYTES bytes from SRC_BP to DST_BP,
-+   without any assumptions about alignment of the pointers.  */
-+#define BYTE_COPY_FWD(dst_bp, src_bp, nbytes)				\
-+do {									\
-+	size_t __nbytes = (nbytes);					\
-+	while (__nbytes > 0) {						\
-+		unsigned char __x = ((unsigned char *) src_bp)[0];	\
-+		src_bp += 1;						\
-+		__nbytes -= 1;						\
-+		((unsigned char *) dst_bp)[0] = __x;			\
-+		dst_bp += 1;						\
-+	}								\
-+} while (0)
-+
-+/* Copy *up to* NBYTES bytes from SRC_BP to DST_BP, with
-+   the assumption that DST_BP is aligned on an OPSIZ multiple.  If
-+   not all bytes could be easily copied, store remaining number of bytes
-+   in NBYTES_LEFT, otherwise store 0.  */
-+/* extern void _wordcopy_fwd_aligned __P ((long int, long int, size_t)); */
-+/* extern void _wordcopy_fwd_dest_aligned __P ((long int, long int, size_t)); */
-+#define WORD_COPY_FWD(dst_bp, src_bp, nbytes_left, nbytes)		\
-+do {									\
-+	if (src_bp % OPSIZ == 0)					\
-+		_wordcopy_fwd_aligned(dst_bp, src_bp, (nbytes) / OPSIZ);\
-+	else								\
-+		_wordcopy_fwd_dest_aligned(dst_bp, src_bp, (nbytes) / OPSIZ);\
-+	src_bp += (nbytes) & -OPSIZ;					\
-+	dst_bp += (nbytes) & -OPSIZ;					\
-+	(nbytes_left) = (nbytes) % OPSIZ;				\
-+} while (0)
-+
-+
-+/* Threshold value for when to enter the unrolled loops.  */
-+#define	OP_T_THRES	16
-+
-+/* _wordcopy_fwd_aligned -- Copy block beginning at SRCP to
-+   block beginning at DSTP with LEN `op_t' words (not LEN bytes!).
-+   Both SRCP and DSTP should be aligned for memory operations on `op_t's.  */
-+/* stream-lined (read x8 + write x8) */
-+static void _wordcopy_fwd_aligned(long int dstp, long int srcp, size_t len)
-+{
-+	while (len > 7) {
-+		register op_t a0, a1, a2, a3, a4, a5, a6, a7;
-+		a0 = ((op_t *) srcp)[0];
-+		a1 = ((op_t *) srcp)[1];
-+		a2 = ((op_t *) srcp)[2];
-+		a3 = ((op_t *) srcp)[3];
-+		a4 = ((op_t *) srcp)[4];
-+		a5 = ((op_t *) srcp)[5];
-+		a6 = ((op_t *) srcp)[6];
-+		a7 = ((op_t *) srcp)[7];
-+		((op_t *) dstp)[0] = a0;
-+		((op_t *) dstp)[1] = a1;
-+		((op_t *) dstp)[2] = a2;
-+		((op_t *) dstp)[3] = a3;
-+		((op_t *) dstp)[4] = a4;
-+		((op_t *) dstp)[5] = a5;
-+		((op_t *) dstp)[6] = a6;
-+		((op_t *) dstp)[7] = a7;
-+
-+		srcp += 8 * OPSIZ;
-+		dstp += 8 * OPSIZ;
-+		len -= 8;
-+	}
-+	while (len > 0) {
-+		*(op_t *)dstp = *(op_t *)srcp;
-+
-+		srcp += OPSIZ;
-+		dstp += OPSIZ;
-+		len -= 1;
-+	}
-+}
-+
-+/* _wordcopy_fwd_dest_aligned -- Copy block beginning at SRCP to
-+   block beginning at DSTP with LEN `op_t' words (not LEN bytes!).
-+   DSTP should be aligned for memory operations on `op_t's, but SRCP must
-+   *not* be aligned.  */
-+/* stream-lined (read x4 + write x4) */
-+static void _wordcopy_fwd_dest_aligned(long int dstp, long int srcp,
-+					size_t len)
-+{
-+	op_t ap;
-+	int sh_1, sh_2;
-+
-+	/* Calculate how to shift a word read at the memory operation
-+	aligned srcp to make it aligned for copy. */
-+
-+	sh_1 = 8 * (srcp % OPSIZ);
-+	sh_2 = 8 * OPSIZ - sh_1;
-+
-+	/* Make SRCP aligned by rounding it down to the beginning of the `op_t'
-+	it points in the middle of. */
-+	srcp &= -OPSIZ;
-+	ap = ((op_t *) srcp)[0];
-+	srcp += OPSIZ;
-+
-+	while (len > 3) {
-+		op_t a0, a1, a2, a3;
-+		a0 = ((op_t *) srcp)[0];
-+		a1 = ((op_t *) srcp)[1];
-+		a2 = ((op_t *) srcp)[2];
-+		a3 = ((op_t *) srcp)[3];
-+		((op_t *) dstp)[0] = MERGE(ap, sh_1, a0, sh_2);
-+		((op_t *) dstp)[1] = MERGE(a0, sh_1, a1, sh_2);
-+		((op_t *) dstp)[2] = MERGE(a1, sh_1, a2, sh_2);
-+		((op_t *) dstp)[3] = MERGE(a2, sh_1, a3, sh_2);
-+
-+		ap = a3;
-+		srcp += 4 * OPSIZ;
-+		dstp += 4 * OPSIZ;
-+		len -= 4;
-+	}
-+	while (len > 0) {
-+		register op_t a0;
-+		a0 = ((op_t *) srcp)[0];
-+		((op_t *) dstp)[0] = MERGE(ap, sh_1, a0, sh_2);
-+
-+		ap = a0;
-+		srcp += OPSIZ;
-+		dstp += OPSIZ;
-+		len -= 1;
-+	}
-+}
-+
-+void *memcpy(void *dstpp, const void *srcpp, size_t len)
-+{
-+	unsigned long int dstp = (long int) dstpp;
-+	unsigned long int srcp = (long int) srcpp;
-+
-+	/* Copy from the beginning to the end.  */
-+
-+	/* If there not too few bytes to copy, use word copy.  */
-+	if (len >= OP_T_THRES) {
-+		/* Copy just a few bytes to make DSTP aligned.  */
-+		len -= (-dstp) % OPSIZ;
-+		BYTE_COPY_FWD(dstp, srcp, (-dstp) % OPSIZ);
-+
-+		/* Copy whole pages from SRCP to DSTP by virtual address
-+		   manipulation, as much as possible.  */
-+
-+		/* PAGE_COPY_FWD_MAYBE (dstp, srcp, len, len); */
-+
-+		/* Copy from SRCP to DSTP taking advantage of the known
-+		   alignment of DSTP. Number of bytes remaining is put in the
-+		   third argument, i.e. in LEN.  This number may vary from
-+		   machine to machine. */
-+
-+		WORD_COPY_FWD(dstp, srcp, len, len);
-+
-+		/* Fall out and copy the tail. */
-+	}
-+
-+	/* There are just a few bytes to copy.  Use byte memory operations. */
-+	BYTE_COPY_FWD(dstp, srcp, len);
-+
-+	return dstpp;
-+}
-+
-+void *memcpyb(void *dstpp, const void *srcpp, unsigned len)
-+{
-+	unsigned long int dstp = (long int) dstpp;
-+	unsigned long int srcp = (long int) srcpp;
-+
-+	BYTE_COPY_FWD(dstp, srcp, len);
-+
-+	return dstpp;
-+}
-diff --git a/arch/nios2/lib/memmove.c b/arch/nios2/lib/memmove.c
-new file mode 100644
-index 0000000..c65ef51
---- /dev/null
-+++ b/arch/nios2/lib/memmove.c
-@@ -0,0 +1,82 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/string.h>
-+
-+#ifdef __HAVE_ARCH_MEMMOVE
-+void *memmove(void *d, const void *s, size_t count)
-+{
-+	unsigned long dst, src;
-+
-+	if (!count)
-+		return d;
-+
-+	if (d < s) {
-+		dst = (unsigned long) d;
-+		src = (unsigned long) s;
-+
-+		if ((count < 8) || ((dst ^ src) & 3))
-+			goto restup;
-+
-+		if (dst & 1) {
-+			*(char *)dst++ = *(char *)src++;
-+			count--;
-+		}
-+		if (dst & 2) {
-+			*(short *)dst = *(short *)src;
-+			src += 2;
-+			dst += 2;
-+			count -= 2;
-+		}
-+		while (count > 3) {
-+			*(long *)dst = *(long *)src;
-+			src += 4;
-+			dst += 4;
-+			count -= 4;
-+		}
-+restup:
-+		while (count--)
-+			*(char *)dst++ = *(char *)src++;
-+	} else {
-+		dst = (unsigned long) d + count;
-+		src = (unsigned long) s + count;
-+
-+		if ((count < 8) || ((dst ^ src) & 3))
-+			goto restdown;
-+
-+		if (dst & 1) {
-+			src--;
-+			dst--;
-+			count--;
-+			*(char *)dst = *(char *)src;
-+		}
-+		if (dst & 2) {
-+			src -= 2;
-+			dst -= 2;
-+			count -= 2;
-+			*(short *)dst = *(short *)src;
-+		}
-+		while (count > 3) {
-+			src -= 4;
-+			dst -= 4;
-+			count -= 4;
-+			*(long *)dst = *(long *)src;
-+		}
-+restdown:
-+		while (count--) {
-+			src--;
-+			dst--;
-+			*(char *)dst = *(char *)src;
-+		}
-+	}
-+
-+	return d;
-+}
-+#endif /* __HAVE_ARCH_MEMMOVE */
-diff --git a/arch/nios2/lib/memset.c b/arch/nios2/lib/memset.c
-new file mode 100644
-index 0000000..65e9780
---- /dev/null
-+++ b/arch/nios2/lib/memset.c
-@@ -0,0 +1,81 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/string.h>
-+
-+#ifdef __HAVE_ARCH_MEMSET
-+void *memset(void *s, int c, size_t count)
-+{
-+	int destptr, charcnt, dwordcnt, fill8reg, wrkrega;
-+
-+	if (!count)
-+		return s;
-+
-+	c &= 0xFF;
-+
-+	if (count <= 8) {
-+		char *xs = (char *) s;
-+
-+		while (count--)
-+			*xs++ = c;
-+		return s;
-+	}
-+
-+	__asm__ __volatile__ (
-+		/* fill8 %3, %5 (c & 0xff) */
-+		"	slli	%4, %5, 8\n"
-+		"	or	%4, %4, %5\n"
-+		"	slli    %3, %4, 16\n"
-+		"	or	%3, %3, %4\n"
-+		/* Word-align %0 (s) if necessary */
-+		"	andi	%4, %0, 0x01\n"
-+		"	beq	%4, zero, 1f\n"
-+		"	addi	%1, %1, -1\n"
-+		"	stb	%3, 0(%0)\n"
-+		"	addi	%0, %0, 1\n"
-+		"1:	mov	%2, %1\n"
-+		/* Dword-align %0 (s) if necessary */
-+		"	andi	%4, %0, 0x02\n"
-+		"	beq	%4, zero, 2f\n"
-+		"	addi	%1, %1, -2\n"
-+		"	sth	%3, 0(%0)\n"
-+		"	addi	%0, %0, 2\n"
-+		"	mov	%2, %1\n"
-+		/* %1 and %2 are how many more bytes to set */
-+		"2:	srli	%2, %2, 2\n"
-+		/* %2 is how many dwords to set */
-+		"3:	stw	%3, 0(%0)\n"
-+		"	addi	%0, %0, 4\n"
-+		"	addi    %2, %2, -1\n"
-+		"	bne	%2, zero, 3b\n"
-+		/* store residual word and/or byte if necessary */
-+		"	andi	%4, %1, 0x02\n"
-+		"	beq	%4, zero, 4f\n"
-+		"	sth	%3, 0(%0)\n"
-+		"	addi	%0, %0, 2\n"
-+		/* store residual byte if necessary */
-+		"4:	andi	%4, %1, 0x01\n"
-+		"	beq	%4, zero, 5f\n"
-+		"	stb	%3, 0(%0)\n"
-+		"5:\n"
-+		: "=r" (destptr),	/* %0  Output */
-+		  "=r" (charcnt),	/* %1  Output */
-+		  "=r" (dwordcnt),	/* %2  Output */
-+		  "=r" (fill8reg),	/* %3  Output */
-+		  "=r" (wrkrega)	/* %4  Output */
-+		: "r" (c),		/* %5  Input */
-+		  "0" (s),		/* %0  Input/Output */
-+		  "1" (count)		/* %1  Input/Output */
-+		: "memory"		/* clobbered */
-+	);
-+
-+	return s;
-+}
-+#endif /* __HAVE_ARCH_MEMSET */
--- 
-1.8.2.1
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index cb510c08073b..0de60769bcf6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6739,7 +6739,7 @@ void dump_vma(const struct vm_area_struct *vma)
+ 		"prot %lx anon_vma %p vm_ops %p\n"
+ 		"pgoff %lx file %p private_data %p\n",
+ 		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
+-		vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
++		vma->vm_prev, vma->vm_mm, pgprot_val(vma->vm_page_prot),
+ 		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
+ 		vma->vm_file, vma->vm_private_data);
+ 	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
+--=20
+2.1.0
 
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/0B6ThQ0Bqv/j.cvOndC2d2z
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUDXrZAAoJEMDTa8Ir7ZwVNEYP/idSeCGW7mOA9OGqdSXs9Wmj
+Ya/wJHHIZxX550lus9XYxe/9t5XsmC4nJ+eBwTrGitof4x/eDqBCW4tUBCZOiUo8
+Br1RfVahIFJvKcuanwwW4iALYdJxSOcr0hGisKT4ti1IKUZto+pic+FT2ji1WXlw
+VIbee+LYulC8XYmDibIVSKCvg1VgW5Ebsopw5HRh1FTnU8uZaQ+HtuLi13UMnW1R
+S69vJUqxLffTtn3dK7wA4zEZ93AnYSLP0QDrGYHagO/lNeFkT0NAednwkX7h50WA
+LWfZ5MAo7a+oGdTyu1p4H+/GrqTgO43KD39iI1yQaih9BdWw7vTy+J8RDMt01it5
+4zVq4qWGKC1qS55gZ8tAvHXKIOcYIp7cBhSBGzfGuCVsfto8OwvoRMYznSrLh7+L
+qsYVLVUl10/R3DUBu8KBw5blmhUEJp8S8UDx20uGgOWs5RgHe6uqspRyHRJfy/GS
+sr45fKP7RHHgAxj6eQ9mFlDPa2ju+qd+lo/K/MSAGE/YvMO6ahDLuCz8gpIXumTm
+J7n1FPP0tuPCytcNlRW9pxXUJA3f1dqJz51VHUM3C6REGLdQXi/8A6dHmnEc925n
+2Pf8x21q1tUK2yC3HaJ7OLQtYpBqJixZYmhqpk2Jvct8koO1w9uyKi1G5W0374WP
+nDsaMawuYdl1R+2RKuR9
+=oTes
+-----END PGP SIGNATURE-----
+
+--Sig_/0B6ThQ0Bqv/j.cvOndC2d2z--
