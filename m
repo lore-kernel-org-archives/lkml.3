@@ -1,378 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaIHLoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:44:00 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:45594 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaIHLn5 (ORCPT
+	id S1753560AbaIHLpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:45:07 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:65038 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874AbaIHLpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:43:57 -0400
-Date: Mon, 8 Sep 2014 07:43:29 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Cc: rui.zhang@intel.com, eduardo.valentin@ti.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        grant.likely@linaro.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] thermal: add generic IIO channel thermal sensor driver
-Message-ID: <20140908114327.GA18469@developer>
-References: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 8 Sep 2014 07:45:05 -0400
+From: Robert Richter <rric@kernel.org>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Robert Richter <rrichter@cavium.com>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
+Date: Mon,  8 Sep 2014 13:44:48 +0200
+Message-Id: <1410176689-20020-1-git-send-email-rric@kernel.org>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Robert Richter <rrichter@cavium.com>
 
-Hello,
+Raising the current maximum limit to 64. This is needed for Cavium's
+Thunder systems that will have at least 48 cores per die.
 
+The change keeps the current memory footprint in cpu mask structures.
+It does not break existing code. Setting the maximum to 64 cpus still
+boots systems with less cpus.
 
-Sorry for the waaay too long answer. In any case, I believe it is worth
-giving answers to why this patch was not merged.
+Mark's Juno happily booted with a NR_CPUS=64 kernel.
 
-On Wed, Feb 05, 2014 at 05:43:27PM -0800, Courtney Cavin wrote:
-> This driver is a generic method for using IIO ADC channels as thermal
-> sensors.
+Tested on our Thunder system with 48 cores. We could see interrupts to
+all cores.
 
-In fact, this seams to be a way of getting DT descriptors, introduced in
-this patches, and register them both in IIO layer and in thermal
-framework, right?
+Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Robert Richter <rrichter@cavium.com>
+---
+ arch/arm64/Kconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-My expectation would be: once it gets registered as IIO device, then it
-would get registered as thermal zone too.
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index fd4e81a4e1ce..67fca2ea81a7 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -252,11 +252,11 @@ config SCHED_SMT
+ 	  places. If unsure say N here.
+ 
+ config NR_CPUS
+-	int "Maximum number of CPUs (2-32)"
+-	range 2 32
++	int "Maximum number of CPUs (2-64)"
++	range 2 64
+ 	depends on SMP
+ 	# These have to remain sorted largest to smallest
+-	default "8"
++	default "64"
+ 
+ config HOTPLUG_CPU
+ 	bool "Support for hot-pluggable CPUs"
+-- 
+2.0.1
 
-> 
-> Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
-> ---
->  .../devicetree/bindings/thermal/iio-thermal.txt    |  46 +++++
->  drivers/thermal/Kconfig                            |  13 ++
->  drivers/thermal/Makefile                           |   1 +
->  drivers/thermal/iio_thermal.c                      | 207 +++++++++++++++++++++
->  4 files changed, 267 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/thermal/iio-thermal.txt
->  create mode 100644 drivers/thermal/iio_thermal.c
-> 
-> diff --git a/Documentation/devicetree/bindings/thermal/iio-thermal.txt b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
-> new file mode 100644
-> index 0000000..3be11b6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
-> @@ -0,0 +1,46 @@
-> +Generic IIO channel thermal sensor bindings
-> +
-> +compatible:
-> +	Usage: required
-> +	Type: string
-> +	Desc: compatible string, must be "iio-thermal"
-> +
-> +conversion-method:
-> +	Usage: required
-> +	Type: string
-> +	Desc: How to convert IIO voltage values to temperature, one of:
-> +		"interpolation" - interpolate between values in lookup table
-> +		"scalar" - use values as multiplier and divisor
-> +
-> +conversion-values:
-> +	Usage: required
-> +	Type: u32 array, 2-tuples
-> +	Desc: lookup table for conversion, for conversion-method:
-> +		"interpolation" - 2-tuples of < uV mK >; micro-volts to
-> +				  milli-kelvin; table must ascend
-> +		"scalar" - single scalar 2-tuple as < M D >; where:
-> +			   mK = uV * M / D
-> +
-> +io-channels:
-> +	Usage: required
-> +	Type: prop-encoded-array
-> +	Desc: See bindings/iio/iio-bindings.txt; must be a voltage channel
-> +
-> +Example:
-> +
-> +vadc: some_vadc {
-> +	compatible = "...";
-> +	#io-channel-cells = <1>;
-> +};
-> +
-> +iio-thermal {
-> +	compatible = "iio-thermal";
-> +	io-channels = <&vadc 0>;
-> +	conversion-method = "interpolation";
-> +	conversion-values = <
-> +		  30000 398200
-> +		 385000 318200
-> +		1738000 233200
-> +	>;
-> +};
-
-The problem I have with the above is the fact that it is an IIO
-descriptor, that in turns gets reused to become a thermal zone. The
-approach leaves the thermal zones with no thermal constraint described. 
-
-What are the trips? and the cooling maps?
-
-> +
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index 35c0664..f83a8e8 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -114,6 +114,19 @@ config THERMAL_EMULATION
->  	  because userland can easily disable the thermal policy by simply
->  	  flooding this sysfs node with low temperature values.
->  
-> +config IIO_THERMAL
-> +	tristate "Temperature sensor driver for generic IIO channels"
-> +	depends on IIO
-> +	depends on THERMAL_OF
-> +	help
-> +	  Support for generic IIO channels, such as ADCs.  This driver allows
-> +	  you to expose an IIO voltage channel as a thermal sensor.  This is
-> +	  implemented as a thermal sensor, not a thermal zone, and thus
-> +	  requires DT defined thermal infrastructure in order to be useful.
-> +
-> +	  If you aren't sure that you need this support, or haven't configured
-> +	  a thermal infrastructure in device tree, you should say 'N' here.
-> +
->  config IMX_THERMAL
->  	tristate "Temperature sensor driver for Freescale i.MX SoCs"
->  	depends on CPU_THERMAL
-> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-> index 54e4ec9..0ee2c92 100644
-> --- a/drivers/thermal/Makefile
-> +++ b/drivers/thermal/Makefile
-> @@ -25,6 +25,7 @@ obj-y				+= samsung/
->  obj-$(CONFIG_DOVE_THERMAL)  	+= dove_thermal.o
->  obj-$(CONFIG_DB8500_THERMAL)	+= db8500_thermal.o
->  obj-$(CONFIG_ARMADA_THERMAL)	+= armada_thermal.o
-> +obj-$(CONFIG_IIO_THERMAL)	+= iio_thermal.o
->  obj-$(CONFIG_IMX_THERMAL)	+= imx_thermal.o
->  obj-$(CONFIG_DB8500_CPUFREQ_COOLING)	+= db8500_cpufreq_cooling.o
->  obj-$(CONFIG_INTEL_POWERCLAMP)	+= intel_powerclamp.o
-> diff --git a/drivers/thermal/iio_thermal.c b/drivers/thermal/iio_thermal.c
-> new file mode 100644
-> index 0000000..df21dbc
-> --- /dev/null
-> +++ b/drivers/thermal/iio_thermal.c
-> @@ -0,0 +1,207 @@
-> +/*
-> + * An IIO channel based thermal sensor driver
-> + *
-> + * Copyright (C) 2014 Sony Mobile Communications, AB
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/consumer.h>
-> +#include <linux/thermal.h>
-> +#include <linux/err.h>
-> +#include <linux/of.h>
-> +
-> +#define MILLIKELVIN_0C 273150
-> +
-> +struct iio_thermal_conv {
-> +	s32 *values;
-> +	int ntuple;
-> +	long (*convert)(const struct iio_thermal_conv *, int val);
-> +};
-> +
-> +struct iio_thermal {
-> +	struct thermal_zone_device *tz;
-> +	struct iio_channel *chan;
-> +	struct iio_thermal_conv conv;
-> +};
-> +
-> +static int iio_bsearch(const struct iio_thermal_conv *conv, s32 input)
-> +{
-> +	int h = conv->ntuple - 1;
-> +	int l = 0;
-> +
-> +	while (h - 1 > l) {
-> +		int m = (l + h) & ~1;
-> +		s32 v = conv->values[m];
-> +		if (v < input)
-> +			l = m >> 1;
-> +		else
-> +			h = m >> 1;
-> +	}
-> +
-> +	return h;
-> +}
-> +
-> +static long iio_thermal_interpolate(const struct iio_thermal_conv *conv, int v)
-> +{
-> +	int n;
-> +
-> +	n = iio_bsearch(conv, v);
-> +	if (n == 0 || n == conv->ntuple) {
-> +		BUG();
-> +	} else {
-> +		s32 *pts = &conv->values[(n-1)*2];
-> +		s32 sx = pts[3] - pts[1];
-> +		s32 sy = pts[2] - pts[0];
-> +		return sx * (v - pts[0]) / sy + pts[1];
-> +	}
-> +}
-> +
-> +static long iio_thermal_scale(const struct iio_thermal_conv *conv, int v)
-> +{
-> +	return div_s64((s64)v * conv->values[0], conv->values[1]);
-> +}
-> +
-> +static int iio_thermal_get_temp(void *pdata, long *value)
-> +{
-> +	struct iio_thermal *iio = pdata;
-> +	long temp;
-> +	int val;
-> +	int rc;
-> +
-> +	rc = iio_read_channel_processed(iio->chan, &val);
-> +	if (rc)
-> +		return rc;
-> +
-> +	temp = iio->conv.convert(&iio->conv, val);
-> +
-> +	/* thermal core wants milli-celsius; we deal in milli-kelvin */
-> +	temp = temp - MILLIKELVIN_0C;
-> +
-> +	/*
-> +	 * Although it would appear that the temperature value here is a
-> +	 * signed value for sensors, the underlying thermal zone core
-> +	 * doesn't deal with negative temperature. Cut this value off at 0C.
-> +	 */
-> +	*value = (temp < 0) ? 0 : temp;
-> +
-> +	return 0;
-> +}
-> +
-> +static int iio_thermal_probe(struct platform_device *pdev)
-> +{
-> +	struct iio_thermal *iio;
-> +	const void *values;
-> +	const char *type;
-> +	int rc;
-> +
-> +	dev_info(&pdev->dev, "registering IIO thermal device\n");
-> +	iio = devm_kzalloc(&pdev->dev, sizeof(*iio), GFP_KERNEL);
-> +	if (!iio)
-> +		return -ENOMEM;
-> +
-> +	values = of_get_property(pdev->dev.of_node,
-> +			"conversion-values", &iio->conv.ntuple);
-> +	if (values == NULL || (iio->conv.ntuple % (sizeof(u32) * 2)) != 0) {
-> +		dev_err(&pdev->dev, "invalid/missing conversion values\n");
-> +		return -EINVAL;
-> +	}
-> +	iio->conv.ntuple /= sizeof(u32) * 2;
-> +	iio->conv.values = devm_kzalloc(&pdev->dev,
-> +			sizeof(u32) * 2 * iio->conv.ntuple, GFP_KERNEL);
-> +	if (!iio->conv.values)
-> +		return -ENOMEM;
-> +
-> +	rc = of_property_read_u32_array(pdev->dev.of_node,
-> +			"conversion-values", (u32 *)iio->conv.values,
-> +			iio->conv.ntuple * 2);
-> +	if (rc) {
-> +		dev_err(&pdev->dev, "invalid/missing conversion values\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	rc = of_property_read_string(pdev->dev.of_node,
-> +			"conversion-method", &type);
-> +	if (rc) {
-> +		dev_err(&pdev->dev, "invalid/missing conversion method\n");
-> +		return rc;
-> +	}
-> +	if (!strcmp(type, "interpolation") && iio->conv.ntuple > 1) {
-> +		if (iio->conv.values[0] > iio->conv.values[2]) {
-> +			dev_err(&pdev->dev,
-> +					"conversion values should ascend\n");
-> +			return rc;
-> +		}
-> +		iio->conv.convert = iio_thermal_interpolate;
-> +	} else if (!strcmp(type, "scalar") && iio->conv.ntuple == 1) {
-> +		iio->conv.convert = iio_thermal_scale;
-> +	} else {
-> +		dev_err(&pdev->dev, "invalid conversion method for values\n");
-> +		return rc;
-> +	}
-> +
-> +	iio->chan = iio_channel_get(&pdev->dev, NULL);
-> +	if (IS_ERR(iio->chan)) {
-> +		dev_err(&pdev->dev, "invalid/missing iio channel\n");
-> +		return PTR_ERR(iio->chan);
-> +	}
-> +	if (iio->chan->channel->type != IIO_VOLTAGE) {
-> +		dev_err(&pdev->dev, "specified iio channel is not voltage\n");
-> +		iio_channel_release(iio->chan);
-> +		return -EINVAL;
-> +	}
-> +	platform_set_drvdata(pdev, iio);
-> +
-> +	iio->tz = thermal_zone_of_sensor_register(&pdev->dev, 0, iio,
-> +			iio_thermal_get_temp, NULL);
-> +	if (IS_ERR(iio->tz)) {
-> +		dev_err(&pdev->dev, "failed to register thermal sensor\n");
-> +		iio_channel_release(iio->chan);
-> +		return PTR_ERR(iio->tz);
-> +	}
-> +	dev_info(&pdev->dev, "successfully registered IIO thermal sensor\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static int iio_thermal_remove(struct platform_device *pdev)
-> +{
-> +	struct iio_thermal *iio;
-> +
-> +	iio = platform_get_drvdata(pdev);
-> +
-> +	thermal_zone_of_sensor_unregister(&pdev->dev, iio->tz);
-> +	iio_channel_release(iio->chan);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id iio_thermal_match[] = {
-> +	{ .compatible = "iio-thermal", },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, iio_thermal_match);
-> +
-> +static struct platform_driver iio_thermal = {
-> +	.driver = {
-> +		.name = "iio-thermal",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = iio_thermal_match,
-> +	},
-> +	.probe = iio_thermal_probe,
-> +	.remove = iio_thermal_remove,
-> +};
-> +module_platform_driver(iio_thermal);
-> +
-> +MODULE_DESCRIPTION("Thermal driver for IIO ADCs");
-> +MODULE_LICENSE("GPL v2");
-> -- 
-> 1.8.1.5
-
-Please give scripts/checkpatch.pl a try on this patch.
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
