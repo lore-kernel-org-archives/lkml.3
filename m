@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069AbaIHOFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:05:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34192 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753327AbaIHOFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:05:36 -0400
-Date: Mon, 8 Sep 2014 16:04:54 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
-Message-ID: <20140908140454.GF17728@krava.brq.redhat.com>
-References: <1409781604-16778-1-git-send-email-acme@kernel.org>
- <1409781604-16778-5-git-send-email-acme@kernel.org>
- <54085BC8.40403@intel.com>
- <20140904151902.GE2997@kernel.org>
- <54097793.4050201@intel.com>
- <20140905140756.GD30520@kernel.org>
- <20140906203915.GA9843@krava.brq.redhat.com>
- <20140908134615.GD2773@kernel.org>
+	id S1754108AbaIHOFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:05:43 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:44725 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079AbaIHOFk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:05:40 -0400
+Date: Mon, 8 Sep 2014 15:05:34 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 06/10] PCI: Introduce generic domain handling for PCI
+ busses.
+Message-ID: <20140908140533.GM27864@e106497-lin.cambridge.arm.com>
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
+ <1410184472-17630-7-git-send-email-Liviu.Dudau@arm.com>
+ <20140908140321.GF22717@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140908140321.GF22717@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 08 Sep 2014 14:05:35.0239 (UTC) FILETIME=[F5C75970:01CFCB6D]
+X-MC-Unique: 114090815053708201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20140908134615.GD2773@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 10:46:16AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Sat, Sep 06, 2014 at 10:39:15PM +0200, Jiri Olsa escreveu:
-> > On Fri, Sep 05, 2014 at 11:07:56AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Fri, Sep 05, 2014 at 11:42:59AM +0300, Adrian Hunter escreveu:
-> > > > On 09/04/2014 06:19 PM, Arnaldo Carvalho de Melo wrote:
-> > > > > Em Thu, Sep 04, 2014 at 03:32:08PM +0300, Adrian Hunter escreveu:
-> > > > No I was meaning something different. For example, 'perf record' opens an
-> > > > event for 2 processes per-cpu and gets 4 file descriptors:
+On Mon, Sep 08, 2014 at 03:03:21PM +0100, Catalin Marinas wrote:
+> On Mon, Sep 08, 2014 at 02:54:28PM +0100, Liviu Dudau wrote:
+> > The handling of PCI domains (or PCI segments in ACPI speak) is
+> > usually a straightforward affair but its implementation is
+> > currently left to the architectural code, with pci_domain_nr(b)
+> > querying the value of the domain associated with bus b.
+> > 
+> > This patch introduces CONFIG_PCI_DOMAINS_GENERIC as an
+> > option that can be selected if an architecture want a
+> > simple implementation where the value of the domain
+> > associated with a bus is stored in struct pci_bus.
+> > 
+> > The architectures that select CONFIG_PCI_DOMAINS_GENERIC will
+> > then have to implement pci_bus_assign_domain_nr() as a way
+> > of setting the domain number associated with a root bus.
+> > All child busses except the root bus will inherit the domain_nr
+> > value from their parent.
+> > 
+> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Catalin Marinas <Catalin.Marinas@arm.com>
+> > [Renamed pci_set_domain_nr() to pci_bus_assign_domain_nr()]
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 > 
-> > > > 	task1	task2
-> > > > cpu0	fd0	fd1
-> > > > cpu1	fd2	fd3
-> 
-> > > > Now, perf record will mmap fd0 and fd2 and set-output fd1->fd0
-> > > > and fd3->fd2.
-> 
-> > > > pollfds includes only fd0 and fd2.
-> 
-> > > > But if task2 exits, the POLLHUP will appear on fd1 and fd3.
-> 
-> > > So? We are not interested in fd1 and fd3, since all our reading is done
-> > > on fd0 and fd2 mmaps, no?
-> 
-> > hm, what if task1 (fd0, fd2) exits first.. perf record will exit,
-> > but it still has to read task2..?
-> 
-> Ok, what happens in that case, i.e. when the fds that were set to be the
-> ones to be polled, gets nuked, does the set-output command gets just
-> undone? Or does the mmap stands, receiving the events from the remaining
-> fds and the polling notifications get sent to, in this case, fd3 and
-> fd1?
+> I'm probably the author here, but the patch log doesn't say so (I don't
+> mind, just a remark).
 
-mmaps stays for fd1 and fd3.. and they get poll notifications as well,
-we just do not check/poll them now
+I've took you patch initially from an email fragment, sorry, should've
+altered the commiter accordingly.
+
+Best regards,
+Liviu
 
 > 
-> I'll look at the kernel code for that...
->  
-> > > I.e. when we ask the kernel to point fd B to fd A's mmap (what you
-> > > called set-output) and fd B inserts an event into fd A's mmap ring
-> > > buffer, we get fd A poll return as POLLRD, no?
-> 
-> > > Have to check... Otherwise we would have to poll all fds all the time,
-> > > not just the ones mmaping, right?
-> 
-> > > > I think Jiri's patchset changed pollfds to include all fds for that reason.
-> 
-> > hm, I did not think of that.. ;-) I needed more grained feedback
-> > for future features like cpu hotplug
-> 
-> So this is good for something you didn't tried to fix (and document) but
-> good for something that may be nice in the future? Grumpf, we have
-> already way too much stuff that will be eventually used but is not used
-> right now :-\
->  
+> -- 
+> Catalin
 
-IMO it's more clear to poll pm all event FDs.. and now with the
-case Adrian described it seems necessary anyway
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-jirka
