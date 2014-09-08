@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501AbaIHWz7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:55:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59117 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754999AbaIHWz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755474AbaIHWz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:55:58 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53009 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754958AbaIHWz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Sep 2014 18:55:57 -0400
-Date: Mon, 8 Sep 2014 17:55:33 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL 2/2] ARM: OMAP4+: PRM fixes, DRA7 suspend-to-ram
- support
-Message-ID: <20140908225533.GA32059@kahuna>
-References: <1410195620-6347-1-git-send-email-nm@ti.com>
- <1410195620-6347-2-git-send-email-nm@ti.com>
- <20140908223204.GN3238@atomide.com>
- <20140908224524.GA31480@kahuna>
- <20140908225135.GP3238@atomide.com>
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Date: Tue, 09 Sep 2014 01:15:23 +0200
+Message-ID: <1899038.KOOHvy2XUu@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140908225012.GE3806@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <2588099.AI1YmNFQ25@vostro.rjw.lan> <20140908225012.GE3806@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140908225135.GP3238@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:51-20140908, Tony Lindgren wrote:
-[...]
-
-> > > > are available in the git repository at:
-> > > > 
-> > > >   https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/for-omap-soc
-> > > 
-> > > Thanks pulling into omap-for-v3.18/soc.
-> > 
-> > Tony, Apologies, I missed the last patch in the series:
-> > 
-> > https://patchwork.kernel.org/patch/4765011/
-> > 
-> > If you could cherry-pick the same with 
-> > Reviewed-by: Kevin Hilman <khilman@linaro.org>
-> > Tested-by: Kevin Hilman <khilman@linaro.org>
-> > based on Kevin's feedback:
-> > http://marc.info/?l=linux-arm-kernel&m=140916701909122&w=2
+On Tuesday, September 09, 2014 07:50:12 AM Tejun Heo wrote:
+> Hello,
 > 
-> OK no problem, will apply into omap-for-v3.18/soc.
-
-Thanks Tony. Apologies on the trouble :(
+> On Tue, Sep 09, 2014 at 12:48:28AM +0200, Rafael J. Wysocki wrote:
+> > Well, not exactly from anywhere.  Just from where try_to_freeze() is called
+> > I suppose?
 > 
--- 
-Regards,
-Nishanth Menon
+> Yeap, anywhere try_to_freeze() may be called.
+> 
+> > Which means that if this is a user space task, it won't to a lot before dying,
+> > will it?
+> 
+> Userland tasks aren't likely to a lot of damages before dying but then
+> again there's no guarantee.  As it currently stands, try_to_freeze()
+> can be anywhere.
+
+Well, in that case the TIF_MEMDIE test alone is not sufficient in my opinion,
+because we can't guarantee that the task will not do something it was frozen
+to prevent it from doing.
+
+I'm not sure about the cgroups freezing case, however.
+
+Rafael
+
