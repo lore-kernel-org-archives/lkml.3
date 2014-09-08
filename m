@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaIHWdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:33:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35954 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936AbaIHWdP (ORCPT
+	id S1755446AbaIHWdb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:33:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60861 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754936AbaIHWd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:33:15 -0400
-Date: Mon, 8 Sep 2014 15:33:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, jslaby@suse.cz,
-        grant.likely@linaro.org, alan@linux.intel.com, varkabhadram@gmail.com,
-        tklauser@distanz.ch, heiko@sntech.de, yingjoe.chen@gmail.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] DTS: serial: Add bindings documention for the
- Mediatek UARTs
-Message-ID: <20140908223314.GA26151@kroah.com>
-References: <1407852737-17265-1-git-send-email-matthias.bgg@gmail.com>
- <1407852737-17265-3-git-send-email-matthias.bgg@gmail.com>
+	Mon, 8 Sep 2014 18:33:29 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
+Subject: Re: [PATCH] Hibernate: Do not assume the first e820 area to be RAM
+Date: Tue, 09 Sep 2014 00:52:55 +0200
+Message-ID: <1561567.ev2pEO8C5v@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1407754252-22779-1-git-send-email-jlee@suse.com>
+References: <1407754252-22779-1-git-send-email-jlee@suse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407852737-17265-3-git-send-email-matthias.bgg@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 04:12:17PM +0200, Matthias Brugger wrote:
-> This patch adds the devicetree documentation for the Mediatek UART.
+On Monday, August 11, 2014 06:50:52 PM Lee, Chun-Yi wrote:
+> In arch/x86/kernel/setup.c::trim_bios_range(), the codes introduced
+> by 1b5576e6 (base on d8a9e6a5), it updates the first 4Kb of memory
+> to be E820_RESERVED region. That's because it's a BIOS owned area
+> but generally not listed in the E820 table:
 > 
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> [    0.000000] e820: BIOS-provided physical RAM map:
+> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x0000000000096fff] usable
+> [    0.000000] BIOS-e820: [mem 0x0000000000097000-0x0000000000097fff] reserved
+> ...
+> [    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+> [    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+> 
+> But the region of first 4Kb didn't register to nosave memory:
+> 
+> [    0.000000] PM: Registered nosave memory: [mem 0x00097000-0x00097fff]
+> [    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+> 
+> The codes in e820_mark_nosave_regions() assumes the first e820 area to be
+> RAM, so it causes the first 4Kb E820_RESERVED region ignored when register
+> to nosave. This patch removed assumption of the first e820 area.
+> 
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+
+Thomas, Ingo, Peter, any objections here?
+
+If not, do you want to handle it or do you want me to do that?
+
 > ---
->  .../devicetree/bindings/serial/mtk-uart.txt        |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/serial/mtk-uart.txt
+>  arch/x86/kernel/e820.c | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/serial/mtk-uart.txt b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> new file mode 100644
-> index 0000000..6ca0e15
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/serial/mtk-uart.txt
-> @@ -0,0 +1,20 @@
-> +* Mediatek Universal Asynchronous Receiver/Transmitter (UART)
-> +
-> +Required properties:
-> +- compatible: "mediatek,mt6577-uart"
-> +  Compatibility with mt6577, mt6589, mt6582
-> +
-> +- reg: The base address of the UART register bank.
-> +
-> +- interrupts: A single interrupt specifier.
-> +
-> +- clocks: Clock driving the hardware.
-> +
-> +Example:
-> +
-> +	uart0: serial@11006000 {
-> +		compatible = "mediatek,mt6577-uart";
-> +		reg = <0x11006000 0x400>;
-> +		interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
-> +		clocks = <&uart_clk>;
-> +	};
-> -- 
-> 1.7.9.5
+> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+> index 988c00a..d595240 100644
+> --- a/arch/x86/kernel/e820.c
+> +++ b/arch/x86/kernel/e820.c
+> @@ -682,18 +682,17 @@ void __init parse_e820_ext(u64 phys_addr, u32 data_len)
+>   * hibernation (32 bit) or software suspend and suspend to RAM (64 bit).
+>   *
+>   * This function requires the e820 map to be sorted and without any
+> - * overlapping entries and assumes the first e820 area to be RAM.
+> + * overlapping entries.
+>   */
+>  void __init e820_mark_nosave_regions(unsigned long limit_pfn)
+>  {
+>  	int i;
+>  	unsigned long pfn;
+>  
+> -	pfn = PFN_DOWN(e820.map[0].addr + e820.map[0].size);
+> -	for (i = 1; i < e820.nr_map; i++) {
+> +	for (i = 0; i < e820.nr_map; i++) {
+>  		struct e820entry *ei = &e820.map[i];
+>  
+> -		if (pfn < PFN_UP(ei->addr))
+> +		if (i > 0 && pfn < PFN_UP(ei->addr))
+>  			register_nosave_region(pfn, PFN_UP(ei->addr));
+>  
+>  		pfn = PFN_DOWN(ei->addr + ei->size);
+> 
 
-Resend this one as well with the 1/2 patch please.
-
-thanks,
-
-greg k-h
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
