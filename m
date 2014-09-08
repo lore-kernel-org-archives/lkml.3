@@ -1,75 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358AbaIHWnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:43:52 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41253 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754951AbaIHWnu (ORCPT
+	id S1755384AbaIHWoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:44:16 -0400
+Received: from relmlor4.renesas.com ([210.160.252.174]:39834 "EHLO
+	relmlie3.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754665AbaIHWoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:43:50 -0400
-Message-ID: <1410216228.2027.88.camel@jarvis.lan>
-Subject: Re: bit fields && data tearing
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>, paulmck@linux.vnet.ibm.com,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Date: Mon, 08 Sep 2014 15:43:48 -0700
-In-Reply-To: <540E1587.3060108@tilera.com>
-References: <21512.10628.412205.873477@gargle.gargle.HOWL>
-			 <20140904090952.GW17454@tucnak.redhat.com>
-			 <540859EC.5000407@hurleysoftware.com>
-			 <20140904175044.4697aee4@alan.etchedpixels.co.uk>
-			 <5408C0AB.6050801@hurleysoftware.com>
-			 <20140905001751.GL5001@linux.vnet.ibm.com>
-			 <1409883098.5078.14.camel@jarvis.lan>
-		 <5409243C.4080704@hurleysoftware.com>
-			 <20140905040645.GO5001@linux.vnet.ibm.com>
-			 <1410066442.12512.13.camel@jarvis.lan>
-			 <20140907162146.GK5001@linux.vnet.ibm.com>
-		 <1410116687.2027.19.camel@jarvis.lan>
-	 <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>
-	 <540E1587.3060108@tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
+	Mon, 8 Sep 2014 18:44:13 -0400
+X-IronPort-AV: E=Sophos;i="5.04,488,1406559600"; 
+   d="scan'208";a="169661402"
+Message-ID: <540E313B.8000305@renesas.com>
+Date: Tue, 09 Sep 2014 07:44:11 +0900
+From: Khiem Nguyen <khiem.nguyen.xt@renesas.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, khiem.nguyen.xt@renesas.com,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC 2/5] PM / Domains: Add DT bindings for the R-Mobile
+ System Controller
+References: <1410183344-14756-1-git-send-email-geert+renesas@glider.be> <1410183344-14756-3-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1410183344-14756-3-git-send-email-geert+renesas@glider.be>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-08 at 16:45 -0400, Chris Metcalf wrote:
-> On 9/8/2014 1:50 AM, James Bottomley wrote:
-> > Actual alignment is pretty irrelevant.  That's why all architectures
-> > which require alignment also have to implement misaligned traps ... this
-> > is a fundamental requirement of the networking code, for instance.
+Hi Geert, 
+
+Thanks for your patch.
+
+On 9/8/2014 10:35 PM, Geert Uytterhoeven wrote:
+> A.o., the Renesas R-Mobile System Controller provides power management
+> support, following the generic PM domain bindings in
+> Documentation/devicetree/bindings/power/power_domain.txt.
 > 
-> Can you clarify what you think the requirement is?  The tile architecture
-> doesn't support misaligned load/store in general, but we do support it for
-> userspace (using a nifty JIT approach with a direct-map hash table kept
-> in userspace), and also for get_user/put_user.  But that's it, and,
-> the networking subsystem works fine for us.
+> For now this supports the R-Mobile A1 (r8a7740) only, but it should be
+> sufficiently generic to handle other members of the SH-Mobile/R-Mobile
+> family in the future.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+>  .../bindings/power/renesas,sysc-rmobile.txt        | 106 +++++++++++++++++++++
+>  1 file changed, 106 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt b/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
+> new file mode 100644
+> index 000000000000..8d9d64df0088
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
+> @@ -0,0 +1,106 @@
+> +DT bindings for the Renesas R-Mobile System Controller
+> +
+> +== System Controller Node ==
+> +
+> +The R-Mobile System Controller provides the following functions:
+> +  - Boot mode management,
+> +  - Reset generation,
+> +  - Power management.
+> +
+> +Required properties:
+> +- compatible: Should be "renesas,sysc-<soctype>", "renesas,sysc-rmobile" as
+> +	      fallback.
+> +	      Examples with soctypes are:
+> +		- "renesas,sysc-r8a7740" (R-Mobile A1)
+> +- reg: Two address start and address range blocks for the device:
+> +         - The first block refers to the normally accessible registers,
+> +         - the second block refers to the registers protected by the HPB
+> +	   semaphore.
+> +
+> +Optional nodes:
+> +- pm-domains: This node contains a hierarchy of PM domain nodes, which should
+> +  match the Power Area Hierarchy in the Power Domain Specifications section of
+> +  the device's datasheet.
+> +
+> +
+> +== PM Domain Nodes ==
+> +
+> +Each of the PM domain nodes represents a PM domain, as documented by the
+> +generic PM domain bindings in
+> +Documentation/devicetree/bindings/power/power_domain.txt.
+> +
+> +The nodes should be named by the real power area names, and thus their names
+> +should be unique.
+> +
+> +Required properties:
+> +  - #power-domain-cells: Must be 0.
+> +
+> +Optional properties:
+> +- reg: If the PM domain is not always-on, this property must contain the bit
+> +       index number for the corresponding power area in the various Power
+> +       Control and Status Registers. The parent's node must contain the
+> +       following two properties:
+> +	 - #address-cells: Must be 1,
+> +	 - #address-cells: Must be 0.
 
-This was years ago (possibly decades).  We had to implement in-kernel
-unaligned traps for the networking layer because it could access short
-and int fields that weren't of the correct alignment when processing
-packets.  It that's all corrected now, we wouldn't really notice (except
-a bit of a speed up since an unaligned trap effectively places the
-broken out instructions into the bit stream).
+Should it be "#size-cells: Must be 0." ?
 
-James
+> +       If the PM domain is always-on, this property must be omitted.
+> +- power-on-latency: Power-on latency of the PM domain, in ns,
+> +- power-off-latency: Power-off latency of the PM domain, in ns.
+> +
+> +
+> +Example:
+> +
+> +This shows a subset of the r8a7740 PM domain hierarchy, containing the
+> +C5 "always-on" domain, 2 of its subdomains (A4S and A4SU), and the A3SP domain,
+> +which is a subdomain of A4S.
+> +
+> +	sysc: system-controller@e6180000 {
+> +		compatible = "renesas,sysc-r8a7740", "renesas,sysc-rmobile";
+> +		reg = <0xe6180000 8000>, <0xe6188000 8000>;
+> +
+> +		pm-domains {
+> +			pd_c5: c5 {
+> +				#address-cells = <1>;
+> +				#size-cells = <0>;
+> +				#power-domain-cells = <0>;
+> +
+> +				pd_a4s: a4s@10 {
+> +					reg = <10>;
+> +					#address-cells = <1>;
+> +					#size-cells = <0>;
+> +					#power-domain-cells = <0>;
+> +					power-on-latency = <250000>;
+> +					power-off-latency = <250000>;
+> +
+> +					pd_a3sp: a3sp@11 {
+> +						reg = <11>;
+> +						#power-domain-cells = <0>;
+> +						power-on-latency = <250000>;
+> +						power-off-latency = <250000>;
+> +					};
+> +				};
+> +
+> +				pd_a4su: a4su@20 {
+> +					reg = <20>;
+> +					#power-domain-cells = <0>;
+> +					power-on-latency = <250000>;
+> +					power-off-latency = <250000>;
+> +				};
+> +			};
+> +		};
+> +	};
+> +
+> +
+> +== PM Domain Consumers ==
+> +
+> +Hardware blocks belonging to a PM domain should contain a "power-domains"
+> +property that is a phandle pointing to the corresponding PM domain node.
+> +
+> +Example:
+> +
+> +	tpu: pwm@e6600000 {
+> +		compatible = "renesas,tpu-r8a7740", "renesas,tpu";
+> +		reg = <0xe6600000 0x100>;
+> +		clocks = <&mstp3_clks R8A7740_CLK_TPU0>;
+> +		power-domains = <&pd_a3sp>;
+> +		#pwm-cells = <3>;
+> +	};
+> 
 
-
-> Occasionally we report bugs for driver code that doesn't use the
-> get_unaligned_xxx() macros and friends, and our fixes are generally taken
-> upstream.
-
-
+-- 
+Best regards,
+KHIEM Nguyen
