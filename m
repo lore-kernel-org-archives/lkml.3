@@ -1,221 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769AbaIHKgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 06:36:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51502 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753018AbaIHKgW (ORCPT
+	id S1753342AbaIHKic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 06:38:32 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:59954 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaIHKia convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 06:36:22 -0400
-Date: Mon, 8 Sep 2014 11:36:00 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Andy Gross <agross@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] dmaengine: qcom_bam_dma: add one more optional clock
-Message-ID: <20140908103559.GC12081@leverpostej>
-References: <1410112547-363-1-git-send-email-svarbanov@mm-sol.com>
+	Mon, 8 Sep 2014 06:38:30 -0400
+From: Mikael Pettersson <mikpelinux@gmail.com>
+X-Google-Original-From: "Mikael Pettersson" <mikpe@cascade>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410112547-363-1-git-send-email-svarbanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <21517.34588.780807.738131@gargle.gargle.HOWL>
+Date: Mon, 8 Sep 2014 12:38:20 +0200
+To: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Mikael Pettersson <mikpelinux@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [BISECTED] 3.17-rc1 radeon screen corruption due to "Always flush
+ the HDP cache before submitting a CS to the GPU"
+In-Reply-To: <540D7267.6040003@daenzer.net>
+References: <21505.55482.547592.906934@gargle.gargle.HOWL>
+	<540572EC.4070909@daenzer.net>
+	<21513.59790.188508.307463@gargle.gargle.HOWL>
+	<540D7267.6040003@daenzer.net>
+X-Mailer: VM 8.1.2 under 24.3.1 (x86_64-redhat-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 07, 2014 at 06:55:47PM +0100, Stanimir Varbanov wrote:
-> The BAM is tightly coupled with the peripheral to which it
-> belongs. In that sprit to access the BAM configuration
-> registers the driver needs to enable some peripheral
-> clocks. Currently the DT node enables bamclk which seems
-> is not enough for some peripherals (for example the crypto
-> engine wants core and iface clocks). This change attempts
-> to solve this issue by adding one more optional clock
-> in bam_dma driver.
-> 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
->  .../devicetree/bindings/dma/qcom_bam_dma.txt       | 12 ++++--
->  drivers/dma/qcom_bam_dma.c                         | 44 +++++++++++++++-------
->  2 files changed, 38 insertions(+), 18 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> index d75a9d7..2376897 100644
-> --- a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> +++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> @@ -6,8 +6,11 @@ Required properties:
->  - interrupts: Should contain the one interrupt shared by all channels
->  - #dma-cells: must be <1>, the cell in the dmas property of the client device
->    represents the channel number
-> -- clocks: required clock
-> -- clock-names: must contain "bam_clk" entry
-> +- clocks: list of required clock plus one optional clock. The optional clock
-> +          is needed for some peripherals and can be omitted.
-> +- clock-names: must contain "core" clock name representing the required clock
-> +               plus the optional "iface" clock name depending on
-> +               peripheral needs.
+Michel Dänzer writes:
+ > On 06.09.2014 01:49, Mikael Pettersson wrote:
+ > > Michel Dänzer writes:
+ > >   > On 30.08.2014 22:59, Mikael Pettersson wrote:
+ > >   > > Since 3.17-rc1 my radeon card (RV370 / X1050 card) causes screen corruption
+ > >   > > after a while in X + firefox.  This still occurs with yesterday's HEAD
+ > >   > > of Linus' repo.  3.16 and ealier kernels are fine.
+ > >   > >
+ > >   > > I ran a bisect, which identified:
+ > >   > >
+ > >   > > commit 72a9987edcedb89db988079a03c9b9c65b6ec9ac
+ > >   > > Author: Michel DÃ¤nzer <michel.daenzer@amd.com>
+ > >   > > Date:   Thu Jul 31 18:43:49 2014 +0900
+ > >   > >
+ > >   > >      drm/radeon: Always flush the HDP cache before submitting a CS to the GPU
+ > >   > >
+ > >   > > as the cause of my screen corruption.  Reverting this from 3.17-rc2
+ > >   > > (which requires manual intervention due to subsequent changes in
+ > >   > > radeon_ring_commit()) eliminates the screen corruption.
+ > >   >
+ > >   > Does the patch below help?
+ > > 
+ > > Tested, sorry no joy.  I first reconfirmed the screen corruption with 3.17-rc3.
+ > > I then applied this and rebuilt/rebooted, and after a few minutes X had a hickup
+ > > (screen went black, came back after a few seconds, but then no cursor or
+ > > reaction to mouse events), but I was able to kill it via my Terminate_Server
+ > > key binding.
+ > 
+ > I was afraid so, thanks for testing it.
+ > 
+ > 
+ > I can't see any other option than the patch below then. Can you confirm that this
+ > fixes the screen corruption?
 
-Please don't change the names of input lines (at least without retaining
-support for the old name). Does this change not break existing DTBs?
+I'll test this on Friday evening when I'm back home and have access to the
+affected machine.
 
-Which of these new names did "bam_clk" previously correspond to?
+/Mikael
 
-How many clock inputs does the BAM actually have? Are there more which
-we don't yet describe?
 
-You mention that the iface clock is actually fed into the peripheral the
-BAM is attached to. Can you explain why this clock is necessary to use
-the BAM?
+ > 
+ > 
+ > diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+ > index 4c5ec44..b0098e7 100644
+ > --- a/drivers/gpu/drm/radeon/r100.c
+ > +++ b/drivers/gpu/drm/radeon/r100.c
+ > @@ -821,6 +821,20 @@ u32 r100_get_vblank_counter(struct radeon_device *rdev, int crtc)
+ >  		return RREG32(RADEON_CRTC2_CRNT_FRAME);
+ >  }
+ >  
+ > +/**
+ > + * r100_ring_hdp_flush - flush Host Data Path via the ring buffer
+ > + * rdev: radeon device structure
+ > + * ring: ring buffer struct for emitting packets
+ > + */
+ > +static void r100_ring_hdp_flush(struct radeon_device *rdev, struct radeon_ring *ring)
+ > +{
+ > +	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+ > +	radeon_ring_write(ring, rdev->config.r100.hdp_cntl |
+ > +				RADEON_HDP_READ_BUFFER_INVALIDATE);
+ > +	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+ > +	radeon_ring_write(ring, rdev->config.r100.hdp_cntl);
+ > +}
+ > +
+ >  /* Who ever call radeon_fence_emit should call ring_lock and ask
+ >   * for enough space (today caller are ib schedule and buffer move) */
+ >  void r100_fence_ring_emit(struct radeon_device *rdev,
+ > @@ -1056,20 +1070,6 @@ void r100_gfx_set_wptr(struct radeon_device *rdev,
+ >  	(void)RREG32(RADEON_CP_RB_WPTR);
+ >  }
+ >  
+ > -/**
+ > - * r100_ring_hdp_flush - flush Host Data Path via the ring buffer
+ > - * rdev: radeon device structure
+ > - * ring: ring buffer struct for emitting packets
+ > - */
+ > -void r100_ring_hdp_flush(struct radeon_device *rdev, struct radeon_ring *ring)
+ > -{
+ > -	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+ > -	radeon_ring_write(ring, rdev->config.r100.hdp_cntl |
+ > -				RADEON_HDP_READ_BUFFER_INVALIDATE);
+ > -	radeon_ring_write(ring, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+ > -	radeon_ring_write(ring, rdev->config.r100.hdp_cntl);
+ > -}
+ > -
+ >  static void r100_cp_load_microcode(struct radeon_device *rdev)
+ >  {
+ >  	const __be32 *fw_data;
+ > diff --git a/drivers/gpu/drm/radeon/radeon_asic.c b/drivers/gpu/drm/radeon/radeon_asic.c
+ > index eeeeabe..2dd5847 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_asic.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_asic.c
+ > @@ -185,7 +185,6 @@ static struct radeon_asic_ring r100_gfx_ring = {
+ >  	.get_rptr = &r100_gfx_get_rptr,
+ >  	.get_wptr = &r100_gfx_get_wptr,
+ >  	.set_wptr = &r100_gfx_set_wptr,
+ > -	.hdp_flush = &r100_ring_hdp_flush,
+ >  };
+ >  
+ >  static struct radeon_asic r100_asic = {
+ > @@ -332,7 +331,6 @@ static struct radeon_asic_ring r300_gfx_ring = {
+ >  	.get_rptr = &r100_gfx_get_rptr,
+ >  	.get_wptr = &r100_gfx_get_wptr,
+ >  	.set_wptr = &r100_gfx_set_wptr,
+ > -	.hdp_flush = &r100_ring_hdp_flush,
+ >  };
+ >  
+ >  static struct radeon_asic r300_asic = {
+ > diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
+ > index 275a5dc..7756bc1 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_asic.h
+ > +++ b/drivers/gpu/drm/radeon/radeon_asic.h
+ > @@ -148,8 +148,7 @@ u32 r100_gfx_get_wptr(struct radeon_device *rdev,
+ >  		      struct radeon_ring *ring);
+ >  void r100_gfx_set_wptr(struct radeon_device *rdev,
+ >  		       struct radeon_ring *ring);
+ > -void r100_ring_hdp_flush(struct radeon_device *rdev,
+ > -			 struct radeon_ring *ring);
+ > +
+ >  /*
+ >   * r200,rv250,rs300,rv280
+ >   */
+ > diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
+ > index a773830..ef5b60a 100644
+ > --- a/drivers/gpu/drm/radeon/radeon_drv.c
+ > +++ b/drivers/gpu/drm/radeon/radeon_drv.c
+ > @@ -83,7 +83,7 @@
+ >   *            CIK: 1D and linear tiling modes contain valid PIPE_CONFIG
+ >   *   2.39.0 - Add INFO query for number of active CUs
+ >   *   2.40.0 - Add RADEON_GEM_GTT_WC/UC, flush HDP cache before submitting
+ > - *            CS to GPU
+ > + *            CS to GPU on >= r600
+ >   */
+ >  #define KMS_DRIVER_MAJOR	2
+ >  #define KMS_DRIVER_MINOR	40
+ > 
+ > 
+ > 
+ > -- 
+ > Earthling Michel Dänzer            |                  http://www.amd.com
+ > Libre software enthusiast          |                Mesa and X developer
 
-If you want do describe multiple clocks and names are required, define
-clocks in terms of clock-names so you don't need to state everything
-twice, Put each clock on a new line, e.g.
-
-- clocks: A list of phandle + clock-specifier pairs, one for each entry
-  in clock-names
-- clock-names: should contain:
-   * "foo_clk" for the FOO clock
-   * "bar_clk" for the BAR input on baz_xxxx systems
-
-Thanks,
-Mark.
-
->  - qcom,ee : indicates the active Execution Environment identifier (0-7) used in
->    the secure world.
->  
-> @@ -17,8 +20,9 @@ Example:
->  		compatible = "qcom,bam-v1.4.0";
->  		reg = <0xf9984000 0x15000>;
->  		interrupts = <0 94 0>;
-> -		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
-> -		clock-names = "bam_clk";
-> +		clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>,
-> +			 <&gcc GCC_BLSP1_AHB_CLK>;
-> +		clock-names = "core", "iface";
->  		#dma-cells = <1>;
->  		qcom,ee = <0>;
->  	};
-> diff --git a/drivers/dma/qcom_bam_dma.c b/drivers/dma/qcom_bam_dma.c
-> index 7a4bbb0..d898ec3 100644
-> --- a/drivers/dma/qcom_bam_dma.c
-> +++ b/drivers/dma/qcom_bam_dma.c
-> @@ -297,7 +297,7 @@ struct bam_device {
->  	/* execution environment ID, from DT */
->  	u32 ee;
->  
-> -	struct clk *bamclk;
-> +	struct clk *iface, *core;
->  	int irq;
->  
->  	/* dma start transaction tasklet */
-> @@ -996,19 +996,32 @@ static int bam_dma_probe(struct platform_device *pdev)
->  		return ret;
->  	}
->  
-> -	bdev->bamclk = devm_clk_get(bdev->dev, "bam_clk");
-> -	if (IS_ERR(bdev->bamclk))
-> -		return PTR_ERR(bdev->bamclk);
-> +	bdev->core = devm_clk_get(bdev->dev, "core");
-> +	if (IS_ERR(bdev->core))
-> +		return PTR_ERR(bdev->core);
->  
-> -	ret = clk_prepare_enable(bdev->bamclk);
-> +	ret = clk_prepare_enable(bdev->core);
->  	if (ret) {
-> -		dev_err(bdev->dev, "failed to prepare/enable clock\n");
-> +		dev_err(bdev->dev, "failed to prepare/enable core clock\n");
->  		return ret;
->  	}
->  
-> +	bdev->iface = devm_clk_get(bdev->dev, "iface");
-> +	if (IS_ERR(bdev->iface) && PTR_ERR(bdev->iface) == -EPROBE_DEFER) {
-> +		ret = -EPROBE_DEFER;
-> +		goto err_disable_core_clk;
-> +	} else if (!IS_ERR(bdev->iface)) {
-> +		ret = clk_prepare_enable(bdev->iface);
-> +		if (ret) {
-> +			dev_err(bdev->dev,
-> +				"failed to prepare/enable iface clock\n");
-> +			goto err_disable_core_clk;
-> +		}
-> +	}
-> +
->  	ret = bam_init(bdev);
->  	if (ret)
-> -		goto err_disable_clk;
-> +		goto err_disable_clks;
->  
->  	tasklet_init(&bdev->task, dma_tasklet, (unsigned long)bdev);
->  
-> @@ -1017,7 +1030,7 @@ static int bam_dma_probe(struct platform_device *pdev)
->  
->  	if (!bdev->channels) {
->  		ret = -ENOMEM;
-> -		goto err_disable_clk;
-> +		goto err_disable_clks;
->  	}
->  
->  	/* allocate and initialize channels */
-> @@ -1029,7 +1042,7 @@ static int bam_dma_probe(struct platform_device *pdev)
->  	ret = devm_request_irq(bdev->dev, bdev->irq, bam_dma_irq,
->  			IRQF_TRIGGER_HIGH, "bam_dma", bdev);
->  	if (ret)
-> -		goto err_disable_clk;
-> +		goto err_disable_clks;
->  
->  	/* set max dma segment size */
->  	bdev->common.dev = bdev->dev;
-> @@ -1037,7 +1050,7 @@ static int bam_dma_probe(struct platform_device *pdev)
->  	ret = dma_set_max_seg_size(bdev->common.dev, BAM_MAX_DATA_SIZE);
->  	if (ret) {
->  		dev_err(bdev->dev, "cannot set maximum segment size\n");
-> -		goto err_disable_clk;
-> +		goto err_disable_clks;
->  	}
->  
->  	platform_set_drvdata(pdev, bdev);
-> @@ -1058,7 +1071,7 @@ static int bam_dma_probe(struct platform_device *pdev)
->  	ret = dma_async_device_register(&bdev->common);
->  	if (ret) {
->  		dev_err(bdev->dev, "failed to register dma async device\n");
-> -		goto err_disable_clk;
-> +		goto err_disable_clks;
->  	}
->  
->  	ret = of_dma_controller_register(pdev->dev.of_node, bam_dma_xlate,
-> @@ -1070,8 +1083,10 @@ static int bam_dma_probe(struct platform_device *pdev)
->  
->  err_unregister_dma:
->  	dma_async_device_unregister(&bdev->common);
-> -err_disable_clk:
-> -	clk_disable_unprepare(bdev->bamclk);
-> +err_disable_clks:
-> +	clk_disable_unprepare(bdev->iface);
-> +err_disable_core_clk:
-> +	clk_disable_unprepare(bdev->core);
->  	return ret;
->  }
->  
-> @@ -1099,7 +1114,8 @@ static int bam_dma_remove(struct platform_device *pdev)
->  
->  	tasklet_kill(&bdev->task);
->  
-> -	clk_disable_unprepare(bdev->bamclk);
-> +	clk_disable_unprepare(bdev->iface);
-> +	clk_disable_unprepare(bdev->core);
->  
->  	return 0;
->  }
-> -- 
-> 1.8.3.2
-> 
-> 
+-- 
