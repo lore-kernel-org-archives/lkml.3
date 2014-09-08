@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaIHNYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:24:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46168 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147AbaIHNYO (ORCPT
+	id S1754018AbaIHNYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:24:25 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:65181 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753988AbaIHNYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:24:14 -0400
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        konrad.wilk@oracle.com, Daniel Kiper <daniel.kiper@oracle.com>
-Subject: [PATCH] xen/balloon: Remove unused pr_fmt() macro
-Date: Mon,  8 Sep 2014 15:23:58 +0200
-Message-Id: <1410182638-18820-1-git-send-email-daniel.kiper@oracle.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 8 Sep 2014 09:24:22 -0400
+Date: Mon, 8 Sep 2014 14:24:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] mfd: add support for Diolan DLN-2 devices
+Message-ID: <20140908132415.GB30307@lee--X1>
+References: <1409930279-1382-1-git-send-email-octavian.purdila@intel.com>
+ <1409930279-1382-2-git-send-email-octavian.purdila@intel.com>
+ <20140908113233.GA9560@localhost>
+ <CAE1zotL3rKb3ayjgp0DbTr-a9xAhEJk6ybdqGEzg3UtuBUKWMw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE1zotL3rKb3ayjgp0DbTr-a9xAhEJk6ybdqGEzg3UtuBUKWMw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused pr_fmt() macro. Additionally, remove surplus empty
-lines which left after earlier various fixes and cleanups.
+On Mon, 08 Sep 2014, Octavian Purdila wrote:
+> On Mon, Sep 8, 2014 at 2:32 PM, Johan Hovold <johan@kernel.org> wrote:
+> >
+> > On Fri, Sep 05, 2014 at 06:17:57PM +0300, Octavian Purdila wrote:
+> > > This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+> > > Master Adapter DLN-2. Details about the device can be found here:
+> > >
+> <snip>
+> >
+> > First of all, this is much cleaner than the first non-MFD version. I'll
+> > have a look at the subdrivers shortly as well.
+> >
+> 
+> Hi Johan,
+> 
+> I have addressed all you comments except one, please see bellow. I
+> will wait for the review on the subdrivers before submitting a new
+> version of the patch set. Thanks for for review !
 
-Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
----
- drivers/xen/balloon.c |    5 -----
- 1 file changed, 5 deletions(-)
+No, please don't.  Fix-up and resubmit.
 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 5c660c7..08417b3 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -36,8 +36,6 @@
-  * IN THE SOFTWARE.
-  */
- 
--#define pr_fmt(fmt) "xen:" KBUILD_MODNAME ": " fmt
--
- #include <linux/cpu.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
-@@ -84,7 +82,6 @@ enum bp_state {
- 	BP_ECANCELED
- };
- 
--
- static DEFINE_MUTEX(balloon_mutex);
- 
- struct balloon_stats balloon_stats;
-@@ -94,7 +91,6 @@ EXPORT_SYMBOL_GPL(balloon_stats);
- static xen_pfn_t frame_list[PAGE_SIZE / sizeof(unsigned long)];
- static DEFINE_PER_CPU(struct page *, balloon_scratch_page);
- 
--
- /* List of ballooned pages, threaded through the mem_map array. */
- static LIST_HEAD(ballooned_pages);
- 
-@@ -616,7 +612,6 @@ static int alloc_balloon_scratch_page(int cpu)
- 	return 0;
- }
- 
--
- static int balloon_cpu_notify(struct notifier_block *self,
- 				    unsigned long action, void *hcpu)
- {
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
