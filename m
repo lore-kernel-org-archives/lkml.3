@@ -1,190 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaIHQkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:40:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42248 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaIHQj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:39:56 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v4 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller driver
-Date: Mon,  8 Sep 2014 11:39:49 -0500
-Message-Id: <1410194390-29007-2-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1410194390-29007-1-git-send-email-galak@codeaurora.org>
-References: <1410194390-29007-1-git-send-email-galak@codeaurora.org>
+	id S1754744AbaIHQk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:40:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753826AbaIHQkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 12:40:24 -0400
+Date: Mon, 8 Sep 2014 18:39:33 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/9] perf: Deny optimized switch for events read by
+ PERF_SAMPLE_READ
+Message-ID: <20140908163933.GI17728@krava.brq.redhat.com>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-3-git-send-email-jolsa@kernel.org>
+ <20140902105244.GI5806@worktop.ger.corp.intel.com>
+ <20140908100018.GC1172@krava.brq.redhat.com>
+ <20140908101119.GB6758@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908101119.GB6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Qualcomm AHCI SATA controller that exists on several
-SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
-requires the associated IPQ806x SATA PHY Driver to be enabled as well.
+On Mon, Sep 08, 2014 at 12:11:19PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 08, 2014 at 12:00:19PM +0200, Jiri Olsa wrote:
+> 
+> > > no.. so the value of the counter is the sum of all the inherited events.
+> > > It doesn't matter if you flip it or not the sum is not affected.
+> > > 
+> > > PERF_SAMPLE_READ should return the value.
+> > 
+> > so I want to be able to do the leader sampling over child processes
+> > that means:
+> >   - have event group with sampling leader, and the rest
+> >     of the group events' periods being read on leader's sample
+> >     via PERF_SAMPLE_READ sample_type
+> >   - for each child process created I want it to do the
+> >     same thing as the parent - sample on leader, read
+> >     values of other events in group via PERF_SAMPLE_READ
+> 
+> The thing is, PERF_SAMPLE_READ should return the exact same thing as an
+> actual read(), and for read() the value reported is the sum of all
+> events.
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
-v4:
-* Added simple PM ops implementation
-* Added setting of pmalive clk
+maybe we could make this configurable? like via new per_event_attr::option bit,
+keeping by default the behaviour you said
 
-v3:
-* Added comment about suspend/resume not supported
-* Fixup ahci_platform_init_host for upstream change to interface
-* cleanup error handling of rxoob clk, moved to devm_clk_get/put
+> 
+> I _think_ I know what you want, and I think I see why you'd want that,
+> but I'm not sure how to best do that.. Hmm.. maybe look at
+> 'perf_event_attr::inherit_stat' that appears to be similar.
+> 
+> At which point read() vs inherit_stat might be 'broken'. Hard to know if
+> anybody uses that :-(
 
-v2:
-* Fixed MODULE_LICENSE to be GPL v2
+I'll check, thanks
 
- drivers/ata/Kconfig     | 10 +++++
- drivers/ata/Makefile    |  1 +
- drivers/ata/ahci_qcom.c | 99 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 110 insertions(+)
- create mode 100644 drivers/ata/ahci_qcom.c
-
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index e1b9278..165d2fa 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -133,6 +133,16 @@ config AHCI_MVEBU
- 
- 	  If unsure, say N.
- 
-+config AHCI_QCOM
-+	tristate "Qualcomm AHCI SATA support"
-+	depends on ARCH_QCOM
-+	help
-+	  This option enables support for AHCI SATA controller
-+	  integrated into Qualcomm ARM SoC chipsets. For more
-+	  information please refer to http://www.qualcomm.com/chipsets.
-+
-+	  If unsure, say N.
-+
- config AHCI_SUNXI
- 	tristate "Allwinner sunxi AHCI SATA support"
- 	depends on ARCH_SUNXI
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index ae41107..812435c 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
- obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_MVEBU)	+= ahci_mvebu.o libahci.o libahci_platform.o
-+obj-$(CONFIG_AHCI_QCOM)		+= ahci_qcom.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_TEGRA)	+= ahci_tegra.o libahci.o libahci_platform.o
-diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
-new file mode 100644
-index 0000000..3da0c94
---- /dev/null
-+++ b/drivers/ata/ahci_qcom.c
-@@ -0,0 +1,99 @@
-+/*
-+ * Qualcomm ARM SoC AHCI SATA platform driver
-+ *
-+ * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
-+ *
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/ahci_platform.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/libata.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm.h>
-+#include "ahci.h"
-+
-+static const struct ata_port_info qcom_ahci_port_info = {
-+	.flags		= AHCI_FLAG_COMMON,
-+	.pio_mask	= ATA_PIO4,
-+	.udma_mask	= ATA_UDMA6,
-+	.port_ops	= &ahci_platform_ops,
-+};
-+
-+static int qcom_ahci_probe(struct platform_device *pdev)
-+{
-+	struct ahci_host_priv *hpriv;
-+	struct clk *rxoob_clk, *pmalive_clk;
-+	int rc;
-+
-+	hpriv = ahci_platform_get_resources(pdev);
-+	if (IS_ERR(hpriv))
-+		return PTR_ERR(hpriv);
-+
-+	/* Try and set the rxoob clk to 100Mhz */
-+	rxoob_clk = of_clk_get_by_name(pdev->dev.of_node, "rxoob");
-+	if (IS_ERR(rxoob_clk))
-+		return PTR_ERR(rxoob_clk);
-+
-+	rc = clk_set_rate(rxoob_clk, 100000000);
-+	if (rc)
-+		return rc;
-+
-+	/* Try and set the pmalive clk to 100Mhz */
-+	pmalive_clk = of_clk_get_by_name(pdev->dev.of_node, "pmalive");
-+	if (IS_ERR(pmalive_clk))
-+		return PTR_ERR(pmalive_clk);
-+
-+	rc = clk_set_rate(pmalive_clk, 100000000);
-+	if (rc)
-+		return rc;
-+
-+	rc = ahci_platform_enable_resources(hpriv);
-+	if (rc)
-+		return rc;
-+
-+	rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info);
-+	if (rc)
-+		goto disable_resources;
-+
-+	return 0;
-+disable_resources:
-+	ahci_platform_disable_resources(hpriv);
-+	return rc;
-+}
-+
-+static const struct of_device_id qcom_ahci_of_match[] = {
-+	{ .compatible = "qcom,msm-ahci", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
-+
-+static SIMPLE_DEV_PM_OPS(qcom_ahci_pm_ops, ahci_platform_suspend,
-+			 ahci_platform_resume);
-+
-+static struct platform_driver qcom_ahci_driver = {
-+	.probe = qcom_ahci_probe,
-+	.remove = ata_platform_remove_one,
-+	.driver = {
-+		.name = "qcom_ahci_qcom",
-+		.owner = THIS_MODULE,
-+		.of_match_table = qcom_ahci_of_match,
-+		.pm = &qcom_ahci_pm_ops,
-+	},
-+};
-+module_platform_driver(qcom_ahci_driver);
-+
-+MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("ahci:qcom");
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+jirka
