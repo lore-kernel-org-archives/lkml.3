@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbaIHTW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:22:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46559 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753882AbaIHTWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 15:22:23 -0400
-Date: Mon, 8 Sep 2014 21:22:18 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] rtc: at91sam9: retain slow clock and check its rate
-Message-ID: <20140908212218.6a81af86@bbrezillon>
-In-Reply-To: <20140908173338.GD14623@piout.net>
-References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1409733934-14465-5-git-send-email-boris.brezillon@free-electrons.com>
-	<20140908173338.GD14623@piout.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754778AbaIHTZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:25:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753882AbaIHTZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 15:25:48 -0400
+From: Aaron Tomlin <atomlin@redhat.com>
+To: peterz@infradead.org
+Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
+        atomlin@redhat.com, oleg@redhat.com, pzijlstr@redhat.com,
+        riel@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        x86@kernel.org, rostedt@goodmis.org, hannes@cmpxchg.org,
+        aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
+Subject: [PATCH 3/3] sched: BUG when stack end location is over written
+Date: Mon,  8 Sep 2014 20:23:17 +0100
+Message-Id: <1410204197-31204-4-git-send-email-atomlin@redhat.com>
+In-Reply-To: <1410204197-31204-1-git-send-email-atomlin@redhat.com>
+References: <20140904161124.GD1436@atomlin.usersys.redhat.com>
+ <1410204197-31204-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014 19:33:38 +0200
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+Currently in the event of a stack overrun a call to schedule()
+does not check for this type of corruption. This corruption is
+often silent and can go unnoticed. However once the corrupted
+region is examined at a later stage, the outcome is undefined
+and often results in a sporadic page fault which cannot be
+handled.
 
-> On 03/09/2014 at 10:45:33 +0200, Boris Brezillon wrote :
-> > The RTT block is using the slow clock and expect it to run at 32KHz.
-> > Now that we moved to the CCF it's better to retain the clk reference so
-> > that the CCF can't disable the slow clock considering it is unused.
-> > 
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > ---
-> >  drivers/rtc/rtc-at91sam9.c | 24 ++++++++++++++++++++++++
-> >  1 file changed, 24 insertions(+)
-> > 
-> > diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-> > index 57014b7..5c5093b 100644
-> > --- a/drivers/rtc/rtc-at91sam9.c
-> > +++ b/drivers/rtc/rtc-at91sam9.c
-> > @@ -21,6 +21,7 @@
-> >  #include <linux/slab.h>
-> >  #include <linux/platform_data/atmel.h>
-> >  #include <linux/io.h>
-> > +#include <linux/clk.h>
-> >  
-> >  /*
-> >   * This driver uses two configurable hardware resources that live in the
-> > @@ -74,6 +75,7 @@ struct sam9_rtc {
-> >  	u32			imr;
-> >  	void __iomem		*gpbr;
-> >  	int 			irq;
-> > +	struct clk		*sclk;
-> >  };
-> >  
-> >  #define rtt_readl(rtc, field) \
-> > @@ -373,6 +375,25 @@ static int at91_rtc_probe(struct platform_device *pdev)
-> >  		return ret;
-> >  	}
-> >  
-> > +	/* Retain slow clk if it is specified in the DT.
-> > +	 * Do not complain if slow clk is missing, but check its rate
-> > +	 * if it is available.
-> > +	 */
-> > +	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
-> > +	if (!IS_ERR(rtc->sclk)) {
-> > +		if (clk_get_rate(rtc->sclk) != AT91_SLOW_CLOCK) {
-> 
-> I would not bother doing that check but use the value for MR instead of
-> AT91_SLOW_CLOCK (see my previous mail).
+This patch checks for a stack overrun and takes appropriate
+action since the damage is already done, there is no point
+in continuing.
 
-Unfortunately, we can't get rid of this macro without modifying the
-clk_lookup table in several arch/arm/mach-at91/<soc-name>.c files in
-order to handle non DT/CCF cases (which will remain until all non DT
-boards are moved to DT).
-But I agree that this should be removed as soon as possible (AFAIR, all
-SoCs have already been moved to the CCF).
-How about adding a TODO comment ?
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+---
+ kernel/sched/core.c |  4 ++++
+ lib/Kconfig.debug   | 12 ++++++++++++
+ 2 files changed, 16 insertions(+)
 
-> 
-> > +			dev_err(&pdev->dev,
-> > +				"Invalid slow clock rate (expecting %lu got %lu)",
-> > +				(unsigned long)AT91_SLOW_CLOCK,
-> > +				clk_get_rate(rtc->sclk));
-> > +			return -EINVAL;
-> > +		}
-> > +
-> > +		ret = clk_prepare_enable(rtc->sclk);
-> > +		if (ret)
-> > +			return ret;
-> > +	}
-> > +
-> >  	/* NOTE:  sam9260 rev A silicon has a ROM bug which resets the
-> >  	 * RTT on at least some reboots.  If you have that chip, you must
-> >  	 * initialize the time from some external source like a GPS, wall
-> > @@ -397,6 +418,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
-> >  	/* disable all interrupts */
-> >  	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
-> >  
-> > +	if (!IS_ERR(rtc->sclk))
-> > +		clk_disable_unprepare(rtc->sclk);
-> > +
-> >  	return 0;
-> >  }
-> >  
-> > -- 
-> > 1.9.1
-> > 
-> 
-
-
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ec1a286..182b2d1 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2660,6 +2660,10 @@ static noinline void __schedule_bug(struct task_struct *prev)
+  */
+ static inline void schedule_debug(struct task_struct *prev)
+ {
++#ifdef CONFIG_SCHED_STACK_END_CHECK
++	if (unlikely(task_stack_end_corrupted(prev)))
++		BUG();
++#endif
+ 	/*
+ 	 * Test if we are atomic. Since do_exit() needs to call into
+ 	 * schedule() atomically, we ignore that path. Otherwise whine
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a285900..2a8280a 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -824,6 +824,18 @@ config SCHEDSTATS
+ 	  application, you can say N to avoid the very slight overhead
+ 	  this adds.
+ 
++config SCHED_STACK_END_CHECK
++	bool "Detect stack corruption on calls to schedule()"
++	depends on DEBUG_KERNEL
++	default y
++	help
++	  This option checks for a stack overrun on calls to schedule().
++	  If the stack end location is found to be over written always panic as
++	  the content of the corrupted region can no longer be trusted.
++	  This is to ensure no erroneous behaviour occurs which could result in
++	  data corruption or a sporadic crash at a later stage once the region
++	  is examined. The runtime overhead introduced is minimal.
++
+ config TIMER_STATS
+ 	bool "Collect kernel timers statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.9.3
+
