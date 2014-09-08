@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaIHTBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:01:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58998 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725AbaIHTBc (ORCPT
+	id S1754493AbaIHTCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:02:06 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:47996 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754415AbaIHTCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 15:01:32 -0400
-Date: Mon, 8 Sep 2014 12:01:12 -0700
-From: tip-bot for Mathias Krause <tipbot@zytor.com>
-Message-ID: <tip-8a5a5d1530d55e367ef29c80946d0274717617bb@git.kernel.org>
-Cc: arjan.van.de.ven@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, minipli@googlemail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        arjan.van.de.ven@intel.com, minipli@googlemail.com, tglx@linutronix.de
-In-Reply-To: <1410114629-24523-1-git-send-email-minipli@googlemail.com>
-References: <1410114629-24523-1-git-send-email-minipli@googlemail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-64, ptdump:
-  Mark espfix area only if existent
-Git-Commit-ID: 8a5a5d1530d55e367ef29c80946d0274717617bb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 8 Sep 2014 15:02:04 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Mon, 8 Sep 2014 15:08:02 -0400 (EDT)
+To: Peter Zijlstra <peterz@infradead.org>
+cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: perf_fuzzer triggers instant reboot
+In-Reply-To: <20140908185115.GI6758@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1409081506510.2150@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8a5a5d1530d55e367ef29c80946d0274717617bb
-Gitweb:     http://git.kernel.org/tip/8a5a5d1530d55e367ef29c80946d0274717617bb
-Author:     Mathias Krause <minipli@googlemail.com>
-AuthorDate: Sun, 7 Sep 2014 20:30:29 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 8 Sep 2014 11:57:34 -0700
+On Mon, 8 Sep 2014, Peter Zijlstra wrote:
 
-x86-64, ptdump: Mark espfix area only if existent
+> On Mon, Sep 08, 2014 at 01:47:11PM -0400, Vince Weaver wrote:
+> > Hello
+> > 
+> > so I finally had time to run my perf_fuzzer again and it has rapidly 
+> > turned up an alarming crash that instant-reboots my core2 test machine.
+> 
+> Urgh, of course :/
 
-We should classify the espfix area as such only if we actually have
-enabled the corresponding option. Otherwise the page table dump might
-look confusing.
+I can trigger it with 3.17-rc4 and 3.17-rc3 but not 3.16 so I'm attempting 
+a bisection, so hopefully it turns out to be a real issue and not just 
+some sort of compilation artifact.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Link: http://lkml.kernel.org/r/1410114629-24523-1-git-send-email-minipli@googlemail.com
-Cc: Arjan van de Ven <arjan.van.de.ven@intel.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/mm/dump_pagetables.c | 4 ++++
- 1 file changed, 4 insertions(+)
+It takes a while to compile on this machine though so it might be a day or 
+so until I have the bisection results.
 
-diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
-index 167ffca..95a427e 100644
---- a/arch/x86/mm/dump_pagetables.c
-+++ b/arch/x86/mm/dump_pagetables.c
-@@ -48,7 +48,9 @@ enum address_markers_idx {
- 	LOW_KERNEL_NR,
- 	VMALLOC_START_NR,
- 	VMEMMAP_START_NR,
-+# ifdef CONFIG_X86_ESPFIX64
- 	ESPFIX_START_NR,
-+# endif
- 	HIGH_KERNEL_NR,
- 	MODULES_VADDR_NR,
- 	MODULES_END_NR,
-@@ -71,7 +73,9 @@ static struct addr_marker address_markers[] = {
- 	{ PAGE_OFFSET,		"Low Kernel Mapping" },
- 	{ VMALLOC_START,        "vmalloc() Area" },
- 	{ VMEMMAP_START,        "Vmemmap" },
-+# ifdef CONFIG_X86_ESPFIX64
- 	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
-+# endif
- 	{ __START_KERNEL_map,   "High Kernel Mapping" },
- 	{ MODULES_VADDR,        "Modules" },
- 	{ MODULES_END,          "End Modules" },
+Vince
