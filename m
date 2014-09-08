@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635AbaIHTdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:33:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34321 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771AbaIHTdr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 15:33:47 -0400
-Date: Mon, 8 Sep 2014 12:33:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Nitin Kuppelur <nitinkuppelur@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: octeon-hcd: removed unwanted return from void
- functions
-Message-ID: <20140908193347.GA13636@kroah.com>
-References: <1410196395-4595-1-git-send-email-nitinkuppelur@gmail.com>
- <20140908185923.GA10550@drone.musicnaut.iki.fi>
+	id S1754592AbaIHTen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:34:43 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:52663
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752755AbaIHTem convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 15:34:42 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>
+CC: "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging: comedi: amplc_pci230: fix DACOUT write
+Thread-Topic: [PATCH] staging: comedi: amplc_pci230: fix DACOUT write
+Thread-Index: AQHPy5kokniDf1CzRUuzS8NokCs3fJv3n8dA
+Date: Mon, 8 Sep 2014 19:34:40 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F903DB@P3PWEX4MB008.ex4.secureserver.net>
+References: <1408447956-10139-1-git-send-email-abbotti@mev.co.uk>
+ <20140908191445.GA32320@kroah.com>
+In-Reply-To: <20140908191445.GA32320@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140908185923.GA10550@drone.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 09:59:23PM +0300, Aaro Koskinen wrote:
-> On Mon, Sep 08, 2014 at 07:13:15PM +0200, Nitin Kuppelur wrote:
-> > This is a patch to the octeon-hcd.c file that fixes checkpatch.pl warning by removing return statement from void functions.
-> 
-> Please format line length to <= 76 characters in the commit log.
-> 
-> Maybe you could fix __cvmx_usb_perform_complete() as well?
+On Monday, September 08, 2014 12:15 PM, Greg Kroah-Hartman wrote:
+> On Tue, Aug 19, 2014 at 12:32:36PM +0100, Ian Abbott wrote:
+>> Commit 4f9c63fe5333b27ab23ed399830c7977f6970744 ("staging: comedi:
+>> amplc_pci230: refactor iobase addresses") removed some parentheses
+>> (presumably to keep the line withing 80 chars) in
+>> `pci230_ao_write_nofifo()` when writing to the DACOUT1 or DACOUT2
+>> registers, but it removed the wrong parentheses.  Fix it.
+>> 
+>> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+>> ---
+>> This bug is in linux-next master and staging-next.
+>> ---
+>>  drivers/staging/comedi/drivers/amplc_pci230.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
+>> index 0fd212f..dd69e47 100644
+>> --- a/drivers/staging/comedi/drivers/amplc_pci230.c
+>> +++ b/drivers/staging/comedi/drivers/amplc_pci230.c
+>> @@ -628,7 +628,7 @@ static inline void pci230_ao_write_nofifo(struct comedi_device *dev,
+>>  
+>>  	/* Write mangled datum to appropriate DACOUT register. */
+>>  	outw(pci230_ao_mangle_datum(dev, datum),
+>> -	     devpriv->daqio + ((chan) == 0) ? PCI230_DACOUT1 : PCI230_DACOUT2);
+>> +	     devpriv->daqio + (chan == 0 ? PCI230_DACOUT1 : PCI230_DACOUT2));
+>>  }
+>>  
+>>  static inline void pci230_ao_write_fifo(struct comedi_device *dev,
+>> -- 
+>> 2.0.4
+>
+> This doesn't apply to my tree anymore, is it still needed?
 
-What is wrong with it?  That should be in a separate patch...
+Looks like you already applied a similar patch from Dan Carpenter:
 
-thanks,
+commit 94254d1baec765b22cc5df3a9a16a8cc9a79d406
+Author: Dan Carpenter <dan.carpenter@oracle.com>
+Date:   Tue Aug 26 10:55:51 2014 +0300
 
-greg k-h
+    staging: comedi: amplc_pci230: fix a precedence bug
+
+Regards,
+Hartley
+
