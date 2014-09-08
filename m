@@ -1,64 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaIHH0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:26:44 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:33399 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaIHH0m (ORCPT
+	id S1752915AbaIHHem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:34:42 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:36209 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665AbaIHHek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:26:42 -0400
-Message-ID: <540D5A2C.7080808@collabora.co.uk>
-Date: Mon, 08 Sep 2014 09:26:36 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 8 Sep 2014 03:34:40 -0400
+Message-ID: <540D5C0B.5040006@suse.cz>
+Date: Mon, 08 Sep 2014 09:34:35 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Nick Dyer <nick.dyer@itdev.co.uk>,
-        =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Yufeng Shen <miletus@chromium.org>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Daniel Stone <daniels@collabora.com>
-Subject: Re: [PATCH v2 1/3] ARM: dts: Add Peach Pit dts entry for Atmel touchpad
-References: <1409066937-3574-1-git-send-email-javier.martinez@collabora.co.uk> <1409066937-3574-2-git-send-email-javier.martinez@collabora.co.uk> <53FD1001.30701@suse.de> <53FD8528.7090504@collabora.co.uk> <53FDD914.5090208@suse.de> <53FDE9B2.4040001@collabora.co.uk> <5405CA4F.10507@itdev.co.uk>
-In-Reply-To: <5405CA4F.10507@itdev.co.uk>
-Content-Type: text/plain; charset=ISO-8859-15
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+CC: lwn@lwn.net
+Subject: Linux 3.12.28
+Content-Type: text/plain; charset=iso-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nick,
+I'm announcing the release of the 3.12.28 kernel.
 
-On 09/02/2014 03:46 PM, Nick Dyer wrote:
-> On 27/08/14 15:22, Javier Martinez Canillas wrote:
->>>> If there was a BTN_NONE or KEY_UNUSED it would had been better but I think
->>>> that making a distinction between these two cases (reserved pin vs GPIO
->>>> available but not used) is useful.
->>>
->>> Maybe Nick can comment here.
-> 
-> Yes, this is probably useful to document. However, I fear that it's not
-> going to be obvious what the distinction is to someone who doesn't have the
-> Atmel docs. Perhaps it would be clearer to just do something like:
-> 
-> 		linux,gpio-keymap = <KEY_RESERVED
-> 		                     KEY_RESERVED
-> 		                     KEY_RESERVED /* GPIO0 */
-> 	        	             KEY_RESERVED /* GPIO1 */
-> 		                     KEY_RESERVED /* GPIO2 */
-> 		                     BTN_LEFT>;   /* GPIO3 */
-> 
-> If you omit any trailing KEY_RESERVED values it doesn't affect anything.
-> 
-> I was also going to suggest that you put something like "/* Atmel mXT224SL
-> */" in your .dts file so it's clear what version of the maXTouch device you
-> are configuring.
-> 
+All users of the 3.12 kernel series must upgrade.
 
-Ok, I'll re-spin with those changes. Thanks a lot for your feedback.
+The updated 3.12.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+linux-3.12.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-Best regards,
-Javier
+----------------------------------------------------------------
+Alan Stern (2):
+      USB: OHCI: fix bugs in debug routines
+      USB: OHCI: don't lose track of EDs when a controller dies
+
+Alex Deucher (3):
+      drm/radeon: add new KV pci id
+      drm/radeon: add new bonaire pci ids
+      drm/radeon: add additional SI pci ids
+
+Alexander Usyskin (1):
+      mei: start disconnect request timer consistently
+
+Andy Lutomirski (1):
+      x86_64/vsyscall: Fix warn_bad_vsyscall log output
+
+Arnd Bergmann (1):
+      crypto: ux500 - make interrupt mode plausible
+
+Axel Lin (6):
+      hwmon: (sis5595) Prevent overflow problem when writing large limits
+      hwmon: (amc6821) Fix possible race condition bug
+      hwmon: (gpio-fan) Prevent overflow problem when writing large limits
+      hwmon: (ads1015) Fix off-by-one for valid channel index checking
+      hwmon: (ads1015) Fix out-of-bounds array access
+      hwmon: (dme1737) Prevent overflow problem when writing large limits
+
+Bjorn Helgaas (1):
+      PCI: Add pci_upstream_bridge()
+
+Bryan O'Donoghue (1):
+      USB: ehci-pci: USB host controller support for Intel Quark X1000
+
+Christoph Schulz (1):
+      x86: don't exclude low BIOS area when allocating address space for
+non-PCI cards
+
+Clemens Ladisch (2):
+      ALSA: virtuoso: add Xonar Essence STX II support
+      ALSA: usb-audio: fix BOSS ME-25 MIDI regression
+
+Daniel Mack (1):
+      usb: musb: cppi41: fire hrtimer according to programmed channel length
+
+David Vrabel (1):
+      x86/xen: resume timer irqs early
+
+Gu Zheng (1):
+      bio-integrity: add "bip_max_vcnt" into struct bio_integrity_payload
+
+Guenter Roeck (2):
+      hwmon: (lm78) Fix overflow problems seen when writing large
+temperature limits
+      hwmon: (lm85) Fix various errors on attribute writes
+
+Hui Wang (2):
+      ALSA: hda - fix an external mic jack problem on a HP machine
+      ALSA: hda - restore the gpio led after resume
+
+James P Michels III (1):
+      usb-core bInterval quirk
+
+Jan Kara (1):
+      isofs: Fix unbounded recursion when processing relocated directories
+
+Jason Gunthorpe (1):
+      tpm: Add missing tpm_do_selftest to ST33 I2C driver
+
+Jeremy Vial (1):
+      ARM: OMAP3: Fix choice of omap3_restore_es function in OMAP34XX
+rev3.1.2 case.
+
+Jiang Liu (1):
+      USB: core: hcd-pci: free IRQ before disabling PCI device when
+shutting down
+
+Jiri Kosina (2):
+      HID: logitech: perform bounds checking on device_id early enough
+      HID: fix a couple of off-by-ones
+
+Jiri Slaby (1):
+      Linux 3.12.28
+
+Joonyoung Shim (1):
+      USB: add reset resume quirk for usb3503
+
+Kent Overstreet (1):
+      bcache: Minor journal fix
+
+Lee, Chun-Yi (1):
+      PM / hibernate: avoid unsafe pages in e820 reserved regions
+
+Matt Fleming (1):
+      x86/efi: Enforce CONFIG_RELOCATABLE for EFI boot stub
+
+Michael S. Tsirkin (1):
+      kvm: iommu: fix the third parameter of kvm_iommu_put_pages
+(CVE-2014-3601)
+
+Nadav Amit (1):
+      KVM: x86: Inter-privilege level ret emulation is not implemeneted
+
+Oliver Neukum (1):
+      USB: devio: fix issue with log flooding
+
+Paolo Bonzini (2):
+      KVM: x86: always exit on EOIs for interrupts listed in the IOAPIC
+redir table
+      Revert "KVM: x86: Increase the number of fixed MTRR regs to 10"
+
+Patrick Riphagen (2):
+      USB: serial: ftdi_sio: Annotate the current Xsens PID assignments
+      USB: serial: ftdi_sio: Add support for new Xsens devices
+
+Peter Hurley (1):
+      serial: core: Preserve termios c_cflag for console resume
+
+Pratyush Anand (1):
+      USB: Fix persist resume of some SS USB devices
+
+Preston Fick (1):
+      USB: serial: cp210x: Removing unncessary `usb_reset_device` on startup
+
+Russell King (1):
+      drm: omapdrm: fix compiler errors
+
+Stephen M. Cameron (1):
+      hpsa: fix bad -ENOMEM return value in hpsa_big_passthru_ioctl
+
+Steven Rostedt (1):
+      debugfs: Fix corrupted loop in debugfs_remove_recursive
+
+Takashi Iwai (2):
+      ALSA: hda/ca0132 - Don't try loading firmware at resume when
+already failed
+      ALSA: hda/realtek - Avoid setting wrong COEF on ALC269 & co
+
+Theodore Ts'o (1):
+      ext4: fix ext4_discard_allocated_blocks() if we can't allocate the
+pa struct
+
+Vidya Sagar (1):
+      PCI: Configure ASPM when enabling device
+
+Wangzhao Cai (1):
+      HID: add quirk for 0x04d9:0xa096 device
+
+Wolfram Sang (1):
+      drivers/i2c/busses: use correct type for dma_map/unmap
+
+ .../sound/alsa/ALSA-Configuration.txt        |  4 +-
+ Makefile                                     |  2 +-
+ arch/arm/mach-omap2/control.c                |  3 +-
+ arch/x86/Kconfig                             |  1 +
+ arch/x86/include/asm/kvm_host.h              |  2 +-
+ arch/x86/kernel/resource.c                   |  8 +--
+ arch/x86/kernel/vsyscall_64.c                |  8 +--
+ arch/x86/kvm/emulate.c                       |  4 ++
+ arch/x86/pci/i386.c                          |  4 ++
+ arch/x86/xen/time.c                          |  2 +-
+ drivers/char/tpm/tpm_i2c_stm_st33.c          |  1 +
+ drivers/crypto/ux500/cryp/cryp_core.c        | 25 +++++-----
+ drivers/gpu/drm/omapdrm/omap_dmm_tiler.c     |  6 ++-
+ drivers/gpu/drm/omapdrm/omap_gem.c           | 10 ++--
+ drivers/gpu/drm/omapdrm/omap_plane.c         |  4 +-
+ drivers/gpu/drm/radeon/cik.c                 |  1 +
+ drivers/hid/hid-cherry.c                     |  2 +-
+ drivers/hid/hid-ids.h                        |  1 +
+ drivers/hid/hid-kye.c                        |  2 +-
+ drivers/hid/hid-lg.c                         |  4 +-
+ drivers/hid/hid-logitech-dj.c                | 13 +++--
+ drivers/hid/hid-monterey.c                   |  2 +-
+ drivers/hid/hid-petalynx.c                   |  2 +-
+ drivers/hid/hid-sunplus.c                    |  2 +-
+ drivers/hid/usbhid/hid-quirks.c              |  1 +
+ drivers/hwmon/ads1015.c                      |  4 +-
+ drivers/hwmon/amc6821.c                      | 17 ++++---
+ drivers/hwmon/dme1737.c                      | 33 +++++++------
+ drivers/hwmon/gpio-fan.c                     |  2 +-
+ drivers/hwmon/lm78.c                         |  2 +-
+ drivers/hwmon/lm85.c                         |  9 ++--
+ drivers/hwmon/sis5595.c                      |  2 +-
+ drivers/i2c/busses/i2c-at91.c                |  4 +-
+ drivers/md/bcache/journal.c                  | 19 ++++++--
+ drivers/misc/mei/client.c                    |  1 +
+ drivers/pci/pci.c                            | 12 ++---
+ drivers/scsi/hpsa.c                          |  2 +-
+ drivers/tty/serial/serial_core.c             |  3 ++
+ drivers/usb/core/config.c                    | 11 +++++
+ drivers/usb/core/devio.c                     |  2 +-
+ drivers/usb/core/hcd-pci.c                   |  2 +
+ drivers/usb/core/hub.c                       | 41 ++++++++++++++++
+ drivers/usb/core/quirks.c                    |  7 +++
+ drivers/usb/host/ehci-pci.c                  | 25 ++++++++++
+ drivers/usb/host/ohci-dbg.c                  | 11 +++--
+ drivers/usb/host/ohci-hcd.c                  | 10 ++--
+ drivers/usb/host/ohci-q.c                    | 46 +++++++++++-------
+ drivers/usb/musb/musb_cppi41.c               |  6 ++-
+ drivers/usb/serial/cp210x.c                  |  3 --
+ drivers/usb/serial/ftdi_sio.c                |  2 +
+ drivers/usb/serial/ftdi_sio_ids.h            | 13 +++--
+ fs/bio-integrity.c                           | 12 ++---
+ fs/debugfs/inode.c                           | 34 ++++++++++---
+ fs/ext4/mballoc.c                            | 21 +++++++-
+ fs/isofs/inode.c                             | 15 +++---
+ fs/isofs/isofs.h                             | 23 +++++++--
+ fs/isofs/rock.c                              | 39 ++++++++++-----
+ include/drm/drm_pciids.h                     |  7 +++
+ include/linux/bio.h                          |  1 +
+ include/linux/pci.h                          |  9 ++++
+ include/linux/usb/quirks.h                   | 11 +++++
+ kernel/power/snapshot.c                      | 21 +++++++-
+ sound/pci/Kconfig                            |  4 +-
+ sound/pci/hda/patch_ca0132.c                 |  7 ++-
+ sound/pci/hda/patch_realtek.c                | 26 ++++++++--
+ sound/pci/hda/patch_sigmatel.c               | 12 +++++
+ sound/pci/oxygen/virtuoso.c                  |  1 +
+ sound/pci/oxygen/xonar_pcm179x.c             | 12 ++++-
+ sound/usb/quirks-table.h                     | 29 +++++++++++
+ virt/kvm/ioapic.c                            |  7 ++-
+ virt/kvm/iommu.c                             | 19 ++++----
+ 71 files changed, 520 insertions(+), 193 deletions(-)
+
+
+thanks,
+-- 
+js
