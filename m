@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaIHVzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:55:16 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:46734 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaIHVzO (ORCPT
+	id S1755216AbaIHVzk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:55:40 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:59612 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877AbaIHVzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:55:14 -0400
-Date: Mon, 8 Sep 2014 23:55:06 +0200
-From: Rabin Vincent <rabin@rab.in>
-To: Kees Cook <keescook@chromium.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
-Message-ID: <20140908215506.GA4759@dator>
-References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
- <1409781429-27593-4-git-send-email-keescook@chromium.org>
- <20140904170349.GL7156@arm.com>
- <CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
- <20140904172748.GO7156@arm.com>
- <20140908191634.GV5598@outflux.net>
+	Mon, 8 Sep 2014 17:55:38 -0400
+Date: Mon, 8 Sep 2014 22:55:35 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI urgent fixes
+Message-ID: <20140908215535.GD18582@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140908191634.GV5598@outflux.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 12:16:34PM -0700, Kees Cook wrote:
-> On Thu, Sep 04, 2014 at 06:27:48PM +0100, Will Deacon wrote:
-> > On Thu, Sep 04, 2014 at 06:23:42PM +0100, Kees Cook wrote:
-> > > Ah! If this is the case, perhaps we can get away with
-> > > local_flush_tlb_kernel_range() then?
-> > 
-> > That's a bit tricky, since you need to ensure that preemption is disabled
-> > until the mapping is put back like it was.
-> 
-> Okay, under both real hardware with the errata, and under QEMU, things seem
-> to work with this change to the series. What do you think?
+Folks,
 
-Preemption is already disabled until the mapping is put back in this
-patch.c code because interrupts are disabled from before the time
-set_fixmap() is called until after clear_fixmap() is called.
+Please queue up the following fixes, mainly for regressions introduced
+in the merge window or -rc2.
 
-I'd guess that Will meant other (future) callers of set_fixmap() would
-have to ensure similar behaviour with set_fixmap() / clear_fixmap().
+The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
 
-Unless I'm missing something set/clear_fixmap() seem to be quite arch
-specific and only really used on x86, so we could ensure that future
-users on ARM perform the correct tlb flush:  the first user on ARM with
-a non-atomic context (or you) could implement a set_fixmap() which does
-the global flush and have this patch.c (and any other atomic context
-callers) call __set_fixmap() directly.
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
 
-The change to local_flush_tlb_kernel_range() in __set_fixmap() would of
-course be needed in that case, and IIRC that was what my original patch
-had (via set_top_pte()).
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+
+for you to fetch changes up to 5d6012d8d72b4107bbc68d9e761aa5e2ddd73b05:
+
+  efi/arm64: Fix fdt-related memory reservation (2014-09-08 20:52:48 +0100)
+
+----------------------------------------------------------------
+ * Fix early boot regression affecting x86 EFI boot stub when loading
+   initrds above 4GB - Yinghai Lu
+
+ * Relocate GOT entries in the x86 EFI boot stub now that we have
+   symbols with global visibility - Matt Fleming
+
+ * Fixes for compiler warnings caused by parameter and variable names
+   shadowing types - Mark Rustad
+
+ * General EFI cleanups and simplifications - Mathias Krause
+
+ * fdt memory reservation fix for arm64 - Mark Salter
+
+----------------------------------------------------------------
+Mark Rustad (1):
+      efi: Resolve some shadow warnings
+
+Mark Salter (1):
+      efi/arm64: Fix fdt-related memory reservation
+
+Mathias Krause (4):
+      x86/efi: Remove unused efi_call* macros
+      x86/efi: Unexport add_efi_memmap variable
+      x86/efi: Update comment regarding required phys mapped EFI services
+      x86/efi: Mark initialization code as such
+
+Matt Fleming (1):
+      x86/efi: Fixup GOT in all boot code paths
+
+Yinghai Lu (1):
+      x86/efi: Only load initrd above 4g on second try
+
+ arch/arm64/mm/init.c                |  3 +-
+ arch/x86/boot/compressed/eboot.c    | 18 +++++++-----
+ arch/x86/boot/compressed/head_32.S  | 54 +++++++++++++++++++++++++----------
+ arch/x86/boot/compressed/head_64.S  | 56 +++++++++++++++++++++++++++----------
+ arch/x86/include/asm/efi.h          | 31 +++++++-------------
+ arch/x86/platform/efi/efi.c         | 20 ++++++-------
+ arch/x86/platform/efi/efi_32.c      | 12 ++++----
+ arch/x86/platform/efi/efi_64.c      |  6 ++--
+ arch/x86/platform/efi/efi_stub_32.S |  4 +--
+ drivers/firmware/efi/libstub/fdt.c  | 10 ++++++-
+ drivers/firmware/efi/vars.c         | 14 +++++-----
+ 11 files changed, 140 insertions(+), 88 deletions(-)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
