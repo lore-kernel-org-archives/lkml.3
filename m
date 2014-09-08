@@ -1,247 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbaIHVTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:19:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39253 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256AbaIHVTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:19:11 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/13] perf tools: Let default config be defined for a PMU
-Date: Mon,  8 Sep 2014 18:18:08 -0300
-Message-Id: <1410211089-28668-13-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410211089-28668-1-git-send-email-acme@kernel.org>
-References: <1410211089-28668-1-git-send-email-acme@kernel.org>
+	id S1755316AbaIHVTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:19:34 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:47159 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755256AbaIHVTc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:19:32 -0400
+Message-ID: <540E1D75.5000500@gmail.com>
+Date: Mon, 08 Sep 2014 14:19:49 -0700
+From: Rajat Jain <rajatxjain@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com
+CC: rajatjain@juniper.net, groeck@juniper.net
+Subject: [PATCH] pci/probe: Ignore the device id while handling CRS
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+Some root ports may return the actual device id returned by the
+endpoint, instead of faking up a synthetic id (0xFFFF) as specified
+by the PCIe spec (sec 2.3.2). We have seen such broken devices in the
+past that match this behaviour:
+(Ref: https://lkml.org/lkml/2007/11/1/198)
 
-This allows default config terms to be provided for a PMU. So, for
-example, when the Intel PT PMU is added, it will be possible to specify:
+To take care of the same, CRS was disabled then, however, we want to
+enable CRS now (https://lkml.org/lkml/2014/9/2/509), but still do not
+want to break such devices. Thus check only against the
+(vendor id == 1) and ignore the device id.
 
-	intel_pt//
-
-which will be the same as:
-
-	intel_pt/tsc=1,noretcomp=0/
-
-meaning that the trace should contain TSC timestamps and perform 'return
-compression'.
-
-An important consideration of this patch is that it must be possible to
-overwrite the default values.  That has meant changing the logic so that
-a zero value can replace a non-zero value.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-7-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+Signed-off-by: Guenter Roeck <groeck@juniper.net>
 ---
- tools/perf/tests/pmu.c         |  2 +-
- tools/perf/util/parse-events.c |  7 ++++++-
- tools/perf/util/pmu.c          | 42 ++++++++++++++++++++++++++----------------
- tools/perf/util/pmu.h          |  9 ++++++++-
- 4 files changed, 41 insertions(+), 19 deletions(-)
+ drivers/pci/probe.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/pmu.c b/tools/perf/tests/pmu.c
-index 12b322fa3475..eeb68bb1972d 100644
---- a/tools/perf/tests/pmu.c
-+++ b/tools/perf/tests/pmu.c
-@@ -152,7 +152,7 @@ int test__pmu(void)
- 		if (ret)
- 			break;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 3c4c35c..0076a9b 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1305,8 +1305,13 @@ bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *l,
+ 	    *l == 0x0000ffff || *l == 0xffff0000)
+ 		return false;
  
--		ret = perf_pmu__config_terms(&formats, &attr, terms);
-+		ret = perf_pmu__config_terms(&formats, &attr, terms, false);
- 		if (ret)
- 			break;
+-	/* Configuration request Retry Status */
+-	while (*l == 0xffff0001) {
++	/*
++	 * Configuration request Retry Status. Note that some root ports
++	 * are broken and may return actual device ID instead of a synthetic ID
++	 * (0xFFFF) to be faked as per the PCIe spec. Hence ignore the device ID
++	 * and only check for (vendor id == 1)
++	 */
++	while (*l & 0xffff == 0x0001) {
+ 		if (!crs_timeout)
+ 			return false;
  
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index e75628813968..61be3e695ec2 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -643,7 +643,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	if (!pmu)
- 		return -EINVAL;
- 
--	memset(&attr, 0, sizeof(attr));
-+	if (pmu->default_config) {
-+		memcpy(&attr, pmu->default_config,
-+		       sizeof(struct perf_event_attr));
-+	} else {
-+		memset(&attr, 0, sizeof(attr));
-+	}
- 
- 	if (!head_config) {
- 		attr.type = pmu->type;
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 9bf582750561..438bb261f391 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -2,6 +2,7 @@
- #include <sys/types.h>
- #include <unistd.h>
- #include <stdio.h>
-+#include <stdbool.h>
- #include <dirent.h>
- #include <api/fs/fs.h>
- #include <locale.h>
-@@ -387,6 +388,12 @@ static struct cpu_map *pmu_cpumask(const char *name)
- 	return cpus;
- }
- 
-+struct perf_event_attr *__attribute__((weak))
-+perf_pmu__get_default_config(struct perf_pmu *pmu __maybe_unused)
-+{
-+	return NULL;
-+}
-+
- static struct perf_pmu *pmu_lookup(const char *name)
- {
- 	struct perf_pmu *pmu;
-@@ -421,6 +428,9 @@ static struct perf_pmu *pmu_lookup(const char *name)
- 	pmu->name = strdup(name);
- 	pmu->type = type;
- 	list_add_tail(&pmu->list, &pmus);
-+
-+	pmu->default_config = perf_pmu__get_default_config(pmu);
-+
- 	return pmu;
- }
- 
-@@ -479,28 +489,24 @@ pmu_find_format(struct list_head *formats, char *name)
- }
- 
- /*
-- * Returns value based on the format definition (format parameter)
-+ * Sets value based on the format definition (format parameter)
-  * and unformated value (value parameter).
-- *
-- * TODO maybe optimize a little ;)
-  */
--static __u64 pmu_format_value(unsigned long *format, __u64 value)
-+static void pmu_format_value(unsigned long *format, __u64 value, __u64 *v,
-+			     bool zero)
- {
- 	unsigned long fbit, vbit;
--	__u64 v = 0;
- 
- 	for (fbit = 0, vbit = 0; fbit < PERF_PMU_FORMAT_BITS; fbit++) {
- 
- 		if (!test_bit(fbit, format))
- 			continue;
- 
--		if (!(value & (1llu << vbit++)))
--			continue;
--
--		v |= (1llu << fbit);
-+		if (value & (1llu << vbit++))
-+			*v |= (1llu << fbit);
-+		else if (zero)
-+			*v &= ~(1llu << fbit);
- 	}
--
--	return v;
- }
- 
- /*
-@@ -509,7 +515,8 @@ static __u64 pmu_format_value(unsigned long *format, __u64 value)
-  */
- static int pmu_config_term(struct list_head *formats,
- 			   struct perf_event_attr *attr,
--			   struct parse_events_term *term)
-+			   struct parse_events_term *term,
-+			   bool zero)
- {
- 	struct perf_pmu_format *format;
- 	__u64 *vp;
-@@ -548,18 +555,19 @@ static int pmu_config_term(struct list_head *formats,
- 	 * non-hardcoded terms, here's the place to translate
- 	 * them into value.
- 	 */
--	*vp |= pmu_format_value(format->bits, term->val.num);
-+	pmu_format_value(format->bits, term->val.num, vp, zero);
- 	return 0;
- }
- 
- int perf_pmu__config_terms(struct list_head *formats,
- 			   struct perf_event_attr *attr,
--			   struct list_head *head_terms)
-+			   struct list_head *head_terms,
-+			   bool zero)
- {
- 	struct parse_events_term *term;
- 
- 	list_for_each_entry(term, head_terms, list)
--		if (pmu_config_term(formats, attr, term))
-+		if (pmu_config_term(formats, attr, term, zero))
- 			return -EINVAL;
- 
- 	return 0;
-@@ -573,8 +581,10 @@ int perf_pmu__config_terms(struct list_head *formats,
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms)
- {
-+	bool zero = !!pmu->default_config;
-+
- 	attr->type = pmu->type;
--	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
-+	return perf_pmu__config_terms(&pmu->format, attr, head_terms, zero);
- }
- 
- static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 1c1e2eecbe1f..413b9a63c38d 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -13,9 +13,12 @@ enum {
- 
- #define PERF_PMU_FORMAT_BITS 64
- 
-+struct perf_event_attr;
-+
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
-+	struct perf_event_attr *default_config;
- 	struct cpu_map *cpus;
- 	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
- 	struct list_head aliases; /* HEAD struct perf_pmu_alias -> list */
-@@ -27,7 +30,8 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
- int perf_pmu__config_terms(struct list_head *formats,
- 			   struct perf_event_attr *attr,
--			   struct list_head *head_terms);
-+			   struct list_head *head_terms,
-+			   bool zero);
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 			  const char **unit, double *scale);
- struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
-@@ -46,4 +50,7 @@ void print_pmu_events(const char *event_glob, bool name_only);
- bool pmu_have_event(const char *pname, const char *name);
- 
- int perf_pmu__test(void);
-+
-+struct perf_event_attr *perf_pmu__get_default_config(struct perf_pmu *pmu);
-+
- #endif /* __PMU_H */
 -- 
-1.9.3
+1.7.9.5
 
