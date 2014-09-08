@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaIHM54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:57:56 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:44560 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753237AbaIHM5y (ORCPT
+	id S1754049AbaIHM6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:58:47 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:64128 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025AbaIHM6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:57:54 -0400
-X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 08:57:54 EDT
-X-Sasl-enc: a+rbTYi3X1tE5b3vKWB8lcuJPmfbXsnbtbGNaPmfclJJ 1410180546
-From: Ilja Sidoroff <ilja.sidoroff@iki.fi>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, Ilja Sidoroff <ilja.sidoroff@iki.fi>
-Subject: [PATCH] Staging: wlan-ng: Remove redundant break/goto statements in hfa384x_usb.c
-Date: Mon,  8 Sep 2014 15:48:09 +0300
-Message-Id: <1410180489-12140-1-git-send-email-ilja.sidoroff@iki.fi>
-X-Mailer: git-send-email 1.9.1
+	Mon, 8 Sep 2014 08:58:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Peter Griffin <peter.griffin@linaro.org>, linux-kernel@vger.kernel.org,
+        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, lee.jones@linaro.org
+Subject: Re: [PATCH v6 0/5]  Add EHCI and OHCI drivers for STi SoC's
+Date: Mon, 08 Sep 2014 14:57:52 +0200
+Message-ID: <3096462.9jpenVzhmp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1410177888-26710-1-git-send-email-peter.griffin@linaro.org>
+References: <1410177888-26710-1-git-send-email-peter.griffin@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:W8va4GV/h89xT2LMuWZBR/7xvT0tE5KEUIwh24K3M80
+ CI7bySA240HfH3sc/raHbCbsLZ6jsGj7MWUk5qSpU8eZbcqZ+0
+ g65aNQAb/J9uwr/dtkhlWBCZaFZucc8QcrLLWXsQM67A58px8/
+ S/zGnAT14Z2tWxN1TxyW8XviCg/PzFdRbpD8U0gSoEq4myvHlD
+ 9F3Q4f8dW1Y7sE+qVHUZrQ756qYYY56ReINlk3Zn/p4fF3UbjJ
+ 0T8fPpJfzxkjZYExBJ2mR+UNzXswn6K56HLg4anVBrNWVupnoI
+ Oofz6HYp3haZVVHY+PFahz/R0HEd7CnGTg2VXXJyCSLwnJbKXZ
+ V+1jMnupRechUDAHA0WI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes redundant goto or break statements in hfa384x_usb.c as found by checkpatch.pl
+On Monday 08 September 2014 13:04:43 Peter Griffin wrote:
+> I believe all feedback has been incorporated, and this series has also been rebased on
+> 3.17-rc3.
+> 
+> It was re-worked from v2 onwards to split out the ehci and ohci parts
+> into their own drivers / devices like most other ARM platforms based on
+> feedback from Arnd Bergmann (see here http://www.spinics.net/lists/linux-usb/msg111124.html. 
+> 
+> The ehci-platform & ohci-platform have been used as a basis for this in case we
+> wish to merge the drivers again in the future.
+> 
 
-Signed-off-by: Ilja Sidoroff <ilja.sidoroff@iki.fi>
----
- drivers/staging/wlan-ng/hfa384x_usb.c | 3 ---
- 1 file changed, 3 deletions(-)
+Looks good to me. Whole series
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 2f63e0c..7f4ca1b 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -3528,7 +3528,6 @@ static void hfa384x_usbin_rx(wlandevice_t *wlandev, struct sk_buff *skb)
- 		netdev_warn(hw->wlandev->netdev, "Received frame on unsupported port=%d\n",
- 			    HFA384x_RXSTATUS_MACPORT_GET(
- 				    usbin->rxfrm.desc.status));
--		goto done;
- 		break;
- 	}
- 
-@@ -4127,7 +4126,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
- 	case HFA384x_PDR_HFA3861_MANF_TESTI:
- 		/* code is OK */
- 		return 1;
--		break;
- 	default:
- 		if (pdrcode < 0x1000) {
- 			/* code is OK, but we don't know exactly what it is */
-@@ -4140,7 +4138,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
- 				 pdrcode);
- 			return 0;
- 		}
--		break;
- 	}
- 	return 0;		/* avoid compiler warnings */
- }
--- 
-1.9.1
-
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
