@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062AbaIHRvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:51:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33541 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083AbaIHRvR (ORCPT
+	id S1754490AbaIHRxh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:53:37 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:34125 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006AbaIHRxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:51:17 -0400
-Message-ID: <540DEC90.4020907@canonical.com>
-Date: Mon, 08 Sep 2014 12:51:12 -0500
-From: Chris J Arges <chris.j.arges@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 8 Sep 2014 13:53:33 -0400
+Date: Mon, 8 Sep 2014 18:52:40 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+Message-ID: <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+In-Reply-To: <5409D9C0.7030403@zytor.com>
+References: <20140712181328.GA8738@redhat.com>
+	<54079B70.4050200@hurleysoftware.com>
+	<1409785893.30640.118.camel@pasglop>
+	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
+	<1409824374.4246.62.camel@pasglop>
+	<5408E458.3@zytor.com>
+	<54090AF4.7060406@hurleysoftware.com>
+	<54091B30.7080100@zytor.com>
+	<5409D76D.2070203@hurleysoftware.com>
+	<5409D9C0.7030403@zytor.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ktest: add ability to skip during BISECT_MANUAL
-References: <1409164021-2136-1-git-send-email-chris.j.arges@canonical.com>	<CAMym5wtmgsAUP6C-eYgMKJcbiPCUVJ-jZW0PFtv4Mwvr3S9jdw@mail.gmail.com> <CAMym5wtXPOd+5FQiXatpnM-TLkyabA=ZV6aj=wxe-=Bn83B5qw@mail.gmail.com>
-In-Reply-To: <CAMym5wtXPOd+5FQiXatpnM-TLkyabA=ZV6aj=wxe-=Bn83B5qw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Satoru,
+On Fri, 05 Sep 2014 08:41:52 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Thanks for the review.
+> On 09/05/2014 08:31 AM, Peter Hurley wrote:
+> > 
+> > Which is a bit ironic because I remember when Digital had a team
+> > working on emulating native x86 apps on Alpha/NT.
+> > 
+> 
+> Right, because the x86 architecture was obsolete and would never scale...
 
-Steven,
+Talking about "not scaling" can anyone explain how a "you need to use
+set_bit() and friends" bug report scaled into a hundred message plus
+discussion about ambiguous properties of processors (and nobody has
+audited all the embedded platforms we support yet, or the weirder ARMs)
+and a propsal to remove Alpha support.
 
-When you have time, let me know if there are any issues with this being
-applied.
+Wouldn't it be *much* simpler to do what I suggested in the first place
+and use the existing intended for purpose, deliberately put there,
+functions for atomic bitops, because they are fast on sane processors and
+they work on everything else.
 
---chris j arges
+I think the whole "removing Alpha EV5" support is basically bonkers. Just
+use set_bit in the tty layer. Alpha will continue to work as well as it
+always has done and you won't design out support for any future processor
+that turns out not to do byte aligned stores.
 
-On 08/30/2014 08:06 AM, Satoru Takeuchi wrote:
-> Hi Chris,
-> 
-> Sorry for late reply.
-> 
-> 2014-08-28 3:26 GMT+09:00 Chris J Arges <chris.j.arges@canonical.com>:
-> 
->> When doing a manual bisect, a build can fail or a test can be inconclusive.
->> In these cases it would be helpful to be able to skip the test entirely.
->>
->> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-> 
-> It look good to me.
-> 
-> Reviewed-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-> 
-> Thanks,
-> Satoru
-> 
->>
->> ---
->>  tools/testing/ktest/ktest.pl | 6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
->> index 55ab700..72010f4 100755
->> --- a/tools/testing/ktest/ktest.pl
->> +++ b/tools/testing/ktest/ktest.pl
->> @@ -2336,15 +2336,17 @@ sub success {
->>
->>  sub answer_bisect {
->>      for (;;) {
->> -       doprint "Pass or fail? [p/f]";
->> +       doprint "Pass, fail, or skip? [p/f/s]";
->>         my $ans = <STDIN>;
->>         chomp $ans;
->>         if ($ans eq "p" || $ans eq "P") {
->>             return 1;
->>         } elsif ($ans eq "f" || $ans eq "F") {
->>             return 0;
->> +       } elsif ($ans eq "s" || $ans eq "S") {
->> +           return -1;
->>         } else {
->> -           print "Please answer 'P' or 'F'\n";
->> +           print "Please answer 'p', 'f', or 's'\n";
->>         }
->>      }
->>  }
->> --
->> 1.9.1
->>
-> 
-
+Alan
