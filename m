@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaIHUqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 16:46:04 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:49754 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122AbaIHUqA (ORCPT
+	id S1754696AbaIHUr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 16:47:58 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:51643 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146AbaIHUr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 16:46:00 -0400
-X-CheckPoint: {540E1587-50-2100090A-C0000000}
-Message-ID: <540E1587.3060108@tilera.com>
-Date: Mon, 8 Sep 2014 16:45:59 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 8 Sep 2014 16:47:56 -0400
+Message-ID: <540E15F8.2030900@converseincode.com>
+Date: Mon, 08 Sep 2014 15:47:52 -0500
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-CC: <paulmck@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        <linux-ia64@vger.kernel.org>
-Subject: Re: bit fields && data tearing
-References: <21512.10628.412205.873477@gargle.gargle.HOWL>		 <20140904090952.GW17454@tucnak.redhat.com>		 <540859EC.5000407@hurleysoftware.com>		 <20140904175044.4697aee4@alan.etchedpixels.co.uk>		 <5408C0AB.6050801@hurleysoftware.com>		 <20140905001751.GL5001@linux.vnet.ibm.com>		 <1409883098.5078.14.camel@jarvis.lan>	 <5409243C.4080704@hurleysoftware.com>		 <20140905040645.GO5001@linux.vnet.ibm.com>		 <1410066442.12512.13.camel@jarvis.lan>		 <20140907162146.GK5001@linux.vnet.ibm.com>	 <1410116687.2027.19.camel@jarvis.lan> <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>
-In-Reply-To: <1410155407.2027.29.camel@jarvis.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, james.l.morris@oracle.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, serge@hallyn.com,
+        torvalds@linux-foundation.org, Mark Charlebois <charlebm@gmail.com>,
+        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH] security, crypto: LLVMLinux: Remove VLAIS from ima_crypto.c
+References: <1409958360-8061-1-git-send-email-behanw@converseincode.com>	 <alpine.DEB.2.10.1409060131260.5472@nanos>	 <540A590F.1030407@converseincode.com>	 <alpine.DEB.2.10.1409061152090.5472@nanos>	 <540BBD9E.6050708@converseincode.com> <540D73C9.3000906@samsung.com>	 <540DA051.2030701@converseincode.com> <1410183821.8054.27.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-Reply-To: <1410183821.8054.27.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/8/2014 1:50 AM, James Bottomley wrote:
-> Actual alignment is pretty irrelevant.  That's why all architectures
-> which require alignment also have to implement misaligned traps ... this
-> is a fundamental requirement of the networking code, for instance.
+On 09/08/14 08:43, Mimi Zohar wrote:
+>
+> Behan, thank you for the explanation.
+No worries. I should have explained better. My apologies.
 
-Can you clarify what you think the requirement is?  The tile architecture
-doesn't support misaligned load/store in general, but we do support it for
-userspace (using a nifty JIT approach with a direct-map hash table kept
-in userspace), and also for get_user/put_user.  But that's it, and,
-the networking subsystem works fine for us.
+> The same snippet of code used
+> here, and elsewhere in the kernel, is taken from the crypto subsystem.
+> Once it is resolved in the crypto subsystem, the same solution should be
+> propogated.
+>
+> Mimi
+Indeed that is my intention. I have tglx's suggested solution coded 
+already. Just doing a bunch of allyesconfig builds to confirm all is 
+compiling correctly.
 
-Occasionally we report bugs for driver code that doesn't use the
-get_unaligned_xxx() macros and friends, and our fixes are generally taken
-upstream.
+I will post all patches as a single patch set this time (posted to all 
+concerned).
+
+I will repeat the explanation as well with the new patch set so everyone 
+else in other subsystems sees those reasons as well.
+
+If this works for everyone I'll also go back and update the crypto 
+patches for the subsystems that have already accepted my previous patches.
+
+Thanks,
+
+Behan
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Behan Webster
+behanw@converseincode.com
+
