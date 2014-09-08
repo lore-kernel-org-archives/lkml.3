@@ -1,573 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaIHJoj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:44:39 -0400
-Received: from mail-bn1bn0100.outbound.protection.outlook.com ([157.56.110.100]:48059
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753901AbaIHJi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:38:58 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Subject: [PATCH v3 09/29] nios2: Page table management
-Date: Mon, 8 Sep 2014 17:22:20 +0800
-Message-ID: <1410168160-3624-10-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+	id S1754522AbaIHJoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:44:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15503 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753741AbaIHJol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:44:41 -0400
+Date: Mon, 8 Sep 2014 11:43:48 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
+ context_equiv
+Message-ID: <20140908094348.GB1172@krava.brq.redhat.com>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-2-git-send-email-jolsa@kernel.org>
+ <20140902105036.GH5806@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(189002)(199003)(93916002)(87936001)(81342001)(68736004)(19580395003)(77096002)(19580405001)(83072002)(92566001)(92726001)(85852003)(21056001)(80022001)(86362001)(36756003)(81542001)(87286001)(77156001)(2201001)(47776003)(84676001)(97736003)(83322001)(44976005)(20776003)(95666004)(6806004)(50466002)(85306004)(90102001)(31966008)(74502001)(74662001)(42186005)(4396001)(50226001)(48376002)(50986999)(76482001)(104166001)(102836001)(99396002)(76176999)(89996001)(107046002)(88136002)(33646002)(62966002)(77982001)(79102001)(46102001)(229853001)(105596002)(106466001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB038;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03283976A6
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-OriginatorOrg: altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140902105036.GH5806@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for page table management.
+On Tue, Sep 02, 2014 at 12:50:36PM +0200, Peter Zijlstra wrote:
+> On Mon, Aug 25, 2014 at 04:45:35PM +0200, Jiri Olsa wrote:
+> > As described in commit:
+> >   1f9a7268c67f perf: Do not allow optimized switch for non-cloned events
+> > we dont allow optimized switch for non cloned contexts.
+> > 
+> > There's no need now to check if one of the context is parent
+> > of the other in context_equiv function.
+> > 
+> 
+> OK, so talk to me about that patch; it looks like you're slowly
+> reverting: 5a3126d4fe7c ("perf: Fix the perf context switch
+> optimization").
+> 
+> So what exactly is the problem? I'm still jet-lagged and not seeing it.
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
+the problem is, that we cannot allow non-cloned context
+to be part of the optimized switch for reasons explained
+in commit 1f9a7268c67f
+
+I did not realize there was a just single commit introducing
+non-cloned context switch to revert ;-) attached
+
+I haven't tested it yet.. will do with my other changes
+
+thanks,
+jirka
+
+
 ---
- arch/nios2/include/asm/pgalloc.h      |  86 ++++++++++
- arch/nios2/include/asm/pgtable-bits.h |  35 ++++
- arch/nios2/include/asm/pgtable.h      | 305 ++++++++++++++++++++++++++++++++++
- arch/nios2/mm/pgtable.c               |  73 ++++++++
- 4 files changed, 499 insertions(+)
- create mode 100644 arch/nios2/include/asm/pgalloc.h
- create mode 100644 arch/nios2/include/asm/pgtable-bits.h
- create mode 100644 arch/nios2/include/asm/pgtable.h
- create mode 100644 arch/nios2/mm/pgtable.c
+This reverts commit 5a3126d4fe7c311fe12f98fef0470f6cb582d1ef.
 
-diff --git a/arch/nios2/include/asm/pgalloc.h b/arch/nios2/include/asm/pgalloc.h
-new file mode 100644
-index 0000000..6e2985e
---- /dev/null
-+++ b/arch/nios2/include/asm/pgalloc.h
-@@ -0,0 +1,86 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 2001, 2003 by Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
-+ */
-+
-+#ifndef _ASM_NIOS2_PGALLOC_H
-+#define _ASM_NIOS2_PGALLOC_H
-+
-+#include <linux/mm.h>
-+
-+static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
-+	pte_t *pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)pte));
-+}
-+
-+static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
-+	pgtable_t pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)page_address(pte)));
-+}
-+#define pmd_pgtable(pmd) pmd_page(pmd)
-+
-+/*
-+ * Initialize a new pmd table with invalid pointers.
-+ */
-+extern void pmd_init(unsigned long page, unsigned long pagetable);
-+
-+extern pgd_t *pgd_alloc(struct mm_struct *mm);
-+
-+static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-+{
-+	free_pages((unsigned long)pgd, PGD_ORDER);
-+}
-+
-+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	pte_t *pte;
-+
-+	pte = (pte_t *) __get_free_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO,
-+					PTE_ORDER);
-+
-+	return pte;
-+}
-+
-+static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	struct page *pte;
-+
-+	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
-+	if (pte) {
-+		if (!pgtable_page_ctor(pte)) {
-+			__free_page(pte);
-+			return NULL;
-+		}
-+		clear_highpage(pte);
-+	}
-+	return pte;
-+}
-+
-+static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-+{
-+	free_pages((unsigned long)pte, PTE_ORDER);
-+}
-+
-+static inline void pte_free(struct mm_struct *mm, struct page *pte)
-+{
-+	pgtable_page_dtor(pte);
-+	__free_pages(pte, PTE_ORDER);
-+}
-+
-+#define __pte_free_tlb(tlb, pte, addr)				\
-+	do {							\
-+		pgtable_page_dtor(pte);				\
-+		tlb_remove_page((tlb), (pte));			\
-+	} while (0)
-+
-+#define check_pgt_cache()	do { } while (0)
-+
-+#endif /* _ASM_NIOS2_PGALLOC_H */
-diff --git a/arch/nios2/include/asm/pgtable-bits.h b/arch/nios2/include/asm/pgtable-bits.h
-new file mode 100644
-index 0000000..ce9e706
---- /dev/null
-+++ b/arch/nios2/include/asm/pgtable-bits.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_PGTABLE_BITS_H
-+#define _ASM_NIOS2_PGTABLE_BITS_H
-+
-+/*
-+ * These are actual hardware defined protection bits in the tlbacc register
-+ * which looks like this:
-+ *
-+ * 31 30 ... 26 25 24 23 22 21 20 19 18 ...  1  0
-+ * ignored........  C  R  W  X  G PFN............
-+ */
-+#define _PAGE_GLOBAL	(1<<20)
-+#define _PAGE_EXEC	(1<<21)
-+#define _PAGE_WRITE	(1<<22)
-+#define _PAGE_READ	(1<<23)
-+#define _PAGE_CACHED	(1<<24)	/* C: data access cacheable */
-+
-+/*
-+ * Software defined bits. They are ignored by the hardware and always read back
-+ * as zero, but can be written as non-zero.
-+ */
-+#define _PAGE_PRESENT	(1<<25)	/* PTE contains a translation */
-+#define _PAGE_ACCESSED	(1<<26)	/* page referenced */
-+#define _PAGE_DIRTY	(1<<27)	/* dirty page */
-+#define _PAGE_FILE	(1<<28)	/* PTE used for file mapping or swap */
-+
-+#endif /* _ASM_NIOS2_PGTABLE_BITS_H */
-diff --git a/arch/nios2/include/asm/pgtable.h b/arch/nios2/include/asm/pgtable.h
-new file mode 100644
-index 0000000..ec85481
---- /dev/null
-+++ b/arch/nios2/include/asm/pgtable.h
-@@ -0,0 +1,305 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *
-+ * Based on asm/pgtable-32.h from mips which is:
-+ *
-+ * Copyright (C) 1994, 95, 96, 97, 98, 99, 2000, 2003 Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_PGTABLE_H
-+#define _ASM_NIOS2_PGTABLE_H
-+
-+#include <linux/io.h>
-+#include <linux/bug.h>
-+#include <asm/page.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+
-+#include <asm/pgtable-bits.h>
-+#include <asm-generic/pgtable-nopmd.h>
-+
-+#define FIRST_USER_ADDRESS	0
-+
-+#define VMALLOC_START		CONFIG_NIOS2_KERNEL_MMU_REGION_BASE
-+#define VMALLOC_END		(CONFIG_NIOS2_KERNEL_REGION_BASE - 1)
-+
-+struct mm_struct;
-+
-+/* Helper macro */
-+#define MKP(x, w, r) __pgprot(_PAGE_PRESENT | _PAGE_CACHED |		\
-+				((x) ? _PAGE_EXEC : 0) |		\
-+				((r) ? _PAGE_READ : 0) |		\
-+				((w) ? _PAGE_WRITE : 0))
-+/*
-+ * These are the macros that generic kernel code needs
-+ * (to populate protection_map[])
-+ */
-+
-+/* Remove W bit on private pages for COW support */
-+#define __P000	MKP(0, 0, 0)
-+#define __P001	MKP(0, 0, 1)
-+#define __P010	MKP(0, 0, 0)	/* COW */
-+#define __P011	MKP(0, 0, 1)	/* COW */
-+#define __P100	MKP(1, 0, 0)
-+#define __P101	MKP(1, 0, 1)
-+#define __P110	MKP(1, 0, 0)	/* COW */
-+#define __P111	MKP(1, 0, 1)	/* COW */
-+
-+/* Shared pages can have exact HW mapping */
-+#define __S000	MKP(0, 0, 0)
-+#define __S001	MKP(0, 0, 1)
-+#define __S010	MKP(0, 1, 0)
-+#define __S011	MKP(0, 1, 1)
-+#define __S100	MKP(1, 0, 0)
-+#define __S101	MKP(1, 0, 1)
-+#define __S110	MKP(1, 1, 0)
-+#define __S111	MKP(1, 1, 1)
-+
-+/* Used all over the kernel */
-+#define PAGE_KERNEL __pgprot(_PAGE_PRESENT | _PAGE_CACHED | _PAGE_READ | \
-+			     _PAGE_WRITE | _PAGE_EXEC | _PAGE_GLOBAL)
-+
-+#define PAGE_COPY MKP(0, 0, 1)
-+
-+#define PGD_ORDER	0
-+#define PTE_ORDER	0
-+
-+#define PTRS_PER_PGD	((PAGE_SIZE << PGD_ORDER) / sizeof(pgd_t))
-+#define PTRS_PER_PTE	((PAGE_SIZE << PTE_ORDER) / sizeof(pte_t))
-+
-+#define USER_PTRS_PER_PGD	\
-+	(CONFIG_NIOS2_KERNEL_MMU_REGION_BASE / PGDIR_SIZE)
-+
-+#define PGDIR_SHIFT	22
-+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
-+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
-+
-+/*
-+ * ZERO_PAGE is a global shared page that is always zero: used
-+ * for zero-mapped memory areas etc..
-+ */
-+extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
-+#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
-+
-+extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
-+extern pte_t invalid_pte_table[PAGE_SIZE/sizeof(pte_t)];
-+
-+/*
-+ * (pmds are folded into puds so this doesn't get actually called,
-+ * but the define is needed for a generic inline function.)
-+ */
-+static inline void set_pmd(pmd_t *pmdptr, pmd_t pmdval)
-+{
-+	pmdptr->pud.pgd.pgd = pmdval.pud.pgd.pgd;
-+}
-+
-+/* to find an entry in a page-table-directory */
-+#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
-+#define pgd_offset(mm, addr)	((mm)->pgd + pgd_index(addr))
-+
-+static inline int pte_write(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_WRITE; }
-+static inline int pte_dirty(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_DIRTY; }
-+static inline int pte_young(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_ACCESSED; }
-+static inline int pte_file(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_FILE; }
-+static inline int pte_special(pte_t pte)	{ return 0; }
-+
-+#define pgprot_noncached pgprot_noncached
-+
-+static inline pgprot_t pgprot_noncached(pgprot_t _prot)
-+{
-+	unsigned long prot = pgprot_val(_prot);
-+
-+	prot &= ~_PAGE_CACHED;
-+
-+	return __pgprot(prot);
-+}
-+
-+static inline int pte_none(pte_t pte)
-+{
-+	return !(pte_val(pte) & ~(_PAGE_GLOBAL|0xf));
-+}
-+
-+static inline int pte_present(pte_t pte)	\
-+	{ return pte_val(pte) & _PAGE_PRESENT; }
-+
-+/*
-+ * The following only work if pte_present() is true.
-+ * Undefined behaviour if not..
-+ */
-+static inline pte_t pte_wrprotect(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_WRITE;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkclean(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_DIRTY;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkold(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_ACCESSED;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkwrite(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_WRITE;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkdirty(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_DIRTY;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
-+
-+static inline pte_t pte_mkyoung(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_ACCESSED;
-+	return pte;
-+}
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-+{
-+	const unsigned long mask = _PAGE_READ | _PAGE_WRITE | _PAGE_EXEC;
-+	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
-+	return pte;
-+}
-+
-+static inline int pmd_present(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) != (unsigned long) invalid_pte_table)
-+			&& (pmd_val(pmd) != 0UL);
-+}
-+
-+static inline void pmd_clear(pmd_t *pmdp)
-+{
-+	pmd_val(*pmdp) = (unsigned long) invalid_pte_table;
-+}
-+
-+#define pte_pfn(pte)		(pte_val(pte) & 0xfffff)
-+#define pfn_pte(pfn, prot)	(__pte(pfn | pgprot_val(prot)))
-+#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
-+
-+/*
-+ * Store a linux PTE into the linux page table.
-+ */
-+static inline void set_pte(pte_t *ptep, pte_t pteval)
-+{
-+	*ptep = pteval;
-+}
-+
-+static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-+			      pte_t *ptep, pte_t pteval)
-+{
-+	unsigned long paddr = page_to_virt(pte_page(pteval));
-+	flush_dcache_range(paddr, paddr + PAGE_SIZE);
-+	set_pte(ptep, pteval);
-+}
-+
-+static inline int pmd_none(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) ==
-+		(unsigned long) invalid_pte_table) || (pmd_val(pmd) == 0UL);
-+}
-+
-+#define pmd_bad(pmd)	(pmd_val(pmd) & ~PAGE_MASK)
-+
-+static inline void pte_clear(struct mm_struct *mm,
-+				unsigned long addr, pte_t *ptep)
-+{
-+	pte_t null;
-+
-+	pte_val(null) = (addr >> PAGE_SHIFT) & 0xf;
-+
-+	set_pte_at(mm, addr, ptep, null);
-+	flush_tlb_one(addr);
-+}
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define mk_pte(page, prot)	(pfn_pte(page_to_pfn(page), prot))
-+
-+#define pte_unmap(pte)	do { } while (0)
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define pmd_phys(pmd)		virt_to_phys((void *)pmd_val(pmd))
-+#define pmd_page(pmd)		(pfn_to_page(pmd_phys(pmd) >> PAGE_SHIFT))
-+#define pmd_page_vaddr(pmd)	pmd_val(pmd)
-+
-+#define pte_offset_map(dir, addr)			\
-+	((pte_t *) page_address(pmd_page(*dir)) +	\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+/* to find an entry in a kernel page-table-directory */
-+#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
-+
-+/* Get the address to the PTE for a vaddr in specfic directory */
-+#define pte_offset_kernel(dir, addr)			\
-+	((pte_t *) pmd_page_vaddr(*(dir)) +		\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+#define pte_ERROR(e) \
-+	pr_err("%s:%d: bad pte %08lx.\n", \
-+		__FILE__, __LINE__, pte_val(e))
-+#define pgd_ERROR(e) \
-+	pr_err("%s:%d: bad pgd %08lx.\n", \
-+		__FILE__, __LINE__, pgd_val(e))
-+
-+/*
-+ * Encode and decode a swap entry (must be !pte_none(pte) && !pte_present(pte)
-+ * && !pte_file(pte)):
-+ *
-+ * 31 30 29 28 27 26 25 24 23 22 21 20 19 18 ...  1  0
-+ *  0  0  0  0 type.  0  0  0  0  0  0 offset.........
-+ *
-+ * This gives us up to 2**2 = 4 swap files and 2**20 * 4K = 4G per swap file.
-+ *
-+ * Note that the offset field is always non-zero, thus !pte_none(pte) is always
-+ * true.
-+ */
-+#define __swp_type(swp)		(((swp).val >> 26) & 0x3)
-+#define __swp_offset(swp)	((swp).val & 0xfffff)
-+#define __swp_entry(type, off)	((swp_entry_t) { (((type) & 0x3) << 26) \
-+						 | ((off) & 0xfffff) })
-+#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+
-+/* Encode and decode a nonlinear file mapping entry */
-+#define PTE_FILE_MAX_BITS	25
-+#define pte_to_pgoff(pte)	(pte_val(pte) & 0x1ffffff)
-+#define pgoff_to_pte(off)	__pte(((off) & 0x1ffffff) | _PAGE_FILE)
-+
-+#define kern_addr_valid(addr)		(1)
-+
-+#include <asm-generic/pgtable.h>
-+
-+#define pgtable_cache_init()		do { } while (0)
-+
-+extern void __init paging_init(void);
-+extern void __init mmu_init(void);
-+
-+extern void update_mmu_cache(struct vm_area_struct *vma,
-+			     unsigned long address, pte_t *pte);
-+
-+#endif /* _ASM_NIOS2_PGTABLE_H */
-diff --git a/arch/nios2/mm/pgtable.c b/arch/nios2/mm/pgtable.c
-new file mode 100644
-index 0000000..21e865f
---- /dev/null
-+++ b/arch/nios2/mm/pgtable.c
-@@ -0,0 +1,73 @@
-+/*
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/sched.h>
-+
-+#include <asm/pgtable.h>
-+#include <asm/cpuinfo.h>
-+
-+/* pteaddr:
-+ *   ptbase | vpn* | zero
-+ *   31-22  | 21-2 | 1-0
-+ *
-+ *   *vpn is preserved on double fault
-+ *
-+ * tlbacc:
-+ *   IG   |*flags| pfn
-+ *   31-25|24-20 | 19-0
-+ *
-+ *   *crwxg
-+ *
-+ * tlbmisc:
-+ *   resv  |way   |rd | we|pid |dbl|bad|perm|d
-+ *   31-24 |23-20 |19 | 20|17-4|3  |2  |1   |0
-+ *
-+ */
-+
-+/*
-+ * Initialize a new pgd / pmd table with invalid pointers.
-+ */
-+static void pgd_init(pgd_t *pgd)
-+{
-+	unsigned long *p = (unsigned long *) pgd;
-+	int i;
-+
-+	for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
-+		p[i + 0] = (unsigned long) invalid_pte_table;
-+		p[i + 1] = (unsigned long) invalid_pte_table;
-+		p[i + 2] = (unsigned long) invalid_pte_table;
-+		p[i + 3] = (unsigned long) invalid_pte_table;
-+		p[i + 4] = (unsigned long) invalid_pte_table;
-+		p[i + 5] = (unsigned long) invalid_pte_table;
-+		p[i + 6] = (unsigned long) invalid_pte_table;
-+		p[i + 7] = (unsigned long) invalid_pte_table;
-+	}
-+}
-+
-+pgd_t *pgd_alloc(struct mm_struct *mm)
-+{
-+	pgd_t *ret, *init;
-+	ret = (pgd_t *) __get_free_pages(GFP_KERNEL, PGD_ORDER);
-+	if (ret) {
-+		init = pgd_offset(&init_mm, 0UL);
-+		pgd_init(ret);
-+		memcpy(ret + USER_PTRS_PER_PGD, init + USER_PTRS_PER_PGD,
-+		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
-+	}
-+
-+	return ret;
-+}
-+
-+void __init pagetable_init(void)
-+{
-+	/* Initialize the entire pgd.  */
-+	pgd_init(swapper_pg_dir);
-+	pgd_init(swapper_pg_dir + USER_PTRS_PER_PGD);
-+}
+As explained in commit:
+  1f9a7268c67f perf: Do not allow optimized switch for non-cloned events
+
+we cannot allow optimized switch for non cloned contexts. It
+suppressed it by forcing the condition for parent contexts.
+
+But what we actually should do is to revert the full commit that
+introduced the optimized switch for non-cloned contexts.
+This way we get rid of unneeded (now) ctx->generation updates
+for non-cloned contexts.
+---
+ kernel/events/core.c | 64 +++++++++++++++-------------------------------------
+ 1 file changed, 18 insertions(+), 46 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d8cb4d21a346..424e6d3b07b7 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -916,7 +916,6 @@ static void unclone_ctx(struct perf_event_context *ctx)
+ 		put_ctx(ctx->parent_ctx);
+ 		ctx->parent_ctx = NULL;
+ 	}
+-	ctx->generation++;
+ }
+ 
+ static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
+@@ -1154,8 +1153,6 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 	ctx->nr_events++;
+ 	if (event->attr.inherit_stat)
+ 		ctx->nr_stat++;
+-
+-	ctx->generation++;
+ }
+ 
+ /*
+@@ -1333,8 +1330,6 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 	 */
+ 	if (event->state > PERF_EVENT_STATE_OFF)
+ 		event->state = PERF_EVENT_STATE_OFF;
+-
+-	ctx->generation++;
+ }
+ 
+ static void perf_group_detach(struct perf_event *event)
+@@ -2243,38 +2238,22 @@ static void ctx_sched_out(struct perf_event_context *ctx,
+ }
+ 
+ /*
+- * Test whether two contexts are equivalent, i.e. whether they have both been
+- * cloned from the same version of the same context.
+- *
+- * Equivalence is measured using a generation number in the context that is
+- * incremented on each modification to it; see unclone_ctx(), list_add_event()
+- * and list_del_event().
++ * Test whether two contexts are equivalent, i.e. whether they
++ * have both been cloned from the same version of the same context
++ * and they both have the same number of enabled events.
++ * If the number of enabled events is the same, then the set
++ * of enabled events should be the same, because these are both
++ * inherited contexts, therefore we can't access individual events
++ * in them directly with an fd; we can only enable/disable all
++ * events via prctl, or enable/disable all events in a family
++ * via ioctl, which will have the same effect on both contexts.
+  */
+ static int context_equiv(struct perf_event_context *ctx1,
+ 			 struct perf_event_context *ctx2)
+ {
+-	/* Pinning disables the swap optimization */
+-	if (ctx1->pin_count || ctx2->pin_count)
+-		return 0;
+-
+-	/* If ctx1 is the parent of ctx2 */
+-	if (ctx1 == ctx2->parent_ctx && ctx1->generation == ctx2->parent_gen)
+-		return 1;
+-
+-	/* If ctx2 is the parent of ctx1 */
+-	if (ctx1->parent_ctx == ctx2 && ctx1->parent_gen == ctx2->generation)
+-		return 1;
+-
+-	/*
+-	 * If ctx1 and ctx2 have the same parent; we flatten the parent
+-	 * hierarchy, see perf_event_init_context().
+-	 */
+-	if (ctx1->parent_ctx && ctx1->parent_ctx == ctx2->parent_ctx &&
+-			ctx1->parent_gen == ctx2->parent_gen)
+-		return 1;
+-
+-	/* Unmatched */
+-	return 0;
++	return ctx1->parent_ctx && ctx1->parent_ctx == ctx2->parent_ctx
++		&& ctx1->parent_gen == ctx2->parent_gen
++		&& !ctx1->pin_count && !ctx2->pin_count;
+ }
+ 
+ static void __perf_event_sync_stat(struct perf_event *event,
+@@ -2354,7 +2333,7 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+ {
+ 	struct perf_event_context *ctx = task->perf_event_ctxp[ctxn];
+ 	struct perf_event_context *next_ctx;
+-	struct perf_event_context *parent, *next_parent;
++	struct perf_event_context *parent;
+ 	struct perf_cpu_context *cpuctx;
+ 	int do_switch = 1;
+ 
+@@ -2366,18 +2345,10 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+ 		return;
+ 
+ 	rcu_read_lock();
+-	next_ctx = next->perf_event_ctxp[ctxn];
+-	if (!next_ctx)
+-		goto unlock;
+-
+ 	parent = rcu_dereference(ctx->parent_ctx);
+-	next_parent = rcu_dereference(next_ctx->parent_ctx);
+-
+-	/* If neither context have a parent context; they cannot be clones. */
+-	if (!parent || !next_parent)
+-		goto unlock;
+-
+-	if (next_parent == ctx || next_ctx == parent || next_parent == parent) {
++	next_ctx = next->perf_event_ctxp[ctxn];
++	if (parent && next_ctx &&
++	    rcu_dereference(next_ctx->parent_ctx) == parent) {
+ 		/*
+ 		 * Looks like the two contexts are clones, so we might be
+ 		 * able to optimize the context switch.  We lock both
+@@ -2405,7 +2376,6 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+ 		raw_spin_unlock(&next_ctx->lock);
+ 		raw_spin_unlock(&ctx->lock);
+ 	}
+-unlock:
+ 	rcu_read_unlock();
+ 
+ 	if (do_switch) {
+@@ -7398,6 +7368,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	}
+ 
+ 	perf_install_in_context(ctx, event, event->cpu);
++	++ctx->generation;
+ 	perf_unpin_context(ctx);
+ 	mutex_unlock(&ctx->mutex);
+ 
+@@ -7484,6 +7455,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	mutex_lock(&ctx->mutex);
+ 	perf_install_in_context(ctx, event, cpu);
++	++ctx->generation;
+ 	perf_unpin_context(ctx);
+ 	mutex_unlock(&ctx->mutex);
+ 
 -- 
-1.8.2.1
+1.8.3.1
 
