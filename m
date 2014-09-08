@@ -1,90 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaIHKBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 06:01:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38282 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273AbaIHKB2 (ORCPT
+	id S1753209AbaIHKKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 06:10:20 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:52932 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034AbaIHKKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 06:01:28 -0400
-Date: Mon, 8 Sep 2014 12:01:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
- context_equiv
-Message-ID: <20140908100122.GS3588@twins.programming.kicks-ass.net>
-References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
- <1408977943-16594-2-git-send-email-jolsa@kernel.org>
- <20140902105036.GH5806@worktop.ger.corp.intel.com>
- <20140908094348.GB1172@krava.brq.redhat.com>
- <20140908094548.GA6758@twins.programming.kicks-ass.net>
- <20140908094855.GR3588@twins.programming.kicks-ass.net>
+	Mon, 8 Sep 2014 06:10:18 -0400
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Todd Poynor <toddpoynor@google.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC v3 1/2] usb: phy: Hold wakeupsource when USB is enumerated in peripheral mode
+Date: Mon,  8 Sep 2014 15:39:23 +0530
+Message-Id: <1410170963-14182-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3m6VNgM56Nljn+Yv"
-Content-Disposition: inline
-In-Reply-To: <20140908094855.GR3588@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Todd Poynor <toddpoynor@google.com>
 
---3m6VNgM56Nljn+Yv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+usb: phy: Hold wakeupsource when USB is enumerated in peripheral mode
 
-On Mon, Sep 08, 2014 at 11:48:55AM +0200, Peter Zijlstra wrote:
+Purpose of this is to prevent the system to enter into suspend state from USB
+peripheral traffic by hodling a wakeupsource when USB is connected and
+enumerated in peripheral mode(say adb).
 
-> > The thing is; I don't understand those reasons. That commit log doesn't
-> > explain.
->=20
-> Ah wait, I finally see. I think we want to fix that exit path, not
-> disallow the cloning.
->=20
-> The thing is, by not allowing this optimization simple things like eg.
-> pipe-test say very expensive.
+Disabled by default, can enable with:
+   echo Y > /sys/module/otg_wakeupsource/parameters/enabled
 
-So its 179033b3e064 ("perf: Add PERF_EVENT_STATE_EXIT state for events
-with exited task") that introduces the problem. Before that things would
-work correctly afaict.
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Arve Hjønnevåg <arve@android.com>
+Cc: Benoit Goby <benoit@android.com>
+Signed-off-by: Todd Poynor <toddpoynor@google.com>
+[kiran: Added context to commit message, squished build fixes
+from Benoit Goby and Arve Hjønnevåg, changed wakelocks usage
+to wakeupsource, merged Todd's refactoring logic and simplified
+the structures and code and addressed community feedback]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+---
+v3:
+* As per the feedback,no global phy pointer used.
+* called the one-liner wakeupsource handling calls
+  directly instead of indirect functions implemented in v2.
+* Removed indirect function get_phy_hook and used usb_get_phy
+  to get the phy handle..
 
-The exit would remove from the context but leave the event in existence.
-Both the fd and the inherited events would have references to it, only
-once those are gone do we destroy the actual event.
+v2:
+* wakeupsource handling implemeted per-PHY
+* Implemented wakeupsource handling calls in phy
+* included Todd's refactoring logic.
 
+v1:
+* changed to "disabled by default" from "enable by default".
+* Kconfig help text modified
+* Included better commit text
+* otgws_nb moved to otg_wakeupsource_init function
+* Introduced get_phy_hook to handle otgws_xceiv per-PHY
 
+RFC:
+* Included build fix from Benoit Goby and Arve Hjønnevåg
+* Removed lock->held field in driver as this mechanism is
+  provided in wakeupsource driver.
+* wakelock(wl) terminology replaced with wakeup_source(ws).
 
---3m6VNgM56Nljn+Yv
-Content-Type: application/pgp-signature
+ drivers/usb/phy/Kconfig            |   8 +++
+ drivers/usb/phy/Makefile           |   1 +
+ drivers/usb/phy/otg-wakeupsource.c | 136 +++++++++++++++++++++++++++++++++++++
+ include/linux/usb/phy.h            |   4 ++
+ 4 files changed, 149 insertions(+)
+ create mode 100644 drivers/usb/phy/otg-wakeupsource.c
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index e253fa0..d9ddd85 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -6,6 +6,14 @@ menu "USB Physical Layer drivers"
+ config USB_PHY
+ 	def_bool n
+ 
++config USB_OTG_WAKEUPSOURCE
++	bool "Hold wakeupsource when USB is enumerated in peripheral mode"
++	depends on PM_SLEEP
++	select USB_PHY
++	help
++	  Prevent the system going into automatic suspend while
++	  it is attached as a USB peripheral by holding a wakeupsource.
++
+ #
+ # USB Transceiver Drivers
+ #
+diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+index 24a9133..ca2fbaf 100644
+--- a/drivers/usb/phy/Makefile
++++ b/drivers/usb/phy/Makefile
+@@ -3,6 +3,7 @@
+ #
+ obj-$(CONFIG_USB_PHY)			+= phy.o
+ obj-$(CONFIG_OF)			+= of.o
++obj-$(CONFIG_USB_OTG_WAKEUPSOURCE)		+= otg-wakeupsource.o
+ 
+ # transceiver drivers, keep the list sorted
+ 
+diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wakeupsource.c
+new file mode 100644
+index 0000000..d9a1720
+--- /dev/null
++++ b/drivers/usb/phy/otg-wakeupsource.c
+@@ -0,0 +1,136 @@
++/*
++ * otg-wakeupsource.c
++ *
++ * Copyright (C) 2011 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/notifier.h>
++#include <linux/pm_wakeup.h>
++#include <linux/spinlock.h>
++#include <linux/usb/otg.h>
++
++bool enabled = false;
++
++static DEFINE_SPINLOCK(otgws_spinlock);
++
++static void otgws_handle_event(struct usb_phy *otgws_xceiv, unsigned long event)
++{
++	unsigned long irqflags;
++
++	spin_lock_irqsave(&otgws_spinlock, irqflags);
++
++	if (!enabled) {
++		__pm_relax(&otgws_xceiv->wsource);
++		spin_unlock_irqrestore(&otgws_spinlock, irqflags);
++		return;
++	}
++
++	switch (event) {
++	case USB_EVENT_VBUS:
++	case USB_EVENT_ENUMERATED:
++		__pm_stay_awake(&otgws_xceiv->wsource);
++		break;
++
++	case USB_EVENT_NONE:
++	case USB_EVENT_ID:
++	case USB_EVENT_CHARGER:
++		__pm_relax(&otgws_xceiv->wsource);
++		break;
++
++	default:
++		break;
++	}
++
++	spin_unlock_irqrestore(&otgws_spinlock, irqflags);
++}
++
++static int otgws_otg_notifications(struct notifier_block *nb,
++				unsigned long event, void *unused)
++{
++	static struct usb_phy *otgws_xceiv;
++
++	otgws_xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
++
++	if (IS_ERR(otgws_xceiv)) {
++		pr_err("%s: No OTG transceiver found\n", __func__);
++		return PTR_ERR(otgws_xceiv);
++	}
++
++	otgws_handle_event(otgws_xceiv, event);
++
++	return NOTIFY_OK;
++}
++
++static int set_enabled(const char *val, const struct kernel_param *kp)
++{
++	int rv = param_set_bool(val, kp);
++	static struct usb_phy *otgws_xceiv;
++
++	if (rv)
++		return rv;
++
++	otgws_xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
++
++	if (IS_ERR(otgws_xceiv)) {
++		pr_err("%s: No OTG transceiver found\n", __func__);
++		return PTR_ERR(otgws_xceiv);
++	}
++
++	otgws_handle_event(otgws_xceiv, otgws_xceiv->last_event);
++
++	return 0;
++}
++
++static struct kernel_param_ops enabled_param_ops = {
++	.set = set_enabled,
++	.get = param_get_bool,
++};
++
++module_param_cb(enabled, &enabled_param_ops, &enabled, 0644);
++MODULE_PARM_DESC(enabled, "Hold wakeupsource when VBUS present");
++
++static int __init otg_wakeupsource_init(void)
++{
++	int ret;
++	char wsource_name[40];
++	static struct usb_phy *otgws_xceiv;
++
++	otgws_xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
++
++	if (IS_ERR(otgws_xceiv)) {
++		pr_err("%s: No OTG transceiver found\n", __func__);
++		return PTR_ERR(otgws_xceiv);
++	}
++
++	snprintf(wsource_name, sizeof(wsource_name), "vbus-%s",
++		dev_name(otgws_xceiv->dev));
++	wakeup_source_init(&otgws_xceiv->wsource, wsource_name);
++
++	otgws_xceiv->otgws_nb.notifier_call = otgws_otg_notifications;
++	ret = usb_register_notifier(otgws_xceiv, &otgws_xceiv->otgws_nb);
++
++	if (ret) {
++		pr_err("%s: usb_register_notifier on transceiver %s failed\n",
++			 __func__, dev_name(otgws_xceiv->dev));
++		wakeup_source_trash(&otgws_xceiv->wsource);
++		otgws_xceiv = NULL;
++		return ret;
++	}
++
++	return 0;
++}
++
++late_initcall(otg_wakeupsource_init);
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 353053a..c71cf15 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -88,6 +88,10 @@ struct usb_phy {
+ 
+ 	/* for notification of usb_phy_events */
+ 	struct atomic_notifier_head	notifier;
++	struct notifier_block	otgws_nb;
++
++	/* wakeup source */
++	struct wakeup_source	wsource;
+ 
+ 	/* to pass extra port status to the root hub */
+ 	u16			port_status;
+-- 
+1.8.2.1
 
-iQIcBAEBAgAGBQJUDX5yAAoJEHZH4aRLwOS65ywP/0hHItVm5W+AGTpF0DYPHnJ7
-T59WCQMpRDCCVE0Oy+JwRo0dFYjwKy8hcTYmKFUz15fdx7e7DkirJt/Wj3R4y4X5
-9AnsGSyvn9iAVvCWaz0lq64IEKH9xIOhesVHnRVvOj4T+sAxRGw7zP1lAJRGit+7
-4DQ8exzZ//C1tVhIgXFy0jTILw31W6bag4Q3v2WQXPrzPpp5lvuJeAOXEEnwOBx4
-6jgW8aEVpLlr+9zqGQYDcFsuJWqrFbLty9V7u+tSVx/F1jAfKtgmzONe0eWG1TSX
-u2lWhriQ+wCDHTe4aq7ipLCCM9Nwt9j/Bt9xlNsOLn0gd6VMiKOcbkA4koJmvC/K
-7khaOodXDcZr1dzCjrJu0rLLCmsT8fW0KaW5mTI4agzFIDXMsUjW0qC7FuhKKBf6
-3gRlyHFrk/4Z73DiUfl2wQJQjY6BPt+PBJlTsYpSuDy2oxBJ/vpOMrwgNpZXEguj
-Vr4VVcHaMdNS9VfbMZFHrS+u0ziJ7taVxvi+typAkcJtIR/zYz36SfNUcPmfXmUr
-kg7nF5jc3UiF2Qfz0UB9HwPinFtbuh5jt4yEyCCWLWfvc3aeRlsPW8cqsYxBoBIZ
-Hjr9gjpWcjW5sYLR+SxOTcVPDs4QL3DlhNR0IDaJEINtTL82ipUAqiVFv7FijSwy
-JtdRieXPoCnZLGxDOW0M
-=aLYe
------END PGP SIGNATURE-----
-
---3m6VNgM56Nljn+Yv--
