@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaIHOCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:02:04 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54791 "EHLO
+	id S1754007AbaIHOCO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:02:14 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54824 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753015AbaIHOCB (ORCPT
+	by vger.kernel.org with ESMTP id S1753206AbaIHOCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:02:01 -0400
+	Mon, 8 Sep 2014 10:02:03 -0400
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
         Rob Herring <robh+dt@kernel.org>,
@@ -26,23 +26,85 @@ Cc: Tanmay Inamdar <tinamdar@apm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Device Tree ML <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v10] arm64: Add architectural support for PCIe
-Date: Mon,  8 Sep 2014 14:55:49 +0100
-Message-Id: <1410184549-17690-2-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v10] Add support for PCI in AArch64
+Date: Mon,  8 Sep 2014 14:55:48 +0100
+Message-Id: <1410184549-17690-1-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410184549-17690-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1410184549-17690-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic PCI domain and OF functions
-to provide support for PCI Express on arm64.
+Hi,
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-[Generic PCI domain support]
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
+This patch adds support for PCIe to AArch64. It depends on my v10 patch
+that adds support for creating generic host bridge resources from device
+trees. With that in place, I was able to boot a platform that
+has PCIe host bridge support and use a PCIe network card.
+
+Changes from v9:
+ - Moved the pcibios_add_device() patch that parses the IRQ number from DT into here.
+ - Moved the arm64-specific redefine of pgprot_device here from the generic patchset.
+ - Readability fix for definition of IO_SPACE_LIMIT
+
+Changes from v8:
+  - Added support for generic PCI domains
+
+Changes from v7:
+  - Rebased to v3.16-rc3
+  - Removed pci_ioremap_io() function as it is provided by my v8 generic
+    PCI host bridge patches under a different name.
+
+Changes from v6:
+  - Guard the pci_domain_nr() inline implementation with #ifdef CONFIG_PCI as
+    to avoid conflict with default empty version present in include/linux/pci.h.
+    Thanks to Jingoo Han for catching this.
+
+Changes from v5:
+  - Removed pcibios_fixup_bridge_ranges() as the week default version is fine.
+  - Removed the ALIGN() call in pcibios_align_resource()
+  - Stopped exporting pcibios_align_resource()
+
+Changes from v4:
+  - Fixed the pci_domain_nr() implementation for arm64. Now we use
+    find_pci_host_bride() to find the host bridge before we retrieve
+    the domain number.
+
+Changes from v3:
+  - Added Acks accumulated so far ;)
+  - Still carrying Catalin's patch for moving the PCI_IO_BASE until it
+    lands in linux-next or mainline, in order to ease applying the series
+
+Changes from v2:
+  - Implement an arch specific version of pci_register_io_range() and
+    pci_address_to_pio().
+  - Return 1 from pci_proc_domain().
+
+Changes from v1:
+  - Added Catalin's patch for moving the PCI_IO_BASE location and extend
+    its size to 16MB
+  - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
+    keeping track of assigned IO space and returns an io_offset. At the
+    moment the code is added in arch/arm64 but it can be moved in drivers/pci.
+  - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
+    as suggested by Arnd.
+
+v9 thread here: https://lkml.org/lkml/2014/8/12/394
+v8 thread here: https://lkml.org/lkml/2014/7/1/705
+v7 thread here: https://lkml.org/lkml/2014/3/14/320
+v6 thread here: https://lkml.org/lkml/2014/3/5/41
+v5 thread here: https://lkml.org/lkml/2014/3/4/307
+v4 thread here: https://lkml.org/lkml/2014/3/3/298
+v3 thread here: https://lkml.org/lkml/2014/2/28/211
+v2 thread here: https://lkml.org/lkml/2014/2/27/255
+v1 thread here: https://lkml.org/lkml/2014/2/3/389
+
+Best regards,
+Liviu
+
+
+Liviu Dudau (1):
+  arm64: Add architectural support for PCIe
+
  arch/arm64/Kconfig               | 22 ++++++++++++++-
  arch/arm64/include/asm/Kbuild    |  1 +
  arch/arm64/include/asm/io.h      |  3 +-
@@ -54,205 +116,6 @@ Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
  create mode 100644 arch/arm64/include/asm/pci.h
  create mode 100644 arch/arm64/kernel/pci.c
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index fd4e81a..6b01df9 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -81,7 +81,7 @@ config MMU
- 	def_bool y
- 
- config NO_IOPORT_MAP
--	def_bool y
-+	def_bool y if !PCI
- 
- config STACKTRACE_SUPPORT
- 	def_bool y
-@@ -156,6 +156,26 @@ menu "Bus support"
- config ARM_AMBA
- 	bool
- 
-+config PCI
-+	bool "PCI support"
-+	help
-+	  This feature enables support for PCIe bus system. If you say Y
-+	  here, the kernel will include drivers and infrastructure code
-+	  to support PCIe bus devices.
-+
-+config PCI_DOMAINS
-+	def_bool PCI
-+
-+config PCI_DOMAINS_GENERIC
-+	def_bool PCI
-+
-+config PCI_SYSCALL
-+	def_bool PCI
-+
-+source "drivers/pci/Kconfig"
-+source "drivers/pci/pcie/Kconfig"
-+source "drivers/pci/hotplug/Kconfig"
-+
- endmenu
- 
- menu "Kernel Features"
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index 0b3fcf8..07cb417 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -29,6 +29,7 @@ generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += mutex.h
- generic-y += pci.h
-+generic-y += pci-bridge.h
- generic-y += poll.h
- generic-y += preempt.h
- generic-y += resource.h
-diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-index e0ecdcf..f998d90 100644
---- a/arch/arm64/include/asm/io.h
-+++ b/arch/arm64/include/asm/io.h
-@@ -121,7 +121,8 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
- /*
-  *  I/O port access primitives.
-  */
--#define IO_SPACE_LIMIT		0xffff
-+#define arch_has_dev_port()	(1)
-+#define IO_SPACE_LIMIT		(SZ_32M - 1)
- #define PCI_IOBASE		((void __iomem *)(MODULES_VADDR - SZ_32M))
- 
- static inline u8 inb(unsigned long addr)
-diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
-new file mode 100644
-index 0000000..872ba93
---- /dev/null
-+++ b/arch/arm64/include/asm/pci.h
-@@ -0,0 +1,37 @@
-+#ifndef __ASM_PCI_H
-+#define __ASM_PCI_H
-+#ifdef __KERNEL__
-+
-+#include <linux/types.h>
-+#include <linux/slab.h>
-+#include <linux/dma-mapping.h>
-+
-+#include <asm/io.h>
-+#include <asm-generic/pci-bridge.h>
-+#include <asm-generic/pci-dma-compat.h>
-+
-+#define PCIBIOS_MIN_IO		0x1000
-+#define PCIBIOS_MIN_MEM		0
-+
-+/*
-+ * Set to 1 if the kernel should re-assign all PCI bus numbers
-+ */
-+#define pcibios_assign_all_busses() \
-+	(pci_has_flag(PCI_REASSIGN_ALL_BUS))
-+
-+/*
-+ * PCI address space differs from physical memory address space
-+ */
-+#define PCI_DMA_BUS_IS_PHYS	(0)
-+
-+extern int isa_dma_bridge_buggy;
-+
-+#ifdef CONFIG_PCI
-+static inline int pci_proc_domain(struct pci_bus *bus)
-+{
-+	return 1;
-+}
-+#endif  /* CONFIG_PCI */
-+
-+#endif  /* __KERNEL__ */
-+#endif  /* __ASM_PCI_H */
-diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-index ffe1ba0..a968523 100644
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -296,6 +296,8 @@ static inline int has_transparent_hugepage(void)
- 	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE) | PTE_PXN | PTE_UXN)
- #define pgprot_writecombine(prot) \
- 	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC) | PTE_PXN | PTE_UXN)
-+#define pgprot_device(prot) \
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRE) | PTE_PXN | PTE_UXN)
- #define __HAVE_PHYS_MEM_ACCESS_PROT
- struct file;
- extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index df7ef87..1ed5a06 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -29,6 +29,7 @@ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
- arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
- arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
- arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
-+arm64-obj-$(CONFIG_PCI)			+= pci.o
- 
- obj-y					+= $(arm64-obj-y) vdso/
- obj-m					+= $(arm64-obj-m)
-diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-new file mode 100644
-index 0000000..0d755d6
---- /dev/null
-+++ b/arch/arm64/kernel/pci.c
-@@ -0,0 +1,59 @@
-+/*
-+ * Code borrowed from powerpc/kernel/pci-common.c
-+ *
-+ * Copyright (C) 2003 Anton Blanchard <anton@au.ibm.com>, IBM
-+ * Copyright (C) 2014 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/of_pci.h>
-+#include <linux/of_platform.h>
-+#include <linux/slab.h>
-+
-+#include <asm/pci-bridge.h>
-+
-+/*
-+ * Called after each bus is probed, but before its children are examined
-+ */
-+void pcibios_fixup_bus(struct pci_bus *bus)
-+{
-+	/* nothing to do, expected to be removed in the future */
-+}
-+
-+/*
-+ * We don't have to worry about legacy ISA devices, so nothing to do here
-+ */
-+resource_size_t pcibios_align_resource(void *data, const struct resource *res,
-+				resource_size_t size, resource_size_t align)
-+{
-+	return res->start;
-+}
-+
-+/*
-+ * Try to assign the IRQ number from DT when adding a new device
-+ */
-+int pcibios_add_device(struct pci_dev *dev)
-+{
-+	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
-+
-+	return 0;
-+}
-+
-+
-+#ifdef CONFIG_PCI_DOMAINS_GENERIC
-+void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
-+{
-+	int domain = of_pci_get_domain_nr(parent->of_node, true);
-+
-+	if (domain >= 0)
-+		bus->domain_nr = domain;
-+}
-+#endif
 -- 
 2.0.4
 
