@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaIHP1C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:27:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39812 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289AbaIHP1A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753806AbaIHP1A (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 8 Sep 2014 11:27:00 -0400
-Date: Mon, 8 Sep 2014 17:26:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 06/22] perf: Redirect output from inherited events to
- parents
-Message-ID: <20140908152655.GU19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1408538179-792-7-git-send-email-alexander.shishkin@linux.intel.com>
+Received: from mout.kundenserver.de ([212.227.17.24]:50318 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbaIHP07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:26:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv2] rtc: pcf8563: fix uninitialized use warning
+Date: Mon, 08 Sep 2014 17:26:26 +0200
+Message-ID: <2750370.rlMuFcoBUA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RibZbuz5vRlk3cF0"
-Content-Disposition: inline
-In-Reply-To: <1408538179-792-7-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ejupKWnl96YvEg4NdNd/gkmE0BW3UdJgjqW8cVZA8VR
+ GpogbZ9MoTSiGH9wam/OS/mMAIWC7BRR8MiOglQQzc2kZLoHqs
+ 7pgj1WF4bYcpbVuGsd5cVADqtrtcUKJrsWCUDMn29jMqAsOIf3
+ tA2vyalXCLsonCc9RsBCZHmCugRg1andLsnjKuLqc5uxlgnsD3
+ CxfRBURSQ40wJQ9eEVsUBcEw0lpgnj0NIC/KNLZGvahevtpdH6
+ p0I2w1albYXWwRgKplMPAznueJ9QQl0iWPe8EY1FbL6Lt5dIuu
+ gNqEdONza21/rQ9zOHscB5D2Lt+fh1iqu+GCFWGBIbGaIdGelY
+ HCLVlaUQof+sbmz+ROhk=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+gcc-4.9 found a potential condition under which the 'pending'
+variable may be used uninitialized:
 
---RibZbuz5vRlk3cF0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+drivers/rtc/rtc-pcf8563.c: In function 'pcf8563_irq':
+drivers/rtc/rtc-pcf8563.c:173:5: warning: 'pending' may be used uninitialized in this function [-Wmaybe-uninitialized]
 
-On Wed, Aug 20, 2014 at 03:36:03PM +0300, Alexander Shishkin wrote:
-> In order to collect AUX data from an inherited event, we can redirect its
-> output to parent's ring buffer if possible (they must be cpu affine). This
-> patch adds set_output() to the inheritance path.
->=20
-> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-> ---
->  kernel/events/core.c | 6 ++++++
->  1 file changed, 6 insertions(+)
->=20
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 67f857ab56..e36478564c 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -7962,6 +7962,12 @@ inherit_event(struct perf_event *parent_event,
->  		=3D parent_event->overflow_handler_context;
-> =20
->  	/*
-> +	 * Direct child's output to parent's ring buffer (if any)
-> +	 */
-> +	if (parent_event->cpu !=3D -1)
-> +		(void)perf_event_set_output(child_event, parent_event);
-> +
-> +	/*
->  	 * Precalculate sample_data sizes
->  	 */
->  	perf_event__header_size(child_event);
+This is because in the pcf8563_get_alarm_mode() function, we
+check any nonzero return of pcf8563_read_block_data, but
+in the irq function we only check for negative values, so
+a possible positive value does not get detected if the compiler
+chooses not to inline the entire call chain.
 
-Uhm, nope, see perf_output_begin(), it always redirects output to parent
-events.
+Checking for any non-zero value in the interrupt handler as well
+is just as correct and lets the compiler know what we are doing,
+without needing a bogus initialization.
 
---RibZbuz5vRlk3cF0
-Content-Type: application/pgp-signature
+As pointed out by Sergei Shtylyov, the same code section contains
+another bug: an interrupt handler is not supposed to return
+an errno value. Let's fix this as well by returning IRQ_NONE
+in case of a communication error.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-iQIcBAEBAgAGBQJUDcq/AAoJEHZH4aRLwOS6eYYP/0aDXFyMDmTe5Ry6329bsTqO
-zKhz727vnxqV1bEYCYj4MC4JQLh9cBOpRvZRKl1PuncmsoJe/7EdwvHVyVi440qS
-qeaYJAQo5AaS6JBLboYwXF9tG2w4meBnXAriDnRy0dal9yRds2thfimo+tKFavjU
-KNKEx2eBZvOqliacIvRkA0uBR/+3joRrfomYyI2AemrobrEK1DmuRwCrBMLcPBGb
-xyqs21cNvVv6hpsGSS0FXhtfOPJ0zdV9wW/8YIY7TQ7SxOC/Ghd32lVHULEHP1ZE
-jMTjKKbyhb8PLEtOhDrMZOmir+NlIqp/4tKE7zQYApTzHM5NMXJ8Z5Jv53SLMtfQ
-pdwqq6sHMSTx+Rjf+jodTrT8Z+9dnqeeVO84W67hD1sB0uIjc7/tqfcl45cu3Zlv
-F8Ctatzs7xl8QPNHGHd1FXSX6DIMcYiHhUEvi6cwE8fiwO6aaedFsi4kX0FlpojM
-UcGFo+3bI9n1ataeSh7XCiyAD9Z4wfu5txzp79aPo4tnd+zWv84O7S4/FT6DRU6M
-HqNCTkSw8jo4cPoKQ6ZXqFZwEeSb9R003Rh7+pbfcirOzLcEyJyTXRoqR1efBIzJ
-mOnP1ZyTgAPoVy6y0Su80xgAK7k6u7Rbm2bh6rblA/aNC/xbky/j92nfv2bSRJgX
-QqDlzxQTUR8y4J3dhg/A
-=2Zks
------END PGP SIGNATURE-----
+diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
+index 5a197d9dc7e7..c2ef0a22ee94 100644
+--- a/drivers/rtc/rtc-pcf8563.c
++++ b/drivers/rtc/rtc-pcf8563.c
+@@ -167,8 +167,8 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
+ 	char pending;
+ 
+ 	err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
+-	if (err < 0)
+-		return err;
++	if (err)
++		return IRQ_NONE;
+ 
+ 	if (pending) {
+ 		rtc_update_irq(pcf8563->rtc, 1, RTC_IRQF | RTC_AF);
 
---RibZbuz5vRlk3cF0--
