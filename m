@@ -1,135 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaIHTWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:22:22 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:64795 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882AbaIHTWS (ORCPT
+	id S1754887AbaIHTW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:22:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46559 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753882AbaIHTWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 15:22:18 -0400
+	Mon, 8 Sep 2014 15:22:23 -0400
+Date: Mon, 8 Sep 2014 21:22:18 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] rtc: at91sam9: retain slow clock and check its rate
+Message-ID: <20140908212218.6a81af86@bbrezillon>
+In-Reply-To: <20140908173338.GD14623@piout.net>
+References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1409733934-14465-5-git-send-email-boris.brezillon@free-electrons.com>
+	<20140908173338.GD14623@piout.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140904063613.GD1610@intel.com>
-References: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
-	<1406549869-24422-2-git-send-email-sthokal@xilinx.com>
-	<20140819170346.GS13288@intel.com>
-	<CA+mB=1L14Os=ZdJzj8_+XXa+oq4ZOS_kadQHpKQ2yws2tqGVSQ@mail.gmail.com>
-	<20140904063613.GD1610@intel.com>
-Date: Tue, 9 Sep 2014 00:52:16 +0530
-X-Google-Sender-Auth: 4jZkLEHL8FaxsKaszKTy3W-RVvg
-Message-ID: <CA+mB=1KarJGUYTZu=2k46gqt3oMAuYawfq+H=Lxa7YVqcThjCw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] dma: Add Xilinx AXI Direct Memory Access Engine
- driver support
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org, anirudh@xilinx.com, svemula@xilinx.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+On Mon, 8 Sep 2014 19:33:38 +0200
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-On Thu, Sep 4, 2014 at 12:06 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Wed, Sep 03, 2014 at 12:17:43PM +0530, Srikanth Thokala wrote:
->> Hi Vinod,
->>
->> Apologies for the delay.
->>
->> On Tue, Aug 19, 2014 at 10:33 PM, Vinod Koul <vinod.koul@intel.com> wrote:
->> > On Mon, Jul 28, 2014 at 05:47:49PM +0530, Srikanth Thokala wrote:
->> >> +struct xilinx_dma_chan {
->> >> +     struct xilinx_dma_device *xdev;
->> >> +     u32 ctrl_offset;
->> >> +     spinlock_t lock;
->> >> +     struct list_head pending_list;
->> >> +     struct xilinx_dma_tx_descriptor *active_desc;
->> >> +     struct xilinx_dma_tx_descriptor *allocated_desc;
->> >> +     struct list_head done_list;
->> >> +     struct list_head free_seg_list;
->> >> +     struct dma_chan common;
->> >> +     struct xilinx_dma_tx_segment *seg_v;
->> >> +     dma_addr_t seg_p;
->> >> +     struct device *dev;
->> >> +     int irq;
->> >> +     int id;
->> >> +     enum dma_transfer_direction direction;
->> > This looks suspect. Why should channel have direction, for a descriptor it
->> > makes sense though.
->>
->> The channel only supports transfers in one direction. Either from memory to
->> peripheral or from peripheral to memory, that's fixed and can't be changed
->> at runtime.  So, the driver needs to know which direction the channel supports
->> and hence it can reject transfers with the wrong direction.
-> But you already have this information in descriptor so why duplicate?
+> On 03/09/2014 at 10:45:33 +0200, Boris Brezillon wrote :
+> > The RTT block is using the slow clock and expect it to run at 32KHz.
+> > Now that we moved to the CCF it's better to retain the clk reference so
+> > that the CCF can't disable the slow clock considering it is unused.
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/rtc/rtc-at91sam9.c | 24 ++++++++++++++++++++++++
+> >  1 file changed, 24 insertions(+)
+> > 
+> > diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+> > index 57014b7..5c5093b 100644
+> > --- a/drivers/rtc/rtc-at91sam9.c
+> > +++ b/drivers/rtc/rtc-at91sam9.c
+> > @@ -21,6 +21,7 @@
+> >  #include <linux/slab.h>
+> >  #include <linux/platform_data/atmel.h>
+> >  #include <linux/io.h>
+> > +#include <linux/clk.h>
+> >  
+> >  /*
+> >   * This driver uses two configurable hardware resources that live in the
+> > @@ -74,6 +75,7 @@ struct sam9_rtc {
+> >  	u32			imr;
+> >  	void __iomem		*gpbr;
+> >  	int 			irq;
+> > +	struct clk		*sclk;
+> >  };
+> >  
+> >  #define rtt_readl(rtc, field) \
+> > @@ -373,6 +375,25 @@ static int at91_rtc_probe(struct platform_device *pdev)
+> >  		return ret;
+> >  	}
+> >  
+> > +	/* Retain slow clk if it is specified in the DT.
+> > +	 * Do not complain if slow clk is missing, but check its rate
+> > +	 * if it is available.
+> > +	 */
+> > +	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
+> > +	if (!IS_ERR(rtc->sclk)) {
+> > +		if (clk_get_rate(rtc->sclk) != AT91_SLOW_CLOCK) {
+> 
+> I would not bother doing that check but use the value for MR instead of
+> AT91_SLOW_CLOCK (see my previous mail).
 
-Our descriptor doesn't have the information of channel direction, we have this
-information only in the chan structure (struct xilinx_dma_chan) which
-is populated
-while parsing the DT.  So, we use this information to ensure if we are servicing
-proper channel (in prep_slave_sg call).
+Unfortunately, we can't get rid of this macro without modifying the
+clk_lookup table in several arch/arm/mach-at91/<soc-name>.c files in
+order to handle non DT/CCF cases (which will remain until all non DT
+boards are moved to DT).
+But I agree that this should be removed as soon as possible (AFAIR, all
+SoCs have already been moved to the CCF).
+How about adding a TODO comment ?
 
-FYI: We also need the direction of the channel so that we can select SRC/DST
-register address in the issue_pending() call.
+> 
+> > +			dev_err(&pdev->dev,
+> > +				"Invalid slow clock rate (expecting %lu got %lu)",
+> > +				(unsigned long)AT91_SLOW_CLOCK,
+> > +				clk_get_rate(rtc->sclk));
+> > +			return -EINVAL;
+> > +		}
+> > +
+> > +		ret = clk_prepare_enable(rtc->sclk);
+> > +		if (ret)
+> > +			return ret;
+> > +	}
+> > +
+> >  	/* NOTE:  sam9260 rev A silicon has a ROM bug which resets the
+> >  	 * RTT on at least some reboots.  If you have that chip, you must
+> >  	 * initialize the time from some external source like a GPS, wall
+> > @@ -397,6 +418,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
+> >  	/* disable all interrupts */
+> >  	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
+> >  
+> > +	if (!IS_ERR(rtc->sclk))
+> > +		clk_disable_unprepare(rtc->sclk);
+> > +
+> >  	return 0;
+> >  }
+> >  
+> > -- 
+> > 1.9.1
+> > 
+> 
 
-Could you please elaborate, if I am missing something?
 
->
->> >> +/**
->> >> + * xilinx_dma_channel_set_config - Configure DMA channel
->> >> + * @dchan: DMA channel
->> >> + * @cfg: DMA device configuration pointer
->> >> + *
->> >> + * Return: '0' on success and failure value on error
->> >> + */
->> >> +int xilinx_dma_channel_set_config(struct dma_chan *dchan,
->> >> +                               struct xilinx_dma_config *cfg)
->> >> +{
->> >> +     struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
->> >> +     u32 reg = dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL);
->> >> +
->> >> +     if (cfg->reset)
->> >> +             return xilinx_dma_reset(chan);
->> >> +
->> >> +     if (cfg->coalesc <= XILINX_DMA_CR_COALESCE_MAX)
->> >> +             reg |= cfg->coalesc << XILINX_DMA_CR_COALESCE_SHIFT;
->> >> +
->> >> +     if (cfg->delay <= XILINX_DMA_CR_DELAY_MAX)
->> >> +             reg |= cfg->delay << XILINX_DMA_CR_DELAY_SHIFT;
->> >> +
->> >> +     dma_ctrl_write(chan, XILINX_DMA_REG_CONTROL, reg);
->> > You aren't checking if a transaction is already running on this channel.
->> > Also don't you need other slave parameters, I see you have removed the
->> > dma_slave_config entirely
->>
->> All the parameters that are required for this DMA engine are provided by
->> SG list, so I don't see the need of dma_slave_config.  There are some
->> specific IP parameters that are not part of dma_slave_config and these
->> are being set by 'dma_channel_set_config' which is exported to slave
->> drivers.
-> And that means you dont have any common parameters between dma_slave_config
-> right?
 
-Yes, true.
-
-Thanks,
-Srikanth
-
->
-> --
-> ~Vinod
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
