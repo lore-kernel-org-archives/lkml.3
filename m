@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaIHXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:32:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56347 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009AbaIHXcH convert rfc822-to-8bit (ORCPT
+	id S1755618AbaIHXcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:32:31 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43664 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755526AbaIHXc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:32:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,489,1406617200"; 
-   d="scan'208";a="570249843"
-From: "Drokin, Oleg" <oleg.drokin@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Hugues <morisset.hugues@gmail.com>,
-        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
-        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>
-Subject: Re: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
-Thread-Topic: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
-Thread-Index: AQHPy7W3OeWcEqfvREW2FvQYu9Sycpv4WAIA
-Date: Mon, 8 Sep 2014 23:31:41 +0000
-Message-ID: <FB7D4E1C-31A3-4A86-9B3F-C00A59DCF339@intel.com>
-References: <540E27FB.2070206@gmail.com> <540E287D.5090101@gmail.com>
- <540E28AD.2060607@gmail.com> <540E29B1.6090005@gmail.com>
- <20140908223853.GN6600@mwanda>
-In-Reply-To: <20140908223853.GN6600@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.252.134.218]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <93382E1E6A7DFA4798FB88AFC858DC51@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Sep 2014 19:32:29 -0400
+Date: Mon, 8 Sep 2014 16:32:20 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Frans Klaver <fransklaver@gmail.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] eeepc-laptop: remove disp attribute show function
+Message-ID: <20140908233219.GA5835@vmdeb7>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+ <1409814488.5546.63.camel@x220>
+ <20140906021757.GA9197@vmdeb7>
+ <7288841.ayNsq2yeGO@vostro.rjw.lan>
+ <1410210762-2487-1-git-send-email-fransklaver@gmail.com>
+ <20140908211627.GA23619@kroah.com>
+ <20140908212306.GA22145@gmail.com>
+ <20140908214438.GB22145@gmail.com>
+ <20140908215723.GA21556@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908215723.GA21556@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!
+On Mon, Sep 08, 2014 at 02:57:23PM -0700, Greg Kroah-Hartman wrote:
+> On Mon, Sep 08, 2014 at 11:44:38PM +0200, Frans Klaver wrote:
+> > On Mon, Sep 08, 2014 at 11:23:06PM +0200, Frans Klaver wrote:
+> > > On Mon, Sep 08, 2014 at 02:16:27PM -0700, Greg Kroah-Hartman wrote:
+> > > > On Mon, Sep 08, 2014 at 11:12:42PM +0200, Frans Klaver wrote:
+> > > > >
+> > > > >  EEEPC_CREATE_DEVICE_ATTR(camera, 0644, CM_ASL_CAMERA);
+> > > > >  EEEPC_CREATE_DEVICE_ATTR(cardr, 0644, CM_ASL_CARDREADER);
+> > > > > -EEEPC_CREATE_DEVICE_ATTR(disp, 0200, CM_ASL_DISPLAYSWITCH);
+> > > > > +
+> > > > > +static ssize_t store_disp(struct device *dev,
+> > > > > +			  struct device_attribute *attr,
+> > > > > +			  const char *buf, size_t count)
+> > > > > +{
+> > > > > +	return store_sys_acpi(dev, CM_ASL_DISPLAYSWITCH, buf, count);
+> > > > > +}
+> > > > > +
+> > > > > +static struct device_attribute dev_attr_disp = {
+> > > > > +	.attr = {
+> > > > > +		.name = "disp",
+> > > > > +		.mode = 0200 },
+> > > > > +	.store  = store_disp,
+> > > > > +};
+> > > > 
+> > > > DEVICE_ATTR()?
+> > > 
+> > > That would make sense, wouldn't it? The only defense I have is that it
+> > > isn't used in EEEPC_CREATE_DEVICE_ATTR() either.
+> > 
+> > I might as well fix that as well, and the fact that the octal
+> > permissions are used instead of S_IRUGO and friends. Would you prefer
+> > that in a separate patch?
 
-Actually, I do't think this function is useful on the client.
->From the name of it, it would have been used in the server code, but even there it was recently removed as I now see.
+If you're offering to fix it (thanks!), please do any necessary cleanup first
+(like switching to S_IRUGO and friends), and then follow up with a DEVICE_ATTR
+solution.
 
-I'll submit a removal patch.
+Thanks,
 
-On Sep 8, 2014, at 6:38 PM, Dan Carpenter wrote:
-
-> On Tue, Sep 09, 2014 at 12:12:01AM +0200, Hugues wrote:
->> Fix potential buffer underflow
->> 
->> When the string 'name' start with a '-' ptr == name and so --ptr will
->> underflow, this patch corrected this by checking ptr before decrementing.
-> 
-> Good eye.  Please fix up the changelog and send it inline etc and
-> resend.  I've added Oleg and Andreas to the CC list so that this doesn't
-> get lost.
-> 
-> regards,
-> dan carpenter
-> 
->>> From 5786040323bd1dc3149fb4afbea9f01e2bf4cfdf Mon Sep 17 00:00:00 2001
->> From: Hugues Morisset <morisset.hugues@gmail.com>
->> Date: Mon, 8 Sep 2014 22:59:04 +0200
->> Subject: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
->> 
->> Signed-off-by: Hugues Morisset <morisset.hugues@gmail.com>
->> ---
->> drivers/staging/lustre/lustre/include/obd.h | 7 ++++++-
->> 1 file changed, 6 insertions(+), 1 deletion(-)
->> 
->> diff --git a/drivers/staging/lustre/lustre/include/obd.h b/drivers/staging/lustre/lustre/include/obd.h
->> index 409eae6..bb67e40 100644
->> --- a/drivers/staging/lustre/lustre/include/obd.h
->> +++ b/drivers/staging/lustre/lustre/include/obd.h
->> @@ -677,7 +677,12 @@ static inline int is_osp_on_mdt(char *name)
->> 	if (strncmp(ptr + 1, "MDT", 3) != 0)
->> 		return 0;
->> 
->> -	while (*(--ptr) != '-' && ptr != name);
->> +	if (ptr == name)
->> +		return 0;
->> +
->> +	--ptr;
->> +	while (ptr != '-' && ptr != name)
->> +		--ptr;
->> 
->> 	if (ptr == name)
->> 		return 0;
->> -- 
->> 2.1.0
->> 
-> 
->> _______________________________________________
->> devel mailing list
->> devel@linuxdriverproject.org
->> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
-> 
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
