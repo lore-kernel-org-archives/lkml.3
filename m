@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbaIHLCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:02:09 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:45752 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaIHLCH (ORCPT
+	id S1753551AbaIHLCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:02:45 -0400
+Received: from exprod7og110.obsmtp.com ([64.18.2.173]:54859 "EHLO
+	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaIHLCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:02:07 -0400
-Message-ID: <540D8CA8.5020104@cogentembedded.com>
-Date: Mon, 08 Sep 2014 15:02:00 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 8 Sep 2014 07:02:43 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Alessandro Zummo <a.zummo@towertech.it>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH] rtc: pcf8563: fix uninitialized use warning
-References: <3640058.m4Rfp1dmTJ@wuerfel>
-In-Reply-To: <3640058.m4Rfp1dmTJ@wuerfel>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140906135308.GC2601@sirena.org.uk>
+References: <1409576021-24828-1-git-send-email-anders.berg@avagotech.com>
+	<1409576021-24828-2-git-send-email-anders.berg@avagotech.com>
+	<CACRpkdby4H-fivNn_kG2uL0EjsCGAc+t6OyFi0+VcNGf2Z9NQA@mail.gmail.com>
+	<20140904170630.GL29327@sirena.org.uk>
+	<CACRpkdZEoBan=Lqr1T-iY41U9NfMA_MCLX3LA=juw7X4pmRvSQ@mail.gmail.com>
+	<CAE0=X_3QO5p26M=FS7joKS3zD6LAM_moFutHNcyE1-CjauL3Rw@mail.gmail.com>
+	<20140906135308.GC2601@sirena.org.uk>
+Date: Mon, 8 Sep 2014 13:02:32 +0200
+Message-ID: <CAE0=X_2q1Z+pGuh6OY9Si5jbrF9HkczNFUqUgK_8xBekNvMeyQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: Add driver for AXM55xx SSP chip selects
+From: Anders Berg <anders.berg@avagotech.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 9/8/2014 12:42 AM, Arnd Bergmann wrote:
-
-> gcc-4.9 found a potential condition under which the 'pending'
-> variable may be used uninitialized:
-
-> drivers/rtc/rtc-pcf8563.c: In function 'pcf8563_irq':
-> drivers/rtc/rtc-pcf8563.c:173:5: warning: 'pending' may be used uninitialized in this function [-Wmaybe-uninitialized]
-
-> This is because in the pcf8563_get_alarm_mode() function, we
-> check any nonzero return of pcf8563_read_block_data, but
-> in the irq function we only check for negative values, so
-> a possible positive value does not get detected if the compiler
-> chooses not to inline the entire call chain.
-
-> Checking for any non-zero value in the interrupt handler as well
-> is just as correct and lets the compiler know what we are doing,
-> without needing a bogus initialization.
+On Sat, Sep 6, 2014 at 3:53 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Sep 05, 2014 at 11:05:37AM +0200, Anders Berg wrote:
 >
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>> Well, the problem with adding this to the spi-pl022 driver (as a
+>> vendor specific extension) is that this IP block unfortunately isn't
+>> distinguishable from the standard ARM PL022 implementation (same
+>> values in the PrimeCell identification registers). That's why I went
+>> down the GPIO path...
 >
-> diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
-> index 5a197d9dc7e7..3a6f994c4da8 100644
-> --- a/drivers/rtc/rtc-pcf8563.c
-> +++ b/drivers/rtc/rtc-pcf8563.c
-> @@ -167,7 +167,7 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
->   	char pending;
->
->   	err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
-> -	if (err < 0)
-> +	if (err)
->   		return err;
+> Would it not be more straightforward to just register it as a platform
+> device in this case, or use a separate OF ID in the DT?  We appear to
+> specify a compatible string when registering AMBA devices even if we are
+> capable of identifying using the ID registers.
 
-    Returning negative values from the IRQ handler doesn't seem valid.
-Arbitrary positive value aren't good either. Perhaps should return IRQ_NONE 
-instead?
+I'll drop this gpio patch for now and submit a patch on the pl022
+driver instead. I read the arm,primecell binding and learned that
+there is a property (arm,primecell-periphid) that can be used to
+override the HW PrimeCell ID. Seems like something to use here, right?
 
-WBR, Sergei
-
+/Anders
