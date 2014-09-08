@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaIHKLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 06:11:22 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41044 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219AbaIHKLU (ORCPT
+	id S1753418AbaIHKLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 06:11:42 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49516 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325AbaIHKLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 06:11:20 -0400
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Todd Poynor <toddpoynor@google.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC v3 2/2] usb: phy: Temporarily hold timed wakeup source on charger and disconnect events
-Date: Mon,  8 Sep 2014 15:40:49 +0530
-Message-Id: <1410171049-14239-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	Mon, 8 Sep 2014 06:11:41 -0400
+Date: Mon, 8 Sep 2014 12:11:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/9] perf: Deny optimized switch for events read by
+ PERF_SAMPLE_READ
+Message-ID: <20140908101119.GB6758@twins.programming.kicks-ass.net>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-3-git-send-email-jolsa@kernel.org>
+ <20140902105244.GI5806@worktop.ger.corp.intel.com>
+ <20140908100018.GC1172@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uHr6nJLCB5hydKEi"
+Content-Disposition: inline
+In-Reply-To: <20140908100018.GC1172@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Todd Poynor <toddpoynor@google.com>
 
-usb: phy: Temporarily hold timed wakeup source on charger and disconnect
-events
+--uHr6nJLCB5hydKEi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It temporarily holds a timed wakeup source on USB disconnect events, to allow
-the rest of the system time to react to the USB disconnection (dropping host
-sessions, updating charger status, etc.) prior to re-allowing suspend
+On Mon, Sep 08, 2014 at 12:00:19PM +0200, Jiri Olsa wrote:
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-[kiran: Added context to commit message and
-addressed community feedback]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
-v3:
-* Modified the commit log.
-* Remove indirect function usb_temporary_hold_wsource and call
-  __pm_wakeup_even directly.
+> > no.. so the value of the counter is the sum of all the inherited events.
+> > It doesn't matter if you flip it or not the sum is not affected.
+> >=20
+> > PERF_SAMPLE_READ should return the value.
+>=20
+> so I want to be able to do the leader sampling over child processes
+> that means:
+>   - have event group with sampling leader, and the rest
+>     of the group events' periods being read on leader's sample
+>     via PERF_SAMPLE_READ sample_type
+>   - for each child process created I want it to do the
+>     same thing as the parent - sample on leader, read
+>     values of other events in group via PERF_SAMPLE_READ
 
-v2:
-* Implement usb_temporary_hold_wsource function in phy.
+The thing is, PERF_SAMPLE_READ should return the exact same thing as an
+actual read(), and for read() the value reported is the sum of all
+events.
 
-v1:
-* Removed the refactoring logic from this integrated into main driver code.
+I _think_ I know what you want, and I think I see why you'd want that,
+but I'm not sure how to best do that.. Hmm.. maybe look at
+'perf_event_attr::inherit_stat' that appears to be similar.
 
-RFC:
-* Integrated the refactoring logic and logic to hold wakeupsource
-  temporarily.
+At which point read() vs inherit_stat might be 'broken'. Hard to know if
+anybody uses that :-(
 
- drivers/usb/phy/otg-wakeupsource.c | 3 ++-
- include/linux/usb/phy.h            | 2 ++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+--uHr6nJLCB5hydKEi
+Content-Type: application/pgp-signature
 
-diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wakeupsource.c
-index d9a1720..7bc9657 100644
---- a/drivers/usb/phy/otg-wakeupsource.c
-+++ b/drivers/usb/phy/otg-wakeupsource.c
-@@ -47,7 +47,8 @@ static void otgws_handle_event(struct usb_phy *otgws_xceiv, unsigned long event)
- 	case USB_EVENT_NONE:
- 	case USB_EVENT_ID:
- 	case USB_EVENT_CHARGER:
--		__pm_relax(&otgws_xceiv->wsource);
-+		__pm_wakeup_event(&otgws_xceiv->wsource,
-+				msecs_to_jiffies(TEMPORARY_HOLD_TIME));
- 		break;
- 
- 	default:
-diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index c71cf15..f8f9f1f 100644
---- a/include/linux/usb/phy.h
-+++ b/include/linux/usb/phy.h
-@@ -12,6 +12,8 @@
- #include <linux/notifier.h>
- #include <linux/usb.h>
- 
-+#define TEMPORARY_HOLD_TIME    2000
-+
- enum usb_phy_interface {
- 	USBPHY_INTERFACE_MODE_UNKNOWN,
- 	USBPHY_INTERFACE_MODE_UTMI,
--- 
-1.8.2.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJUDYDHAAoJEHZH4aRLwOS6LNoP/jFs66dp6qUDfwbHfXn7d55k
+b3ykb8rTN7W5kF1KQI8xj+ANOXscO4s1eNAOwsW0T0J8XzGNl8+f2lr96F6pxlTo
+Jk38xMmdREI89W9xgK+iBg4OMIZjcnvMYoZJUPwGxCwOExn6k5kSjj6pF3q5eIvP
+1xt/6AYkYzQtd/lNs8niztTkhmpytkcavfQiVO3WD33fLtpgdQ40O4Z/Nw/GhbrM
+hEGdcx3OxLonloY4wXA/W6GbrHZBHjOOt9hE7r52vIZCV+nXhypi1Ko57Nzf5zDC
+8AWSt2P76kTWvX017kdMldM0goNsfguFzMUE9NT1jO2OeI9kfBnh3pX/6yUxgTOU
+U1zzpJ4w6QYA2RC5ZmQ8Qt9FrVRjQ43xgwKi/556VB+fR6Sv+e7hrjJt7rivd2Zm
+20BCHEU3dye01Wn42upO8050cF3Zsr+/dQvZ5O84QNpV7USykj6RihaAXRkKx/3s
+7uEQKqDlGyFsB/RFnmgSBUZOGg0LAprsA+LAUViJduqPuU1DyZK0gwsVC78W14Zu
+R8wlJPeHtjZmdCw1v4MlGWZcY8ZfjkqtYOdv66iGUNTUJZJ5mWqp4N+6G7YXU0Bi
+4hvF2VlnNa0kBdkF/lCNcoYIYcDORfq+X6Ef1gaR9tCmrqPRiU0Z2TXLhxbZBqok
+cPxL7lAUPZNB2CfBfe2M
+=muzv
+-----END PGP SIGNATURE-----
+
+--uHr6nJLCB5hydKEi--
