@@ -1,656 +1,1032 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaIHLq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:46:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33362 "EHLO mx1.redhat.com"
+	id S1753665AbaIHLsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:48:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54021 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584AbaIHLq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:46:26 -0400
-Message-ID: <540D9707.3020708@redhat.com>
-Date: Mon, 08 Sep 2014 13:46:15 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Morgan Phillips <winter2718@gmail.com>, brijohn@gmail.com
-CC: m.chehab@samsung.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wolfram@the-dreams.de
-Subject: Re: [PATCH] [media] sn9c20x: refactor initialization functions and
- fix lint warnings/errors
-References: <1410143107-16515-1-git-send-email-winter2718@gmail.com>
-In-Reply-To: <1410143107-16515-1-git-send-email-winter2718@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1751781AbaIHLsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 07:48:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
+   d="scan'208";a="599620063"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Ning Li <ning.li@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org
+Subject: [PATCH 2/2] gpio: Add support for Intel Cherryview/Braswell GPIO controller
+Date: Mon,  8 Sep 2014 14:48:00 +0300
+Message-Id: <1410176880-22524-2-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410176880-22524-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1410176880-22524-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Ning Li <ning.li@intel.com>
 
-On 09/08/2014 04:25 AM, Morgan Phillips wrote:
-> Centralize redundant print messages and references to sensor names via macros.
-> 
-> Change msleep time from 10ms to 20ms in order to address checkpatch.pl warning:
-> "msleep < 20ms can sleep for up to 20ms."
-> 
-> Refactor redundant sensor initialization logic into two functions (_init_sensor_w1,
-> _init_sensor_w2).
-> 
-> Alter generically named function parameters (data, len), annotated with comments,
-> so that they are self descriptive.
-> 
-> Reformat struct initializations, line lengths, and variable declarations to
-> follow style guidelines.
-> 
-> Signed-off-by: Morgan Phillips <winter2718@gmail.com>
+This driver supports the GPIO controllers found in newer Intel SoCs like
+Cherryview and Braswell.
 
-Ugh, you're lumping a whole lot of unrelated changes together here, please do not do that.
+Signed-off-by: Ning Li <ning.li@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/gpio/Kconfig           |   8 +
+ drivers/gpio/Makefile          |   1 +
+ drivers/gpio/gpio-cherryview.c | 947 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 956 insertions(+)
+ create mode 100644 drivers/gpio/gpio-cherryview.c
 
-Other then that I'm not really enthusiastic about the "refactor initialization functions"
-thing you're doing here, this makes it harder to follow what is going on, and will make
-it harder to tweak individual sensor init functions if that turns out to be necessary
-in the future, so NAK for that bit.
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 9de1515e5808..73a317d7b7bf 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -736,6 +736,14 @@ config GPIO_INTEL_MID
+ 	help
+ 	  Say Y here to support Intel Mid GPIO.
+ 
++config GPIO_CHERRYVIEW
++	tristate "Intel CherryView/Braswell GPIO support"
++	depends on ACPI
++	select GPIOLIB_IRQCHIP
++	help
++	  Enable support for GPIO host controllers found on Intel SoCs
++	  such as CherryView and Braswell.
++
+ config GPIO_PCH
+ 	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
+ 	depends on PCI && (X86_32 || COMPILE_TEST)
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 5d024e396622..1162b08564a7 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_GPIO_AMD8111)	+= gpio-amd8111.o
+ obj-$(CONFIG_GPIO_ARIZONA)	+= gpio-arizona.o
+ obj-$(CONFIG_GPIO_BCM_KONA)	+= gpio-bcm-kona.o
+ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
++obj-$(CONFIG_GPIO_CHERRYVIEW)	+= gpio-cherryview.o
+ obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
+ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
+ obj-$(CONFIG_GPIO_CRYSTAL_COVE)	+= gpio-crystalcove.o
+diff --git a/drivers/gpio/gpio-cherryview.c b/drivers/gpio/gpio-cherryview.c
+new file mode 100644
+index 000000000000..ba45741a345c
+--- /dev/null
++++ b/drivers/gpio/gpio-cherryview.c
+@@ -0,0 +1,947 @@
++/*
++ * GPIO controller driver for Intel Cherryview/Braswell.
++ *
++ * Copyright (C) 2014, Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/bitops.h>
++#include <linux/interrupt.h>
++#include <linux/gpio/driver.h>
++#include <linux/seq_file.h>
++#include <linux/ioport.h>
++#include <linux/acpi.h>
++#include <linux/platform_device.h>
++
++#define FAMILY0_PAD_REGS_OFF	0x4400
++#define FAMILY_PAD_REGS_SIZE	0x400
++#define MAX_FAMILY_PAD_GPIO_NO	15
++#define GPIO_REGS_SIZE		8
++
++#define CV_PADCTRL0_REG		0x000
++#define CV_PADCTRL1_REG		0x004
++#define CV_INT_STAT_REG		0x300
++#define CV_INT_MASK_REG		0x380
++
++#define CV_GPIO_RX_STAT		BIT(0)
++#define CV_GPIO_TX_STAT		BIT(1)
++#define CV_GPIO_EN		BIT(15)
++
++#define CV_CFG_LOCK_MASK	BIT(31)
++#define CV_INT_CFG_MASK		(BIT(0) | BIT(1) | BIT(2))
++#define CV_PAD_MODE_MASK	(0xf << 16)
++
++#define CV_GPIO_CFG_MASK	(BIT(8) | BIT(9) | BIT(10))
++#define CV_GPIO_TX_EN		(1 << 8)
++#define CV_GPIO_RX_EN		(2 << 8)
++
++#define CV_INV_RX_DATA		BIT(6)
++
++#define CV_INT_SEL_MASK		(0xf << 28)
++
++enum {
++	CV_INTR_DISABLE,
++	CV_TRIG_EDGE_FALLING,
++	CV_TRIG_EDGE_RISING,
++	CV_TRIG_EDGE_BOTH,
++	CV_TRIG_LEVEL,
++};
++
++struct chv_gpio_bank {
++	const char *name;
++	const char *uid;
++	const char * const *pads;
++	size_t npads;
++};
++
++struct chv_gpio {
++	struct gpio_chip chip;
++	spinlock_t lock;
++	void __iomem *reg_base;
++	int intr_lines[16];
++	const struct chv_gpio_bank *bank;
++};
++
++static const char * const north_pads[] = {
++	"GPIO_DFX_0",
++	"GPIO_DFX_3",
++	"GPIO_DFX_7",
++	"GPIO_DFX_1",
++	"GPIO_DFX_5",
++	"GPIO_DFX_4",
++	"GPIO_DFX_8",
++	"GPIO_DFX_2",
++	"GPIO_DFX_6",
++
++	[9 ... 14] = 0,
++
++	"GPIO_SUS0",
++	"SEC_GPIO_SUS10",
++	"GPIO_SUS3",
++	"GPIO_SUS7",
++	"GPIO_SUS1",
++	"GPIO_SUS5",
++	"SEC_GPIO_SUS11",
++	"GPIO_SUS4",
++	"SEC_GPIO_SUS8",
++	"GPIO_SUS2",
++	"GPIO_SUS6",
++	"CX_PREQ_B",
++	"SEC_GPIO_SUS9",
++
++	[28 ... 29] = 0,
++
++	"TRST_B",
++	"TCK",
++	"PROCHOT_B",
++	"SVIDO_DATA",
++	"TMS",
++	"CX_PRDY_B_2",
++	"TDO_2",
++	"CX_PRDY_B",
++	"SVIDO_ALERT_B",
++	"TDO",
++	"SVIDO_CLK",
++	"TDI",
++
++	[42 ... 44] = 0,
++
++	"GP_CAMERASB_05",
++	"GP_CAMERASB_02",
++	"GP_CAMERASB_08",
++	"GP_CAMERASB_00",
++	"GP_CAMERASB_06",
++	"GP_CAMERASB_10",
++	"GP_CAMERASB_03",
++	"GP_CAMERASB_09",
++	"GP_CAMERASB_01",
++	"GP_CAMERASB_07",
++	"GP_CAMERASB_11",
++	"GP_CAMERASB_04",
++
++	[57 ... 59] = 0,
++
++	"PANEL0_BKLTEN",
++	"HV_DDI0_HPD",
++	"HV_DDI2_DDC_SDA",
++	"PANEL1_BKLTCTL",
++	"HV_DDI1_HPD",
++	"PANEL0_BKLTCTL",
++	"HV_DDI0_DDC_SDA",
++	"HV_DDI2_DDC_SCL",
++	"HV_DDI2_HPD",
++	"PANEL1_VDDEN",
++	"PANEL1_BKLTEN",
++	"HV_DDI0_DDC_SCL",
++	"PANEL0_VDDEN",
++};
++
++static const char * const southeast_pads[] = {
++	"MF_PLT_CLK0",
++	"PWM1",
++	"MF_PLT_CLK1",
++	"MF_PLT_CLK4",
++	"MF_PLT_CLK3",
++	"PWM0",
++	"MF_PLT_CLK5",
++	"MF_PLT_CLK2",
++
++	[9 ... 14] = 0,
++
++	"SDMMC2_D3_CD_B",
++	"SDMMC1_CLK",
++	"SDMMC1_D0",
++	"SDMMC2_D1",
++	"SDMMC2_CLK",
++	"SDMMC1_D2",
++	"SDMMC2_D2",
++	"SDMMC2_CMD",
++	"SDMMC1_CMD",
++	"SDMMC1_D1",
++	"SDMMC2_D0",
++	"SDMMC1_D3_CD_B",
++
++	[27 ... 29] = 0,
++
++	"SDMMC3_D1",
++	"SDMMC3_CLK",
++	"SDMMC3_D3",
++	"SDMMC3_D2",
++	"SDMMC3_CMD",
++	"SDMMC3_D0",
++
++	[36 ... 44] = 0,
++
++	"MF_LPC_AD2",
++	"LPC_CLKRUNB",
++	"MF_LPC_AD0",
++	"LPC_FRAMEB",
++	"MF_LPC_CLKOUT1",
++	"MF_LPC_AD3",
++	"MF_LPC_CLKOUT0",
++	"MF_LPC_AD1",
++
++	[53 ... 59] = 0,
++
++	"SPI1_MISO",
++	"SPI1_CSO_B",
++	"SPI1_CLK",
++	"MMC1_D6",
++	"SPI1_MOSI",
++	"MMC1_D5",
++	"SPI1_CS1_B",
++	"MMC1_D4_SD_WE",
++	"MMC1_D7",
++	"MMC1_RCLK",
++
++	[70 ... 74] = 0,
++
++	"USB_OC1_B",
++	"PMU_RESETBUTTON_B",
++	"GPIO_ALERT",
++	"SDMMC3_PWR_EN_B",
++	"ILB_SERIRQ",
++	"USB_OC0_B",
++	"SDMMC3_CD_B",
++	"SPKR",
++	"SUSPWRDNACK",
++	"SPARE_PIN",
++	"SDMMC3_1P8_EN",
++};
++
++static const char * const east_pads[] = {
++	"PMU_SLP_S3_B",
++	"PMU_BATLOW_B",
++	"SUS_STAT_B",
++	"PMU_SLP_S0IX_B",
++	"PMU_AC_PRESENT",
++	"PMU_PLTRST_B",
++	"PMU_SUSCLK",
++	"PMU_SLP_LAN_B",
++	"PMU_PWRBTN_B",
++	"PMU_SLP_S4_B",
++	"PMU_WAKE_B",
++	"PMU_WAKE_LAN_B",
++
++	[12 ... 14] = 0,
++
++	"MF_ISH_GPIO_3",
++	"MF_ISH_GPIO_7",
++	"MF_ISH_I2C1_SCL",
++	"MF_ISH_GPIO_1",
++	"MF_ISH_GPIO_5",
++	"MF_ISH_GPIO_9",
++	"MF_ISH_GPIO_0",
++	"MF_ISH_GPIO_4",
++	"MF_ISH_GPIO_8",
++	"MF_ISH_GPIO_2",
++	"MF_ISH_GPIO_6",
++	"MF_ISH_I2C1_SDA",
++};
++
++static const char * const southwest_pads[] = {
++	"FST_SPI_D2",
++	"FST_SPI_D0",
++	"FST_SPI_CLK",
++	"FST_SPI_D3",
++	"FST_SPI_CS1_B",
++	"FST_SPI_D1",
++	"FST_SPI_CS0_B",
++	"FST_SPI_CS2_B",
++
++	[8 ... 14] = 0,
++
++	"UART1_RTS_B",
++	"UART1_RXD",
++	"UART2_RXD",
++	"UART1_CTS_B",
++	"UART2_RTS_B",
++	"UART1_TXD",
++	"UART2_TXD",
++	"UART2_CTS_B",
++
++	[23 ... 29] = 0,
++
++	"MF_HDA_CLK",
++	"MF_HDA_RSTB",
++	"MF_HDA_SDIO",
++	"MF_HDA_SDO",
++	"MF_HDA_DOCKRSTB",
++	"MF_HDA_SYNC",
++	"MF_HDA_SDI1",
++	"MF_HDA_DOCKENB",
++
++	[38 ... 44] = 0,
++
++	"I2C5_SDA",
++	"I2C4_SDA",
++	"I2C6_SDA",
++	"I2C5_SCL",
++	"I2C_NFC_SDA",
++	"I2C4_SCL",
++	"I2C6_SCL",
++	"I2C_NFC_SCL",
++
++	[53 ... 59] = 0,
++
++	"I2C1_SDA",
++	"I2C0_SDA",
++	"I2C2_SDA",
++	"I2C1_SCL",
++	"I2C3_SDA",
++	"I2C0_SCL",
++	"I2C2_SCL",
++	"I2C3_SCL",
++
++	[68 ... 74] = 0,
++
++	"SATA_GP0",
++	"SATA_GP1",
++	"SATA_LEDN",
++	"SATA_GP2",
++	"MF_SMB_ALERTB",
++	"SATA_GP3",
++	"MF_SMB_CLK",
++	"MF_SMB_DATA",
++
++	[83 ... 89] = 0,
++
++	"PCIE_CLKREQ0B",
++	"PCIE_CLKREQ1B",
++	"GP_SSP_2_CLK",
++	"PCIE_CLKREQ2B",
++	"GP_SSP_2_RXD",
++	"PCIE_CLKREQ3B",
++	"GP_SSP_2_FS",
++	"GP_SSP_2_TXD",
++};
++
++static const struct chv_gpio_bank chv_banks[] = {
++	{
++		.name = "SW",
++		.uid = "1",
++		.pads = southwest_pads,
++		.npads = ARRAY_SIZE(southwest_pads),
++	},
++	{
++		.name = "N",
++		.uid = "2",
++		.pads = north_pads,
++		.npads = ARRAY_SIZE(north_pads),
++	},
++	{
++		.name = "E",
++		.uid = "3",
++		.pads = east_pads,
++		.npads = ARRAY_SIZE(east_pads),
++	},
++	{
++		.name = "SE",
++		.uid = "4",
++		.pads = southeast_pads,
++		.npads = ARRAY_SIZE(southeast_pads),
++	},
++};
++
++#define to_chv_gpio(c)	container_of(c, struct chv_gpio, chip)
++
++static void __iomem *chv_gpio_reg(struct chv_gpio *cg, unsigned offset, int reg)
++{
++	u32 reg_offset;
++
++	if (reg == CV_INT_STAT_REG || reg == CV_INT_MASK_REG) {
++		reg_offset = 0;
++	} else {
++		reg_offset = FAMILY0_PAD_REGS_OFF +
++		      FAMILY_PAD_REGS_SIZE * (offset / MAX_FAMILY_PAD_GPIO_NO) +
++		      GPIO_REGS_SIZE * (offset % MAX_FAMILY_PAD_GPIO_NO);
++	}
++
++	return cg->reg_base + reg_offset + reg;
++}
++
++static inline void chv_writel(u32 value, void __iomem *reg)
++{
++	writel(value, reg);
++	/* simple readback to confirm the bus transferring done */
++	readl(reg);
++}
++
++/* When Pad Cfg is locked, driver can only change GPIOTXState or GPIORXState */
++static inline bool chv_gpio_pad_locked(struct chv_gpio *cg, unsigned offset)
++{
++	void __iomem *reg;
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL1_REG);
++	return readl(reg) & CV_CFG_LOCK_MASK;
++}
++
++static int chv_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	struct chv_gpio *cg = to_chv_gpio(chip);
++	void __iomem *reg;
++	u32 value;
++
++	if (!cg->bank->pads[offset])
++		return -EINVAL;
++
++	if (chv_gpio_pad_locked(cg, offset))
++		return 0;
++
++	/* Disable interrupt generation */
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL1_REG);
++	value = readl(reg);
++	value &= ~(CV_INT_CFG_MASK | CV_INV_RX_DATA);
++	chv_writel(value, reg);
++
++	/* Switch to a GPIO mode */
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++	value = readl(reg) | CV_GPIO_EN;
++	chv_writel(value, reg);
++
++	return 0;
++}
++
++static void chv_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	struct chv_gpio *cg = to_chv_gpio(chip);
++	void __iomem *reg;
++	u32 value;
++
++	if (chv_gpio_pad_locked(cg, offset))
++		return;
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++	value = readl(reg) & ~CV_GPIO_EN;
++	chv_writel(value, reg);
++}
++
++static void chv_update_irq_type(struct chv_gpio *cg, unsigned type,
++				void __iomem *reg)
++{
++	u32 value;
++
++	value = readl(reg);
++	value &= ~CV_INT_CFG_MASK;
++	value &= ~CV_INV_RX_DATA;
++
++	if (type & IRQ_TYPE_EDGE_BOTH) {
++		if ((type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
++			value |= CV_TRIG_EDGE_BOTH;
++		else if (type & IRQ_TYPE_EDGE_RISING)
++			value |= CV_TRIG_EDGE_RISING;
++		else if (type & IRQ_TYPE_EDGE_FALLING)
++			value |= CV_TRIG_EDGE_FALLING;
++	} else if (type & IRQ_TYPE_LEVEL_MASK) {
++			value |= CV_TRIG_LEVEL;
++		if (type & IRQ_TYPE_LEVEL_LOW)
++			value |= CV_INV_RX_DATA;
++	}
++
++	chv_writel(value, reg);
++}
++
++/* BIOS programs IntSel bits for shared interrupt. GPIO driver follows it. */
++static void pad_intr_line_save(struct chv_gpio *cg, unsigned offset)
++{
++	void __iomem *reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++	u32 value, intr_line;
++
++	value = readl(reg);
++	intr_line = (value & CV_INT_SEL_MASK) >> 28;
++	cg->intr_lines[intr_line] = offset;
++}
++
++static int chv_irq_type(struct irq_data *d, unsigned type)
++{
++	struct chv_gpio *cg = irq_data_get_irq_chip_data(d);
++	u32 offset = irqd_to_hwirq(d);
++	void __iomem *reg;
++	unsigned long flags;
++
++	spin_lock_irqsave(&cg->lock, flags);
++
++	/*
++	 * Pins which can be used as shared interrupt are configured in
++	 * BIOS. Driver trusts BIOS configurations and assigns different
++	 * handler according to the irq type.
++	 *
++	 * Driver needs to save the mapping between each pin and
++	 * its interrupt line.
++	 * 1. If the pin cfg is locked in BIOS:
++	 *	Trust BIOS has programmed IntWakeCfg bits correctly,
++	 *	driver just needs to save the mapping.
++	 * 2. If the pin cfg is not locked in BIOS:
++	 *	Driver programs the IntWakeCfg bits and save the mapping.
++	 */
++	if (!chv_gpio_pad_locked(cg, offset)) {
++		reg = chv_gpio_reg(cg, offset, CV_PADCTRL1_REG);
++		chv_update_irq_type(cg, type, reg);
++	}
++
++	pad_intr_line_save(cg, offset);
++
++	if (type & IRQ_TYPE_EDGE_BOTH)
++		__irq_set_handler_locked(d->irq, handle_edge_irq);
++	else if (type & IRQ_TYPE_LEVEL_MASK)
++		__irq_set_handler_locked(d->irq, handle_level_irq);
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++
++	return 0;
++}
++
++static int chv_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct chv_gpio *cg = to_chv_gpio(chip);
++	unsigned long flags;
++	void __iomem *reg;
++	u32 value;
++	int ret;
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++
++	spin_lock_irqsave(&cg->lock, flags);
++
++	value = readl(reg);
++	if (value & CV_GPIO_TX_EN)
++		ret = !!(value & CV_GPIO_TX_STAT);
++	else
++		ret = !!(value & CV_GPIO_RX_STAT);
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++
++	return ret;
++}
++
++static void chv_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct chv_gpio *cg = to_chv_gpio(chip);
++	void __iomem *reg;
++	unsigned long flags;
++	u32 old_val;
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++
++	spin_lock_irqsave(&cg->lock, flags);
++
++	old_val = readl(reg);
++
++	if (value)
++		chv_writel(old_val | CV_GPIO_TX_STAT, reg);
++	else
++		chv_writel(old_val & ~CV_GPIO_TX_STAT, reg);
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++}
++
++static int chv_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct chv_gpio *cg = to_chv_gpio(chip);
++	unsigned long flags;
++	void __iomem *reg;
++	u32 value;
++
++	if (chv_gpio_pad_locked(cg, offset))
++		return 0;
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++
++	spin_lock_irqsave(&cg->lock, flags);
++
++	value = readl(reg) & ~CV_GPIO_CFG_MASK;
++	/* Disable TX and Enable RX */
++	value |= CV_GPIO_RX_EN;
++	chv_writel(value, reg);
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++
++	return 0;
++}
++
++static int chv_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
++				     int value)
++{
++	struct chv_gpio *cg = to_chv_gpio(chip);
++	unsigned long flags;
++	void __iomem *reg;
++	u32 reg_val;
++
++	if (chv_gpio_pad_locked(cg, offset))
++		return 0;
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++
++	spin_lock_irqsave(&cg->lock, flags);
++	reg_val = readl(reg) & ~CV_GPIO_CFG_MASK;
++	reg_val |= CV_GPIO_TX_EN;
++
++	/* Control TX State */
++	if (value)
++		reg_val |= CV_GPIO_TX_STAT;
++	else
++		reg_val &= ~CV_GPIO_TX_STAT;
++
++	chv_writel(reg_val, reg);
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++	return 0;
++}
++
++static void chv_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
++{
++	struct chv_gpio *cg = to_chv_gpio(chip);
++	u32 ctrl0, ctrl1, offs;
++	unsigned long flags;
++	void __iomem *reg;
++	int i;
++
++	spin_lock_irqsave(&cg->lock, flags);
++
++	for (i = 0; i < cg->chip.ngpio; i++) {
++		const char *intcfg;
++		const char *label;
++		const char *value;
++		const char *dir;
++		char pin[8];
++
++		if (!cg->bank->pads[i])
++			continue;
++
++		offs = FAMILY0_PAD_REGS_OFF +
++		      FAMILY_PAD_REGS_SIZE * (i / MAX_FAMILY_PAD_GPIO_NO) +
++		      GPIO_REGS_SIZE * (i % MAX_FAMILY_PAD_GPIO_NO);
++
++		ctrl0 = readl(chv_gpio_reg(cg, i, CV_PADCTRL0_REG));
++		ctrl1 = readl(chv_gpio_reg(cg, i, CV_PADCTRL1_REG));
++
++		snprintf(pin, sizeof(pin), "%s%02d", cg->bank->name, i);
++
++		switch (ctrl1 & CV_INT_CFG_MASK) {
++		case CV_INTR_DISABLE:
++			intcfg = "disabled";
++			break;
++
++		case CV_TRIG_EDGE_FALLING:
++			intcfg = "falling";
++			break;
++
++		case CV_TRIG_EDGE_RISING:
++			intcfg = "rising";
++			break;
++
++		case CV_TRIG_EDGE_BOTH:
++			intcfg = "both";
++			break;
++
++		case CV_TRIG_LEVEL:
++			if (ctrl1 & CV_INV_RX_DATA)
++				intcfg = "low";
++			else
++				intcfg = "high";
++			break;
++
++		default:
++			intcfg = "unknown";
++			break;
++		}
++
++		switch ((ctrl0 & CV_GPIO_CFG_MASK) >> 8) {
++		case 0:
++			dir = "in out";
++			break;
++		case 1:
++			dir = "   out";
++			break;
++		case 2:
++			dir = "in";
++			break;
++		case 3:
++			dir = "HiZ";
++			break;
++		default:
++			dir = "unknown";
++			break;
++		}
++
++		if (ctrl0 & CV_GPIO_TX_EN)
++			value = ctrl0 & CV_GPIO_TX_STAT ? "high" : "low";
++		else
++			value = ctrl0 & CV_GPIO_RX_STAT ? "high" : "low";
++
++		seq_printf(s,
++			   "%c%-4s %-17s %-8s %-4s 0x%03x %d %-8s %02d 0x%08x 0x%08x",
++			   chv_gpio_pad_locked(cg, i) ? '*' : ' ',
++			   pin, cg->bank->pads[i], dir, value, offs,
++			   (ctrl0 & CV_PAD_MODE_MASK) >> 16, intcfg,
++			   (ctrl0 & CV_INT_SEL_MASK) >> 28, ctrl0, ctrl1);
++
++		label = gpiochip_is_requested(&cg->chip, i);
++		if (label)
++			seq_printf(s, " %s\n", label);
++		else
++			seq_puts(s, "\n");
++	}
++
++	reg = chv_gpio_reg(cg, 0, CV_INT_STAT_REG);
++	seq_printf(s, "CV_INT_STAT_REG: 0x%08x\n", readl(reg));
++
++	reg = chv_gpio_reg(cg, 0, CV_INT_MASK_REG);
++	seq_printf(s, "CV_INT_MASK_REG: 0x%08x\n", readl(reg));
++
++	for (i = 0; i < ARRAY_SIZE(cg->intr_lines); i++) {
++		if (cg->intr_lines[i] >= 0)
++			seq_printf(s, "intline: %d, offset: %d\n", i,
++				   cg->intr_lines[i]);
++	}
++
++	seq_puts(s, "\n");
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++}
++
++static void chv_irq_unmask(struct irq_data *d)
++{
++	struct chv_gpio *cg = irq_data_get_irq_chip_data(d);
++	u32 offset = irqd_to_hwirq(d);
++	u32 value, intr_line;
++	unsigned long flags;
++	void __iomem *reg;
++
++	spin_lock_irqsave(&cg->lock, flags);
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++	intr_line = (readl(reg) & CV_INT_SEL_MASK) >> 28;
++
++	reg = chv_gpio_reg(cg, 0, CV_INT_MASK_REG);
++	value = readl(reg);
++	value |= (1 << intr_line);
++	chv_writel(value, reg);
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++}
++
++static void chv_irq_mask(struct irq_data *d)
++{
++	struct chv_gpio *cg = irq_data_get_irq_chip_data(d);
++	u32 offset = irqd_to_hwirq(d);
++	u32 value, intr_line;
++	unsigned long flags;
++	void __iomem *reg;
++
++	spin_lock_irqsave(&cg->lock, flags);
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL0_REG);
++	intr_line = (readl(reg) & CV_INT_SEL_MASK) >> 28;
++
++	value = readl(reg);
++	value &= ~(1 << intr_line);
++	chv_writel(value, reg);
++
++	spin_unlock_irqrestore(&cg->lock, flags);
++}
++
++static void chv_irq_ack(struct irq_data *d)
++{
++}
++
++static void chv_irq_shutdown(struct irq_data *d)
++{
++	struct chv_gpio *cg = irq_data_get_irq_chip_data(d);
++	u32 offset = irqd_to_hwirq(d);
++	void __iomem *reg;
++	unsigned long flags;
++
++	reg = chv_gpio_reg(cg, offset, CV_PADCTRL1_REG);
++
++	chv_irq_mask(d);
++
++	if (!chv_gpio_pad_locked(cg, offset)) {
++		spin_lock_irqsave(&cg->lock, flags);
++		chv_update_irq_type(cg, IRQ_TYPE_NONE, reg);
++		spin_unlock_irqrestore(&cg->lock, flags);
++	}
++}
++
++static struct irq_chip chv_irqchip = {
++	.name = "CHV-GPIO",
++	.irq_mask = chv_irq_mask,
++	.irq_unmask = chv_irq_unmask,
++	.irq_set_type = chv_irq_type,
++	.irq_ack = chv_irq_ack,
++	.irq_shutdown = chv_irq_shutdown,
++	.flags = IRQCHIP_SKIP_SET_WAKE,
++};
++
++static void chv_gpio_irq_handler(unsigned irq, struct irq_desc *desc)
++{
++	struct irq_data *data = irq_desc_get_irq_data(desc);
++	struct chv_gpio *cg = to_chv_gpio(irq_desc_get_handler_data(desc));
++	struct irq_chip *chip = irq_data_get_irq_chip(data);
++	u32 intr_line, mask, offset;
++	void __iomem *reg, *mask_reg;
++	u32 pending;
++
++	/* each GPIO controller has one INT_STAT reg */
++	reg = chv_gpio_reg(cg, 0, CV_INT_STAT_REG);
++	mask_reg = chv_gpio_reg(cg, 0, CV_INT_MASK_REG);
++	while ((pending = (readl(reg) & readl(mask_reg) & 0xffff))) {
++		unsigned irq;
++
++		intr_line = __ffs(pending);
++		mask = BIT(intr_line);
++		chv_writel(mask, reg);
++		offset = cg->intr_lines[intr_line];
++		if (unlikely(offset < 0)) {
++			dev_warn(cg->chip.dev, "unregistered shared irq\n");
++			continue;
++		}
++
++		irq = irq_find_mapping(cg->chip.irqdomain, offset);
++		generic_handle_irq(irq);
++	}
++
++	chip->irq_eoi(data);
++}
++
++static void chv_gpio_irq_init_hw(struct chv_gpio *cg)
++{
++	void __iomem *reg;
++
++	/* Mask all interrupts */
++	reg = chv_gpio_reg(cg, 0, CV_INT_MASK_REG);
++	chv_writel(0, reg);
++
++	reg = chv_gpio_reg(cg, 0, CV_INT_STAT_REG);
++	chv_writel(0xffff, reg);
++}
++
++static const struct gpio_chip chv_gpio_chip = {
++	.owner = THIS_MODULE,
++	.request = chv_gpio_request,
++	.free = chv_gpio_free,
++	.direction_input = chv_gpio_direction_input,
++	.direction_output = chv_gpio_direction_output,
++	.get = chv_gpio_get,
++	.set = chv_gpio_set,
++	.dbg_show = chv_gpio_dbg_show,
++	.base = -1,
++};
++
++static int chv_gpio_probe(struct platform_device *pdev)
++{
++	struct resource *mem_rc, *irq_rc;
++	const struct chv_gpio_bank *bank;
++	struct acpi_device *adev;
++	struct chv_gpio *cg;
++	int i, ret = 0;
++
++	adev = ACPI_COMPANION(&pdev->dev);
++	if (!adev)
++		return -ENODEV;
++
++	cg = devm_kzalloc(&pdev->dev, sizeof(*cg), GFP_KERNEL);
++	if (!cg)
++		return -ENOMEM;
++
++	for (i = 0; i < ARRAY_SIZE(chv_banks); i++) {
++		bank = &chv_banks[i];
++		if (!strcmp(adev->pnp.unique_id, bank->uid)) {
++			cg->bank = bank;
++			break;
++		}
++	}
++	if (i == ARRAY_SIZE(chv_banks))
++		return -ENODEV;
++
++	mem_rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++
++	cg->reg_base = devm_ioremap_resource(&pdev->dev, mem_rc);
++	if (IS_ERR(cg->reg_base))
++		return PTR_ERR(cg->reg_base);
++
++	spin_lock_init(&cg->lock);
++	cg->chip = chv_gpio_chip;
++	cg->chip.ngpio = cg->bank->npads;
++	cg->chip.label = dev_name(&pdev->dev);
++	cg->chip.dev = &pdev->dev;
++
++	/* Initialize interrupt lines array with negative value */
++	for (i = 0; i < ARRAY_SIZE(cg->intr_lines); i++)
++		cg->intr_lines[i] = -1;
++
++	ret = gpiochip_add(&cg->chip);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed adding GPIO chip\n");
++		return ret;
++	}
++
++	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (irq_rc && irq_rc->start) {
++		chv_gpio_irq_init_hw(cg);
++
++		ret = gpiochip_irqchip_add(&cg->chip, &chv_irqchip, 0,
++					   handle_simple_irq, IRQ_TYPE_NONE);
++		if (ret) {
++			dev_err(&pdev->dev, "Failed to add irqchip\n");
++			gpiochip_remove(&cg->chip);
++			return ret;
++		}
++
++		gpiochip_set_chained_irqchip(&cg->chip, &chv_irqchip,
++					     (unsigned)irq_rc->start,
++					     chv_gpio_irq_handler);
++	}
++
++	return 0;
++}
++
++static int chv_gpio_remove(struct platform_device *pdev)
++{
++	struct chv_gpio *cg = platform_get_drvdata(pdev);
++
++	gpiochip_remove(&cg->chip);
++	return 0;
++}
++
++static const struct acpi_device_id chv_gpio_acpi_match[] = {
++	{ "INT33FF" },
++	{ }
++};
++MODULE_DEVICE_TABLE(acpi, chv_gpio_acpi_match);
++
++static struct platform_driver chv_gpio_driver = {
++	.probe = chv_gpio_probe,
++	.remove = chv_gpio_remove,
++	.driver = {
++		.name = "chv_gpio",
++		.owner = THIS_MODULE,
++		.acpi_match_table = ACPI_PTR(chv_gpio_acpi_match),
++	},
++};
++
++static int __init chv_gpio_init(void)
++{
++	return platform_driver_register(&chv_gpio_driver);
++}
++subsys_initcall(chv_gpio_init);
++
++static void __exit chv_gpio_exit(void)
++{
++	platform_driver_unregister(&chv_gpio_driver);
++}
++module_exit(chv_gpio_exit);
++
++MODULE_DESCRIPTION("GPIO driver for Intel Cherryview/Braswell");
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Ning Li <ning.li@intel.com>");
++MODULE_AUTHOR("Alan Cox <alan@linux.intel.com>");
++MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
++MODULE_ALIAS("platform:chv_gpio");
+-- 
+2.1.0
 
-Also I see no added value in things like:
-
-#define SENSOR_OV9650_STR "OV9650"
-
-And then to later on write SENSOR_OV9650_STR instead of just plain "OV9650", that
-is wasting a whole lot of characters to receive the same end result, and makes the
-end-result harder to read, so NAK for that bit too.
-
-Nor do I see any added value in doing things like s/data/isoc_pkt_data/ that is just
-needless churn, with a (tiny) chance of regressions for no gain.
-
-The msleep 10 -> msleep 20 change also does not seem like a good idea to me, esp.
-without first testing affected webcams.
-
-I guess that after dropping all the above changes, there probably is not all that much
-left. I'm willing to take a patch which *purely* fixes coding-style issues, note if this
-turns out to get rather big again please split it up.
-
-Regards,
-
-Hans (the gspca maintainer)
-
-
-
-
-> ---
->  drivers/media/usb/gspca/sn9c20x.c | 351 +++++++++++++++++++-------------------
->  1 file changed, 176 insertions(+), 175 deletions(-)
-> 
-> diff --git a/drivers/media/usb/gspca/sn9c20x.c b/drivers/media/usb/gspca/sn9c20x.c
-> index 41a9a89..39fbc4b 100644
-> --- a/drivers/media/usb/gspca/sn9c20x.c
-> +++ b/drivers/media/usb/gspca/sn9c20x.c
-> @@ -65,6 +65,30 @@ MODULE_LICENSE("GPL");
->  #define LED_REVERSE	0x2 /* some cameras unset gpio to turn on leds */
->  #define FLIP_DETECT	0x4
->  
-> +/* message constants */
-> +#define SENSOR_OV9650_STR "OV9650"
-> +#define SENSOR_OV9655_STR "OV9655"
-> +#define SENSOR_SOI968_STR "SOI968"
-> +#define SENSOR_OV7660_STR "OV7660"
-> +#define SENSOR_OV7670_STR "OV7670"
-> +#define SENSOR_MT9V011_STR "MT9V011"
-> +#define SENSOR_MT9V111_STR "MT9V111"
-> +#define SENSOR_MT9V112_STR "MT9V112"
-> +#define SENSOR_MT9M001_STR "MT9M001"
-> +#define SENSOR_MT9M111_STR "MT9M111"
-> +#define SENSOR_MT9M112_STR "MT9M112"
-> +#define SENSOR_HV7131R_STR "HV7131R"
-> +#define SENSOR_MT9VPRB_STR "MT9VPRB"
-> +#define SENSOR_OV9650_STR "OV9650"
-> +
-> +/* info messages */
-> +#define sensor_detected_info(sensor_name)\
-> +			pr_info("%s sensor detected\n", sensor_name)
-> +
-> +/* error messages */
-> +#define sensor_init_err(sensor_name)\
-> +			pr_err("%s sensor initialization failed\n", sensor_name)
-> +
->  /* specific webcam descriptor */
->  struct sd {
->  	struct gspca_dev gspca_dev;
-> @@ -971,7 +995,7 @@ static void i2c_w(struct gspca_dev *gspca_dev, const u8 *buffer)
->  			}
->  			return;
->  		}
-> -		msleep(10);
-> +		msleep(20);
->  	}
->  	pr_err("i2c_w reg %02x no response\n", buffer[2]);
->  /*	gspca_dev->usb_err = -EIO;	fixme: may occur */
-> @@ -1079,85 +1103,128 @@ static void i2c_r2(struct gspca_dev *gspca_dev, u8 reg, u16 *val)
->  	*val = (gspca_dev->usb_buf[3] << 8) | gspca_dev->usb_buf[4];
->  }
->  
-> +/* Initialize sensors with i2c_reg_u8 buffers. */
-> +static void _init_sensor_w1(struct gspca_dev *gspca_dev,
-> +			const struct i2c_reg_u8 buf[], int buf_size,
-> +			const char *sensor_str,	u8 hstart, u8 vstart,
-> +			bool sensor_reset)
-> +{
-> +	struct sd *sd = (struct sd *) gspca_dev;
-> +
-> +	if (sensor_reset) {
-> +		i2c_w1(gspca_dev, 0x12, 0x80);		/* sensor reset */
-> +		msleep(200);
-> +	}
-> +	i2c_w1_buf(gspca_dev, buf, buf_size);
-> +	if (gspca_dev->usb_err < 0)
-> +		sensor_init_err(sensor_str);
-> +	sd->hstart = hstart;
-> +	sd->vstart = vstart;
-> +}
-> +
-> +/* Initialize sensors with i2c_reg_u16 buffers. */
-> +static void _init_sensor_w2(struct gspca_dev *gspca_dev,
-> +			const struct i2c_reg_u16 buf[], int buf_size,
-> +			const char *sensor_str, u8 hstart, u8 vstart)
-> +{
-> +	struct sd *sd = (struct sd *) gspca_dev;
-> +
-> +	i2c_w2_buf(gspca_dev, buf, buf_size);
-> +	if (gspca_dev->usb_err < 0)
-> +		sensor_init_err(sensor_str);
-> +	sd->hstart = hstart;
-> +	sd->vstart = vstart;
-> +}
-> +
->  static void ov9650_init_sensor(struct gspca_dev *gspca_dev)
->  {
->  	u16 id;
-> -	struct sd *sd = (struct sd *) gspca_dev;
->  
->  	i2c_r2(gspca_dev, 0x1c, &id);
-> +
->  	if (gspca_dev->usb_err < 0)
->  		return;
-> -
->  	if (id != 0x7fa2) {
->  		pr_err("sensor id for ov9650 doesn't match (0x%04x)\n", id);
->  		gspca_dev->usb_err = -ENODEV;
->  		return;
->  	}
->  
-> -	i2c_w1(gspca_dev, 0x12, 0x80);		/* sensor reset */
-> -	msleep(200);
-> -	i2c_w1_buf(gspca_dev, ov9650_init, ARRAY_SIZE(ov9650_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("OV9650 sensor initialization failed\n");
-> -	sd->hstart = 1;
-> -	sd->vstart = 7;
-> +	_init_sensor_w1(gspca_dev, ov9650_init, ARRAY_SIZE(ov9650_init),
-> +			SENSOR_OV9650_STR, 1, 7, true);
->  }
->  
->  static void ov9655_init_sensor(struct gspca_dev *gspca_dev)
->  {
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> -
-> -	i2c_w1(gspca_dev, 0x12, 0x80);		/* sensor reset */
-> -	msleep(200);
-> -	i2c_w1_buf(gspca_dev, ov9655_init, ARRAY_SIZE(ov9655_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("OV9655 sensor initialization failed\n");
-> -
-> -	sd->hstart = 1;
-> -	sd->vstart = 2;
-> +	_init_sensor_w1(gspca_dev, ov9655_init, ARRAY_SIZE(ov9655_init),
-> +			SENSOR_OV9655_STR, 1, 2, true);
->  }
->  
->  static void soi968_init_sensor(struct gspca_dev *gspca_dev)
->  {
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> +	_init_sensor_w1(gspca_dev, soi968_init, ARRAY_SIZE(soi968_init),
-> +			SENSOR_SOI968_STR, 60, 11, true);
-> +}
->  
-> -	i2c_w1(gspca_dev, 0x12, 0x80);		/* sensor reset */
-> -	msleep(200);
-> -	i2c_w1_buf(gspca_dev, soi968_init, ARRAY_SIZE(soi968_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("SOI968 sensor initialization failed\n");
-> +static void ov7660_init_sensor(struct gspca_dev *gspca_dev)
-> +{
-> +	_init_sensor_w1(gspca_dev, ov7660_init, ARRAY_SIZE(ov7660_init),
-> +			SENSOR_OV7660_STR, 3, 3, true);
-> +}
-> +
-> +static void ov7670_init_sensor(struct gspca_dev *gspca_dev)
-> +{
-> +	_init_sensor_w1(gspca_dev, ov7670_init, ARRAY_SIZE(ov7670_init),
-> +			SENSOR_OV7670_STR, 0, 1, true);
-> +}
->  
-> -	sd->hstart = 60;
-> -	sd->vstart = 11;
-> +static void hv7131r_init_sensor(struct gspca_dev *gspca_dev)
-> +{
-> +	_init_sensor_w1(gspca_dev, hv7131r_init, ARRAY_SIZE(hv7131r_init),
-> +			SENSOR_HV7131R_STR, 0, 1, false);
->  }
->  
-> -static void ov7660_init_sensor(struct gspca_dev *gspca_dev)
-> +static void mt9m112_init_sensor(struct gspca_dev *gspca_dev)
->  {
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> +	_init_sensor_w2(gspca_dev, mt9m112_init, ARRAY_SIZE(mt9m112_init),
-> +			SENSOR_MT9M112_STR, 0, 2);
-> +}
->  
-> -	i2c_w1(gspca_dev, 0x12, 0x80);		/* sensor reset */
-> -	msleep(200);
-> -	i2c_w1_buf(gspca_dev, ov7660_init, ARRAY_SIZE(ov7660_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("OV7660 sensor initialization failed\n");
-> -	sd->hstart = 3;
-> -	sd->vstart = 3;
-> +static void mt9m111_init_sensor(struct gspca_dev *gspca_dev)
-> +{
-> +	_init_sensor_w2(gspca_dev, mt9m111_init, ARRAY_SIZE(mt9m111_init),
-> +			SENSOR_MT9M111_STR, 0, 2);
->  }
->  
-> -static void ov7670_init_sensor(struct gspca_dev *gspca_dev)
-> +static void mt9m001_init_sensor(struct gspca_dev *gspca_dev)
->  {
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> +	u16 id;
->  
-> -	i2c_w1(gspca_dev, 0x12, 0x80);		/* sensor reset */
-> -	msleep(200);
-> -	i2c_w1_buf(gspca_dev, ov7670_init, ARRAY_SIZE(ov7670_init));
-> +	i2c_r2(gspca_dev, 0x00, &id);
->  	if (gspca_dev->usb_err < 0)
-> -		pr_err("OV7670 sensor initialization failed\n");
-> +		return;
-> +
-> +	/* must be 0x8411 or 0x8421 for colour sensor and 8431 for bw */
-> +	switch (id) {
-> +	case 0x8411:
-> +	case 0x8421:
-> +		sensor_detected_info("MT9M001 color");
-> +		break;
-> +	case 0x8431:
-> +		sensor_detected_info("MT9M001 mono");
-> +		break;
-> +	default:
-> +		pr_err("No MT9M001 chip detected, ID = %x\n\n", id);
-> +		gspca_dev->usb_err = -ENODEV;
-> +		return;
-> +	}
->  
-> -	sd->hstart = 0;
-> -	sd->vstart = 1;
-> +	_init_sensor_w2(gspca_dev, mt9m001_init, ARRAY_SIZE(mt9m001_init),
-> +			SENSOR_MT9M001_STR, 1, 1);
->  }
->  
-> +
-> +
->  static void mt9v_init_sensor(struct gspca_dev *gspca_dev)
->  {
->  	struct sd *sd = (struct sd *) gspca_dev;
-> @@ -1169,13 +1236,13 @@ static void mt9v_init_sensor(struct gspca_dev *gspca_dev)
->  	 && value == 0x8243) {
->  		i2c_w2_buf(gspca_dev, mt9v011_init, ARRAY_SIZE(mt9v011_init));
->  		if (gspca_dev->usb_err < 0) {
-> -			pr_err("MT9V011 sensor initialization failed\n");
-> +			sensor_init_err(SENSOR_MT9V011_STR);
->  			return;
->  		}
->  		sd->hstart = 2;
->  		sd->vstart = 2;
->  		sd->sensor = SENSOR_MT9V011;
-> -		pr_info("MT9V011 sensor detected\n");
-> +		sensor_detected_info(SENSOR_MT9V011_STR);
->  		return;
->  	}
->  
-> @@ -1187,13 +1254,13 @@ static void mt9v_init_sensor(struct gspca_dev *gspca_dev)
->  	 && value == 0x823a) {
->  		i2c_w2_buf(gspca_dev, mt9v111_init, ARRAY_SIZE(mt9v111_init));
->  		if (gspca_dev->usb_err < 0) {
-> -			pr_err("MT9V111 sensor initialization failed\n");
-> +			sensor_init_err(SENSOR_MT9V111_STR);
->  			return;
->  		}
->  		sd->hstart = 2;
->  		sd->vstart = 2;
->  		sd->sensor = SENSOR_MT9V111;
-> -		pr_info("MT9V111 sensor detected\n");
-> +		sensor_detected_info(SENSOR_MT9V111_STR);
->  		return;
->  	}
->  
-> @@ -1210,94 +1277,26 @@ static void mt9v_init_sensor(struct gspca_dev *gspca_dev)
->  	 && value == 0x1229) {
->  		i2c_w2_buf(gspca_dev, mt9v112_init, ARRAY_SIZE(mt9v112_init));
->  		if (gspca_dev->usb_err < 0) {
-> -			pr_err("MT9V112 sensor initialization failed\n");
-> +			sensor_init_err(SENSOR_MT9V112_STR);
->  			return;
->  		}
->  		sd->hstart = 6;
->  		sd->vstart = 2;
->  		sd->sensor = SENSOR_MT9V112;
-> -		pr_info("MT9V112 sensor detected\n");
-> +		sensor_detected_info(SENSOR_MT9V112_STR);
->  		return;
->  	}
->  
->  	gspca_dev->usb_err = -ENODEV;
->  }
->  
-> -static void mt9m112_init_sensor(struct gspca_dev *gspca_dev)
-> -{
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> -
-> -	i2c_w2_buf(gspca_dev, mt9m112_init, ARRAY_SIZE(mt9m112_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("MT9M112 sensor initialization failed\n");
-> -
-> -	sd->hstart = 0;
-> -	sd->vstart = 2;
-> -}
-> -
-> -static void mt9m111_init_sensor(struct gspca_dev *gspca_dev)
-> -{
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> -
-> -	i2c_w2_buf(gspca_dev, mt9m111_init, ARRAY_SIZE(mt9m111_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("MT9M111 sensor initialization failed\n");
-> -
-> -	sd->hstart = 0;
-> -	sd->vstart = 2;
-> -}
-> -
-> -static void mt9m001_init_sensor(struct gspca_dev *gspca_dev)
-> -{
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> -	u16 id;
-> -
-> -	i2c_r2(gspca_dev, 0x00, &id);
-> -	if (gspca_dev->usb_err < 0)
-> -		return;
-> -
-> -	/* must be 0x8411 or 0x8421 for colour sensor and 8431 for bw */
-> -	switch (id) {
-> -	case 0x8411:
-> -	case 0x8421:
-> -		pr_info("MT9M001 color sensor detected\n");
-> -		break;
-> -	case 0x8431:
-> -		pr_info("MT9M001 mono sensor detected\n");
-> -		break;
-> -	default:
-> -		pr_err("No MT9M001 chip detected, ID = %x\n\n", id);
-> -		gspca_dev->usb_err = -ENODEV;
-> -		return;
-> -	}
-> -
-> -	i2c_w2_buf(gspca_dev, mt9m001_init, ARRAY_SIZE(mt9m001_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("MT9M001 sensor initialization failed\n");
-> -
-> -	sd->hstart = 1;
-> -	sd->vstart = 1;
-> -}
-> -
-> -static void hv7131r_init_sensor(struct gspca_dev *gspca_dev)
-> -{
-> -	struct sd *sd = (struct sd *) gspca_dev;
-> -
-> -	i2c_w1_buf(gspca_dev, hv7131r_init, ARRAY_SIZE(hv7131r_init));
-> -	if (gspca_dev->usb_err < 0)
-> -		pr_err("HV7131R Sensor initialization failed\n");
-> -
-> -	sd->hstart = 0;
-> -	sd->vstart = 1;
-> -}
-> -
->  static void set_cmatrix(struct gspca_dev *gspca_dev,
->  		s32 brightness, s32 contrast, s32 satur, s32 hue)
->  {
->  	s32 hue_coord, hue_index = 180 + hue;
->  	u8 cmatrix[21];
->  
-> -	memset(cmatrix, 0, sizeof cmatrix);
-> +	memset(cmatrix, 0, sizeof(cmatrix));
->  	cmatrix[2] = (contrast * 0x25 / 0x100) + 0x26;
->  	cmatrix[0] = 0x13 + (cmatrix[2] - 0x26) * 0x13 / 0x25;
->  	cmatrix[4] = 0x07 + (cmatrix[2] - 0x26) * 0x07 / 0x25;
-> @@ -1787,8 +1786,9 @@ static int sd_init(struct gspca_dev *gspca_dev)
->  	struct sd *sd = (struct sd *) gspca_dev;
->  	int i;
->  	u8 value;
-> -	u8 i2c_init[9] =
-> -		{0x80, sd->i2c_addr, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
-> +	u8 i2c_init[9] = {
-> +		0x80, sd->i2c_addr, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03
-> +	};
->  
->  	for (i = 0; i < ARRAY_SIZE(bridge_init); i++) {
->  		value = bridge_init[i][1];
-> @@ -1815,49 +1815,49 @@ static int sd_init(struct gspca_dev *gspca_dev)
->  		ov9650_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("OV9650 sensor detected\n");
-> +		sensor_detected_info(SENSOR_OV9650_STR);
->  		break;
->  	case SENSOR_OV9655:
->  		ov9655_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("OV9655 sensor detected\n");
-> +		sensor_detected_info(SENSOR_OV9655_STR);
->  		break;
->  	case SENSOR_SOI968:
->  		soi968_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("SOI968 sensor detected\n");
-> +		sensor_detected_info(SENSOR_SOI968_STR);
->  		break;
->  	case SENSOR_OV7660:
->  		ov7660_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("OV7660 sensor detected\n");
-> +		sensor_detected_info(SENSOR_OV7660_STR);
->  		break;
->  	case SENSOR_OV7670:
->  		ov7670_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("OV7670 sensor detected\n");
-> +		sensor_detected_info(SENSOR_OV7670_STR);
->  		break;
->  	case SENSOR_MT9VPRB:
->  		mt9v_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("MT9VPRB sensor detected\n");
-> +		sensor_detected_info(SENSOR_MT9VPRB_STR);
->  		break;
->  	case SENSOR_MT9M111:
->  		mt9m111_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("MT9M111 sensor detected\n");
-> +		sensor_detected_info(SENSOR_MT9M111_STR);
->  		break;
->  	case SENSOR_MT9M112:
->  		mt9m112_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("MT9M112 sensor detected\n");
-> +		sensor_detected_info(SENSOR_MT9M112_STR);
->  		break;
->  	case SENSOR_MT9M001:
->  		mt9m001_init_sensor(gspca_dev);
-> @@ -1868,7 +1868,7 @@ static int sd_init(struct gspca_dev *gspca_dev)
->  		hv7131r_init_sensor(gspca_dev);
->  		if (gspca_dev->usb_err < 0)
->  			break;
-> -		pr_info("HV7131R sensor detected\n");
-> +		sensor_detected_info(SENSOR_HV7131R_STR);
->  		break;
->  	default:
->  		pr_err("Unsupported sensor\n");
-> @@ -2171,13 +2171,12 @@ static void qual_upd(struct work_struct *work)
->  }
->  
->  #if IS_ENABLED(CONFIG_INPUT)
-> -static int sd_int_pkt_scan(struct gspca_dev *gspca_dev,
-> -			u8 *data,		/* interrupt packet */
-> -			int len)		/* interrupt packet length */
-> +static int sd_int_pkt_scan(struct gspca_dev *gspca_dev, u8 *interrupt_pkt_data,
-> +				 int interrupt_pkt_len)
->  {
->  	struct sd *sd = (struct sd *) gspca_dev;
->  
-> -	if (!(sd->flags & HAS_NO_BUTTON) && len == 1) {
-> +	if (!(sd->flags & HAS_NO_BUTTON) && interrupt_pkt_len == 1) {
->  		input_report_key(gspca_dev->input_dev, KEY_CAMERA, 1);
->  		input_sync(gspca_dev->input_dev);
->  		input_report_key(gspca_dev->input_dev, KEY_CAMERA, 0);
-> @@ -2189,8 +2188,7 @@ static int sd_int_pkt_scan(struct gspca_dev *gspca_dev,
->  #endif
->  
->  /* check the JPEG compression */
-> -static void transfer_check(struct gspca_dev *gspca_dev,
-> -			u8 *data)
-> +static void transfer_check(struct gspca_dev *gspca_dev, u8 *data)
->  {
->  	struct sd *sd = (struct sd *) gspca_dev;
->  	int new_qual, r;
-> @@ -2219,8 +2217,10 @@ static void transfer_check(struct gspca_dev *gspca_dev,
->  			   use v4l2_ctrl_g/s_ctrl here. Access the value
->  			   directly instead. */
->  			s32 curqual = sd->jpegqual->cur.val;
-> +
->  			sd->nchg = 0;
->  			new_qual += curqual;
-> +
->  			if (new_qual < sd->jpegqual->minimum)
->  				new_qual = sd->jpegqual->minimum;
->  			else if (new_qual > sd->jpegqual->maximum)
-> @@ -2236,70 +2236,71 @@ static void transfer_check(struct gspca_dev *gspca_dev,
->  	sd->pktsz = sd->npkt = 0;
->  }
->  
-> -static void sd_pkt_scan(struct gspca_dev *gspca_dev,
-> -			u8 *data,			/* isoc packet */
-> -			int len)			/* iso packet length */
-> +static void sd_pkt_scan(struct gspca_dev *gspca_dev, u8 *isoc_pkt_data,
-> +			int isoc_pkt_len)
->  {
->  	struct sd *sd = (struct sd *) gspca_dev;
->  	int avg_lum, is_jpeg;
-> -	static const u8 frame_header[] =
-> -		{0xff, 0xff, 0x00, 0xc4, 0xc4, 0x96};
-> +	static const u8 frame_header[] = {
-> +		0xff, 0xff, 0x00, 0xc4, 0xc4, 0x96
-> +	};
->  
->  	is_jpeg = (sd->fmt & 0x03) == 0;
-> -	if (len >= 64 && memcmp(data, frame_header, 6) == 0) {
-> -		avg_lum = ((data[35] >> 2) & 3) |
-> -			   (data[20] << 2) |
-> -			   (data[19] << 10);
-> -		avg_lum += ((data[35] >> 4) & 3) |
-> -			    (data[22] << 2) |
-> -			    (data[21] << 10);
-> -		avg_lum += ((data[35] >> 6) & 3) |
-> -			    (data[24] << 2) |
-> -			    (data[23] << 10);
-> -		avg_lum += (data[36] & 3) |
-> -			   (data[26] << 2) |
-> -			   (data[25] << 10);
-> -		avg_lum += ((data[36] >> 2) & 3) |
-> -			    (data[28] << 2) |
-> -			    (data[27] << 10);
-> -		avg_lum += ((data[36] >> 4) & 3) |
-> -			    (data[30] << 2) |
-> -			    (data[29] << 10);
-> -		avg_lum += ((data[36] >> 6) & 3) |
-> -			    (data[32] << 2) |
-> -			    (data[31] << 10);
-> -		avg_lum += ((data[44] >> 4) & 3) |
-> -			    (data[34] << 2) |
-> -			    (data[33] << 10);
-> +	if (isoc_pkt_len >= 64 && memcmp(isoc_pkt_data, frame_header, 6) == 0) {
-> +		avg_lum = ((isoc_pkt_data[35] >> 2) & 3) |
-> +			   (isoc_pkt_data[20] << 2) |
-> +			   (isoc_pkt_data[19] << 10);
-> +		avg_lum += ((isoc_pkt_data[35] >> 4) & 3) |
-> +			    (isoc_pkt_data[22] << 2) |
-> +			    (isoc_pkt_data[21] << 10);
-> +		avg_lum += ((isoc_pkt_data[35] >> 6) & 3) |
-> +			    (isoc_pkt_data[24] << 2) |
-> +			    (isoc_pkt_data[23] << 10);
-> +		avg_lum += (isoc_pkt_data[36] & 3) |
-> +			   (isoc_pkt_data[26] << 2) |
-> +			   (isoc_pkt_data[25] << 10);
-> +		avg_lum += ((isoc_pkt_data[36] >> 2) & 3) |
-> +			    (isoc_pkt_data[28] << 2) |
-> +			    (isoc_pkt_data[27] << 10);
-> +		avg_lum += ((isoc_pkt_data[36] >> 4) & 3) |
-> +			    (isoc_pkt_data[30] << 2) |
-> +			    (isoc_pkt_data[29] << 10);
-> +		avg_lum += ((isoc_pkt_data[36] >> 6) & 3) |
-> +			    (isoc_pkt_data[32] << 2) |
-> +			    (isoc_pkt_data[31] << 10);
-> +		avg_lum += ((isoc_pkt_data[44] >> 4) & 3) |
-> +			    (isoc_pkt_data[34] << 2) |
-> +			    (isoc_pkt_data[33] << 10);
->  		avg_lum >>= 9;
->  		atomic_set(&sd->avg_lum, avg_lum);
->  
->  		if (is_jpeg)
-> -			transfer_check(gspca_dev, data);
-> +			transfer_check(gspca_dev, isoc_pkt_data);
->  
->  		gspca_frame_add(gspca_dev, LAST_PACKET, NULL, 0);
-> -		len -= 64;
-> -		if (len == 0)
-> +		isoc_pkt_len -= 64;
-> +		if (isoc_pkt_len == 0)
->  			return;
-> -		data += 64;
-> +		isoc_pkt_data += 64;
->  	}
->  	if (gspca_dev->last_packet_type == LAST_PACKET) {
->  		if (is_jpeg) {
->  			gspca_frame_add(gspca_dev, FIRST_PACKET,
->  				sd->jpeg_hdr, JPEG_HDR_SZ);
->  			gspca_frame_add(gspca_dev, INTER_PACKET,
-> -				data, len);
-> +				isoc_pkt_data, isoc_pkt_len);
->  		} else {
->  			gspca_frame_add(gspca_dev, FIRST_PACKET,
-> -				data, len);
-> +				isoc_pkt_data, isoc_pkt_len);
->  		}
->  	} else {
->  		/* if JPEG, count the packets and their size */
->  		if (is_jpeg) {
->  			sd->npkt++;
-> -			sd->pktsz += len;
-> +			sd->pktsz += isoc_pkt_len;
->  		}
-> -		gspca_frame_add(gspca_dev, INTER_PACKET, data, len);
-> +		gspca_frame_add(gspca_dev, INTER_PACKET, isoc_pkt_data,
-> +				isoc_pkt_len);
->  	}
->  }
->  
-> 
