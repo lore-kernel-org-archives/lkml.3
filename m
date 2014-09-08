@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbaIHIwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:52:31 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:59650 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaIHIwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 04:52:30 -0400
+	id S1753338AbaIHIxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:53:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:53177 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753058AbaIHIxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 04:53:44 -0400
+Date: Mon, 8 Sep 2014 18:53:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stefan Hengelein <stefan.hengelein@fau.de>,
+        Andreas Ruprecht <rupran@einserver.de>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: linux-next: manual merge of the akpm-current tree with the rcu tree
+Message-ID: <20140908185336.4e5b6baf@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1393537013-6264-1-git-send-email-fkan@apm.com>
-References: <1393537013-6264-1-git-send-email-fkan@apm.com>
-Date: Mon, 8 Sep 2014 14:22:28 +0530
-Message-ID: <CAFdej02vSm8TbUWGsMr936WN1GNmJ0SBuEKQkKyzKoEjtVmc+g@mail.gmail.com>
-Subject: Re: [PATCH V3] irqchip:gic: change access of gicc_ctrl register to
- read modify write.
-From: Arun Chandran <achandran@mvista.com>
-To: Feng Kan <fkan@apm.com>
-Cc: tglx@linutronix.de, patches@apm.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        Vinayak Kale <vkale@apm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/SLUJXmiBe2lhXNJxTHXBVA+"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Feng,
+--Sig_/SLUJXmiBe2lhXNJxTHXBVA+
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Is this patch still needed to fix perf calltrace?
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265814.html
+Hi Andrew,
 
-On Fri, Feb 28, 2014 at 3:06 AM, Feng Kan <fkan@apm.com> wrote:
-> This change is made to preserve the GIC v2 releated bits in the
-> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-> The original code only set the enable/disable group bit in this register.
-> This code will preserve the bypass bits configured by the bootload except
-> the enable/disable bit. The main reason for this change is to allow the
-> bypass bits specified in the v2 spec to remain untouched by the current
-> GIC code. In the X-Gene platform, the bypass functionality is not used
-> and bypass must be disabled at all time.
->
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Acked-by: Anup Patel <apatel@apm.com>
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
-> V3 Changes:
->         - Sorry, forgot to change the mask for cpu_init path
->           assumed bootloader setup bits correctly.
-> V2 Changes:
->         - only mask off v2 bypass bits
->  drivers/irqchip/irq-gic.c |   32 +++++++++++++++++++++++++++++---
->  1 files changed, 29 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 341c601..3ca7995 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->         void __iomem *dist_base = gic_data_dist_base(gic);
->         void __iomem *base = gic_data_cpu_base(gic);
->         unsigned int cpu_mask, cpu = smp_processor_id();
-> +       unsigned int ctrl_mask;
->         int i;
->
->         /*
-> @@ -449,13 +450,29 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->
->         writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
-> -       writel_relaxed(1, base + GIC_CPU_CTRL);
-> +
-> +       ctrl_mask = readl(base + GIC_CPU_CTRL);
+Today's linux-next merge of the akpm-current tree got a conflict in
+init/Kconfig between commit d2cf0d24cb2d ("rcu: Fix attempt to avoid
+unsolicited offloading of callbacks") from the rcu tree and commit
+0c67534a7708 ("init/Kconfig: move RCU_NOCB_CPU dependencies to choice")
+from the akpm-current tree.
 
-readl_relaxed() here?
+I fixed it up (a version of the akpm-current tree commit also exists in
+the rcu tree, so I used that) and can carry the fix as necessary (no
+action is required).
 
-> +
-> +       /* Mask out the gic v2 bypass bits */
-> +       ctrl_mask &= 0x1e0;
-> +
-> +       /* Enable group 0 */
-> +       ctrl_mask |= 0x1;
-> +       writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
->  }
->
->  void gic_cpu_if_down(void)
->  {
-> +       unsigned int ctrl_mask;
->         void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
-> -       writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
-> +
-> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
-readl_relaxed() here?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +       /*
-> +        * Disable grp enable bit, leave the bypass bits alone as changing
-> +        * them could leave the system unstable
-> +        */
-> +       ctrl_mask &= 0x1e0;
-> +       writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
->  }
->
->  #ifdef CONFIG_CPU_PM
-> @@ -566,6 +583,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->  {
->         int i;
->         u32 *ptr;
-> +       unsigned int ctrl_mask;
->         void __iomem *dist_base;
->         void __iomem *cpu_base;
->
-> @@ -590,7 +608,15 @@ static void gic_cpu_restore(unsigned int gic_nr)
->                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->
->         writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
-> -       writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-> +
-> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
+--Sig_/SLUJXmiBe2lhXNJxTHXBVA+
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-readl_relaxed() here?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> +
-> +       /* Mask out the gic v2 bypass bits */
-> +       ctrl_mask &= 0x1e0;
-> +
-> +       /* Enable group 0 */
-> +       ctrl_mask |= 0x1;
-> +       writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
->  }
->
+iQIcBAEBCAAGBQJUDW6VAAoJEMDTa8Ir7ZwVuycP/3DCRXxwYqlGHpUGoqr16SDc
+8vFjQPEkuAIYAscaUxl2B1r56f8qvJdKtPoSpX62eZZhzyP5Umui7nypHmfWICzZ
+yk6chbo3GFa/eD4Pu3zhRWReaeuv44+w38FnBwW2pnLfJRFqJi/PxZctr91qCZWX
+RtVlCKsmv2q4lRJhSTtk8taBbsxeXK+sChhk2va0LQhSKGxp40d87uMXekRpKu2w
+H6xy/an7OHtLH2Rt6XljR+XqvT0UOxiob01/9AnMtaRLuGmE9dyMBEEtrixessQM
+9DjMG4OQtetnmfS7SCA74YCBZ5P2PTzJsI/iAs83yDOnoLJQhZiSIxo/h8snsJB/
+fVcV3caUiqQDfWEe9yWxkOk+DkAW+ufj1e+CFN6bVq68PB0mwjXB6ziVgosNjUd6
+bZ0S9NPKpRezGJ/92WqX3qxRvwb4iDZypuoM0PzNwHH//mlB/sYHLssmebHPO7Gw
+9677EseHHsP/56ose1o3+Rbubpq/7ZnWLf8C29nQDpxYcR3SL6D5S37pqvkSGI2k
+aDvboGiHrV4Zp5mpG1Xqvn8hJZqQU1Idh+IVDv0vGQCMwoyUlo2dmOVpVwjyqh+j
+ik9Jn8mXpK+vt10s4Uhgp6tqXO9HzfC5eDoremxGlfI9buh8j8uEPmnE02Xuaykv
+NTTuSrBM2+YMqlkDKiPr
+=6WwN
+-----END PGP SIGNATURE-----
 
---Arun
+--Sig_/SLUJXmiBe2lhXNJxTHXBVA+--
