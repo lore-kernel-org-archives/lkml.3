@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaIHCMw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 22:12:52 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:53433 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618AbaIHCMe (ORCPT
+	id S1752720AbaIHCWH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 22:22:07 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:22158 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751424AbaIHCWF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 22:12:34 -0400
-From: Tejun Heo <tj@kernel.org>
-To: cl@linux-foundation.org, kmo@daterainc.com
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/3] percpu-refcount: implement percpu_ref_set_killed()
-Date: Mon,  8 Sep 2014 11:12:21 +0900
-Message-Id: <1410142342-8185-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410142342-8185-1-git-send-email-tj@kernel.org>
-References: <1410142342-8185-1-git-send-email-tj@kernel.org>
+	Sun, 7 Sep 2014 22:22:05 -0400
+Date: Mon, 8 Sep 2014 04:21:59 +0200 (CEST)
+From: robert.jarzmik@free.fr
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        arm@kernel.org
+Message-ID: <2043099673.69233100.1410142919959.JavaMail.root@zimbra1-e1.priv.proxad.net>
+In-Reply-To: <3188925.pjYA4K7kjn@wuerfel>
+Subject: =?utf-8?Q?Re=C2=A0:_Re:_[PATCH_]_ARM:_pxa:_fix_section_?=
+ =?utf-8?Q?mismatch_warning_for_pxa=5Ftimer=5Fnodt=5Finit?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [32.145.84.193]
+X-Mailer: Zimbra 7.2.0-GA2598 (zclient/7.2.0-GA2598)
+X-Authenticated-User: robert.jarzmik@free.fr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the recent addition of percpu_ref_reinit(), percpu_ref now can be
-used as a persistent switch which can be turned on and off repeatedly
-where turning off maps to killing the ref and waiting for it to drain;
-however, there currently isn't a way to initialize a percpu_ref in its
-off (killed and drained) state, which can be inconvenient for certain
-persistent switch use cases.
+Yes please Arnd, I'm still out for 1.5 week, so it would be great if you take that through your tree with my ack. Thanks.
 
-This patch adds percpu_ref_set_killed() which forces the percpu_ref
-into its killed and drained state.  The caller is responsible for
-ensuring that no one else is using the ref.  This can be used to force
-the percpu_ref into its off state after initialization.
+Robert
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
----
- include/linux/percpu-refcount.h |  1 +
- lib/percpu-refcount.c           | 14 ++++++++++++++
- 2 files changed, 15 insertions(+)
+PS: I know, top-posting is madness, but I'm really limited by technology right now.
 
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index ee83251..97a7d2a 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -69,6 +69,7 @@ struct percpu_ref {
- int __must_check percpu_ref_init(struct percpu_ref *ref,
- 				 percpu_ref_func_t *release, gfp_t gfp);
- void percpu_ref_reinit(struct percpu_ref *ref);
-+void percpu_ref_set_killed(struct percpu_ref *ref);
- void percpu_ref_exit(struct percpu_ref *ref);
- void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
- 				 percpu_ref_func_t *confirm_kill);
-diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-index 70d28c9..a6768f6 100644
---- a/lib/percpu-refcount.c
-+++ b/lib/percpu-refcount.c
-@@ -98,6 +98,20 @@ void percpu_ref_reinit(struct percpu_ref *ref)
- EXPORT_SYMBOL_GPL(percpu_ref_reinit);
- 
- /**
-+ * percpu_ref_set_killed - force a percpu refcount to the killed state
-+ * @ref: percpu_ref to set killed for
-+ *
-+ * Set @ref's state to killed.  This function doesn't care about the
-+ * current state or in-progress operations on @ref and the caller is
-+ * responsible for ensuring that @ref isn't being used by anyone else.
-+ */
-+void percpu_ref_set_killed(struct percpu_ref *ref)
-+{
-+	ref->pcpu_count_ptr |= PCPU_REF_DEAD;
-+	atomic_set(&ref->count, 0);
-+}
-+
-+/**
-  * percpu_ref_exit - undo percpu_ref_init()
-  * @ref: percpu_ref to exit
-  *
--- 
-1.9.3
+----- Mail d'origine -----
+De: Arnd Bergmann <arnd@arndb.de>
+À: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Daniel Lezcano <daniel.lezcano@linaro.org>, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>, arm@kernel.org
+Envoyé: Sun, 07 Sep 2014 23:06:05 +0200 (CEST)
+Objet: Re: [PATCH ] ARM: pxa: fix section mismatch warning for pxa_timer_nodt_init
+
+On Saturday 26 July 2014 20:50:36 Arnd Bergmann wrote:
+> commit a38b1f60b5245a3 ("ARM: pxa: Add non device-tree timer link to
+> clocksource") introduced a harmless section mismatch warning for
+> all pxa platforms, by introducing a new pxa_timer_init() function
+> that is not marked __init but that calls pxa_timer_nodt_init(),
+> which is. The function is only called at init time, so it is safe
+> to also annotate it this way.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+
+Apparently this is not merged yet, should we take it through arm-soc?
+
+diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
+index 630fa916bbc6..04b013fbc98f 100644
+--- a/arch/arm/mach-pxa/generic.c
++++ b/arch/arm/mach-pxa/generic.c
+@@ -61,7 +61,7 @@ EXPORT_SYMBOL(get_clock_tick_rate);
+ /*
+ * For non device-tree builds, keep legacy timer init
+ */
+-void pxa_timer_init(void)
++void __init pxa_timer_init(void)
+ {
+ pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
+ get_clock_tick_rate());
 
