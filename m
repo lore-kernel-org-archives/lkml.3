@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaIHX1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:27:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36430 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213AbaIHX12 (ORCPT
+	id S1755500AbaIHX30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:29:26 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:41899 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213AbaIHX3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:27:28 -0400
-Date: Mon, 8 Sep 2014 16:27:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>, Jiri Slaby <jslaby@suse.cz>,
-        kernel@stlinux.com, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3.17-rc3] serial: asc: Adopt readl_/writel_relaxed()
-Message-ID: <20140908232727.GA8970@kroah.com>
-References: <1409745651-3247-1-git-send-email-daniel.thompson@linaro.org>
+	Mon, 8 Sep 2014 19:29:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409745651-3247-1-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <4809128.C6aPga5IjQ@vostro.rjw.lan>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+	<1609685.fbsF6EQ3X7@vostro.rjw.lan>
+	<CAM_iQpXiJL=q6NFkiPF71dZHKXu=ReJ59Rbadc__+UX-GW2x8A@mail.gmail.com>
+	<4809128.C6aPga5IjQ@vostro.rjw.lan>
+Date: Mon, 8 Sep 2014 16:29:24 -0700
+Message-ID: <CAM_iQpXwEEoCTqksFEyJ7UigOJkf6g5UHnddEHcMDjwKz6K-DQ@mail.gmail.com>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 01:00:51PM +0100, Daniel Thompson wrote:
-> The architectures where this peripheral exists (ARM and SH) have expensive
-> implementations of writel(), reliant on spin locks and explicit L2 cache
-> management. These architectures provide a cheaper writel_relaxed() which
-> is much better suited to peripherals that do not perform DMA. The
-> situation with readl()/readl_relaxed()is similar although less acute.
-> 
-> This driver does not use DMA and will be more power efficient and more
-> robust (due to absense of spin locks during console I/O) if it uses the
-> relaxed variants.
-> 
-> This change means the driver is no longer portable and therefore no
-> longer suitable for compile testing.
-> 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-> Cc: Patrice Chotard <patrice.chotard@st.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: kernel@stlinux.com
-> Cc: linux-serial@vger.kernel.org
-> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
-> Acked-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  drivers/tty/serial/Kconfig  | 2 +-
->  drivers/tty/serial/st-asc.c | 4 ++--
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-> index 26cec64d..e9b1735 100644
-> --- a/drivers/tty/serial/Kconfig
-> +++ b/drivers/tty/serial/Kconfig
-> @@ -1527,7 +1527,7 @@ config SERIAL_FSL_LPUART_CONSOLE
->  config SERIAL_ST_ASC
->  	tristate "ST ASC serial port support"
->  	select SERIAL_CORE
-> -	depends on ARM || COMPILE_TEST
-> +	depends on ARM
+On Mon, Sep 8, 2014 at 4:42 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Monday, September 08, 2014 04:16:15 PM Cong Wang wrote:
+>> On Mon, Sep 8, 2014 at 4:23 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> >
+>> > The reason why it matters for the suspend-time freezing is that we freeze tasks
+>> > to take them out of the picture entirely until they are thawed.  Therefore we
+>> > can't allow them to go back to the picture just for a while until they are
+>> > killed.  Frozen tasks are not supposed to get back to the picture at all.
+>> >
+>>
+>>
+>> Ok, then checking TIF_MEMDIE is unsafe for PM freeze, we should
+>> keep the cgroup_freezing() test to make sure freeze request is from
+>> cgroup not PM. Question got answered. :)
+>
+> Do I think correctly that cgroups freezing and system suspend are
+> mutually exclusive?  If not, then this still is problematic.
 
-I really don't like stuff that does this, sorry.  I want to test build
-as many drivers as I can.  COMPILE_TEST does not mean that the driver is
-"portable", only that it builds properly on all platforms.
+Good point! Although rare, but it is possible we freeze a process both from
+cgroup and PM. Hmm, this means we have to explicitly exclude PM rather
+just checking cgroup freeze? Interesting, but I am not familiar with PM.
 
->  	help
->  	  This driver is for the on-chip Asychronous Serial Controller on
->  	  STMicroelectronics STi SoCs.
-> diff --git a/drivers/tty/serial/st-asc.c b/drivers/tty/serial/st-asc.c
-> index 8b2d735..adadbc1 100644
-> --- a/drivers/tty/serial/st-asc.c
-> +++ b/drivers/tty/serial/st-asc.c
-> @@ -151,12 +151,12 @@ static inline struct asc_port *to_asc_port(struct uart_port *port)
-> 
->  static inline u32 asc_in(struct uart_port *port, u32 offset)
->  {
-> -	return readl(port->membase + offset);
-> +	return readl_relaxed(port->membase + offset);
+>
+>> I will put the following as a comment:
+>>
+>> /* OOM killer may decide to kill this process after it is frozen,
+>>    in this case SIGKILL can never be handled, so we should check
+>>   TIF_MEMDIE and if it is set, thaw and let SIGKILL kill it.
+>>   But for PM freeze, it is not allowed to get out even for a while,
+>>   so we have to keep it being frozen. */
+>>
+>> Let me know if it looks good to you.
+>
+> Well, it reflects the reality, so it's good enough.  But please adhere to the
+> coding style rules for comments.
+>
 
-What plaforms do not provide readl_relaxed()?
+Sure thing.
 
-thanks,
-
-greg k-h
+Thanks!
