@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441AbaIHJnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:43:51 -0400
-Received: from mail-bl2on0072.outbound.protection.outlook.com ([65.55.169.72]:29734
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1754407AbaIHJnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:43:50 -0400
+Received: from mail-bn1bon0095.outbound.protection.outlook.com ([157.56.111.95]:13040
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753315AbaIHJjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:39:07 -0400
+	id S1753941AbaIHJjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:39:08 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v3 04/29] nios2: Exception handling
-Date: Mon, 8 Sep 2014 17:22:15 +0800
-Message-ID: <1410168160-3624-5-git-send-email-lftan@altera.com>
+Subject: [PATCH v3 29/29] nios2: Build infrastructure
+Date: Mon, 8 Sep 2014 17:22:40 +0800
+Message-ID: <1410168160-3624-30-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
 References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(19580405001)(86362001)(575784001)(87936001)(88136002)(85852003)(85306004)(99396002)(104166001)(87286001)(42186005)(46102001)(92726001)(79102001)(20776003)(74502001)(33646002)(47776003)(48376002)(44976005)(19580395003)(6806004)(31966008)(50226001)(106466001)(84676001)(97736003)(92566001)(36756003)(74662001)(105596002)(77982001)(68736004)(4396001)(93916002)(89996001)(77156001)(81342001)(90102001)(2201001)(83322001)(102836001)(80022001)(62966002)(76176999)(83072002)(50986999)(81542001)(95666004)(107046002)(50466002)(77096002)(229853001)(76482001)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB043;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(31966008)(107046002)(4396001)(84676001)(21056001)(36756003)(95666004)(106466001)(77982001)(88136002)(86362001)(74502001)(85306004)(92726001)(42186005)(46102001)(2201001)(97736003)(87936001)(15975445006)(74662001)(89996001)(77096002)(68736004)(77156001)(92566001)(62966002)(80022001)(229853001)(15202345003)(105596002)(48376002)(50986999)(76176999)(81342001)(99396002)(81542001)(6806004)(19580405001)(50226001)(102836001)(93916002)(575784001)(85852003)(83072002)(76482001)(104166001)(47776003)(50466002)(79102001)(90102001)(20776003)(33646002)(44976005)(19580395003)(83322001)(87286001)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB045;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 03283976A6
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,831 +31,961 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains the exception entry code (kernel/entry.S) and misaligned exception.
+This patch adds Makefile and Kconfig files required for building a
+nios2 kernel.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/kernel/entry.S      | 548 +++++++++++++++++++++++++++++++++++++++++
- arch/nios2/kernel/misaligned.c | 255 +++++++++++++++++++
- 2 files changed, 803 insertions(+)
- create mode 100644 arch/nios2/kernel/entry.S
- create mode 100644 arch/nios2/kernel/misaligned.c
+ arch/nios2/Kconfig                   | 201 +++++++++++++++++++++++++++++++++++
+ arch/nios2/Kconfig.debug             |  17 +++
+ arch/nios2/Makefile                  |  73 +++++++++++++
+ arch/nios2/boot/Makefile             |  52 +++++++++
+ arch/nios2/boot/install.sh           |  52 +++++++++
+ arch/nios2/configs/3c120_defconfig   |  77 ++++++++++++++
+ arch/nios2/include/asm/Kbuild        |  63 +++++++++++
+ arch/nios2/include/uapi/asm/Kbuild   |   6 ++
+ arch/nios2/kernel/Makefile           |  24 +++++
+ arch/nios2/kernel/nios2_ksyms.c      |  35 ++++++
+ arch/nios2/kernel/vmlinux.lds.S      |  75 +++++++++++++
+ arch/nios2/lib/Makefile              |   9 ++
+ arch/nios2/mm/Makefile               |  14 +++
+ arch/nios2/platform/Kconfig.platform | 129 ++++++++++++++++++++++
+ arch/nios2/platform/Makefile         |   1 +
+ 15 files changed, 828 insertions(+)
+ create mode 100644 arch/nios2/Kconfig
+ create mode 100644 arch/nios2/Kconfig.debug
+ create mode 100644 arch/nios2/Makefile
+ create mode 100644 arch/nios2/boot/Makefile
+ create mode 100644 arch/nios2/boot/install.sh
+ create mode 100644 arch/nios2/configs/3c120_defconfig
+ create mode 100644 arch/nios2/include/asm/Kbuild
+ create mode 100644 arch/nios2/include/uapi/asm/Kbuild
+ create mode 100644 arch/nios2/kernel/Makefile
+ create mode 100644 arch/nios2/kernel/nios2_ksyms.c
+ create mode 100644 arch/nios2/kernel/vmlinux.lds.S
+ create mode 100644 arch/nios2/lib/Makefile
+ create mode 100644 arch/nios2/mm/Makefile
+ create mode 100644 arch/nios2/platform/Kconfig.platform
+ create mode 100644 arch/nios2/platform/Makefile
 
-diff --git a/arch/nios2/kernel/entry.S b/arch/nios2/kernel/entry.S
+diff --git a/arch/nios2/Kconfig b/arch/nios2/Kconfig
 new file mode 100644
-index 0000000..04a01e1
+index 0000000..8a4889d
 --- /dev/null
-+++ b/arch/nios2/kernel/entry.S
-@@ -0,0 +1,548 @@
-+/*
-+ * linux/arch/nios2/kernel/entry.S
-+ *
-+ * Copyright (C) 2013  Altera Corporation
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ *
-+ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * Based on:
-+ *
-+ * linux/arch/nios2/kernel/entry.S
-+ *
-+ *  Copyright (C) 1999-2002, Greg Ungerer (gerg@snapgear.com)
-+ *  Copyright (C) 1998  D. Jeff Dionne <jeff@lineo.ca>,
-+ *                      Kenneth Albanowski <kjahds@kjahds.com>,
-+ *  Copyright (C) 2000  Lineo Inc. (www.lineo.com)
-+ *  Copyright (C) 2004  Microtronix Datacom Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Linux/m68k support by Hamish Macdonald
-+ *
-+ * 68060 fixes by Jesper Skov
-+ * ColdFire support by Greg Ungerer (gerg@snapgear.com)
-+ * 5307 fixes by David W. Miller
-+ * linux 2.4 support David McCullough <davidm@snapgear.com>
-+ */
-+
-+#include <linux/sys.h>
-+#include <linux/linkage.h>
-+#include <asm/asm-offsets.h>
-+#include <asm/asm-macros.h>
-+#include <asm/thread_info.h>
-+#include <asm/errno.h>
-+#include <asm/setup.h>
-+#include <asm/entry.h>
-+#include <asm/unistd.h>
-+#include <asm/processor.h>
-+
-+.macro GET_THREAD_INFO reg
-+.if THREAD_SIZE & 0xffff0000
-+	andhi	\reg, sp, %hi(~(THREAD_SIZE-1))
-+.else
-+	addi	\reg, r0, %lo(~(THREAD_SIZE-1))
-+	and	\reg, \reg, sp
-+.endif
-+.endm
-+
-+.macro	kuser_cmpxchg_check
-+	/*
-+	 * Make sure our user space atomic helper is restarted if it was
-+	 * interrupted in a critical region.
-+	 * ea-4 = address of interrupted insn (ea must be preserved).
-+	 * sp = saved regs.
-+	 * cmpxchg_ldw = first critical insn, cmpxchg_stw = last critical insn.
-+	 * If ea <= cmpxchg_stw and ea > cmpxchg_ldw then saved EA is set to
-+	 * cmpxchg_ldw + 4.
-+	*/
-+	/* et = cmpxchg_stw + 4 */
-+	movui   et, (KUSER_BASE + 4 + (cmpxchg_stw - __kuser_helper_start))
-+	bgtu	ea, et, 1f
-+
-+	subi	et, et, (cmpxchg_stw - cmpxchg_ldw) /* et = cmpxchg_ldw + 4 */
-+	bltu	ea, et, 1f
-+	stw	et, PT_EA(sp)	/* fix up EA */
-+	mov	ea, et
-+1:
-+.endm
-+
-+.section .rodata
-+.align 4
-+exception_table:
-+	.word unhandled_exception	/* 0 - Reset */
-+	.word unhandled_exception	/* 1 - Processor-only Reset */
-+	.word external_interrupt	/* 2 - Interrupt */
-+	.word handle_trap		/* 3 - Trap Instruction */
-+
-+	.word instruction_trap		/* 4 - Unimplemented instruction */
-+	.word handle_illegal		/* 5 - Illegal instruction */
-+	.word handle_unaligned		/* 6 - Misaligned data access */
-+	.word handle_unaligned		/* 7 - Misaligned destination address */
-+
-+	.word handle_diverror		/* 8 - Division error */
-+	.word protection_exception_ba	/* 9 - Supervisor-only instr. address */
-+	.word protection_exception_instr /* 10 - Supervisor only instruction */
-+	.word protection_exception_ba	/* 11 - Supervisor only data address */
-+
-+	.word unhandled_exception	/* 12 - Double TLB miss (data) */
-+	.word protection_exception_pte	/* 13 - TLB permission violation (x) */
-+	.word protection_exception_pte	/* 14 - TLB permission violation (r) */
-+	.word protection_exception_pte	/* 15 - TLB permission violation (w) */
-+
-+	.word unhandled_exception	/* 16 - MPU region violation */
-+
-+trap_table:
-+	.word	handle_system_call	/* 0  */
-+	.word	instruction_trap	/* 1  */
-+	.word	instruction_trap	/* 2  */
-+	.word	instruction_trap	/* 3  */
-+	.word	instruction_trap	/* 4  */
-+	.word	instruction_trap	/* 5  */
-+	.word	instruction_trap	/* 6  */
-+	.word	instruction_trap	/* 7  */
-+	.word	instruction_trap	/* 8  */
-+	.word	instruction_trap	/* 9  */
-+	.word	instruction_trap	/* 10 */
-+	.word	instruction_trap	/* 11 */
-+	.word	instruction_trap	/* 12 */
-+	.word	instruction_trap	/* 13 */
-+	.word	instruction_trap	/* 14 */
-+	.word	instruction_trap	/* 15 */
-+	.word	instruction_trap	/* 16 */
-+	.word	instruction_trap	/* 17 */
-+	.word	instruction_trap	/* 18 */
-+	.word	instruction_trap	/* 19 */
-+	.word	instruction_trap	/* 20 */
-+	.word	instruction_trap	/* 21 */
-+	.word	instruction_trap	/* 22 */
-+	.word	instruction_trap	/* 23 */
-+	.word	instruction_trap	/* 24 */
-+	.word	instruction_trap	/* 25 */
-+	.word	instruction_trap	/* 26 */
-+	.word	instruction_trap	/* 27 */
-+	.word	instruction_trap	/* 28 */
-+	.word	instruction_trap	/* 29 */
-+	.word	instruction_trap	/* 30 */
-+	.word	handle_breakpoint	/* 31 */
-+
-+.text
-+.set noat
-+.set nobreak
-+
-+ENTRY(inthandler)
-+	SAVE_ALL
-+
-+	kuser_cmpxchg_check
-+
-+	/* Clear EH bit before we get a new excpetion in the kernel
-+	 * and after we have saved it to the exception frame. This is done
-+	 * wheter it's trap, tlb-miss or interrupt. If we don't do this
-+	 * estatus is not updated the next exception.
-+	 */
-+	rdctl	r24, status
-+	movi	r9, %lo(~STATUS_EH)
-+	and	r24, r24, r9
-+	wrctl	status, r24
-+
-+	/* Read cause and vector and branch to the associated handler */
-+	mov	r4, sp
-+	rdctl	r5, exception
-+	movia	r9, exception_table
-+	add	r24, r9, r5
-+	ldw	r24, 0(r24)
-+	jmp	r24
-+
-+
-+/***********************************************************************
-+ * Handle traps
-+ ***********************************************************************
-+ */
-+ENTRY(handle_trap)
-+	ldw	r24, -4(ea)	/* instruction that caused the exception */
-+	srli	r24, r24, 4
-+	andi	r24, r24, 0x7c
-+	movia	r9,trap_table
-+	add	r24, r24, r9
-+	ldw	r24, 0(r24)
-+	jmp	r24
-+
-+
-+/***********************************************************************
-+ * Handle system calls
-+ ***********************************************************************
-+ */
-+ENTRY(handle_system_call)
-+	/* Enable interrupts */
-+	rdctl	r10, status
-+	ori	r10, r10, STATUS_PIE
-+	wrctl	status, r10
-+
-+	/* Reload registers destroyed by common code. */
-+	ldw	r4, PT_R4(sp)
-+	ldw	r5, PT_R5(sp)
-+
-+	/* Check that the requested system call is within limits */
-+	movui	r1, __NR_syscalls
-+	bgeu	r2, r1, ret_invsyscall
-+	slli	r1, r2, 2
-+	movhi	r11, %hiadj(sys_call_table)
-+	add	r1, r1, r11
-+	ldw	r1, %lo(sys_call_table)(r1)
-+	beq	r1, r0, ret_invsyscall
-+
-+	/* Check if we are being traced */
-+	GET_THREAD_INFO r11
-+	ldw	r11,TI_FLAGS(r11)
-+	BTBNZ   r11,r11,TIF_SYSCALL_TRACE,traced_system_call
-+
-+	/* Execute the system call */
-+	callr	r1
-+
-+	/* If the syscall returns a negative result:
-+	 *   Set r7 to 1 to indicate error,
-+	 *   Negate r2 to get a positive error code
-+	 * If the syscall returns zero or a positive value:
-+	 *   Set r7 to 0.
-+	 * The sigreturn system calls will skip the code below by
-+	 * adding to register ra. To avoid destroying registers
-+	 */
-+translate_rc_and_ret:
-+	movi	r1, 0
-+	bge	r2, zero, 3f
-+	sub	r2, zero, r2
-+	movi	r1, 1
-+3:
-+	stw	r2, PT_R2(sp)
-+	stw	r1, PT_R7(sp)
-+end_translate_rc_and_ret:
-+
-+ret_from_exception:
-+	ldw	r1, PT_ESTATUS(sp)
-+	/* if so, skip resched, signals */
-+	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
-+
-+restore_all:
-+	rdctl	r10, status			/* disable intrs */
-+	andi	r10, r10, %lo(~STATUS_PIE)
-+	wrctl	status, r10
-+	RESTORE_ALL
-+	eret
-+
-+	/* If the syscall number was invalid return ENOSYS */
-+ret_invsyscall:
-+	movi	r2, -ENOSYS
-+	br	translate_rc_and_ret
-+
-+	/* This implements the same as above, except it calls
-+	 * do_syscall_trace_enter and do_syscall_trace_exit before and after the
-+	 * syscall in order for utilities like strace and gdb to work.
-+	 */
-+traced_system_call:
-+	SAVE_SWITCH_STACK
-+	call	do_syscall_trace_enter
-+	RESTORE_SWITCH_STACK
-+
-+	/* Create system call register arguments. The 5th and 6th
-+	   arguments on stack are already in place at the beginning
-+	   of pt_regs. */
-+	ldw	r2, PT_R2(sp)
-+	ldw	r4, PT_R4(sp)
-+	ldw	r5, PT_R5(sp)
-+	ldw	r6, PT_R6(sp)
-+	ldw	r7, PT_R7(sp)
-+
-+	/* Fetch the syscall function, we don't need to check the boundaries
-+	 * since this is already done.
-+	 */
-+	slli	r1, r2, 2
-+	movhi	r11,%hiadj(sys_call_table)
-+	add	r1, r1, r11
-+	ldw	r1, %lo(sys_call_table)(r1)
-+
-+	callr	r1
-+
-+	/* If the syscall returns a negative result:
-+	 *   Set r7 to 1 to indicate error,
-+	 *   Negate r2 to get a positive error code
-+	 * If the syscall returns zero or a positive value:
-+	 *   Set r7 to 0.
-+	 * The sigreturn system calls will skip the code below by
-+	 * adding to register ra. To avoid destroying registers
-+	 */
-+translate_rc_and_ret2:
-+	movi	r1, 0
-+	bge	r2, zero, 4f
-+	sub	r2, zero, r2
-+	movi	r1, 1
-+4:
-+	stw	r2, PT_R2(sp)
-+	stw	r1, PT_R7(sp)
-+end_translate_rc_and_ret2:
-+	SAVE_SWITCH_STACK
-+	call	do_syscall_trace_exit
-+	RESTORE_SWITCH_STACK
-+	br	ret_from_exception
-+
-+Luser_return:
-+	GET_THREAD_INFO	r11			/* get thread_info pointer */
-+	ldw	r10, TI_FLAGS(r11)		/* get thread_info->flags */
-+	ANDI32	r11, r10, _TIF_WORK_MASK
-+	beq	r11, r0, restore_all		/* Nothing to do */
-+	BTBZ	r1, r10, TIF_NEED_RESCHED, Lsignal_return
-+
-+	/* Reschedule work */
-+	call	schedule
-+	br	ret_from_exception
-+
-+Lsignal_return:
-+	ANDI32	r1, r10, _TIF_SIGPENDING | _TIF_NOTIFY_RESUME
-+	beq	r1, r0, restore_all
-+	mov	r4, sp			/* pt_regs */
-+	SAVE_SWITCH_STACK
-+	movi	r5, 1			/* in_syscall = 1 */
-+	call	do_notify_resume
-+	RESTORE_SWITCH_STACK
-+	br	restore_all
-+
-+
-+
-+/***********************************************************************
-+ * Handle external interrupts.
-+ ***********************************************************************
-+ */
-+/*
-+ * This is the generic interrupt handler (for all hardware interrupt
-+ * sources). It figures out the vector number and calls the appropriate
-+ * interrupt service routine directly.
-+ */
-+external_interrupt:
-+	rdctl	r12, ipending
-+	rdctl	r9, ienable
-+	and	r12, r12, r9
-+	/* skip if no interrupt is pending */
-+	beq	r12, r0, ret_from_interrupt
-+
-+	movi	r24, -1
-+	stw	r24, PT_ORIG_R2(sp)
-+
-+	/*
-+	 * Process an external hardware interrupt.
-+	 */
-+
-+	addi	ea, ea, -4	/* re-issue the interrupted instruction */
-+	stw	ea, PT_EA(sp)
-+2:	movi	r4, %lo(-1)	/* Start from bit position 0,
-+					highest priority */
-+				/* This is the IRQ # for handler call */
-+1:	andi	r10, r12, 1	/* Isolate bit we are interested in */
-+	srli	r12, r12, 1	/* shift count is costly without hardware
-+					multiplier */
-+	addi	r4, r4, 1
-+	beq	r10, r0, 1b
-+	mov	r5, sp		/* Setup pt_regs pointer for handler call */
-+	call	do_IRQ
-+	rdctl	r12, ipending	/* check again if irq still pending */
-+	rdctl	r9, ienable	/* Isolate possible interrupts */
-+	and	r12, r12, r9
-+	bne	r12, r0, 2b
-+	/* br	ret_from_interrupt */ /* fall throught to ret_from_interrupt */
-+
-+ENTRY(ret_from_interrupt)
-+	ldw	r1, PT_ESTATUS(sp)	/* check if returning to kernel */
-+	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
-+
-+#ifdef CONFIG_PREEMPT
-+	GET_THREAD_INFO	r1
-+	ldw	r4, TI_PREEMPT_COUNT(r1)
-+	bne	r4, r0, restore_all
-+
-+need_resched:
-+	ldw	r4, TI_FLAGS(r1)		/* ? Need resched set */
-+	BTBZ	r10, r4, TIF_NEED_RESCHED, restore_all
-+	ldw	r4, PT_ESTATUS(sp)	/* ? Interrupts off */
-+	andi	r10, r4, ESTATUS_EPIE
-+	beq	r10, r0, restore_all
-+	movia	r4, PREEMPT_ACTIVE
-+	stw	r4, TI_PREEMPT_COUNT(r1)
-+	rdctl	r10, status		/* enable intrs again */
-+	ori	r10, r10 ,STATUS_PIE
-+	wrctl	status, r10
-+	PUSH	r1
-+	call	schedule
-+	POP	r1
-+	mov	r4, r0
-+	stw	r4, TI_PREEMPT_COUNT(r1)
-+	rdctl	r10, status		/* disable intrs */
-+	andi	r10, r10, %lo(~STATUS_PIE)
-+	wrctl	status, r10
-+	br	need_resched
-+#else
-+	br	restore_all
-+#endif
-+
-+/***********************************************************************
-+ * A few syscall wrappers
-+ ***********************************************************************
-+ */
-+/*
-+ * int clone(unsigned long clone_flags, unsigned long newsp,
-+ *		int __user * parent_tidptr, int __user * child_tidptr,
-+ *		int tls_val)
-+ */
-+ENTRY(sys_clone)
-+	SAVE_SWITCH_STACK
-+	addi	sp, sp, -4
-+	stw	r7, 0(sp)	/* Pass 5th arg thru stack */
-+	mov	r7, r6		/* 4th arg is 3rd of clone() */
-+	mov	r6, zero	/* 3rd arg always 0 */
-+	call	do_fork
-+	addi	sp, sp, 4
-+	RESTORE_SWITCH_STACK
-+	ret
-+
-+ENTRY(sys_rt_sigreturn)
-+	SAVE_SWITCH_STACK
-+	mov	r4, sp
-+	call	do_rt_sigreturn
-+	RESTORE_SWITCH_STACK
-+	addi	ra, ra, (end_translate_rc_and_ret - translate_rc_and_ret)
-+	ret
-+
-+/***********************************************************************
-+ * A few other wrappers and stubs
-+ ***********************************************************************
-+ */
-+protection_exception_pte:
-+	rdctl	r6, pteaddr
-+	slli	r6, r6, 10
-+	call	do_page_fault
-+	br	ret_from_exception
-+
-+protection_exception_ba:
-+	rdctl	r6, badaddr
-+	call	do_page_fault
-+	br	ret_from_exception
-+
-+protection_exception_instr:
-+	call	handle_supervisor_instr
-+	br	ret_from_exception
-+
-+handle_breakpoint:
-+	call	breakpoint_c
-+	br	ret_from_exception
-+
-+#ifdef CONFIG_NIOS2_ALIGNMENT_TRAP
-+handle_unaligned:
-+	SAVE_SWITCH_STACK
-+	call	handle_unaligned_c
-+	RESTORE_SWITCH_STACK
-+	br	ret_from_exception
-+#else
-+handle_unaligned:
-+	call	handle_unaligned_c
-+	br	ret_from_exception
-+#endif
-+
-+handle_illegal:
-+	call	handle_illegal_c
-+	br	ret_from_exception
-+
-+handle_diverror:
-+	call	handle_diverror_c
-+	br	ret_from_exception
-+
-+/*
-+ * Beware - when entering resume, prev (the current task) is
-+ * in r4, next (the new task) is in r5, don't change these
-+ * registers.
-+ */
-+ENTRY(resume)
-+
-+	rdctl	r7, status			/* save thread status reg */
-+	stw	r7, TASK_THREAD + THREAD_KPSR(r4)
-+
-+	andi	r7, r7, %lo(~STATUS_PIE)	/* disable interrupts */
-+	wrctl	status, r7
-+
-+	SAVE_SWITCH_STACK
-+	stw	sp, TASK_THREAD + THREAD_KSP(r4)/* save kernel stack pointer */
-+	ldw	sp, TASK_THREAD + THREAD_KSP(r5)/* restore new thread stack */
-+	movia	r24, _current_thread		/* save thread */
-+	GET_THREAD_INFO r1
-+	stw	r1, 0(r24)
-+	RESTORE_SWITCH_STACK
-+
-+	ldw	r7, TASK_THREAD + THREAD_KPSR(r5)/* restore thread status reg */
-+	wrctl	status, r7
-+	ret
-+
-+ENTRY(ret_from_fork)
-+	call	schedule_tail
-+	br	ret_from_exception
-+
-+ENTRY(ret_from_kernel_thread)
-+	call	schedule_tail
-+	mov	r4,r17	/* arg */
-+	callr	r16	/* function */
-+	br	ret_from_exception
-+
-+/*
-+ * Kernel user helpers.
-+ *
-+ * Each segment is 64-byte aligned and will be mapped to the <User space>.
-+ * New segments (if ever needed) must be added after the existing ones.
-+ * This mechanism should be used only for things that are really small and
-+ * justified, and not be abused freely.
-+ *
-+ */
-+
-+ /* Filling pads with undefined instructions. */
-+.macro	kuser_pad sym size
-+	.if	((. - \sym) & 3)
-+	.rept	(4 - (. - \sym) & 3)
-+	.byte	0
-+	.endr
-+	.endif
-+	.rept	((\size - (. - \sym)) / 4)
-+	.word	0xdeadbeef
-+	.endr
-+.endm
-+
-+	.align	6
-+	.globl	__kuser_helper_start
-+__kuser_helper_start:
-+
-+__kuser_helper_version:				/* @ 0x1000 */
-+	.word	((__kuser_helper_end - __kuser_helper_start) >> 6)
-+
-+__kuser_cmpxchg:				/* @ 0x1004 */
-+	/*
-+	 * r4 pointer to exchange variable
-+	 * r5 old value
-+	 * r6 new value
-+	 */
-+cmpxchg_ldw:
-+	ldw	r2, 0(r4)			/* load current value */
-+	sub	r2, r2, r5			/* compare with old value */
-+	bne	r2, zero, cmpxchg_ret
-+
-+	/* We had a match, store the new value */
-+cmpxchg_stw:
-+	stw	r6, 0(r4)
-+cmpxchg_ret:
-+	ret
-+
-+	kuser_pad __kuser_cmpxchg, 64
-+
-+	.globl	__kuser_sigtramp
-+__kuser_sigtramp:
-+	movi	r2, __NR_rt_sigreturn
-+	trap
-+
-+	kuser_pad __kuser_sigtramp, 64
-+
-+	.globl	__kuser_helper_end
-+__kuser_helper_end:
-diff --git a/arch/nios2/kernel/misaligned.c b/arch/nios2/kernel/misaligned.c
++++ b/arch/nios2/Kconfig
+@@ -0,0 +1,201 @@
++config NIOS2
++	def_bool y
++	select ARCH_WANT_OPTIONAL_GPIOLIB
++	select CLKSRC_OF
++	select GENERIC_ATOMIC64
++	select GENERIC_CLOCKEVENTS
++	select GENERIC_CPU_DEVICES
++	select GENERIC_IRQ_PROBE
++	select GENERIC_IRQ_SHOW
++	select HAVE_ARCH_TRACEHOOK
++	select IRQ_DOMAIN
++	select MODULES_USE_ELF_RELA
++	select OF
++	select OF_EARLY_FLATTREE
++	select SOC_BUS
++	select SPARSE_IRQ
++	select USB_ARCH_HAS_HCD if USB_SUPPORT
++
++config GENERIC_CSUM
++	def_bool y
++
++config GENERIC_HWEIGHT
++	def_bool y
++
++config GENERIC_CALIBRATE_DELAY
++	def_bool y
++
++config NO_IOPORT_MAP
++	def_bool y
++
++config HAS_DMA
++	def_bool y
++
++config FPU
++	def_bool n
++
++config SWAP
++	def_bool n
++
++config RWSEM_GENERIC_SPINLOCK
++	def_bool y
++
++config TRACE_IRQFLAGS_SUPPORT
++	def_bool n
++
++source "init/Kconfig"
++
++menu "Kernel features"
++
++source "kernel/Kconfig.preempt"
++
++source "kernel/Kconfig.freezer"
++
++source "kernel/Kconfig.hz"
++
++source "mm/Kconfig"
++
++config FORCE_MAX_ZONEORDER
++	int "Maximum zone order"
++	range 9 20
++	default "11"
++	help
++	  The kernel memory allocator divides physically contiguous memory
++	  blocks into "zones", where each zone is a power of two number of
++	  pages.  This option selects the largest power of two that the kernel
++	  keeps in the memory allocator.  If you need to allocate very large
++	  blocks of physically contiguous memory, then you may need to
++	  increase this value.
++
++	  This config option is actually maximum order plus one. For example,
++	  a value of 11 means that the largest free memory block is 2^10 pages.
++
++endmenu
++
++source "arch/nios2/platform/Kconfig.platform"
++
++menu "Processor type and features"
++
++config MMU
++	def_bool y
++
++config NIOS2_ALIGNMENT_TRAP
++	bool "Catch alignment trap"
++	default y
++	help
++	  Nios II CPUs cannot fetch/store data which is not bus aligned,
++	  i.e., a 2 or 4 byte fetch must start at an address divisible by
++	  2 or 4. Any non-aligned load/store instructions will be trapped and
++	  emulated in software if you say Y here, which has a performance
++	  impact.
++
++comment "Boot options"
++
++config CMDLINE_BOOL
++	bool "Default bootloader kernel arguments"
++	default y
++
++config CMDLINE
++	string "Default kernel command string"
++	default ""
++	depends on CMDLINE_BOOL
++	help
++	  On some platforms, there is currently no way for the boot loader to
++	  pass arguments to the kernel. For these platforms, you can supply
++	  some command-line options at build time by entering them here.  In
++	  other cases you can specify kernel args so that you don't have
++	  to set them up in board prom initialization routines.
++
++config CMDLINE_FORCE
++	bool "Force default kernel command string"
++	depends on CMDLINE_BOOL
++	help
++	  Set this to have arguments from the default kernel command string
++	  override those passed by the boot loader.
++
++config NIOS2_CMDLINE_IGNORE_DTB
++	bool "Ignore kernel command string from DTB"
++	depends on !CMDLINE_FORCE
++	default y
++	help
++	  Set this to ignore the bootargs property from the devicetree's
++	  chosen node and fall back to CMDLINE if nothing is passed.
++
++config NIOS2_PASS_CMDLINE
++	bool "Passed kernel command line from u-boot"
++	default n
++	help
++	  Use bootargs env variable from u-boot for kernel command line.
++	  will override "Default kernel command string".
++	  Say N if you are unsure.
++
++endmenu
++
++menu "Advanced setup"
++
++config ADVANCED_OPTIONS
++	bool "Prompt for advanced kernel configuration options"
++	help
++
++comment "Default settings for advanced configuration options are used"
++	depends on !ADVANCED_OPTIONS
++
++config NIOS2_KERNEL_MMU_REGION_BASE_BOOL
++	bool "Set custom kernel MMU region base address"
++	depends on ADVANCED_OPTIONS
++	help
++	  This option allows you to set the virtual address of the kernel MMU region.
++
++	  Say N here unless you know what you are doing.
++
++config NIOS2_KERNEL_MMU_REGION_BASE
++	hex "Virtual base address of the kernel MMU region " if NIOS2_KERNEL_MMU_REGION_BASE_BOOL
++	default "0x80000000"
++	help
++	  This option allows you to set the virtual base address of the kernel MMU region.
++
++config NIOS2_KERNEL_REGION_BASE_BOOL
++	bool "Set custom kernel region base address"
++	depends on ADVANCED_OPTIONS
++	help
++	  This option allows you to set the virtual address of the kernel region.
++
++	  Say N here unless you know what you are doing.
++
++config NIOS2_KERNEL_REGION_BASE
++	hex "Virtual base address of the kernel region " if NIOS2_KERNEL_REGION_BASE_BOOL
++	default "0xc0000000"
++
++config NIOS2_IO_REGION_BASE_BOOL
++	bool "Set custom I/O region base address"
++	depends on ADVANCED_OPTIONS
++	help
++	  This option allows you to set the virtual address of the I/O region.
++
++	  Say N here unless you know what you are doing.
++
++config NIOS2_IO_REGION_BASE
++	hex "Virtual base address of the I/O region" if NIOS2_IO_REGION_BASE_BOOL
++	default "0xe0000000"
++
++endmenu
++
++menu "Executable file formats"
++
++source "fs/Kconfig.binfmt"
++
++endmenu
++
++source "net/Kconfig"
++
++source "drivers/Kconfig"
++
++source "fs/Kconfig"
++
++source "arch/nios2/Kconfig.debug"
++
++source "security/Kconfig"
++
++source "crypto/Kconfig"
++
++source "lib/Kconfig"
+diff --git a/arch/nios2/Kconfig.debug b/arch/nios2/Kconfig.debug
 new file mode 100644
-index 0000000..db5c54a
+index 0000000..8d4e6ba
 --- /dev/null
-+++ b/arch/nios2/kernel/misaligned.c
-@@ -0,0 +1,255 @@
++++ b/arch/nios2/Kconfig.debug
+@@ -0,0 +1,17 @@
++menu "Kernel hacking"
++
++config TRACE_IRQFLAGS_SUPPORT
++	def_bool y
++
++source "lib/Kconfig.debug"
++
++config DEBUG_STACK_USAGE
++	bool "Enable stack utilization instrumentation"
++	depends on DEBUG_KERNEL
++	help
++	  Enables the display of the minimum amount of free stack which each
++	  task has ever had available in the sysrq-T and sysrq-P debug output.
++
++	  This option will slow down process creation somewhat.
++
++endmenu
+diff --git a/arch/nios2/Makefile b/arch/nios2/Makefile
+new file mode 100644
+index 0000000..e142c9ee
+--- /dev/null
++++ b/arch/nios2/Makefile
+@@ -0,0 +1,73 @@
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 2013 Altera Corporation
++# Copyright (C) 1994, 95, 96, 2003 by Wind River Systems
++# Written by Fredrik Markstrom
++#
++# This file is included by the global makefile so that you can add your own
++# architecture-specific flags and dependencies. Remember to do have actions
++# for "archclean" cleaning up for this architecture.
++#
++# Nios2 port by Wind River Systems Inc trough:
++#   fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++
++UTS_SYSNAME = Linux
++
++export MMU
++
++LIBGCC		:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
++
++KBUILD_CFLAGS += -pipe -D__linux__ -D__ELF__
++KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_HW_MUL_SUPPORT),-mhw-mul,-mno-hw-mul)
++KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_HW_MULX_SUPPORT),-mhw-mulx,-mno-hw-mulx)
++KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_HW_DIV_SUPPORT),-mhw-div,-mno-hw-div)
++KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_FPU_SUPPORT),-mcustom-fpu-cfg=60-1,)
++
++KBUILD_CFLAGS += -fno-optimize-sibling-calls
++KBUILD_CFLAGS += -DUTS_SYSNAME=\"$(UTS_SYSNAME)\"
++KBUILD_CFLAGS += -fno-builtin
++KBUILD_CFLAGS += -G 0
++
++head-y		:= arch/nios2/kernel/head.o
++libs-y		+= arch/nios2/lib/ $(LIBGCC)
++core-y		+= arch/nios2/kernel/ arch/nios2/mm/
++core-y		+= arch/nios2/platform/
++
++INSTALL_PATH ?= /tftpboot
++nios2-boot := arch/$(ARCH)/boot
++BOOT_TARGETS = vmImage zImage
++PHONY += $(BOOT_TARGETS) install
++KBUILD_IMAGE := $(nios2-boot)/vmImage
++
++ifneq ($(CONFIG_NIOS2_DTB_SOURCE),"")
++	core-y	+= $(nios2-boot)/
++endif
++
++all: vmImage
++
++archclean:
++	$(Q)$(MAKE) $(clean)=$(nios2-boot)
++
++%.dtb:
++	$(Q)$(MAKE) $(build)=$(nios2-boot) $(nios2-boot)/$@
++
++dtbs:
++	$(Q)$(MAKE) $(build)=$(nios2-boot) $(nios2-boot)/$@
++
++$(BOOT_TARGETS): vmlinux
++	$(Q)$(MAKE) $(build)=$(nios2-boot) $(nios2-boot)/$@
++
++install:
++	$(Q)$(MAKE) $(build)=$(nios2-boot) BOOTIMAGE=$(KBUILD_IMAGE) install
++
++define archhelp
++  echo  '* vmImage         - Kernel-only image for U-Boot ($(KBUILD_IMAGE))'
++  echo  '  install         - Install kernel using'
++  echo  '                     (your) ~/bin/$(INSTALLKERNEL) or'
++  echo  '                     (distribution) /sbin/$(INSTALLKERNEL) or'
++  echo  '                     install to $$(INSTALL_PATH)'
++  echo  '  dtbs            - Build device tree blobs for enabled boards'
++endef
+diff --git a/arch/nios2/boot/Makefile b/arch/nios2/boot/Makefile
+new file mode 100644
+index 0000000..59392dc
+--- /dev/null
++++ b/arch/nios2/boot/Makefile
+@@ -0,0 +1,52 @@
++#
++# arch/nios2/boot/Makefile
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++
++UIMAGE_LOADADDR = $(shell $(NM) vmlinux | awk '$$NF == "_stext" {print $$1}')
++UIMAGE_ENTRYADDR = $(shell $(NM) vmlinux | awk '$$NF == "_start" {print $$1}')
++UIMAGE_COMPRESSION = gzip
++
++OBJCOPYFLAGS_vmlinux.bin := -O binary
++
++targets += vmlinux.bin vmlinux.gz vmImage
++
++$(obj)/vmlinux.bin: vmlinux FORCE
++	$(call if_changed,objcopy)
++
++$(obj)/vmlinux.gz: $(obj)/vmlinux.bin FORCE
++	$(call if_changed,gzip)
++
++$(obj)/vmImage: $(obj)/vmlinux.gz
++	$(call if_changed,uimage)
++	@$(kecho) 'Kernel: $@ is ready'
++
++# Rule to build device tree blobs
++DTB_SRC := $(patsubst "%",%,$(CONFIG_NIOS2_DTB_SOURCE))
++
++# Make sure the generated dtb gets removed during clean
++extra-$(CONFIG_NIOS2_DTB_SOURCE_BOOL) += system.dtb
++
++$(obj)/system.dtb: $(DTB_SRC) FORCE
++	$(call cmd,dtc)
++
++# Ensure system.dtb exists
++$(obj)/linked_dtb.o: $(obj)/system.dtb
++
++obj-$(CONFIG_NIOS2_DTB_SOURCE_BOOL) += linked_dtb.o
++
++targets += $(dtb-y)
++
++# Rule to build device tree blobs with make command
++$(obj)/%.dtb: $(src)/dts/%.dts FORCE
++	$(call if_changed_dep,dtc)
++
++$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
++
++clean-files := *.dtb
++
++install:
++	sh $(srctree)/$(src)/install.sh $(KERNELRELEASE) $(BOOTIMAGE) System.map "$(INSTALL_PATH)"
+diff --git a/arch/nios2/boot/install.sh b/arch/nios2/boot/install.sh
+new file mode 100644
+index 0000000..57d640d
+--- /dev/null
++++ b/arch/nios2/boot/install.sh
+@@ -0,0 +1,52 @@
++#!/bin/sh
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 1995 by Linus Torvalds
++#
++# Adapted from code in arch/i386/boot/Makefile by H. Peter Anvin
++#
++# "make install" script for m68k architecture
++#
++# Arguments:
++#   $1 - kernel version
++#   $2 - kernel image file
++#   $3 - kernel map file
++#   $4 - default install path (blank if root directory)
++#
++
++verify () {
++	if [ ! -f "$1" ]; then
++		echo ""                                                   1>&2
++		echo " *** Missing file: $1"                              1>&2
++		echo ' *** You need to run "make" before "make install".' 1>&2
++		echo ""                                                   1>&2
++		exit 1
++	fi
++}
++
++# Make sure the files actually exist
++verify "$2"
++verify "$3"
++
++# User may have a custom install script
++
++if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
++if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
++
++# Default install - same as make zlilo
++
++if [ -f $4/vmlinuz ]; then
++	mv $4/vmlinuz $4/vmlinuz.old
++fi
++
++if [ -f $4/System.map ]; then
++	mv $4/System.map $4/System.old
++fi
++
++cat $2 > $4/vmlinuz
++cp $3 $4/System.map
++
++sync
+diff --git a/arch/nios2/configs/3c120_defconfig b/arch/nios2/configs/3c120_defconfig
+new file mode 100644
+index 0000000..87541f0
+--- /dev/null
++++ b/arch/nios2/configs/3c120_defconfig
+@@ -0,0 +1,77 @@
++CONFIG_SYSVIPC=y
++CONFIG_NO_HZ_IDLE=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_LOG_BUF_SHIFT=14
++CONFIG_SYSCTL_SYSCALL=y
++# CONFIG_ELF_CORE is not set
++# CONFIG_EPOLL is not set
++# CONFIG_SIGNALFD is not set
++# CONFIG_TIMERFD is not set
++# CONFIG_EVENTFD is not set
++# CONFIG_SHMEM is not set
++# CONFIG_AIO is not set
++CONFIG_EMBEDDED=y
++CONFIG_SLAB=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_NIOS2_MEM_BASE=0x10000000
++CONFIG_NIOS2_HW_MUL_SUPPORT=y
++CONFIG_NIOS2_HW_DIV_SUPPORT=y
++CONFIG_CUSTOM_CACHE_SETTINGS=y
++CONFIG_NIOS2_DCACHE_SIZE=0x8000
++CONFIG_NIOS2_ICACHE_SIZE=0x8000
++# CONFIG_NIOS2_CMDLINE_IGNORE_DTB is not set
++CONFIG_NIOS2_PASS_CMDLINE=y
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_IP_PNP_BOOTP=y
++CONFIG_IP_PNP_RARP=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_LRO is not set
++# CONFIG_IPV6 is not set
++# CONFIG_WIRELESS is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_FW_LOADER is not set
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_CFI=y
++CONFIG_MTD_CFI_INTELEXT=y
++CONFIG_MTD_CFI_AMDSTD=y
++CONFIG_MTD_PHYSMAP_OF=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_NETDEVICES=y
++CONFIG_ALTERA_TSE=y
++CONFIG_MARVELL_PHY=y
++# CONFIG_WLAN is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_SERIO_SERPORT is not set
++# CONFIG_VT is not set
++CONFIG_SERIAL_ALTERA_JTAGUART=y
++CONFIG_SERIAL_ALTERA_JTAGUART_CONSOLE=y
++CONFIG_SERIAL_ALTERA_UART=y
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_USB_SUPPORT is not set
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_TRIGGERS=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++# CONFIG_DNOTIFY is not set
++# CONFIG_INOTIFY_USER is not set
++CONFIG_JFFS2_FS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3_ACL=y
++CONFIG_ROOT_NFS=y
++CONFIG_SUNRPC_DEBUG=y
++CONFIG_DEBUG_INFO=y
++# CONFIG_ENABLE_WARN_DEPRECATED is not set
+diff --git a/arch/nios2/include/asm/Kbuild b/arch/nios2/include/asm/Kbuild
+new file mode 100644
+index 0000000..8cb4410
+--- /dev/null
++++ b/arch/nios2/include/asm/Kbuild
+@@ -0,0 +1,63 @@
++generic-y += atomic.h
++generic-y += auxvec.h
++generic-y += barrier.h
++generic-y += bitops.h
++generic-y += bitsperlong.h
++generic-y += bug.h
++generic-y += bugs.h
++generic-y += cputime.h
++generic-y += current.h
++generic-y += device.h
++generic-y += div64.h
++generic-y += dma.h
++generic-y += emergency-restart.h
++generic-y += errno.h
++generic-y += exec.h
++generic-y += fb.h
++generic-y += fcntl.h
++generic-y += ftrace.h
++generic-y += futex.h
++generic-y += hardirq.h
++generic-y += hash.h
++generic-y += hw_irq.h
++generic-y += ioctl.h
++generic-y += ioctls.h
++generic-y += ipcbuf.h
++generic-y += irq_regs.h
++generic-y += kdebug.h
++generic-y += kmap_types.h
++generic-y += kvm_para.h
++generic-y += local.h
++generic-y += mcs_spinlock.h
++generic-y += mman.h
++generic-y += module.h
++generic-y += msgbuf.h
++generic-y += param.h
++generic-y += pci.h
++generic-y += percpu.h
++generic-y += poll.h
++generic-y += posix_types.h
++generic-y += preempt.h
++generic-y += resource.h
++generic-y += scatterlist.h
++generic-y += sections.h
++generic-y += segment.h
++generic-y += sembuf.h
++generic-y += serial.h
++generic-y += shmbuf.h
++generic-y += shmparam.h
++generic-y += siginfo.h
++generic-y += signal.h
++generic-y += socket.h
++generic-y += sockios.h
++generic-y += spinlock.h
++generic-y += stat.h
++generic-y += statfs.h
++generic-y += termbits.h
++generic-y += termios.h
++generic-y += topology.h
++generic-y += trace_clock.h
++generic-y += types.h
++generic-y += unaligned.h
++generic-y += user.h
++generic-y += xor.h
+diff --git a/arch/nios2/include/uapi/asm/Kbuild b/arch/nios2/include/uapi/asm/Kbuild
+new file mode 100644
+index 0000000..1a6d0db
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/Kbuild
+@@ -0,0 +1,6 @@
++include include/uapi/asm-generic/Kbuild.asm
++
++header-y += elf.h
++header-y += processor.h
++header-y += traps.h
++header-y += ucontext.h
+diff --git a/arch/nios2/kernel/Makefile b/arch/nios2/kernel/Makefile
+new file mode 100644
+index 0000000..8ae7682
+--- /dev/null
++++ b/arch/nios2/kernel/Makefile
+@@ -0,0 +1,24 @@
++#
++# Makefile for the nios2 linux kernel.
++#
++
++extra-y	+= head.o
++extra-y	+= vmlinux.lds
++
++obj-y	+= cpuinfo.o
++obj-y	+= entry.o
++obj-y	+= insnemu.o
++obj-y	+= irq.o
++obj-y	+= nios2_ksyms.o
++obj-y	+= process.o
++obj-y	+= prom.o
++obj-y	+= ptrace.o
++obj-y	+= setup.o
++obj-y	+= signal.o
++obj-y	+= sys_nios2.o
++obj-y	+= syscall_table.o
++obj-y	+= time.o
++obj-y	+= traps.o
++
++obj-$(CONFIG_MODULES)			+= module.o
++obj-$(CONFIG_NIOS2_ALIGNMENT_TRAP)	+= misaligned.o
+diff --git a/arch/nios2/kernel/nios2_ksyms.c b/arch/nios2/kernel/nios2_ksyms.c
+new file mode 100644
+index 0000000..eaf7f0c
+--- /dev/null
++++ b/arch/nios2/kernel/nios2_ksyms.c
+@@ -0,0 +1,35 @@
 +/*
-+ *  linux/arch/nios2/kernel/misaligned.c
-+ *
-+ *  basic emulation for mis-aligned accesses on the NIOS II cpu
-+ *  modeled after the version for arm in arm/alignment.c
-+ *
-+ *  Brad Parker <brad@heeltoe.com>
-+ *  Copyright (C) 2010 Ambient Corporation
-+ *  Copyright (c) 2010 Altera Corporation, San Jose, California, USA.
-+ *  Copyright (c) 2010 Arrow Electronics, Inc.
++ * Copyright (C) 2004 Microtronix Datacom Ltd
 + *
 + * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of
-+ * this archive for more details.
++ * Public License. See the file COPYING in the main directory of this
++ * archive for more details.
 + */
 +
-+#include <linux/errno.h>
++#include <linux/export.h>
 +#include <linux/string.h>
-+#include <linux/proc_fs.h>
-+#include <linux/init.h>
-+#include <linux/sched.h>
-+#include <linux/uaccess.h>
-+#include <linux/seq_file.h>
 +
-+#include <asm/traps.h>
-+#include <asm/unaligned.h>
++/* string functions */
 +
-+/* instructions we emulate */
-+#define INST_LDHU	0x0b
-+#define INST_STH	0x0d
-+#define INST_LDH	0x0f
-+#define INST_STW	0x15
-+#define INST_LDW	0x17
-+
-+static unsigned long ma_user, ma_kern, ma_skipped, ma_half, ma_word;
-+
-+static unsigned int ma_usermode;
-+#define UM_WARN		0x01
-+#define UM_FIXUP	0x02
-+#define UM_SIGNAL	0x04
-+#define KM_WARN		0x08
-+
-+/* see arch/nios2/include/asm/ptrace.h */
-+static u8 sys_stack_frame_reg_offset[] = {
-+	/* struct pt_regs */
-+	8, 9, 10, 11, 12, 13, 14, 15, 1, 2, 3, 4, 5, 6, 7, 0,
-+	/* struct switch_stack */
-+	16, 17, 18, 19, 20, 21, 22, 23, 0, 0, 0, 0, 0, 0, 0, 0
-+};
-+
-+static int reg_offsets[32];
-+
-+static inline u32 get_reg_val(struct pt_regs *fp, int reg)
-+{
-+	u8 *p = ((u8 *)fp) + reg_offsets[reg];
-+	return *(u32 *)p;
-+}
-+
-+static inline void put_reg_val(struct pt_regs *fp, int reg, u32 val)
-+{
-+	u8 *p = ((u8 *)fp) + reg_offsets[reg];
-+	*(u32 *)p = val;
-+}
++EXPORT_SYMBOL(memcpy);
++EXPORT_SYMBOL(memset);
++EXPORT_SYMBOL(memmove);
 +
 +/*
-+ * (mis)alignment handler
++ * libgcc functions - functions that are used internally by the
++ * compiler...  (prototypes are not correct though, but that
++ * doesn't really matter since they're not versioned).
 + */
-+asmlinkage void handle_unaligned_c(struct pt_regs *fp, int cause)
++#define DECLARE_EXPORT(name)	extern void name(void); EXPORT_SYMBOL(name)
++
++DECLARE_EXPORT(__gcc_bcmp);
++DECLARE_EXPORT(__divdi3);
++DECLARE_EXPORT(__divsi3);
++DECLARE_EXPORT(__moddi3);
++DECLARE_EXPORT(__modsi3);
++DECLARE_EXPORT(__udivdi3);
++DECLARE_EXPORT(__udivmoddi4);
++DECLARE_EXPORT(__udivsi3);
++DECLARE_EXPORT(__umoddi3);
++DECLARE_EXPORT(__umodsi3);
++DECLARE_EXPORT(__muldi3);
+diff --git a/arch/nios2/kernel/vmlinux.lds.S b/arch/nios2/kernel/vmlinux.lds.S
+new file mode 100644
+index 0000000..326fab4
+--- /dev/null
++++ b/arch/nios2/kernel/vmlinux.lds.S
+@@ -0,0 +1,75 @@
++/*
++ * Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++#include <asm/page.h>
++#include <asm-generic/vmlinux.lds.h>
++#include <asm/cache.h>
++#include <asm/thread_info.h>
++
++OUTPUT_FORMAT("elf32-littlenios2", "elf32-littlenios2", "elf32-littlenios2")
++
++OUTPUT_ARCH(nios)
++ENTRY(_start)	/* Defined in head.S */
++
++jiffies = jiffies_64;
++
++SECTIONS
 +{
-+	u32 isn, addr, val;
-+	int in_kernel;
-+	u8 a, b, d0, d1, d2, d3;
-+	u16 imm16;
-+	unsigned int fault;
++	. = CONFIG_NIOS2_MEM_BASE | CONFIG_NIOS2_KERNEL_REGION_BASE;
 +
-+	/* back up one instruction */
-+	fp->ea -= 4;
++	_text = .;
++	_stext = .;
++	HEAD_TEXT_SECTION
++	.text : {
++		TEXT_TEXT
++		SCHED_TEXT
++		LOCK_TEXT
++		IRQENTRY_TEXT
++		KPROBES_TEXT
++	} =0
++	_etext = .;
 +
-+	if (fixup_exception(fp)) {
-+		ma_skipped++;
-+		return;
++	.got : {
++		*(.got.plt)
++		*(.igot.plt)
++		*(.got)
++		*(.igot)
 +	}
 +
-+	in_kernel = !user_mode(fp);
++	EXCEPTION_TABLE(L1_CACHE_BYTES)
 +
-+	isn = *(unsigned long *)(fp->ea);
++	. = ALIGN(PAGE_SIZE);
++	__init_begin = .;
++	INIT_TEXT_SECTION(PAGE_SIZE)
++	INIT_DATA_SECTION(PAGE_SIZE)
++	PERCPU_SECTION(L1_CACHE_BYTES)
++	__init_end = .;
 +
-+	fault = 0;
++	_sdata = .;
++	RO_DATA_SECTION(PAGE_SIZE)
++	RW_DATA_SECTION(L1_CACHE_BYTES, PAGE_SIZE, THREAD_SIZE)
++	_edata = .;
 +
-+	/* do fixup if in kernel or mode turned on */
-+	if (in_kernel || (ma_usermode & UM_FIXUP)) {
-+		/* decompose instruction */
-+		a = (isn >> 27) & 0x1f;
-+		b = (isn >> 22) & 0x1f;
-+		imm16 = (isn >> 6) & 0xffff;
-+		addr = get_reg_val(fp, a) + imm16;
++	BSS_SECTION(0, 0, 0)
++	_end = .;
 +
-+		/* do fixup to saved registers */
-+		switch (isn & 0x3f) {
-+		case INST_LDHU:
-+			fault |= __get_user(d0, (u8 *)(addr+0));
-+			fault |= __get_user(d1, (u8 *)(addr+1));
-+			val = (d1 << 8) | d0;
-+			put_reg_val(fp, b, val);
-+			ma_half++;
-+			break;
-+		case INST_STH:
-+			val = get_reg_val(fp, b);
-+			d1 = val >> 8;
-+			d0 = val >> 0;
++	STABS_DEBUG
++	DWARF_DEBUG
++	NOTES
 +
-+			pr_debug("sth: ra=%d (%08x) rb=%d (%08x), imm16 %04x addr %08x val %08x\n",
-+				a, get_reg_val(fp, a),
-+				b, get_reg_val(fp, b),
-+				imm16, addr, val);
-+
-+			if (in_kernel) {
-+				*(u8 *)(addr+0) = d0;
-+				*(u8 *)(addr+1) = d1;
-+			} else {
-+				fault |= __put_user(d0, (u8 *)(addr+0));
-+				fault |= __put_user(d1, (u8 *)(addr+1));
-+			}
-+			ma_half++;
-+			break;
-+		case INST_LDH:
-+			fault |= __get_user(d0, (u8 *)(addr+0));
-+			fault |= __get_user(d1, (u8 *)(addr+1));
-+			val = (short)((d1 << 8) | d0);
-+			put_reg_val(fp, b, val);
-+			ma_half++;
-+			break;
-+		case INST_STW:
-+			val = get_reg_val(fp, b);
-+			d3 = val >> 24;
-+			d2 = val >> 16;
-+			d1 = val >> 8;
-+			d0 = val >> 0;
-+			if (in_kernel) {
-+				*(u8 *)(addr+0) = d0;
-+				*(u8 *)(addr+1) = d1;
-+				*(u8 *)(addr+2) = d2;
-+				*(u8 *)(addr+3) = d3;
-+			} else {
-+				fault |= __put_user(d0, (u8 *)(addr+0));
-+				fault |= __put_user(d1, (u8 *)(addr+1));
-+				fault |= __put_user(d2, (u8 *)(addr+2));
-+				fault |= __put_user(d3, (u8 *)(addr+3));
-+			}
-+			ma_word++;
-+			break;
-+		case INST_LDW:
-+			fault |= __get_user(d0, (u8 *)(addr+0));
-+			fault |= __get_user(d1, (u8 *)(addr+1));
-+			fault |= __get_user(d2, (u8 *)(addr+2));
-+			fault |= __get_user(d3, (u8 *)(addr+3));
-+			val = (d3 << 24) | (d2 << 16) | (d1 << 8) | d0;
-+			put_reg_val(fp, b, val);
-+			ma_word++;
-+			break;
-+		}
-+	}
-+
-+	addr = RDCTL(CTL_BADADDR);
-+	cause >>= 2;
-+
-+	if (fault) {
-+		if (in_kernel) {
-+			pr_err("fault during kernel misaligned fixup @ %#lx; addr 0x%08lx; isn=0x%08x\n",
-+				fp->ea, (long unsigned int)addr,
-+				(unsigned int)isn);
-+		} else {
-+			pr_err("fault during user misaligned fixup @ %#lx; isn=%08x addr=0x%08x sp=0x%08lx pid=%d\n",
-+				fp->ea,
-+				(unsigned int)isn, addr, fp->sp,
-+				current->pid);
-+
-+			_exception(SIGSEGV, fp, SEGV_MAPERR, fp->ea);
-+			return;
-+		}
-+	}
-+
-+	/*
-+	 * kernel mode -
-+	 *  note exception and skip bad instruction (return)
-+	 */
-+	if (in_kernel) {
-+		ma_kern++;
-+		fp->ea += 4;
-+
-+		if (ma_usermode & KM_WARN) {
-+			pr_err("kernel unaligned access @ %#lx; BADADDR 0x%08lx; cause=%d, isn=0x%08lx\n",
-+				fp->ea,
-+				(long unsigned int)addr, cause,
-+				(long unsigned int)isn);
-+			/* show_regs(fp); */
-+		}
-+
-+		return;
-+	}
-+
-+	ma_user++;
-+
-+	/*
-+	 * user mode -
-+	 *  possibly warn,
-+	 *  possibly send SIGBUS signal to process
-+	 */
-+	if (ma_usermode & UM_WARN) {
-+		pr_err("user unaligned access @ %#lx; isn=0x%08lx ea=0x%08lx ra=0x%08lx sp=0x%08lx\n",
-+			(unsigned long)addr, (unsigned long)isn,
-+			fp->ea, fp->ra, fp->sp);
-+	}
-+
-+	if (ma_usermode & UM_SIGNAL)
-+		_exception(SIGBUS, fp, BUS_ADRALN, fp->ea);
-+	else
-+		fp->ea += 4;	/* else advance */
++	DISCARDS
 +}
+diff --git a/arch/nios2/lib/Makefile b/arch/nios2/lib/Makefile
+new file mode 100644
+index 0000000..be4c64a
+--- /dev/null
++++ b/arch/nios2/lib/Makefile
+@@ -0,0 +1,9 @@
++#
++# Makefile for Nios2-specific library files.
++#
 +
-+static void __init misaligned_calc_reg_offsets(void)
-+{
-+	int i, r, offset;
++lib-y += delay.o
++lib-y += io.o
++lib-y += memcpy.o
++lib-y += memmove.o
++lib-y += memset.o
+diff --git a/arch/nios2/mm/Makefile b/arch/nios2/mm/Makefile
+new file mode 100644
+index 0000000..3cbd084
+--- /dev/null
++++ b/arch/nios2/mm/Makefile
+@@ -0,0 +1,14 @@
++#
++# Makefile for the Nios2-specific parts of the memory manager.
++#
 +
-+	/* pre-calc offsets of registers on sys call stack frame */
-+	offset = 0;
++obj-y	+= cacheflush.o
++obj-y	+= dma-mapping.o
++obj-y	+= extable.o
++obj-y	+= fault.o
++obj-y	+= init.o
++obj-y	+= ioremap.o
++obj-y	+= mmu_context.o
++obj-y	+= pgtable.o
++obj-y	+= tlb.o
++obj-y	+= uaccess.o
+diff --git a/arch/nios2/platform/Kconfig.platform b/arch/nios2/platform/Kconfig.platform
+new file mode 100644
+index 0000000..a2c5cc8
+--- /dev/null
++++ b/arch/nios2/platform/Kconfig.platform
+@@ -0,0 +1,129 @@
++menu "Platform options"
 +
-+	/* struct pt_regs */
-+	for (i = 0; i < 16; i++) {
-+		r = sys_stack_frame_reg_offset[i];
-+		reg_offsets[r] = offset;
-+		offset += 4;
-+	}
++comment "Memory settings"
 +
-+	/* struct switch_stack */
-+	offset = -sizeof(struct switch_stack);
-+	for (i = 16; i < 32; i++) {
-+		r = sys_stack_frame_reg_offset[i];
-+		reg_offsets[r] = offset;
-+		offset += 4;
-+	}
-+}
++config NIOS2_MEM_BASE
++	hex "Memory base address"
++	default "0x00000000"
++	help
++	  This is the physical address of the memory that the kernel will run
++	  from. This address is used to link the kernel and setup initial memory
++	  management. You should take the raw memory address without any MMU
++	  or cache bits set.
++	  Please not that this address is used directly so you have to manually
++	  do address translation if it's connected to a bridge.
 +
++comment "Device tree"
 +
-+static int __init misaligned_init(void)
-+{
-+	/* default mode - silent fix */
-+	ma_usermode = UM_FIXUP | KM_WARN;
++config NIOS2_DTB_AT_PHYS_ADDR
++	bool "DTB at physical address"
++	default n
++	help
++	  When enabled you can select a physical address to load the dtb from.
++	  Normally this address is passed by a bootloader such as u-boot but
++	  using this you can use a devicetree without a bootloader.
++	  This way you can store a devicetree in NOR flash or an onchip rom.
++	  Please note that this addres is used directly so you have to manually
++	  do address translation if it's connected to a bridge. Also take into
++	  account that when using an MMU you'd have to ad 0xC0000000 to your
++	  address
 +
-+	misaligned_calc_reg_offsets();
++config NIOS2_DTB_PHYS_ADDR
++	hex "DTB Address"
++	depends on NIOS2_DTB_AT_PHYS_ADDR
++	default "0xC0000000"
++	help
++	  Physical address of a dtb blob.
 +
-+	return 0;
-+}
++config NIOS2_DTB_SOURCE_BOOL
++	bool "Compile and link device tree into kernel image"
++	default n
++	help
++	  This allows you to specify a dts (device tree source) file
++	  which will be compiled and linked into the kernel image.
 +
-+fs_initcall(misaligned_init);
++config NIOS2_DTB_SOURCE
++	string "Device tree source file"
++	depends on NIOS2_DTB_SOURCE_BOOL
++	default ""
++	help
++	  Absolute path to the device tree source (dts) file describing your
++	  system.
++
++comment "Nios II instructions"
++
++config NIOS2_HW_MUL_SUPPORT
++	bool "Enable MUL instruction"
++	default n
++	help
++	  Set to true if you configured the Nios II to include the MUL
++	  instruction.  This will enable the -mhw-mul compiler flag.
++
++config NIOS2_HW_MULX_SUPPORT
++	bool "Enable MULX instruction"
++	default n
++	help
++	  Set to true if you configured the Nios II to include the MULX
++	  instruction.  Enables the -mhw-mulx compiler flag.
++
++config NIOS2_HW_DIV_SUPPORT
++	bool "Enable DIV instruction"
++	default n
++	help
++	  Set to true if you configured the Nios II to include the DIV
++	  instruction.  Enables the -mhw-div compiler flag.
++
++config NIOS2_FPU_SUPPORT
++	bool "Custom floating point instr support"
++	default n
++	help
++	  Enables the -mcustom-fpu-cfg=60-1 compiler flag.
++
++config NIOS2_CI_SWAB_SUPPORT
++	bool "Byteswap custom instruction"
++	default n
++	help
++	  Use the byteswap (endian convertor) Nios II custom instruction provided
++	  by Altera and which can be enabled in QSYS builder. This accelerates
++	  endian conversions in the kernel (e.g. ntohs).
++
++config NIOS2_CI_SWAB_NO
++	int "Byteswap custom instruction number" if NIOS2_CI_SWAB_SUPPORT
++	default 0
++	help
++	  Number of the instruction as configured in QSYS Builder.
++
++comment "Cache settings"
++
++config CUSTOM_CACHE_SETTINGS
++	bool "Custom cache settings"
++	help
++	  This option allows you to tweak the cache settings used during early
++	  boot (where the information from device tree is not yet available).
++	  There should be no reason to change these values. Linux will work
++	  perfectly fine, even if the Nios II is configured with smaller caches.
++
++	  Say N here unless you know what you are doing.
++
++config NIOS2_DCACHE_SIZE
++	hex "D-Cache size" if CUSTOM_CACHE_SETTINGS
++	range 0x200 0x10000
++	default "0x800"
++	help
++	  Maximum possible data cache size.
++
++config NIOS2_DCACHE_LINE_SIZE
++	hex "D-Cache line size" if CUSTOM_CACHE_SETTINGS
++	range 0x10 0x20
++	default "0x20"
++	help
++	  Minimum possible data cache line size.
++
++config NIOS2_ICACHE_SIZE
++	hex "I-Cache size" if CUSTOM_CACHE_SETTINGS
++	range 0x200 0x10000
++	default "0x1000"
++	help
++	  Maximum possible instruction cache size.
++
++endmenu
+diff --git a/arch/nios2/platform/Makefile b/arch/nios2/platform/Makefile
+new file mode 100644
+index 0000000..46364f1
+--- /dev/null
++++ b/arch/nios2/platform/Makefile
+@@ -0,0 +1 @@
++obj-y += platform.o
 -- 
 1.8.2.1
 
