@@ -1,111 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaIHNb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:31:59 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45152 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaIHNb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:31:58 -0400
-Message-ID: <540DAFBC.1010502@roeck-us.net>
-Date: Mon, 08 Sep 2014 06:31:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
-        David Paris <david.paris@st.com>
-Subject: Re: [PATCH 4/4] watchdog: st_wdt: Add new driver for ST's LPC Watchdog
-References: <1409841592-18890-1-git-send-email-lee.jones@linaro.org> <1409841592-18890-6-git-send-email-lee.jones@linaro.org> <20140905155811.GA12374@roeck-us.net> <20140908123246.GB26284@lee--X1>
-In-Reply-To: <20140908123246.GB26284@lee--X1>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.540DAFCD.0281,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1754025AbaIHNcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:32:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925AbaIHNcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 09:32:50 -0400
+From: Mark Salter <msalter@redhat.com>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>, matt.fleming@intel.com,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Mark Salter <msalter@redhat.com>
+Subject: [PATCH] efi/arm64: fix fdt-related memory reservation
+Date: Mon,  8 Sep 2014 09:31:42 -0400
+Message-Id: <1410183102-6969-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 05:32 AM, Lee Jones wrote:
-> On Fri, 05 Sep 2014, Guenter Roeck wrote:
-...
->>> +
->>> +static struct st_wdog_syscfg stid127_syscfg = {
->>> +	.type_mask	= BIT(2),
->>> +	.enable_mask	= BIT(2),
->>> +};
->>> +
->>> +static struct st_wdog_syscfg stih415_syscfg = {
->>> +	.type_mask	= BIT(6),
->>> +	.enable_mask	= BIT(7),
->>> +};
->>> +
->>> +static struct st_wdog_syscfg stih416_syscfg = {
->>> +	.type_mask	= BIT(6),
->>> +	.enable_mask	= BIT(7),
->>> +};
->>> +
->>> +static struct st_wdog_syscfg stih407_syscfg = {
->>> +	.enable_mask	= BIT(19),
->>> +};
->>> +
-...
+Commit 86c8b27a01cf:
+ "arm64: ignore DT memreserve entries when booting in UEFI mode
 
->>> +	/* Mask/unmask watchdog reset */
->>> +	regmap_update_bits(st_wdog->syscfg->regmap,
->>> +			   st_wdog->syscfg->enable_reg,
->>> +			   st_wdog->syscfg->enable_mask,
->>> +			   !enable);
->>
->> enable is a bool, but is supposed to provide the value to be put into the
->> register, masked with enable_mask. Unless I am missing something, the value
->> is not shifted in regmap_update_bits. So I don't think this can work, but
->> effectively always writes zero into the mask unless the mask happens to be
->> at bit position 0 - which never happens.
->>
->> Same is true for warm_reset above, which also has values 0 or 1.
->>
->> I know it does not really matter in C (at least when it comes to handling
->> 0 and 1), but I would suggest to avoid mixing booleans with bit masks.
->
-> You're right of course, great spot.
->
-> How about?
->
->    !enable << ffs(st_wdog->syscfg->enable_mask).
->
-Seems to add a lot of complexity (as in 'makes it difficult to understand')
-to avoid a conditional, and assumes that enable_mask will never have more
-than one bit set. I would go with
-	enable ? st_wdog->syscfg->enable_mask : 0
-to avoid confusion, but your call.
+prevents early_init_fdt_scan_reserved_mem() from being called for
+arm64 kernels booting via UEFI. This was done because the kernel
+will use the UEFI memory map to determine reserved memory regions.
+That approach has problems in that early_init_fdt_scan_reserved_mem()
+also reserves the FDT itself and any node-specific reserved memory.
+By chance of some kernel configs, the FDT may be overwritten before
+it can be unflattened and the kernel will fail to boot. More subtle
+problems will result if the FDT has node specific reserved memory
+which is not really reserved.
 
-Guenter
+This patch has the UEFI stub remove the memory reserve map entries
+from the FDT as it does with the memory nodes. This allows
+early_init_fdt_scan_reserved_mem() to be called unconditionally
+so that the other needed reservations are made.
+
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/arm64/mm/init.c               |  3 +--
+ drivers/firmware/efi/libstub/fdt.c | 10 +++++++++-
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+index 5472c24..a83061f 100644
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -149,8 +149,7 @@ void __init arm64_memblock_init(void)
+ 		memblock_reserve(__virt_to_phys(initrd_start), initrd_end - initrd_start);
+ #endif
+ 
+-	if (!efi_enabled(EFI_MEMMAP))
+-		early_init_fdt_scan_reserved_mem();
++	early_init_fdt_scan_reserved_mem();
+ 
+ 	/* 4GB maximum for 32-bit only capable devices */
+ 	if (IS_ENABLED(CONFIG_ZONE_DMA))
+diff --git a/drivers/firmware/efi/libstub/fdt.c b/drivers/firmware/efi/libstub/fdt.c
+index a56bb35..723c7da 100644
+--- a/drivers/firmware/efi/libstub/fdt.c
++++ b/drivers/firmware/efi/libstub/fdt.c
+@@ -22,7 +22,7 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
+ 			unsigned long map_size, unsigned long desc_size,
+ 			u32 desc_ver)
+ {
+-	int node, prev;
++	int node, prev, i, num_rsv;
+ 	int status;
+ 	u32 fdt_val32;
+ 	u64 fdt_val64;
+@@ -73,6 +73,14 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
+ 		prev = node;
+ 	}
+ 
++	/*
++	 * Delete all memory reserve map entries. When booting via UEFI,
++	 * kernel will use the UEFI memory map to find reserved regions.
++	 */
++	num_rsv = fdt_num_mem_rsv(fdt);
++	for (i = 0; i < num_rsv; i++)
++		fdt_del_mem_rsv(fdt, i);
++
+ 	node = fdt_subnode_offset(fdt, 0, "chosen");
+ 	if (node < 0) {
+ 		node = fdt_add_subnode(fdt, 0, "chosen");
+-- 
+1.8.3.1
 
