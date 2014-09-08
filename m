@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937AbaIHVuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:50:23 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:35077 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254AbaIHVuU (ORCPT
+	id S1755028AbaIHVv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:51:28 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:40849 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306AbaIHVv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:50:20 -0400
+	Mon, 8 Sep 2014 17:51:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140908141035.GK22290@redhat.com>
-References: <cover.1408051536.git.luto@amacapital.net> <59f55d679cc596731589516a71075b6059fcaaa5.1408051536.git.luto@amacapital.net>
- <20140908141035.GK22290@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 8 Sep 2014 14:49:59 -0700
-Message-ID: <CALCETrX3KO=1T1m4Qwn+j7vqqhEuNb8Xdkf_c2Ne4P9AbpwOoA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] sb_edac: Claim a different PCI device
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-edac@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rui Wang <ruiv.wang@gmail.com>
+In-Reply-To: <CACRpkdbD3Ds=iPxwD57ERd=xPAyVvdVbMEfjqdtAvO-0YqT_EA@mail.gmail.com>
+References: <1409159852-7249-1-git-send-email-mathieu.poirier@linaro.org>
+	<1409159852-7249-9-git-send-email-mathieu.poirier@linaro.org>
+	<CACRpkdbD3Ds=iPxwD57ERd=xPAyVvdVbMEfjqdtAvO-0YqT_EA@mail.gmail.com>
+Date: Mon, 8 Sep 2014 15:51:26 -0600
+Message-ID: <CANLsYkzrXcx9UCc6bxfKR59sjDwg=p1YhKWAS5YV0iYZNH67Gw@mail.gmail.com>
+Subject: Re: [PATCH 08/11 v5] coresight: adding documentation for coresight
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Pratik Patel <pratikp@codeaurora.org>,
+        Vikas Varshney <varshney@ti.com>, Al Grant <Al.Grant@arm.com>,
+        Jonas Svennebring <jonas.svennebring@avagotech.com>,
+        James King <james.king@linaro.org>,
+        Panchaxari Prasannamurthy Tumkur 
+	<panchaxari.prasannamurthy@linaro.org>,
+        Kaixu Xia <kaixu.xia@linaro.org>,
+        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>,
+        "r.sengupta@samsung.com" <r.sengupta@samsung.com>,
+        Robert Marklund <robbelibobban@gmail.com>,
+        Tony Armitstead <Tony.Armitstead@arm.com>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 7:10 AM, Aristeu Rozanski <aris@redhat.com> wrote:
-> On Thu, Aug 14, 2014 at 02:45:41PM -0700, Andy Lutomirski wrote:
->> sb_edac controls a large number of different PCI functions.  Rather
->> than registering as a normal PCI driver for all of them, it
->> registers for just one so that it gets probed and, at probe time, it
->> looks for all the others.
->>
->> Coincidentally, the device it registers for also contains the SMBUS
->> registers, so the PCI core will refuse to probe both sb_edac and a
->> future iMC SMBUS driver.  The drivers don't actually conflict, so
->> just change sb_edac's device table to probe a different device.
->>
->> An alternative fix would be to merge the two drivers, but sb_edac
->> will also refuse to load on non-ECC systems, whereas i2c_imc would
->> still be useful without ECC.
->>
->> The only user-visible change should be that sb_edac appears to bind
->> a different device.
->>
->> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
->> Cc: Rui Wang <ruiv.wang@gmail.com>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>  drivers/edac/sb_edac.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
->> index a2597e9313c6..e3bc2cced580 100644
->> --- a/drivers/edac/sb_edac.c
->> +++ b/drivers/edac/sb_edac.c
->> @@ -432,7 +432,7 @@ static const struct pci_id_table pci_dev_descr_ibridge_table[] = {
->>   *   pci_device_id   table for which devices we are looking for
->>   */
->>  static const struct pci_device_id sbridge_pci_tbl[] = {
->> -     {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA)},
->> +     {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0)},
->>       {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA)},
->>       {0,}                    /* 0 terminated list. */
->>  };
+Apologies on the late reply - I was doing a quick review of your
+earlier comments before getting ready for another submission when I
+remembered I hadn't address this one.  Pls see below.
+
+On 3 September 2014 02:43, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Aug 27, 2014 at 7:17 PM,  <mathieu.poirier@linaro.org> wrote:
 >
-> Acked-by: Aristeu Rozanski <aris@redhat.com>
+>> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+>>
+>> Documentation for the coresight framework and drivers.
+>>
+>> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> (...)
+>>  Documentation/trace/coresight.txt | 237 ++++++++++++++++++++++++++++++++++++++
 >
+> I guess you agreed on this location? If it's ARM-specific,
+> Documentation/arm/coresight.txt
+> is an alternative.
 
-Whose tree will this go through?
+I didn't have prior agreement with anyone before - it was simply
+dropped there to get the conversation started.  Very well, I'll move
+it to @arm.
 
-FWIW, this git am can't apply this to 3.17-rc4, but git am --3way can,
-and it's a one-liner in any case.  Should I send a trivially rebased
-version?
-
---Andy
-
-> --
-> Aristeu
 >
+>> +The file cstrace.bin can be decompressed using "ptm2human", DS-5 or Trace32.
+>
+> Is ptm2human a candidate for the kernel tools/ directory?
 
+A fair amount of work would have to be invested in "ptm2human" to make
+it production ready.
 
+>
+> Maybe not now but later?
+>
+> +root@linaro-developer:/sys/kernel/debug/coresight# ls
+>
+> Maybe reduce noise here:
+>
+> root:/sys/kernel/debug/coresight# ls
+>
+> The reader probably does not need to know the name of your
+> development system.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Ok.
+
+>
+> Yours,
+> Linus Walleij
