@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbaIHXd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:33:59 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59287 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754481AbaIHXd4 (ORCPT
+	id S1755236AbaIHXiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:38:05 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:46342 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308AbaIHXiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:33:56 -0400
-Message-ID: <540E3CDF.8020607@hurleysoftware.com>
-Date: Mon, 08 Sep 2014 19:33:51 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 8 Sep 2014 19:38:03 -0400
+Message-ID: <540E3D60.2020906@hp.com>
+Date: Mon, 08 Sep 2014 19:36:00 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/26] tty/serial flow control fixes
-References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <20140908232445.GA28204@kroah.com>
-In-Reply-To: <20140908232445.GA28204@kroah.com>
-Content-Type: text/plain; charset=utf-8
+To: Pranith Kumar <bobby.prani@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Question reg. asm/qrwlock.h
+References: <CAJhHMCCDPe_GGDWUF3OHQieCKLty2+TaYZwnKjK9ZF3z0auo8A@mail.gmail.com>
+In-Reply-To: <CAJhHMCCDPe_GGDWUF3OHQieCKLty2+TaYZwnKjK9ZF3z0auo8A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 07:24 PM, Greg Kroah-Hartman wrote:
-> On Tue, Sep 02, 2014 at 05:39:09PM -0400, Peter Hurley wrote:
->> Hi Greg,
->>
->> This patch series reworks the internals of tty and serial flow control to
->> fix multiple races in both START/STOP flow control and RTS/CTS flow control.
->>
->> The main changes in this series are:
->> Patch 1
->>    Backs out the UPF_HARD_FLOW kludge for 8250. This revert should be
->>    for mainline and -next
->>
->> Patches 3-7
->>    Fixes to x_char handling (ie., sending START/STOP) both in the serial
->>    core and to several UART drivers
->>
->> Patches 10-15
->>    Rename and move ASYNC_CTS_FLOW and ASYNC_CHECK_CD statuses into
->>    a private field for the serial core, and add helper functions to test
->>    those statuses for UART drivers.
->>
->>    This is a necessary step toward making tty port->flags SMP-safe, without
->>    introducing a new lock.
-> 
-> I stopped applying at patch 13, due to the objections to that patch.
-> Please redo the rest of the series and resend.
+On 09/05/2014 07:45 PM, Pranith Kumar wrote:
+> Hi Waiman,
+>
+> I see that in arch/x86/include/asm/qrwlock.h, there is this snippet within
+>
+> #ifndef CONFIG_X86_PPRO_FENCE
+> #define queue_write_unlock queue_write_unlock
+> static inline void queue_write_unlock(struct qrwlock *lock)
+> {
+>          barrier();
+>          ACCESS_ONCE(*(u8 *)&lock->cnts) = 0;
+> }
+> #endif
+>
+>
+> I've been trying to understand why this special case is necessary for
+> PPRO. Could you please explain?
+>
+> Thanks!
 
-I'm going to wait for the fallout from patch 21 to shake out first.
+This is related to the memory ordering of the x86 architecture. Modern 
+x86 processor has pretty strong memory ordering semantics where only 
+stores can be reordered after load. So a barrier() call is a good enough 
+memory barrier except for some older x86 processors (Pentium Pro) that 
+should have CONFIG_X86_PPRO_FENCE set. In that case, atomic instruction 
+like cmpxchg() will be needed to ensure proper memory ordering.
 
-Regards,
-Peter Hurley
+-Longman
