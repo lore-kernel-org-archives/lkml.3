@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaIHJqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:46:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:33309 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753639AbaIHJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:46:04 -0400
-Date: Mon, 8 Sep 2014 19:45:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140908194557.21b3fc2e@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1754311AbaIHJqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:46:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38136 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137AbaIHJqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:46:09 -0400
+Date: Mon, 8 Sep 2014 11:45:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
+ context_equiv
+Message-ID: <20140908094548.GA6758@twins.programming.kicks-ass.net>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-2-git-send-email-jolsa@kernel.org>
+ <20140902105036.GH5806@worktop.ger.corp.intel.com>
+ <20140908094348.GB1172@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/0B6ThQ0Bqv/j.cvOndC2d2z"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6W/vd+xQRxZFP9Eu"
+Content-Disposition: inline
+In-Reply-To: <20140908094348.GB1172@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0B6ThQ0Bqv/j.cvOndC2d2z
-Content-Type: text/plain; charset=US-ASCII
+
+--6W/vd+xQRxZFP9Eu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+On Mon, Sep 08, 2014 at 11:43:48AM +0200, Jiri Olsa wrote:
+> On Tue, Sep 02, 2014 at 12:50:36PM +0200, Peter Zijlstra wrote:
+> > On Mon, Aug 25, 2014 at 04:45:35PM +0200, Jiri Olsa wrote:
+> > > As described in commit:
+> > >   1f9a7268c67f perf: Do not allow optimized switch for non-cloned eve=
+nts
+> > > we dont allow optimized switch for non cloned contexts.
+> > >=20
+> > > There's no need now to check if one of the context is parent
+> > > of the other in context_equiv function.
+> > >=20
+> >=20
+> > OK, so talk to me about that patch; it looks like you're slowly
+> > reverting: 5a3126d4fe7c ("perf: Fix the perf context switch
+> > optimization").
+> >=20
+> > So what exactly is the problem? I'm still jet-lagged and not seeing it.
+>=20
+> the problem is, that we cannot allow non-cloned context
+> to be part of the optimized switch for reasons explained
+> in commit 1f9a7268c67f
 
-After merging the akpm tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+The thing is; I don't understand those reasons. That commit log doesn't
+explain.
 
-mm/page_alloc.c: In function 'dump_vma':
-mm/page_alloc.c:6742:46: error: request for member 'pgprot' in something no=
-t a structure or union
-   vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
-                                              ^
-
-Caused by commit d1305f0fa17f ("mm: introduce dump_vma").  pgprot_t on
-PPC is normally (i.e. unless STRICT_MM_TYPECHECKS is explicitly
-defined) just an "unsigned long" (see
-arch/powerpc/include/asm/page.h).  This is true for several other
-architectures as well.
-
-I added this fix patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 8 Sep 2014 19:41:54 +1000
-Subject: [PATCH] mm: introduce dump_vma fix 2
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index cb510c08073b..0de60769bcf6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6739,7 +6739,7 @@ void dump_vma(const struct vm_area_struct *vma)
- 		"prot %lx anon_vma %p vm_ops %p\n"
- 		"pgoff %lx file %p private_data %p\n",
- 		vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
--		vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
-+		vma->vm_prev, vma->vm_mm, pgprot_val(vma->vm_page_prot),
- 		vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
- 		vma->vm_file, vma->vm_private_data);
- 	dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
---=20
-2.1.0
-
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/0B6ThQ0Bqv/j.cvOndC2d2z
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--6W/vd+xQRxZFP9Eu
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJUDXrZAAoJEMDTa8Ir7ZwVNEYP/idSeCGW7mOA9OGqdSXs9Wmj
-Ya/wJHHIZxX550lus9XYxe/9t5XsmC4nJ+eBwTrGitof4x/eDqBCW4tUBCZOiUo8
-Br1RfVahIFJvKcuanwwW4iALYdJxSOcr0hGisKT4ti1IKUZto+pic+FT2ji1WXlw
-VIbee+LYulC8XYmDibIVSKCvg1VgW5Ebsopw5HRh1FTnU8uZaQ+HtuLi13UMnW1R
-S69vJUqxLffTtn3dK7wA4zEZ93AnYSLP0QDrGYHagO/lNeFkT0NAednwkX7h50WA
-LWfZ5MAo7a+oGdTyu1p4H+/GrqTgO43KD39iI1yQaih9BdWw7vTy+J8RDMt01it5
-4zVq4qWGKC1qS55gZ8tAvHXKIOcYIp7cBhSBGzfGuCVsfto8OwvoRMYznSrLh7+L
-qsYVLVUl10/R3DUBu8KBw5blmhUEJp8S8UDx20uGgOWs5RgHe6uqspRyHRJfy/GS
-sr45fKP7RHHgAxj6eQ9mFlDPa2ju+qd+lo/K/MSAGE/YvMO6ahDLuCz8gpIXumTm
-J7n1FPP0tuPCytcNlRW9pxXUJA3f1dqJz51VHUM3C6REGLdQXi/8A6dHmnEc925n
-2Pf8x21q1tUK2yC3HaJ7OLQtYpBqJixZYmhqpk2Jvct8koO1w9uyKi1G5W0374WP
-nDsaMawuYdl1R+2RKuR9
-=oTes
+iQIcBAEBAgAGBQJUDXrMAAoJEHZH4aRLwOS6ftoQAJxXWWRxn/GVyeCHJAWd2dBU
+ms9V3qAWvuGKMC6zukFUrMIe9g2NbEQIdGlka/Iqzm32Mg1KRHaoqoMhBicxdfC6
+bc6Geg0lGgVP4/0pKv2Hj2+iEtuvU4kDsRy5fGukeXCDtrSR5F7sYrsOxpXrDqJd
+DvIEPHaZl5beUE0vMhO9AbIBP2X7M/34bA72/yLJxKjdMFDtjwSTaWsRY08BWZc7
+4z1T4UTG/Ecv7CQIWBtwiKlNmQMVCCLctxfOBOqNDs7YJt3PX6LschMJ2P5Uo+ex
+CkSQQjGIgWOFulWVqsOkiFrtymovfsfSSrhho0/ltBFpaDSuYjQhas2BM6ZvvWiw
+HpRB2wYz9WvyywMNbN4f5rFgL9gpL3D/3GV2NaCIQGHTIob2jf3tPuSnrxshITDT
+Ha7PsuhbG1D8tSPxosH52BbzdjlqPvtRB3vWdHzrYKHxmFGvfcMKTSoF8epxE2Fo
+rUp3aWhbhFZ/EXLnCE2OSDGsyFvVVOv7m98LQvkgAE/vlehmxwnj5GD3iWQDkBBa
+QQI4EJvaXCD2zMkt6IoKog2ivprafYd8Vxa+xWRDA4Gb3fSBJfnw0IidVkxwsmhp
+zTEjHjo4nsTfzS7P05/bhkIMkeX0g5Obcu2ut1RVHIeSjfFmhY6HI9ZFgfD5pDMW
+4kpd4798NiUCDsppm5sM
+=ecoM
 -----END PGP SIGNATURE-----
 
---Sig_/0B6ThQ0Bqv/j.cvOndC2d2z--
+--6W/vd+xQRxZFP9Eu--
