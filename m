@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaIHRxh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:53:37 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:34125 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006AbaIHRxd (ORCPT
+	id S1754685AbaIHRzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:55:21 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22413 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593AbaIHRzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:53:33 -0400
-Date: Mon, 8 Sep 2014 18:52:40 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
-In-Reply-To: <5409D9C0.7030403@zytor.com>
-References: <20140712181328.GA8738@redhat.com>
-	<54079B70.4050200@hurleysoftware.com>
-	<1409785893.30640.118.camel@pasglop>
-	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
-	<1409824374.4246.62.camel@pasglop>
-	<5408E458.3@zytor.com>
-	<54090AF4.7060406@hurleysoftware.com>
-	<54091B30.7080100@zytor.com>
-	<5409D76D.2070203@hurleysoftware.com>
-	<5409D9C0.7030403@zytor.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 8 Sep 2014 13:55:17 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19BXX6kwuqBewsqoopX5uut
+Date: Mon, 8 Sep 2014 10:55:10 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v8 00/18] 8250-core based serial driver for OMAP + DMA
+Message-ID: <20140908175510.GK3238@atomide.com>
+References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+ <20140908174020.GI3238@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908174020.GI3238@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Sep 2014 08:41:52 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
-
-> On 09/05/2014 08:31 AM, Peter Hurley wrote:
+* Tony Lindgren <tony@atomide.com> [140908 10:41]:
+> * Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140905 12:03]:
+> > This is my complete queue fo the omap serial driver based on the 8250 core
+> > code. I played with it on beagle bone, am335x-evm and dra7xx including DMA.
+> > The runtime-pm pieces look now bug-compatible with the omap-serial driver.
+> > Besides the runtime-om improvement I also fixed a few corner cases for the
+> > TX-DMA problem. The DMA fixes (in edma and omap-dma) were dropped and the
+> > problem has been in 8250-dma via patch #13.
 > > 
-> > Which is a bit ironic because I remember when Digital had a team
-> > working on emulating native x86 apps on Alpha/NT.
-> > 
+> > The whole queue is available at
+> >   git://git.breakpoint.cc/bigeasy/linux.git uart_v8
 > 
-> Right, because the x86 architecture was obsolete and would never scale...
+> Gave the above branch a quick try, but it again does not idle for
+> my omap3 test cases. It seems that now the cm_idlest1_core sdma
+> bit is blocking deeper idle states. Is that the correct branch
+> to use?
 
-Talking about "not scaling" can anyone explain how a "you need to use
-set_bit() and friends" bug report scaled into a hundred message plus
-discussion about ambiguous properties of processors (and nobody has
-audited all the embedded platforms we support yet, or the weirder ARMs)
-and a propsal to remove Alpha support.
+Never mind. User error. I forgot to apply my own patch for force
+idling the UARTs for the omap hwmod. And the sdma bit clears if
+I do sleep 5 before attempting to read the sysfs entry..
 
-Wouldn't it be *much* simpler to do what I suggested in the first place
-and use the existing intended for purpose, deliberately put there,
-functions for atomic bitops, because they are fast on sane processors and
-they work on everything else.
+Regards,
 
-I think the whole "removing Alpha EV5" support is basically bonkers. Just
-use set_bit in the tty layer. Alpha will continue to work as well as it
-always has done and you won't design out support for any future processor
-that turns out not to do byte aligned stores.
-
-Alan
+Tony
