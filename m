@@ -1,491 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206AbaIHJkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:40:10 -0400
-Received: from mail-bl2on0060.outbound.protection.outlook.com ([65.55.169.60]:19520
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753125AbaIHJkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:40:05 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Subject: [PATCH v3 21/29] nios2: Time keeping
-Date: Mon, 8 Sep 2014 17:22:32 +0800
-Message-ID: <1410168160-3624-22-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+	id S1754141AbaIHJj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:39:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38175 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342AbaIHJjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:39:54 -0400
+Date: Mon, 8 Sep 2014 11:39:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Chintan Pandya <cpandya@codeaurora.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers for
+ scanner thread
+Message-ID: <20140908093949.GZ6758@twins.programming.kicks-ass.net>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
+ <1408536628-29379-2-git-send-email-cpandya@codeaurora.org>
+ <alpine.LSU.2.11.1408272258050.10518@eggly.anvils>
+ <20140903095815.GK4783@worktop.ger.corp.intel.com>
+ <alpine.LSU.2.11.1409080023100.1610@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(87936001)(47776003)(74502001)(77096002)(102836001)(83322001)(20776003)(86362001)(4396001)(19580405001)(80022001)(21056001)(81342001)(44976005)(92726001)(50466002)(107046002)(76482001)(77982001)(79102001)(90102001)(97736003)(104166001)(36756003)(87286001)(33646002)(89996001)(105596002)(93916002)(99396002)(19580395003)(15975445006)(77156001)(88136002)(85306004)(62966002)(76176999)(92566001)(83072002)(74662001)(31966008)(229853001)(15202345003)(68736004)(42186005)(50226001)(6806004)(84676001)(50986999)(81542001)(46102001)(48376002)(2201001)(85852003)(106466001)(95666004)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB041;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03283976A6
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-OriginatorOrg: altera.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="82wJsBn+m3vGehqm"
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1409080023100.1610@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add time keeping code for nios2.
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- arch/nios2/include/asm/delay.h |  21 +++
- arch/nios2/include/asm/timex.h |  26 ++++
- arch/nios2/kernel/time.c       | 318 +++++++++++++++++++++++++++++++++++++++++
- arch/nios2/lib/delay.c         |  52 +++++++
- 4 files changed, 417 insertions(+)
- create mode 100644 arch/nios2/include/asm/delay.h
- create mode 100644 arch/nios2/include/asm/timex.h
- create mode 100644 arch/nios2/kernel/time.c
- create mode 100644 arch/nios2/lib/delay.c
+--82wJsBn+m3vGehqm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/nios2/include/asm/delay.h b/arch/nios2/include/asm/delay.h
-new file mode 100644
-index 0000000..098e49b
---- /dev/null
-+++ b/arch/nios2/include/asm/delay.h
-@@ -0,0 +1,21 @@
-+/*
-+ * Copyright (C) 2014 Altera Corporation
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_DELAY_H
-+#define _ASM_NIOS2_DELAY_H
-+
-+#include <asm-generic/delay.h>
-+
-+/* Undefined functions to get compile-time errors */
-+extern void __bad_udelay(void);
-+extern void __bad_ndelay(void);
-+
-+extern unsigned long loops_per_jiffy;
-+
-+#endif /* _ASM_NIOS2_DELAY_H */
-diff --git a/arch/nios2/include/asm/timex.h b/arch/nios2/include/asm/timex.h
-new file mode 100644
-index 0000000..8996106
---- /dev/null
-+++ b/arch/nios2/include/asm/timex.h
-@@ -0,0 +1,26 @@
-+/* Copyright Altera Corporation (C) 2014. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2,
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#ifndef _ASM_NIOS2_TIMEX_H
-+#define _ASM_NIOS2_TIMEX_H
-+
-+typedef unsigned long cycles_t;
-+
-+extern cycles_t get_cycles(void);
-+
-+#define ARCH_HAS_READ_CURRENT_TIMER
-+
-+#endif
-diff --git a/arch/nios2/kernel/time.c b/arch/nios2/kernel/time.c
-new file mode 100644
-index 0000000..ca51f08
---- /dev/null
-+++ b/arch/nios2/kernel/time.c
-@@ -0,0 +1,318 @@
-+/*
-+ * Copyright (C) 2013-2014 Altera Corporation
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/interrupt.h>
-+#include <linux/clockchips.h>
-+#include <linux/clocksource.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+
-+#define ALTERA_TIMER_STATUS_REG		0
-+#define ALTERA_TIMER_CONTROL_REG	4
-+#define ALTERA_TIMER_PERIODL_REG	8
-+#define ALTERA_TIMER_PERIODH_REG	12
-+#define ALTERA_TIMER_SNAPL_REG		16
-+#define ALTERA_TIMER_SNAPH_REG		20
-+
-+#define ALTERA_TIMER_CONTROL_ITO_MSK	(0x1)
-+#define ALTERA_TIMER_CONTROL_CONT_MSK	(0x2)
-+#define ALTERA_TIMER_CONTROL_START_MSK	(0x4)
-+#define ALTERA_TIMER_CONTROL_STOP_MSK	(0x8)
-+
-+struct nios2_timer {
-+	void __iomem *base;
-+	unsigned long freq;
-+	int irq;
-+};
-+
-+struct nios2_clockevent_dev {
-+	struct nios2_timer timer;
-+	struct clock_event_device ced;
-+	struct irqaction irqaction;
-+};
-+
-+struct nios2_clocksource {
-+	struct nios2_timer timer;
-+	struct clocksource cs;
-+};
-+
-+struct nios2_clocksource *nios2_cs;
-+
-+static inline struct nios2_clockevent_dev *
-+	to_nios2_clkevent(struct clock_event_device *evt)
-+{
-+	return container_of(evt, struct nios2_clockevent_dev, ced);
-+}
-+
-+static inline struct nios2_clocksource *
-+	to_nios2_clksource(struct clocksource *cs)
-+{
-+	return container_of(cs, struct nios2_clocksource, cs);
-+}
-+
-+static u16 timer_readw(struct nios2_timer *timer, u32 offs)
-+{
-+	return readw(timer->base + offs);
-+}
-+
-+static void timer_writew(struct nios2_timer *timer, u16 val, u32 offs)
-+{
-+	writew(val, timer->base + offs);
-+}
-+
-+static inline unsigned long read_timersnapshot(struct nios2_timer *timer)
-+{
-+	unsigned long count;
-+
-+	timer_writew(timer, 0, ALTERA_TIMER_SNAPL_REG);
-+	count = timer_readw(timer, ALTERA_TIMER_SNAPH_REG) << 16 |
-+		timer_readw(timer, ALTERA_TIMER_SNAPL_REG);
-+
-+	return count;
-+}
-+
-+static cycle_t nios2_timer_read(struct clocksource *cs)
-+{
-+	struct nios2_clocksource *nios2_cs = to_nios2_clksource(cs);
-+	unsigned long flags;
-+	u32 count;
-+
-+	local_irq_save(flags);
-+	count = read_timersnapshot(&nios2_cs->timer);
-+	local_irq_restore(flags);
-+
-+	/* Counter is counting down */
-+	return ~count;
-+}
-+
-+cycles_t get_cycles(void)
-+{
-+	return nios2_timer_read(&nios2_cs->cs);
-+}
-+
-+int read_current_timer(unsigned long *timer_val)
-+{
-+	*timer_val = (unsigned long) get_cycles();
-+	return 0;
-+}
-+
-+static void nios2_timer_start(struct nios2_timer *timer)
-+{
-+	u16 ctrl;
-+
-+	ctrl = timer_readw(timer, ALTERA_TIMER_CONTROL_REG);
-+	ctrl |= ALTERA_TIMER_CONTROL_START_MSK;
-+	timer_writew(timer, ctrl, ALTERA_TIMER_CONTROL_REG);
-+}
-+
-+static void nios2_timer_stop(struct nios2_timer *timer)
-+{
-+	u16 ctrl;
-+
-+	ctrl = timer_readw(timer, ALTERA_TIMER_CONTROL_REG);
-+	ctrl |= ALTERA_TIMER_CONTROL_STOP_MSK;
-+	timer_writew(timer, ctrl, ALTERA_TIMER_CONTROL_REG);
-+}
-+
-+static void nios2_timer_config(struct nios2_timer *timer, unsigned long period,
-+	enum clock_event_mode mode)
-+{
-+	u16 ctrl;
-+
-+	/* The timer's actual period is one cycle greater than the value
-+	 * stored in the period register. */
-+	if (period)
-+		period--;
-+
-+	ctrl = timer_readw(timer, ALTERA_TIMER_CONTROL_REG);
-+	/* stop counter */
-+	timer_writew(timer, ctrl | ALTERA_TIMER_CONTROL_STOP_MSK,
-+		ALTERA_TIMER_CONTROL_REG);
-+
-+	/* write new count */
-+	timer_writew(timer, period, ALTERA_TIMER_PERIODL_REG);
-+	timer_writew(timer, period >> 16, ALTERA_TIMER_PERIODH_REG);
-+
-+	ctrl |= ALTERA_TIMER_CONTROL_START_MSK | ALTERA_TIMER_CONTROL_ITO_MSK;
-+	if (mode == CLOCK_EVT_MODE_PERIODIC)
-+		ctrl |= ALTERA_TIMER_CONTROL_CONT_MSK;
-+	else
-+		ctrl &= ~ALTERA_TIMER_CONTROL_CONT_MSK;
-+	timer_writew(timer, ctrl, ALTERA_TIMER_CONTROL_REG);
-+}
-+
-+static int nios2_timer_set_next_event(unsigned long delta,
-+	struct clock_event_device *evt)
-+{
-+	struct nios2_clockevent_dev *nios2_ced = to_nios2_clkevent(evt);
-+
-+	nios2_timer_config(&nios2_ced->timer, delta, evt->mode);
-+
-+	return 0;
-+}
-+
-+static void nios2_timer_set_mode(enum clock_event_mode mode,
-+	struct clock_event_device *evt)
-+{
-+	unsigned long period;
-+	struct nios2_clockevent_dev *nios2_ced = to_nios2_clkevent(evt);
-+	struct nios2_timer *timer = &nios2_ced->timer;
-+
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		period = DIV_ROUND_UP(timer->freq, HZ);
-+		nios2_timer_config(timer, period, CLOCK_EVT_MODE_PERIODIC);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		nios2_timer_config(timer, ULONG_MAX, CLOCK_EVT_MODE_ONESHOT);
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		nios2_timer_stop(timer);
-+		break;
-+	case CLOCK_EVT_MODE_RESUME:
-+		nios2_timer_start(timer);
-+		break;
-+	}
-+}
-+
-+irqreturn_t timer_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *evt = (struct clock_event_device *) dev_id;
-+	struct nios2_clockevent_dev *nios2_ced = to_nios2_clkevent(evt);
-+
-+	/* Clear the interrupt condition */
-+	timer_writew(&nios2_ced->timer, 0, ALTERA_TIMER_STATUS_REG);
-+	evt->event_handler(evt);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void __init nios2_timer_get_base_and_freq(struct device_node *np,
-+				    void __iomem **base, u32 *freq)
-+{
-+	*base = of_iomap(np, 0);
-+	if (!*base)
-+		panic("Unable to map reg for %s\n", np->name);
-+
-+	if (of_property_read_u32(np, "clock-frequency", freq))
-+		panic("Unable to get %s clock frequency\n", np->name);
-+}
-+
-+static __init void nios2_clockevent_init(struct device_node *timer)
-+{
-+	struct nios2_clockevent_dev *ce;
-+	void __iomem *iobase;
-+	u32 freq;
-+	int irq;
-+
-+	ce = kzalloc(sizeof(*ce), GFP_KERNEL);
-+	if (!ce)
-+		panic("Failed to allocate memory for %s\n", timer->name);
-+
-+	nios2_timer_get_base_and_freq(timer, &iobase, &freq);
-+
-+	irq = irq_of_parse_and_map(timer, 0);
-+	if (irq < 0)
-+		panic("Unable to parse timer irq\n");
-+
-+	ce->timer.base = iobase;
-+	ce->timer.irq = irq;
-+	ce->timer.freq = freq;
-+
-+	ce->ced.name = timer->name;
-+	ce->ced.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-+	ce->ced.rating = 250;
-+	ce->ced.shift = 32;
-+	ce->ced.set_next_event = nios2_timer_set_next_event;
-+	ce->ced.set_mode = nios2_timer_set_mode;
-+	ce->ced.cpumask = cpumask_of(0);
-+	ce->ced.irq = irq;
-+
-+	ce->irqaction.name = timer->name;
-+	ce->irqaction.handler = timer_interrupt;
-+	ce->irqaction.dev_id = &ce->ced;
-+	ce->irqaction.irq = irq;
-+	ce->irqaction.flags = IRQF_TIMER;
-+
-+	nios2_timer_stop(&ce->timer);
-+	/* clear pending interrupt */
-+	timer_writew(&ce->timer, 0, ALTERA_TIMER_STATUS_REG);
-+
-+	if (setup_irq(irq, &ce->irqaction))
-+		panic("Unable to setup timer irq\n");
-+
-+	clockevents_config_and_register(&ce->ced, freq, 1, ULONG_MAX);
-+}
-+
-+static __init void nios2_clocksource_init(struct device_node *timer)
-+{
-+	unsigned int ctrl;
-+	void __iomem *iobase;
-+	u32 freq;
-+
-+	nios2_cs = kzalloc(sizeof(*nios2_cs), GFP_KERNEL);
-+	if (!nios2_cs)
-+		panic("Failed to allocate memory for %s\n", timer->name);
-+
-+	nios2_timer_get_base_and_freq(timer, &iobase, &freq);
-+
-+	nios2_cs->timer.base = iobase;
-+	nios2_cs->timer.freq = freq;
-+
-+	nios2_cs->cs.name = timer->name;
-+	nios2_cs->cs.rating = 250;
-+	nios2_cs->cs.read = nios2_timer_read;
-+	nios2_cs->cs.mask = CLOCKSOURCE_MASK(32);
-+	nios2_cs->cs.flags = CLOCK_SOURCE_IS_CONTINUOUS;
-+
-+	clocksource_register_hz(&nios2_cs->cs, freq);
-+
-+	timer_writew(&nios2_cs->timer, USHRT_MAX, ALTERA_TIMER_PERIODL_REG);
-+	timer_writew(&nios2_cs->timer, USHRT_MAX, ALTERA_TIMER_PERIODH_REG);
-+
-+	/* interrupt disable + continuous + start */
-+	ctrl = ALTERA_TIMER_CONTROL_CONT_MSK | ALTERA_TIMER_CONTROL_START_MSK;
-+	timer_writew(&nios2_cs->timer, ctrl, ALTERA_TIMER_CONTROL_REG);
-+}
-+
-+
-+static int num_called;
-+static void __init nios2_time_init(struct device_node *timer)
-+{
-+	switch (num_called) {
-+	case 0:
-+		nios2_clockevent_init(timer);
-+		break;
-+	case 1:
-+		nios2_clocksource_init(timer);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	num_called++;
-+}
-+
-+void read_persistent_clock(struct timespec *ts)
-+{
-+	ts->tv_sec = mktime(2007, 1, 1, 0, 0, 0);
-+	ts->tv_nsec = 0;
-+}
-+
-+void __init time_init(void)
-+{
-+	clocksource_of_init();
-+}
-+
-+CLOCKSOURCE_OF_DECLARE(nios2_timer, "altr,timer-1.0", nios2_time_init);
-diff --git a/arch/nios2/lib/delay.c b/arch/nios2/lib/delay.c
-new file mode 100644
-index 0000000..088119c
---- /dev/null
-+++ b/arch/nios2/lib/delay.c
-@@ -0,0 +1,52 @@
-+/* Copyright Altera Corporation (C) 2014. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2,
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <asm/delay.h>
-+#include <asm/param.h>
-+#include <asm/processor.h>
-+#include <asm/timex.h>
-+
-+void __delay(unsigned long cycles)
-+{
-+	cycles_t start = get_cycles();
-+
-+	while ((get_cycles() - start) < cycles)
-+		cpu_relax();
-+}
-+EXPORT_SYMBOL(__delay);
-+
-+void __const_udelay(unsigned long xloops)
-+{
-+	u64 loops;
-+
-+	loops = (u64)xloops * loops_per_jiffy * HZ;
-+
-+	__delay(loops >> 32);
-+}
-+EXPORT_SYMBOL(__const_udelay);
-+
-+void __udelay(unsigned long usecs)
-+{
-+	__const_udelay(usecs * 0x10C7UL); /* 2**32 / 1000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__udelay);
-+
-+void __ndelay(unsigned long nsecs)
-+{
-+	__const_udelay(nsecs * 0x5UL); /* 2**32 / 1000000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__ndelay);
--- 
-1.8.2.1
+On Mon, Sep 08, 2014 at 01:25:36AM -0700, Hugh Dickins wrote:
+> Well, yes, but... how do we know when there is no more work to do?
 
+Yeah, I figured that out _after_ I send that email..
+
+> Thomas has given reason why KSM might simply fail to do its job if we
+> rely on the deferrable timer.  So I've tried another approach, patch
+> below; but I do not expect you to jump for joy at the sight of it!
+
+Indeed :/
+
+> I've tried to minimize the offensive KSM hook in context_switch().
+> Why place it there, rather than do something near profile_tick() or
+> account_process_tick()?  Because KSM is aware of mms not tasks, and
+> context_switch() should have the next mm cachelines hot (if not, a
+> slight regrouping in mm_struct should do it); whereas I can find
+> no reference whatever to mm_struct in kernel/time, so hooking to
+> KSM from there would drag in another few cachelines every tick.
+>=20
+> (Another approach would be to set up KSM hint faulting, along the
+> lines of NUMA hint faulting.  Not a path I'm keen to go down.)
+>=20
+> I'm not thrilled with this patch, I think it's somewhat defective
+> in several ways.  But maybe in practice it will prove good enough,
+> and if so then I'd rather not waste effort on complicating it.
+>=20
+> My own testing is not realistic, nor representative of real KSM users;
+> and I have no idea what values of pages_to_scan and sleep_millisecs
+> people really use (and those may make quite a difference to how
+> well it works).
+>=20
+> Chintan, even if the scheduler guys turn out to hate it, please would
+> you give the patch below a try, to see how well it works in your
+> environment, whether it seems to go better or worse than your own patch.
+>=20
+> If it works well enough for you, maybe we can come up with ideas to
+> make it more palatable.  I do think your issue is an important one
+> to fix, one way or another.
+>=20
+> Thanks,
+> Hugh
+>=20
+> [PATCH] ksm: avoid periodic wakeup while mergeable mms are quiet
+>=20
+> Description yet to be written!
+>=20
+> Reported-by: Chintan Pandya <cpandya@codeaurora.org>
+> Not-Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+>=20
+>  include/linux/ksm.h   |   14 +++++++++++
+>  include/linux/sched.h |    1=20
+>  kernel/sched/core.c   |    9 ++++++-
+>  mm/ksm.c              |   50 ++++++++++++++++++++++++++++------------
+>  4 files changed, 58 insertions(+), 16 deletions(-)
+>=20
+> --- 3.17-rc4/include/linux/ksm.h	2014-03-30 20:40:15.000000000 -0700
+> +++ linux/include/linux/ksm.h	2014-09-07 11:54:41.528003316 -0700
+
+> @@ -87,6 +96,11 @@ static inline void ksm_exit(struct mm_st
+>  {
+>  }
+> =20
+> +static inline wait_queue_head_t *ksm_switch(struct mm_struct *mm)
+
+s/ksm_switch/__&/
+
+> +{
+> +	return NULL;
+> +}
+> +
+>  static inline int PageKsm(struct page *page)
+>  {
+>  	return 0;
+
+> --- 3.17-rc4/kernel/sched/core.c	2014-08-16 16:00:54.062189063 -0700
+> +++ linux/kernel/sched/core.c	2014-09-07 11:54:41.528003316 -0700
+
+> @@ -2304,6 +2305,7 @@ context_switch(struct rq *rq, struct tas
+>  	       struct task_struct *next)
+>  {
+>  	struct mm_struct *mm, *oldmm;
+> +	wait_queue_head_t *wake_ksm =3D NULL;
+> =20
+>  	prepare_task_switch(rq, prev, next);
+> =20
+> @@ -2320,8 +2322,10 @@ context_switch(struct rq *rq, struct tas
+>  		next->active_mm =3D oldmm;
+>  		atomic_inc(&oldmm->mm_count);
+>  		enter_lazy_tlb(oldmm, next);
+> -	} else
+> +	} else {
+>  		switch_mm(oldmm, mm, next);
+> +		wake_ksm =3D ksm_switch(mm);
+
+Is this the right mm? We've just switched the stack, so we're looking at
+next->mm when we switched away from current. That might not exist
+anymore.
+
+> +	}
+> =20
+>  	if (!prev->mm) {
+>  		prev->active_mm =3D NULL;
+> @@ -2348,6 +2352,9 @@ context_switch(struct rq *rq, struct tas
+>  	 * frame will be invalid.
+>  	 */
+>  	finish_task_switch(this_rq(), prev);
+> +
+> +	if (wake_ksm)
+> +		wake_up_interruptible(wake_ksm);
+>  }
+
+Quite horrible for sure. I really hate seeing KSM cruft all the way down
+here. Can't we create a new (timer) infrastructure that does the right
+thing? Surely this isn't the only such case.
+
+I know both RCU and some NOHZ_FULL muck already track when the system is
+completely idle. This is yet another case of that.
+
+--82wJsBn+m3vGehqm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUDXllAAoJEHZH4aRLwOS6XXgP/3S0AwWq3WaXgJAD4RwYaBh6
+FFLgz+/Hl/QeBSDJXHPTt96D4ppMTeke4vWHx82dfagPcQS/8Tg7+dSQCkdRVaiG
+iXWtGfuNS/oFJfIN3oOjAfhFhmlPvpgB+QswUm3xQ3ftZqsnlL+XoaDijrOyHsis
+Qr7h4K95uU4iN/gvdfsjUmdoxifIZt8h/FHWX9F8NuZWYaWNlLQBsptaIqHLkIWg
+so2gNxa3os2nJToMQtcMCNFkyZJvsMbf/kPBKzIJjX+eyNCuN2kVUObHFeSi7OLm
+ACOgao/kTdWswz+tv+rOJ+gxLvAJ1ErPyKx4PuzDrDmXmWT/OI4ADPjW2oA3nbGX
+PIryZuI5wXMRGFQDxyaGkEJqFKYiPDETiBCNDiDsja/m6uWeO/wcB2qNxgbQsaNx
+McBftBKhUvpRUWdOIdadaat6Fx7xRnGJ78ZQ1dGqf3jk8Mr9iyxGuU6BcmNY3nEc
+NyptRyCoQR/9H2EExMl1rukjsD3uTAOXgH++UJaLeLkqnWOMwU+r8NC0AUmOwOtg
+sXRvTJDjoDp/w/nLYqRgCgRiAr7K/Yy+3SFdvdadHzt70/lxcOCtIp5NxjYRY6AR
+0zPOwC5KlUO0LOIMaDlbdoKDhwzUISFCaNi9E08e4mwffw5LsuY4j3okJV6REW79
+DZ72OzY8UTDchPWN6FUR
+=A+t6
+-----END PGP SIGNATURE-----
+
+--82wJsBn+m3vGehqm--
