@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbaIHPSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:18:17 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:14507 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973AbaIHPSQ (ORCPT
+	id S1754130AbaIHPTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:19:13 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:62822 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaIHPTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:18:16 -0400
-Message-ID: <1410188863.28990.209.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 4/5] x86, mm: Add set_memory_wt() for WT
-From: Toshi Kani <toshi.kani@hp.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Yigal Korman <yigal@plexistor.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Mon, 08 Sep 2014 09:07:43 -0600
-In-Reply-To: <CALCETrX-jsDBbPTVBLE=TkrfO9dLJgpog7TVKqi-wxxj6saRjA@mail.gmail.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
-	 <1409855739-8985-5-git-send-email-toshi.kani@hp.com>
-	 <CALCETrXjpoVmCi07zo0dKH9LrF+nz9F3GshNiQvmiueFFH=TUQ@mail.gmail.com>
-	 <1409857025.28990.125.camel@misato.fc.hp.com>
-	 <540C1C01.1000308@plexistor.com>
-	 <CALCETrX-jsDBbPTVBLE=TkrfO9dLJgpog7TVKqi-wxxj6saRjA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Sep 2014 11:19:12 -0400
+Date: Mon, 8 Sep 2014 20:48:51 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Morgan Phillips <winter2718@gmail.com>
+Cc: brijohn@gmail.com, hdegoede@redhat.com, m.chehab@samsung.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [media]: sn9c20x.c: fix checkpatch error: that open
+ brace { should be on the previous line
+Message-ID: <20140908151851.GA23663@sudip-PC>
+References: <1410179542-3272-1-git-send-email-winter2718@gmail.com>
+ <1410188158-6560-1-git-send-email-winter2718@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410188158-6560-1-git-send-email-winter2718@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-09-07 at 09:49 -0700, Andy Lutomirski wrote:
-> On Sun, Sep 7, 2014 at 1:49 AM, Yigal Korman <yigal@plexistor.com> wrote:
-> > I think that what confused Andy (or at least me) is the documentation in Documentation/x86/pat.txt
-> > If it's possible, can you please update pat.txt as part of the patch?
+On Mon, Sep 08, 2014 at 09:55:58AM -0500, Morgan Phillips wrote:
+> Change array initialization format to fix style error.
+> 	from:
+> 		u8 foo[] =
+> 			{1, 2, 3};
+> 	to:
+checkpatch is giving a warning here , but looks like a false positive.
+
+thanks
+sudip
+
+> 		u8 foo[] = {
+> 			1, 2, 3
+> 		};
 > 
-> Indeed.  That file seems to indicate several times that the intended
-> use of set_memory_xyz is for RAM.
-
-
-Good point.  pat.txt is correct that the "intended" use of
-set_memory_xyz() is for RAM since there is no other way to set non-WB
-attribute for RAM.  For reserved memory, one should call ioremap_xyz()
-to map with the xyz attribute directly.  From the functionality POV,
-set_memory_xyz() works for reserved memory, but such usage is not
-intended.
-
-Should I drop the patch 4/5 until we can track the use of WT for RAM?
-
-Thanks,
--Toshi
- 
-
+> Signed-off-by: Morgan Phillips <winter2718@gmail.com>
+> ---
+>  Changes since v2:
+>    * adds a more verbose commit message
+> 
+>  drivers/media/usb/gspca/sn9c20x.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/media/usb/gspca/sn9c20x.c b/drivers/media/usb/gspca/sn9c20x.c
+> index 41a9a89..95467f0 100644
+> --- a/drivers/media/usb/gspca/sn9c20x.c
+> +++ b/drivers/media/usb/gspca/sn9c20x.c
+> @@ -1787,8 +1787,9 @@ static int sd_init(struct gspca_dev *gspca_dev)
+>  	struct sd *sd = (struct sd *) gspca_dev;
+>  	int i;
+>  	u8 value;
+> -	u8 i2c_init[9] =
+> -		{0x80, sd->i2c_addr, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+> +	u8 i2c_init[9] = {
+> +		0x80, sd->i2c_addr, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03
+> +	};
+>  
+>  	for (i = 0; i < ARRAY_SIZE(bridge_init); i++) {
+>  		value = bridge_init[i][1];
+> @@ -2242,8 +2243,9 @@ static void sd_pkt_scan(struct gspca_dev *gspca_dev,
+>  {
+>  	struct sd *sd = (struct sd *) gspca_dev;
+>  	int avg_lum, is_jpeg;
+> -	static const u8 frame_header[] =
+> -		{0xff, 0xff, 0x00, 0xc4, 0xc4, 0x96};
+> +	static const u8 frame_header[] = {
+> +		0xff, 0xff, 0x00, 0xc4, 0xc4, 0x96
+> +	};
+>  
+>  	is_jpeg = (sd->fmt & 0x03) == 0;
+>  	if (len >= 64 && memcmp(data, frame_header, 6) == 0) {
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
