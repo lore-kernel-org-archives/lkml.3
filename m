@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774AbaIHMOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:14:25 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:35249 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaIHMOY (ORCPT
+	id S1753854AbaIHMPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:15:35 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:59811 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172AbaIHMPd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:14:24 -0400
+	Mon, 8 Sep 2014 08:15:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <540D9A9B.6070706@gmail.com>
-References: <20140905171959.GO5216@hansolo.jdub.homelinux.org>
-	<540D9A9B.6070706@gmail.com>
-Date: Mon, 8 Sep 2014 08:14:23 -0400
-X-Google-Sender-Auth: boV_78OnRWEGN4dd6X6RunFn_WI
-Message-ID: <CA+5PVA5eTMqON9TwPR-Mi7Bz=EY71q54CtaQ-T1U5pxpCODxpA@mail.gmail.com>
-Subject: Re: [PATCH] drm/vmwgfx: Fix drm.h include
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Emil Velikov <emil.l.velikov@gmail.com>
-Cc: Thomas Hellstrom <thellstrom@vmware.com>, Brian Paul <brianp@vmware.com>,
-        David Airlie <airlied@linux.ie>, dmarlin@redhat.com,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <53F1FBA7.8000707@neotion.com>
+References: <53C7E45E.2060102@neotion.com>
+	<CAPDyKFoRpQBHGGCMPvEKdeVGjTO-rnyYVostLZGCV3dudD1rmA@mail.gmail.com>
+	<53EB2DC3.2080002@neotion.com>
+	<CAPDyKFpjYqVUZ8GHB76gD8pOx_eMg9ecvbWrMEfbhEd5ffk7mw@mail.gmail.com>
+	<53ECB95F.2030207@neotion.com>
+	<CAPDyKFp2ekmucHVzMWxeKfyTmuFKTXAYwUEpL5QxvEh8AjFopg@mail.gmail.com>
+	<53F1FBA7.8000707@neotion.com>
+Date: Mon, 8 Sep 2014 14:15:31 +0200
+Message-ID: <CAPDyKFrpj=tuZTBHC1wsOz=v-Rh6zGkWrawQzVRrwe36tEpRyg@mail.gmail.com>
+Subject: Re: [PATCH v3 0002/0002] mmc: Checks EXT_CSD_PARTITION_SETTING_COMPLETED
+ bit before partitions computation
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>
+Cc: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 8:01 AM, Emil Velikov <emil.l.velikov@gmail.com> wrote:
-> Hi Josh
+On 18 August 2014 15:12, Grégory Soutadé <gsoutade@neotion.com> wrote:
+> Checks EXT_CSD_PARTITION_SETTING_COMPLETED bit before
+> computing enhanced user area offset and size, and adding
+> mmc general purpose partitions.
+> The two needs EXT_CSD_PARTITION_SETTING_COMPLETED bit be set
+> to be valid (as described in JEDEC standard).
 >
-> On 05/09/14 18:19, Josh Boyer wrote:
->> The userspace drm.h include doesn't prefix the drm directory.  This can lead
->> to compile failures as /usr/include/drm/ isn't in the standard gcc include
->> paths.  Fix it to be <drm/drm.h>, which matches the rest of the driver drm
->> header files that get installed into /usr/include/drm.
->>
-> Is this an actual issue or a hypothetical one ? Afaict no-one is using the
-> kernel drm headers, but instead the ones from libdrm are in place.
-> linux-headers does not even ship /usr/include/drm on my Archlinux box.
+> Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
+> ---
+>  drivers/mmc/core/mmc.c |  167 +++++++++++++++++++++++++++---------------------
+>  1 file changed, 95 insertions(+), 72 deletions(-)
+>
+> Changelog v2:
+>         Move code for user area and general purpose partitions
+>         into functions.
 
-It's shipped in kernel-headers in Fedora and I'm guessing someone hit
-it at one point, but I don't know what the actual initial problem was.
+Overall I like the end-result of this patch.
 
-> Additionally most (all?) vmwgfx components (mesa, ddx) use a local version of
-> the header, which albeit not ideal should not cause issues.
->
-> Or perhaps I'm missing something ?
->
->
-> To the VMware guys,
->
-> Any objections if we update the libdrm header and drop the mesa/ddx copies ?
->
-> Cheers,
-> Emil
->
-> P.S. I'm against the patch in any way :)
+What I don't like is that you move code and fix bugs in same patch.
+Could possibly, split this up into two patches?
 
-Was that meant to say "I'm not against the patch in any way" ?
-
-josh
+Kind regards
+Uffe
