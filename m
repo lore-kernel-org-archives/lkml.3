@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530AbaIHSsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:48:40 -0400
-Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:49704 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754471AbaIHSsi (ORCPT
+	id S1754092AbaIHSvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:51:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40947 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147AbaIHSvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:48:38 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3868:3870:3872:3874:4321:5007:6119:7652:7903:9010:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: gun61_10d63a7e02359
-X-Filterd-Recvd-Size: 1428
-Message-ID: <1410202114.12560.16.camel@joe-AO725>
-Subject: Re: [PATCH v2] checkpatch: look for common misspellings
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-doc <linux-doc@vger.kernel.org>
-Date: Mon, 08 Sep 2014 11:48:34 -0700
-In-Reply-To: <20140908181524.GA11839@www.outflux.net>
-References: <20140908181524.GA11839@www.outflux.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Sep 2014 14:51:19 -0400
+Date: Mon, 8 Sep 2014 20:51:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: perf_fuzzer triggers instant reboot
+Message-ID: <20140908185115.GI6758@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8S3Z05jHc5WjjFzN"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-08 at 11:15 -0700, Kees Cook wrote:
-> Check for misspellings, based on Debian's lintian list. Several false
-> positives were removed, and several additional words added that were
-> common in the kernel:
-> 
-> 	backword backwords
-> 	invalide valide
-> 	recieves
-> 	singed unsinged
-> 
-> While going back and fixing existing spelling mistakes isn't a high
-> priority, it'd be nice to try to catch them before they hit the tree.
 
-Seems sensible enough.
+--8S3Z05jHc5WjjFzN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Joe Perches <joe@perches.com>
+On Mon, Sep 08, 2014 at 01:47:11PM -0400, Vince Weaver wrote:
+> Hello
+>=20
+> so I finally had time to run my perf_fuzzer again and it has rapidly=20
+> turned up an alarming crash that instant-reboots my core2 test machine.
+
+Urgh, of course :/
 
 
+
+--8S3Z05jHc5WjjFzN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUDfqeAAoJEHZH4aRLwOS6laEP/3iUeTu5NkIoe7jZC6W4Rl8k
+Qwk48C8n3J4HIei1aEnr+abmM8n/DoyDkcsXG0SDBWSeTXyR1FnGCzppGe/qkBZD
+aPYpUt6nabJJq0EkqhvBt4jhyx4RQjxSXNLPeQAXkP5cBAT6Qq/eg1FvpYgbAem5
+cnnxAZCb+27eypWfxxcD7Sw3MV2HgunWyL9hfnlYnlFH/E5r4U5DD3uJ4YLFMdXI
+kNUKxFkqDxQYv2nNp8TisdmJJdDWqRTQubrf7chkzkViYNUqHLz62BE7vrupbuHU
+JZbMy5zq/bmNlRZWkQkEoTyT6mcurWNxH2ZYZqnTi4tyyX1VQSqjtGnXhF0rzmxs
+3R65o4vLSNVh5B2SeeRIv2rXIDIPif8eujmvXmV6gdtCX2DtylR+0p64G8+ftWKk
+bvLMUdtqWy8Hq7ANdCP1UQhrkqL7rmvrkkA8VQjGFTf3TQDWoui8zRT2hAbbPmTK
+m6Z5fqjAVOiFGAjEdxrjN9qtVpOJvoUBe65F8bBwsNz2wyJGMbwU03D/9w6DdHNe
+iAgXzMxb5bx4aDDffNNZ5DG/a51MsojXV1ItFT744MBtr03z1YnovAb71YMnlyYO
+yO7uo3X0rJ3gWa252D083CD9rAkwtek+SRrYetGlg+dEQ2onxRqHeU0Crde1TepK
+/DU1+RdFGEw/TqAPLXqw
+=9p/H
+-----END PGP SIGNATURE-----
+
+--8S3Z05jHc5WjjFzN--
