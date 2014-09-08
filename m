@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483AbaIHPiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:38:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59815 "EHLO mx1.redhat.com"
+	id S1754526AbaIHPiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:38:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36035 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754434AbaIHPiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:38:06 -0400
+	id S1754491AbaIHPiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:38:17 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 05/13] KEYS: Make the key matching functions return bool
+Subject: [PATCH 06/13] KEYS: Implement binary asymmetric key ID handling
 From: David Howells <dhowells@redhat.com>
 To: rusty@rustcorp.com.au
 Cc: keyrings@linux-nfs.org, jwboyer@redhat.com, linux-kernel@vger.kernel.org,
         dhowells@redhat.com, linux-security-module@vger.kernel.org,
         pjones@redhat.com, vgoyal@redhat.com
-Date: Mon, 08 Sep 2014 16:37:57 +0100
-Message-ID: <20140908153757.28301.12320.stgit@warthog.procyon.org.uk>
+Date: Mon, 08 Sep 2014 16:38:09 +0100
+Message-ID: <20140908153809.28301.79665.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140908153704.28301.41578.stgit@warthog.procyon.org.uk>
 References: <20140908153704.28301.41578.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -28,125 +28,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the key matching functions pointed to by key_match_data::cmp return bool
-rather than int.
+Implement the first step in using binary key IDs for asymmetric keys rather
+than hex string keys.
+
+The previously added match data preparsing will be able to convert hex
+criterion strings into binary which can then be compared more rapidly.
+
+Further, we actually want more then one ID string per public key.  The problem
+is that X.509 certs refer to other X.509 certs by matching Issuer + AuthKeyId
+to Subject + SubjKeyId, but PKCS#7 messages match against X.509 Issuer +
+SerialNumber.
+
+This patch just provides facilities for a later patch to make use of.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/asymmetric_type.c |    4 ++--
- include/linux/key-type.h                 |   10 ++++++----
- net/dns_resolver/dns_key.c               |    4 ++--
- security/keys/internal.h                 |    8 ++++----
- security/keys/keyring.c                  |    4 ++--
- security/keys/process_keys.c             |    4 ++--
- 6 files changed, 18 insertions(+), 16 deletions(-)
+ crypto/asymmetric_keys/asymmetric_keys.h |    4 +
+ crypto/asymmetric_keys/asymmetric_type.c |   82 ++++++++++++++++++++++++++++++
+ include/keys/asymmetric-type.h           |   38 ++++++++++++++
+ 3 files changed, 124 insertions(+)
 
+diff --git a/crypto/asymmetric_keys/asymmetric_keys.h b/crypto/asymmetric_keys/asymmetric_keys.h
+index a63c551c6557..917be6b985e7 100644
+--- a/crypto/asymmetric_keys/asymmetric_keys.h
++++ b/crypto/asymmetric_keys/asymmetric_keys.h
+@@ -10,6 +10,10 @@
+  */
+ 
+ int asymmetric_keyid_match(const char *kid, const char *id);
++extern bool asymmetric_match_key_ids(const struct asymmetric_key_ids *kids,
++				     const struct asymmetric_key_id *match_id);
++
++extern struct asymmetric_key_id *asymmetric_key_hex_to_key_id(const char *id);
+ 
+ static inline const char *asymmetric_key_id(const struct key *key)
+ {
 diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index 7c0498968975..7755f918e8d9 100644
+index 7755f918e8d9..3bc71b4e1eed 100644
 --- a/crypto/asymmetric_keys/asymmetric_type.c
 +++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -59,8 +59,8 @@ EXPORT_SYMBOL_GPL(asymmetric_keyid_match);
-  *	"id:<id>"	- request a key matching the ID
-  *	"<subtype>:<id>" - request a key of a subtype
-  */
--static int asymmetric_key_cmp(const struct key *key,
--			      const struct key_match_data *match_data)
-+static bool asymmetric_key_cmp(const struct key *key,
-+			       const struct key_match_data *match_data)
- {
- 	const struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
- 	const char *description = match_data->raw_data;
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index c14816bd3b44..ff9f1d394235 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -56,10 +56,12 @@ typedef int (*request_key_actor_t)(struct key_construction *key,
-  * Preparsed matching criterion.
-  */
- struct key_match_data {
--	/* Comparison function, defaults to type->match, but can be replaced by
--	 * type->match_preparse(). */
--	int (*cmp)(const struct key *key,
--		   const struct key_match_data *match_data);
-+	/* Comparison function, defaults to exact description match, but can be
-+	 * overridden by type->match_preparse().  Should return true if a match
-+	 * is found and false if not.
-+	 */
-+	bool (*cmp)(const struct key *key,
-+		    const struct key_match_data *match_data);
+@@ -15,6 +15,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/ctype.h>
+ #include "asymmetric_keys.h"
  
- 	const void	*raw_data;	/* Raw match data */
- 	void		*preparsed;	/* For ->match_preparse() to stash stuff */
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index a07b9ba7e0b7..31cd4fd75486 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -176,8 +176,8 @@ static void dns_resolver_free_preparse(struct key_preparsed_payload *prep)
-  * The domain name may be a simple name or an absolute domain name (which
-  * should end with a period).  The domain name is case-independent.
-  */
--static int dns_resolver_cmp(const struct key *key,
--			    const struct key_match_data *match_data)
-+static bool dns_resolver_cmp(const struct key *key,
-+			     const struct key_match_data *match_data)
- {
- 	int slen, dlen, ret = 0;
- 	const char *src = key->description, *dsp = match_data->raw_data;
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 4ef315325b9d..7a1299af41c3 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -128,8 +128,8 @@ struct keyring_search_context {
- 	struct timespec		now;
- };
+ MODULE_LICENSE("GPL");
+@@ -23,6 +24,87 @@ static LIST_HEAD(asymmetric_key_parsers);
+ static DECLARE_RWSEM(asymmetric_key_parsers_sem);
  
--extern int key_default_cmp(const struct key *key,
--			   const struct key_match_data *match_data);
-+extern bool key_default_cmp(const struct key *key,
-+			    const struct key_match_data *match_data);
- extern key_ref_t keyring_search_aux(key_ref_t keyring_ref,
- 				    struct keyring_search_context *ctx);
- 
-@@ -151,8 +151,8 @@ extern struct key *request_key_and_link(struct key_type *type,
- 					struct key *dest_keyring,
- 					unsigned long flags);
- 
--extern int lookup_user_key_possessed(const struct key *key,
--				     const struct key_match_data *match_data);
-+extern bool lookup_user_key_possessed(const struct key *key,
-+				      const struct key_match_data *match_data);
- extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
- 				 key_perm_t perm);
- #define KEY_LOOKUP_CREATE	0x01
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index d8ce7db1db78..e43f0e8faa3e 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -513,8 +513,8 @@ EXPORT_SYMBOL(keyring_alloc);
  /*
-  * By default, we keys found by getting an exact match on their descriptions.
++ * Construct an asymmetric key ID from two binary blobs.
++ */
++struct asymmetric_key_id *asymmetric_key_generate_id(const void *val_1,
++						     size_t len_1,
++						     const void *val_2,
++						     size_t len_2)
++{
++	struct asymmetric_key_id *kid;
++
++	kid = kmalloc(sizeof(struct asymmetric_key_id) + len_1 + 4 + len_2,
++		      GFP_KERNEL);
++	if (!kid)
++		return ERR_PTR(-ENOMEM);
++	kid->len = len_1 + 4 + len_2;
++	memcpy(kid->data, val_1, len_1);
++	kid->data[len_1 + 0] = 0xff;
++	kid->data[len_1 + 1] = 0xff;
++	kid->data[len_1 + 2] = 0xff;
++	kid->data[len_1 + 3] = 0xff;
++	memcpy(kid->data + len_1 + 4, val_2, len_2);
++	return kid;
++}
++
++/*
++ * Return true if two asymmetric keys are the same.
++ */
++bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
++			    const struct asymmetric_key_id *kid2)
++{
++	if (!kid1 || !kid2)
++		return false;
++	if (kid1->len != kid2->len)
++		return false;
++	return memcmp(kid1->data, kid2->data, kid1->len) == 0;
++}
++
++/*
++ * Match asymmetric key id with partial match
++ * @id: key id to match in a form "id:<id>"
++ */
++bool asymmetric_match_key_ids(const struct asymmetric_key_ids *kids,
++			      const struct asymmetric_key_id *match_id)
++{
++	if (!kids || !match_id)
++		return false;
++	if (asymmetric_key_id_same(kids->id[0], match_id))
++		return true;
++	if (asymmetric_key_id_same(kids->id[1], match_id))
++		return true;
++	return false;
++}
++EXPORT_SYMBOL_GPL(asymmetric_match_key_ids);
++
++/**
++ * Convert a hex string into a key ID.
++ */
++struct asymmetric_key_id *asymmetric_key_hex_to_key_id(const char *id)
++{
++	struct asymmetric_key_id *match_id;
++	const char *p;
++	ptrdiff_t hexlen;
++
++	if (!*id)
++		return ERR_PTR(-EINVAL);
++	for (p = id; *p; p++)
++		if (!isxdigit(*p))
++			return ERR_PTR(-EINVAL);
++	hexlen = p - id;
++	if (hexlen & 1)
++		return ERR_PTR(-EINVAL);
++
++	match_id = kmalloc(sizeof(struct asymmetric_key_id) + hexlen / 2,
++			   GFP_KERNEL);
++	if (!match_id)
++		return ERR_PTR(-ENOMEM);
++	match_id->len = hexlen / 2;
++	hex2bin(match_id->data, id, hexlen / 2);
++	return match_id;
++}
++
++/*
+  * Match asymmetric key id with partial match
+  * @id:		key id to match in a form "id:<id>"
   */
--int key_default_cmp(const struct key *key,
--		    const struct key_match_data *match_data)
-+bool key_default_cmp(const struct key *key,
-+		     const struct key_match_data *match_data)
- {
- 	return strcmp(key->description, match_data->raw_data) == 0;
- }
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 08bd533d014f..bd536cb221e2 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -489,8 +489,8 @@ found:
+diff --git a/include/keys/asymmetric-type.h b/include/keys/asymmetric-type.h
+index 7dd473496180..044ab0d3aa45 100644
+--- a/include/keys/asymmetric-type.h
++++ b/include/keys/asymmetric-type.h
+@@ -19,6 +19,44 @@
+ extern struct key_type key_type_asymmetric;
+ 
  /*
-  * See if the key we're looking at is the target key.
++ * Identifiers for an asymmetric key ID.  We have three ways of looking up a
++ * key derived from an X.509 certificate:
++ *
++ * (1) Serial Number & Issuer.  Non-optional.  This is the only valid way to
++ *     map a PKCS#7 signature to an X.509 certificate.
++ *
++ * (2) Issuer & Subject Unique IDs.  Optional.  These were the original way to
++ *     match X.509 certificates, but have fallen into disuse in favour of (3).
++ *
++ * (3) Auth & Subject Key Identifiers.  Optional.  SKIDs are only provided on
++ *     CA keys that are intended to sign other keys, so don't appear in end
++ *     user certificates unless forced.
++ *
++ * We could also support an PGP key identifier, which is just a SHA1 sum of the
++ * public key and certain parameters, but since we don't support PGP keys at
++ * the moment, we shall ignore those.
++ *
++ * What we actually do is provide a place where binary identifiers can be
++ * stashed and then compare against them when checking for an id match.
++ */
++struct asymmetric_key_id {
++	unsigned short	len;
++	unsigned char	data[];
++};
++
++struct asymmetric_key_ids {
++	void		*id[2];
++};
++
++extern bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
++				   const struct asymmetric_key_id *kid2);
++
++extern struct asymmetric_key_id *asymmetric_key_generate_id(const void *val_1,
++							    size_t len_1,
++							    const void *val_2,
++							    size_t len_2);
++
++/*
+  * The payload is at the discretion of the subtype.
   */
--int lookup_user_key_possessed(const struct key *key,
--			      const struct key_match_data *match_data)
-+bool lookup_user_key_possessed(const struct key *key,
-+			       const struct key_match_data *match_data)
- {
- 	return key == match_data->raw_data;
- }
+ 
 
