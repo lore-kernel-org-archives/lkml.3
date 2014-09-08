@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaIHHNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:13:21 -0400
-Received: from ozlabs.org ([103.22.144.67]:45940 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404AbaIHHNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:13:20 -0400
-Date: Mon, 8 Sep 2014 17:13:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: linux-next: manual merge of the usb-gadget tree with Linus' tree
-Message-ID: <20140908171311.414b05d2@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753001AbaIHHOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:14:19 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:40822 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaIHHOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 03:14:18 -0400
+Date: Mon, 8 Sep 2014 09:14:09 +0200
+From: Robert Richter <rric@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Michal Marek <mmarek@suse.cz>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>
+Subject: Re: [PATCH 2/6] dts, kbuild: Factor out dtbs install rules to
+ Makefile.dtbinst
+Message-ID: <20140908071409.GV4703@rric.localhost>
+References: <1409899692-1455-1-git-send-email-rric@kernel.org>
+ <1409899692-1455-3-git-send-email-rric@kernel.org>
+ <CAL_Jsq+NYU9c0Jw8DX_iH6G5_9tom9DGcP548q4tKQsdkb-s0A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/TPOxAYe.RyoFrSbSMf70jVy"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_Jsq+NYU9c0Jw8DX_iH6G5_9tom9DGcP548q4tKQsdkb-s0A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TPOxAYe.RyoFrSbSMf70jVy
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 05.09.14 07:48:30, Rob Herring wrote:
+> On Fri, Sep 5, 2014 at 1:48 AM, Robert Richter <rric@kernel.org> wrote:
+> > From: Robert Richter <rrichter@cavium.com>
+> >
+> > Move dtbs install rules to Makefile.dtbinst. This change is needed to
+> > implement support for dts vendor subdirs. The change makes Makefiles
+> > easier and smaller as no longer the dtbs_install rule needs to be
+> > defined. Another advantage is that install goals are not encoded in
+> > targets anymore (%.dtb_dtbinst_).
+> >
+> > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > ---
+> >  arch/arm/Makefile            |  6 +++++-
+> >  arch/arm/boot/dts/Makefile   |  2 --
+> >  arch/arm64/Makefile          |  6 +++++-
+> >  arch/arm64/boot/dts/Makefile |  2 --
+> >  scripts/Kbuild.include       |  6 ++++++
+> >  scripts/Makefile.dtbinst     | 38 ++++++++++++++++++++++++++++++++++++++
+> >  scripts/Makefile.lib         | 12 ------------
+> >  7 files changed, 54 insertions(+), 18 deletions(-)
+> >  create mode 100644 scripts/Makefile.dtbinst
+> >
+> > diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> > index 0ce9d0f71f2a..1963d9a9a2c4 100644
+> > --- a/arch/arm/Makefile
+> > +++ b/arch/arm/Makefile
+> > @@ -313,9 +313,13 @@ $(BOOT_TARGETS): vmlinux
+> >         $(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
+> >
+> >  PHONY += dtbs dtbs_install
+> > -dtbs dtbs_install: prepare scripts
+> > +
+> > +dtbs: prepare scripts
+> >         $(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
+> >
+> > +dtbs_install:
+> > +       $(Q)$(MAKE) $(dtbinst)=$(boot)/dts MACHINE=$(MACHINE)
+> 
+> Can't you get rid of MACHINE here, too?
 
-Hi Felipe,
+I moved this change to the end of this patch series to let maintainers
+the choise to drop the change if they are not fine with it.
 
-Today's linux-next merge of the usb-gadget tree got a conflict in
-drivers/usb/phy/phy-samsung-usb.h between commit bbc66e140bab ("usb:
-phy: samsung: Fix wrong bit mask for PHYPARAM1_PCS_TXDEEMPH") from
-Linus' tree and commit ea2fdf842365 ("usb: phy: samsung: remove old
-common USB PHY code") from the usb-gadget tree.
-
-I fixed it up (the latter just removed the file, so I did that) and can
-carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/TPOxAYe.RyoFrSbSMf70jVy
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUDVcMAAoJEMDTa8Ir7ZwVH28P/1LhqM+dXyisnGdyPeAtBpEq
-GohGWyhCB+M8S7stFtfQoF3XkCqfNfy2Xwvwu0Dm4QmCjrZvgeHCzzfovpjxqHh6
-HlRHUpH6dGNAD/FXwOcqbwCJqRTsz02EQv7GyonpsDm2A2tMXFv9FXpAxykUEPmR
-JwSksRD0+wFMDFwD64t9dy4C0GdH61uF0/E/RvdKw/IOUzRZxfOF9bW7OBYPr9kx
-USK3qprd50xGCMKNK6HeI0AcW9BHAwMbqq+U+tPWDjjKtDnRtCM/owU2Yp7sjJh3
-dSK1z8OO55ErA5cVXzXLcY0yubPI8fI0fju8gfmGV35g8mmNh5FwsnrPaic9oqNT
-QMvn/6a+R0yidlRV+AfGsCc1XKNVeiAzSYngg5ePeJJ527uD0u5bSS/42m9qtNqm
-6mggq1DbQBRJFN5HTv70rypc073lWFxBpbsShN9nPu/k/5suPaDbL4+UAC0LPmgQ
-k+LpbVaQPrwbrE1/l195JOWZpMhIdrTVvcdLEgze1Uwn2k9ilCySaMBTvbVpu5zf
-JhBTLJw+cVVgPmUQ/RgPzT0Fqyk/iBbL8Md36E49hCBHKRqs2p9La+jNJnXwZuct
-4MwhG/4oaCB/o+1eyKV5TBwV6CVUj1QJo4v0DhPRCJa85qAs3+PlpUb2n7rcALF6
-L/u/QBTLTc2uz5JwE+pf
-=tgp7
------END PGP SIGNATURE-----
-
---Sig_/TPOxAYe.RyoFrSbSMf70jVy--
+-Robert
