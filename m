@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067AbaIHVSj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:18:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39069 "EHLO mail.kernel.org"
+	id S1754945AbaIHVS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:18:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39007 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754993AbaIHVSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:18:37 -0400
+	id S1754908AbaIHVS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:18:26 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Jiri Olsa <jolsa@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/13] perf kvm stat report: Enable the target.system_wide flag
-Date: Mon,  8 Sep 2014 18:18:00 -0300
-Message-Id: <1410211089-28668-5-git-send-email-acme@kernel.org>
+Subject: [PATCH 01/13] perf tools: Add +field argument support for --sort option
+Date: Mon,  8 Sep 2014 18:17:57 -0300
+Message-Id: <1410211089-28668-2-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410211089-28668-1-git-send-email-acme@kernel.org>
 References: <1410211089-28668-1-git-send-email-acme@kernel.org>
@@ -25,43 +27,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The 'perf kvm stat report' command can be used to analyze events either
-for system wide or for specific pids.
+Adding support to add field(s) to default sort order via using the '+'
+prefix, like for report:
 
-Let's enable kvm->opts.target.system_wide flag when 'report' command is
-running for system-wide analyzing. This helps to sync kvm->opts.target
-values in 'report' and 'live' commands.
+  $ perf report
+  Samples: 2K of event 'cycles', Event count (approx.): 882172583
+  Overhead  Command  Shared Object        Symbol
+     7.39%  swapper  [kernel.kallsyms]    [k] intel_idle
+     1.97%  firefox  libpthread-2.17.so   [.] pthread_mutex_lock
+     1.39%  firefox  [snd_hda_intel]      [k] azx_get_position
+     1.11%  firefox  libpthread-2.17.so   [.] pthread_mutex_unlock
 
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+  $ perf report -s +cpu
+  Samples: 2K of event 'cycles', Event count (approx.): 882172583
+  Overhead  Command  Shared Object        Symbol                  CPU
+     2.89%  swapper  [kernel.kallsyms]    [k] intel_idle          000
+     2.61%  swapper  [kernel.kallsyms]    [k] intel_idle          002
+     1.20%  swapper  [kernel.kallsyms]    [k] intel_idle          001
+     0.82%  firefox  libpthread-2.17.so   [.] pthread_mutex_lock  002
+
+Works in general for commands using --sort option.
+
+v2 with changes suggested:
+  - Use dynamic memory instead static buffer
+  - Fix error message typo
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1409579095-12963-3-git-send-email-yarygin@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/20140823125948.GA1193@krava.brq.redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/util/sort.c | 37 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 36 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 646ec5d5de80..84295ab6c4e1 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1207,6 +1207,9 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 					   kvm_events_report_options);
- 	}
- 
-+	if (!kvm->opts.target.pid)
-+		kvm->opts.target.system_wide = true;
-+
- 	return kvm_events_report_vcpu(kvm);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 1958637cf136..289df9d1e65a 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1446,12 +1446,47 @@ static const char *get_default_sort_order(void)
+ 	return default_sort_orders[sort__mode];
  }
  
++static int setup_sort_order(void)
++{
++	char *new_sort_order;
++
++	/*
++	 * Append '+'-prefixed sort order to the default sort
++	 * order string.
++	 */
++	if (!sort_order || is_strict_order(sort_order))
++		return 0;
++
++	if (sort_order[1] == '\0') {
++		error("Invalid --sort key: `+'");
++		return -EINVAL;
++	}
++
++	/*
++	 * We allocate new sort_order string, but we never free it,
++	 * because it's checked over the rest of the code.
++	 */
++	if (asprintf(&new_sort_order, "%s,%s",
++		     get_default_sort_order(), sort_order + 1) < 0) {
++		error("Not enough memory to set up --sort");
++		return -ENOMEM;
++	}
++
++	sort_order = new_sort_order;
++	return 0;
++}
++
+ static int __setup_sorting(void)
+ {
+ 	char *tmp, *tok, *str;
+-	const char *sort_keys = sort_order;
++	const char *sort_keys;
+ 	int ret = 0;
+ 
++	ret = setup_sort_order();
++	if (ret)
++		return ret;
++
++	sort_keys = sort_order;
+ 	if (sort_keys == NULL) {
+ 		if (is_strict_order(field_order)) {
+ 			/*
 -- 
 1.9.3
 
