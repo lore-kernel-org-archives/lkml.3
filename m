@@ -1,266 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaIHGlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 02:41:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51530 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaIHGld (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 02:41:33 -0400
-Date: Sun, 7 Sep 2014 23:39:57 -0700
-From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-e78c3496790ee8a36522a838b59b388e8a709e65@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        guillaume@morinfr.org, mschmidt@redhat.com, riel@redhat.com,
-        akpm@linux-foundation.org, oleg@redhat.com, tglx@linutronix.de,
-        vdavydov@parallels.com, yangds.fnst@cn.fujitsu.com,
-        rientjes@google.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        daeseok.youn@gmail.com, athorlton@sgi.com, geert@linux-m68k.org,
-        keescook@chromium.org, ionut.m.alexa@gmail.com, mhocko@suse.cz,
-        lizefan@huawei.com
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, guillaume@morinfr.org, mschmidt@redhat.com,
-        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        oleg@redhat.com, rientjes@google.com, yangds.fnst@cn.fujitsu.com,
-        vdavydov@parallels.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        daeseok.youn@gmail.com, keescook@chromium.org, geert@linux-m68k.org,
-        athorlton@sgi.com, ionut.m.alexa@gmail.com, mhocko@suse.cz,
-        lizefan@huawei.com
-In-Reply-To: <20140816134010.26a9b572@annuminas.surriel.com>
-References: <20140816134010.26a9b572@annuminas.surriel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] time, signal:
-  Protect resource use statistics with seqlock
-Git-Commit-ID: e78c3496790ee8a36522a838b59b388e8a709e65
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753240AbaIHGmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 02:42:43 -0400
+Received: from sym2.noone.org ([178.63.92.236]:58495 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752640AbaIHGmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 02:42:42 -0400
+Date: Mon, 8 Sep 2014 08:42:40 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: anicoara <anicoara@uwaterloo.ca>
+Cc: shigekatsu.tateno@atmel.com, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] staging: ozwpan: fix redundant else after break or
+ return
+Message-ID: <20140908064240.GC3578@distanz.ch>
+References: <20140907182403.GB2312@uwaterloo.ca>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140907182403.GB2312@uwaterloo.ca>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e78c3496790ee8a36522a838b59b388e8a709e65
-Gitweb:     http://git.kernel.org/tip/e78c3496790ee8a36522a838b59b388e8a709e65
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Sat, 16 Aug 2014 13:40:10 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Sep 2014 08:17:01 +0200
+Your From: line does not contain a real name and does not match your
+Signed-off-by line, please check your e-mail client settings.
 
-time, signal: Protect resource use statistics with seqlock
+On 2014-09-07 at 20:24:03 +0200, anicoara <anicoara@uwaterloo.ca> wrote:
+> Signed-off-by: Adrian Nicoara <anicoara@uwaterloo.ca>
 
-Both times() and clock_gettime(CLOCK_PROCESS_CPUTIME_ID) have scalability
-issues on large systems, due to both functions being serialized with a
-lock.
+No changelog text? Please add a short notice, describing why this change
+is done.
 
-The lock protects against reporting a wrong value, due to a thread in the
-task group exiting, its statistics reporting up to the signal struct, and
-that exited task's statistics being counted twice (or not at all).
-
-Protecting that with a lock results in times() and clock_gettime() being
-completely serialized on large systems.
-
-This can be fixed by using a seqlock around the events that gather and
-propagate statistics. As an additional benefit, the protection code can
-be moved into thread_group_cputime(), slightly simplifying the calling
-functions.
-
-In the case of posix_cpu_clock_get_task() things can be simplified a
-lot, because the calling function already ensures that the task sticks
-around, and the rest is now taken care of in thread_group_cputime().
-
-This way the statistics reporting code can run lockless.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Alex Thorlton <athorlton@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Guillaume Morin <guillaume@morinfr.org>
-Cc: Ionut Alexa <ionut.m.alexa@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Michal Schmidt <mschmidt@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>
-Cc: umgwanakikbuti@gmail.com
-Cc: fweisbec@gmail.com
-Cc: srao@redhat.com
-Cc: lwoodman@redhat.com
-Cc: atheurer@redhat.com
-Link: http://lkml.kernel.org/r/20140816134010.26a9b572@annuminas.surriel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched.h          |  1 +
- kernel/exit.c                  |  4 ++++
- kernel/fork.c                  |  1 +
- kernel/sched/cputime.c         | 33 ++++++++++++++++++++-------------
- kernel/sys.c                   |  2 --
- kernel/time/posix-cpu-timers.c | 14 --------------
- 6 files changed, 26 insertions(+), 29 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..dd9eb48 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -645,6 +645,7 @@ struct signal_struct {
- 	 * Live threads maintain their own counters and add to these
- 	 * in __exit_signal, except for the group leader.
- 	 */
-+	seqlock_t stats_lock;
- 	cputime_t utime, stime, cutime, cstime;
- 	cputime_t gtime;
- 	cputime_t cgtime;
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b93d46d..fa09b86 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -127,6 +127,7 @@ static void __exit_signal(struct task_struct *tsk)
- 	 * the signal_struct.
- 	 */
- 	task_cputime(tsk, &utime, &stime);
-+	write_seqlock(&sig->stats_lock);
- 	sig->utime += utime;
- 	sig->stime += stime;
- 	sig->gtime += task_gtime(tsk);
-@@ -140,6 +141,7 @@ static void __exit_signal(struct task_struct *tsk)
- 	sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
- 	sig->nr_threads--;
- 	__unhash_process(tsk, group_dead);
-+	write_sequnlock(&sig->stats_lock);
- 
- 	/*
- 	 * Do this under ->siglock, we can race with another thread
-@@ -1042,6 +1044,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
- 		spin_lock_irq(&p->real_parent->sighand->siglock);
- 		psig = p->real_parent->signal;
- 		sig = p->signal;
-+		write_seqlock(&psig->stats_lock);
- 		psig->cutime += tgutime + sig->cutime;
- 		psig->cstime += tgstime + sig->cstime;
- 		psig->cgtime += task_gtime(p) + sig->gtime + sig->cgtime;
-@@ -1064,6 +1067,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
- 			psig->cmaxrss = maxrss;
- 		task_io_accounting_add(&psig->ioac, &p->ioac);
- 		task_io_accounting_add(&psig->ioac, &sig->ioac);
-+		write_sequnlock(&psig->stats_lock);
- 		spin_unlock_irq(&p->real_parent->sighand->siglock);
- 	}
- 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0cf9cdb..9387ae8 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1068,6 +1068,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
- 	sig->curr_target = tsk;
- 	init_sigpending(&sig->shared_pending);
- 	INIT_LIST_HEAD(&sig->posix_timers);
-+	seqlock_init(&sig->stats_lock);
- 
- 	hrtimer_init(&sig->real_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	sig->real_timer.function = it_real_fn;
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 3e52836..49b7cfe 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -288,18 +288,28 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
- 	struct signal_struct *sig = tsk->signal;
- 	cputime_t utime, stime;
- 	struct task_struct *t;
--
--	times->utime = sig->utime;
--	times->stime = sig->stime;
--	times->sum_exec_runtime = sig->sum_sched_runtime;
-+	unsigned int seq, nextseq;
- 
- 	rcu_read_lock();
--	for_each_thread(tsk, t) {
--		task_cputime(t, &utime, &stime);
--		times->utime += utime;
--		times->stime += stime;
--		times->sum_exec_runtime += task_sched_runtime(t);
--	}
-+	/* Attempt a lockless read on the first round. */
-+	nextseq = 0;
-+	do {
-+		seq = nextseq;
-+		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-+		times->utime = sig->utime;
-+		times->stime = sig->stime;
-+		times->sum_exec_runtime = sig->sum_sched_runtime;
-+
-+		for_each_thread(tsk, t) {
-+			task_cputime(t, &utime, &stime);
-+			times->utime += utime;
-+			times->stime += stime;
-+			times->sum_exec_runtime += task_sched_runtime(t);
-+		}
-+		/* If lockless access failed, take the lock. */
-+		nextseq = 1;
-+	} while (need_seqretry(&sig->stats_lock, seq));
-+	done_seqretry(&sig->stats_lock, seq);
- 	rcu_read_unlock();
- }
- 
-@@ -611,9 +621,6 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	cputime_adjust(&cputime, &p->prev_cputime, ut, st);
- }
- 
--/*
-- * Must be called with siglock held.
-- */
- void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
- {
- 	struct task_cputime cputime;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index ce81291..b663664 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -862,11 +862,9 @@ void do_sys_times(struct tms *tms)
- {
- 	cputime_t tgutime, tgstime, cutime, cstime;
- 
--	spin_lock_irq(&current->sighand->siglock);
- 	thread_group_cputime_adjusted(current, &tgutime, &tgstime);
- 	cutime = current->signal->cutime;
- 	cstime = current->signal->cstime;
--	spin_unlock_irq(&current->sighand->siglock);
- 	tms->tms_utime = cputime_to_clock_t(tgutime);
- 	tms->tms_stime = cputime_to_clock_t(tgstime);
- 	tms->tms_cutime = cputime_to_clock_t(cutime);
-diff --git a/kernel/time/posix-cpu-timers.c b/kernel/time/posix-cpu-timers.c
-index 3b89464..492b986 100644
---- a/kernel/time/posix-cpu-timers.c
-+++ b/kernel/time/posix-cpu-timers.c
-@@ -272,22 +272,8 @@ static int posix_cpu_clock_get_task(struct task_struct *tsk,
- 		if (same_thread_group(tsk, current))
- 			err = cpu_clock_sample(which_clock, tsk, &rtn);
- 	} else {
--		unsigned long flags;
--		struct sighand_struct *sighand;
--
--		/*
--		 * while_each_thread() is not yet entirely RCU safe,
--		 * keep locking the group while sampling process
--		 * clock for now.
--		 */
--		sighand = lock_task_sighand(tsk, &flags);
--		if (!sighand)
--			return err;
--
- 		if (tsk == current || thread_group_leader(tsk))
- 			err = cpu_clock_sample_group(which_clock, tsk, &rtn);
--
--		unlock_task_sighand(tsk, &flags);
- 	}
- 
- 	if (!err)
+> ---
+> Patch submitted as part of the Eudyptula challenge.
+> 
+>  drivers/staging/ozwpan/ozhcd.c |  8 +++-----
+>  drivers/staging/ozwpan/ozpd.c  | 10 ++++------
+>  2 files changed, 7 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
+> index b30c4d87..ba2168f 100644
+> --- a/drivers/staging/ozwpan/ozhcd.c
+> +++ b/drivers/staging/ozwpan/ozhcd.c
+> @@ -1010,10 +1010,9 @@ void oz_hcd_data_ind(void *hport, u8 endpoint, const u8 *data, int data_len)
+>  			urb->actual_length = copy_len;
+>  			oz_complete_urb(port->ozhcd->hcd, urb, 0);
+>  			return;
+> -		} else {
+> -			oz_dbg(ON, "buffering frame as URB is not available\n");
+> -			oz_hcd_buffer_data(ep, data, data_len);
+>  		}
+> +		oz_dbg(ON, "buffering frame as URB is not available\n");
+> +		oz_hcd_buffer_data(ep, data, data_len);
+>  		break;
+>  	case USB_ENDPOINT_XFER_ISOC:
+>  		oz_hcd_buffer_data(ep, data, data_len);
+> @@ -1903,8 +1902,7 @@ static int oz_hcd_hub_status_data(struct usb_hcd *hcd, char *buf)
+>  	spin_unlock_bh(&ozhcd->hcd_lock);
+>  	if (buf[0] != 0 || buf[1] != 0)
+>  		return 2;
+> -	else
+> -		return 0;
+> +	return 0;
+>  }
+> 
+>  /*
+> diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
+> index 26c1049..852c288 100644
+> --- a/drivers/staging/ozwpan/ozpd.c
+> +++ b/drivers/staging/ozwpan/ozpd.c
+> @@ -496,11 +496,10 @@ static int oz_send_next_queued_frame(struct oz_pd *pd, int more_data)
+>  			oz_dbg(TX_FRAMES, "Sending ISOC Frame, nb_isoc= %d\n",
+>  			       pd->nb_queued_isoc_frames);
+>  			return 0;
+> -		} else {
+> -			kfree_skb(skb);
+> -			oz_dbg(TX_FRAMES, "Dropping ISOC Frame>\n");
+> -			return -1;
+>  		}
+> +		kfree_skb(skb);
+> +		oz_dbg(TX_FRAMES, "Dropping ISOC Frame>\n");
+> +		return -1;
+>  	}
+> 
+>  	pd->last_sent_frame = e;
+> @@ -813,8 +812,7 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, const u8 *data, int len)
+>  			atomic_inc(&g_submitted_isoc);
+>  			if (dev_queue_xmit(skb) < 0)
+>  				return -1;
+> -			else
+> -				return 0;
+> +			return 0;
+>  		}
+> 
+>  out:	kfree_skb(skb);
+> --
+> 2.0.1
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> 
