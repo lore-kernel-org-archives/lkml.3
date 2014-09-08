@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316AbaIHVTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:19:34 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:47159 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256AbaIHVTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:19:32 -0400
-Message-ID: <540E1D75.5000500@gmail.com>
-Date: Mon, 08 Sep 2014 14:19:49 -0700
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com
-CC: rajatjain@juniper.net, groeck@juniper.net
-Subject: [PATCH] pci/probe: Ignore the device id while handling CRS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755339AbaIHVTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:19:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39318 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755150AbaIHVTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:19:15 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 13/13] perf tools: Add perf_pmu__scan_file()
+Date: Mon,  8 Sep 2014 18:18:09 -0300
+Message-Id: <1410211089-28668-14-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410211089-28668-1-git-send-email-acme@kernel.org>
+References: <1410211089-28668-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some root ports may return the actual device id returned by the
-endpoint, instead of faking up a synthetic id (0xFFFF) as specified
-by the PCIe spec (sec 2.3.2). We have seen such broken devices in the
-past that match this behaviour:
-(Ref: https://lkml.org/lkml/2007/11/1/198)
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-To take care of the same, CRS was disabled then, however, we want to
-enable CRS now (https://lkml.org/lkml/2014/9/2/509), but still do not
-want to break such devices. Thus check only against the
-(vendor id == 1) and ignore the device id.
+Add a function to scan a sysfs file within the pmu device directory.
 
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
+This will be used to read capability values from the PMU 'caps'
+subdirectory.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1406786474-9306-8-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/pci/probe.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ tools/perf/util/pmu.c | 37 +++++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h |  3 +++
+ 2 files changed, 40 insertions(+)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 3c4c35c..0076a9b 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1305,8 +1305,13 @@ bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *l,
- 	    *l == 0x0000ffff || *l == 0xffff0000)
- 		return false;
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 438bb261f391..22a4ad5a927a 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -3,6 +3,7 @@
+ #include <unistd.h>
+ #include <stdio.h>
+ #include <stdbool.h>
++#include <stdarg.h>
+ #include <dirent.h>
+ #include <api/fs/fs.h>
+ #include <locale.h>
+@@ -804,3 +805,39 @@ bool pmu_have_event(const char *pname, const char *name)
+ 	}
+ 	return false;
+ }
++
++static FILE *perf_pmu__open_file(struct perf_pmu *pmu, const char *name)
++{
++	struct stat st;
++	char path[PATH_MAX];
++	const char *sysfs;
++
++	sysfs = sysfs__mountpoint();
++	if (!sysfs)
++		return NULL;
++
++	snprintf(path, PATH_MAX,
++		 "%s" EVENT_SOURCE_DEVICE_PATH "%s/%s", sysfs, pmu->name, name);
++
++	if (stat(path, &st) < 0)
++		return NULL;
++
++	return fopen(path, "r");
++}
++
++int perf_pmu__scan_file(struct perf_pmu *pmu, const char *name, const char *fmt,
++			...)
++{
++	va_list args;
++	FILE *file;
++	int ret = EOF;
++
++	va_start(args, fmt);
++	file = perf_pmu__open_file(pmu, name);
++	if (file) {
++		ret = vfscanf(file, fmt, args);
++		fclose(file);
++	}
++	va_end(args);
++	return ret;
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 413b9a63c38d..0f5c0a88fdc8 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -49,6 +49,9 @@ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ void print_pmu_events(const char *event_glob, bool name_only);
+ bool pmu_have_event(const char *pname, const char *name);
  
--	/* Configuration request Retry Status */
--	while (*l == 0xffff0001) {
-+	/*
-+	 * Configuration request Retry Status. Note that some root ports
-+	 * are broken and may return actual device ID instead of a synthetic ID
-+	 * (0xFFFF) to be faked as per the PCIe spec. Hence ignore the device ID
-+	 * and only check for (vendor id == 1)
-+	 */
-+	while (*l & 0xffff == 0x0001) {
- 		if (!crs_timeout)
- 			return false;
++int perf_pmu__scan_file(struct perf_pmu *pmu, const char *name, const char *fmt,
++			...) __attribute__((format(scanf, 3, 4)));
++
+ int perf_pmu__test(void);
  
+ struct perf_event_attr *perf_pmu__get_default_config(struct perf_pmu *pmu);
 -- 
-1.7.9.5
+1.9.3
 
