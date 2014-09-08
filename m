@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaIHJsr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:48:47 -0400
-Received: from mail-wg0-f68.google.com ([74.125.82.68]:42146 "EHLO
-	mail-wg0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237AbaIHJsq convert rfc822-to-8bit (ORCPT
+	id S1754307AbaIHJtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:49:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40870 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111AbaIHJtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:48:46 -0400
+	Mon, 8 Sep 2014 05:49:05 -0400
+Date: Mon, 8 Sep 2014 11:48:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
+ context_equiv
+Message-ID: <20140908094855.GR3588@twins.programming.kicks-ass.net>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-2-git-send-email-jolsa@kernel.org>
+ <20140902105036.GH5806@worktop.ger.corp.intel.com>
+ <20140908094348.GB1172@krava.brq.redhat.com>
+ <20140908094548.GA6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Reply-To: fragsobibra12@gmail.com
-Date: Mon, 8 Sep 2014 10:48:44 +0100
-Message-ID: <CAMrLj5JhXgEQdqxkSdUXdz=qRRR+Zth-1YoLyoj7VjRhED7kzg@mail.gmail.com>
-Subject: Good Day.
-From: abba sankara <abbasankara00@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LXESt2jNC8oCvz8w"
+Content-Disposition: inline
+In-Reply-To: <20140908094548.GA6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dear,
 
-Cordial Greeting to you. I am El Frag Sobibra i am presently working
-with the Bank of Africa, here in Ouagadougou, Burkina Faso. I am
-sending you this brief mail just to seek your interest and honest
-partnership to transfer into your Bank Account the sum of Fifteen
-million United States Dollars ($15,000,000), which was deposited in
-the Bank here by a foreign customer before his accidental death some
-years ago. I will send you more details about this deal and the
-procedures to follow when I receive a positive response from you.
+--LXESt2jNC8oCvz8w
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Sep 08, 2014 at 11:45:48AM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 08, 2014 at 11:43:48AM +0200, Jiri Olsa wrote:
+> > On Tue, Sep 02, 2014 at 12:50:36PM +0200, Peter Zijlstra wrote:
+> > > On Mon, Aug 25, 2014 at 04:45:35PM +0200, Jiri Olsa wrote:
+> > > > As described in commit:
+> > > >   1f9a7268c67f perf: Do not allow optimized switch for non-cloned e=
+vents
+> > > > we dont allow optimized switch for non cloned contexts.
+> > > >=20
+> > > > There's no need now to check if one of the context is parent
+> > > > of the other in context_equiv function.
+> > > >=20
+> > >=20
+> > > OK, so talk to me about that patch; it looks like you're slowly
+> > > reverting: 5a3126d4fe7c ("perf: Fix the perf context switch
+> > > optimization").
+> > >=20
+> > > So what exactly is the problem? I'm still jet-lagged and not seeing i=
+t.
+> >=20
+> > the problem is, that we cannot allow non-cloned context
+> > to be part of the optimized switch for reasons explained
+> > in commit 1f9a7268c67f
+>=20
+> The thing is; I don't understand those reasons. That commit log doesn't
+> explain.
 
-1) Your Full Name.________________
-2) Your Age._____________________
-3) Marital Status.__________________
-4) Your Phone Number_____________
-5) You’re Fax Numbers._____________
-6) Your Country.__________________
-7) Your Occupation._______________
-8) Sex.__________________________
+Ah wait, I finally see. I think we want to fix that exit path, not
+disallow the cloning.
 
+The thing is, by not allowing this optimization simple things like eg.
+pipe-test say very expensive.
 
-Best Regards,
-Yours faithfully,
-El Frag Sobibra
+--LXESt2jNC8oCvz8w
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUDXuHAAoJEHZH4aRLwOS6YpYQAKOBIyGA+NXl2Qy/XM0ZLQsD
+m9ycidPKnMV3YL3BXRzKq9AiCdnGJqa0CqAH3VvEm/P0CKRAA3jyT2EM7/+8iu2l
+1j44mMT8GKY11yQrexYHZ7XPYCrWmkMg94K4WeDBEBicrrWWjnyTPNxJNtdb8krJ
+xpRkdC9MFg1jOnNJcsyfMEFS0XvE3dKdJ7Kw5tn7nJ/maIUo4ZF/Y0TZPZHclA7q
+HNqy98dZm3JX4bTu+LGaRTNQz+7K8x+ifulSsEx+7ao5iOdBdXycQEtt1joktTW5
+YtGAfDj+dfxIB8wV1LqInZJ9ekKgXoIKffs78Qohmakjuy7GlJW3PQDIo/Uao79y
+w8mxKR6fPgGnEPCjgZxj2NuVx3d7XOI6hW+mU7NMCNoBD79PYKzCYOHQYgVHte4S
+Du/akGpoDrdlUANAopcAfHqESUYAZQ90BPLA4JvxXwrhreJkqTaJIIlUQxPjxIB0
++EmjQoavHTgFogC8w9gdaDsP9lUn/ZjXm4NrQrw/BaxJoH29mv6Lrl20Rom6fW3J
+pRyNu9pFxAP+TYwz901R29sT9w3/6+/z1LFD+ZUlHpnvJz9FQ2tXKeAtROxySXg6
+klH7yogGt5uL5SLspbW2SSx9P+JsZQN7yXqYmJo7RL/V9tvJBNz09iGQffHYPlcf
+rcPRIVhkv0RpdBLz7XZd
+=HfVH
+-----END PGP SIGNATURE-----
+
+--LXESt2jNC8oCvz8w--
