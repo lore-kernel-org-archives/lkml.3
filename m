@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaIHGEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 02:04:43 -0400
-Received: from ozlabs.org ([103.22.144.67]:45017 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685AbaIHGEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 02:04:42 -0400
-Date: Mon, 8 Sep 2014 16:04:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, Will Deacon <will.deacon@arm.com>
-Subject: linux-next: manual merge of the kvm-arm tree with the kvm tree
-Message-ID: <20140908160430.21c67797@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1752777AbaIHGL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 02:11:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37308 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaIHGL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 02:11:57 -0400
+Date: Mon, 8 Sep 2014 08:11:51 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Catalin Iacob <iacobcatalin@gmail.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 3/9] irq_work: Force raised irq work to run on irq
+ work interrupt
+Message-ID: <20140908061151.GP19379@twins.programming.kicks-ass.net>
+References: <1408632777-3348-1-git-send-email-fweisbec@gmail.com>
+ <1408632777-3348-4-git-send-email-fweisbec@gmail.com>
+ <20140904061137.GB3190@worktop.ger.corp.intel.com>
+ <20140906133513.GA1471@lerouge>
+ <20140906154556.GO19379@twins.programming.kicks-ass.net>
+ <20140906171223.GB1471@lerouge>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/bLm3+CVE_0St3Gb_0CUmdIV"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SHdUoswF6B01XDUc"
+Content-Disposition: inline
+In-Reply-To: <20140906171223.GB1471@lerouge>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/bLm3+CVE_0St3Gb_0CUmdIV
-Content-Type: text/plain; charset=US-ASCII
+
+--SHdUoswF6B01XDUc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On Sat, Sep 06, 2014 at 07:12:26PM +0200, Frederic Weisbecker wrote:
+> On Sat, Sep 06, 2014 at 05:45:56PM +0200, Peter Zijlstra wrote:
+> > On Sat, Sep 06, 2014 at 03:35:15PM +0200, Frederic Weisbecker wrote:
+> > > You have a script that does that arch/*/include/asm/Kbuild edit for y=
+ou right?
+> > > Is this something in scripts/ ?
+> >=20
+> > See commit b119fa61d440 ("locking/mcs: Order the header files in Kbuild
+> > of each architecture in alphabetical order")
+> >=20
+> > That script is a little buggy, but should work in the current case. So
+> > first do something like:
+> >=20
+> > 	for i in arch/*/include/asm/Kbuild; do
+> > 		echo "generic-y +=3D foo.h" >> $i;
+> > 	done
+> >=20
+> > Then run that script.
+> >=20
+> > IIRC the bug was where a single line contained multiple headers and/or a
+> > continuation. I should have a better version somewhere, but this one was
+> > easier to find.
+>=20
+> I see. Meanwhile I've applied your suggestion as a separate patch in
+> the series. May I use your SOB?
 
-Today's linux-next merge of the kvm-arm tree got a conflict in
-arch/arm64/include/asm/kvm_host.h between commit 656473003bc7 ("KVM:
-forward declare structs in kvm_types.h") from the kvm tree and commit
-6951e48bff0b ("KVM: ARM/arm64: fix non-const declaration of function
-returning const") from the kvm-arm tree.
+Sure.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm64/include/asm/kvm_host.h
-index be9970a59497,50431d36732b..000000000000
---- a/arch/arm64/include/asm/kvm_host.h
-+++ b/arch/arm64/include/asm/kvm_host.h
-@@@ -43,7 -41,8 +43,7 @@@
- =20
-  #define KVM_VCPU_MAX_FEATURES 3
- =20
-- int kvm_target_cpu(void);
- -struct kvm_vcpu;
-+ int __attribute_const__ kvm_target_cpu(void);
-  int kvm_reset_vcpu(struct kvm_vcpu *vcpu);
-  int kvm_arch_dev_ioctl_check_extension(long ext);
- =20
-
---Sig_/bLm3+CVE_0St3Gb_0CUmdIV
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--SHdUoswF6B01XDUc
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJUDUbyAAoJEMDTa8Ir7ZwVsekP/0JQvJ9ukYyxEf7XwAhquII8
-DwjMpUcztJn6Y0Mlk3nm4R4nFqmyFauVUVJbVg69f91p7x/GOYRL92uAw1LXItw1
-boVByzGj8ybct6nwKF+GHy/UDpdVvxw55QzulGHgYBGAyFO2C9U/eu4OoknnaCCy
-qXlJps5iZda/Qn1CWApCqoHXJWysSFeJmCDkNoM2WFYpy03Rz5m6WEelP6BuzYSg
-AmVzqekzkiQA0L+AuqyMgN3OnNiL85S0yvq0tT6RsOZSV+Cg4DhQQ0t6qdVT0P0R
-5/DvYwz4tQkoO90pTb90F98KUGjs5Hw92Lr28ifjUVXHqdtZ2AXyFZ/9qPHj9hDo
-M/Q6CIvEclBhx/T+0x78f7mc7c4A8B6ww1xLCM/qsdhSaNrf+PWaVkTRacHGqnBe
-v5ELk9EEQWE6ddtWZTagMzCvr8TN9IM8eQysB9lgzh3kIz794hypSrdTjxDOVGKN
-HE8P/AijTWf8wBPniRz13vnX8St6PE30rO4jJmq6LrFBiFPwfrl0ylHv4CsYYoIw
-S8wT+XP1W/5Aylmopl/Aaxv6bSABiEo9eKalVebdN+bRJGvbdCacpMNo3gY4O+iX
-hlAU7KwTojJoy6rS2lDXUBWYM4vEUMnnVSfhLrOE6CFDkHxYVUq8Kg5caT5WQtfJ
-4z7ytjRFA3PsKm1Bi7MM
-=AufA
+iQIcBAEBAgAGBQJUDUihAAoJEHZH4aRLwOS6I/IP/jIag7VnU9B3Ee/WFyIN51xI
+PP0G7ZrtrGuWSjgiycRq0QdDxgnO9VWrVSDB6cwPfsLtwT4+NE34v7ZN6+FOCsLb
+8YlVh2Wpmb2f4WnOllaEvu3snKcyKx/gGtiEhCdALvMPiBPKIEsN6yCSsUBw3nBD
+HfiRC+qpklx204b6RSvLON+8TcmQxEenMT4l5sXQk2LgsjjtaXF0V0eT3VuhRTsg
+tG4IIbVQwJvd7WiaeSE6VKhDTJPjbANR2370iwszHBn8ZglXj00rjeG9ZQLzv25m
+V6B/8sFanZbTx+OmitI6elxArWbtst2jZhHzUnDo0GJXIzhxwizViRLQ8xpIV0qy
+xAv5jW23fpDJg6PMyI19kMvfaBnexAeKZteXu7wff7OqkZbrA77B576h6NPLp64q
+n725u46wQmr1QWr4lO1BtP5hPjh9qwGHmKY79FmSrTPNTtzlMsO53Fbud90Bs7UU
+VARLdF1A27Rh5lH8UzzRBSihuNBUbi5mxzagKVnUCw0slGofu3wsTR84Z3a2ydAW
+tPLw1P+9lVBN7a1hd1v9gFaYSDAH4f/xgVrnpgEolxhBzg1mef0IV+CPGEHL/P4K
+PFLRhdbAnqNpZMtgste1aaBHXHd6eqbT7gM6ROwpKJEVNAG0DhH8q4lfzD0yBSrs
+Ml9dHXmZFvMN3w8ltuui
+=RIHH
 -----END PGP SIGNATURE-----
 
---Sig_/bLm3+CVE_0St3Gb_0CUmdIV--
+--SHdUoswF6B01XDUc--
