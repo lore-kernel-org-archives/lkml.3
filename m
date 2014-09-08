@@ -1,43 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225AbaIHW3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:29:04 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56725 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755149AbaIHW3B (ORCPT
+	id S1755157AbaIHWcM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:32:12 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56837 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665AbaIHWcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:29:01 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Tue, 09 Sep 2014 00:48:28 +0200
-Message-ID: <2588099.AI1YmNFQ25@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140908222253.GB3806@mtj.dyndns.org>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <3827451.ToKxd7Xb2J@vostro.rjw.lan> <20140908222253.GB3806@mtj.dyndns.org>
+	Mon, 8 Sep 2014 18:32:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19oNtz2xEDXQo4EfLaM9s2z
+Date: Mon, 8 Sep 2014 15:32:05 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL 2/2] ARM: OMAP4+: PRM fixes, DRA7 suspend-to-ram
+ support
+Message-ID: <20140908223204.GN3238@atomide.com>
+References: <1410195620-6347-1-git-send-email-nm@ti.com>
+ <1410195620-6347-2-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410195620-6347-2-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 09, 2014 07:22:53 AM Tejun Heo wrote:
-> On Mon, Sep 08, 2014 at 11:53:34PM +0200, Rafael J. Wysocki wrote:
-> > But please tell me this: If TIF_MEMDIE is set and we thaw the process,
-> > can it do *anything* before dying or will it die immediately?
+* Nishanth Menon <nm@ti.com> [140908 10:02]:
+> Hi Tony,
+> Please pull the following changes.
 > 
-> The task could be in freezer from anywhere and there's no limit in
-> what the task may do before it eventually dies.
+> part 2: "ARM: OMAP3+: PRM: fix up prm_handling"
+> http://marc.info/?l=linux-kernel&m=140871580806186&w=2
+> Status: Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> 
+> part 3: "ARM: OMAP5+: pdata quirks for pinctrl"
+> http://marc.info/?l=linux-kernel&m=140871598306262&w=2
+> Status: Sending pull based on http://marc.info/?l=linux-kernel&m=140871666506706&w=2 (Acked by Tony, Pulled by Linus W)
+> 
+> part 5: "ARM: OMAP5 / DRA7: Add framework for suspend and cpuidle"
+> http://marc.info/?l=linux-kernel&m=140871637106555&w=2
+> Status: picked up kevin's tested and reviewed-by, dropped cpuidle for this pull
+> 
+> These could go into your tree for the branch  omap-for-v3.18/soc
+> 
+> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+> 
+>   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+> 
+> are available in the git repository at:
+> 
+>   https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/for-omap-soc
 
-Well, not exactly from anywhere.  Just from where try_to_freeze() is called
-I suppose?
+Thanks pulling into omap-for-v3.18/soc.
 
-Which means that if this is a user space task, it won't to a lot before dying,
-will it?
+Regards,
 
-Rafael
-
+Tony
+ 
+> for you to fetch changes up to 628ed4717000789bff827c5799d1aac4c1008541:
+> 
+>   ARM: OMAP5: Add hook in SoC initcalls to enable pm initialization (2014-09-08 11:38:43 -0500)
+> 
+> ----------------------------------------------------------------
+> Keerthy (1):
+>       ARM: AM437x: use pdata quirks for pinctrl information
+> 
+> Nishanth Menon (8):
+>       ARM: OMAP4+: prminst: provide function to find prm_dev instance offset
+>       ARM: OMAP4: PRM: use the generic prm_inst to allow logic to be abstracted
+>       ARM: OMAP4+: PRM: register interrupt information from DT
+>       ARM: OMAP4+: PRM: remove "wkup" event
+>       ARM: OMAP4+: PRM: Enable wakeup capability for OMAP5, DRA7
+>       ARM: OMAP3+: PRM: register interrupt information from DT
+>       ARM: OMAP5: use pdata quirks for pinctrl information
+>       ARM: DRA7: use pdata quirks for pinctrl information
+> 
+> Rajendra Nayak (2):
+>       ARM: OMAP5 / DRA7: PM: Avoid all SAR saves
+>       ARM: OMAP5 / DRA7: Enable CPU RET on suspend
+> 
+> Santosh Shilimkar (6):
+>       ARM: OMAP5 / DRA7: PM: Update CPU context register offset
+>       ARM: OMAP5 / DRA7: PM: Set MPUSS-EMIF clock-domain static dependency
+>       ARM: OMAP5 / DRA7: PM / wakeupgen: Enables ES2 PM mode by default
+>       ARM: OMAP5 / DRA7: PM: Enable Mercury retention mode on CPUx powerdomains
+>       ARM: OMAP5 / DRA7: PM: Provide a dummy startup function for CPU hotplug
+>       ARM: OMAP5: Add hook in SoC initcalls to enable pm initialization
+> 
+>  arch/arm/mach-omap2/common.h              |    2 +-
+>  arch/arm/mach-omap2/io.c                  |    3 +
+>  arch/arm/mach-omap2/omap-mpuss-lowpower.c |  102 ++++++++++++++++++++---------
+>  arch/arm/mach-omap2/omap-secure.h         |    1 +
+>  arch/arm/mach-omap2/omap-wakeupgen.c      |   20 +++++-
+>  arch/arm/mach-omap2/omap-wakeupgen.h      |    1 +
+>  arch/arm/mach-omap2/pdata-quirks.c        |   10 +++
+>  arch/arm/mach-omap2/pm.h                  |    1 +
+>  arch/arm/mach-omap2/pm44xx.c              |   48 ++++++++++++--
+>  arch/arm/mach-omap2/prm3xxx.c             |   18 +++++
+>  arch/arm/mach-omap2/prm44xx.c             |   90 +++++++++++++++++++++----
+>  arch/arm/mach-omap2/prminst44xx.c         |   40 ++++++-----
+>  arch/arm/mach-omap2/prminst44xx.h         |    3 +
+>  13 files changed, 275 insertions(+), 64 deletions(-)
+> 
+> Regards,
+> Nishanth Menon
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
