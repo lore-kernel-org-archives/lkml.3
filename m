@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788AbaIHRPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:15:51 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45613 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040AbaIHRPs (ORCPT
+	id S1754558AbaIHRSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:18:09 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.201]:29212 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753907AbaIHRSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:15:48 -0400
-Message-ID: <540DE442.6060505@codeaurora.org>
-Date: Mon, 08 Sep 2014 13:15:46 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 8 Sep 2014 13:18:07 -0400
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 13:18:07 EDT
+X-Env-Sender: Benjamin.Romer@unisys.com
+X-Msg-Ref: server-8.tower-46.messagelabs.com!1410196255!31518721!1
+X-Originating-IP: [192.61.61.104]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+From: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: *S-Par-Maintainer <SParMaintainer@unisys.com>,
+        "Kershner, David A" <David.Kershner@unisys.com>,
+        Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 8 Sep 2014 12:10:55 -0500
+Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Thread-Topic: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Thread-Index: Ac/Lh9nU1xCoOFiyRBu4bQhP7OIqqw==
+Message-ID: <C97001BC43954D438ACB059713BA5CDFC97127E0E5@USEA-EXCH7.na.uis.unisys.com>
+References: <1409908966-23148-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E1@USEA-EXCH7.na.uis.unisys.com>
+ <20140908170613.GB10454@kroah.com>
+In-Reply-To: <20140908170613.GB10454@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v2 14/15] cpufreq: Add module to register cpufreq on Krait
- CPUs
-References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <1409957256-23729-16-git-send-email-sboyd@codeaurora.org> <CAKohpokLFMMK-h2657=_BCBr3oXCTiQDA+C-rDgorxfrPR-9YQ@mail.gmail.com>
-In-Reply-To: <CAKohpokLFMMK-h2657=_BCBr3oXCTiQDA+C-rDgorxfrPR-9YQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s88HIEV7032630
 
-On 09/08/2014 12:46 AM, Viresh Kumar wrote:
-> On 6 September 2014 04:17, Stephen Boyd <sboyd@codeaurora.org> wrote:
+On Mon, 2014-09-08 at 10:06 -0700, Greg Kroah-Hartman wrote:
+> Traditionally, you would respond with a:
+> 	Acked-by: Developer Name <email@address>
+> so I can add it to the patch.
 > 
->> diff --git a/drivers/cpufreq/qcom-cpufreq.c b/drivers/cpufreq/qcom-cpufreq.c
->> new file mode 100644
->> index 000000000000..aa8eb97144b6
->> --- /dev/null
->> +++ b/drivers/cpufreq/qcom-cpufreq.c
->> @@ -0,0 +1,199 @@
->> +/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> Care to do that here?
 > 
-> Shouldn't this have Qcom instead?
+> thanks,
+> 
+> greg k-h
 
-No. The copyright has been transferred.
+Of course. :)
 
-Christopher
+Acked-by: Benjamin Romer <benjamin.romer@unisys.com>
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Should I do this instead of Tested-by and Signed-off-by, in the future?
+
+-- Ben
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
