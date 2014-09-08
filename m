@@ -1,100 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaIHIBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:01:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50148 "EHLO mx2.suse.de"
+	id S1753379AbaIHIBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:01:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50178 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752925AbaIHIBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 04:01:45 -0400
+	id S1753068AbaIHIBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 04:01:47 -0400
 From: Juergen Gross <jgross@suse.com>
 To: stefan.bader@canonical.com, toshi.kani@hp.com,
         linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
         x86@kernel.org, jbeulich@suse.com, david.vrabel@citrix.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V2 0/3] x86: Full support of PAT
-Date: Mon,  8 Sep 2014 10:01:35 +0200
-Message-Id: <1410163298-8951-1-git-send-email-jgross@suse.com>
+Subject: [PATCH V2 3/3] Support Xen pv-domains using PAT
+Date: Mon,  8 Sep 2014 10:01:38 +0200
+Message-Id: <1410163298-8951-4-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1410163298-8951-1-git-send-email-jgross@suse.com>
+References: <1410163298-8951-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The x86 architecture offers via the PAT (Page Attribute Table) a way to
-specify different caching modes in page table entries. The PAT MSR contains
-8 entries each specifying one of 6 possible cache modes. A pte references one
-of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
+With the dynamical mapping between cache modes and pgprot values it is
+now possible to use all cache modes via the Xen hypervisor PAT settings
+in a pv domain.
 
-The Linux kernel currently supports only 4 different cache modes. The PAT MSR
-is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
-top 4 entries in the PAT MSR are the same as the 4 lower entries.
+All to be done is to read the PAT configuration MSR and set up the
+translation tables accordingly.
 
-This results in the kernel not supporting e.g. write-through mode. Especially
-this cache mode would speed up drivers of video cards which now have to use
-uncached accesses.
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ arch/x86/xen/enlighten.c | 25 +++++++------------------
+ arch/x86/xen/mmu.c       | 48 ++----------------------------------------------
+ arch/x86/xen/xen-ops.h   |  1 -
+ 3 files changed, 9 insertions(+), 65 deletions(-)
 
-OTOH some old processors (Pentium) don't support PAT correctly and the Xen
-hypervisor has been using a different PAT MSR configuration for some time now
-and can't change that as this setting is part of the ABI.
-
-This patch set abstracts the cache mode from the pte and introduces tables to
-translate between cache mode and pte bits (the default cache mode "write back"
-is hard-wired to PAT entry 0). The tables are statically initialized with
-values being compatible to old processors and current usage. As soon as the
-PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
-changed accordingly. Requests of mappings with special cache modes are always
-possible now, in case they are not supported there will be a fallback to a
-compatible but slower mode.
-
-Summing it up, this patch set adds the following features:
-- capability to support WT and WP cache modes on processors with full PAT
-  support
-- processors with no or uncorrect PAT support are still working as today, even
-  if WT or WP cache mode are selected by drivers for some pages
-- reduction of Xen special handling regarding cache mode
-
-Changes in V2:
-- simplified handling of PAT MSR write under Xen as suggested by David Vrabel
-- removed resetting of pat_enabled under Xen
-- two small corrections requested by Toshi Kani (UC_MINUS cache mode in
-  vermilion driver, fix 32 bit kernel build failure)
-- correct build error on non-x86 arch by moving definition of
-  update_cache_mode_entry() to x86 specific header
-
-Changes since RFC:
-- renamed functions and variables as suggested by Toshi Kani
-- corrected cache mode bits for WT and WP
-- modified handling of PAT MSR write under Xen as suggested by Jan Beulich
-
-Juergen Gross (3):
-  x86: Make page cache mode a real type
-  x86: Enable PAT to use cache mode translation tables
-  Support Xen pv-domains using PAT
-
- arch/x86/include/asm/cacheflush.h         |  38 ++++---
- arch/x86/include/asm/fb.h                 |   6 +-
- arch/x86/include/asm/io.h                 |   2 +-
- arch/x86/include/asm/pat.h                |   7 +-
- arch/x86/include/asm/pgtable.h            |  19 ++--
- arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
- arch/x86/mm/dump_pagetables.c             |  24 ++--
- arch/x86/mm/init.c                        |  37 ++++++
- arch/x86/mm/init_64.c                     |   9 +-
- arch/x86/mm/iomap_32.c                    |  15 ++-
- arch/x86/mm/ioremap.c                     |  63 ++++++-----
- arch/x86/mm/mm_internal.h                 |   2 +
- arch/x86/mm/pageattr.c                    |  84 ++++++++------
- arch/x86/mm/pat.c                         | 181 +++++++++++++++++++-----------
- arch/x86/mm/pat_internal.h                |  22 ++--
- arch/x86/mm/pat_rbtree.c                  |   8 +-
- arch/x86/pci/i386.c                       |   4 +-
- arch/x86/xen/enlighten.c                  |  25 ++---
- arch/x86/xen/mmu.c                        |  48 +-------
- arch/x86/xen/xen-ops.h                    |   1 -
- drivers/video/fbdev/gbefb.c               |   3 +-
- drivers/video/fbdev/vermilion/vermilion.c |   6 +-
- 22 files changed, 421 insertions(+), 279 deletions(-)
-
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index c0cb11f..75ac572 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1100,12 +1100,6 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+ 		/* Fast syscall setup is all done in hypercalls, so
+ 		   these are all ignored.  Stub them out here to stop
+ 		   Xen console noise. */
+-		break;
+-
+-	case MSR_IA32_CR_PAT:
+-		if (smp_processor_id() == 0)
+-			xen_set_pat(((u64)high << 32) | low);
+-		break;
+ 
+ 	default:
+ 		ret = native_write_msr_safe(msr, low, high);
+@@ -1554,10 +1548,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 
+ 	/* Prevent unwanted bits from being set in PTEs. */
+ 	__supported_pte_mask &= ~_PAGE_GLOBAL;
+-#if 0
+-	if (!xen_initial_domain())
+-#endif
+-		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
+ 
+ 	__supported_pte_mask |= _PAGE_IOMAP;
+ 
+@@ -1613,14 +1603,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 	 */
+ 	acpi_numa = -1;
+ #endif
+-#ifdef CONFIG_X86_PAT
+-	/*
+-	 * For right now disable the PAT. We should remove this once
+-	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
+-	 * (xen/pat: Disable PAT support for now) is reverted.
+-	 */
+-	pat_enabled = 0;
+-#endif
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+ 	   possible map and a non-dummy shared_info. */
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+@@ -1634,6 +1616,13 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 	/* Allocate and initialize top and mid mfn levels for p2m structure */
+ 	xen_build_mfn_list_list();
+ 
++	/*
++	 * Modify the cache mode translation tables to match Xen's PAT
++	 * configuration.
++	 */
++
++	pat_init_cache_modes();
++
+ 	/* keep using Xen gdt for now; no urgent need to change it */
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index e8a1201..70702e9 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -434,13 +434,7 @@ static pteval_t iomap_pte(pteval_t val)
+ __visible pteval_t xen_pte_val(pte_t pte)
+ {
+ 	pteval_t pteval = pte.pte;
+-#if 0
+-	/* If this is a WC pte, convert back from Xen WC to Linux WC */
+-	if ((pteval & (_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)) == _PAGE_PAT) {
+-		WARN_ON(!pat_enabled);
+-		pteval = (pteval & ~_PAGE_PAT) | _PAGE_PWT;
+-	}
+-#endif
++
+ 	if (xen_initial_domain() && (pteval & _PAGE_IOMAP))
+ 		return pteval;
+ 
+@@ -454,48 +448,10 @@ __visible pgdval_t xen_pgd_val(pgd_t pgd)
+ }
+ PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
+ 
+-/*
+- * Xen's PAT setup is part of its ABI, though I assume entries 6 & 7
+- * are reserved for now, to correspond to the Intel-reserved PAT
+- * types.
+- *
+- * We expect Linux's PAT set as follows:
+- *
+- * Idx  PTE flags        Linux    Xen    Default
+- * 0                     WB       WB     WB
+- * 1            PWT      WC       WT     WT
+- * 2        PCD          UC-      UC-    UC-
+- * 3        PCD PWT      UC       UC     UC
+- * 4    PAT              WB       WC     WB
+- * 5    PAT     PWT      WC       WP     WT
+- * 6    PAT PCD          UC-      rsv    UC-
+- * 7    PAT PCD PWT      UC       rsv    UC
+- */
+-
+-void xen_set_pat(u64 pat)
+-{
+-	/* We expect Linux to use a PAT setting of
+-	 * UC UC- WC WB (ignoring the PAT flag) */
+-	WARN_ON(pat != 0x0007010600070106ull);
+-}
+-
+ __visible pte_t xen_make_pte(pteval_t pte)
+ {
+ 	phys_addr_t addr = (pte & PTE_PFN_MASK);
+-#if 0
+-	/* If Linux is trying to set a WC pte, then map to the Xen WC.
+-	 * If _PAGE_PAT is set, then it probably means it is really
+-	 * _PAGE_PSE, so avoid fiddling with the PAT mapping and hope
+-	 * things work out OK...
+-	 *
+-	 * (We should never see kernel mappings with _PAGE_PSE set,
+-	 * but we could see hugetlbfs mappings, I think.).
+-	 */
+-	if (pat_enabled && !WARN_ON(pte & _PAGE_PAT)) {
+-		if ((pte & (_PAGE_PCD | _PAGE_PWT)) == _PAGE_PWT)
+-			pte = (pte & ~(_PAGE_PCD | _PAGE_PWT)) | _PAGE_PAT;
+-	}
+-#endif
++
+ 	/*
+ 	 * Unprivileged domains are allowed to do IOMAPpings for
+ 	 * PCI passthrough, but not map ISA space.  The ISA
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 28c7e0b..4ab9298 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -33,7 +33,6 @@ extern unsigned long xen_max_p2m_pfn;
+ 
+ void xen_mm_pin_all(void);
+ void xen_mm_unpin_all(void);
+-void xen_set_pat(u64);
+ 
+ char * __init xen_memory_setup(void);
+ char * xen_auto_xlated_memory_setup(void);
 -- 
 1.8.4.5
 
