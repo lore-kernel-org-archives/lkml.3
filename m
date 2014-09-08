@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271AbaIHPsZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:48:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29526 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797AbaIHPsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:48:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="570039486"
-Message-ID: <540DCF99.2070900@intel.com>
-Date: Mon, 08 Sep 2014 08:47:37 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754133AbaIHPtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:49:46 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:44422 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292AbaIHPto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:49:44 -0400
+Date: Mon, 8 Sep 2014 11:49:39 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 3/5] arm: fiq: Replace default FIQ handler
+In-Reply-To: <1410190115-32604-4-git-send-email-daniel.thompson@linaro.org>
+Message-ID: <alpine.LFD.2.11.1409081140360.16533@knanqh.ubzr>
+References: <1409931198-22600-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-4-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>
-CC: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-References: <54061505.8020500@sr71.net> <5406262F.4050705@intel.com> <54062F32.5070504@sr71.net> <20140904142721.GB14548@dhcp22.suse.cz> <5408CB2E.3080101@sr71.net> <20140905123517.GA21208@cmpxchg.org>
-In-Reply-To: <20140905123517.GA21208@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 05:35 AM, Johannes Weiner wrote:
-> On Thu, Sep 04, 2014 at 01:27:26PM -0700, Dave Hansen wrote:
->> On 09/04/2014 07:27 AM, Michal Hocko wrote:
->>> Ouch. free_pages_and_swap_cache completely kills the uncharge batching
->>> because it reduces it to PAGEVEC_SIZE batches.
->>>
->>> I think we really do not need PAGEVEC_SIZE batching anymore. We are
->>> already batching on tlb_gather layer. That one is limited so I think
->>> the below should be safe but I have to think about this some more. There
->>> is a risk of prolonged lru_lock wait times but the number of pages is
->>> limited to 10k and the heavy work is done outside of the lock. If this
->>> is really a problem then we can tear LRU part and the actual
->>> freeing/uncharging into a separate functions in this path.
->>>
->>> Could you test with this half baked patch, please? I didn't get to test
->>> it myself unfortunately.
->>
->> 3.16 settled out at about 11.5M faults/sec before the regression.  This
->> patch gets it back up to about 10.5M, which is good.  The top spinlock
->> contention in the kernel is still from the resource counter code via
->> mem_cgroup_commit_charge(), though.
-> 
-> Thanks for testing, that looks a lot better.
-> 
-> But commit doesn't touch resource counters - did you mean try_charge()
-> or uncharge() by any chance?
+On Mon, 8 Sep 2014, Daniel Thompson wrote:
 
-I don't have the perf output that I was looking at when I said this, but
-here's the path that I think I was referring to.  The inlining makes
-this non-obvious, but this memcg_check_events() calls
-mem_cgroup_update_tree() which is contending on mctz->lock.
+> +@
+> +@ Taking a FIQ in abort mode is similar to taking a FIQ in SVC mode
+> +@ and reuses the same macros. However in abort mode we must also
+> +@ save/restore lr_abt and spsr_abt to make nested aborts safe.
+> +@
+> +	.align 5
+> +__fiq_abt:
+> +	svc_entry 0, 0
+> +
+> + ARM(	msr	cpsr_c, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
+> + THUMB( mov	r0, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
+> + THUMB( msr	cpsr_c, r0 )
+> +	mov	r1, lr		@ Save lr_abt
+> +	mrs	r2, spsr	@ Save spsr_abt, abort is now safe
+> + ARM(	msr	cpsr_c, #SVC_MODE | PSR_I_BIT | PSR_F_BIT )
+> + THUMB( mov	r0, #SVC_MODE | PSR_I_BIT | PSR_F_BIT )
+> + THUMB( msr	cpsr_c, r0 )
+> +	push	{r1 - r2}
 
-So, you were right, it's not the resource counters code, it's a lock in
-'struct mem_cgroup_tree_per_zone'.  But, the contention isn't _that_
-high (2% of CPU) in this case.  But, that is 2% that we didn't see before.
+	stmfd sp!, {r1 - r2}
 
->      1.87%     1.87%  [kernel]               [k] _raw_spin_lock_irqsave       
->                                |
->                                --- _raw_spin_lock_irqsave
->                                   |          
->                                   |--107.09%-- memcg_check_events
->                                   |          |          
->                                   |          |--79.98%-- mem_cgroup_commit_charge
->                                   |          |          |          
->                                   |          |          |--99.81%-- do_cow_fault
->                                   |          |          |          handle_mm_fault
->                                   |          |          |          __do_page_fault
->                                   |          |          |          do_page_fault
->                                   |          |          |          page_fault
->                                   |          |          |          testcase
->                                   |          |           --0.19%-- [...]
+> +
+> +	sub	r0, sp, #8			@ struct pt_regs *regs
+> +	bl	handle_fiq_as_nmi
+> +
+> +	pop	{r1 - r2}
+
+	ldmfd sp!, {r1 - r2}
+
+... so that old binutils we still accept to compile the kernel (in ARM 
+mode) are happy.
+
+Otherwise...
+
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
 
+Nicolas
