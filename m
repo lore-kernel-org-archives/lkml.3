@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaIHPTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:19:13 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:62822 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaIHPTM (ORCPT
+	id S1754002AbaIHPVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:21:24 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:60412 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748AbaIHPVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:19:12 -0400
-Date: Mon, 8 Sep 2014 20:48:51 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Morgan Phillips <winter2718@gmail.com>
-Cc: brijohn@gmail.com, hdegoede@redhat.com, m.chehab@samsung.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] [media]: sn9c20x.c: fix checkpatch error: that open
- brace { should be on the previous line
-Message-ID: <20140908151851.GA23663@sudip-PC>
-References: <1410179542-3272-1-git-send-email-winter2718@gmail.com>
- <1410188158-6560-1-git-send-email-winter2718@gmail.com>
+	Mon, 8 Sep 2014 11:21:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Steve French <sfrench@samba.org>
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] cifs: remove dead code
+Date: Mon, 08 Sep 2014 17:20:56 +0200
+Message-ID: <3319326.1eJrmz0Vgc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410188158-6560-1-git-send-email-winter2718@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:AVBBbaIbRPcO1nlb10C8as/Jya4939kHshUzS0XTF9L
+ wzvlq5SRpWMe43noeLIx01ZEHkYZTevDBaDBFLKqfpg26UhaWd
+ CIz6KnAgL4RlllBlSK8eqxFyNnUbCRAtGmu0FkyB356fbpaNgw
+ 3i8KtCWmM2jpkj8pikIzJPD/gnmWP16peu+jDSvghapjO+JgpC
+ ghMXMvsCiw63nnTowmtQrw9PhlWK5lQvsuNlPG/LGUd8kgfPFj
+ 18ts18Qr+6qC/qph0xjPqzgwNoOlwYRtpqccg4my87loyIi6LF
+ qJ5OkLlVgpF5md9h3i5q5K0qrdGkv/T4FloeWjVUR99TtvSW2B
+ 3FXH5jNzjwmofJ2r2Cdg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 09:55:58AM -0500, Morgan Phillips wrote:
-> Change array initialization format to fix style error.
-> 	from:
-> 		u8 foo[] =
-> 			{1, 2, 3};
-> 	to:
-checkpatch is giving a warning here , but looks like a false positive.
+cifs provides two dummy functions 'sess_auth_lanman' and
+'sess_auth_kerberos' for the case in which the respective
+features are not defined. However, the caller is also under
+an #ifdef, so we just get warnings about unused code:
 
-thanks
-sudip
+fs/cifs/sess.c:1109:1: warning: 'sess_auth_kerberos' defined but not used [-Wunused-function]
+ sess_auth_kerberos(struct sess_data *sess_data)
 
-> 		u8 foo[] = {
-> 			1, 2, 3
-> 		};
-> 
-> Signed-off-by: Morgan Phillips <winter2718@gmail.com>
-> ---
->  Changes since v2:
->    * adds a more verbose commit message
-> 
->  drivers/media/usb/gspca/sn9c20x.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/media/usb/gspca/sn9c20x.c b/drivers/media/usb/gspca/sn9c20x.c
-> index 41a9a89..95467f0 100644
-> --- a/drivers/media/usb/gspca/sn9c20x.c
-> +++ b/drivers/media/usb/gspca/sn9c20x.c
-> @@ -1787,8 +1787,9 @@ static int sd_init(struct gspca_dev *gspca_dev)
->  	struct sd *sd = (struct sd *) gspca_dev;
->  	int i;
->  	u8 value;
-> -	u8 i2c_init[9] =
-> -		{0x80, sd->i2c_addr, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
-> +	u8 i2c_init[9] = {
-> +		0x80, sd->i2c_addr, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03
-> +	};
->  
->  	for (i = 0; i < ARRAY_SIZE(bridge_init); i++) {
->  		value = bridge_init[i][1];
-> @@ -2242,8 +2243,9 @@ static void sd_pkt_scan(struct gspca_dev *gspca_dev,
->  {
->  	struct sd *sd = (struct sd *) gspca_dev;
->  	int avg_lum, is_jpeg;
-> -	static const u8 frame_header[] =
-> -		{0xff, 0xff, 0x00, 0xc4, 0xc4, 0x96};
-> +	static const u8 frame_header[] = {
-> +		0xff, 0xff, 0x00, 0xc4, 0xc4, 0x96
-> +	};
->  
->  	is_jpeg = (sd->fmt & 0x03) == 0;
->  	if (len >= 64 && memcmp(data, frame_header, 6) == 0) {
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Removing the dead functions gets rid of the warnings without
+any downsides that I can see.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/fs/cifs/sess.c b/fs/cifs/sess.c
+index 07fe97ac6b0c..ab0fda6e8e58 100644
+--- a/fs/cifs/sess.c
++++ b/fs/cifs/sess.c
+@@ -745,14 +745,6 @@ out:
+ 	sess_free_buffer(sess_data);
+ }
+ 
+-#else
+-
+-static void
+-sess_auth_lanman(struct sess_data *sess_data)
+-{
+-	sess_data->result = -EOPNOTSUPP;
+-	sess_data->func = NULL;
+-}
+ #endif
+ 
+ static void
+@@ -1103,15 +1095,6 @@ out:
+ 	ses->auth_key.response = NULL;
+ }
+ 
+-#else
+-
+-static void
+-sess_auth_kerberos(struct sess_data *sess_data)
+-{
+-	cifs_dbg(VFS, "Kerberos negotiated but upcall support disabled!\n");
+-	sess_data->result = -ENOSYS;
+-	sess_data->func = NULL;
+-}
+ #endif /* ! CONFIG_CIFS_UPCALL */
+ 
+ /*
+
