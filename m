@@ -1,185 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaIHQza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:55:30 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:37685 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506AbaIHQz0 (ORCPT
+	id S1754748AbaIHQ5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:57:06 -0400
+Received: from exprod5og103.obsmtp.com ([64.18.0.145]:44746 "HELO
+	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754391AbaIHQ5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:55:26 -0400
-Date: Mon, 8 Sep 2014 09:55:22 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: synaptics - add support for ForcePads
-Message-ID: <20140908165520.GA35051@core.coreip.homeip.net>
+	Mon, 8 Sep 2014 12:57:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFdej02vSm8TbUWGsMr936WN1GNmJ0SBuEKQkKyzKoEjtVmc+g@mail.gmail.com>
+References: <1393537013-6264-1-git-send-email-fkan@apm.com>
+	<CAFdej02vSm8TbUWGsMr936WN1GNmJ0SBuEKQkKyzKoEjtVmc+g@mail.gmail.com>
+Date: Mon, 8 Sep 2014 09:57:01 -0700
+Message-ID: <CAL85gmBRUuc3mtOGSkNuspEgkRQe42LV0e=fQfNmwcCicjT=vA@mail.gmail.com>
+Subject: Re: [PATCH V3] irqchip:gic: change access of gicc_ctrl register to
+ read modify write.
+From: Feng Kan <fkan@apm.com>
+To: Arun Chandran <achandran@mvista.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>, patches <patches@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Vinayak Kale <vkale@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-physical buttons, instead they generate primary button click when user
-presses somewhat hard on the surface of the touchpad. Unfortunately they
-also report primary button click whenever there are 2 or more contacts
-on the pad, messing up all multi-finger gestures (2-finger scrolling,
-multi-finger tapping, etc). To cope with this behavior we introduce a
-delay (currently 50 msecs) in reporting primary press in case more
-contacts appear.
+On Mon, Sep 8, 2014 at 1:52 AM, Arun Chandran <achandran@mvista.com> wrote:
+> Hi Feng,
+>
+> Is this patch still needed to fix perf calltrace?
+Yes, if the someone decide to run the secure mode of the GIC, which is
+what is present in
+the kernel tree now.
 
-For now we are using DMI matching to detect ForcePads, hopefully we'll
-be able to figure a better way down the road.
-
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/mouse/synaptics.c | 80 ++++++++++++++++++++++++++++++++---------
- drivers/input/mouse/synaptics.h |  5 +++
- 2 files changed, 69 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index e8573c6..5de1bb6 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -618,6 +618,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
- 	priv->agm_pending = true;
- }
- 
-+static bool is_forcepad;
-+
- static int synaptics_parse_hw_state(const unsigned char buf[],
- 				    struct synaptics_data *priv,
- 				    struct synaptics_hw_state *hw)
-@@ -629,10 +631,58 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 			 ((buf[0] & 0x04) >> 1) |
- 			 ((buf[3] & 0x04) >> 2));
- 
-+		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-+			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-+		    hw->w == 2) {
-+			synaptics_parse_agm(buf, priv, hw);
-+			return 1;
-+		}
-+
-+		hw->x = (((buf[3] & 0x10) << 8) |
-+			 ((buf[1] & 0x0f) << 8) |
-+			 buf[4]);
-+		hw->y = (((buf[3] & 0x20) << 7) |
-+			 ((buf[1] & 0xf0) << 4) |
-+			 buf[5]);
-+		hw->z = buf[2];
-+
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 
--		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
-+		if (is_forcepad) {
-+			/* XXX is there a proper capability bit for this? */
-+			/*
-+			 * ForcePads, like Clickpads, use middle button
-+			 * bits to report primary button clicks.
-+			 * Unfortunately they report primary button not only
-+			 * when user presses on the pad above certain threshold,
-+			 * but also when there are more than one finger on the
-+			 * touchpad, which interferes with out multi-finger
-+			 * gestures.
-+			 */
-+			if (hw->z == 0) {
-+				/* No contacts */
-+				priv->press = priv->report_press = false;
-+			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
-+				/*
-+				 * Single-finger touch with pressure above
-+				 * the threshold.
-+				 */
-+				if  (!priv->press) {
-+					priv->press_start = jiffies;
-+					priv->press = true;
-+				} else if (time_after(jiffies,
-+						priv->press_start +
-+							msecs_to_jiffies(50))) {
-+					priv->report_press = true;
-+				}
-+			} else {
-+				priv->press = false;
-+			}
-+
-+			hw->left = priv->report_press;
-+
-+		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
- 			/*
- 			 * Clickpad's button is transmitted as middle button,
- 			 * however, since it is primary button, we will report
-@@ -651,21 +701,6 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
- 		}
- 
--		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
--			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
--		    hw->w == 2) {
--			synaptics_parse_agm(buf, priv, hw);
--			return 1;
--		}
--
--		hw->x = (((buf[3] & 0x10) << 8) |
--			 ((buf[1] & 0x0f) << 8) |
--			 buf[4]);
--		hw->y = (((buf[3] & 0x20) << 7) |
--			 ((buf[1] & 0xf0) << 4) |
--			 buf[5]);
--		hw->z = buf[2];
--
- 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
- 		    ((buf[0] ^ buf[3]) & 0x02)) {
- 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
-@@ -1642,11 +1677,24 @@ static const struct dmi_system_id __initconst cr48_dmi_table[] = {
- 	{ }
- };
- 
-+static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
-+#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-+	{
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
-+		},
-+	},
-+#endif
-+	{ }
-+};
-+
- void __init synaptics_module_init(void)
- {
- 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
- 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
- 	cr48_profile_sensor = dmi_check_system(cr48_dmi_table);
-+	is_forcepad = dmi_check_system(forcepad_dmi_table);
- }
- 
- static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index e594af0..adc80c9 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -177,6 +177,11 @@ struct synaptics_data {
- 	 */
- 	struct synaptics_hw_state agm;
- 	bool agm_pending;			/* new AGM packet received */
-+
-+	/* ForcePad handling */
-+	unsigned long				press_start;
-+	bool					press;
-+	bool					report_press;
- };
- 
- void synaptics_module_init(void);
--- 
-2.1.0.rc2.206.gedb03e5
-
-
--- 
-Dmitry
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265814.html
+>
+> On Fri, Feb 28, 2014 at 3:06 AM, Feng Kan <fkan@apm.com> wrote:
+>> This change is made to preserve the GIC v2 releated bits in the
+>> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+>> The original code only set the enable/disable group bit in this register.
+>> This code will preserve the bypass bits configured by the bootload except
+>> the enable/disable bit. The main reason for this change is to allow the
+>> bypass bits specified in the v2 spec to remain untouched by the current
+>> GIC code. In the X-Gene platform, the bypass functionality is not used
+>> and bypass must be disabled at all time.
+>>
+>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>> Acked-by: Anup Patel <apatel@apm.com>
+>> Signed-off-by: Feng Kan <fkan@apm.com>
+>> ---
+>> V3 Changes:
+>>         - Sorry, forgot to change the mask for cpu_init path
+>>           assumed bootloader setup bits correctly.
+>> V2 Changes:
+>>         - only mask off v2 bypass bits
+>>  drivers/irqchip/irq-gic.c |   32 +++++++++++++++++++++++++++++---
+>>  1 files changed, 29 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>> index 341c601..3ca7995 100644
+>> --- a/drivers/irqchip/irq-gic.c
+>> +++ b/drivers/irqchip/irq-gic.c
+>> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>         void __iomem *dist_base = gic_data_dist_base(gic);
+>>         void __iomem *base = gic_data_cpu_base(gic);
+>>         unsigned int cpu_mask, cpu = smp_processor_id();
+>> +       unsigned int ctrl_mask;
+>>         int i;
+>>
+>>         /*
+>> @@ -449,13 +450,29 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>>
+>>         writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+>> -       writel_relaxed(1, base + GIC_CPU_CTRL);
+>> +
+>> +       ctrl_mask = readl(base + GIC_CPU_CTRL);
+>
+> readl_relaxed() here?
+>
+>> +
+>> +       /* Mask out the gic v2 bypass bits */
+>> +       ctrl_mask &= 0x1e0;
+>> +
+>> +       /* Enable group 0 */
+>> +       ctrl_mask |= 0x1;
+>> +       writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
+>>  }
+>>
+>>  void gic_cpu_if_down(void)
+>>  {
+>> +       unsigned int ctrl_mask;
+>>         void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+>> -       writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
+>> +
+>> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
+> readl_relaxed() here?
+>
+>> +       /*
+>> +        * Disable grp enable bit, leave the bypass bits alone as changing
+>> +        * them could leave the system unstable
+>> +        */
+>> +       ctrl_mask &= 0x1e0;
+>> +       writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
+>>  }
+>>
+>>  #ifdef CONFIG_CPU_PM
+>> @@ -566,6 +583,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>  {
+>>         int i;
+>>         u32 *ptr;
+>> +       unsigned int ctrl_mask;
+>>         void __iomem *dist_base;
+>>         void __iomem *cpu_base;
+>>
+>> @@ -590,7 +608,15 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+>>
+>>         writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+>> -       writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+>> +
+>> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
+>
+> readl_relaxed() here?
+Trying to make sure read is completed before write back out to gic.
+>
+>> +
+>> +       /* Mask out the gic v2 bypass bits */
+>> +       ctrl_mask &= 0x1e0;
+>> +
+>> +       /* Enable group 0 */
+>> +       ctrl_mask |= 0x1;
+>> +       writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
+>>  }
+>>
+>
+> --Arun
