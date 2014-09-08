@@ -1,93 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaIHSZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:25:56 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:43627 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbaIHSZz (ORCPT
+	id S1753973AbaIHS07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:26:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50357 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429AbaIHS05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:25:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140908110131.GX4703@rric.localhost>
-References: <1409903205-2762-1-git-send-email-rric@kernel.org>
- <7863371.EMkUuntQWU@wuerfel> <20140905142245.GG20164@leverpostej>
- <2952834.1P42roDKD9@wuerfel> <20140908110131.GX4703@rric.localhost>
-From: Rob Herring <robherring2@gmail.com>
-Date: Mon, 8 Sep 2014 13:25:34 -0500
-Message-ID: <CAL_JsqLgimdX0Ff4Wsyx68-8NaFDx=0CN36qnLUtXNTicybAgA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium
- Thunder SoC Family
-To: Robert Richter <rric@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        Olof Johansson <olof@lixom.net>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 8 Sep 2014 14:26:57 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rob Clark <robdclark@gmail.com>
+Subject: [PATCH] ARM: perf: Don't sleep while atomic when enabling per-cpu interrupts
+Date: Mon,  8 Sep 2014 11:26:54 -0700
+Message-Id: <1410200814-25878-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 6:01 AM, Robert Richter <rric@kernel.org> wrote:
-> On 05.09.14 18:25:35, Arnd Bergmann wrote:
->> On Friday 05 September 2014 15:22:46 Mark Rutland wrote:
->> >
->> > > A common pattern these days is to do dependencies like
->> > >
->> > > arch/*/Kconfig:
->> > >       config ARCH_FOO
->> > >       bool "Enable support for Foo platform"
->> > >       help
->> > >         ...
->> > >
->> > >
->> > > drivers/*/Kconfig
->> > >       config SUBSYS_FOO
->> > >       bool "SUBSYS driver for Foo"
->> > >       depends on ARCH_FOO || COMPILE_TEST
->> > >       depends on OF && REGULATOR && GENERIC_PHY # or whatever
->> >
->> > Russell's comments w.r.t. Kconfig warnings when config names change
->> > still holds regardless of select vs depends on.
->>
->> Yes, that's what I wrote in my reply as well.
->>
->> > > That way we can enable everything in the defconfig, but someone
->> > > who likes to build a more specialized kernel can disable the
->> > > other platforms and won't get the drivers that are specific to
->> > > those.
->> > >
->> > > I personally think this is a bit more verbose than what we need, but
->> > > I don't strongly object doing it that way.
->> >
->> > You'd still be able to do this without ARCH_FOO, though you would need
->> > to know which drivers are necessary for a particular SoC. That seems to
->> > be the way things are handled on x86; I don't recall having to select
->> > support for specific machines there, just the individual drivers.
->
-> This is well hidden on x86, but each vendor has a config option. For
-> AMD systems we have had our own option to disable vendor specific
-> code, see CPU_SUP_AMD for example. Disabling this will remove all AMD
-> specific code in the kernel. Of course this is enabled per default.
->
-> With ARCH_THUNDER I intended to do the same (you could name this also
-> SOC_SUP_CAVIUM or so but I kept the current naming scheme). In patch
-> 4/4 I have added the option to defconfig. This enables this per
-> default and nobody has to deal with any option manually, just running
-> make defconfig is fine.
->
-> Also, at least to disable building the dtb file for foo, you will need
-> ARCH_FOO too. How else would you deal with dtb files then?
+Rob Clark reports a sleeping while atomic bug when using perf.
 
-dtb builds are quick and don't affect the image size at all.
-Personally, I would prefer to see all dtb's get built for the dtbs
-rule. You can still specify the specific dtb you want in the case of
-only caring about 1 platform.
+BUG: sleeping function called from invalid context at ../kernel/locking/mutex.c:583
+in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/0
+------------[ cut here ]------------
+WARNING: CPU: 2 PID: 4828 at ../kernel/locking/mutex.c:479 mutex_lock_nested+0x3a0/0x3e8()
+DEBUG_LOCKS_WARN_ON(in_interrupt())
+Modules linked in:
+CPU: 2 PID: 4828 Comm: Xorg.bin Tainted: G        W      3.17.0-rc3-00234-gd535c45-dirty #819
+[<c0216690>] (unwind_backtrace) from [<c0212174>] (show_stack+0x10/0x14)
+[<c0212174>] (show_stack) from [<c0867cc0>] (dump_stack+0x98/0xb8)
+[<c0867cc0>] (dump_stack) from [<c02492a4>] (warn_slowpath_common+0x70/0x8c)
+[<c02492a4>] (warn_slowpath_common) from [<c02492f0>] (warn_slowpath_fmt+0x30/0x40)
+[<c02492f0>] (warn_slowpath_fmt) from [<c086a3f8>] (mutex_lock_nested+0x3a0/0x3e8)
+[<c086a3f8>] (mutex_lock_nested) from [<c0294d08>] (irq_find_host+0x20/0x9c)
+[<c0294d08>] (irq_find_host) from [<c0769d50>] (of_irq_get+0x28/0x48)
+[<c0769d50>] (of_irq_get) from [<c057d104>] (platform_get_irq+0x1c/0x8c)
+[<c057d104>] (platform_get_irq) from [<c021a06c>] (cpu_pmu_enable_percpu_irq+0x14/0x38)
+[<c021a06c>] (cpu_pmu_enable_percpu_irq) from [<c02b1634>] (flush_smp_call_function_queue+0x88/0x178)
+[<c02b1634>] (flush_smp_call_function_queue) from [<c0214dc0>] (handle_IPI+0x88/0x160)
+[<c0214dc0>] (handle_IPI) from [<c0208930>] (gic_handle_irq+0x64/0x68)
+[<c0208930>] (gic_handle_irq) from [<c0212d04>] (__irq_svc+0x44/0x5c)
+Exception stack(0xe63ddea0 to 0xe63ddee8)
+dea0: 00000001 00000001 00000000 c2f3b200 c16db380 c032d4a0 e63ddf40 60010013
+dec0: 00000000 001fbfd4 00000100 00000000 00000001 e63ddee8 c0284770 c02a2e30
+dee0: 20010013 ffffffff
+[<c0212d04>] (__irq_svc) from [<c02a2e30>] (ktime_get_ts64+0x1c8/0x200)
+[<c02a2e30>] (ktime_get_ts64) from [<c032d4a0>] (poll_select_set_timeout+0x60/0xa8)
+[<c032d4a0>] (poll_select_set_timeout) from [<c032df64>] (SyS_select+0xa8/0x118)
+[<c032df64>] (SyS_select) from [<c020e8e0>] (ret_fast_syscall+0x0/0x48)
+---[ end trace 0bb583b46342da6f ]---
+INFO: lockdep is turned off.
 
-Rob
+We don't really need to get the platform irq again when we're
+enabling or disabling the per-cpu irq. Instead we can pass along
+the two pieces of data we need to the enable/disable functions.
+This should be slightly more efficient and also fix the
+scheduling while atomic bug.
+
+Reported-by: Rob Clark <robdclark@gmail.com>
+Fixes: bbd64559376f "ARM: perf: support percpu irqs for the CPU PMU"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/kernel/perf_event_cpu.c | 27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+index e6a6edbec613..1f24b47cd81e 100644
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -74,11 +74,16 @@ static struct pmu_hw_events *cpu_pmu_get_cpu_events(void)
+ 	return this_cpu_ptr(&cpu_hw_events);
+ }
+ 
++struct pmu_enable {
++	struct arm_pmu *pmu;
++	int irq;
++};
++
+ static void cpu_pmu_enable_percpu_irq(void *data)
+ {
+-	struct arm_pmu *cpu_pmu = data;
+-	struct platform_device *pmu_device = cpu_pmu->plat_device;
+-	int irq = platform_get_irq(pmu_device, 0);
++	struct pmu_enable *pmu_enable = data;
++	struct arm_pmu *cpu_pmu = pmu_enable->pmu;
++	int irq = pmu_enable->irq;
+ 
+ 	enable_percpu_irq(irq, IRQ_TYPE_NONE);
+ 	cpumask_set_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
+@@ -86,9 +91,9 @@ static void cpu_pmu_enable_percpu_irq(void *data)
+ 
+ static void cpu_pmu_disable_percpu_irq(void *data)
+ {
+-	struct arm_pmu *cpu_pmu = data;
+-	struct platform_device *pmu_device = cpu_pmu->plat_device;
+-	int irq = platform_get_irq(pmu_device, 0);
++	struct pmu_enable *pmu_enable = data;
++	struct arm_pmu *cpu_pmu = pmu_enable->pmu;
++	int irq = pmu_enable->irq;
+ 
+ 	cpumask_clear_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
+ 	disable_percpu_irq(irq);
+@@ -98,12 +103,15 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
+ {
+ 	int i, irq, irqs;
+ 	struct platform_device *pmu_device = cpu_pmu->plat_device;
++	struct pmu_enable pmu_enable;
+ 
+ 	irqs = min(pmu_device->num_resources, num_possible_cpus());
+ 
+ 	irq = platform_get_irq(pmu_device, 0);
+ 	if (irq >= 0 && irq_is_percpu(irq)) {
+-		on_each_cpu(cpu_pmu_disable_percpu_irq, cpu_pmu, 1);
++		pmu_enable.pmu = cpu_pmu;
++		pmu_enable.irq = irq;
++		on_each_cpu(cpu_pmu_disable_percpu_irq, &pmu_enable, 1);
+ 		free_percpu_irq(irq, &percpu_pmu);
+ 	} else {
+ 		for (i = 0; i < irqs; ++i) {
+@@ -120,6 +128,7 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ {
+ 	int i, err, irq, irqs;
+ 	struct platform_device *pmu_device = cpu_pmu->plat_device;
++	struct pmu_enable pmu_enable;
+ 
+ 	if (!pmu_device)
+ 		return -ENODEV;
+@@ -138,7 +147,9 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ 				irq);
+ 			return err;
+ 		}
+-		on_each_cpu(cpu_pmu_enable_percpu_irq, cpu_pmu, 1);
++		pmu_enable.pmu = cpu_pmu;
++		pmu_enable.irq = irq;
++		on_each_cpu(cpu_pmu_enable_percpu_irq, &pmu_enable, 1);
+ 	} else {
+ 		for (i = 0; i < irqs; ++i) {
+ 			err = 0;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
