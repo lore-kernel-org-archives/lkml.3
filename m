@@ -1,136 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaIHNFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:05:43 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:60504 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584AbaIHNFj (ORCPT
+	id S1753184AbaIHNJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:09:37 -0400
+Received: from service88.mimecast.com ([195.130.217.12]:47209 "EHLO
+	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781AbaIHNJg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:05:39 -0400
-Message-ID: <540DA998.7060807@gmail.com>
-Date: Mon, 08 Sep 2014 15:05:28 +0200
-From: Imre Palik <imrep.amz@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 8 Sep 2014 09:09:36 -0400
+From: Michael Williams <Michael.Williams@arm.com>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Pawel Moll <Pawel.Moll@arm.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        "kan.liang@intel.com" <kan.liang@intel.com>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        Al Grant <Al.Grant@arm.com>, Deepak Saxena <dsaxena@linaro.org>
+Date: Mon, 8 Sep 2014 14:08:19 +0100
+Subject: RE: [PATCH v4 00/22] perf: Add infrastructure and support for Intel
+ PT
+Thread-Topic: [PATCH v4 00/22] perf: Add infrastructure and support for
+ Intel PT
+Thread-Index: Ac/LZORgA+JBCUfTRvyKKoxpcU9sJQAACXgw
+Message-ID: <44659A5EA256A841B597E63DCE366E8A6FB28A6E5D@BUNGLE.Emea.Arm.com>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140901163039.GV27892@worktop.ger.corp.intel.com>
+ <1409591843.4343.65.camel@hornet>
+ <CANLsYky0vuwo7MwKbiGXypkLkrX7k6BOEf2uej3-Z3-HZHKd7w@mail.gmail.com>
+ <20140904082656.GM3190@worktop.ger.corp.intel.com>
+ <CANLsYkwdRBfOFb5c6=nb+1qzt1R=MJ4NbPWymgp5J6iRs02KDQ@mail.gmail.com>
+ <87iokyuy15.fsf@ashishki-desk.ger.corp.intel.com>
+In-Reply-To: <87iokyuy15.fsf@ashishki-desk.ger.corp.intel.com>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
 MIME-Version: 1.0
-To: Lars <lars.ellenberg@linbit.com>
-CC: drbd-dev@lists.linbit.com, Philipp Reisner <philipp.reisner@linbit.com>,
-        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
-        Matt Wilson <msw@amazon.com>
-Subject: Re: [PATCH v3] drbd: fix throttling on newly created DM backing devices
-References: <1409942478-29135-1-git-send-email-imrep.amz@gmail.com> <20140907095834.GA2332@hein>
-In-Reply-To: <20140907095834.GA2332@hein>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+X-MC-Unique: 114090814092510002
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/14 11:58, Lars wrote:
-> On Fri, Sep 05, 2014 at 08:41:18PM +0200, Imre Palik wrote:
->> From: "Palik, Imre" <imrep@amazon.de>
->>
->> If the drbd backing device is a new device mapper device (e.g., a
->> dm-linear mapping of an existing block device that contains data), the
->> counters are initially 0 even though the device contains useful
->> data. This causes throttling until something accesses the drbd device
->> or the backing device.
+
+Alexander Shishkin wrote:
+> Mathieu Poirier <mathieu.poirier@linaro.org> writes:
 >
-> What was wrong with my previous proposal?
-
-Sorry, I haven't realised you added a proposal to your reply.  It seems, 
-I really needed that extra sleep during the weekend ...
-
-Your proposal is good.  Of course, I like my last one a slightly better. 
-  But as they say, beauty is in the eye of the beholder :-)
-
-> How does changing the signedness help with
-> rs_last_events not being properly initialized?
-
-It only helps with reasoning.  I reason with modular arithmetic way 
-easier than with signed integer overflows.  Accidentally, 0 is a good 
-initialisation value in case of unsigned arithmetic.
-
-> Are you sure you have also considered all wrap-around cases?
+>> On 4 September 2014 02:26, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Tue, Sep 02, 2014 at 02:18:16PM -0600, Mathieu Poirier wrote:
+>>>> Pawell, many thanks for looping me in.
+>>>>
+>>>> I am definitely not a perf-internal guru and as such won't be able to
+>>>> comment on the implementation.  On the flip side it is easy for me to
+>>>> see how the work on coresight done at Linaro can be made to tie-in
+>>>> what Alexander is proposing.  Albeit not at the top of the priority
+>>>> list at this time, integration with perf (and ftrace) is definitely
+>>>> on the roadmap.
+>>>>
+>>>> Powell is correct in his statement that Linaro's work in HW trace
+>>>> decoding is (currently) mainly focused on processor tracing but that
+>>>> will change when we have the basic infrastructure upstreamed.
+>>>>
+>>>> Last but not least it would be interesting to have more information
+>>>> on the "sideband data".  With coresight we have something called
+>>>> "metadata", also related to how the trace source was configured and
+>>>> instrumental to proper trace decoding.  I'm pretty sure we are facing
+> the same problems.
+>>>
+>>> So we use the sideband or AUX data stream to export the 'big' data
+>>> stream generated by the CPU in an opaque manner. For every AUX data
+>>> block 'posted' we issue an event into the regular data buffer that
+>>> describes it.
+>>
+>> In the context of "describe it" written above, what kind of
+>> information one would typically find in that description?
 >
-> Maybe you are too focused on your particular corner case
-> (disk_stats starting with 0).
-> Maybe I'm just thick right now, so please explain.
-
-The idea is that 0 is the smallest possible value for an unsigned, and 
-curr_events is monotonically increasing (mod 2^32) .  This means, 
-initially either curr_events > 64, that is, we enter the loop, and do 
-the initialisation, or it will be bigger than 64 at most when we want to 
-start throttle in an ideal world (after no more than 64 sectors of 
-activity).
-
-Basically, while you initialise rs_last_events to an ideal value with 
-some calculation, I choose a safe static value.  I am content with both 
-approaches.  I think, as a subsystem maintainer, you should choose the 
-one you like better.  If you choose yours, then you can add
-Reviewed-by: Imre Palik <imrep@amazon.de>
-
-Imre
-
+> It's like "got a chunk of AUX data in the AUX buffer, starting at offset
+> $X, length $Y".
 >
-> 	Lars
+>>>
+>>> I was assuming that both ARM and MIPS would generate a single data
+>>> stream as well. So please do tell more about your meta-data; is that
+>>> a one time thing or a second continuous stream of data, albeit
+>>> smaller than the main stream?
+>>
+>> Coresight does indeed generate a single steam of compressed data.
+>> Depending on the tracing specifics that were requested by the use case
+>> (trace engine configuration) the format of the packets in the
+>> compressed stream will change.  Since the compressed stream itself
+>> doesn't carry clues about the formatting information, knowledge of how
+>> the trace engine was configured is mandatory for the proper decoding
+>> of the trace stream.
 >
->> The patch disables throttling, as long as only resync is responsible
->> for disk activity on a freshly created device.
+> Ok, in perf the trace configuration would be part of 'session'
+> information, so the way the tracing was configured by userspace will be
+> saved to the resulting trace file (perf.data) by the userspace.
+> We have that with Intel PT as well.
+>
+>> Metadata refer to exactly that - the configuration of the trace
+>> engine.  It has to be somehow lumped with the trace stream for off
+>> target analysis.
+>
+> What we call sideband data in our code is more like runtime metadata,
+> such as executable mappings (so that you know what is mapped to which
+> addresses, iirc ETM/PTM also deals in virtual addresses, so you'll need
+> this information to make sense of the trace, right?) and context
+> switches.
+>
+> One of the great things about perf here is that it provides all this
+> information practically for free.
+>
+>>>
+>>> The way I read your explanation it is a one time blob generated once
+>>> you setup the hardware.
 >>
->> Reported-by: Mikhail Sugakov <msugakov@amazon.de>
->> Cc: Matt Wilson <msw@amazon.com>
->> Signed-off-by: Imre Palik <imrep@amazon.de>
->> ---
->>   drivers/block/drbd/drbd_int.h      |    4 ++--
->>   drivers/block/drbd/drbd_receiver.c |   10 +++++-----
->>   2 files changed, 7 insertions(+), 7 deletions(-)
+>> Correct.
 >>
->> diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
->> index 1a00001..298b1dc 100644
->> --- a/drivers/block/drbd/drbd_int.h
->> +++ b/drivers/block/drbd/drbd_int.h
->> @@ -960,8 +960,8 @@ struct drbd_device {
->>   	atomic_t rs_sect_in; /* for incoming resync data rate, SyncTarget */
->>   	atomic_t rs_sect_ev; /* for submitted resync data rate, both */
->>   	int rs_last_sect_ev; /* counter to compare with */
->> -	int rs_last_events;  /* counter of read or write "events" (unit sectors)
->> -			      * on the lower level device when we last looked. */
->> +	unsigned int rs_last_events;  /* counter of read or write "events" (unit sectors)
->> +				       * on the lower level device when we last looked. */
->>   	int c_sync_rate; /* current resync rate after syncer throttle magic */
->>   	struct fifo_buffer *rs_plan_s; /* correction values of resync planer (RCU, connection->conn_update) */
->>   	int rs_in_flight; /* resync sectors in flight (to proxy, in proxy and from proxy) */
->> diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
->> index 9342b8d..147c917 100644
->> --- a/drivers/block/drbd/drbd_receiver.c
->> +++ b/drivers/block/drbd/drbd_receiver.c
->> @@ -2467,7 +2467,7 @@ bool drbd_rs_c_min_rate_throttle(struct drbd_device *device)
->>   	struct gendisk *disk = device->ldev->backing_bdev->bd_contains->bd_disk;
->>   	unsigned long db, dt, dbdt;
->>   	unsigned int c_min_rate;
->> -	int curr_events;
->> +	unsigned int curr_events;
+>>> I suppose we could either dump it once into the normal data stream or
+>>> maybe dump it once every time we generate an AUX buffer event into
+>>> the normal data stream -- if its not too big.
 >>
->>   	rcu_read_lock();
->>   	c_min_rate = rcu_dereference(device->ldev->disk_conf)->c_min_rate;
->> @@ -2477,12 +2477,12 @@ bool drbd_rs_c_min_rate_throttle(struct drbd_device *device)
->>   	if (c_min_rate == 0)
->>   		return false;
->>
->> -	curr_events = (int)part_stat_read(&disk->part0, sectors[0]) +
->> -		      (int)part_stat_read(&disk->part0, sectors[1]) -
->> -			atomic_read(&device->rs_sect_ev);
->> +	curr_events = (unsigned int)part_stat_read(&disk->part0, sectors[0]) +
->> +		      (unsigned int)part_stat_read(&disk->part0, sectors[1]) -
->> +		(unsigned int)atomic_read(&device->rs_sect_ev);
->>
->>   	if (atomic_read(&device->ap_actlog_cnt)
->> -	    || !device->rs_last_events || curr_events - device->rs_last_events > 64) {
->> +		|| curr_events - device->rs_last_events > 64) {
->>   		unsigned long rs_left;
->>   		int i;
->>
->> --
->> 1.7.9.5
->>
+>> Right, there is a set of meta-data to be generated with each trace
+>> run.  With the current implementation a "trace run" pertains to all
+>> the information collected between the beginning and end of a trace
+>> scenario.  Future work involve triggering a DMA transfer of the full
+>> coresight buffer to a kernel memory area, something that is probably
+>> close to the "buffer event" you are referring to.
+>
+> Again correct me if I'm wrong, but the TMC(?) controller can be
+> configured to direct ETM/PTM output right into system memory by means of
+> a scatter-gather table. This is what we call AUX area, it's basically a
+> circular buffer with trace data. Trace output is sent to the system
+> memory, which is also mmap()ed to the userspace tracing tool (perf), so
+> that it can capture it in real time. Well, that's one of the scenarios.
+
+Correct. However there are two provisos:
+
+Firstly, not all systems will have the Trace Memory Controller (TMC) in the Embedded Trace Router (ETR) configuration that can write directly to system memory. Many systems have a dedicated Embedded Trace Buffer (ETB). This is a dedicated SRAM for collecting trace that is not memory-mapped. It can only be accessed by the driver. Getting the data out is quick compared to reconstructing the trace. Systems can have a combination of multiple ETRs, ETBs, ...
+
+Secondly, ETR/ETB etc. might contain multiple traces from different sources and different processors multiplexed together with the Trace Wrapping Protocol (TWP). For security reasons you might decide to unwrap this in privileged mode code, not in userspace. Again this is quick compared to reconstructing the trace.
+
+So you might need to support copying the data out into a userspace buffer.
+
+Mike.
+--
+Michael Williams, Principal Engineer, ARM Limited, Cambridge UK
+ARM: The Architecture for the Digital World http://www.arm.com
+
+
+
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+
+ARM Limited, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2557590
+ARM Holdings plc, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2548782
 
