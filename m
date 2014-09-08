@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960AbaIHM5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:57:18 -0400
-Received: from mx8.pku.edu.cn ([162.105.129.171]:45786 "EHLO mail.pku.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753488AbaIHM5R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:57:17 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -307.404
-Date: Mon, 8 Sep 2014 20:57:02 +0800 (CST)
-From: =?gbk?B?WHVldGFvIEd1YW4g?= <gxt@pku.edu.cn>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Message-ID: <174974381.13596.1410181022043.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <540B439C.8070204@roeck-us.net>
-Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_=E5=9B=9E=E5=A4=8D?=
- =?utf-8?Q?=EF=BC=9A_Re:_=E5=9B=9E=E5=A4=8D=EF=BC=9A_R?=
- =?utf-8?Q?e:_=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_?=
- =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Status_?=
- =?utf-8?Q?of_'unicore32'_architecture_in_Linux_kernel?=
+	id S1753991AbaIHM50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:57:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33575 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753826AbaIHM5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 08:57:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
+   d="scan'208";a="476054088"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 02/22] perf: Add AUX area to ring buffer for raw data streams
+In-Reply-To: <20140908113422.GD6758@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com> <20140908070242.GS19379@twins.programming.kicks-ass.net> <87lhpuuztj.fsf@ashishki-desk.ger.corp.intel.com> <20140908113422.GD6758@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 08 Sep 2014 15:55:11 +0300
+Message-ID: <87a96auv9s.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [162.105.129.94]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter Zijlstra <peterz@infradead.org> writes:
 
------ Guenter Roeck <linux@roeck-us.net> 写道：
-> On 09/04/2014 11:13 PM, Xuetao Guan  wrote:
-> Hi,
-> 
-> I made everything I have available at http://server.roeck-us.net/qemu/unicore32/.
-> I tried multiple variants for creating the root file system, including the one
-> on https://github.com/gxt/UniCore32.git and the one using mkrootfs.sh in
-> the link above. No difference - I always see the same crash. Note that the
-> 'init' program is loading, but crashes with above error (0x0000000b is SIGSEGV
-> unless I am missing something).
-> 
-> Note that I used the latest qemu for unicore from upstream sources; I was unable
-> to compile it from git@github.com:gxt/QEMU.git. Qemu configuration did not seem
-> to make a difference. The toolchain was extracted from uc4-1.0.5-hard.tgz.
-> 
-> Hope this helps,
-> Guenter
-> 
-I guess you used the newest kernel to run busybox.
-However, as for unicore32, the newest kernel uses different ABI with uc4-1.0.5 toolchain.
-I'm sorry to make it so confusing.
-I'll update and submit another-ABI patches asap.
+> On Mon, Sep 08, 2014 at 02:16:56PM +0300, Alexander Shishkin wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>> 
+>> > On Wed, Aug 20, 2014 at 03:35:59PM +0300, Alexander Shishkin wrote:
+>> >> From: Peter Zijlstra <peterz@infradead.org>
+>> >> 
+>> >> This patch introduces "AUX space" in the perf mmap buffer, intended for
+>> >> exporting high bandwidth data streams to userspace, such as instruction
+>> >> flow traces.
+>> >> 
+>> >> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
+>> >> user_page structure, and read/write pointers aux_{head,tail}, which abide
+>> >> by the same rules as data_* counterparts of the main perf buffer.
+>> >> 
+>> >> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
+>> >> such an offset that will be greater than data_offset+data_size and
+>> >> aux_size to be the desired buffer size. Both need to be page aligned.
+>> >> Then, same aux_offset and aux_size should be passed to mmap() call and
+>> >> if everything adds up, you should have an AUX buffer as a result.
+>> >> 
+>> >> Pages that are mapped into this buffer also come out of user's mlock
+>> >> rlimit plus perf_event_mlock_kb allowance.
+>> >> 
+>> >> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+>> >> ---
+>> >
+>> >> +void rb_free_aux(struct ring_buffer *rb, struct perf_event *event)
+>> >> +{
+>> >> +	struct perf_event *iter;
+>> >> +	int pg;
+>> >> +
+>> >> +	if (rb->aux_priv) {
+>> >> +		/* disable all potential writers before freeing */
+>> >> +		rcu_read_lock();
+>> >> +		list_for_each_entry_rcu(iter, &rb->event_list, rb_entry)
+>> >> +			perf_event_disable(iter);
+>> >> +		rcu_read_unlock();
+>> >
+>> > Hmm, I cannot remember this from the last time; and its not explained
+>> > why this was added.
+>> >
+>> > This would change semantics between munmap of a buffer with and without
+>> > AUX bits in. 
+>> 
+>> Indeed, but this seems fair: if an event is generating AUX data while we
+>> unmap the AUX buffer, there is no reason to keep it on, because chances
+>> are, AUX data is the only thing this event is generating. The
+>> alternative would be to have a separate callback for this, but then
+>> again, that would race with other pmu callbacks, since it would be
+>> called from munmap() path. I should add an elaborate comment about this.
+>> 
+>> Does this sound reasonable?
+>
+> Well, the same is true for regular buffers, if you munmap() them while
+> in use the events are pointless.
+>
+> Still we keep them enabled, we simply skip generating output.
+>
+> I would much like not to create deviating behaviour if you don't
+> absolutely have to. In both cases its an explicit user request, so you
+> don't need to go hold hands. He did it, he gets to keep whatever pieces
+> it generates.
 
-Thanks,
-Xutao
+Fair enough. Then I'd like to disable the ACTIVE ones before freeing AUX
+stuff and then re-enabling them since perf_event_{en,dis}able() already
+provide the convenient cross-cpu calls, which would also avoid
+concurrency between pmu::{add,del} callbacks and this unmap path. Makes
+sense?
 
-
-
+Regards,
+--
+Alex
