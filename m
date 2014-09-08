@@ -1,168 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368AbaIHJm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:42:59 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:46810 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754011AbaIHJjV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:39:21 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <540D7A18.4030201@smartplayin.com>
-Date: Mon, 08 Sep 2014 15:12:48 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754004AbaIHJjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:39:19 -0400
+Received: from mail-bn1on0094.outbound.protection.outlook.com ([157.56.110.94]:22916
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753907AbaIHJjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:39:14 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
+        <cltang@codesourcery.com>
+Subject: [PATCH v3 11/29] nios2: Cache handling
+Date: Mon, 8 Sep 2014 17:22:22 +0800
+Message-ID: <1410168160-3624-12-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 00/15] Krait clocks + Krait CPUfreq
-References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(87936001)(47776003)(74502001)(77096002)(102836001)(83322001)(20776003)(86362001)(4396001)(19580405001)(80022001)(21056001)(81342001)(44976005)(92726001)(50466002)(107046002)(76482001)(77982001)(79102001)(90102001)(97736003)(104166001)(36756003)(87286001)(33646002)(89996001)(105596002)(93916002)(99396002)(19580395003)(77156001)(88136002)(85306004)(62966002)(76176999)(92566001)(83072002)(74662001)(31966008)(229853001)(68736004)(42186005)(50226001)(6806004)(84676001)(50986999)(81542001)(46102001)(48376002)(2201001)(85852003)(106466001)(95666004)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB041;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03283976A6
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-Looks like one patch is missing from v1. Is this removed from v2
-patchset from some reason?
-	ARM: Add Krait L2 register accessor functions
+This patch adds functionality required for cache maintenance.
 
-But there are references to this in v2 set and build fails while
-compiling drivers/clk/qcom/clk-krait.c.
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ arch/nios2/include/asm/cache.h      |  36 +++++
+ arch/nios2/include/asm/cacheflush.h |  52 +++++++
+ arch/nios2/mm/cacheflush.c          | 270 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 358 insertions(+)
+ create mode 100644 arch/nios2/include/asm/cache.h
+ create mode 100644 arch/nios2/include/asm/cacheflush.h
+ create mode 100644 arch/nios2/mm/cacheflush.c
 
-Thanks and Regards
-Pramod
+diff --git a/arch/nios2/include/asm/cache.h b/arch/nios2/include/asm/cache.h
+new file mode 100644
+index 0000000..2293cf5
+--- /dev/null
++++ b/arch/nios2/include/asm/cache.h
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ */
++
++#ifndef _ASM_NIOS2_CACHE_H
++#define _ASM_NIOS2_CACHE_H
++
++#define NIOS2_DCACHE_SIZE	CONFIG_NIOS2_DCACHE_SIZE
++#define NIOS2_ICACHE_SIZE	CONFIG_NIOS2_ICACHE_SIZE
++#define NIOS2_DCACHE_LINE_SIZE	CONFIG_NIOS2_DCACHE_LINE_SIZE
++#define NIOS2_ICACHE_LINE_SHIFT	5
++#define NIOS2_ICACHE_LINE_SIZE	(1 << NIOS2_ICACHE_LINE_SHIFT)
++
++/* bytes per L1 cache line */
++#define L1_CACHE_SHIFT		NIOS2_ICACHE_LINE_SHIFT
++#define L1_CACHE_BYTES		NIOS2_ICACHE_LINE_SIZE
++
++#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
++
++#define __cacheline_aligned
++#define ____cacheline_aligned
++
++#endif
+diff --git a/arch/nios2/include/asm/cacheflush.h b/arch/nios2/include/asm/cacheflush.h
+new file mode 100644
+index 0000000..52abba9
+--- /dev/null
++++ b/arch/nios2/include/asm/cacheflush.h
+@@ -0,0 +1,52 @@
++/*
++ * Copyright (C) 2003 Microtronix Datacom Ltd.
++ * Copyright (C) 2000-2002 Greg Ungerer <gerg@snapgear.com>
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_CACHEFLUSH_H
++#define _ASM_NIOS2_CACHEFLUSH_H
++
++#include <linux/mm_types.h>
++
++/*
++ * This flag is used to indicate that the page pointed to by a pte is clean
++ * and does not require cleaning before returning it to the user.
++ */
++#define PG_dcache_clean PG_arch_1
++
++struct mm_struct;
++
++extern void flush_cache_all(void);
++extern void flush_cache_mm(struct mm_struct *mm);
++extern void flush_cache_dup_mm(struct mm_struct *mm);
++extern void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
++	unsigned long end);
++extern void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
++	unsigned long pfn);
++#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 1
++extern void flush_dcache_page(struct page *page);
++
++extern void flush_icache_range(unsigned long start, unsigned long end);
++extern void flush_icache_page(struct vm_area_struct *vma, struct page *page);
++
++#define flush_cache_vmap(start, end)		flush_dcache_range(start, end)
++#define flush_cache_vunmap(start, end)		flush_dcache_range(start, end)
++
++extern void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
++				unsigned long user_vaddr,
++				void *dst, void *src, int len);
++extern void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
++				unsigned long user_vaddr,
++				void *dst, void *src, int len);
++
++extern void flush_dcache_range(unsigned long start, unsigned long end);
++extern void invalidate_dcache_range(unsigned long start, unsigned long end);
++
++#define flush_dcache_mmap_lock(mapping)		do { } while (0)
++#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
++
++#endif /* _ASM_NIOS2_CACHEFLUSH_H */
+diff --git a/arch/nios2/mm/cacheflush.c b/arch/nios2/mm/cacheflush.c
+new file mode 100644
+index 0000000..cf06a00
+--- /dev/null
++++ b/arch/nios2/mm/cacheflush.c
+@@ -0,0 +1,270 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ */
++
++#include <linux/export.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++
++#include <asm/cacheflush.h>
++#include <asm/cpuinfo.h>
++
++static void __flush_dcache(unsigned long start, unsigned long end)
++{
++	unsigned long addr;
++
++	start &= ~(cpuinfo.dcache_line_size - 1);
++	end += (cpuinfo.dcache_line_size - 1);
++	end &= ~(cpuinfo.dcache_line_size - 1);
++
++	if (end > start + cpuinfo.dcache_size)
++		end = start + cpuinfo.dcache_size;
++
++	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
++		__asm__ __volatile__ ("   flushda 0(%0)\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
++	}
++}
++
++static void __flush_dcache_all(unsigned long start, unsigned long end)
++{
++	unsigned long addr;
++
++	start &= ~(cpuinfo.dcache_line_size - 1);
++	end += (cpuinfo.dcache_line_size - 1);
++	end &= ~(cpuinfo.dcache_line_size - 1);
++
++	if (end > start + cpuinfo.dcache_size)
++		end = start + cpuinfo.dcache_size;
++
++	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
++		__asm__ __volatile__ ("   flushd 0(%0)\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
++	}
++}
++
++static void __invalidate_dcache(unsigned long start, unsigned long end)
++{
++	unsigned long addr;
++
++	start &= ~(cpuinfo.dcache_line_size - 1);
++	end += (cpuinfo.dcache_line_size - 1);
++	end &= ~(cpuinfo.dcache_line_size - 1);
++
++	if (end > start + cpuinfo.dcache_size)
++		end = start + cpuinfo.dcache_size;
++
++	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
++		__asm__ __volatile__ ("   initda 0(%0)\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
++	}
++}
++
++static void __flush_icache(unsigned long start, unsigned long end)
++{
++	unsigned long addr;
++
++	start &= ~(cpuinfo.icache_line_size - 1);
++	end += (cpuinfo.icache_line_size - 1);
++	end &= ~(cpuinfo.icache_line_size - 1);
++
++	if (end > start + cpuinfo.icache_size)
++		end = start + cpuinfo.icache_size;
++
++	for (addr = start; addr < end; addr += cpuinfo.icache_line_size) {
++		__asm__ __volatile__ ("   flushi %0\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
++	}
++	__asm__ __volatile(" flushp\n");
++}
++
++static void flush_aliases(struct address_space *mapping, struct page *page)
++{
++	struct mm_struct *mm = current->active_mm;
++	struct vm_area_struct *mpnt;
++	pgoff_t pgoff;
++
++	pgoff = page->index;
++
++	flush_dcache_mmap_lock(mapping);
++	vma_interval_tree_foreach(mpnt, &mapping->i_mmap, pgoff, pgoff) {
++		unsigned long offset;
++
++		if (mpnt->vm_mm != mm)
++			continue;
++		if (!(mpnt->vm_flags & VM_MAYSHARE))
++			continue;
++
++		offset = (pgoff - mpnt->vm_pgoff) << PAGE_SHIFT;
++		flush_cache_page(mpnt, mpnt->vm_start + offset,
++			page_to_pfn(page));
++	}
++	flush_dcache_mmap_unlock(mapping);
++}
++
++void flush_cache_all(void)
++{
++	__flush_dcache_all(0, cpuinfo.dcache_size);
++	__flush_icache(0, cpuinfo.icache_size);
++}
++
++void flush_cache_mm(struct mm_struct *mm)
++{
++	flush_cache_all();
++}
++
++void flush_cache_dup_mm(struct mm_struct *mm)
++{
++	flush_cache_all();
++}
++
++void flush_icache_range(unsigned long start, unsigned long end)
++{
++	__flush_icache(start, end);
++}
++
++void flush_dcache_range(unsigned long start, unsigned long end)
++{
++	__flush_dcache(start, end);
++}
++EXPORT_SYMBOL(flush_dcache_range);
++
++void invalidate_dcache_range(unsigned long start, unsigned long end)
++{
++	__invalidate_dcache(start, end);
++}
++EXPORT_SYMBOL(invalidate_dcache_range);
++
++void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
++			unsigned long end)
++{
++	__flush_dcache(start, end);
++	if (vma == NULL || (vma->vm_flags & VM_EXEC))
++		__flush_icache(start, end);
++}
++
++void flush_icache_page(struct vm_area_struct *vma, struct page *page)
++{
++	unsigned long start = (unsigned long) page_address(page);
++	unsigned long end = start + PAGE_SIZE;
++
++	__flush_icache(start, end);
++}
++
++void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
++			unsigned long pfn)
++{
++	unsigned long start = vmaddr;
++	unsigned long end = start + PAGE_SIZE;
++
++	__flush_dcache(start, end);
++	if (vma->vm_flags & VM_EXEC)
++		__flush_icache(start, end);
++}
++
++void flush_dcache_page(struct page *page)
++{
++	struct address_space *mapping;
++
++	/*
++	 * The zero page is never written to, so never has any dirty
++	 * cache lines, and therefore never needs to be flushed.
++	 */
++	if (page == ZERO_PAGE(0))
++		return;
++
++	mapping = page_mapping(page);
++
++	/* Flush this page if there are aliases. */
++	if (mapping && !mapping_mapped(mapping)) {
++		clear_bit(PG_dcache_clean, &page->flags);
++	} else {
++		unsigned long start = (unsigned long)page_address(page);
++		__flush_dcache_all(start, start + PAGE_SIZE);
++		if (mapping)
++			flush_aliases(mapping,  page);
++		set_bit(PG_dcache_clean, &page->flags);
++	}
++}
++EXPORT_SYMBOL(flush_dcache_page);
++
++void update_mmu_cache(struct vm_area_struct *vma,
++		      unsigned long address, pte_t *pte)
++{
++	unsigned long pfn = pte_pfn(*pte);
++	struct page *page;
++
++	if (!pfn_valid(pfn))
++		return;
++
++	/*
++	* The zero page is never written to, so never has any dirty
++	* cache lines, and therefore never needs to be flushed.
++	*/
++	page = pfn_to_page(pfn);
++	if (page == ZERO_PAGE(0))
++		return;
++
++	if (!PageReserved(page) &&
++	     !test_and_set_bit(PG_dcache_clean, &page->flags)) {
++		unsigned long start = page_to_virt(page);
++		struct address_space *mapping;
++
++		__flush_dcache(start, start + PAGE_SIZE);
++
++		mapping = page_mapping(page);
++		if (mapping)
++			flush_aliases(mapping, page);
++	}
++}
++
++void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++		    struct page *to)
++{
++	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
++	copy_page(vto, vfrom);
++	__flush_dcache((unsigned long)vto, (unsigned long)vto + PAGE_SIZE);
++}
++
++void clear_user_page(void *addr, unsigned long vaddr, struct page *page)
++{
++	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
++	clear_page(addr);
++	__flush_dcache((unsigned long)addr, (unsigned long)addr + PAGE_SIZE);
++}
++
++void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
++			unsigned long user_vaddr,
++			void *dst, void *src, int len)
++{
++	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
++	memcpy(dst, src, len);
++	__flush_dcache((unsigned long)src, (unsigned long)src + len);
++	if (vma->vm_flags & VM_EXEC)
++		__flush_icache((unsigned long)src, (unsigned long)src + len);
++}
++
++void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
++			unsigned long user_vaddr,
++			void *dst, void *src, int len)
++{
++	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
++	memcpy(dst, src, len);
++	__flush_dcache((unsigned long)dst, (unsigned long)dst + len);
++	if (vma->vm_flags & VM_EXEC)
++		__flush_icache((unsigned long)dst, (unsigned long)dst + len);
++}
+-- 
+1.8.2.1
 
-On Saturday 06 September 2014 04:17 AM, Stephen Boyd wrote:
-> These patches provide cpufreq scaling on devices with Krait CPUs.
-> In Krait CPU designs there's one PLL and two muxes per CPU, allowing
-> us to switch CPU frequencies independently.
-> 
-> 				 secondary
-> 	 +-----+                    +
-> 	 | QSB |-------+------------|\
-> 	 +-----+       |            | |-+
-> 		       |    +-------|/  |
-> 		       |    |       +   |
-> 	 +-----+       |    |           |
-> 	 | PLL |----+-------+           |   primary
-> 	 +-----+    |  |                |     +
-> 		    |  |                +-----|\       +------+
-> 	 +-------+  |  |                      | \      |      |
-> 	 | HFPLL |----------+-----------------|  |-----| CPU0 |
-> 	 +-------+  |  |    |                 |  |     |      |
-> 		    |  |    | +-----+         | /      +------+
-> 		    |  |    +-| / 2 |---------|/
-> 		    |  |      +-----+         +
-> 		    |  |         secondary
-> 		    |  |            +
-> 		    |  +------------|\
-> 		    |               | |-+
-> 		    +---------------|/  |   primary
-> 				    +   |     +
-> 					+-----|\       +------+
-> 	 +-------+                            | \      |      |
-> 	 | HFPLL |----------------------------|  |-----| CPU1 |
-> 	 +-------+          |                 |  |     |      |
-> 			    | +-----+         | /      +------+
-> 			    +-| / 2 |---------|/
-> 			      +-----+         +
-> 
-> To support this in the common clock framework we model the muxes,
-> dividers, and PLLs as different clocks. CPUfreq only interacts
-> with the primary mux (farthest right in the diagram). When CPUfreq
-> sets a rate, the mux code finds the best parent that can provide the rate.
-> Due to the design, QSB and the top PLL are always a fixed rate and thus
-> only support one frequency each. These sources provide the lowest
-> frequencies for the CPUs. The HFPLLs are where we can make the CPU go
-> faster (GHz range). Sometimes we need to run the HFPLL twice as
-> fast and divide it by two to get a particular frequency.
-> 
-> When switching rates we can't leave the CPU clocked by the HFPLL because
-> we need to turn off the output of the PLL when changing its frequency.
-> This means we have to switch over to the secondary mux and use one of the
-> fixed sources. This is why we need something like the safe parent patch.
-> 
-> I plan to submit the DTS changes through arm-soc, but I've included everything
-> here to make it easier to pick things up for testing, etc. Please note
-> that these patches rely on the Krait L2 accessor patch I posted a while back
-> in another series[1]. This also relies on the cpufreq-generic patchset from
-> Viresh[2]. If anything can be picked up right now it would be better
-> to reduce the churn over time as other pieces settle. The series gets
-> progressively more controversial as it goes on, so I hope that things
-> near the beggining will be picked up earlier.
-> 
-> Changes since v1:
->  * Added IPQ and APQ8064 support
->  * Switched to cpufreq-generic
->  * Added OPP parsing from DT (need to write binding though)
->  * New patches to make clk-generic.c go away
->   * Made mux and divider reusable for non-MMIO devices
->   * Added a mux_determine_rate_closest (not sure if this is really needed)
->   * Added unregistration of muxes
->  * New patch to avoid sending high frequencies down to devices using clocks
-> 
-> TODO:
->  * Add Krait regulator voltage scaling (not strictly necessary)
->  * Document DT bindings
->  * Use a new efuse/eeprom API instead of hardcoding the location in the driver
->  * Add some thermal awareness
-> 
-> 
-> Stephen Boyd (15):
->   clk: mux: Add unregistration API
->   clk: mux: Split out register accessors for reuse
->   clk: Add __clk_mux_determine_rate_closest
->   clk: divider: Make generic for usage elsewhere
->   clk: Add safe switch hook
->   clk: Avoid sending high rates to downstream clocks during set_rate
->   clk: qcom: Add support for High-Frequency PLLs (HFPLLs)
->   clk: qcom: Add HFPLL driver
->   clk: qcom: Add MSM8960/APQ8064's HFPLLs
->   clk: qcom: Add IPQ806X's HFPLLs
->   clk: qcom: Add support for Krait clocks
->   clk: qcom: Add KPSS ACC/GCC driver
->   clk: qcom: Add Krait clock controller driver
->   cpufreq: Add module to register cpufreq on Krait CPUs
->   ARM: dts: qcom: Add necessary DT data for Krait cpufreq
-> 
->  arch/arm/boot/dts/qcom-apq8064.dtsi          | 230 +++++++++++++++++
->  arch/arm/boot/dts/qcom-msm8960.dtsi          |  49 ++++
->  arch/arm/boot/dts/qcom-msm8974.dtsi          | 311 ++++++++++++++++++++++-
->  drivers/clk/clk-divider.c                    | 197 +++++++++------
->  drivers/clk/clk-mux.c                        |  91 ++++---
->  drivers/clk/clk.c                            | 133 +++++++---
->  drivers/clk/qcom/Kconfig                     |  28 +++
->  drivers/clk/qcom/Makefile                    |   5 +
->  drivers/clk/qcom/clk-hfpll.c                 | 253 +++++++++++++++++++
->  drivers/clk/qcom/clk-hfpll.h                 |  54 ++++
->  drivers/clk/qcom/clk-krait.c                 | 166 +++++++++++++
->  drivers/clk/qcom/clk-krait.h                 |  49 ++++
->  drivers/clk/qcom/gcc-ipq806x.c               |  83 +++++++
->  drivers/clk/qcom/gcc-msm8960.c               | 172 +++++++++++++
->  drivers/clk/qcom/hfpll.c                     | 110 +++++++++
->  drivers/clk/qcom/kpss-xcc.c                  |  94 +++++++
->  drivers/clk/qcom/krait-cc.c                  | 357 +++++++++++++++++++++++++++
->  drivers/cpufreq/Kconfig.arm                  |   9 +
->  drivers/cpufreq/Makefile                     |   1 +
->  drivers/cpufreq/qcom-cpufreq.c               | 199 +++++++++++++++
->  include/dt-bindings/clock/qcom,gcc-msm8960.h |   2 +
->  include/linux/clk-private.h                  |   2 +
->  include/linux/clk-provider.h                 |  32 ++-
->  23 files changed, 2486 insertions(+), 141 deletions(-)
->  create mode 100644 drivers/clk/qcom/clk-hfpll.c
->  create mode 100644 drivers/clk/qcom/clk-hfpll.h
->  create mode 100644 drivers/clk/qcom/clk-krait.c
->  create mode 100644 drivers/clk/qcom/clk-krait.h
->  create mode 100644 drivers/clk/qcom/hfpll.c
->  create mode 100644 drivers/clk/qcom/kpss-xcc.c
->  create mode 100644 drivers/clk/qcom/krait-cc.c
->  create mode 100644 drivers/cpufreq/qcom-cpufreq.c
-> 
-> [1] http://lkml.iu.edu/hypermail/linux/kernel/1404.0/02636.html
-> [2] git://git.linaro.org/people/viresh.kumar/linux cpufreq/cpu0-krait-v3
-> 
