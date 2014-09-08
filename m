@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaIHD7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 23:59:54 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:44660 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392AbaIHD7w (ORCPT
+	id S1752065AbaIHEA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 00:00:57 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:39316 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaIHEA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 23:59:52 -0400
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: wsa@the-dreams.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <7296b3385a9c031a09cb4491b3ba9122>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH v2] i2c: rk3x: fix divisor calculation for SCL frequency
-Date: Mon,  8 Sep 2014 11:38:25 +0800
-Message-Id: <1410147505-5930-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1409884333-3544-1-git-send-email-addy.ke@rock-chips.com>
-References: <1409884333-3544-1-git-send-email-addy.ke@rock-chips.com>
+	Mon, 8 Sep 2014 00:00:56 -0400
+From: Varka Bhadram <varkabhadram@gmail.com>
+X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, balbi@ti.com, mugunthanvnm@ti.com,
+        linux@rainbow-software.org, linux-kernel@vger.kernel.org,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next] ethernet: ti: remove unwanted THIS_MODULE macro
+Date: Mon,  8 Sep 2014 09:28:19 +0530
+Message-Id: <1410148699-3724-1-git-send-email-varkab@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I2C_CLKDIV register descripted in the previous version of
-RK3x chip manual is incorrect. Plus 1 is required.
+It removes the owner field updation of driver structure.
+It will be automatically updated by module_platform_driver()
 
-The correct formula:
-- T(SCL_HIGH) = T(PCLK) * (CLKDIVH + 1) * 8
-- T(SCL_LOW) = T(PCLK) * (CLKDIVL + 1) * 8
-- (SCL Divsor) = 8 * ((CLKDIVL + 1) + (CLKDIVH + 1))
-- SCL = PCLK / (CLK Divsor)
-
-It will be updated to the latest version of chip manual.
-
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
 ---
-changes since v1:
-- make it more cleaner, suggested by Doug Anderson
+ drivers/net/ethernet/ti/cpmac.c        |    1 -
+ drivers/net/ethernet/ti/cpsw-phy-sel.c |    1 -
+ drivers/net/ethernet/ti/cpsw.c         |    1 -
+ drivers/net/ethernet/ti/davinci_emac.c |    1 -
+ drivers/net/ethernet/ti/davinci_mdio.c |    1 -
+ 5 files changed, 5 deletions(-)
 
- drivers/i2c/busses/i2c-rk3x.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-index e637c32..93cfc83 100644
---- a/drivers/i2c/busses/i2c-rk3x.c
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -433,12 +433,11 @@ static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
- 	unsigned long i2c_rate = clk_get_rate(i2c->clk);
- 	unsigned int div;
- 
--	/* SCL rate = (clk rate) / (8 * DIV) */
--	div = DIV_ROUND_UP(i2c_rate, scl_rate * 8);
--
--	/* The lower and upper half of the CLKDIV reg describe the length of
--	 * SCL low & high periods. */
--	div = DIV_ROUND_UP(div, 2);
-+	/* set DIV = DIVH = DIVL
-+	 * SCL rate = (clk rate) / (8 * (DIVH + 1 + DIVL + 1))
-+	 *          = (clk rate) / (16 * (DIV + 1))
-+	 */
-+	div = DIV_ROUND_UP(i2c_rate, scl_rate * 16) - 1;
- 
- 	i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
- }
+diff --git a/drivers/net/ethernet/ti/cpmac.c b/drivers/net/ethernet/ti/cpmac.c
+index f9bcf7a..dd94300 100644
+--- a/drivers/net/ethernet/ti/cpmac.c
++++ b/drivers/net/ethernet/ti/cpmac.c
+@@ -1207,7 +1207,6 @@ static int cpmac_remove(struct platform_device *pdev)
+ static struct platform_driver cpmac_driver = {
+ 	.driver = {
+ 		.name 	= "cpmac",
+-		.owner 	= THIS_MODULE,
+ 	},
+ 	.probe 	= cpmac_probe,
+ 	.remove = cpmac_remove,
+diff --git a/drivers/net/ethernet/ti/cpsw-phy-sel.c b/drivers/net/ethernet/ti/cpsw-phy-sel.c
+index aa8bf45..0ea7832 100644
+--- a/drivers/net/ethernet/ti/cpsw-phy-sel.c
++++ b/drivers/net/ethernet/ti/cpsw-phy-sel.c
+@@ -211,7 +211,6 @@ static struct platform_driver cpsw_phy_sel_driver = {
+ 	.probe		= cpsw_phy_sel_probe,
+ 	.driver		= {
+ 		.name	= "cpsw-phy-sel",
+-		.owner	= THIS_MODULE,
+ 		.of_match_table = cpsw_phy_sel_id_table,
+ 	},
+ };
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index 03b4099..6d20e24 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -2359,7 +2359,6 @@ MODULE_DEVICE_TABLE(of, cpsw_of_mtable);
+ static struct platform_driver cpsw_driver = {
+ 	.driver = {
+ 		.name	 = "cpsw",
+-		.owner	 = THIS_MODULE,
+ 		.pm	 = &cpsw_pm_ops,
+ 		.of_match_table = cpsw_of_mtable,
+ 	},
+diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
+index 35a139e..ea71251 100644
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -2083,7 +2083,6 @@ MODULE_DEVICE_TABLE(of, davinci_emac_of_match);
+ static struct platform_driver davinci_emac_driver = {
+ 	.driver = {
+ 		.name	 = "davinci_emac",
+-		.owner	 = THIS_MODULE,
+ 		.pm	 = &davinci_emac_pm_ops,
+ 		.of_match_table = of_match_ptr(davinci_emac_of_match),
+ 	},
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 2791f6f..98655b4 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -481,7 +481,6 @@ MODULE_DEVICE_TABLE(of, davinci_mdio_of_mtable);
+ static struct platform_driver davinci_mdio_driver = {
+ 	.driver = {
+ 		.name	 = "davinci_mdio",
+-		.owner	 = THIS_MODULE,
+ 		.pm	 = &davinci_mdio_pm_ops,
+ 		.of_match_table = of_match_ptr(davinci_mdio_of_mtable),
+ 	},
 -- 
-1.8.3.2
+1.7.9.5
 
