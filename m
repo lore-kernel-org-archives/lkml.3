@@ -1,111 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaIHGl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 02:41:26 -0400
-Received: from ozlabs.org ([103.22.144.67]:51629 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753070AbaIHGlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 02:41:24 -0400
-Date: Mon, 8 Sep 2014 16:41:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: linux-next: manual merge of the percpu tree with the ext4 tree
-Message-ID: <20140908164114.262bb178@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753186AbaIHGlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 02:41:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51530 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081AbaIHGld (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 02:41:33 -0400
+Date: Sun, 7 Sep 2014 23:39:57 -0700
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-e78c3496790ee8a36522a838b59b388e8a709e65@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        guillaume@morinfr.org, mschmidt@redhat.com, riel@redhat.com,
+        akpm@linux-foundation.org, oleg@redhat.com, tglx@linutronix.de,
+        vdavydov@parallels.com, yangds.fnst@cn.fujitsu.com,
+        rientjes@google.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        daeseok.youn@gmail.com, athorlton@sgi.com, geert@linux-m68k.org,
+        keescook@chromium.org, ionut.m.alexa@gmail.com, mhocko@suse.cz,
+        lizefan@huawei.com
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, guillaume@morinfr.org, mschmidt@redhat.com,
+        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        oleg@redhat.com, rientjes@google.com, yangds.fnst@cn.fujitsu.com,
+        vdavydov@parallels.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        daeseok.youn@gmail.com, keescook@chromium.org, geert@linux-m68k.org,
+        athorlton@sgi.com, ionut.m.alexa@gmail.com, mhocko@suse.cz,
+        lizefan@huawei.com
+In-Reply-To: <20140816134010.26a9b572@annuminas.surriel.com>
+References: <20140816134010.26a9b572@annuminas.surriel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] time, signal:
+  Protect resource use statistics with seqlock
+Git-Commit-ID: e78c3496790ee8a36522a838b59b388e8a709e65
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  e78c3496790ee8a36522a838b59b388e8a709e65
+Gitweb:     http://git.kernel.org/tip/e78c3496790ee8a36522a838b59b388e8a709e65
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Sat, 16 Aug 2014 13:40:10 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 8 Sep 2014 08:17:01 +0200
 
-Hi all,
+time, signal: Protect resource use statistics with seqlock
 
-Today's linux-next merge of the percpu tree got a conflict in
-fs/ext4/super.c between commit eb68d0e2fc5a ("ext4: track extent status
-tree shrinker delay statictics") from the ext4 tree and commit
-908c7f1949cb ("percpu_counter: add @gfp to percpu_counter_init()") from
-the percpu tree.
+Both times() and clock_gettime(CLOCK_PROCESS_CPUTIME_ID) have scalability
+issues on large systems, due to both functions being serialized with a
+lock.
 
-I fixed it up (the former removed a reference to percpu_counter_init)
-and can carry the fix as necessary (no action is required).
+The lock protects against reporting a wrong value, due to a thread in the
+task group exiting, its statistics reporting up to the signal struct, and
+that exited task's statistics being counted twice (or not at all).
 
-That commit also added two references in fs/ext4/extents_status.c (thus
-proving that modifying a little used API causes it to be used
-more :-)), so I added the following merge fix patch:
+Protecting that with a lock results in times() and clock_gettime() being
+completely serialized on large systems.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 8 Sep 2014 16:25:46 +1000
-Subject: [PATCH] percpu_counter: fix for ext4 updates
+This can be fixed by using a seqlock around the events that gather and
+propagate statistics. As an additional benefit, the protection code can
+be moved into thread_group_cputime(), slightly simplifying the calling
+functions.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+In the case of posix_cpu_clock_get_task() things can be simplified a
+lot, because the calling function already ensures that the task sticks
+around, and the rest is now taken care of in thread_group_cputime().
+
+This way the statistics reporting code can run lockless.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Alex Thorlton <athorlton@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Guillaume Morin <guillaume@morinfr.org>
+Cc: Ionut Alexa <ionut.m.alexa@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Michal Schmidt <mschmidt@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>
+Cc: umgwanakikbuti@gmail.com
+Cc: fweisbec@gmail.com
+Cc: srao@redhat.com
+Cc: lwoodman@redhat.com
+Cc: atheurer@redhat.com
+Link: http://lkml.kernel.org/r/20140816134010.26a9b572@annuminas.surriel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/ext4/extents_status.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/sched.h          |  1 +
+ kernel/exit.c                  |  4 ++++
+ kernel/fork.c                  |  1 +
+ kernel/sched/cputime.c         | 33 ++++++++++++++++++++-------------
+ kernel/sys.c                   |  2 --
+ kernel/time/posix-cpu-timers.c | 14 --------------
+ 6 files changed, 26 insertions(+), 29 deletions(-)
 
-diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c
-index 09fd57667262..3777f7eda5cf 100644
---- a/fs/ext4/extents_status.c
-+++ b/fs/ext4/extents_status.c
-@@ -13,6 +13,7 @@
- #include <linux/list_sort.h>
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
-+#include <linux/gfp.h>
- #include "ext4.h"
- #include "extents_status.h"
-=20
-@@ -1189,10 +1190,10 @@ int ext4_es_register_shrinker(struct ext4_sb_info *=
-sbi)
- 	sbi->s_es_stats.es_stats_cache_misses =3D 0;
- 	sbi->s_es_stats.es_stats_scan_time =3D 0;
- 	sbi->s_es_stats.es_stats_max_scan_time =3D 0;
--	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_all_cnt, 0);
-+	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_all_cnt, 0, GFP_KER=
-NEL);
- 	if (err)
- 		return err;
--	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_lru_cnt, 0);
-+	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_lru_cnt, 0, GFP_KER=
-NEL);
- 	if (err)
- 		goto err1;
-=20
---=20
-2.1.0
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUDU+QAAoJEMDTa8Ir7ZwVbCIP/1djJ3itqnb7r2qtLkGlgHNf
-33rcaeRReP+8InsiSILxZTtO1AL8yPQs+vxdNfnf4z2ho7T4tpFsJCFwV/ieiTfx
-3j8acFliN/h6QdaHtnH+1uaDFO0Te1FHBjiSBGrGEoILhrWdGxvXRa2mXRjRoQJE
-MJATjsEAJYbeEo49udL8q5sK3u6cUCNajfG3iRjEHUC53Lp8JvwU8GOHGFOLOjqJ
-0NELqGukiKUXqTG9oh/Fw9rf7t+o6tY2RXUySWBBe/bpR8ZbIzZLPFtIwQKeyj58
-ApMiKXluj4ukipsTIg1q4ONEl/rEy4I0xrPMHumS0kBmZAKvPQT7Tmgm3C2zqzuS
-Ycn4Aan6hAboLyUNOnVw3TshdSvGzA2l9Fl3qLoXEptCKU4jxiSldyu1MhtG3R+n
-Kv9FMrUxYuxcoT2vKXpAMHJKCrJvFsAXoyRo8jUAkNxmMp6QG/oBLAv9gFsUu194
-f/XfdHTuN8qCNndIaxHqaMpvg0Ln/MCiK+cywxQ7wkk1qR62l3hSDG/Qp6zkRzAc
-nCa3AZKl/IWn6LKRV8hZuxH01r1ZtUO5/7IBCmzPgvb9+p28Xz0dQ8n4HtNMMn9W
-Y6+7osQj50o3ayfMPu+8O+tJi9Isjvbid0OIrQ+jQD1Oitu6oAfn58qLq62YLW++
-zIqArsLtRjhgfDHyPQLP
-=dkVS
------END PGP SIGNATURE-----
-
---Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9--
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..dd9eb48 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -645,6 +645,7 @@ struct signal_struct {
+ 	 * Live threads maintain their own counters and add to these
+ 	 * in __exit_signal, except for the group leader.
+ 	 */
++	seqlock_t stats_lock;
+ 	cputime_t utime, stime, cutime, cstime;
+ 	cputime_t gtime;
+ 	cputime_t cgtime;
+diff --git a/kernel/exit.c b/kernel/exit.c
+index b93d46d..fa09b86 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -127,6 +127,7 @@ static void __exit_signal(struct task_struct *tsk)
+ 	 * the signal_struct.
+ 	 */
+ 	task_cputime(tsk, &utime, &stime);
++	write_seqlock(&sig->stats_lock);
+ 	sig->utime += utime;
+ 	sig->stime += stime;
+ 	sig->gtime += task_gtime(tsk);
+@@ -140,6 +141,7 @@ static void __exit_signal(struct task_struct *tsk)
+ 	sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
+ 	sig->nr_threads--;
+ 	__unhash_process(tsk, group_dead);
++	write_sequnlock(&sig->stats_lock);
+ 
+ 	/*
+ 	 * Do this under ->siglock, we can race with another thread
+@@ -1042,6 +1044,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 		spin_lock_irq(&p->real_parent->sighand->siglock);
+ 		psig = p->real_parent->signal;
+ 		sig = p->signal;
++		write_seqlock(&psig->stats_lock);
+ 		psig->cutime += tgutime + sig->cutime;
+ 		psig->cstime += tgstime + sig->cstime;
+ 		psig->cgtime += task_gtime(p) + sig->gtime + sig->cgtime;
+@@ -1064,6 +1067,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 			psig->cmaxrss = maxrss;
+ 		task_io_accounting_add(&psig->ioac, &p->ioac);
+ 		task_io_accounting_add(&psig->ioac, &sig->ioac);
++		write_sequnlock(&psig->stats_lock);
+ 		spin_unlock_irq(&p->real_parent->sighand->siglock);
+ 	}
+ 
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 0cf9cdb..9387ae8 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1068,6 +1068,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
+ 	sig->curr_target = tsk;
+ 	init_sigpending(&sig->shared_pending);
+ 	INIT_LIST_HEAD(&sig->posix_timers);
++	seqlock_init(&sig->stats_lock);
+ 
+ 	hrtimer_init(&sig->real_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	sig->real_timer.function = it_real_fn;
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 3e52836..49b7cfe 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -288,18 +288,28 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+ 	struct signal_struct *sig = tsk->signal;
+ 	cputime_t utime, stime;
+ 	struct task_struct *t;
+-
+-	times->utime = sig->utime;
+-	times->stime = sig->stime;
+-	times->sum_exec_runtime = sig->sum_sched_runtime;
++	unsigned int seq, nextseq;
+ 
+ 	rcu_read_lock();
+-	for_each_thread(tsk, t) {
+-		task_cputime(t, &utime, &stime);
+-		times->utime += utime;
+-		times->stime += stime;
+-		times->sum_exec_runtime += task_sched_runtime(t);
+-	}
++	/* Attempt a lockless read on the first round. */
++	nextseq = 0;
++	do {
++		seq = nextseq;
++		read_seqbegin_or_lock(&sig->stats_lock, &seq);
++		times->utime = sig->utime;
++		times->stime = sig->stime;
++		times->sum_exec_runtime = sig->sum_sched_runtime;
++
++		for_each_thread(tsk, t) {
++			task_cputime(t, &utime, &stime);
++			times->utime += utime;
++			times->stime += stime;
++			times->sum_exec_runtime += task_sched_runtime(t);
++		}
++		/* If lockless access failed, take the lock. */
++		nextseq = 1;
++	} while (need_seqretry(&sig->stats_lock, seq));
++	done_seqretry(&sig->stats_lock, seq);
+ 	rcu_read_unlock();
+ }
+ 
+@@ -611,9 +621,6 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	cputime_adjust(&cputime, &p->prev_cputime, ut, st);
+ }
+ 
+-/*
+- * Must be called with siglock held.
+- */
+ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ {
+ 	struct task_cputime cputime;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index ce81291..b663664 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -862,11 +862,9 @@ void do_sys_times(struct tms *tms)
+ {
+ 	cputime_t tgutime, tgstime, cutime, cstime;
+ 
+-	spin_lock_irq(&current->sighand->siglock);
+ 	thread_group_cputime_adjusted(current, &tgutime, &tgstime);
+ 	cutime = current->signal->cutime;
+ 	cstime = current->signal->cstime;
+-	spin_unlock_irq(&current->sighand->siglock);
+ 	tms->tms_utime = cputime_to_clock_t(tgutime);
+ 	tms->tms_stime = cputime_to_clock_t(tgstime);
+ 	tms->tms_cutime = cputime_to_clock_t(cutime);
+diff --git a/kernel/time/posix-cpu-timers.c b/kernel/time/posix-cpu-timers.c
+index 3b89464..492b986 100644
+--- a/kernel/time/posix-cpu-timers.c
++++ b/kernel/time/posix-cpu-timers.c
+@@ -272,22 +272,8 @@ static int posix_cpu_clock_get_task(struct task_struct *tsk,
+ 		if (same_thread_group(tsk, current))
+ 			err = cpu_clock_sample(which_clock, tsk, &rtn);
+ 	} else {
+-		unsigned long flags;
+-		struct sighand_struct *sighand;
+-
+-		/*
+-		 * while_each_thread() is not yet entirely RCU safe,
+-		 * keep locking the group while sampling process
+-		 * clock for now.
+-		 */
+-		sighand = lock_task_sighand(tsk, &flags);
+-		if (!sighand)
+-			return err;
+-
+ 		if (tsk == current || thread_group_leader(tsk))
+ 			err = cpu_clock_sample_group(which_clock, tsk, &rtn);
+-
+-		unlock_task_sighand(tsk, &flags);
+ 	}
+ 
+ 	if (!err)
