@@ -1,260 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaIHNlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:41:15 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:60117 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078AbaIHNlN (ORCPT
+	id S1753917AbaIHNnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:43:52 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47936 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188AbaIHNns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:41:13 -0400
-From: Morgan Phillips <winter2718@gmail.com>
-To: brijohn@gmail.com
-Cc: hdegoede@redhat.com, m.chehab@samsung.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wolfram@the-dreams.de,
-        Morgan Phillips <winter2718@gmail.com>
-Subject: [PATCH] [media]: sn9c20x: centralize repeated error/info messages with macros
-Date: Mon,  8 Sep 2014 08:39:09 -0500
-Message-Id: <1410183549-4966-1-git-send-email-winter2718@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 8 Sep 2014 09:43:48 -0400
+Message-ID: <1410183821.8054.27.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH] security, crypto: LLVMLinux: Remove VLAIS from
+ ima_crypto.c
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Behan Webster <behanw@converseincode.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, james.l.morris@oracle.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, serge@hallyn.com,
+        torvalds@linux-foundation.org, Mark Charlebois <charlebm@gmail.com>,
+        Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Date: Mon, 08 Sep 2014 09:43:41 -0400
+In-Reply-To: <540DA051.2030701@converseincode.com>
+References: <1409958360-8061-1-git-send-email-behanw@converseincode.com>
+	 <alpine.DEB.2.10.1409060131260.5472@nanos>
+	 <540A590F.1030407@converseincode.com>
+	 <alpine.DEB.2.10.1409061152090.5472@nanos>
+	 <540BBD9E.6050708@converseincode.com> <540D73C9.3000906@samsung.com>
+	 <540DA051.2030701@converseincode.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090813-9332-0000-0000-000001EFB261
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create inline functions to print info/error messages: "sensor detected" and "sensor initialization failed" which are used identically in many places.  This makes it easier to change the message formats en masse and frees up some memory by centralizing repeated strings.
+On Mon, 2014-09-08 at 07:25 -0500, Behan Webster wrote: 
+> On 09/08/14 04:15, Dmitry Kasatkin wrote:
+> > On 07/09/14 05:06, Behan Webster wrote:
+> >> On 09/06/14 03:11, Thomas Gleixner wrote:
+> >>> On Fri, 5 Sep 2014, Behan Webster wrote:
+> >>>> On 09/05/14 17:18, Thomas Gleixner wrote:
+> >>>>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> >>>>>> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> >>>>>> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+> >>>>> This SOB chain is completely ass backwards. See Documentation/...
+> >>>> "The Signed-off-by: tag indicates that the signer was involved in the
+> >>>> development of the patch, or that he/she was in the patch's delivery
+> >>>> path."
+> >>>>
+> >>>> All three of us were involved. Does that not satisfy this rule?
+> >>> No. Read #12
+> >>>
+> >>> The sign-off is a simple line at the end of the explanation for the
+> >>> patch, which certifies that you wrote it or otherwise have the right to
+> >>> pass it on as an open-source patch.
+> >>>
+> >>> So the above chain says:
+> >>>
+> >>>      Written-by:   Behan
+> >>>      Passed-on-by: Mark
+> >>>      Passed-on-by: Jan
+> >>>
+> >>> That would be correct if you sent the patch to Mark, Mark sent it to
+> >>> Jan and Jan finally submitted it to LKML.
+> >> I suppose "Reviewed-by" is probably more appropriate for the last 2
+> >> then. Will fix.
+> >>
+> >>>>>> -    struct {
+> >>>>>> -        struct shash_desc shash;
+> >>>>>> -        char ctx[crypto_shash_descsize(tfm)];
+> >>>>>> -    } desc;
+> >>>>>> +    char desc[sizeof(struct shash_desc) +
+> >>>>>> +        crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
+> >>>>>> +    struct shash_desc *shash = (struct shash_desc *)desc;
+> >>>>> That anon struct should have never happened in the first place.
+> >>>> Sadly this is a design pattern used in many places through out the
+> >>>> kernel, and
+> >>>> appears to be fundamental to the crypto system. I was advised *not*
+> >>>> to change
+> >>>> it, so we haven't.
+> >>>>
+> >>>> I agree that it's not a good practice.
+> >>>>
+> >>>>>     Not
+> >>>>> your problem, but you are not making it any better. You replace open
+> >>>>> coded crap with even more unreadable crap.
+> >>>>>
+> >>>>> Whats wrong with
+> >>>>>
+> >>>>>          SHASH_DESC_ON_STACK(shash, tfm);
+> >>>> Nothing is wrong with that. I would have actually preferred that.
+> >>>> But it would
+> >>>> have fundamentally changed a lot more code.
+> >>> Errm. Why is
+> >>>
+> >>> #define SHASH_DESC_ON_STACK(shash, tfm)                \
+> >>>      char __shash[sizeof(.....)];                \
+> >>>      struct shash_desc *shash = (struct shash_desc *) __shash
+> >>>
+> >>> requiring more fundamental than open coding the same thing a gazillion
+> >>> times. You still need to change ALL usage sides of the anon struct.
+> >>>
+> >>> So in fact you could avoid the whole code change by making it
+> >>>
+> >>>      SHASH_DESC_ON_STACK(desc, tfm);
+> >>>
+> >>> and do the anon struct or a proper struct magic in the macro.
+> >> I see. I thought you meant a more fundamental change to the crypto
+> >> system API. My misunderstanding.
+> >>
+> >> Ironically we tried to stay away from macros since the last time we
+> >> tried to replace VLAIS using macros (we've attempted patches to remove
+> >> VLAIS a few times) we were told *not* to hide the implementation with
+> >> macro magic. Though, to be fair, we were using more pointer math in
+> >> our other macro-based effort, and the non-crypto uses of VLAIS are a
+> >> lot more complex to replace.
+> >>
+> >> Like I said I'm actually a fan of hiding ugliness in macros. Will fix.
+> >>
+> >> Again, thanks for the feedback,
+> >>
+> >> Behan
+> >>
+> > Hi,
+> >
+> > Despite if it is crap or not, it was said already in this thread,
+> > following "design pattern" is heavily used through out the kernel - by
+> > crypto core itself and by many widely used clients.
+> >
+> >      struct {
+> >          struct shash_desc shash;
+> >          char ctx[crypto_shash_descsize(tfm)];
+> >      } desc;
+> >
+> >
+> > My question why do you want to change this particular piece of code?
+> Because it employs Variable Length Arrays in Structs. A construct which 
+> is explicitly forbidden by the C standard (C89, C99, C11). Because the 
+> vast majority of kernel developers I've talked to about this have been 
+> unaware of the use of VLAIS in the kernel and most find its use 
+> objectionable (there is a similar objection to the use of nested 
+> functions). Because implementing VLAIS in a compiler can severely impact 
+> the generated instructions surrounding its use, which is why most 
+> compilers don't implement VLAIS as a feature. Because using such a 
+> construct precludes standards based compilers from competing with the 
+> incumbent (my interest is enabling the use of clang and LLVM based 
+> technologies as a toolchain choice to compile and develop the kernel).
+> 
+> > What about rest of the kernel?
+> The LLVMLinux project is systematically working to remove the use of 
+> VLAIS from the kernel (already removed from ext4, USB Gadget, netfilter, 
+> mac802.11, apparmor, bluetooth, etc). Users of the crpyto subsystem are 
+> one of the last and heaviest users of VLAIS.
+> 
+> > To solve your problem you probably need to change everything.
+> Essentially yes. Though I like to think of it as finding alternatives to 
+> where ever it is still used. "Changing everything" implies much larger 
+> changes which aren't necessary in most cases. Sometimes the alternative 
+> is merely using a flexible member (zero length array at the end of the 
+> struct, instead of a VLA in the struct). In several places several VLAs 
+> are used in the same struct. And recently we found that exofs is using a 
+> VLAIS inside VLAIS (second order VLAIS) in one of its structures. So not 
+> finished yet.
+> 
+> > If we are going to change it and introduce any macros, it is better to
+> > do with the guidance from crypto folks.
+> Absolutely. Most of the crypto related patches have been sent to them. I 
+> am absolutely looking for their input.
+> 
+> > I added CC:linux-crypto@vger.kernel.org mailing list and Herbert Xu,
+> > crypto maintainer.
+> I suppose this specific patch may not have CC that list. However, most 
+> of the other VLAIS removal patches were copied to linux-crypto, Herbert 
+> Xu and David Miller.
 
-Signed-off-by: Morgan Phillips <winter2718@gmail.com>
----
- drivers/media/usb/gspca/sn9c20x.c | 60 ++++++++++++++++++++++-----------------
- 1 file changed, 34 insertions(+), 26 deletions(-)
+Behan, thank you for the explanation.  The same snippet of code used
+here, and elsewhere in the kernel, is taken from the crypto subsystem.
+Once it is resolved in the crypto subsystem, the same solution should be
+propogated.
 
-diff --git a/drivers/media/usb/gspca/sn9c20x.c b/drivers/media/usb/gspca/sn9c20x.c
-index 41a9a89..558911e 100644
---- a/drivers/media/usb/gspca/sn9c20x.c
-+++ b/drivers/media/usb/gspca/sn9c20x.c
-@@ -65,6 +65,14 @@ MODULE_LICENSE("GPL");
- #define LED_REVERSE	0x2 /* some cameras unset gpio to turn on leds */
- #define FLIP_DETECT	0x4
- 
-+/* info messages */
-+#define pr_sensor_detected_info(sensor_name)\
-+                        pr_info("%s sensor detected\n", sensor_name)
-+
-+/* error messages */
-+#define pr_sensor_init_err(sensor_name)\
-+                        pr_err("%s sensor initialization failed\n", sensor_name)
-+
- /* specific webcam descriptor */
- struct sd {
- 	struct gspca_dev gspca_dev;
-@@ -1098,7 +1106,7 @@ static void ov9650_init_sensor(struct gspca_dev *gspca_dev)
- 	msleep(200);
- 	i2c_w1_buf(gspca_dev, ov9650_init, ARRAY_SIZE(ov9650_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("OV9650 sensor initialization failed\n");
-+		pr_sensor_init_err("OV9650");
- 	sd->hstart = 1;
- 	sd->vstart = 7;
- }
-@@ -1111,7 +1119,7 @@ static void ov9655_init_sensor(struct gspca_dev *gspca_dev)
- 	msleep(200);
- 	i2c_w1_buf(gspca_dev, ov9655_init, ARRAY_SIZE(ov9655_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("OV9655 sensor initialization failed\n");
-+		pr_sensor_init_err("OV9655");
- 
- 	sd->hstart = 1;
- 	sd->vstart = 2;
-@@ -1125,7 +1133,7 @@ static void soi968_init_sensor(struct gspca_dev *gspca_dev)
- 	msleep(200);
- 	i2c_w1_buf(gspca_dev, soi968_init, ARRAY_SIZE(soi968_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("SOI968 sensor initialization failed\n");
-+		pr_sensor_init_err("SOI968");
- 
- 	sd->hstart = 60;
- 	sd->vstart = 11;
-@@ -1139,7 +1147,7 @@ static void ov7660_init_sensor(struct gspca_dev *gspca_dev)
- 	msleep(200);
- 	i2c_w1_buf(gspca_dev, ov7660_init, ARRAY_SIZE(ov7660_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("OV7660 sensor initialization failed\n");
-+		pr_sensor_init_err("OV7660");
- 	sd->hstart = 3;
- 	sd->vstart = 3;
- }
-@@ -1152,7 +1160,7 @@ static void ov7670_init_sensor(struct gspca_dev *gspca_dev)
- 	msleep(200);
- 	i2c_w1_buf(gspca_dev, ov7670_init, ARRAY_SIZE(ov7670_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("OV7670 sensor initialization failed\n");
-+		pr_sensor_init_err("OV7670");
- 
- 	sd->hstart = 0;
- 	sd->vstart = 1;
-@@ -1169,13 +1177,13 @@ static void mt9v_init_sensor(struct gspca_dev *gspca_dev)
- 	 && value == 0x8243) {
- 		i2c_w2_buf(gspca_dev, mt9v011_init, ARRAY_SIZE(mt9v011_init));
- 		if (gspca_dev->usb_err < 0) {
--			pr_err("MT9V011 sensor initialization failed\n");
-+			pr_sensor_init_err("MT9V011");
- 			return;
- 		}
- 		sd->hstart = 2;
- 		sd->vstart = 2;
- 		sd->sensor = SENSOR_MT9V011;
--		pr_info("MT9V011 sensor detected\n");
-+		pr_sensor_detected_info("MT9V011");
- 		return;
- 	}
- 
-@@ -1187,13 +1195,13 @@ static void mt9v_init_sensor(struct gspca_dev *gspca_dev)
- 	 && value == 0x823a) {
- 		i2c_w2_buf(gspca_dev, mt9v111_init, ARRAY_SIZE(mt9v111_init));
- 		if (gspca_dev->usb_err < 0) {
--			pr_err("MT9V111 sensor initialization failed\n");
-+			pr_sensor_init_err("MT9V111");
- 			return;
- 		}
- 		sd->hstart = 2;
- 		sd->vstart = 2;
- 		sd->sensor = SENSOR_MT9V111;
--		pr_info("MT9V111 sensor detected\n");
-+		pr_sensor_detected_info("MT9V111");
- 		return;
- 	}
- 
-@@ -1210,13 +1218,13 @@ static void mt9v_init_sensor(struct gspca_dev *gspca_dev)
- 	 && value == 0x1229) {
- 		i2c_w2_buf(gspca_dev, mt9v112_init, ARRAY_SIZE(mt9v112_init));
- 		if (gspca_dev->usb_err < 0) {
--			pr_err("MT9V112 sensor initialization failed\n");
-+			pr_sensor_init_err("MT9V112");
- 			return;
- 		}
- 		sd->hstart = 6;
- 		sd->vstart = 2;
- 		sd->sensor = SENSOR_MT9V112;
--		pr_info("MT9V112 sensor detected\n");
-+		pr_sensor_detected_info("MT9V112");
- 		return;
- 	}
- 
-@@ -1229,7 +1237,7 @@ static void mt9m112_init_sensor(struct gspca_dev *gspca_dev)
- 
- 	i2c_w2_buf(gspca_dev, mt9m112_init, ARRAY_SIZE(mt9m112_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("MT9M112 sensor initialization failed\n");
-+		pr_sensor_init_err("MT9M112");
- 
- 	sd->hstart = 0;
- 	sd->vstart = 2;
-@@ -1241,7 +1249,7 @@ static void mt9m111_init_sensor(struct gspca_dev *gspca_dev)
- 
- 	i2c_w2_buf(gspca_dev, mt9m111_init, ARRAY_SIZE(mt9m111_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("MT9M111 sensor initialization failed\n");
-+		pr_sensor_init_err("MT9M111");
- 
- 	sd->hstart = 0;
- 	sd->vstart = 2;
-@@ -1260,10 +1268,10 @@ static void mt9m001_init_sensor(struct gspca_dev *gspca_dev)
- 	switch (id) {
- 	case 0x8411:
- 	case 0x8421:
--		pr_info("MT9M001 color sensor detected\n");
-+		pr_sensor_detected_info("MT9M001 color");
- 		break;
- 	case 0x8431:
--		pr_info("MT9M001 mono sensor detected\n");
-+		pr_sensor_detected_info("MT9M001 mono");
- 		break;
- 	default:
- 		pr_err("No MT9M001 chip detected, ID = %x\n\n", id);
-@@ -1273,7 +1281,7 @@ static void mt9m001_init_sensor(struct gspca_dev *gspca_dev)
- 
- 	i2c_w2_buf(gspca_dev, mt9m001_init, ARRAY_SIZE(mt9m001_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("MT9M001 sensor initialization failed\n");
-+		pr_sensor_init_err("MT9M001");
- 
- 	sd->hstart = 1;
- 	sd->vstart = 1;
-@@ -1285,7 +1293,7 @@ static void hv7131r_init_sensor(struct gspca_dev *gspca_dev)
- 
- 	i2c_w1_buf(gspca_dev, hv7131r_init, ARRAY_SIZE(hv7131r_init));
- 	if (gspca_dev->usb_err < 0)
--		pr_err("HV7131R Sensor initialization failed\n");
-+		pr_sensor_init_err("HV7131R");
- 
- 	sd->hstart = 0;
- 	sd->vstart = 1;
-@@ -1815,49 +1823,49 @@ static int sd_init(struct gspca_dev *gspca_dev)
- 		ov9650_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("OV9650 sensor detected\n");
-+		pr_sensor_detected_info("OV9650");
- 		break;
- 	case SENSOR_OV9655:
- 		ov9655_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("OV9655 sensor detected\n");
-+		pr_sensor_detected_info("OV9655");
- 		break;
- 	case SENSOR_SOI968:
- 		soi968_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("SOI968 sensor detected\n");
-+		pr_sensor_detected_info("SOI968");
- 		break;
- 	case SENSOR_OV7660:
- 		ov7660_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("OV7660 sensor detected\n");
-+		pr_sensor_detected_info("OV7660");
- 		break;
- 	case SENSOR_OV7670:
- 		ov7670_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("OV7670 sensor detected\n");
-+		pr_sensor_detected_info("OV7670");
- 		break;
- 	case SENSOR_MT9VPRB:
- 		mt9v_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("MT9VPRB sensor detected\n");
-+		pr_sensor_detected_info("MT9VPRB");
- 		break;
- 	case SENSOR_MT9M111:
- 		mt9m111_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("MT9M111 sensor detected\n");
-+		pr_sensor_detected_info("MT9M111");
- 		break;
- 	case SENSOR_MT9M112:
- 		mt9m112_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("MT9M112 sensor detected\n");
-+		pr_sensor_detected_info("MT9M112");
- 		break;
- 	case SENSOR_MT9M001:
- 		mt9m001_init_sensor(gspca_dev);
-@@ -1868,7 +1876,7 @@ static int sd_init(struct gspca_dev *gspca_dev)
- 		hv7131r_init_sensor(gspca_dev);
- 		if (gspca_dev->usb_err < 0)
- 			break;
--		pr_info("HV7131R sensor detected\n");
-+		pr_sensor_detected_info("HV7131R");
- 		break;
- 	default:
- 		pr_err("Unsupported sensor\n");
--- 
-1.9.1
+Mimi
+
 
