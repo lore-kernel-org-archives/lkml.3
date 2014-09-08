@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270AbaIHWnF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:43:05 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44651 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754905AbaIHWnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:43:03 -0400
-Date: Mon, 8 Sep 2014 18:42:57 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] an ext4 bug fix for 3.17
-Message-ID: <20140908224257.GA25719@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1755358AbaIHWnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:43:52 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41253 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754951AbaIHWnu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 18:43:50 -0400
+Message-ID: <1410216228.2027.88.camel@jarvis.lan>
+Subject: Re: bit fields && data tearing
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, paulmck@linux.vnet.ibm.com,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Date: Mon, 08 Sep 2014 15:43:48 -0700
+In-Reply-To: <540E1587.3060108@tilera.com>
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>
+			 <20140904090952.GW17454@tucnak.redhat.com>
+			 <540859EC.5000407@hurleysoftware.com>
+			 <20140904175044.4697aee4@alan.etchedpixels.co.uk>
+			 <5408C0AB.6050801@hurleysoftware.com>
+			 <20140905001751.GL5001@linux.vnet.ibm.com>
+			 <1409883098.5078.14.camel@jarvis.lan>
+		 <5409243C.4080704@hurleysoftware.com>
+			 <20140905040645.GO5001@linux.vnet.ibm.com>
+			 <1410066442.12512.13.camel@jarvis.lan>
+			 <20140907162146.GK5001@linux.vnet.ibm.com>
+		 <1410116687.2027.19.camel@jarvis.lan>
+	 <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>
+	 <540E1587.3060108@tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d4f03186c8986ffde34d06fe74a99aab08f7ee0b:
+On Mon, 2014-09-08 at 16:45 -0400, Chris Metcalf wrote:
+> On 9/8/2014 1:50 AM, James Bottomley wrote:
+> > Actual alignment is pretty irrelevant.  That's why all architectures
+> > which require alignment also have to implement misaligned traps ... this
+> > is a fundamental requirement of the networking code, for instance.
+> 
+> Can you clarify what you think the requirement is?  The tile architecture
+> doesn't support misaligned load/store in general, but we do support it for
+> userspace (using a nifty JIT approach with a direct-map hash table kept
+> in userspace), and also for get_user/put_user.  But that's it, and,
+> the networking subsystem works fine for us.
 
-  Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2014-08-29 11:52:46 -0700)
+This was years ago (possibly decades).  We had to implement in-kernel
+unaligned traps for the networking layer because it could access short
+and int fields that weren't of the correct alignment when processing
+packets.  It that's all corrected now, we wouldn't really notice (except
+a bit of a speed up since an unaligned trap effectively places the
+broken out instructions into the bit stream).
 
-are available in the git repository at:
+James
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus_urgent
 
-for you to fetch changes up to a9cfcd63e8d206ce4235c355d857c4fbdf0f4587:
+> Occasionally we report bugs for driver code that doesn't use the
+> get_unaligned_xxx() macros and friends, and our fixes are generally taken
+> upstream.
 
-  ext4: avoid trying to kfree an ERR_PTR pointer (2014-09-03 09:37:30 -0400)
 
-----------------------------------------------------------------
-Theodore Ts'o (1):
-      ext4: avoid trying to kfree an ERR_PTR pointer
-
- fs/ext4/namei.c  | 2 ++
- fs/ext4/resize.c | 2 ++
- 2 files changed, 4 insertions(+)
