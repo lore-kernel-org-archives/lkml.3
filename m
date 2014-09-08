@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbaIHPbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:31:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36395 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754006AbaIHPa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:30:58 -0400
-Message-ID: <540DCB91.7060702@ti.com>
-Date: Mon, 8 Sep 2014 21:00:25 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754590AbaIHPc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:32:59 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:51198 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753590AbaIHPcy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:32:54 -0400
+X-Sasl-enc: GUZamEiHC2Mt1gHBQSuh9ZywLZgv3WhsmESomNcKnBCO 1410189995
+Date: Mon, 8 Sep 2014 08:26:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Francis Moreau <francis.moro@gmail.com>,
+        Kent Overstreet <kmo@daterainc.com>, Peter Kieser <peter@kieser.ca>,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        stable <stable@vger.kernel.org>
+Subject: Re: [GIT PULL] bcache changes for 3.17
+Message-ID: <20140908152634.GA32677@kroah.com>
+References: <20140805043346.GF541@moria.home.lan>
+ <53E10D48.1010700@kernel.dk>
+ <53E7251B.3080305@kieser.ca>
+ <540966BA.9030106@gmail.com>
+ <20140905214532.GA30221@kroah.com>
+ <540A377C.2000901@kernel.dk>
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <srinivas.kandagatla@gmail.com>, <maxime.coquelin@st.com>,
-        <patrice.chotard@st.com>
-CC: <lee.jones@linaro.org>, <devicetree@vger.kernel.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: Re: [PATCH 2/3] phy: phy-stih407-usb: Add dt documentation for USB
- picophy found on stih407 SoC family
-References: <1409740079-16554-1-git-send-email-peter.griffin@linaro.org> <1409740079-16554-3-git-send-email-peter.griffin@linaro.org>
-In-Reply-To: <1409740079-16554-3-git-send-email-peter.griffin@linaro.org>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540A377C.2000901@kernel.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wednesday 03 September 2014 03:57 PM, Peter Griffin wrote:
-> This patch adds the dt documentation for the usb picophy found on stih407 SoC family
-> available from STMicroelectronics.
+On Fri, Sep 05, 2014 at 04:21:48PM -0600, Jens Axboe wrote:
+> On 09/05/2014 03:45 PM, Greg KH wrote:
+> > On Fri, Sep 05, 2014 at 09:31:06AM +0200, Francis Moreau wrote:
+> >> On 08/10/2014 09:54 AM, Peter Kieser wrote:
+> >>>
+> >>> On 2014-08-05 9:58 AM, Jens Axboe wrote:
+> >>>> On 08/04/2014 10:33 PM, Kent Overstreet wrote:
+> >>>>> Hey Jens, here's the pull request for 3.17 - typically late, but lots of tasty
+> >>>>> fixes in this one :)
+> >>>> Normally I'd say no, but since it's basically just fixes, I guess we can
+> >>>> pull it in. But generally, it has to be in my hands a week before this,
+> >>>> so it can simmer a bit in for-next before going in...
+> >>>>
+> >>> Are these fixes going to be backported to 3.10 or other stable releases?
+> >>>
+> >>
+> >> Could you please answer this question ?
+> >>
+> >> If you don't want to maintain bcache for stable kernels (I can
+> >> understand that), can you mark it at least as unstable/experimental
+> >> stuff since it really is ?
+> > 
+> > WTF?
+> > 
+> > Just because a maintainer/developer doesn't want to do anything for the
+> > stable kernel releases does _NOT_ mean the code is
+> > "unstable/expreimental" at all.
 > 
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  .../devicetree/bindings/phy/phy-stih407-usb.txt    | 37 ++++++++++++++++++++++
->  1 file changed, 37 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
-> new file mode 100644
-> index 0000000..650d346
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
-> @@ -0,0 +1,37 @@
-> +ST STiH407 USB-PHY controller
-> +
-> +This file documents the dt bindings for the picoPHY driver which is the PHY for both USB2 and USB3 host controllers
-> +controllers available on STiH407 SoC families.
-> +
-> +On STiH410, we have to use the DWC3 port#2 with a picoPHY to manage USB2
-> +devices. The USB2 Controller will use the ports #0 and #1.
-> +
-> +This is to document the DT parameters to be passed from the blob in that case.
-> +
-> +Required properties:
-> +- compatible		: should be "st,stih407-usb2-phy"
+> That's not what he is saying at all. The code IS unstable in 3.10. And
+> the fact that nothing goes to stable for bcache, the situation wasn't
+> likely to change for 3.10. Nobody is saying "Oh nothing goes to stable,
+> lets mark it experimental".
 
-If STiH410 also uses the same driver then you should add a new compatibility
-value for it.
-> +- reg			: contain the offset and length of the system configuration registers
-> +			  used as glue logic to control & parameter phy
-> +- reg-names		: the names of the system configuration registers in "reg", should be "param" and "reg"
-> +- st,syscfg		: sysconfig register to manage phy parameter at driver level
-> +- resets		: list of phandle and reset specifier pairs. There should be two entries, one
-> +			  for the whole phy and one for the port
-> +- reset-names		: list of reset signal names. Should be "global" and "port"
-> +See: Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
-> +See: Documentation/devicetree/bindings/reset/reset.txt
-> +
-> +Example:
-> +
-> +usb2_picophy0: usbpicophy@0 {
-usbpicophy@f8 since you have a reg property ;-)
+Sorry, but with only the context above which is what I was sent, you can
+see how I can be confused here...
 
-> +	compatible	= "st,stih407-usb2-phy";
-> +	reg		= <0xf8 0x04>,	/* syscfg 5062 */
-> +			  <0xf4 0x04>;	/* syscfg 5061 */
-> +	reg-names	= "param",
-> +			  "ctrl";
-> +			  #phy-cells = <0>;
-
-alignment seems to have gone wrong here.
-
-Thanks
-Kishon
+greg k-h
