@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaIHQk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:40:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9967 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826AbaIHQkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:40:24 -0400
-Date: Mon, 8 Sep 2014 18:39:33 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/9] perf: Deny optimized switch for events read by
- PERF_SAMPLE_READ
-Message-ID: <20140908163933.GI17728@krava.brq.redhat.com>
-References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
- <1408977943-16594-3-git-send-email-jolsa@kernel.org>
- <20140902105244.GI5806@worktop.ger.corp.intel.com>
- <20140908100018.GC1172@krava.brq.redhat.com>
- <20140908101119.GB6758@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140908101119.GB6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754769AbaIHQku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:40:50 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42255 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754500AbaIHQj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 12:39:57 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 3/3] ata: qcom: Add device tree bindings information
+Date: Mon,  8 Sep 2014 11:39:50 -0500
+Message-Id: <1410194390-29007-3-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1410194390-29007-1-git-send-email-galak@codeaurora.org>
+References: <1410194390-29007-1-git-send-email-galak@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 12:11:19PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 08, 2014 at 12:00:19PM +0200, Jiri Olsa wrote:
-> 
-> > > no.. so the value of the counter is the sum of all the inherited events.
-> > > It doesn't matter if you flip it or not the sum is not affected.
-> > > 
-> > > PERF_SAMPLE_READ should return the value.
-> > 
-> > so I want to be able to do the leader sampling over child processes
-> > that means:
-> >   - have event group with sampling leader, and the rest
-> >     of the group events' periods being read on leader's sample
-> >     via PERF_SAMPLE_READ sample_type
-> >   - for each child process created I want it to do the
-> >     same thing as the parent - sample on leader, read
-> >     values of other events in group via PERF_SAMPLE_READ
-> 
-> The thing is, PERF_SAMPLE_READ should return the exact same thing as an
-> actual read(), and for read() the value reported is the sum of all
-> events.
+Add device tree binding for Qualcomm AHCI SATA controller and specifically
+the sata controller on the IPQ806x family of SoCs.
 
-maybe we could make this configurable? like via new per_event_attr::option bit,
-keeping by default the behaviour you said
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ .../devicetree/bindings/ata/qcom-sata.txt          | 40 ++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/qcom-sata.txt
 
-> 
-> I _think_ I know what you want, and I think I see why you'd want that,
-> but I'm not sure how to best do that.. Hmm.. maybe look at
-> 'perf_event_attr::inherit_stat' that appears to be similar.
-> 
-> At which point read() vs inherit_stat might be 'broken'. Hard to know if
-> anybody uses that :-(
+diff --git a/Documentation/devicetree/bindings/ata/qcom-sata.txt b/Documentation/devicetree/bindings/ata/qcom-sata.txt
+new file mode 100644
+index 0000000..5e74e41
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/qcom-sata.txt
+@@ -0,0 +1,40 @@
++* Qualcomm AHCI SATA Controller
++
++SATA nodes are defined to describe on-chip Serial ATA controllers.
++Each SATA controller should have its own node.
++
++Required properties:
++- compatible		: compatible list, contains "qcom,msm-ahci"
++- interrupts		: <interrupt mapping for SATA IRQ>
++- reg			: <registers mapping>
++- phys			: Must contain exactly one entry as specified
++			  in phy-bindings.txt
++- phy-names		: Must be "sata-phy"
++
++Required properties for "qcom,ipq806x-ahci" compatible:
++- clocks		: Must contain an entry for each entry in clock-names.
++- clock-names		: Shall be:
++				"slave_iface" - Fabric port AHB clock for SATA
++				"iface" - AHB clock
++				"core" - core clock
++				"rxoob" - RX out-of-band clock
++				"pmalive" - Power Module Alive clock
++
++Example:
++	sata@29000000 {
++		compatible = "qcom,ipq806x-ahci", "qcom,msm-ahci";
++		reg = <0x29000000 0x180>;
++
++		interrupts = <0 209 0x0>;
++
++		clocks = <&gcc SFAB_SATA_S_H_CLK>,
++			 <&gcc SATA_H_CLK>,
++			 <&gcc SATA_A_CLK>,
++			 <&gcc SATA_RXOOB_CLK>,
++			 <&gcc SATA_PMALIVE_CLK>;
++		clock-names = "slave_iface", "iface", "core",
++				"rxoob", "pmalive";
++
++		phys = <&sata_phy>;
++		phy-names = "sata-phy";
++	};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-I'll check, thanks
-
-jirka
