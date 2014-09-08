@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaIHVBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:01:50 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:62648 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416AbaIHVBt convert rfc822-to-8bit (ORCPT
+	id S1754875AbaIHVDL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:03:11 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64047 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195AbaIHVDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:01:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <56E276C7-8204-48DD-B5C5-BF5B1452248A@arm.com>
-References: <1409959394-14936-1-git-send-email-behanw@converseincode.com>
-	<2954780.2t9bpyu7ov@wuerfel>
-	<CAFzeTN0AO40k2ObpMX3xPOmKaiGdiLREev1A2J0sE=B7z64qug@mail.gmail.com>
-	<56E276C7-8204-48DD-B5C5-BF5B1452248A@arm.com>
-Date: Mon, 8 Sep 2014 14:01:48 -0700
-Message-ID: <CAFzeTN10iz0eMTVqdRhzvqKagyB7srEZN8YAUOJzxzfJihv62Q@mail.gmail.com>
-Subject: Re: [PATCH] arm64: LLVMLinux: Provide __aeabi_* symbols which are
- needed for clang
-From: Mark Charlebois <charlebm@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Behan Webster <behanw@converseincode.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "zhichang.yuan@linaro.org" <zhichang.yuan@linaro.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Sep 2014 17:03:10 -0400
+From: Nitin Kuppelur <nitinkuppelur@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Nitin Kuppelur <nitinkuppelur@gmail.com>
+Subject: [PATCH V2] Staging: octeon-hcd: removed unwanted return from void
+Date: Mon,  8 Sep 2014 21:28:30 +0200
+Message-Id: <1410204510-5384-1-git-send-email-nitinkuppelur@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <540DFEDA.2060202@gmail.com>
+References: <540DFEDA.2060202@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 7, 2014 at 12:30 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On 7 Sep 2014, at 03:30, Mark Charlebois <charlebm@gmail.com> wrote:
->> On Sat, Sep 6, 2014 at 7:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>
->>> On Friday 05 September 2014 16:23:14 behanw@converseincode.com wrote:
->>>> + *  Copyright (C) 2012  Mark Charlebois
->>>> + */
->>>> +
->>>> +/*
->>>> + * EABI routines
->>>
->>> Does EABI specify these function names? I would think that they are
->>> just random libgcc (whatever that is called in clang) functions.
->>
->> http://infocenter.arm.com/help/topic/com.arm.doc.ihi0043d/IHI0043D_rtabi.pdf
->>
->> See section 4.3.4 Memory copying, clearing, and setting
->
-> What does this document have to do with arm64 (AArch64, A64)? We don’t
-> need such symbols on arm64. Also, the arm64 kernel links with libgcc (no
-> immediate need AFAICT but the compiler does not guarantee the intrinsics
-> would always be generated inline).
+This is a patch to the octeon-hcd.c file that fixes
+checkpatch.pl warning by removing return statement from
+void functions.
 
-[reposting in plain text]
+Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
+---
+ drivers/staging/octeon-usb/octeon-hcd.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-This patch was made early in the arm64 kernel support. I just retested
-and you are correct, it is no longer needed.  My apologies to all.
+diff --git a/drivers/staging/octeon-usb/octeon-hcd.c b/drivers/staging/octeon-usb/octeon-hcd.c
+index 3a5feb4..8a80982 100644
+--- a/drivers/staging/octeon-usb/octeon-hcd.c
++++ b/drivers/staging/octeon-usb/octeon-hcd.c
+@@ -1332,8 +1332,6 @@ static void __cvmx_usb_poll_rx_fifo(struct cvmx_usb_state *usb)
+ 		bytes -= 4;
+ 	}
+ 	CVMX_SYNCW;
+-
+-	return;
+ }
+ 
+ 
+@@ -1437,8 +1435,6 @@ static void __cvmx_usb_poll_tx_fifo(struct cvmx_usb_state *usb)
+ 					union cvmx_usbcx_gintmsk,
+ 					nptxfempmsk, 0);
+ 	}
+-
+-	return;
+ }
+ 
+ 
+@@ -1490,8 +1486,6 @@ static void __cvmx_usb_fill_tx_fifo(struct cvmx_usb_state *usb, int channel)
+ 		fifo->head = 0;
+ 
+ 	__cvmx_usb_poll_tx_fifo(usb);
+-
+-	return;
+ }
+ 
+ /**
+@@ -1640,7 +1634,6 @@ static void __cvmx_usb_start_channel_control(struct cvmx_usb_state *usb,
+ 
+ 	__cvmx_usb_write_csr32(usb, CVMX_USBCX_HCTSIZX(channel, usb->index),
+ 			       usbc_hctsiz.u32);
+-	return;
+ }
+ 
+ 
+@@ -1987,7 +1980,6 @@ static void __cvmx_usb_start_channel(struct cvmx_usb_state *usb,
+ 			union cvmx_usbcx_hccharx, chena, 1);
+ 	if (usb->init_flags & CVMX_USB_INITIALIZE_FLAGS_NO_DMA)
+ 		__cvmx_usb_fill_tx_fifo(usb, channel);
+-	return;
+ }
+ 
+ 
+@@ -2116,7 +2108,6 @@ done:
+ 	}
+ 	USB_SET_FIELD32(CVMX_USBCX_GINTMSK(usb->index),
+ 			union cvmx_usbcx_gintmsk, sofmsk, need_sof);
+-	return;
+ }
+ 
+ static inline struct octeon_hcd *cvmx_usb_to_octeon(struct cvmx_usb_state *p)
+-- 
+1.9.1
 
--Mark
-
->
-> Catalin
