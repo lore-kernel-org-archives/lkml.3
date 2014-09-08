@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaIHLRN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:17:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63855 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238AbaIHLRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:17:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="596195168"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 02/22] perf: Add AUX area to ring buffer for raw data streams
-In-Reply-To: <20140908070242.GS19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com> <20140908070242.GS19379@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 08 Sep 2014 14:16:56 +0300
-Message-ID: <87lhpuuztj.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1753236AbaIHL11 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:27:27 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15806 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752640AbaIHL1Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 07:27:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19/xxVHGza6OgKRngzyB4PBme/1r3YQ/KM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D59B05DAF30
+Date: Mon, 8 Sep 2014 07:26:57 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Matti Vaittinen <matti.vaittinen@nsn.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        "linux@roeck-us.net" <linux@roeck-us.net>, a.zummo@towertech.it,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [RESEND PATCH v3]     rtc: ds1307: add trickle charger device
+ tree binding
+Message-ID: <20140908112657.GD30828@titan.lakedaemon.net>
+References: <20140908073216.GA20850@fi-ourus-dhcp00977.emea.nsn-net.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908073216.GA20850@fi-ourus-dhcp00977.emea.nsn-net.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Matti,
 
-> On Wed, Aug 20, 2014 at 03:35:59PM +0300, Alexander Shishkin wrote:
->> From: Peter Zijlstra <peterz@infradead.org>
->> 
->> This patch introduces "AUX space" in the perf mmap buffer, intended for
->> exporting high bandwidth data streams to userspace, such as instruction
->> flow traces.
->> 
->> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
->> user_page structure, and read/write pointers aux_{head,tail}, which abide
->> by the same rules as data_* counterparts of the main perf buffer.
->> 
->> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
->> such an offset that will be greater than data_offset+data_size and
->> aux_size to be the desired buffer size. Both need to be page aligned.
->> Then, same aux_offset and aux_size should be passed to mmap() call and
->> if everything adds up, you should have an AUX buffer as a result.
->> 
->> Pages that are mapped into this buffer also come out of user's mlock
->> rlimit plus perf_event_mlock_kb allowance.
->> 
->> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
->> ---
->
->> +void rb_free_aux(struct ring_buffer *rb, struct perf_event *event)
->> +{
->> +	struct perf_event *iter;
->> +	int pg;
->> +
->> +	if (rb->aux_priv) {
->> +		/* disable all potential writers before freeing */
->> +		rcu_read_lock();
->> +		list_for_each_entry_rcu(iter, &rb->event_list, rb_entry)
->> +			perf_event_disable(iter);
->> +		rcu_read_unlock();
->
-> Hmm, I cannot remember this from the last time; and its not explained
-> why this was added.
->
-> This would change semantics between munmap of a buffer with and without
-> AUX bits in. 
+On Mon, Sep 08, 2014 at 10:32:24AM +0300, Matti Vaittinen wrote:
 
-Indeed, but this seems fair: if an event is generating AUX data while we
-unmap the AUX buffer, there is no reason to keep it on, because chances
-are, AUX data is the only thing this event is generating. The
-alternative would be to have a separate callback for this, but then
-again, that would race with other pmu callbacks, since it would be
-called from munmap() path. I should add an elaborate comment about this.
+>From here:
 
-Does this sound reasonable?
+> Hi dt bindings maintainers (and others interested in device-tree bindings),
+> 
+>    I would like to get this included in your tree. Do you think there is
+>    still something I could improve/change in order to get this accepted?
+>    Or do you think I should address this to someone else?
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
 
-Regards,
---
-Alex
+To here should go below the '---'
+
+> Some DS13XX devices have "trickle chargers". Introduce a device tree binding
+> for specifying the trickle charger configuration for ds1339.
+> 
+> Signed-off-by: Matti Vaittinen <matti.vaittinen@nsn.com>
+> ---
+
+Here.  Otherwise, it'll get included in the commit message, which I
+don't think was your intention.
+
+>  .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
+>  .../devicetree/bindings/rtc/dallas,ds1339.txt      | 18 ++++++
+>  drivers/rtc/rtc-ds1307.c                           | 66 ++++++++++++++++++++--
+>  3 files changed, 80 insertions(+), 5 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+
+I would split this into two patches, one for the binding documentation,
+and one for the C file changes.  You can then use
+./scripts/get_maintainer.pl to see who the rtc maintainer is (nothing
+jumps out from my memory).
+
+Most likely, the rtc maintainer will take the series with the DT
+maintainers Acks.  You made all the binding changes as discussed by Mark
+and I, so fwiw,
+
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+
+Just keep in mind that I'm not a DT maintainer, I've just moved a lot of
+patches into that area :-P  When you respin the series to split it, just
+throw my Ack on the binding docs.
+
+thx,
+
+Jason.
