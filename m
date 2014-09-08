@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaIHDMS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 23:12:18 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:45236 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaIHDMR (ORCPT
+	id S1752814AbaIHDRO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 23:17:14 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:36917 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707AbaIHDRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 23:12:17 -0400
-Message-ID: <1410145932.5157.3.camel@marge.simpson.net>
-Subject: Re: 3.17-rc4 fails compile (arch/x86/pci/irq.c)
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Pete Clements <clem@clem.clem-digital.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Date: Mon, 08 Sep 2014 05:12:12 +0200
-In-Reply-To: <201409080225.s882Pntx019152@clem.clem-digital.net>
-References: <201409080225.s882Pntx019152@clem.clem-digital.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 7 Sep 2014 23:17:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140908012025.GF5061@mtj.dyndns.org>
+References: <20140908012025.GF5061@mtj.dyndns.org>
+Date: Sun, 7 Sep 2014 20:17:11 -0700
+X-Google-Sender-Auth: 9gVIpvJ0SXxhoip7fHTyhVbkorw
+Message-ID: <CA+55aFw+L1EUDEmAATDtGj_ngHos842jHLddAszboRy4b0pn2A@mail.gmail.com>
+Subject: Re: [GIT PULL] cgroup fixes for v3.17-rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adds CC)
+On Sun, Sep 7, 2014 at 6:20 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+>                   While this is a userland visible
+> behavior change, given the craziness of allowing '\n' and its
+> implications, I believe the change is justified.
 
-On Sun, 2014-09-07 at 22:25 -0400, Pete Clements wrote: 
-> Fyi: i386 up  -- problem introduced in rc3.
-> 
->   CC      arch/x86/pci/irq.o
-> arch/x86/pci/irq.c: In function 'pirq_disable_irq':
-> arch/x86/pci/irq.c:1259:2: error: implicit declaration of function 'mp_should_keep_irq' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> make[1]: *** [arch/x86/pci/irq.o] Error 1
-> make: *** [arch/x86/pci] Error 2
-> 
+Tejun, absolutely nothing "justifies" things if they break. Not "bad
+design", not "craziness". Even security issues should be worked around
+without breaking, if at all possible,
 
+However, "userland visible" is only relevant _if_ things break.
+Presumably nobody actually uses '\n' in a cgroup name. And if nothing
+breaks, you don't need the excuses.
 
+In other words, I'll happily pull this, but your excuses for it are
+wrong-headed. There is no "crazyness justifies this". That's crap. But
+the argument of "nobody does this, so let's fix it before anybody
+_starts_ doing it" is perfectly valid - with the deep and implicit
+understanding that if it turns out somebody *does* do it, the change
+gets reverted asap.
+
+People need to understand this. "Theoretical ABI breakage" is entirely
+irrelevant. Nobody cares. But any _actual_ ABI breakage is a complete
+no-no.
+
+So next time you realize "ok, this could break things", don't make
+excuses. Look for alternatives (maybe the name can be escaped, for
+example), or take the approach of "let's hopw nobody notices".
+
+None of this "the interface is crazy, so we can change it".  Because
+that is pure and utter BS. Whether the interface is crazy or not is
+*entirely* irrelevant to whether it can be changed or not. The only
+thing that matters is whether people actually _trigger_ the issue you
+have in reality, not whether the issue is crazy.
+
+See the difference?
+
+                 Linus
