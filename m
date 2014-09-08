@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605AbaIHXjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:39:40 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57814 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753827AbaIHXjj (ORCPT
+	id S1755632AbaIHXld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:41:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36495 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbaIHXlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:39:39 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Tue, 09 Sep 2014 01:59:06 +0200
-Message-ID: <4394731.dfhKV5T3ox@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAM_iQpXwEEoCTqksFEyJ7UigOJkf6g5UHnddEHcMDjwKz6K-DQ@mail.gmail.com>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <4809128.C6aPga5IjQ@vostro.rjw.lan> <CAM_iQpXwEEoCTqksFEyJ7UigOJkf6g5UHnddEHcMDjwKz6K-DQ@mail.gmail.com>
+	Mon, 8 Sep 2014 19:41:32 -0400
+Date: Mon, 8 Sep 2014 16:41:31 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Aristeu Rozanski <aris@redhat.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-edac@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rui Wang <ruiv.wang@gmail.com>
+Subject: Re: [PATCH 2/2] sb_edac: Claim a different PCI device
+Message-ID: <20140908234131.GA14042@kroah.com>
+References: <cover.1408051536.git.luto@amacapital.net>
+ <59f55d679cc596731589516a71075b6059fcaaa5.1408051536.git.luto@amacapital.net>
+ <20140908141035.GK22290@redhat.com>
+ <CALCETrX3KO=1T1m4Qwn+j7vqqhEuNb8Xdkf_c2Ne4P9AbpwOoA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrX3KO=1T1m4Qwn+j7vqqhEuNb8Xdkf_c2Ne4P9AbpwOoA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 08, 2014 04:29:24 PM Cong Wang wrote:
-> On Mon, Sep 8, 2014 at 4:42 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Monday, September 08, 2014 04:16:15 PM Cong Wang wrote:
-> >> On Mon, Sep 8, 2014 at 4:23 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> >
-> >> > The reason why it matters for the suspend-time freezing is that we freeze tasks
-> >> > to take them out of the picture entirely until they are thawed.  Therefore we
-> >> > can't allow them to go back to the picture just for a while until they are
-> >> > killed.  Frozen tasks are not supposed to get back to the picture at all.
-> >> >
+On Mon, Sep 08, 2014 at 02:49:59PM -0700, Andy Lutomirski wrote:
+> On Mon, Sep 8, 2014 at 7:10 AM, Aristeu Rozanski <aris@redhat.com> wrote:
+> > On Thu, Aug 14, 2014 at 02:45:41PM -0700, Andy Lutomirski wrote:
+> >> sb_edac controls a large number of different PCI functions.  Rather
+> >> than registering as a normal PCI driver for all of them, it
+> >> registers for just one so that it gets probed and, at probe time, it
+> >> looks for all the others.
 > >>
+> >> Coincidentally, the device it registers for also contains the SMBUS
+> >> registers, so the PCI core will refuse to probe both sb_edac and a
+> >> future iMC SMBUS driver.  The drivers don't actually conflict, so
+> >> just change sb_edac's device table to probe a different device.
 > >>
-> >> Ok, then checking TIF_MEMDIE is unsafe for PM freeze, we should
-> >> keep the cgroup_freezing() test to make sure freeze request is from
-> >> cgroup not PM. Question got answered. :)
+> >> An alternative fix would be to merge the two drivers, but sb_edac
+> >> will also refuse to load on non-ECC systems, whereas i2c_imc would
+> >> still be useful without ECC.
+> >>
+> >> The only user-visible change should be that sb_edac appears to bind
+> >> a different device.
+> >>
+> >> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> >> Cc: Rui Wang <ruiv.wang@gmail.com>
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> ---
+> >>  drivers/edac/sb_edac.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> >> index a2597e9313c6..e3bc2cced580 100644
+> >> --- a/drivers/edac/sb_edac.c
+> >> +++ b/drivers/edac/sb_edac.c
+> >> @@ -432,7 +432,7 @@ static const struct pci_id_table pci_dev_descr_ibridge_table[] = {
+> >>   *   pci_device_id   table for which devices we are looking for
+> >>   */
+> >>  static const struct pci_device_id sbridge_pci_tbl[] = {
+> >> -     {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA)},
+> >> +     {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0)},
+> >>       {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA)},
+> >>       {0,}                    /* 0 terminated list. */
+> >>  };
 > >
-> > Do I think correctly that cgroups freezing and system suspend are
-> > mutually exclusive?  If not, then this still is problematic.
+> > Acked-by: Aristeu Rozanski <aris@redhat.com>
+> >
 > 
-> Good point! Although rare, but it is possible we freeze a process both from
-> cgroup and PM. Hmm, this means we have to explicitly exclude PM rather
-> just checking cgroup freeze?
+> Whose tree will this go through?
 
-There's no way to do that currently as PM freezing is all-inclusive.
+Mauro should have a tree for this as he's the subsystem maintainer.
 
-> Interesting, but I am not familiar with PM.
+thanks,
 
-I'm wondering if the OOM killer might avoid killing frozen tasks instead?
-
-Or there might be a "suspend" operation for the OOM killer that would be
-run from a PM notifier to guaratee that the OOM killer would not mess up
-with things during the entire system suspend (which surely is not quite
-useful anyway).
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+greg k-h
