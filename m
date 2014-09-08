@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaIHJik (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:38:40 -0400
-Received: from mail-by2on0085.outbound.protection.outlook.com ([207.46.100.85]:31362
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1753872AbaIHJiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:38:46 -0400
+Received: from mail-bn1on0062.outbound.protection.outlook.com ([157.56.110.62]:43088
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753315AbaIHJih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:38:37 -0400
-X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 05:38:37 EDT
+	id S1753315AbaIHJim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:38:42 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v3 02/29] nios2: Assembly macros and definitions
-Date: Mon, 8 Sep 2014 17:22:13 +0800
-Message-ID: <1410168160-3624-3-git-send-email-lftan@altera.com>
+Subject: [PATCH v3 20/29] nios2: Device tree support
+Date: Mon, 8 Sep 2014 17:22:31 +0800
+Message-ID: <1410168160-3624-21-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
 References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(199003)(189002)(81542001)(102836001)(93916002)(2201001)(50986999)(229853001)(42186005)(106466001)(47776003)(79102001)(88136002)(48376002)(77982001)(62966002)(83322001)(68736004)(77096002)(85306004)(15202345003)(20776003)(95666004)(21056001)(50226001)(19580395003)(50466002)(107046002)(4396001)(36756003)(6806004)(77156001)(76176999)(44976005)(85852003)(33646002)(74662001)(31966008)(92726001)(46102001)(99396002)(89996001)(105596002)(81342001)(90102001)(87286001)(86362001)(19580405001)(76482001)(74502001)(104166001)(87936001)(83072002)(92566001)(15975445006)(97736003)(80022001)(84676001)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB048;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(979002)(6009001)(199003)(22564002)(189002)(74502001)(76482001)(74662001)(77096002)(85852003)(33646002)(68736004)(50466002)(93916002)(2201001)(92566001)(77156001)(107046002)(229853001)(92726001)(89996001)(46102001)(31966008)(95666004)(90102001)(88136002)(15975445006)(50986999)(87936001)(85306004)(575784001)(79102001)(87286001)(86362001)(4396001)(106466001)(104166001)(64706001)(105596002)(44976005)(77982001)(81542001)(42186005)(47776003)(48376002)(83072002)(80022001)(62966002)(84676001)(20776003)(36756003)(6806004)(50226001)(102836001)(83322001)(76176999)(19580395003)(81342001)(21056001)(99396002)(97736003)(15202345003)(19580405001)(2004002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB047;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 03283976A6
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -32,343 +31,327 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add assembly macros and definitions used in
-the .S files across arch/nios2/ and together with asm-offsets.c.
+Add device tree support to arch/nios2.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/asm-macros.h  | 309 +++++++++++++++++++++++++++++++++++
- arch/nios2/include/asm/asm-offsets.h |  20 +++
- arch/nios2/kernel/asm-offsets.c      |  88 ++++++++++
- 3 files changed, 417 insertions(+)
- create mode 100644 arch/nios2/include/asm/asm-macros.h
- create mode 100644 arch/nios2/include/asm/asm-offsets.h
- create mode 100644 arch/nios2/kernel/asm-offsets.c
+ Documentation/devicetree/bindings/nios2/nios2.txt |  62 ++++++++
+ Documentation/devicetree/bindings/nios2/timer.txt |  19 +++
+ arch/nios2/boot/dts/3c120_devboard.dts            | 164 ++++++++++++++++++++++
+ arch/nios2/boot/linked_dtb.S                      |  19 +++
+ arch/nios2/kernel/prom.c                          |  66 +++++++++
+ arch/nios2/platform/platform.c                    |  46 ++++++
+ 6 files changed, 376 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/nios2/nios2.txt
+ create mode 100644 Documentation/devicetree/bindings/nios2/timer.txt
+ create mode 100644 arch/nios2/boot/dts/3c120_devboard.dts
+ create mode 100644 arch/nios2/boot/linked_dtb.S
+ create mode 100644 arch/nios2/kernel/prom.c
+ create mode 100644 arch/nios2/platform/platform.c
 
-diff --git a/arch/nios2/include/asm/asm-macros.h b/arch/nios2/include/asm/asm-macros.h
+diff --git a/Documentation/devicetree/bindings/nios2/nios2.txt b/Documentation/devicetree/bindings/nios2/nios2.txt
 new file mode 100644
-index 0000000..29fa2e4
+index 0000000..d6d0a94
 --- /dev/null
-+++ b/arch/nios2/include/asm/asm-macros.h
-@@ -0,0 +1,309 @@
++++ b/Documentation/devicetree/bindings/nios2/nios2.txt
+@@ -0,0 +1,62 @@
++* Nios II Processor Binding
++
++This binding specifies what properties available in the device tree
++representation of a Nios II Processor Core.
++
++Users can use sopc2dts tool for generating device tree sources (dts) from a
++Qsys system. See more detail in: http://www.alterawiki.com/wiki/Sopc2dts
++
++Required properties:
++
++- compatible: Compatible property value should be "altr,nios2-1.0".
++- reg: Contains CPU index.
++- interrupt-controller: Specifies that the node is an interrupt controller
++- #interrupt-cells: Specifies the number of cells needed to encode an
++		interrupt source, should be 1.
++- clock-frequency: Contains the clock frequency for CPU, in Hz.
++- dcache-line-size: Contains data cache line size.
++- icache-line-size: Contains instruction line size.
++- dcache-size: Contains data cache size.
++- icache-size: Contains instruction cache size.
++- altr,pid-num-bits: Specifies the number of bits to use to represent the process
++		identifier (PID).
++- altr,tlb-num-ways: Specifies the number of set-associativity ways in the TLB.
++- altr,tlb-num-entries: Specifies the number of entries in the TLB.
++- altr,tlb-ptr-sz: Specifies size of TLB pointer.
++- altr,has-mul: Specifies CPU hardware multipy support, should be 1.
++- altr,has-mmu: Specifies CPU support MMU support, should be 1.
++- altr,has-initda: Specifies CPU support initda instruction, should be 1.
++- altr,reset-addr: Specifies CPU reset address
++- altr,fast-tlb-miss-addr: Specifies CPU fast TLB miss exception address
++- altr,exception-addr: Specifies CPU exception address
++
++Optional properties:
++- altr,has-div: Specifies CPU hardware divide support
++- altr,implementation: Nios II core implementation, this should be "fast";
++
++Example:
++
++cpu@0x0 {
++	device_type = "cpu";
++	compatible = "altr,nios2-1.0";
++	reg = <0>;
++	interrupt-controller;
++	#interrupt-cells = <1>;
++	clock-frequency = <125000000>;
++	dcache-line-size = <32>;
++	icache-line-size = <32>;
++	dcache-size = <32768>;
++	icache-size = <32768>;
++	altr,implementation = "fast";
++	altr,pid-num-bits = <8>;
++	altr,tlb-num-ways = <16>;
++	altr,tlb-num-entries = <128>;
++	altr,tlb-ptr-sz = <7>;
++	altr,has-div = <1>;
++	altr,has-mul = <1>;
++	altr,reset-addr = <0xc2800000>;
++	altr,fast-tlb-miss-addr = <0xc7fff400>;
++	altr,exception-addr = <0xd0000020>;
++	altr,has-initda = <1>;
++	altr,has-mmu = <1>;
++};
+diff --git a/Documentation/devicetree/bindings/nios2/timer.txt b/Documentation/devicetree/bindings/nios2/timer.txt
+new file mode 100644
+index 0000000..904a584
+--- /dev/null
++++ b/Documentation/devicetree/bindings/nios2/timer.txt
+@@ -0,0 +1,19 @@
++Altera Timer
++
++Required properties:
++
++- compatible : should be "altr,timer-1.0"
++- reg : Specifies base physical address and size of the registers.
++- interrupt-parent: phandle of the interrupt controller
++- interrupts : Should contain the timer interrupt number
++- clock-frequency : The frequency of the clock that drives the counter, in Hz.
++
++Example:
++
++timer {
++	compatible = "altr,timer-1.0";
++	reg = <0x00400000 0x00000020>;
++	interrupt-parent = <&cpu>;
++	interrupts = <11>;
++	clock-frequency = <125000000>;
++};
+diff --git a/arch/nios2/boot/dts/3c120_devboard.dts b/arch/nios2/boot/dts/3c120_devboard.dts
+new file mode 100644
+index 0000000..31c51f9
+--- /dev/null
++++ b/arch/nios2/boot/dts/3c120_devboard.dts
+@@ -0,0 +1,164 @@
 +/*
-+ * Macro used to simplify coding multi-line assembler.
-+ * Some of the bit test macro can simplify down to one line
-+ * depending on the mask value.
-+ *
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * All rights reserved.
++ *  Copyright (C) 2013 Altera Corporation
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
 + * the Free Software Foundation; either version 2 of the License, or
 + * (at your option) any later version.
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ */
-+#ifndef _ASM_NIOS2_ASMMACROS_H
-+#define _ASM_NIOS2_ASMMACROS_H
-+/*
-+ * ANDs reg2 with mask and places the result in reg1.
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + *
-+ * You cannnot use the same register for reg1 & reg2.
++ * This file is generated by sopc2dts.
 + */
 +
-+.macro ANDI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		movhi	\reg1, %hi(\mask)
-+		movui	\reg1, %lo(\mask)
-+		and	\reg1, \reg1, \reg2
-+	.else
-+		andi	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	andhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
++/dts-v1/;
 +
-+/*
-+ * ORs reg2 with mask and places the result in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
++/ {
++	model = "altr,qsys_ghrd_3c120";
++	compatible = "altr,qsys_ghrd_3c120";
++	#address-cells = <1>;
++	#size-cells = <1>;
 +
-+.macro ORI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		orhi	\reg1, \reg2, %hi(\mask)
-+		ori	\reg1, \reg2, %lo(\mask)
-+	.else
-+		ori	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	orhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+/*
-+ * XORs reg2 with mask and places the result in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
++		cpu: cpu@0x0 {
++			device_type = "cpu";
++			compatible = "altr,nios2-1.0";
++			reg = <0x00000000>;
++			interrupt-controller;
++			#interrupt-cells = <1>;
++			clock-frequency = <125000000>;
++			dcache-line-size = <32>;
++			icache-line-size = <32>;
++			dcache-size = <32768>;
++			icache-size = <32768>;
++			altr,implementation = "fast";
++			altr,pid-num-bits = <8>;
++			altr,tlb-num-ways = <16>;
++			altr,tlb-num-entries = <128>;
++			altr,tlb-ptr-sz = <7>;
++			altr,has-div = <1>;
++			altr,has-mul = <1>;
++			altr,reset-addr = <0xc2800000>;
++			altr,fast-tlb-miss-addr = <0xc7fff400>;
++			altr,exception-addr = <0xd0000020>;
++			altr,has-initda = <1>;
++			altr,has-mmu = <1>;
++		};
++	};
 +
-+.macro XORI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		xorhi	\reg1, \reg2, %hi(\mask)
-+		xori	\reg1, \reg1, %lo(\mask)
-+	.else
-+		xori	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	xorhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
++	memory@0 {
++		device_type = "memory";
++		reg = <0x10000000 0x08000000>,
++			<0x07fff400 0x00000400>;
++	};
 +
-+/*
-+ * This is a support macro for BTBZ & BTBNZ.  It checks
-+ * the bit to make sure it is valid 32 value.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
++	sopc@0 {
++		device_type = "soc";
++		ranges;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "altr,avalon", "simple-bus";
++		bus-frequency = <125000000>;
 +
-+.macro BT	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
++		pb_cpu_to_io: bridge@0x8000000 {
++			compatible = "simple-bus";
++			reg = <0x08000000 0x00800000>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges = <0x00002000 0x08002000 0x00002000>,
++				<0x00004000 0x08004000 0x00000400>,
++				<0x00004400 0x08004400 0x00000040>,
++				<0x00004800 0x08004800 0x00000040>,
++				<0x00004c80 0x08004c80 0x00000020>,
++				<0x00004d50 0x08004d50 0x00000008>,
++				<0x00008000 0x08008000 0x00000020>,
++				<0x00400000 0x08400000 0x00000020>;
 +
-+/*
-+ * Tests the bit in reg2 and branches to label if the
-+ * bit is zero.  The result of the bit test is stored in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
++			timer_1ms: timer@0x400000 {
++				compatible = "altr,timer-1.0";
++				reg = <0x00400000 0x00000020>;
++				interrupt-parent = <&cpu>;
++				interrupts = <11>;
++				clock-frequency = <125000000>;
++			};
 +
-+.macro BTBZ	reg1, reg2, bit, label
-+	BT	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
++			timer_0: timer@0x8000 {
++				compatible = "altr,timer-1.0";
++				reg = < 0x00008000 0x00000020 >;
++				interrupt-parent = < &cpu >;
++				interrupts = < 5 >;
++				clock-frequency = < 125000000 >;
++			};
 +
-+/*
-+ * Tests the bit in reg2 and branches to label if the
-+ * bit is non-zero.  The result of the bit test is stored in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
++			jtag_uart: serial@0x4d50 {
++				compatible = "altr,juart-1.0";
++				reg = <0x00004d50 0x00000008>;
++				interrupt-parent = <&cpu>;
++				interrupts = <1>;
++			};
 +
-+.macro BTBNZ	reg1, reg2, bit, label
-+	BT	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
++			tse_mac: ethernet@0x4000 {
++				compatible = "altr,tse-1.0";
++				reg = <0x00004000 0x00000400>,
++					<0x00004400 0x00000040>,
++					<0x00004800 0x00000040>,
++					<0x00002000 0x00002000>;
++				reg-names = "control_port", "rx_csr", "tx_csr", "s1";
++				interrupt-parent = <&cpu>;
++				interrupts = <2 3>;
++				interrupt-names = "rx_irq", "tx_irq";
++				rx-fifo-depth = <8192>;
++				tx-fifo-depth = <8192>;
++				max-frame-size = <1518>;
++				local-mac-address = [ 00 00 00 00 00 00 ];
++				phy-mode = "rgmii-id";
++				phy-handle = <&phy0>;
++				tse_mac_mdio: mdio {
++					compatible = "altr,tse-mdio";
++					#address-cells = <1>;
++					#size-cells = <0>;
++					phy0: ethernet-phy@18 {
++						reg = <18>;
++						device_type = "ethernet-phy";
++					};
++				};
++			};
 +
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
++			uart: serial@0x4c80 {
++				compatible = "altr,uart-1.0";
++				reg = <0x00004c80 0x00000020>;
++				interrupt-parent = <&cpu>;
++				interrupts = <10>;
++				current-speed = <115200>;
++				clock-frequency = <62500000>;
++			};
++		};
 +
-+.macro BTC	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		xori	\reg2, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		xorhi	\reg2, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
++		cfi_flash_64m: flash@0x0 {
++			compatible = "cfi-flash";
++			reg = <0x00000000 0x04000000>;
++			bank-width = <2>;
++			device-width = <1>;
++			#address-cells = <1>;
++			#size-cells = <1>;
 +
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
++			partition@800000 {
++				reg = <0x00800000 0x01e00000>;
++				label = "JFFS2 Filesystem";
++			};
++		};
++	};
 +
-+.macro BTS	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		ori	\reg2, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		orhi	\reg2, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTR	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		andi	\reg2, \reg2, %lo(~(1 << \bit))
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		andhi	\reg2, \reg2, %lo(~(1 << (\bit - 16)))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTCBZ	reg1, reg2, bit, label
-+	BTC	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTCBNZ	reg1, reg2, bit, label
-+	BTC	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTSBZ	reg1, reg2, bit, label
-+	BTS	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTSBNZ	reg1, reg2, bit, label
-+	BTS	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTRBZ	reg1, reg2, bit, label
-+	BTR	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTRBNZ	reg1, reg2, bit, label
-+	BTR	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bits in mask against reg2 stores the result in reg1.
-+ * If the all the bits in the mask are zero it branches to label.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro TSTBZ	reg1, reg2, mask, label
-+	ANDI32	\reg1, \reg2, \mask
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bits in mask against reg2 stores the result in reg1.
-+ * If the any of the bits in the mask are 1 it branches to label.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro TSTBNZ	reg1, reg2, mask, label
-+	ANDI32	\reg1, \reg2, \mask
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Pushes reg onto the stack.
-+ */
-+
-+.macro PUSH	reg
-+	addi	sp, sp, -4
-+	stw	\reg, 0(sp)
-+.endm
-+
-+/*
-+ * Pops the top of the stack into reg.
-+ */
-+
-+.macro POP	reg
-+	ldw	\reg, 0(sp)
-+	addi	sp, sp, 4
-+.endm
-+
-+
-+#endif /* _ASM_NIOS2_ASMMACROS_H */
-diff --git a/arch/nios2/include/asm/asm-offsets.h b/arch/nios2/include/asm/asm-offsets.h
++	chosen {
++		bootargs = "debug console=ttyJ0,115200";
++	};
++};
+diff --git a/arch/nios2/boot/linked_dtb.S b/arch/nios2/boot/linked_dtb.S
 new file mode 100644
-index 0000000..5b9f5e0
+index 0000000..071f922
 --- /dev/null
-+++ b/arch/nios2/include/asm/asm-offsets.h
-@@ -0,0 +1,20 @@
++++ b/arch/nios2/boot/linked_dtb.S
+@@ -0,0 +1,19 @@
 +/*
-+ *  Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ *  Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
++ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++.section .dtb.init.rodata,"a"
++.incbin "arch/nios2/boot/system.dtb"
+diff --git a/arch/nios2/kernel/prom.c b/arch/nios2/kernel/prom.c
+new file mode 100644
+index 0000000..8b1ac14
+--- /dev/null
++++ b/arch/nios2/kernel/prom.c
+@@ -0,0 +1,66 @@
++/*
++ * Device tree support
++ *
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * Based on MIPS support for CONFIG_OF device tree support
++ *
++ * Copyright (C) 2010 Cisco Systems Inc. <dediao@cisco.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -385,101 +368,99 @@ index 0000000..5b9f5e0
 + *
 + */
 +
-+#include <generated/asm-offsets.h>
-diff --git a/arch/nios2/kernel/asm-offsets.c b/arch/nios2/kernel/asm-offsets.c
-new file mode 100644
-index 0000000..3852f5c
---- /dev/null
-+++ b/arch/nios2/kernel/asm-offsets.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/bootmem.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/io.h>
 +
-+#include <linux/stddef.h>
-+#include <linux/sched.h>
-+#include <linux/kernel_stat.h>
-+#include <linux/ptrace.h>
-+#include <linux/hardirq.h>
-+#include <linux/thread_info.h>
-+#include <linux/kbuild.h>
++#include <asm/sections.h>
 +
-+int main(void)
++void __init early_init_dt_add_memory_arch(u64 base, u64 size)
 +{
-+	/* struct task_struct */
-+	OFFSET(TASK_THREAD, task_struct, thread);
-+	BLANK();
++	u64 kernel_start = (u64)virt_to_phys(_text);
 +
-+	/* struct thread_struct */
-+	OFFSET(THREAD_KSP, thread_struct, ksp);
-+	OFFSET(THREAD_KPSR, thread_struct, kpsr);
-+	BLANK();
++	if (!memory_size &&
++	    (kernel_start >= base) && (kernel_start < (base + size)))
++		memory_size = size;
 +
-+	/* struct pt_regs */
-+	OFFSET(PT_ORIG_R2, pt_regs, orig_r2);
-+	OFFSET(PT_ORIG_R7, pt_regs, orig_r7);
-+
-+	OFFSET(PT_R1, pt_regs, r1);
-+	OFFSET(PT_R2, pt_regs, r2);
-+	OFFSET(PT_R3, pt_regs, r3);
-+	OFFSET(PT_R4, pt_regs, r4);
-+	OFFSET(PT_R5, pt_regs, r5);
-+	OFFSET(PT_R6, pt_regs, r6);
-+	OFFSET(PT_R7, pt_regs, r7);
-+	OFFSET(PT_R8, pt_regs, r8);
-+	OFFSET(PT_R9, pt_regs, r9);
-+	OFFSET(PT_R10, pt_regs, r10);
-+	OFFSET(PT_R11, pt_regs, r11);
-+	OFFSET(PT_R12, pt_regs, r12);
-+	OFFSET(PT_R13, pt_regs, r13);
-+	OFFSET(PT_R14, pt_regs, r14);
-+	OFFSET(PT_R15, pt_regs, r15);
-+	OFFSET(PT_EA, pt_regs, ea);
-+	OFFSET(PT_RA, pt_regs, ra);
-+	OFFSET(PT_FP, pt_regs, fp);
-+	OFFSET(PT_SP, pt_regs, sp);
-+	OFFSET(PT_GP, pt_regs, gp);
-+	OFFSET(PT_ESTATUS, pt_regs, estatus);
-+	DEFINE(PT_REGS_SIZE, sizeof(struct pt_regs));
-+	BLANK();
-+
-+	/* struct switch_stack */
-+	OFFSET(SW_R16, switch_stack, r16);
-+	OFFSET(SW_R17, switch_stack, r17);
-+	OFFSET(SW_R18, switch_stack, r18);
-+	OFFSET(SW_R19, switch_stack, r19);
-+	OFFSET(SW_R20, switch_stack, r20);
-+	OFFSET(SW_R21, switch_stack, r21);
-+	OFFSET(SW_R22, switch_stack, r22);
-+	OFFSET(SW_R23, switch_stack, r23);
-+	OFFSET(SW_FP, switch_stack, fp);
-+	OFFSET(SW_GP, switch_stack, gp);
-+	OFFSET(SW_RA, switch_stack, ra);
-+	DEFINE(SWITCH_STACK_SIZE, sizeof(struct switch_stack));
-+	BLANK();
-+
-+	/* struct thread_info */
-+	OFFSET(TI_TASK, thread_info, task);
-+	OFFSET(TI_FLAGS, thread_info, flags);
-+	OFFSET(TI_PREEMPT_COUNT, thread_info, preempt_count);
-+	BLANK();
-+
-+	return 0;
++	return;
 +}
++
++void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
++{
++	return alloc_bootmem_align(size, align);
++}
++
++void __init early_init_devtree(void *params)
++{
++	__be32 *dtb = (u32*)__dtb_start;
++#if defined(CONFIG_NIOS2_DTB_AT_PHYS_ADDR)
++	if (be32_to_cpup((__be32 *)CONFIG_NIOS2_DTB_PHYS_ADDR) ==
++		 OF_DT_HEADER) {
++		params = (void *)CONFIG_NIOS2_DTB_PHYS_ADDR;
++		early_init_dt_scan(params);
++		return;
++	}
++#endif
++	if (be32_to_cpu((__be32) *dtb) == OF_DT_HEADER)
++		params = (void *)__dtb_start;
++
++	early_init_dt_scan(params);
++}
+diff --git a/arch/nios2/platform/platform.c b/arch/nios2/platform/platform.c
+new file mode 100644
+index 0000000..d478773
+--- /dev/null
++++ b/arch/nios2/platform/platform.c
+@@ -0,0 +1,46 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2011 Thomas Chou
++ * Copyright (C) 2011 Walter Goossens
++ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License. See the file COPYING in the main directory of this
++ * archive for more details.
++ */
++
++#include <linux/init.h>
++#include <linux/of_platform.h>
++#include <linux/of_address.h>
++#include <linux/of_fdt.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/sys_soc.h>
++#include <linux/io.h>
++
++static int __init nios2_soc_device_init(void)
++{
++	struct soc_device *soc_dev;
++	struct soc_device_attribute *soc_dev_attr;
++	const char *machine;
++
++	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
++	if (soc_dev_attr) {
++		machine = of_flat_dt_get_machine_name();
++		if (machine)
++			soc_dev_attr->machine = kasprintf(GFP_KERNEL, "%s",
++						machine);
++
++		soc_dev_attr->family = "Nios II";
++
++		soc_dev = soc_device_register(soc_dev_attr);
++		if (IS_ERR(soc_dev)) {
++			kfree(soc_dev_attr->machine);
++			kfree(soc_dev_attr);
++		}
++	}
++
++	return of_platform_populate(NULL, of_default_bus_match_table,
++		NULL, NULL);
++}
++
++device_initcall(nios2_soc_device_init);
 -- 
 1.8.2.1
 
