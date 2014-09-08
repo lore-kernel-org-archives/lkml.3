@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbaIHQku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:40:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42255 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500AbaIHQj5 (ORCPT
+	id S1754793AbaIHQl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:41:57 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:49573 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460AbaIHQly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:39:57 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 3/3] ata: qcom: Add device tree bindings information
-Date: Mon,  8 Sep 2014 11:39:50 -0500
-Message-Id: <1410194390-29007-3-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1410194390-29007-1-git-send-email-galak@codeaurora.org>
-References: <1410194390-29007-1-git-send-email-galak@codeaurora.org>
+	Mon, 8 Sep 2014 12:41:54 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18dW9WeKfxn92davzregMf7
+Date: Mon, 8 Sep 2014 09:41:48 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 11/18] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140908164147.GG3238@atomide.com>
+References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+ <1409943773-7874-12-git-send-email-bigeasy@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409943773-7874-12-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree binding for Qualcomm AHCI SATA controller and specifically
-the sata controller on the IPQ806x family of SoCs.
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140905 12:28]:
+> This problem has not been seen on DRA7 or beaglebone (OMAP3). I am not
+> sure if this is UART-IP core specific or DMA engine.
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
- .../devicetree/bindings/ata/qcom-sata.txt          | 40 ++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/ata/qcom-sata.txt
+Maybe check this comment for future reference too because
+beaglebone and bealeboard do different things for PM.. Do
+you mean Beaglebone or beagleboard? Or both?
 
-diff --git a/Documentation/devicetree/bindings/ata/qcom-sata.txt b/Documentation/devicetree/bindings/ata/qcom-sata.txt
-new file mode 100644
-index 0000000..5e74e41
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/qcom-sata.txt
-@@ -0,0 +1,40 @@
-+* Qualcomm AHCI SATA Controller
-+
-+SATA nodes are defined to describe on-chip Serial ATA controllers.
-+Each SATA controller should have its own node.
-+
-+Required properties:
-+- compatible		: compatible list, contains "qcom,msm-ahci"
-+- interrupts		: <interrupt mapping for SATA IRQ>
-+- reg			: <registers mapping>
-+- phys			: Must contain exactly one entry as specified
-+			  in phy-bindings.txt
-+- phy-names		: Must be "sata-phy"
-+
-+Required properties for "qcom,ipq806x-ahci" compatible:
-+- clocks		: Must contain an entry for each entry in clock-names.
-+- clock-names		: Shall be:
-+				"slave_iface" - Fabric port AHB clock for SATA
-+				"iface" - AHB clock
-+				"core" - core clock
-+				"rxoob" - RX out-of-band clock
-+				"pmalive" - Power Module Alive clock
-+
-+Example:
-+	sata@29000000 {
-+		compatible = "qcom,ipq806x-ahci", "qcom,msm-ahci";
-+		reg = <0x29000000 0x180>;
-+
-+		interrupts = <0 209 0x0>;
-+
-+		clocks = <&gcc SFAB_SATA_S_H_CLK>,
-+			 <&gcc SATA_H_CLK>,
-+			 <&gcc SATA_A_CLK>,
-+			 <&gcc SATA_RXOOB_CLK>,
-+			 <&gcc SATA_PMALIVE_CLK>;
-+		clock-names = "slave_iface", "iface", "core",
-+				"rxoob", "pmalive";
-+
-+		phys = <&sata_phy>;
-+		phy-names = "sata-phy";
-+	};
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Regards,
 
+Tony
