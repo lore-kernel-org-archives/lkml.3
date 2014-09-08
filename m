@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaIHGha (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 02:37:30 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:33496 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaIHGh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 02:37:28 -0400
-Date: Mon, 8 Sep 2014 08:37:23 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: ast@plumgrid.com, pablo@netfilter.org, torvalds@linuxfoundation.org,
-        luto@amacapital.net, rostedt@goodmis.org, dborkman@redhat.com,
-        hannes@stressinduktion.org, chema@google.com, edumazet@google.com,
-        a.p.zijlstra@chello.nl, hpa@zytor.com, akpm@linuxfoundation.org,
-        keescook@chromium.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 net-next 2/2] net: filter: split filter.h and expose
- eBPF to user space
-Message-ID: <20140908063723.GA8219@gmail.com>
-References: <20140907180737.GA5057@salvia>
- <CAMEtUuxJLDu8AAsZQdtG781vwC8y60Ygdt4ji5tbeyTE8YbWbQ@mail.gmail.com>
- <20140908052329.GA30461@gmail.com>
- <20140907.222841.1933004265241590374.davem@davemloft.net>
+	id S1752918AbaIHGi5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 02:38:57 -0400
+Received: from sym2.noone.org ([178.63.92.236]:58104 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751424AbaIHGi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 02:38:56 -0400
+Date: Mon, 8 Sep 2014 08:38:52 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: anicoara <anicoara@uwaterloo.ca>
+Cc: shigekatsu.tateno@atmel.com, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] staging: ozwpan: use kmalloc_array over kmalloc with
+ multiply
+Message-ID: <20140908063852.GA3578@distanz.ch>
+References: <20140907182825.GD2312@uwaterloo.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140907.222841.1933004265241590374.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140907182825.GD2312@uwaterloo.ca>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Your From: line does not contain a real name and does not match your
+Signed-off-by line, please check your e-mail client settings.
 
-* David Miller <davem@davemloft.net> wrote:
+On 2014-09-07 at 20:28:25 +0200, anicoara <anicoara@uwaterloo.ca> wrote:
 
-> From: Ingo Molnar <mingo@kernel.org>
-> Date: Mon, 8 Sep 2014 07:23:29 +0200
+No changelog text? Please add a short notice, describing why this change
+is done.
+
+> Signed-off-by: Adrian Nicoara <anicoara@uwaterloo.ca>
+> ---
+> Patch submitted as part of the Eudyptula challenge.
 > 
-> > 
-> > * Alexei Starovoitov <ast@plumgrid.com> wrote:
-> > 
-> >> > I don't think the speed up of the llvm submission is a 
-> >> > good argument, this sounds to me similar to the "please 
-> >> > apply this patch that reserves this new netlink family in 
-> >> > include/linux/netlink.h, I promise this new subsystem will 
-> >> > be submitted soon though. Meanwhile this will speed up 
-> >> > submission of my userspace software to distributions for 
-> >> > packaging" argument.
-> >> 
-> >> You're not correct here. I'm not saying 'I promise it will 
-> >> be submitted'. There _were_ already submitted. [...]
-> > 
-> > And this split-up smaller submissions was requested by David 
-> > Miller, the networking maintainer, so if Pablo wants another 
-> > submission format, he needs to take it up with David - we 
-> > can't do both at once obviously.
+>  drivers/staging/ozwpan/ozhcd.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> I think that just because I asked the submission size to be 
-> smaller, it does not mean that you can submit things before you 
-> provide the initial user as well.
+> diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
+> index ba2168f..4cfe56e 100644
+> --- a/drivers/staging/ozwpan/ozhcd.c
+> +++ b/drivers/staging/ozwpan/ozhcd.c
+> @@ -1315,7 +1315,7 @@ static int oz_build_endpoints_for_config(struct usb_hcd *hcd,
+>  	if (num_iface) {
+>  		struct oz_interface *iface;
 > 
-> And how to work that out and keep the submission size 
-> reasonable is the submitter's problem, not mine.
+> -		iface = kmalloc(num_iface*sizeof(struct oz_interface),
+> +		iface = kmalloc_array(num_iface, sizeof(struct oz_interface),
+>  				mem_flags | __GFP_ZERO);
 
-That's a pretty harsh requirement but might be doable 
-technically: Alexei, please submit a series that is large enough 
-to provide self-sufficient functionality as per Pablo's request,
-but is also small and minimal, as per David's request.
+The line above should be adjusted to match the opening parenthesis.
 
-If that fails then another route would be to decouple from 
-networking initially and create something new and stand-alone in 
-kernel/ebpf/ (or any other name really), with tracing and perf 
-usecases, with networking integration and code deduplication to 
-be done at the end, when there can be no legitimate argument 
-about its utility.
-
-Thanks,
-
-	Ingo
+>  		if (!iface)
+>  			return -ENOMEM;
+> --
+> 2.0.1
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> 
