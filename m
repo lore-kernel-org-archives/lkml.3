@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311AbaIHJqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:46:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38136 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137AbaIHJqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:46:09 -0400
-Date: Mon, 8 Sep 2014 11:45:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
- context_equiv
-Message-ID: <20140908094548.GA6758@twins.programming.kicks-ass.net>
-References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
- <1408977943-16594-2-git-send-email-jolsa@kernel.org>
- <20140902105036.GH5806@worktop.ger.corp.intel.com>
- <20140908094348.GB1172@krava.brq.redhat.com>
+	id S1754322AbaIHJrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:47:06 -0400
+Received: from mail-bl2on0061.outbound.protection.outlook.com ([65.55.169.61]:36544
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753781AbaIHJia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:38:30 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
+        <cltang@codesourcery.com>
+Subject: [PATCH v3 15/29] Add ELF machine define for Nios2
+Date: Mon, 8 Sep 2014 17:22:26 +0800
+Message-ID: <1410168160-3624-16-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6W/vd+xQRxZFP9Eu"
-Content-Disposition: inline
-In-Reply-To: <20140908094348.GB1172@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(199003)(189002)(81342001)(21056001)(76482001)(79102001)(77156001)(77982001)(85852003)(83072002)(19580395003)(19580405001)(46102001)(2201001)(20776003)(47776003)(102836001)(95666004)(105596002)(106466001)(90102001)(575784001)(97736003)(33646002)(42186005)(86362001)(83322001)(92566001)(93916002)(6806004)(92726001)(88136002)(4396001)(99396002)(76176999)(44976005)(74662001)(89996001)(74502001)(31966008)(50986999)(62966002)(80022001)(50466002)(85306004)(84676001)(107046002)(229853001)(87286001)(87936001)(77096002)(50226001)(48376002)(68736004)(81542001)(36756003)(104166001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB033;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03283976A6
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ include/uapi/linux/elf-em.h | 1 +
+ 1 file changed, 1 insertion(+)
 
---6W/vd+xQRxZFP9Eu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
+index 01529bd..7f06c0d 100644
+--- a/include/uapi/linux/elf-em.h
++++ b/include/uapi/linux/elf-em.h
+@@ -33,6 +33,7 @@
+ #define EM_M32R		88	/* Renesas M32R */
+ #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
+ #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
++#define EM_ALTERA_NIOS2	113	/* Altera Nios II soft-core processor */
+ #define EM_TI_C6000	140	/* TI C6X DSPs */
+ #define EM_AARCH64	183	/* ARM 64 bit */
+ #define EM_FRV		0x5441	/* Fujitsu FR-V */
+-- 
+1.8.2.1
 
-On Mon, Sep 08, 2014 at 11:43:48AM +0200, Jiri Olsa wrote:
-> On Tue, Sep 02, 2014 at 12:50:36PM +0200, Peter Zijlstra wrote:
-> > On Mon, Aug 25, 2014 at 04:45:35PM +0200, Jiri Olsa wrote:
-> > > As described in commit:
-> > >   1f9a7268c67f perf: Do not allow optimized switch for non-cloned eve=
-nts
-> > > we dont allow optimized switch for non cloned contexts.
-> > >=20
-> > > There's no need now to check if one of the context is parent
-> > > of the other in context_equiv function.
-> > >=20
-> >=20
-> > OK, so talk to me about that patch; it looks like you're slowly
-> > reverting: 5a3126d4fe7c ("perf: Fix the perf context switch
-> > optimization").
-> >=20
-> > So what exactly is the problem? I'm still jet-lagged and not seeing it.
->=20
-> the problem is, that we cannot allow non-cloned context
-> to be part of the optimized switch for reasons explained
-> in commit 1f9a7268c67f
-
-The thing is; I don't understand those reasons. That commit log doesn't
-explain.
-
---6W/vd+xQRxZFP9Eu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUDXrMAAoJEHZH4aRLwOS6ftoQAJxXWWRxn/GVyeCHJAWd2dBU
-ms9V3qAWvuGKMC6zukFUrMIe9g2NbEQIdGlka/Iqzm32Mg1KRHaoqoMhBicxdfC6
-bc6Geg0lGgVP4/0pKv2Hj2+iEtuvU4kDsRy5fGukeXCDtrSR5F7sYrsOxpXrDqJd
-DvIEPHaZl5beUE0vMhO9AbIBP2X7M/34bA72/yLJxKjdMFDtjwSTaWsRY08BWZc7
-4z1T4UTG/Ecv7CQIWBtwiKlNmQMVCCLctxfOBOqNDs7YJt3PX6LschMJ2P5Uo+ex
-CkSQQjGIgWOFulWVqsOkiFrtymovfsfSSrhho0/ltBFpaDSuYjQhas2BM6ZvvWiw
-HpRB2wYz9WvyywMNbN4f5rFgL9gpL3D/3GV2NaCIQGHTIob2jf3tPuSnrxshITDT
-Ha7PsuhbG1D8tSPxosH52BbzdjlqPvtRB3vWdHzrYKHxmFGvfcMKTSoF8epxE2Fo
-rUp3aWhbhFZ/EXLnCE2OSDGsyFvVVOv7m98LQvkgAE/vlehmxwnj5GD3iWQDkBBa
-QQI4EJvaXCD2zMkt6IoKog2ivprafYd8Vxa+xWRDA4Gb3fSBJfnw0IidVkxwsmhp
-zTEjHjo4nsTfzS7P05/bhkIMkeX0g5Obcu2ut1RVHIeSjfFmhY6HI9ZFgfD5pDMW
-4kpd4798NiUCDsppm5sM
-=ecoM
------END PGP SIGNATURE-----
-
---6W/vd+xQRxZFP9Eu--
