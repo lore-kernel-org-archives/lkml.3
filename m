@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671AbaIHQqm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:46:42 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:40723 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaIHQqk (ORCPT
+	id S1754636AbaIHQsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:48:50 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.107]:46723 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753907AbaIHQss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:46:40 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 8 Sep 2014 18:44:38 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] gpio: add support for the Diolan DLN-2 USB GPIO
- driver
-Message-ID: <20140908164438.GG9560@localhost>
-References: <1409930279-1382-1-git-send-email-octavian.purdila@intel.com>
- <1409930279-1382-4-git-send-email-octavian.purdila@intel.com>
+	Mon, 8 Sep 2014 12:48:48 -0400
+X-Env-Sender: Benjamin.Romer@unisys.com
+X-Msg-Ref: server-12.tower-201.messagelabs.com!1410194915!13491432!13
+X-Originating-IP: [192.61.61.105]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+From: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+CC: "Kershner, David A" <David.Kershner@unisys.com>,
+        *S-Par-Maintainer <SParMaintainer@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 8 Sep 2014 11:48:44 -0500
+Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Thread-Topic: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Thread-Index: Ac/LhMCSdHOSBQilRtev5LBypu7ZFQ==
+Message-ID: <C97001BC43954D438ACB059713BA5CDFC97127E0E4@USEA-EXCH7.na.uis.unisys.com>
+References: <1409908966-23148-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E1@USEA-EXCH7.na.uis.unisys.com>
+ <20140908162714.GA5497@fool>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E3@USEA-EXCH7.na.uis.unisys.com>
+ <20140908163852.GA5995@fool>
+In-Reply-To: <20140908163852.GA5995@fool>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409930279-1382-4-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s88GmsAT032432
 
-On Fri, Sep 05, 2014 at 06:17:59PM +0300, Octavian Purdila wrote:
+On Mon, 2014-09-08 at 22:08 +0530, Sudip Mukherjee wrote:
+> Hi Ben,
+> sorry to disturb you again. i got confused , which one is perfect one combined patch or 
+> separate patches?
+> 
+> thanks
+> sudip
 
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-dln2.c
-> @@ -0,0 +1,537 @@
-> +/*
-> + * Driver for the Diolan DLN-2 USB-GPIO adapter
-> + *
-> + * Copyright (c) 2014 Intel Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation, version 2.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/errno.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/mutex.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqchip/chained_irq.h>
-> +#include <linux/usb.h>
-> +#include <linux/gpio.h>
-> +#include <linux/gpio/driver.h>
-> +#include <linux/ptrace.h>
-> +#include <linux/wait.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/mfd/dln2.h>
+Two patches, as you preferred.
 
-It seems you don't need all these includes (usb, ptrace, wait...). Only
-include what you actually use.
+-- Ben
 
-Johan
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
