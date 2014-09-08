@@ -1,104 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaIHE0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 00:26:41 -0400
-Received: from ozlabs.org ([103.22.144.67]:57323 "EHLO ozlabs.org"
+	id S1752001AbaIHEdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 00:33:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:47786 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845AbaIHE0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 00:26:40 -0400
-Date: Mon, 8 Sep 2014 14:26:31 +1000
+	id S1750845AbaIHEdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 00:33:03 -0400
+Date: Mon, 8 Sep 2014 14:32:56 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
         Ville =?UTF-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: linux-next: build failure after merge of the drm tree
-Message-ID: <20140908142631.6cb967a3@canb.auug.org.au>
+        Jani Nikula <jani.nikula@intel.com>
+Subject: linux-next: manual merge of the drm-intel tree with Linus' tree
+Message-ID: <20140908143256.44287543@canb.auug.org.au>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/eaFtsqWPGZBhmcGrt2l6GYA"; protocol="application/pgp-signature"
+ boundary="Sig_/zQVrlaIBdQkcJy97TsNCh/I"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/eaFtsqWPGZBhmcGrt2l6GYA
+--Sig_/zQVrlaIBdQkcJy97TsNCh/I
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Hi all,
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/intel_display.c between commit a4bf214ffc72
+("drm/i915: Move intel_ddi_set_vc_payload_alloc(false) to
+haswell_crtc_disable()") from Linus' tree and commit 575f7ab754c4
+("drm/i915: Pass intel_crtc to intel_disable_pipe() and
+intel_wait_for_pipe_off()") from the drm-intel tree.
 
-drivers/gpu/drm/i915/intel_display.c: In function 'intel_crtc_cursor_set_ob=
-j':
-drivers/gpu/drm/i915/intel_display.c:8302:24: error: 'dev_priv' undeclared =
-(first use in this function)
-   intel_runtime_pm_get(dev_priv);
-                        ^
-
-Caused by commit d7ce484eeec4 ("drm/i915: Move CURSIZE setup to
-i845_update_cursor()") interacting with commit d6dd6843ff4a ("drm/i915:
-fix plane/cursor handling when runtime suspended") from Linus' tree.
-
-I am not sure why this hasn't failed before as both commits have been
-in linux-next since (at least) Sept 3.
-
-I have applied this merge fix patch (which reverts part of d7ce484eeec4):
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 8 Sep 2014 14:17:21 +1000
-Subject: [PATCH] drm/i915: fix up for recent merge
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/gpu/drm/i915/intel_display.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/in=
-tel_display.c
-index a1acf8376c0f..18da8349a070 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8253,6 +8253,7 @@ static int intel_crtc_cursor_set_obj(struct drm_crtc =
-*crtc,
- 				     uint32_t width, uint32_t height)
- {
- 	struct drm_device *dev =3D crtc->dev;
-+	struct drm_i915_private *dev_priv =3D dev->dev_private;
- 	struct intel_crtc *intel_crtc =3D to_intel_crtc(crtc);
- 	enum pipe pipe =3D intel_crtc->pipe;
- 	unsigned old_width, stride;
---=20
-2.1.0
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/eaFtsqWPGZBhmcGrt2l6GYA
+diff --cc drivers/gpu/drm/i915/intel_display.c
+index 18da8349a070,b912107a1392..000000000000
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@@ -4168,7 -4253,11 +4264,7 @@@ static void ironlake_crtc_disable(struc
+  	if (intel_crtc->config.has_pch_encoder)
+  		intel_set_pch_fifo_underrun_reporting(dev, pipe, false);
+ =20
+- 	intel_disable_pipe(dev_priv, pipe);
++ 	intel_disable_pipe(intel_crtc);
+ -
+ -	if (intel_crtc->config.dp_encoder_is_mst)
+ -		intel_ddi_set_vc_payload_alloc(crtc, false);
+ -
+  	ironlake_pfit_disable(intel_crtc);
+ =20
+  	for_each_encoder_on_crtc(dev, crtc, encoder)
+@@@ -4231,11 -4319,8 +4326,11 @@@ static void haswell_crtc_disable(struc
+ =20
+  	if (intel_crtc->config.has_pch_encoder)
+  		intel_set_pch_fifo_underrun_reporting(dev, TRANSCODER_A, false);
+- 	intel_disable_pipe(dev_priv, pipe);
++ 	intel_disable_pipe(intel_crtc);
+ =20
+ +	if (intel_crtc->config.dp_encoder_is_mst)
+ +		intel_ddi_set_vc_payload_alloc(crtc, false);
+ +
+  	intel_ddi_disable_transcoder_func(dev_priv, cpu_transcoder);
+ =20
+  	ironlake_pfit_disable(intel_crtc);
+
+--Sig_/zQVrlaIBdQkcJy97TsNCh/I
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUDS/8AAoJEMDTa8Ir7ZwVcuoP/RvYBSzPxkGbM30rOT226/y/
-YrZgeErfRUK8cYDvqb9zTbXa4TPGxN0CdIkGHtcxFKtrwjPTkaAiqHWJxsNKKxDe
-eZIF1R1TOkVjf2mRXH7NGdYlFyh0dM/KVON8NilNE4dIi1UEp0CdAgXrJKAsWpHI
-GyS4laASQtBGzrkJKdXidljLzGCvkrygOmn/1nK5yr87veo2LI1mEulCm5yLBqVY
-FBG1S/gG6LlFFgR86XO55saRauR6n4ah2PGNiX4DMXTXXnyQJX1+w5KD+/YAbP2k
-XOg7yikJyvh2CqYf4nHEwQRbtfFwqVLRmnAxdxR1dghprjCFaEDiBpC0HWkO6MVN
-/ihUm6dyUXL4CbcvarxrUjD1NKwTnjxL+peI9eRhapHZ3uoOOxh2aT7whEeAvhDx
-x4eE2jIb6AcPOz1zF7iDHfbApuFrEgV1wSKudVWfRqobv+LQR61JgI5K8oRR7LKH
-dg6v1ICxZul3dBcCSigQOmVyLMG4KzLKvsDx6SJxQFWJpWnFgY//gaEHLpoFI12i
-mWWUDmwXnkLtk98oQWmcURGTLHfVc9R2PM4D/gfMGK4fJZwbH6E3DztE4+IuyQlu
-ugnvk3QytIadZSdIXvDlxO9myEjIEYHjHD2ft3R7sezFPgfOd+6oCK9qTr9Z1BH0
-NacE0ETvlwZgq49IIeTt
-=YwNh
+iQIcBAEBCAAGBQJUDTF9AAoJEMDTa8Ir7ZwVAYsP/jQSU6CLjgJq5ENoUMBve22n
+ZgRaqPZUap8VUGGjSSlBWig9Sh41LEFZTc8B3b+yXC+hRCNLJfVlNdMnmnRq3+OP
+YHIW/cAWFKYQqE//jh2epIdNOZ5ndjvJDXpMC0II6kmLjE5xQ3NrYqO9EjRnHhA1
+1Hb+WNHtesVR+V708A/r1ydrPZMiSOUdzEv3FpVVSh2NRcossrq8uzKwI1ptOUTp
+ilGBNV17BplubGC/HC3lRgON40DS8SA9SHv//ppAfVdLn5G4sQtiv1c6Ho15DSVN
+CEln8TRJXDGcYq0kT3qWl1TW0VOEVo0WcbAEgJhXz53gGmPw1WvB4uEVTXLvkqpC
+s8dvso3ofE9HZeMrmAkyJIMKlZ6zlsTecsPmrHWwwc0/mPF6EZB+1r3ie49Aqj/r
+rmGSEDJ/UJGY+f3uj138MNsjJj7PfXEbBuCdIR+tIwFNAs2t+Il6g9MBIzD7ygg+
+s9fOKq2xbsJehRQli3K88nbisKP3QhAz9BSaSd9oTaQqgUkqWmPyrojTipQlNfkM
+MgSj5Y5+W5nfq7BcWF3GlWSY7IKfiDg3fJERkuScs3WqWPLTlOc8KbhtwskIoPg5
+h50Ukpw5rc+gQDgg7PWb7qafCBrU/tXQBgfVH5UOwEsAYIcZX6WbMU9n0TvTrgaJ
+5u8oRwOrky4Pi2iVCccV
+=UeSY
 -----END PGP SIGNATURE-----
 
---Sig_/eaFtsqWPGZBhmcGrt2l6GYA--
+--Sig_/zQVrlaIBdQkcJy97TsNCh/I--
