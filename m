@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaIHLHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:07:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13423 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640AbaIHLH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:07:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="569916772"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 04/22] perf: Add a capability for AUX_NO_SG pmus to do software double buffering
-In-Reply-To: <20140908071712.GT19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-5-git-send-email-alexander.shishkin@linux.intel.com> <20140908071712.GT19379@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 08 Sep 2014 14:07:22 +0300
-Message-ID: <87oauqv09h.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1753194AbaIHLQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:16:44 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56951 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033AbaIHLQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 07:16:43 -0400
+Date: Mon, 8 Sep 2014 12:16:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Message-ID: <20140908111627.GI4015@sirena.org.uk>
+References: <1410158617-16827-1-git-send-email-mpa@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EDJsL2R9iCFAt7IV"
+Content-Disposition: inline
+In-Reply-To: <1410158617-16827-1-git-send-email-mpa@pengutronix.de>
+X-Cookie: See label for sequence.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] regmap: Fix debugfs-file 'registers' mode
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
 
-> On Wed, Aug 20, 2014 at 03:36:01PM +0300, Alexander Shishkin wrote:
->> For pmus that don't support scatter-gather for AUX data in hardware, it
->> might still make sense to implement software double buffering to avoid
->> losing data while the user is reading data out. For this purpose, add
->> a pmu capability that guarantees multiple high-order chunks for AUX buffer,
->> so that the pmu driver can do switchover tricks.
->
-> Please expand this with more detail on how to use this.
+--EDJsL2R9iCFAt7IV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Sure.
+On Mon, Sep 08, 2014 at 08:43:37AM +0200, Markus Pargmann wrote:
+> The macro "REGMAP_ALLOW_WRITE_DEBUGFS" can be used to enable write
+> support on the registers file in the debugfs. The mode of the file is
+> fixed to 0400 so it is not possible to write the file ever.
 
->> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
->> ---
->>  include/linux/perf_event.h  |  1 +
->>  kernel/events/ring_buffer.c | 15 ++++++++++++++-
->>  2 files changed, 15 insertions(+), 1 deletion(-)
->> 
->> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->> index fe10bf6f94..1e7b659b49 100644
->> --- a/include/linux/perf_event.h
->> +++ b/include/linux/perf_event.h
->> @@ -172,6 +172,7 @@ struct perf_event;
->>   */
->>  #define PERF_PMU_CAP_NO_INTERRUPT		0x01
->>  #define PERF_PMU_CAP_AUX_NO_SG			0x02
->> +#define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
->>  
->>  /**
->>   * struct pmu - generic performance monitoring unit
->> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
->> index d10919ca42..f5ee3669f8 100644
->> --- a/kernel/events/ring_buffer.c
->> +++ b/kernel/events/ring_buffer.c
->> @@ -286,9 +286,22 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
->>  	if (!has_aux(event))
->>  		return -ENOTSUPP;
->>  
->> -	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
->> +	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG) {
->>  		order = get_order(nr_pages * PAGE_SIZE);
->>  
->> +		/*
->> +		 * PMU requests more than one contiguous chunks of memory
->> +		 * for SW double buffering
->> +		 */
->> +		if ((event->pmu->capabilities & PERF_PMU_CAP_AUX_SW_DOUBLEBUF) &&
->> +		    !overwrite) {
->> +			if (!order)
->> +				return -EINVAL;
->> +
->> +			order--;
->> +		}
->> +	}
->
-> In particular this looks like it will allocate double the total amount
-> of pages and 'loose' half of them. There is no corresponding code in the
-> free path to collect them.
+Applied, thanks.
 
-This code makes the biggest high order allocation no bigger than half of
-the total requested size. Then, when I allocate the high-order chunks, I
-do a split_page() on them and everywhere else in the code they are
-treated as individual pages, including the free path. So this patch has
-no implication on freeing. Is this your concern?
+--EDJsL2R9iCFAt7IV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards,
---
-Alex
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUDZAKAAoJECTWi3JdVIfQ6UYH/0BRez381R/lIBmLN/stSPHm
+qMccHBfVHahVeWMoT/uXR57I0xm+PnBaPdw6Y+Z6G1utD4y7k3O+pUAb3cXwCOwi
+WuQYRGhO2Znw0nmgKRh4EStLgkmzy6aUTI1VwvhQZ6Adta2UUkJknYvN62poMTl7
+t5Fun9wO2N6kf/SdQrZPp+OBH8TWDBSkti6DbpHGZ3e9xMM3kx7VWAr6TUWwru7y
+oY3HmRSoHQkTqZH/ICX8NzgXuB1TBAPSt/CqqbSt19Hz8n8em5PEAHdYsyQKolps
+J1XQHhYvbLucCpYec4EMz00lKjVeuD1XYDQvYFyguQB2SEA43VA794TrsbfoKdg=
+=3Lrv
+-----END PGP SIGNATURE-----
+
+--EDJsL2R9iCFAt7IV--
