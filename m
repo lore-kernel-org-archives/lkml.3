@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049AbaIHVhd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:37:33 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:40184 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987AbaIHVhb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:37:31 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        <linux-pm@vger.kernel.org>, <ben.dooks@codethink.co.uk>,
-        <laurent.pinchart@ideasonboard.com>, <grant.likely@secretlab.ca>,
-        <ulf.hansson@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/3] PM / clock_ops: allow to specify custom pm_clk_notifier callback
-References: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
-Date: Mon, 08 Sep 2014 14:37:29 -0700
-In-Reply-To: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
-	(Grygorii Strashko's message of "Fri, 25 Jul 2014 21:31:33 +0300")
-Message-ID: <7hr3zln692.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755117AbaIHVhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:37:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43879 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755087AbaIHVhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:37:52 -0400
+Date: Mon, 8 Sep 2014 17:37:41 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 2/6] mm/hugetlb: take page table lock in
+ follow_huge_(addr|pmd|pud)()
+Message-ID: <20140908213741.GA6866@nhori.bos.redhat.com>
+References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1409276340-7054-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.LSU.2.11.1409031243420.9023@eggly.anvils>
+ <20140905052751.GA6883@nhori.redhat.com>
+ <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii Strashko <grygorii.strashko@ti.com> writes:
+On Mon, Sep 08, 2014 at 12:13:16AM -0700, Hugh Dickins wrote:
+> On Fri, 5 Sep 2014, Naoya Horiguchi wrote:
+> > On Wed, Sep 03, 2014 at 02:17:41PM -0700, Hugh Dickins wrote:
+> > > On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
+> > > > 
+> > > > Reported-by: Hugh Dickins <hughd@google.com>
+> > > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > > Cc: <stable@vger.kernel.org>  # [3.12+]
+> > > 
+> > > No ack to this one yet, I'm afraid.
+> > 
+> > OK, I defer Reported-by until all the problems in this patch are solved.
+> > I added this Reported-by because Andrew asked how In found this problem,
+> > and advised me to show the reporter.
+> > And I didn't intend by this Reported-by that you acked the patch.
+> > In this case, should I have used some unofficial tag like
+> > "Not-yet-Reported-by:" to avoid being rude?
+> 
+> Sorry, misunderstanding, I chose that position to write "No ack to this
+> one yet" because that is where I would insert my "Acked-by" to the patch
+> when ready.  I just meant that I cannot yet give you my "Acked-by".
 
-> The CLK PM domain (clock_ops.c) assumes that platform code should always provide
-> list of Connection IDs of the clock (con_id) in pm_clk_notifier_block structure.
-> Then CLK PM domain uses these con_ids to setup list of clocks per device.
->
-> Such approach is inconvenient when devices can have different number
-> of clocks. For example, if maximum number of clocks used by
-> devices is 4 the pm_clk_notifier_block structure will look like:
->
-> static struct pm_clk_notifier_block platform_domain_notifier = {
-> 	.pm_domain = &keystone_pm_domain,
-> 	.con_ids = { "fck", "opt1", "opt2", "opt3", NULL },
-> };
->
-> More over, clocks in DT have to be named using only above con_ids:
-> 	clocks = <&paclk13>, <&clkcpgmac>, <&chipclk12>;
-> 	clock-names = "fck", "opt1", "opt2";
->
-> It makes hard to enable/support Runtime PM in case when some HW modules are used
-> by different SoCs or there are few version of the same SoC, because clock trees
-> can be changed significantly in all such cases.
->
-> This patch set allows to specify custom pm_clk_notifier callback from
-> platform code and in such way makes CLK PM domain initialization
-> more flexible. 
+I see my understanding, thanks.
 
-Replacing the pm_clk notifier is essentially replacing the guts of the
-clock_ops code.
+> You were not being rude to me at all, quite the reverse.
+> 
+> I have no objection to your writing "Reported-by: Hugh...": you are
+> being polite to acknowledge me, and I was not objecting to that.
 
-I think your platform may have left the realm of "simple" platforms that
-the clock_ops was intended for.
+Great.
 
-Since you're essentially gutting clock_ops, have you considered
-migrating to genpd and having your own pm_domain ops that manage your clocks?
+> Although usually, we save "Reported-by"s for users who have
+> reported a problem they saw in practice, rather than for fellow
+> developers who have looked at the code and seen a potential bug -
+> so I won't mind at all if you end up taking it out.
+> 
+> > 
+> > > One subtlety to take care over: it's a long time since I've had to
+> > > worry about pmd folding and pud folding (what happens when you only
+> > > have 2 or 3 levels of page table instead of the full 4): macros get
+> > > defined to each other, and levels get optimized out (perhaps
+> > > differently on different architectures).
+> > > 
+> > > So although at first sight the lock to take in follow_huge_pud()
+> > > would seem to be mm->page_table_lock, I am not at this point certain
+> > > that that's necessarily so - sometimes pud_huge might be pmd_huge,
+> > > and the size PMD_SIZE, and pmd_lockptr appropriate at what appears
+> > > to be the pud level.  Maybe: needs checking through the architectures
+> > > and their configs, not obvious to me.
+> > 
+> > I think that every architecture uses mm->page_table_lock for pud-level
+> > locking at least for now, but that could be changed in the future,
+> > for example when 1GB hugepages or pud-based hugepages become common and
+> > someone are interested in splitting lock for pud level.
+> 
+> I'm not convinced by your answer, that you understand the (perhaps
+> imaginary!) issue I'm referring to.  Try grep for __PAGETABLE_P.D_FOLDED.
+> 
+> Our infrastructure allows for 4 levels of pagetable, pgd pud pmd pte,
+> but many architectures/configurations support only 2 or 3 levels.
+> What pud functions and pmd functions work out to be in those
+> configs is confusing, and varies from architecture to architecture.
+> 
+> In particular, pud and pmd may be different expressions of the same
+> thing (with 1 pmd per pud, instead of say 512).  In that case PUD_SIZE
+> will equal PMD_SIZE: and then at the pud level huge_pte_lockptr()
+> will be using split locking instead of mm->page_table_lock.
 
-> Also, It updates Keystone 2 platform code to provide custom
-> callback which fills list of clocks for Device with all clocks assigned to this
-> Device in DT.
-> More over, It's safe for Keystone 2 to perform CLK PM domain initialization
-> at device's binding time instead of device's creation time.
->
-> I've posted these patches because I need fully enable Runtime PM on Keystone 2
-> where all HW modules are controlled using clocks only. That's why CLK PM domain 
-> fits our needs perfectly. 
+Is it a possible problem? It seems to me that in such system no one
+can create pud-based hugepages and care about pud level locking.
 
-Heh, doesn't seem like a perfect fit to me ;)
+> Many of the hugetlb architectures have a pud_huge() which just returns
+> 0, and we need not worry about those, nor the follow_huge_addr() powerpc.
+> But arm64, mips, tile, x86 look more interesting.
+> 
+> Frankly, I find myself too dumb to be sure of the right answer for all:
+> and think that when we put the proper locking into follow_huge_pud(),
+> we shall have to include a PUD_SIZE == PMD_SIZE test, to let the
+> compiler decide for us which is the appropriate locking to match
+> huge_pte_lockptr().
 
-> Also, on Keystone 2 clocks are initialized early and
-> they are available at device creation time. The main problems from my side are:
->  - every time when support for new HW modules is added the ".con_ids" array 
->    need to be checked and updated;
->  - restriction for clock's names in DT - to be named using only above con_ids
->    It's ugly.
->
-> I hope, this approach to be accepted at least as temporal solution until 
-> the generic solution is not found.
+Yes, both should be done at the same time.
 
-Sorry if I missed it, but is there ongoing discussion of a more generic
-solution other than this one:
+> 
+> Unless Kirill can illuminate: I may be afraid of complications
+> where actually there are none.
 
-> [1] Previously, same problem was discussed in, but no final solution was accepted:
->  "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
->  https://lkml.org/lkml/2014/4/24/1118
+Yes. What we need now is to fix follow_huge_pmd(), and combining
+non-urgent things with it is not easy for me.
 
-Personally, I still like Geert's approach better.
-
-Kevin
+Thanks,
+Naoya Horiguchi
