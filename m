@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091AbaIHWiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:38:09 -0400
-Received: from smtprelay0036.hostedemail.com ([216.40.44.36]:43237 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754947AbaIHWiI (ORCPT
+	id S1755244AbaIHWjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:39:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39753 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036AbaIHWjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:38:08 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3874:3876:4321:5007:7652:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12517:12519:12740:13069:13161:13229:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: act37_808f7d0d6493a
-X-Filterd-Recvd-Size: 1641
-Message-ID: <1410215881.12560.21.camel@joe-AO725>
-Subject: Re: [PATCH] drivers: staging: lustre: Fix "space prohibited after
- that open parenthesis '('" errors
-From: Joe Perches <joe@perches.com>
-To: Greg Donald <gdonald@gmail.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org
-Date: Mon, 08 Sep 2014 15:38:01 -0700
-In-Reply-To: <1410215528-22856-1-git-send-email-gdonald@gmail.com>
-References: <1410215528-22856-1-git-send-email-gdonald@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Sep 2014 18:39:10 -0400
+Date: Tue, 9 Sep 2014 01:38:53 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Hugues <morisset.hugues@gmail.com>, Oleg Drokin <oleg.drokin@intel.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
+Message-ID: <20140908223853.GN6600@mwanda>
+References: <540E27FB.2070206@gmail.com>
+ <540E287D.5090101@gmail.com>
+ <540E28AD.2060607@gmail.com>
+ <540E29B1.6090005@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540E29B1.6090005@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-08 at 17:32 -0500, Greg Donald wrote:
-> Fix checkpatch.pl "space prohibited after that open parenthesis '('" errors
-[]
-> diff --git a/drivers/staging/lustre/lustre/obdclass/obdo.c b/drivers/staging/lustre/lustre/obdclass/obdo.c
-[]
-> @@ -161,35 +161,35 @@ int obdo_cmp_md(struct obdo *dst, struct obdo *src, u32 compare)
->  {
->  	int res = 0;
+On Tue, Sep 09, 2014 at 12:12:01AM +0200, Hugues wrote:
+> Fix potential buffer underflow
+> 
+> When the string 'name' start with a '-' ptr == name and so --ptr will
+> underflow, this patch corrected this by checking ptr before decrementing.
+
+Good eye.  Please fix up the changelog and send it inline etc and
+resend.  I've added Oleg and Andreas to the CC list so that this doesn't
+get lost.
+
+regards,
+dan carpenter
+
+> >From 5786040323bd1dc3149fb4afbea9f01e2bf4cfdf Mon Sep 17 00:00:00 2001
+> From: Hugues Morisset <morisset.hugues@gmail.com>
+> Date: Mon, 8 Sep 2014 22:59:04 +0200
+> Subject: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
+> 
+> Signed-off-by: Hugues Morisset <morisset.hugues@gmail.com>
+> ---
+>  drivers/staging/lustre/lustre/include/obd.h | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/lustre/lustre/include/obd.h b/drivers/staging/lustre/lustre/include/obd.h
+> index 409eae6..bb67e40 100644
+> --- a/drivers/staging/lustre/lustre/include/obd.h
+> +++ b/drivers/staging/lustre/lustre/include/obd.h
+> @@ -677,7 +677,12 @@ static inline int is_osp_on_mdt(char *name)
+>  	if (strncmp(ptr + 1, "MDT", 3) != 0)
+>  		return 0;
 >  
-> -	if ( compare & OBD_MD_FLATIME )
-> +	if (compare & OBD_MD_FLATIME)
->  		res = (res || (dst->o_atime != src->o_atime));
+> -	while (*(--ptr) != '-' && ptr != name);
+> +	if (ptr == name)
+> +		return 0;
+> +
+> +	--ptr;
+> +	while (ptr != '-' && ptr != name)
+> +		--ptr;
+>  
+>  	if (ptr == name)
+>  		return 0;
+> -- 
+> 2.1.0
+> 
 
-These would be nicer as
-
-		res |= dst->o_atime != src->o_atime;
-
-> -	if ( compare & OBD_MD_FLMTIME )
-> +	if (compare & OBD_MD_FLMTIME)
->  		res = (res || (dst->o_mtime != src->o_mtime));
-
-etc...
-
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
 
