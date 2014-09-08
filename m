@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaIHN2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:28:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44441 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaIHN2q (ORCPT
+	id S1754078AbaIHN2w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:28:52 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:45591 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997AbaIHN2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:28:46 -0400
-Date: Mon, 8 Sep 2014 15:28:42 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: ti_am335x_tscadc: fix TSC resume
-Message-ID: <20140908132842.GA17443@linutronix.de>
+	Mon, 8 Sep 2014 09:28:51 -0400
+Date: Mon, 8 Sep 2014 15:28:43 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Robert Richter <rrichter@cavium.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
+Message-ID: <20140908132843.GY4703@rric.localhost>
+References: <1410176689-20020-1-git-send-email-rric@kernel.org>
+ <3450151.nDuN2aF2Xl@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3450151.nDuN2aF2Xl@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the resume path, the ADC invokes am335x_tsc_se_set_cache() with 0 as
-the steps argument if continous mode is not in use. This in turn disables
-all steps and so the TSC is not working until one ADC sampling is
-performed.
+On 08.09.14 15:00:47, Arnd Bergmann wrote:
+> On Monday 08 September 2014 13:44:48 Robert Richter wrote:
+> > From: Robert Richter <rrichter@cavium.com>
+> > 
+> > Raising the current maximum limit to 64. This is needed for Cavium's
+> > Thunder systems that will have at least 48 cores per die.
+> > 
+> > The change keeps the current memory footprint in cpu mask structures.
+> > It does not break existing code. Setting the maximum to 64 cpus still
+> > boots systems with less cpus.
+> > 
+> > Mark's Juno happily booted with a NR_CPUS=64 kernel.
+> > 
+> > Tested on our Thunder system with 48 cores. We could see interrupts to
+> > all cores.
+> > 
+> > Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > 
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> FWIW, have you tried what happens when you increase the number further?
+> We have architectures on which we support thousands of CPUs, so I wonder
+> if there is a point at which this stops working on ARM64.
+> 
+> Are you able to compile and boot a kernel built with e.g. NR_CPUS=256 or
+> 4096 on your hardware?
 
-This patch fixes it by writing the current cached mask instead of the
-passed steps.
+We haven't tried this so far, but it's definitely on our list testing
+this.
 
-Fixes: 7ca6740cd1cd ("mfd: input: iio: ti_amm335x: Rework TSC/ADCA
-synchronization")
-Cc: stable@vger.kernel.org # v3.13+
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/mfd/ti_am335x_tscadc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index e3076afe6b3c..e87a2485468f 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -58,7 +58,7 @@ void am335x_tsc_se_set_cache(struct ti_tscadc_dev *tsadc, u32 val)
- 	if (tsadc->adc_waiting)
- 		wake_up(&tsadc->reg_se_wait);
- 	else if (!tsadc->adc_in_use)
--		tscadc_writel(tsadc, REG_SE, val);
-+		tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
- 
- 	spin_unlock_irqrestore(&tsadc->reg_lock, flags);
- }
--- 
-2.1.0
-
+-Robert
