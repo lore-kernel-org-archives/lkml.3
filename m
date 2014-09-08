@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015AbaIHOqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:46:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51868 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753070AbaIHOqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:46:19 -0400
-Date: Mon, 8 Sep 2014 10:46:03 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        kkolasa@winsoft.pl, dm-devel@redhat.com
-Subject: Re: [PATCH] slab: implement kmalloc guard
-In-Reply-To: <alpine.DEB.2.11.1409080932490.20388@gentwo.org>
-Message-ID: <alpine.LRH.2.02.1409081041160.29432@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1409051833510.9790@file01.intranet.prod.int.rdu2.redhat.com> <alpine.DEB.2.11.1409080932490.20388@gentwo.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754080AbaIHOq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:46:26 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:37297 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147AbaIHOqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:46:22 -0400
+X-ASG-Debug-ID: 1410187579-0759e778ba15aa840002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Mon, 8 Sep 2014 16:46:18 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <linux-serial@vger.kernel.org>, <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 00/18] 8250-core based serial driver for OMAP + DMA
+Message-ID: <20140908144616.GA22315@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH v8 00/18] 8250-core based serial driver for OMAP + DMA
+References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1410187579
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9283
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+On Fri, Sep 05, 2014 at 09:02:35PM +0200, Sebastian Andrzej Siewior wrote:
+> This is my complete queue fo the omap serial driver based on the 8250 core
+> code. I played with it on beagle bone, am335x-evm and dra7xx including DMA.
+> The runtime-pm pieces look now bug-compatible with the omap-serial driver.
+> Besides the runtime-om improvement I also fixed a few corner cases for the
+> TX-DMA problem. The DMA fixes (in edma and omap-dma) were dropped and the
+> problem has been in 8250-dma via patch #13.
 
-On Mon, 8 Sep 2014, Christoph Lameter wrote:
+Thanks for the respin. I've just tested the series a bit. Here's some
+things I ran into.
 
-> On Fri, 5 Sep 2014, Mikulas Patocka wrote:
-> 
-> > This patch adds a new option DEBUG_KMALLOC that makes it possible to
-> > detect writes beyond the end of space allocated with kmalloc. Normally,
-> > the kmalloc function rounds the size to the next power of two (there is
-> > exception to this rule - sizes 96 and 192). Slab debugging detects only
-> > writes beyond the end of the slab object, it is unable to detect writes
-> > beyond the end of kmallocated size that fit into the slab object.
-> >
-> > The motivation for this patch was this: There was 6 year old bug in
-> > dm-crypt (d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed) where the driver would
-> > write beyond the end of kmallocated space, but the bug went undetected
-> > because the write would fit into the power-of-two-sized slab object. Only
-> > recent changes to dm-crypt made the bug show up. There is similar problem
-> > in the nx-crypto driver in the function nx_crypto_ctx_init - again,
-> > because kmalloc rounds the size up to the next power of two, this bug went
-> > undetected.
-> 
-> The problem with the kmalloc array for debugging is inded that it is
-> only for powers of two for efficiency purposes. In the debug
-> situation we may not have the need for that efficiency. Maybe simply
-> creating kmalloc arrays for each size will do the trick?
+- Basic console use is better than the previous series. It behaves
+  pretty much like the omap-serial implementation.
 
-I don't know what you mean. If someone allocates 10000 objects with sizes 
-from 1 to 10000, you can't have 10000 slab caches - you can't have a slab 
-cache for each used size. Also - you can't create a slab cache in 
-interrupt context.
+- ncurses based applications (vi, less) don't play nice for me on the
+  console with this series. less doesn't show me anything. vi doesn't
+  return to console properly.
 
-> > This patch works for slab, slub and slob subsystems. The end of slab block
-> > can be found out with ksize (this patch renames it to __ksize). At the end
-> > of the block, we put a structure kmalloc_guard. This structure contains a
-> > magic number and a real size of the block - the exact size given to
-> 
-> We already have a redzone structure to check for writes over the end of
-> the object. Lets use that.
+- I seem seem to get stuck in a "serial8250: too much work for irq%d"
+  loop somewhat reliably. We have a rather demanding application with
+  typically somewhere between 600 and 1000 byte packets being sent at
+  240Hz (roughly somewhere between 1.5 and 2 Mb/s). We run at baudrate
+  3500k. I get into this "too much work" thing already when running at
+  300 bytes per packet.
 
-So, change all three slab subsystems to use that.
+I hope this is of some use to you. I'll do more testing later.
 
-Mikulas
+Thanks,
+Frans
