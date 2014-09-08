@@ -1,181 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaIHL4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:56:34 -0400
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:57098 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753060AbaIHL4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:56:32 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <540D9A3F.2000807@smartplayin.com>
-Date: Mon, 08 Sep 2014 17:29:59 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753636AbaIHL5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:57:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54305 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753533AbaIHL5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 07:57:23 -0400
+Date: Mon, 8 Sep 2014 12:57:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Leon Romanovsky <leon@leon.nu>, Vlastimil Babka <vbabka@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] mm: page_alloc: Fix setting of ZONE_FAIR_DEPLETED on UP v2
+Message-ID: <20140908115718.GL17501@suse.de>
+References: <1404893588-21371-1-git-send-email-mgorman@suse.de>
+ <1404893588-21371-7-git-send-email-mgorman@suse.de>
+ <53E4EC53.1050904@suse.cz>
+ <20140811121241.GD7970@suse.de>
+ <53E8B83D.1070004@suse.cz>
+ <20140902140116.GD29501@cmpxchg.org>
+ <20140905101451.GF17501@suse.de>
+ <CALq1K=JO2b-=iq40RRvK8JFFbrzyH5EyAp5jyS50CeV0P3eQcA@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 00/15] Krait clocks + Krait CPUfreq
-References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <540D7A18.4030201@smartplayin.com>
-In-Reply-To: <540D7A18.4030201@smartplayin.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CALq1K=JO2b-=iq40RRvK8JFFbrzyH5EyAp5jyS50CeV0P3eQcA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry Stephen for spaming.
-I read the full patch cover letter and found your note. Somehow I missed
-on that.
+Commit 4ffeaf35 (mm: page_alloc: reduce cost of the fair zone allocation
+policy) arguably broke the fair zone allocation policy on UP with these
+hunks.
 
-Thanks
-Pramod
-On Monday 08 September 2014 03:12 PM, Pramod Gurav wrote:
-> Hi Stephen,
-> Looks like one patch is missing from v1. Is this removed from v2
-> patchset from some reason?
-> 	ARM: Add Krait L2 register accessor functions
-> 
-> But there are references to this in v2 set and build fails while
-> compiling drivers/clk/qcom/clk-krait.c.
-> 
-> Thanks and Regards
-> Pramod
-> 
-> On Saturday 06 September 2014 04:17 AM, Stephen Boyd wrote:
->> These patches provide cpufreq scaling on devices with Krait CPUs.
->> In Krait CPU designs there's one PLL and two muxes per CPU, allowing
->> us to switch CPU frequencies independently.
->>
->> 				 secondary
->> 	 +-----+                    +
->> 	 | QSB |-------+------------|\
->> 	 +-----+       |            | |-+
->> 		       |    +-------|/  |
->> 		       |    |       +   |
->> 	 +-----+       |    |           |
->> 	 | PLL |----+-------+           |   primary
->> 	 +-----+    |  |                |     +
->> 		    |  |                +-----|\       +------+
->> 	 +-------+  |  |                      | \      |      |
->> 	 | HFPLL |----------+-----------------|  |-----| CPU0 |
->> 	 +-------+  |  |    |                 |  |     |      |
->> 		    |  |    | +-----+         | /      +------+
->> 		    |  |    +-| / 2 |---------|/
->> 		    |  |      +-----+         +
->> 		    |  |         secondary
->> 		    |  |            +
->> 		    |  +------------|\
->> 		    |               | |-+
->> 		    +---------------|/  |   primary
->> 				    +   |     +
->> 					+-----|\       +------+
->> 	 +-------+                            | \      |      |
->> 	 | HFPLL |----------------------------|  |-----| CPU1 |
->> 	 +-------+          |                 |  |     |      |
->> 			    | +-----+         | /      +------+
->> 			    +-| / 2 |---------|/
->> 			      +-----+         +
->>
->> To support this in the common clock framework we model the muxes,
->> dividers, and PLLs as different clocks. CPUfreq only interacts
->> with the primary mux (farthest right in the diagram). When CPUfreq
->> sets a rate, the mux code finds the best parent that can provide the rate.
->> Due to the design, QSB and the top PLL are always a fixed rate and thus
->> only support one frequency each. These sources provide the lowest
->> frequencies for the CPUs. The HFPLLs are where we can make the CPU go
->> faster (GHz range). Sometimes we need to run the HFPLL twice as
->> fast and divide it by two to get a particular frequency.
->>
->> When switching rates we can't leave the CPU clocked by the HFPLL because
->> we need to turn off the output of the PLL when changing its frequency.
->> This means we have to switch over to the secondary mux and use one of the
->> fixed sources. This is why we need something like the safe parent patch.
->>
->> I plan to submit the DTS changes through arm-soc, but I've included everything
->> here to make it easier to pick things up for testing, etc. Please note
->> that these patches rely on the Krait L2 accessor patch I posted a while back
->> in another series[1]. This also relies on the cpufreq-generic patchset from
->> Viresh[2]. If anything can be picked up right now it would be better
->> to reduce the churn over time as other pieces settle. The series gets
->> progressively more controversial as it goes on, so I hope that things
->> near the beggining will be picked up earlier.
->>
->> Changes since v1:
->>  * Added IPQ and APQ8064 support
->>  * Switched to cpufreq-generic
->>  * Added OPP parsing from DT (need to write binding though)
->>  * New patches to make clk-generic.c go away
->>   * Made mux and divider reusable for non-MMIO devices
->>   * Added a mux_determine_rate_closest (not sure if this is really needed)
->>   * Added unregistration of muxes
->>  * New patch to avoid sending high frequencies down to devices using clocks
->>
->> TODO:
->>  * Add Krait regulator voltage scaling (not strictly necessary)
->>  * Document DT bindings
->>  * Use a new efuse/eeprom API instead of hardcoding the location in the driver
->>  * Add some thermal awareness
->>
->>
->> Stephen Boyd (15):
->>   clk: mux: Add unregistration API
->>   clk: mux: Split out register accessors for reuse
->>   clk: Add __clk_mux_determine_rate_closest
->>   clk: divider: Make generic for usage elsewhere
->>   clk: Add safe switch hook
->>   clk: Avoid sending high rates to downstream clocks during set_rate
->>   clk: qcom: Add support for High-Frequency PLLs (HFPLLs)
->>   clk: qcom: Add HFPLL driver
->>   clk: qcom: Add MSM8960/APQ8064's HFPLLs
->>   clk: qcom: Add IPQ806X's HFPLLs
->>   clk: qcom: Add support for Krait clocks
->>   clk: qcom: Add KPSS ACC/GCC driver
->>   clk: qcom: Add Krait clock controller driver
->>   cpufreq: Add module to register cpufreq on Krait CPUs
->>   ARM: dts: qcom: Add necessary DT data for Krait cpufreq
->>
->>  arch/arm/boot/dts/qcom-apq8064.dtsi          | 230 +++++++++++++++++
->>  arch/arm/boot/dts/qcom-msm8960.dtsi          |  49 ++++
->>  arch/arm/boot/dts/qcom-msm8974.dtsi          | 311 ++++++++++++++++++++++-
->>  drivers/clk/clk-divider.c                    | 197 +++++++++------
->>  drivers/clk/clk-mux.c                        |  91 ++++---
->>  drivers/clk/clk.c                            | 133 +++++++---
->>  drivers/clk/qcom/Kconfig                     |  28 +++
->>  drivers/clk/qcom/Makefile                    |   5 +
->>  drivers/clk/qcom/clk-hfpll.c                 | 253 +++++++++++++++++++
->>  drivers/clk/qcom/clk-hfpll.h                 |  54 ++++
->>  drivers/clk/qcom/clk-krait.c                 | 166 +++++++++++++
->>  drivers/clk/qcom/clk-krait.h                 |  49 ++++
->>  drivers/clk/qcom/gcc-ipq806x.c               |  83 +++++++
->>  drivers/clk/qcom/gcc-msm8960.c               | 172 +++++++++++++
->>  drivers/clk/qcom/hfpll.c                     | 110 +++++++++
->>  drivers/clk/qcom/kpss-xcc.c                  |  94 +++++++
->>  drivers/clk/qcom/krait-cc.c                  | 357 +++++++++++++++++++++++++++
->>  drivers/cpufreq/Kconfig.arm                  |   9 +
->>  drivers/cpufreq/Makefile                     |   1 +
->>  drivers/cpufreq/qcom-cpufreq.c               | 199 +++++++++++++++
->>  include/dt-bindings/clock/qcom,gcc-msm8960.h |   2 +
->>  include/linux/clk-private.h                  |   2 +
->>  include/linux/clk-provider.h                 |  32 ++-
->>  23 files changed, 2486 insertions(+), 141 deletions(-)
->>  create mode 100644 drivers/clk/qcom/clk-hfpll.c
->>  create mode 100644 drivers/clk/qcom/clk-hfpll.h
->>  create mode 100644 drivers/clk/qcom/clk-krait.c
->>  create mode 100644 drivers/clk/qcom/clk-krait.h
->>  create mode 100644 drivers/clk/qcom/hfpll.c
->>  create mode 100644 drivers/clk/qcom/kpss-xcc.c
->>  create mode 100644 drivers/clk/qcom/krait-cc.c
->>  create mode 100644 drivers/cpufreq/qcom-cpufreq.c
->>
->> [1] http://lkml.iu.edu/hypermail/linux/kernel/1404.0/02636.html
->> [2] git://git.linaro.org/people/viresh.kumar/linux cpufreq/cpu0-krait-v3
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+a/mm/page_alloc.c
+b/mm/page_alloc.c
+@@ -1612,6 +1612,9 @@ again:
+       	}
+
+       	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++       if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
++           !zone_is_fair_depleted(zone))
++               zone_set_flag(zone, ZONE_FAIR_DEPLETED);
+
+       	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+       	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1966,8 +1985,10 @@ zonelist_scan:
+               	if (alloc_flags & ALLOC_FAIR) {
+                       	if (!zone_local(preferred_zone, zone))
+                               	break;
+-                       if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++                       if (zone_is_fair_depleted(zone)) {
++                               nr_fair_skipped++;
+                               	continue;
++                       }
+               	}
+
+A <= check was replaced with a ==. On SMP it doesn't matter because
+negative values are returned as zero due to per-CPU drift which is not
+possible in the UP case. Vlastimil Babka correctly pointed out that this
+can wrap negative due to high-order allocations.
+
+However, Leon Romanovsky pointed out that a <= check on zone_page_state
+was never correct as zone_page_state returns unsigned long so the root
+cause of the breakage was the <= check in the first place.
+
+zone_page_state is an API hazard because of the difference in behaviour
+between SMP and UP is very surprising. There is a good reason to allow
+NR_ALLOC_BATCH to go negative -- when the counter is reset the negative
+value takes recent activity into account. This patch makes zone_page_state
+behave the same on SMP and UP as saving one branch on UP is not likely to
+make a measurable performance difference.
+
+Reported-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Leon Romanovsky <leon@leon.nu>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/vmstat.h | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 82e7db7..cece0f0 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -131,10 +131,8 @@ static inline unsigned long zone_page_state(struct zone *zone,
+ 					enum zone_stat_item item)
+ {
+ 	long x = atomic_long_read(&zone->vm_stat[item]);
+-#ifdef CONFIG_SMP
+ 	if (x < 0)
+ 		x = 0;
+-#endif
+ 	return x;
+ }
+ 
