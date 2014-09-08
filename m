@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbaIHMgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:36:00 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60290 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752946AbaIHMf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:35:59 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch] mm: page_alloc: fix zone allocation fairness on UP
-Date: Mon,  8 Sep 2014 08:35:51 -0400
-Message-Id: <1410179751-28115-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.4
+	id S1753915AbaIHMhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:37:42 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:46179 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483AbaIHMhl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 08:37:41 -0400
+MIME-Version: 1.0
+X-Originating-IP: [95.23.61.81]
+In-Reply-To: <1408533593-32346-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1408533593-32346-1-git-send-email-javier.martinez@collabora.co.uk>
+Date: Mon, 8 Sep 2014 14:37:39 +0200
+Message-ID: <CABxcv==ycrPw1MTv7X0baX2WfqgDS+4EEfGAWc+ZhpiR6=Uy+Q@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] Add max77802 support for Peach boards
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The zone allocation batches can easily underflow due to higher-order
-allocations or spills to remote nodes.  On SMP that's fine, because
-underflows are expected from concurrency and dealt with by returning
-0.  But on UP, zone_page_state will just return a wrapped unsigned
-long, which will get past the <= 0 check and then consider the zone
-eligible until its watermarks are hit.
+Hello Kukjin,
 
-3a025760fc15 ("mm: page_alloc: spill to remote nodes before waking
-kswapd") already made the counter-resetting use atomic_long_read() to
-accomodate underflows from remote spills, but it didn't go all the way
-with it.  Make it clear that these batches are expected to go negative
-regardless of concurrency, and use atomic_long_read() everywhere.
+On Wed, Aug 20, 2014 at 1:19 PM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+>
+> This is a second version of the series that adds max77802 support for
+> the Peach Pit and Pi boards. The series also have all the pending
+> patches that were posted but depended on this support. I've picked
+> all the patches I found and rebased them to be sure that they apply
+> cleanly on top of linux-next. Also I've taken some DT snippets from
+> the downstream Chrome OS 3.8 kernel DTS for devices that use one of
+> these regulators as their input supply.
+>
 
-Fixes: 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: "3.12+" <stable@kernel.org>
----
- mm/page_alloc.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+Any comments on this series?
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 18cee0d4c8a2..eee961958021 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1612,7 +1612,7 @@ again:
- 	}
- 
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
--	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
-+	if (atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]) <= 0 &&
- 	    !zone_is_fair_depleted(zone))
- 		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
- 
-@@ -5701,9 +5701,8 @@ static void __setup_per_zone_wmarks(void)
- 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
- 
- 		__mod_zone_page_state(zone, NR_ALLOC_BATCH,
--				      high_wmark_pages(zone) -
--				      low_wmark_pages(zone) -
--				      zone_page_state(zone, NR_ALLOC_BATCH));
-+			high_wmark_pages(zone) - low_wmark_pages(zone) -
-+			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
- 
- 		setup_zone_migrate_reserve(zone);
- 		spin_unlock_irqrestore(&zone->lock, flags);
--- 
-2.0.4
-
+Best regards,
+Javier
