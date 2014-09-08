@@ -1,89 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaIHXi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:38:27 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:65535 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295AbaIHXiZ (ORCPT
+	id S1755487AbaIHXib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:38:31 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:54967 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295AbaIHXi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:38:25 -0400
+	Mon, 8 Sep 2014 19:38:28 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Sabrina Dubroca <sd@queasysnail.net>, linux-mm@kvack.org
-Subject: [PATCH v2 1/3] mm: use memblock_alloc_range_nid() and memblock_alloc_range()
-Date: Tue,  9 Sep 2014 08:38:02 +0900
-Message-Id: <1410219484-8038-1-git-send-email-akinobu.mita@gmail.com>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org
+Subject: [PATCH v2 2/3] x86: use memblock_alloc_range()
+Date: Tue,  9 Sep 2014 08:38:03 +0900
+Message-Id: <1410219484-8038-2-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410219484-8038-1-git-send-email-akinobu.mita@gmail.com>
+References: <1410219484-8038-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memblock_alloc_range_nid() is equivalent to memblock_find_in_range_node()
-followed by memblock_reserve().  memblock_alloc_range() is equivalent to
-memblock_alloc_range_nid() with NUMA_NO_NODE for any node.
+memblock_alloc_range() is equivalent to memblock_find_in_range()
+followed by memblock_reserve().  Convert to use it where possible.
 
-Convert to use these functions and remove subsequent kmemleak_alloc()
-call as it is already called in memblock_alloc() and its variants.
-
-This is just a cleanup.
+This is mainly a cleanup.  Also, memblock_alloc_range() calls
+kmemleak_alloc() for allocated memory block with min_count of 0, so that
+it is never reported as leaks.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Sabrina Dubroca <sd@queasysnail.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
 Cc: linux-mm@kvack.org
 ---
-* v2: fix overlapping kmemleak_alloc() calls, reported by Sabrina Dubroca.
+* v2: split from membloc_alloc_base() conversions.
 
- mm/memblock.c | 18 ++----------------
- 1 file changed, 2 insertions(+), 16 deletions(-)
+ arch/x86/kernel/aperture_64.c |  6 +++---
+ arch/x86/kernel/setup.c       | 17 ++++++++---------
+ arch/x86/mm/init.c            |  7 +++----
+ 3 files changed, 14 insertions(+), 16 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 70fad0c..a942f6e 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -1150,21 +1150,16 @@ static void * __init memblock_virt_alloc_internal(
- 	if (WARN_ON_ONCE(slab_is_available()))
- 		return kzalloc_node(size, GFP_NOWAIT, nid);
- 
--	if (!align)
--		align = SMP_CACHE_BYTES;
--
- 	if (max_addr > memblock.current_limit)
- 		max_addr = memblock.current_limit;
- 
- again:
--	alloc = memblock_find_in_range_node(size, align, min_addr, max_addr,
--					    nid);
-+	alloc = memblock_alloc_range_nid(size, align, min_addr, max_addr, nid);
- 	if (alloc)
- 		goto done;
- 
- 	if (nid != NUMA_NO_NODE) {
--		alloc = memblock_find_in_range_node(size, align, min_addr,
--						    max_addr,  NUMA_NO_NODE);
-+		alloc = memblock_alloc_range(size, align, min_addr, max_addr);
- 		if (alloc)
- 			goto done;
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 76164e1..baaa7c9 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -74,14 +74,14 @@ static u32 __init allocate_aperture(void)
+ 	 * memory. Unfortunately we cannot move it up because that would
+ 	 * make the IOMMU useless.
+ 	 */
+-	addr = memblock_find_in_range(GART_MIN_ADDR, GART_MAX_ADDR,
+-				      aper_size, aper_size);
++	addr = memblock_alloc_range(aper_size, aper_size,
++				    GART_MIN_ADDR, GART_MAX_ADDR);
++
+ 	if (!addr) {
+ 		pr_err("Cannot allocate aperture memory hole [mem %#010lx-%#010lx] (%uKB)\n",
+ 		       addr, addr + aper_size - 1, aper_size >> 10);
+ 		return 0;
  	}
-@@ -1177,18 +1172,9 @@ again:
+-	memblock_reserve(addr, aper_size);
+ 	pr_info("Mapping aperture over RAM [mem %#010lx-%#010lx] (%uKB)\n",
+ 		addr, addr + aper_size - 1, aper_size >> 10);
+ 	register_nosave_region(addr >> PAGE_SHIFT,
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 41ead8d..7d32406 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -545,8 +545,8 @@ static void __init reserve_crashkernel_low(void)
+ 			return;
  	}
  
- done:
--	memblock_reserve(alloc, size);
- 	ptr = phys_to_virt(alloc);
- 	memset(ptr, 0, size);
+-	low_base = memblock_find_in_range(low_size, (1ULL<<32),
+-					low_size, alignment);
++	low_base = memblock_alloc_range(low_size, alignment,
++					low_size, 1ULL << 32);
  
--	/*
--	 * The min_count is set to 0 so that bootmem allocated blocks
--	 * are never reported as leaks. This is because many of these blocks
--	 * are only referred via the physical address which is not
--	 * looked up by kmemleak.
--	 */
--	kmemleak_alloc(ptr, size, 0, 0);
--
- 	return ptr;
+ 	if (!low_base) {
+ 		if (!auto_set)
+@@ -555,7 +555,6 @@ static void __init reserve_crashkernel_low(void)
+ 		return;
+ 	}
  
- error:
+-	memblock_reserve(low_base, low_size);
+ 	pr_info("Reserving %ldMB of low memory at %ldMB for crashkernel (System low RAM: %ldMB)\n",
+ 			(unsigned long)(low_size >> 20),
+ 			(unsigned long)(low_base >> 20),
+@@ -593,10 +592,10 @@ static void __init reserve_crashkernel(void)
+ 		/*
+ 		 *  kexec want bzImage is below CRASH_KERNEL_ADDR_MAX
+ 		 */
+-		crash_base = memblock_find_in_range(alignment,
++		crash_base = memblock_alloc_range(crash_size, alignment,
++					alignment,
+ 					high ? CRASH_KERNEL_ADDR_HIGH_MAX :
+-					       CRASH_KERNEL_ADDR_LOW_MAX,
+-					crash_size, alignment);
++					       CRASH_KERNEL_ADDR_LOW_MAX);
+ 
+ 		if (!crash_base) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
+@@ -606,14 +605,14 @@ static void __init reserve_crashkernel(void)
+ 	} else {
+ 		unsigned long long start;
+ 
+-		start = memblock_find_in_range(crash_base,
+-				 crash_base + crash_size, crash_size, 1<<20);
++		start = memblock_alloc_range(crash_size, 1 << 20,
++					     crash_base,
++					     crash_base + crash_size);
+ 		if (start != crash_base) {
+ 			pr_info("crashkernel reservation failed - memory is in use.\n");
+ 			return;
+ 		}
+ 	}
+-	memblock_reserve(crash_base, crash_size);
+ 
+ 	printk(KERN_INFO "Reserving %ldMB of memory at %ldMB "
+ 			"for crashkernel (System RAM: %ldMB)\n",
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 66dba36..76f67be 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -61,12 +61,11 @@ __ref void *alloc_low_pages(unsigned int num)
+ 		unsigned long ret;
+ 		if (min_pfn_mapped >= max_pfn_mapped)
+ 			panic("alloc_low_pages: ran out of memory");
+-		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+-					max_pfn_mapped << PAGE_SHIFT,
+-					PAGE_SIZE * num , PAGE_SIZE);
++		ret = memblock_alloc_range(PAGE_SIZE * num, PAGE_SIZE,
++					   min_pfn_mapped << PAGE_SHIFT,
++					   max_pfn_mapped << PAGE_SHIFT);
+ 		if (!ret)
+ 			panic("alloc_low_pages: can not alloc memory");
+-		memblock_reserve(ret, PAGE_SIZE * num);
+ 		pfn = ret >> PAGE_SHIFT;
+ 	} else {
+ 		pfn = pgt_buf_end;
 -- 
 1.9.1
 
