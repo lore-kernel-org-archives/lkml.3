@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaIHH6s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:58:48 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:38564 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809AbaIHH6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:58:47 -0400
-From: Nix <nix@esperi.org.uk>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <878um4tg09.fsf@spindle.srvr.nix>
-	<1409569752.24385.12.camel@linux-fkkt.site>
-	<874mwnosz1.fsf@spindle.srvr.nix>
-	<1409903983.9532.0.camel@linux-fkkt.site>
-	<8761h2nlk4.fsf@spindle.srvr.nix>
-	<1410160901.11338.16.camel@linux-fkkt.site>
-Emacs: if it payed rent for disk space, you'd be rich.
-Date: Mon, 08 Sep 2014 08:58:44 +0100
-In-Reply-To: <1410160901.11338.16.camel@linux-fkkt.site> (Oliver Neukum's
-	message of "Mon, 08 Sep 2014 09:21:41 +0200")
-Message-ID: <87sik2czm3.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	id S1753347AbaIHH7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:59:23 -0400
+Received: from ozlabs.org ([103.22.144.67]:35625 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752995AbaIHH7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 03:59:21 -0400
+Date: Mon, 8 Sep 2014 17:59:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@infradead.org>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Peter Foley <pefoley2@pefoley.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Willem de Bruijn <willemb@google.com>
+Subject: linux-next: manual merge of the rd-docs tree with the net-next tree
+Message-ID: <20140908175913.42603191@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=2 Fuz1=2 Fuz2=2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ubLhkEWkDM/WYMowOA=QCiz"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 Sep 2014, Oliver Neukum said:
+--Sig_/ubLhkEWkDM/WYMowOA=QCiz
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On Fri, 2014-09-05 at 16:17 +0100, Nix wrote:
->> On 5 Sep 2014, Oliver Neukum verbalised:
->> 
->> > On Fri, 2014-09-05 at 00:40 +0100, Nix wrote:
->> >> I'm working around this confusing morass by rebooting into each test
->> >> kernel, unplugging and replugging the entropy key if it was fubared,
->> >> then rebooting into the same kernel again and seeing if it was still
->> >> fubared. But this is not terribly fast, particularly not on a headless
->> >> compact-flash-based Geode box which doesn't even complete booting
->> >> without the entropy source which this bug cuts off :) so it'll be
->> >> sometime tomorrow before I can get this bisection done, I'm afraid.
->> >
->> > Ugh. My sympathies. I cannot suggest a better method, I am afraid.
->> 
->> Well, that method doesn't work. I've found pairs of kernels (e.g.
->> 59a3d4c3631e553357b7305dc09db1990aa6757c and
->> b05d59dfceaea72565b1648af929b037b0f96d7f) where each kernel works on its
->> own (rebooting from that kernel into the same kernel keeps a working
->> key, so I would normally assume that each kernel is OK) but rebooting
->> from the first into the second yields a broken one if it was working
->> before (so one of them must, in fact, be broken, but I have no clue
->> which one).
->> 
->> So I can't figure out how to bisect this.
->> 
->> Any suggestions as to what failure-test I might use, or what other
->> methods I might use to figure out what's going wrong? Not knowing
->> anything about USB doesn't help here. I don't know for sure that this is
->> a cdc-acm problem -- bisecting just the cdc-acm driver was fruitless --
->> so it might be something more generally USBish.
->
-> Do your kernels work if you start with a known good kernel e.g.
-> 3.15 and then reboot?
+Hi Randy,
 
-That case works -- aha, so I could orchestrate it by going
+Today's linux-next merge of the rd-docs tree got a conflict in
+Documentation/networking/timestamping/Makefile between commit
+8fe2f761cae9 ("net-timestamp: expand documentation") from the net-next
+tree and commits 429cbe7863ad ("Documentation: use subdir-y to avoid
+unnecessary built-in.o files") and b07a884ea14d ("Documentation: add
+makefiles for more targets") from the rd-docs tree.
 
-3.15 -> test -> test -> reset to 3.15 -> test -> test ...
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-i.e. a triple reboot cycle. Should have thought of that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-God, what a pain :)
+diff --cc Documentation/networking/timestamping/Makefile
+index 95e239c70076,52ac67da9315..000000000000
+--- a/Documentation/networking/timestamping/Makefile
++++ b/Documentation/networking/timestamping/Makefile
+@@@ -1,20 -1,8 +1,14 @@@
+ +# To compile, from the source root
+ +#
+ +#    make headers_install
+ +#    make M=3Ddocumentation
+ +
+- # kbuild trick to avoid linker error. Can be omitted if a module is built.
+- obj- :=3D dummy.o
+-=20
+  # List of programs to build
+- hostprogs-y :=3D timestamping txtimestamp hwtstamp_config
+ -hostprogs-y :=3D hwtstamp_config timestamping
+++hostprogs-y :=3D hwtstamp_config timestamping txtimestamp
+ =20
+  # Tell kbuild to always build the programs
+  always :=3D $(hostprogs-y)
+ =20
+  HOSTCFLAGS_timestamping.o +=3D -I$(objtree)/usr/include
+ +HOSTCFLAGS_txtimestamp.o +=3D -I$(objtree)/usr/include
+  HOSTCFLAGS_hwtstamp_config.o +=3D -I$(objtree)/usr/include
+-=20
+- clean:
+- 	rm -f timestamping txtimestamp hwtstamp_config
 
-I'll give it a try tonight.
+--Sig_/ubLhkEWkDM/WYMowOA=QCiz
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
--- 
-NULL && (void)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUDWHWAAoJEMDTa8Ir7ZwVLKQP/2pDg7ZUUQaBG14pqSJk6H3/
+A9I5c1sve+pUcLOmJyUSEDZ6etd4s25nmTS2e00eGnFv7mcrefMMP4E547f8tYqg
+5dK1WZzRTB02AGWjq41iRMbscipxFpEGkPeaNCOR82EYOXeVysVyREpXuPX9jD+N
+R73/y+8ilr/z1UbvtJAe0Rm6Jnsh5nthJ0KPW3IN3iYtgICrGIlTMIaMPg3zxNnr
+dAqoZMg6PlCOzxoJxgETq1Yi84CCVZ08Q/BCAc5aX+4ezNj45TnbuS0xj8jECOiz
+1X2r1w0thbbFKDMP1l1vXzDceuJ3VpMCzfXYVIFkXKZRRS0fst3/e5zpqqB8ehxO
+Zhn0boNpSFG7uC6qmUt2vazzAtVy68IGDq2d/jITCI1YjKmOrCPEZuiRefCLnE2k
+BU7LtA2e2FgluQ4woLGvwTyBaRaVZiIuZ6FPn/uEs9arYxm62JarzFeJdbNeLztC
+OBb0kwkw5GoSoY7ZxlR0haOk5X/E++Qyjg1sKFcFg7gUy1PVWDRLy3mLPKrU/U6d
+KKyqzj1vFRPdlsl3bD0+Oyo0Y1k4b24VLMaXttkv5n87V/vA4AoOW7M31YEfAWaX
+H+biJFBKHvYVClOSCIJJLbpPIetg+s8QlnBvDD/MLO5BJ/OMIUTabq3Qy5M08T74
+S3z9GBTs0pouZL8IwpZq
+=GC/k
+-----END PGP SIGNATURE-----
+
+--Sig_/ubLhkEWkDM/WYMowOA=QCiz--
