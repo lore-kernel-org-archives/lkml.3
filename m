@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaIHWz6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:55:58 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53009 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754958AbaIHWz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:55:57 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Tue, 09 Sep 2014 01:15:23 +0200
-Message-ID: <1899038.KOOHvy2XUu@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140908225012.GE3806@mtj.dyndns.org>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <2588099.AI1YmNFQ25@vostro.rjw.lan> <20140908225012.GE3806@mtj.dyndns.org>
+	id S1755278AbaIHW7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:59:33 -0400
+Received: from ozlabs.org ([103.22.144.67]:42199 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755110AbaIHW7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 18:59:32 -0400
+Date: Tue, 9 Sep 2014 08:59:29 +1000
+From: Anton Blanchard <anton@samba.org>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: Ignore stripped vmlinux and fallback to kallsyms
+Message-ID: <20140909085929.4a5a81f0@kryten>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 09, 2014 07:50:12 AM Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Sep 09, 2014 at 12:48:28AM +0200, Rafael J. Wysocki wrote:
-> > Well, not exactly from anywhere.  Just from where try_to_freeze() is called
-> > I suppose?
-> 
-> Yeap, anywhere try_to_freeze() may be called.
-> 
-> > Which means that if this is a user space task, it won't to a lot before dying,
-> > will it?
-> 
-> Userland tasks aren't likely to a lot of damages before dying but then
-> again there's no guarantee.  As it currently stands, try_to_freeze()
-> can be anywhere.
+If a vmlinux is stripped, perf will use it and ignore kallsyms. We
+end up with useless profiles where everything maps to a few
+runtime symbols:
 
-Well, in that case the TIF_MEMDIE test alone is not sufficient in my opinion,
-because we can't guarantee that the task will not do something it was frozen
-to prevent it from doing.
+    63.39%       swapper  [kernel.kallsyms]   [k] hcall_real_table
+     4.90%      beam.smp  [kernel.kallsyms]   [k] hcall_real_table
+     4.44%      beam.smp  [kernel.kallsyms]   [k] __sched_text_start
+     3.72%      beam.smp  [kernel.kallsyms]   [k] __run_at_kexec
 
-I'm not sure about the cgroups freezing case, however.
+Detect this case and fallback to using kallsyms. This fixes the issue:
 
-Rafael
+    62.81%       swapper  [kernel.kallsyms]   [k] snooze_loop
+     4.44%      beam.smp  [kernel.kallsyms]   [k] __schedule
+     0.91%      beam.smp  [kernel.kallsyms]   [k] _switch
+     0.73%      beam.smp  [kernel.kallsyms]   [k] put_prev_entity
 
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+Index: b/tools/perf/util/symbol-elf.c
+===================================================================
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -712,6 +712,14 @@ int dso__load_sym(struct dso *dso, struc
+ 		symbols__delete(&dso->symbols[map->type]);
+ 
+ 	if (!syms_ss->symtab) {
++		/*
++		 * If the vmlinux is stripped, fail so we will fall back
++		 * to using kallsyms. The vmlinux runtime symbols aren't
++		 * of much use.
++		 */
++		if (dso->kernel)
++			goto out_elf_end;
++
+ 		syms_ss->symtab  = syms_ss->dynsym;
+ 		syms_ss->symshdr = syms_ss->dynshdr;
+ 	}
