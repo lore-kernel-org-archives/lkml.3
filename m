@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaIHHxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:53:07 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:58792 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874AbaIHHxG (ORCPT
+	id S1753167AbaIHHzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:55:10 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:48284 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665AbaIHHzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:53:06 -0400
-Message-ID: <1410160901.11338.16.camel@linux-fkkt.site>
-Subject: Re: [3.16.1 REGRESSION]: Simtec Entropy Key (cdc-acm) broken in
- 3.16
-From: Oliver Neukum <oliver@neukum.org>
-To: Nix <nix@esperi.org.uk>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <8761h2nlk4.fsf@spindle.srvr.nix>
-References: <878um4tg09.fsf@spindle.srvr.nix>
-	 <1409569752.24385.12.camel@linux-fkkt.site>
-	 <874mwnosz1.fsf@spindle.srvr.nix> <1409903983.9532.0.camel@linux-fkkt.site>
-	 <8761h2nlk4.fsf@spindle.srvr.nix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Sep 2014 09:21:41 +0200
-Mime-Version: 1.0
-X-Mailer: Evolution 3.10.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Sep 2014 03:55:08 -0400
+Date: Mon, 8 Sep 2014 09:54:59 +0200
+From: Robert Richter <rric@kernel.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 3/4] arm64, thunder: Document devicetree bindings for
+ Cavium Thunder SoC
+Message-ID: <20140908075459.GW4703@rric.localhost>
+References: <1409903205-2762-1-git-send-email-rric@kernel.org>
+ <1409903205-2762-4-git-send-email-rric@kernel.org>
+ <20140905084200.GE13515@arm.com>
+ <20140905093222.GS4703@rric.localhost>
+ <20140905093932.GI2172@leverpostej>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905093932.GI2172@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-05 at 16:17 +0100, Nix wrote:
-> On 5 Sep 2014, Oliver Neukum verbalised:
+On 05.09.14 10:39:33, Mark Rutland wrote:
+> On Fri, Sep 05, 2014 at 10:32:22AM +0100, Robert Richter wrote:
+> > On 05.09.14 09:42:00, Will Deacon wrote:
+> > > On Fri, Sep 05, 2014 at 08:46:44AM +0100, Robert Richter wrote:
+> > > > From: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > > > 
+> > > > This patch adds documentation for the devicetree bindings used by the
+> > > > DT files of Cavium Thunder SoC platforms.
+> > > > 
+> > > > Signed-off-by: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> > > > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > > > ---
+> > > >  Documentation/devicetree/bindings/arm/cavium-thunder.txt | 10 ++++++++++
+> > > >  Documentation/devicetree/bindings/arm/cpus.txt           |  1 +
+> > > >  2 files changed, 11 insertions(+)
+> > > >  create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
+> > > > 
+> > > > diff --git a/Documentation/devicetree/bindings/arm/cavium-thunder.txt b/Documentation/devicetree/bindings/arm/cavium-thunder.txt
+> > > > new file mode 100644
+> > > > index 000000000000..6f63a5866902
+> > > > --- /dev/null
+> > > > +++ b/Documentation/devicetree/bindings/arm/cavium-thunder.txt
+> > > > @@ -0,0 +1,10 @@
+> > > > +Cavium Thunder platform device tree bindings
+> > > > +--------------------------------------------
+> > > > +
+> > > > +Boards with Cavium's Thunder SoC shall have following properties.
+> > > > +
+> > > > +Root Node
+> > > > +---------
+> > > > +Required root node properties:
+> > > > +
+> > > > +  - compatible = "cavium,thunder-88xx";
+> > > 
+> > > Is this file necessary? We don't have one for xgene afaict.
+> > 
+> > Hmm, looking at Documentation/devicetree/bindings/arm/calxeda.txt
+> > there is something similar.
+> > 
+> > I am fine with both, keeping or removing it.
+> > 
+> > Would leave this to the DT maintainers.
 > 
-> > On Fri, 2014-09-05 at 00:40 +0100, Nix wrote:
-> >> I'm working around this confusing morass by rebooting into each test
-> >> kernel, unplugging and replugging the entropy key if it was fubared,
-> >> then rebooting into the same kernel again and seeing if it was still
-> >> fubared. But this is not terribly fast, particularly not on a headless
-> >> compact-flash-based Geode box which doesn't even complete booting
-> >> without the entropy source which this bug cuts off :) so it'll be
-> >> sometime tomorrow before I can get this bisection done, I'm afraid.
-> >
-> > Ugh. My sympathies. I cannot suggest a better method, I am afraid.
-> 
-> Well, that method doesn't work. I've found pairs of kernels (e.g.
-> 59a3d4c3631e553357b7305dc09db1990aa6757c and
-> b05d59dfceaea72565b1648af929b037b0f96d7f) where each kernel works on its
-> own (rebooting from that kernel into the same kernel keeps a working
-> key, so I would normally assume that each kernel is OK) but rebooting
-> from the first into the second yields a broken one if it was working
-> before (so one of them must, in fact, be broken, but I have no clue
-> which one).
-> 
-> So I can't figure out how to bisect this.
-> 
-> Any suggestions as to what failure-test I might use, or what other
-> methods I might use to figure out what's going wrong? Not knowing
-> anything about USB doesn't help here. I don't know for sure that this is
-> a cdc-acm problem -- bisecting just the cdc-acm driver was fruitless --
-> so it might be something more generally USBish.
-> 
+> Having a required root node compatible is fine, though I would only
+> expect it to be necessary for errata workarounds if we have no other way
+> of detecting things.
 
-Do your kernels work if you start with a known good kernel e.g.
-3.15 and then reboot?
+Ok, will keep the change.
 
-	Regards
-		Oliver
+> That said, compatible strings shouldn't have wildcards, so
+> "cavium,thunder-88xx" should be replaced with something more specific.
+> Later boards can claim compatibility with that (but should have their
+> own strings too).
 
+88xx is not a wildcard for chips, there are no chips named 8800 or
+whatever, instead we have e.g. 87xx. That said, 88xx is the specific
+name of the soc and the first reference board. If there will be other
+boards with the same soc, it should have its own name but should be
+compatible with cavium,thunder-88xx. Later soc revisions will get a
+different name than thunder-88xx for differentiation.
 
+-Robert
