@@ -1,174 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaIHMZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:25:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33772 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaIHMZy convert rfc822-to-8bit (ORCPT
+	id S1753796AbaIHM0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:26:01 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:63475 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630AbaIHMZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:25:54 -0400
-Date: Mon, 8 Sep 2014 13:25:49 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v9 06/12] ARM: integrator: Correct usage of
- of_pci_range_to_resource()
-Message-ID: <20140908122549.GI27864@e106497-lin.cambridge.arm.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-7-git-send-email-Liviu.Dudau@arm.com>
- <20140905220820.GI8080@google.com>
+	Mon, 8 Sep 2014 08:25:57 -0400
+Message-ID: <540DA051.2030701@converseincode.com>
+Date: Mon, 08 Sep 2014 07:25:53 -0500
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140905220820.GI8080@google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Sep 2014 12:25:50.0777 (UTC) FILETIME=[06C2EA90:01CFCB60]
-X-MC-Unique: 114090813255110701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: zohar@linux.vnet.ibm.com, james.l.morris@oracle.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, serge@hallyn.com,
+        torvalds@linux-foundation.org, Mark Charlebois <charlebm@gmail.com>,
+        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH] security, crypto: LLVMLinux: Remove VLAIS from ima_crypto.c
+References: <1409958360-8061-1-git-send-email-behanw@converseincode.com> <alpine.DEB.2.10.1409060131260.5472@nanos> <540A590F.1030407@converseincode.com> <alpine.DEB.2.10.1409061152090.5472@nanos> <540BBD9E.6050708@converseincode.com> <540D73C9.3000906@samsung.com>
+In-Reply-To: <540D73C9.3000906@samsung.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 11:08:20PM +0100, Bjorn Helgaas wrote:
-> [+cc Linus]
-> 
-> On Tue, Aug 12, 2014 at 05:25:19PM +0100, Liviu Dudau wrote:
-> > Previously, of_pci_range_to_resource() would return a resource
-> > that contained physical addresses of the IO space even if the
-> > IORESOURCE_IO flags mandate a logical port set of values. Now
-> > that the function has been fixed we need to update the drivers
-> > that were taking advantage of the old behaviour.
-> > 
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> 
-> Something's wrong with the CC: list.  You list Linus here in the changelog,
-> but I don't see him in the CC: headers.
+On 09/08/14 04:15, Dmitry Kasatkin wrote:
+> On 07/09/14 05:06, Behan Webster wrote:
+>> On 09/06/14 03:11, Thomas Gleixner wrote:
+>>> On Fri, 5 Sep 2014, Behan Webster wrote:
+>>>> On 09/05/14 17:18, Thomas Gleixner wrote:
+>>>>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>>>>>> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+>>>>>> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+>>>>> This SOB chain is completely ass backwards. See Documentation/...
+>>>> "The Signed-off-by: tag indicates that the signer was involved in the
+>>>> development of the patch, or that he/she was in the patch's delivery
+>>>> path."
+>>>>
+>>>> All three of us were involved. Does that not satisfy this rule?
+>>> No. Read #12
+>>>
+>>> The sign-off is a simple line at the end of the explanation for the
+>>> patch, which certifies that you wrote it or otherwise have the right to
+>>> pass it on as an open-source patch.
+>>>
+>>> So the above chain says:
+>>>
+>>>      Written-by:   Behan
+>>>      Passed-on-by: Mark
+>>>      Passed-on-by: Jan
+>>>
+>>> That would be correct if you sent the patch to Mark, Mark sent it to
+>>> Jan and Jan finally submitted it to LKML.
+>> I suppose "Reviewed-by" is probably more appropriate for the last 2
+>> then. Will fix.
+>>
+>>>>>> -    struct {
+>>>>>> -        struct shash_desc shash;
+>>>>>> -        char ctx[crypto_shash_descsize(tfm)];
+>>>>>> -    } desc;
+>>>>>> +    char desc[sizeof(struct shash_desc) +
+>>>>>> +        crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR;
+>>>>>> +    struct shash_desc *shash = (struct shash_desc *)desc;
+>>>>> That anon struct should have never happened in the first place.
+>>>> Sadly this is a design pattern used in many places through out the
+>>>> kernel, and
+>>>> appears to be fundamental to the crypto system. I was advised *not*
+>>>> to change
+>>>> it, so we haven't.
+>>>>
+>>>> I agree that it's not a good practice.
+>>>>
+>>>>>     Not
+>>>>> your problem, but you are not making it any better. You replace open
+>>>>> coded crap with even more unreadable crap.
+>>>>>
+>>>>> Whats wrong with
+>>>>>
+>>>>>          SHASH_DESC_ON_STACK(shash, tfm);
+>>>> Nothing is wrong with that. I would have actually preferred that.
+>>>> But it would
+>>>> have fundamentally changed a lot more code.
+>>> Errm. Why is
+>>>
+>>> #define SHASH_DESC_ON_STACK(shash, tfm)                \
+>>>      char __shash[sizeof(.....)];                \
+>>>      struct shash_desc *shash = (struct shash_desc *) __shash
+>>>
+>>> requiring more fundamental than open coding the same thing a gazillion
+>>> times. You still need to change ALL usage sides of the anon struct.
+>>>
+>>> So in fact you could avoid the whole code change by making it
+>>>
+>>>      SHASH_DESC_ON_STACK(desc, tfm);
+>>>
+>>> and do the anon struct or a proper struct magic in the macro.
+>> I see. I thought you meant a more fundamental change to the crypto
+>> system API. My misunderstanding.
+>>
+>> Ironically we tried to stay away from macros since the last time we
+>> tried to replace VLAIS using macros (we've attempted patches to remove
+>> VLAIS a few times) we were told *not* to hide the implementation with
+>> macro magic. Though, to be fair, we were using more pointer math in
+>> our other macro-based effort, and the non-crypto uses of VLAIS are a
+>> lot more complex to replace.
+>>
+>> Like I said I'm actually a fan of hiding ugliness in macros. Will fix.
+>>
+>> Again, thanks for the feedback,
+>>
+>> Behan
+>>
+> Hi,
+>
+> Despite if it is crap or not, it was said already in this thread,
+> following "design pattern" is heavily used through out the kernel - by
+> crypto core itself and by many widely used clients.
+>
+>      struct {
+>          struct shash_desc shash;
+>          char ctx[crypto_shash_descsize(tfm)];
+>      } desc;
+>
+>
+> My question why do you want to change this particular piece of code?
+Because it employs Variable Length Arrays in Structs. A construct which 
+is explicitly forbidden by the C standard (C89, C99, C11). Because the 
+vast majority of kernel developers I've talked to about this have been 
+unaware of the use of VLAIS in the kernel and most find its use 
+objectionable (there is a similar objection to the use of nested 
+functions). Because implementing VLAIS in a compiler can severely impact 
+the generated instructions surrounding its use, which is why most 
+compilers don't implement VLAIS as a feature. Because using such a 
+construct precludes standards based compilers from competing with the 
+incumbent (my interest is enabling the use of clang and LLVM based 
+technologies as a toolchain choice to compile and develop the kernel).
 
-Yes, turns out one of my .git/config directories had supresscc=all.
+> What about rest of the kernel?
+The LLVMLinux project is systematically working to remove the use of 
+VLAIS from the kernel (already removed from ext4, USB Gadget, netfilter, 
+mac802.11, apparmor, bluetooth, etc). Users of the crpyto subsystem are 
+one of the last and heaviest users of VLAIS.
 
-Best regards,
-Liviu
+> To solve your problem you probably need to change everything.
+Essentially yes. Though I like to think of it as finding alternatives to 
+where ever it is still used. "Changing everything" implies much larger 
+changes which aren't necessary in most cases. Sometimes the alternative 
+is merely using a flexible member (zero length array at the end of the 
+struct, instead of a VLA in the struct). In several places several VLAs 
+are used in the same struct. And recently we found that exofs is using a 
+VLAIS inside VLAIS (second order VLAIS) in one of its structures. So not 
+finished yet.
 
-> 
-> > ---
-> >  arch/arm/mach-integrator/pci_v3.c | 24 +++++++++++++-----------
-> >  1 file changed, 13 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
-> > index 05e1f73..193b7f8 100644
-> > --- a/arch/arm/mach-integrator/pci_v3.c
-> > +++ b/arch/arm/mach-integrator/pci_v3.c
-> > @@ -660,6 +660,7 @@ static void __init pci_v3_preinit(void)
-> >  {
-> >  	unsigned long flags;
-> >  	unsigned int temp;
-> > +	phys_addr_t io_address = pci_pio_to_address(io_mem.start);
-> >  
-> >  	pcibios_min_mem = 0x00100000;
-> >  
-> > @@ -701,7 +702,7 @@ static void __init pci_v3_preinit(void)
-> >  	/*
-> >  	 * Setup window 2 - PCI IO
-> >  	 */
-> > -	v3_writel(V3_LB_BASE2, v3_addr_to_lb_base2(io_mem.start) |
-> > +	v3_writel(V3_LB_BASE2, v3_addr_to_lb_base2(io_address) |
-> >  			V3_LB_BASE_ENABLE);
-> >  	v3_writew(V3_LB_MAP2, v3_addr_to_lb_map2(0));
-> >  
-> > @@ -742,6 +743,7 @@ static void __init pci_v3_preinit(void)
-> >  static void __init pci_v3_postinit(void)
-> >  {
-> >  	unsigned int pci_cmd;
-> > +	phys_addr_t io_address = pci_pio_to_address(io_mem.start);
-> >  
-> >  	pci_cmd = PCI_COMMAND_MEMORY |
-> >  		  PCI_COMMAND_MASTER | PCI_COMMAND_INVALIDATE;
-> > @@ -758,7 +760,7 @@ static void __init pci_v3_postinit(void)
-> >  		       "interrupt: %d\n", ret);
-> >  #endif
-> >  
-> > -	register_isa_ports(non_mem.start, io_mem.start, 0);
-> > +	register_isa_ports(non_mem.start, io_address, 0);
-> >  }
-> >  
-> >  /*
-> > @@ -867,33 +869,33 @@ static int __init pci_v3_probe(struct platform_device *pdev)
-> >  
-> >  	for_each_of_pci_range(&parser, &range) {
-> >  		if (!range.flags) {
-> > -			of_pci_range_to_resource(&range, np, &conf_mem);
-> > +			ret = of_pci_range_to_resource(&range, np, &conf_mem);
-> >  			conf_mem.name = "PCIv3 config";
-> >  		}
-> >  		if (range.flags & IORESOURCE_IO) {
-> > -			of_pci_range_to_resource(&range, np, &io_mem);
-> > +			ret = of_pci_range_to_resource(&range, np, &io_mem);
-> > +			dev_info(&pdev->dev, "IO PCI range converted\n");
-> >  			io_mem.name = "PCIv3 I/O";
-> >  		}
-> >  		if ((range.flags & IORESOURCE_MEM) &&
-> >  			!(range.flags & IORESOURCE_PREFETCH)) {
-> >  			non_mem_pci = range.pci_addr;
-> >  			non_mem_pci_sz = range.size;
-> > -			of_pci_range_to_resource(&range, np, &non_mem);
-> > +			ret = of_pci_range_to_resource(&range, np, &non_mem);
-> >  			non_mem.name = "PCIv3 non-prefetched mem";
-> >  		}
-> >  		if ((range.flags & IORESOURCE_MEM) &&
-> >  			(range.flags & IORESOURCE_PREFETCH)) {
-> >  			pre_mem_pci = range.pci_addr;
-> >  			pre_mem_pci_sz = range.size;
-> > -			of_pci_range_to_resource(&range, np, &pre_mem);
-> > +			ret = of_pci_range_to_resource(&range, np, &pre_mem);
-> >  			pre_mem.name = "PCIv3 prefetched mem";
-> >  		}
-> > -	}
-> >  
-> > -	if (!conf_mem.start || !io_mem.start ||
-> > -	    !non_mem.start || !pre_mem.start) {
-> > -		dev_err(&pdev->dev, "missing ranges in device node\n");
-> > -		return -EINVAL;
-> > +		if (ret < 0) {
-> > +			dev_err(&pdev->dev, "missing ranges in device node\n");
-> > +			return -EINVAL;
-> > +		}
-> >  	}
-> >  
-> >  	pci_v3.map_irq = of_irq_parse_and_map_pci;
-> > -- 
-> > 2.0.4
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> If we are going to change it and introduce any macros, it is better to
+> do with the guidance from crypto folks.
+Absolutely. Most of the crypto related patches have been sent to them. I 
+am absolutely looking for their input.
+
+> I added CC:linux-crypto@vger.kernel.org mailing list and Herbert Xu,
+> crypto maintainer.
+I suppose this specific patch may not have CC that list. However, most 
+of the other VLAIS removal patches were copied to linux-crypto, Herbert 
+Xu and David Miller.
+
+Thanks,
+
+Behan
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+Behan Webster
+behanw@converseincode.com
 
