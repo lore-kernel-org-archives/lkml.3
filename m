@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaIHVS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:18:26 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:60893 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160AbaIHVSX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:18:23 -0400
-Date: Mon, 8 Sep 2014 14:18:19 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Frank Razenberg <frank@zzattack.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: make xpad recognize Razer Sabertooth as 360
- controller
-Message-ID: <20140908211819.GA18860@core.coreip.homeip.net>
-References: <CAGL5hbP9+Qx6qa1anhiLBWOowrJi_4xwR-brCsCk5zKKeLBsfw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGL5hbP9+Qx6qa1anhiLBWOowrJi_4xwR-brCsCk5zKKeLBsfw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754981AbaIHVSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:18:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39037 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754619AbaIHVS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:18:29 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/13] perf tools powerpc: Fix build issue when DWARF support is disabled
+Date: Mon,  8 Sep 2014 18:17:58 -0300
+Message-Id: <1410211089-28668-3-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410211089-28668-1-git-send-email-acme@kernel.org>
+References: <1410211089-28668-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 07:45:10PM +0200, Frank Razenberg wrote:
-> The xpad driver recognizes Razer Sabertooth controllers as generic
-> xbox controller, while it is really a 360 controller.
-> This patch adds pid/vid mappings for the controller so that it is
-> correctly recognized.
-> 
-> Signed-off-by: Frank Razenberg <frank@zzattack.org>
-> ---
-> diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-> index 177602cf7079..113e30feadf9 100644
-> --- a/drivers/input/joystick/xpad.c
-> +++ b/drivers/input/joystick/xpad.c
-> @@ -171,6 +171,7 @@ static const struct xpad_device {
->         { 0x146b, 0x0601, "BigBen Interactive XBOX 360 Controller", 0,
-> XTYPE_XBOX360 },
->         { 0x1689, 0xfd00, "Razer Onza Tournament Edition", 0, XTYPE_XBOX360
-> },
->         { 0x1689, 0xfd01, "Razer Onza Classic Edition", 0, XTYPE_XBOX360 },
-> +       { 0x24c6, 0x5d04, "Razer Sabertooth", 0, XTYPE_XBOX360 },
->         { 0x1bad, 0x0002, "Harmonix Rock Band Guitar", 0, XTYPE_XBOX360 },
->         { 0x1bad, 0x0003, "Harmonix Rock Band Drumkit",
-> MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
->         { 0x1bad, 0xf016, "Mad Catz Xbox 360 Controller", 0, XTYPE_XBOX360
-> },
+From: Anton Blanchard <anton@samba.org>
 
-Applied, although next time please make sure your mailer does not mangle
-the patch (it came to me line-wrapped with tabs replaced by spaces).
+The powerpc skip callchain code uses DWARF, so we must disable it if
+DWARF is disabled.
 
-Thanks.
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20140825182506.2be6512d@kryten
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/arch/powerpc/Makefile |  2 +-
+ tools/perf/config/Makefile       | 10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
+diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
+index b92219b1900d..6f7782bea5dd 100644
+--- a/tools/perf/arch/powerpc/Makefile
++++ b/tools/perf/arch/powerpc/Makefile
+@@ -1,6 +1,6 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 75d4c237b03d..98c9fd174e98 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -48,10 +48,6 @@ ifneq ($(ARCH),$(filter $(ARCH),x86 arm))
+   NO_LIBDW_DWARF_UNWIND := 1
+ endif
+ 
+-ifeq ($(ARCH),powerpc)
+-  CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
+-endif
+-
+ ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ else
+@@ -378,6 +374,12 @@ ifndef NO_LIBELF
+   endif # NO_DWARF
+ endif # NO_LIBELF
+ 
++ifeq ($(ARCH),powerpc)
++  ifndef NO_DWARF
++    CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
++  endif
++endif
++
+ ifndef NO_LIBUNWIND
+   ifneq ($(feature-libunwind), 1)
+     msg := $(warning No libunwind found. Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR);
 -- 
-Dmitry
+1.9.3
+
