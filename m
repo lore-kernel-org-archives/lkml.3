@@ -1,179 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaIHICV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:02:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50165 "EHLO mx2.suse.de"
+	id S1753415AbaIHIDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:03:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:43721 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752974AbaIHIBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 04:01:45 -0400
-From: Juergen Gross <jgross@suse.com>
-To: stefan.bader@canonical.com, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
-        x86@kernel.org, jbeulich@suse.com, david.vrabel@citrix.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V2 2/3] x86: Enable PAT to use cache mode translation tables
-Date: Mon,  8 Sep 2014 10:01:37 +0200
-Message-Id: <1410163298-8951-3-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1410163298-8951-1-git-send-email-jgross@suse.com>
-References: <1410163298-8951-1-git-send-email-jgross@suse.com>
+	id S1752973AbaIHIDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 04:03:42 -0400
+Date: Mon, 8 Sep 2014 18:03:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Peter Foley <pefoley2@pefoley.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary
+ built-in.o files
+Message-ID: <20140908180327.6ef7f2b8@canb.auug.org.au>
+In-Reply-To: <20140907184837.GD4015@sirena.org.uk>
+References: <53FB9DA0.7000301@infradead.org>
+	<CAOFdcFP4b0YFMuUFKm4=FoAGbCObf4u=W0UUPwf-ju_TNvuJaA@mail.gmail.com>
+	<540651B3.8030400@infradead.org>
+	<20140902232906.GG29327@sirena.org.uk>
+	<CAOFdcFPmHH9z+6Kuc5Agu6PDC9+t+420Cb5R6VuHp+MebG+2LQ@mail.gmail.com>
+	<20140903232149.GG29327@sirena.org.uk>
+	<5407A68F.5090805@infradead.org>
+	<20140904104201.GI29327@sirena.org.uk>
+	<540A503D.20807@infradead.org>
+	<540C9D19.5080201@infradead.org>
+	<20140907184837.GD4015@sirena.org.uk>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/IbUJydwLY1td9P7A=SwEPeY"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the translation tables from cache mode to pgprot values
-according to the PAT settings. This enables changing the cache
-attributes of a PAT index in just one place without having to change
-at the users side.
+--Sig_/IbUJydwLY1td9P7A=SwEPeY
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-With this change it is possible to use the same kernel with different
-PAT configurations, e.g. supporting Xen.
+Hi Mark,
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
----
- arch/x86/include/asm/pat.h           |  1 +
- arch/x86/include/asm/pgtable_types.h |  4 +++
- arch/x86/mm/init.c                   |  8 ++++++
- arch/x86/mm/mm_internal.h            |  2 ++
- arch/x86/mm/pat.c                    | 55 ++++++++++++++++++++++++++++++++++--
- 5 files changed, 68 insertions(+), 2 deletions(-)
+On Sun, 7 Sep 2014 19:48:37 +0100 Mark Brown <broonie@kernel.org> wrote:
+>
+> On Sun, Sep 07, 2014 at 10:59:53AM -0700, Randy Dunlap wrote:
+>=20
+> > The quilt-import.log from 20140829 says:
+>=20
+> > $ git am --patch-format=3Dmbox ../quilt/rd-docs/001-docum-use-subdiry-a=
+void-builtin.patch
+>=20
+> > and in the 20140905 git tree it says:
+>=20
+> > $ git am ../quilt/rd-docs/001-docum-use-subdiry-avoid-builtin.patch
+> > Patch format detection failed.
+>=20
+> > Are you using Stephen's scripts?  Why would his tree apply patches with
+> > --patch-format=3Dmbox
+> > while the later trees did not use that git-am option?
+>=20
+> Yes, I'm using his scripts.  I guess it's possible there's something in
+> his global git configuration that changes the behaviour?
 
-diff --git a/arch/x86/include/asm/pat.h b/arch/x86/include/asm/pat.h
-index 150407a..91bc4ba 100644
---- a/arch/x86/include/asm/pat.h
-+++ b/arch/x86/include/asm/pat.h
-@@ -11,6 +11,7 @@ static const int pat_enabled;
- #endif
- 
- extern void pat_init(void);
-+void pat_init_cache_modes(void);
- 
- extern int reserve_memtype(u64 start, u64 end,
- 		enum page_cache_mode req_pcm, enum page_cache_mode *ret_pcm);
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 0d38511..bd2f50f 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -338,6 +338,10 @@ extern uint8_t __pte2cachemode_tbl[8];
- 	((((cb) >> (_PAGE_BIT_PAT - 2)) & 4) |		\
- 	 (((cb) >> (_PAGE_BIT_PCD - 1)) & 2) |		\
- 	 (((cb) >> _PAGE_BIT_PWT) & 1))
-+#define __cm_idx2pte(i)					\
-+	((((i) & 4) << (_PAGE_BIT_PAT - 2)) |		\
-+	 (((i) & 2) << (_PAGE_BIT_PCD - 1)) |		\
-+	 (((i) & 1) << _PAGE_BIT_PWT))
- 
- static inline unsigned long cachemode2protval(enum page_cache_mode pcm)
- {
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index a9776ba..82b41d5 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -716,3 +716,11 @@ void __init zone_sizes_init(void)
- 	free_area_init_nodes(max_zone_pfns);
- }
- 
-+void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache)
-+{
-+	/* entry 0 MUST be WB (hardwired to speed up translations) */
-+	BUG_ON(!entry && cache != _PAGE_CACHE_MODE_WB);
-+
-+	__cachemode2pte_tbl[cache] = __cm_idx2pte(entry);
-+	__pte2cachemode_tbl[entry] = cache;
-+}
-diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-index 6b563a1..62474ba 100644
---- a/arch/x86/mm/mm_internal.h
-+++ b/arch/x86/mm/mm_internal.h
-@@ -16,4 +16,6 @@ void zone_sizes_init(void);
- 
- extern int after_bootmem;
- 
-+void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache);
-+
- #endif	/* __X86_MM_INTERNAL_H */
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index ef75f3f..ff31851 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -31,6 +31,7 @@
- #include <asm/io.h>
- 
- #include "pat_internal.h"
-+#include "mm_internal.h"
- 
- #ifdef CONFIG_X86_PAT
- int __read_mostly pat_enabled = 1;
-@@ -75,6 +76,57 @@ enum {
- 	PAT_UC_MINUS = 7,	/* UC, but can be overriden by MTRR */
- };
- 
-+/*
-+ * Update the cache mode to pgprot translation tables according to PAT
-+ * configuration.
-+ * Using lower indices is preferred, so we start with highest index.
-+ */
-+void pat_init_cache_modes(void)
-+{
-+	int i;
-+	enum page_cache_mode cache;
-+	char pat_msg[33];
-+	char *cache_mode;
-+	u64 pat;
-+
-+	rdmsrl(MSR_IA32_CR_PAT, pat);
-+	pat_msg[32] = 0;
-+	for (i = 7; i >= 0; i--) {
-+		switch ((pat >> (i * 8)) & 7) {
-+		case PAT_UC:
-+			cache = _PAGE_CACHE_MODE_UC;
-+			cache_mode = "UC  ";
-+			break;
-+		case PAT_WC:
-+			cache = _PAGE_CACHE_MODE_WC;
-+			cache_mode = "WC  ";
-+			break;
-+		case PAT_WT:
-+			cache = _PAGE_CACHE_MODE_WT;
-+			cache_mode = "WT  ";
-+			break;
-+		case PAT_WP:
-+			cache = _PAGE_CACHE_MODE_WP;
-+			cache_mode = "WP  ";
-+			break;
-+		case PAT_WB:
-+			cache = _PAGE_CACHE_MODE_WB;
-+			cache_mode = "WB  ";
-+			break;
-+		case PAT_UC_MINUS:
-+			cache = _PAGE_CACHE_MODE_UC_MINUS;
-+			cache_mode = "UC- ";
-+			break;
-+		default:
-+			cache = _PAGE_CACHE_MODE_WB;
-+			cache_mode = "WB  ";
-+		}
-+		update_cache_mode_entry(i, cache);
-+		memcpy(pat_msg + 4 * i, cache_mode, 4);
-+	}
-+	pr_info("PAT configuration [0-7]: %s\n", pat_msg);
-+}
-+
- #define PAT(x, y)	((u64)PAT_ ## y << ((x)*8))
- 
- void pat_init(void)
-@@ -124,8 +176,7 @@ void pat_init(void)
- 	wrmsrl(MSR_IA32_CR_PAT, pat);
- 
- 	if (boot_cpu)
--		printk(KERN_INFO "x86 PAT enabled: cpu %d, old 0x%Lx, new 0x%Lx\n",
--		       smp_processor_id(), boot_pat_state, pat);
-+		pat_init_cache_modes();
- }
- 
- #undef PAT
--- 
-1.8.4.5
 
+You seem to have been using an older version of my scripts.  The above
+was changed on May 5th in commit
+9f1441da46c87531635fe742016124db2069db24 in my "tools" directory.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/IbUJydwLY1td9P7A=SwEPeY
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUDWLUAAoJEMDTa8Ir7ZwVL1MP/3eFLo8w84vblR5pzjeQslKt
+M/5CueQL0GHzJ8xmpYyqfkxsGFPYcHovjkihkhhQDesN/V2IOlw7+PSioyR/8NuP
+D2cdjLeCb1d4CwpK8B1Vxy3BR99YIFaVEu3Hp7DBW86qiviesMZgvxdPkYFMxB34
+/xmSqKldYGCgjV9jOwOnsImo9rye8RRplFwjOq3i2YttKDSDh7ZvhMRbaCEJrDs+
+COQKFM4+1gOpmd+nGP6DsyrHvSyxTmtOWppiUfCLulfC+bDB8pzvnT5yTIWU9Qly
+2ttLTBFyTUKqGKWxt0mI/O6WpvK2Qr3kXrY/+hOePr6yxxyAjZFjHtjFQsTyFilk
+9sC8CRsQRFPhYd74O9RkReZnCLQiJIs1DiwOwQ2hvBd9lwqMGDqfC1P8XReUwiRH
+HZk35H16/WOm4W0f2gwz7cNDus+55x7yfbj11SKPGpIrikE8BkakzVj4cR5Yn6oQ
+jxDFDhxRUO6FYxB2SkcNY1b84GLuOn+7ACZhqyjHY7vCeykvKUBMgWie+GBvZ5jh
+FhxdXXD1El5hNggtQ/LpL73+/F+Q7tKsmyAVcZzv8jUHFia/ORRxFRx7c8WAfvJv
+tvGFTCboDYnWQyar0sDAVO53nQAwg6T8NxrsDVihaFf+0HmpfopCuDYfPY74BZVK
+XsTtdXtDiEqPpeeZ0MUq
+=so86
+-----END PGP SIGNATURE-----
+
+--Sig_/IbUJydwLY1td9P7A=SwEPeY--
