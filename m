@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbaIHXdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:33:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36469 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963AbaIHXda (ORCPT
+	id S1754968AbaIHXd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:33:59 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59287 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754481AbaIHXd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:33:30 -0400
-Date: Mon, 8 Sep 2014 16:33:29 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com
-Subject: Re: [PATCH 03/18] tty: serial: 8250_core: allow to set ->throttle /
- ->unthrottle callbacks
-Message-ID: <20140908233329.GA32144@kroah.com>
-References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
- <1409943773-7874-4-git-send-email-bigeasy@linutronix.de>
+	Mon, 8 Sep 2014 19:33:56 -0400
+Message-ID: <540E3CDF.8020607@hurleysoftware.com>
+Date: Mon, 08 Sep 2014 19:33:51 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409943773-7874-4-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/26] tty/serial flow control fixes
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <20140908232445.GA28204@kroah.com>
+In-Reply-To: <20140908232445.GA28204@kroah.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 09:02:38PM +0200, Sebastian Andrzej Siewior wrote:
-> The OMAP UART provides support for HW assisted flow control. What is
-> missing is the support to throttle / unthrottle callbacks which are used
-> by the omap-serial driver at the moment.
-> This patch adds the callbacks. It should be safe to add them since they
-> are only invoked from the serial_core (uart_throttle()) if the feature
-> flags are set.
+On 09/08/2014 07:24 PM, Greg Kroah-Hartman wrote:
+> On Tue, Sep 02, 2014 at 05:39:09PM -0400, Peter Hurley wrote:
+>> Hi Greg,
+>>
+>> This patch series reworks the internals of tty and serial flow control to
+>> fix multiple races in both START/STOP flow control and RTS/CTS flow control.
+>>
+>> The main changes in this series are:
+>> Patch 1
+>>    Backs out the UPF_HARD_FLOW kludge for 8250. This revert should be
+>>    for mainline and -next
+>>
+>> Patches 3-7
+>>    Fixes to x_char handling (ie., sending START/STOP) both in the serial
+>>    core and to several UART drivers
+>>
+>> Patches 10-15
+>>    Rename and move ASYNC_CTS_FLOW and ASYNC_CHECK_CD statuses into
+>>    a private field for the serial core, and add helper functions to test
+>>    those statuses for UART drivers.
+>>
+>>    This is a necessary step toward making tty port->flags SMP-safe, without
+>>    introducing a new lock.
 > 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> I stopped applying at patch 13, due to the objections to that patch.
+> Please redo the rest of the series and resend.
 
-Due to other recent changes, this patch fails to apply :(
+I'm going to wait for the fallout from patch 21 to shake out first.
 
-I've applied your first two, can you respin the rest and resend as a new
-series?
-
-thanks,
-
-greg k-h
+Regards,
+Peter Hurley
