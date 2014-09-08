@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497AbaIHQ3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:29:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40556 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753550AbaIHQ3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:29:30 -0400
-Message-ID: <540DD950.30207@ti.com>
-Date: Mon, 8 Sep 2014 11:29:04 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754649AbaIHQaw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:30:52 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.104]:43190 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754214AbaIHQav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 12:30:51 -0400
+X-Env-Sender: Benjamin.Romer@unisys.com
+X-Msg-Ref: server-9.tower-201.messagelabs.com!1410193849!16082115!1
+X-Originating-IP: [192.61.61.104]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+From: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+CC: "Kershner, David A" <David.Kershner@unisys.com>,
+        *S-Par-Maintainer <SParMaintainer@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 8 Sep 2014 11:30:48 -0500
+Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Thread-Topic: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Thread-Index: Ac/Lgj9NJGjpkFwcR8irDKF/rYcEXw==
+Message-ID: <C97001BC43954D438ACB059713BA5CDFC97127E0E3@USEA-EXCH7.na.uis.unisys.com>
+References: <1409908966-23148-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E1@USEA-EXCH7.na.uis.unisys.com>
+ <20140908162714.GA5497@fool>
+In-Reply-To: <20140908162714.GA5497@fool>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@deeprootsystems.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Keerthy <j-keerthy@ti.com>,
-        =?windows-1252?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 00/10] ARM: OMAP5 / DRA7: Add framework for suspend and
- cpuidle
-References: <1408716154-26101-1-git-send-email-nm@ti.com> <7htx4xbv7p.fsf@paris.lan>
-In-Reply-To: <7htx4xbv7p.fsf@paris.lan>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s88GUuPT032269
 
-On 08/27/2014 02:15 PM, Kevin Hilman wrote:
-> Nishanth Menon <nm@ti.com> writes:
+On Mon, 2014-09-08 at 21:57 +0530, Sudip Mukherjee wrote:
+> Hi Ben,
+> thanks. the same file is having two more similar warnings. if you want i can
+> resend a patch fixing all the three warnings , or i can send two separate
+> patches. 
+> I personally will prefer two separate patches , as that will be
+> easier for you to test and review.
 > 
->> The following series are various fixes and improvements for
->> supporting suspend-to-ram. This depends on the following for basic functionality:
->> series 1/6 where powerdomain fixes were involved.
-> 
-> I had a look through this series, and it looks good overall.  I think Daniel
-> needs to weigh in on the CPUidle driver, otherwise.
-> 
-> Reviewed-by: Kevin Hilman <khilman@linaro.org>
-> 
-> I also tested on omap5uevm with the pm_debug/wakeup_timer_seconds patch.
-> 
-> Tested-by: Kevin Hilman <khilman@linaro.org>
-> 
-> Kevin
-> 
+> thanks
+> sudip
 
-I am dropping cpuidle patch for the moment, and sending remaining
-stuff to Tony for merge with Kevin's Reviewed and Tested. we will send
-cpuidle once we have Daniel's response.
+That would be perfect, thanks. :)
 
--- 
-Regards,
-Nishanth Menon
+-- Ben
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
