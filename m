@@ -1,138 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaIHNjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:39:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44361 "EHLO mail.kernel.org"
+	id S1754142AbaIHNkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:40:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47781 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084AbaIHNjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:39:53 -0400
-Date: Mon, 8 Sep 2014 10:38:47 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
-Message-ID: <20140908133847.GA2773@kernel.org>
-References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
- <540964C0.1050702@intel.com>
- <20140905141123.GE30520@kernel.org>
- <1409930200.1662.16.camel@leonhard>
- <20140905154402.GF30520@kernel.org>
- <CABPqkBQxcTK7YFhcaV5PORx7ub+scwpkd3Rd=bAPgTK6Cvh1Rg@mail.gmail.com>
+	id S1753084AbaIHNkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 09:40:03 -0400
+Date: Mon, 8 Sep 2014 08:39:49 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RFC v3 2/2] usb: phy: Temporarily hold timed wakeup source on
+ charger and disconnect events
+Message-ID: <20140908133948.GI22409@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1410171049-14239-1-git-send-email-kiran.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jQIvE3yXcK9X9HBh"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABPqkBQxcTK7YFhcaV5PORx7ub+scwpkd3Rd=bAPgTK6Cvh1Rg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1410171049-14239-1-git-send-email-kiran.kumar@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Sep 07, 2014 at 10:24:12PM +0200, Stephane Eranian escreveu:
-> On Fri, Sep 5, 2014 at 5:44 PM, Arnaldo Carvalho de Melo
-> <acme@kernel.org> wrote:
-> > Em Sat, Sep 06, 2014 at 12:16:40AM +0900, Namhyung Kim escreveu:
-> >> Hi Adrian and Arnaldo,
-> >>
-> >> 2014-09-05 (금), 11:11 -0300, Arnaldo Carvalho de Melo:
-> >> > Em Fri, Sep 05, 2014 at 10:22:40AM +0300, Adrian Hunter escreveu:
-> >> > > On 09/05/2014 07:59 AM, Namhyung Kim wrote:
-> >> > > > +++ b/tools/perf/util/machine.c
-> >> > > > @@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
-> >> > > >                                 strlen(kmmap_prefix));
-> >> > > >                 /*
-> >> > > >                  * Should be there already, from the build-id table in
-> >> > > > -                * the header.
-> >> > > > +                * the header (but maybe with a different name: "vmlinux").
-> >> > > >                  */
-> >> > > > -               struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
-> >> > > > -                                                    kmmap_prefix);
-> >> > > > +               struct dso *kernel = dsos__find(&machine->kernel_dsos,
-> >> > > > +                                               "vmlinux", true);
-> >> >
-> >> > > Isn't "vmlinux" just the basename of the original file name, so if it had a
-> >> > > different name this wouldn't work e.g. if the filename had been
-> >> > > /boot/vmlinuz-3.11.0-26-generic then you would need
-> >> > > "vmlinuz-3.11.0-26-generic" for this to work?
-> >> >
-> >> > Yeah, looking for well known pathnames to then check if the build-id
-> >> > matches the one we're looking for, be it because we obtained it from
-> >> > /sys/kernel/notes (for the running kernel), or from the perf.data file
-> >> > build-id table is ok, as we don't know where it is.
-> >> >
-> >> > Plain sticking "vmlinux" there is not.
-> >>
-> >> I don't get it.  AFAIK when perf record runs, it uses [kernel.kallsyms]
-> >> name for kernel map.  But it can be changed only if it found a "vmlinux"
-> >> file in the vmlinux_path[].  So short name will always be "vmlinux" -
-> >> okay, it might be vmlinux-$(uname -r) too; I can add it.
-> >>
-> >> As you know, the vmlinux file is a ELF image that created during kernel
-> >> build process so I guess its name is fixed.  It's different from the
-> >> vmlinu"z" which resides in /boot directory.
-> >>
-> >> Am I missing something?
-> >
-> > [acme@zoo linux]$ perf report --help 2>&1 | grep vmlin
-> >        -k, --vmlinux=<file>
-> >            vmlinux pathname
-> > [acme@zoo linux]$
-> >
-> > Yes, it is using [kernel.kallsyms].ref_reloc_sym for the synthesized
-> > KERNEL mmap event, but it stores the full path in the build-id table.
-> >
-> > It seems we need a way to state that an entry in the build-id table is
-> > for the kernel, without looking at its file name. That or to put the
-> > build-id into the synthesized kernel mmap event. Which is better,
-> > because:
-> >
-> Can't you figure out it is from the kernel (in perf record) by remembering
-> you got the buildid from /sys/kernel/notes?
+--jQIvE3yXcK9X9HBh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sure, the question was more about how to encode that in the build-id
-table in the perf.data file, i.e. we don't have a flags field there that
-we could use a bit for this purpose (hey, this entry is for the kernel,
-please match it to the PERF_RECORD_MMAP [kernel_kallsyms] synthesized
-for the kernel).
+Hi,
 
-We know it is a kernel because the name is [kernel.kallsyms] in the
-synthesized PERF_RECORD_MMAP. So perhaps we should have the kernel
-pathname right after the reference relocation symbol, that way we would
-use it to get the entry in the build-id table.
+On Mon, Sep 08, 2014 at 03:40:49PM +0530, Kiran Kumar Raparthy wrote:
+> From: Todd Poynor <toddpoynor@google.com>
+>=20
+> usb: phy: Temporarily hold timed wakeup source on charger and disconnect
+> events
+>=20
+> It temporarily holds a timed wakeup source on USB disconnect events, to a=
+llow
+> the rest of the system time to react to the USB disconnection (dropping h=
+ost
+> sessions, updating charger status, etc.) prior to re-allowing suspend
+>=20
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-usb@vger.kernel.org
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+> [kiran: Added context to commit message and
+> addressed community feedback]
+> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+> ---
+> v3:
+> * Modified the commit log.
+> * Remove indirect function usb_temporary_hold_wsource and call
+>   __pm_wakeup_even directly.
+>=20
+> v2:
+> * Implement usb_temporary_hold_wsource function in phy.
+>=20
+> v1:
+> * Removed the refactoring logic from this integrated into main driver cod=
+e.
+>=20
+> RFC:
+> * Integrated the refactoring logic and logic to hold wakeupsource
+>   temporarily.
+>=20
+>  drivers/usb/phy/otg-wakeupsource.c | 3 ++-
+>  include/linux/usb/phy.h            | 2 ++
+>  2 files changed, 4 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wak=
+eupsource.c
+> index d9a1720..7bc9657 100644
+> --- a/drivers/usb/phy/otg-wakeupsource.c
+> +++ b/drivers/usb/phy/otg-wakeupsource.c
+> @@ -47,7 +47,8 @@ static void otgws_handle_event(struct usb_phy *otgws_xc=
+eiv, unsigned long event)
+>  	case USB_EVENT_NONE:
+>  	case USB_EVENT_ID:
+>  	case USB_EVENT_CHARGER:
+> -		__pm_relax(&otgws_xceiv->wsource);
+> +		__pm_wakeup_event(&otgws_xceiv->wsource,
+> +				msecs_to_jiffies(TEMPORARY_HOLD_TIME));
 
-I.e. parts of what we need are in the synthesized PERF_RECORD_MMAP (how
-to do relocation, start-end kernel mmap, and we have parts of it in the
-build-id table: the build-id and the full pathname. How to connect both
-is what we're trying to achieve here, and in a backwards compatible
-way.
+this was introduced by patch 1, why don't you merge this with that
+patch? This is another comment that I have already provided. Why are you
+ignoring my comments ? At a minimum, explain why are you ignoring them.
 
-The (ugly) way I found to achieve all this is to concatenate the full
-pathname right after the ref reloc symbol in the synthesized
-PERF_RECORD_MMAP for the kernel mmap.
+--=20
+balbi
 
-Older tools would just ignore what is after the ref reloc symbol (need
-to check if we put the zero there, if not, we can add the zero + the
-full pathname.).
+--jQIvE3yXcK9X9HBh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Newer tools would look if the size of the record is longer than the
-strlen(ref_reloc_symbol), and if it is, it means we have the kernel full
-pathname after the ref_reloc_symbol, that we can use to find the
-build-id in the build-id table.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-In the future this is all moot if we add the build-id to all
-PERF_RECORD_MMAP events, as described below:
+iQIcBAEBAgAGBQJUDbGkAAoJEIaOsuA1yqRE4xgQAJ0tAPvV1GKYJPC2Dz2m66er
+CICQXFMh3lp9ek6qZxjFOZTpeLVDZ7g6oXFkXHJuEOkZkou2caMQicG7BviteSmD
+RgJRuKZ2pfwHWYMOGaAWypeC0RGeki0C+z9QHeQuHTm5GiMirPJMtcb08LyfxWCI
+OzZ15vdAlDARmFTE80tsqwGZi9gt1iM9IwIeVGqqIWOekZhlRiQfpjEmlOc3YRmo
+8W4USv1ISogdjg9SSjBAfsvHz4ci617QZrgA9oB9Wa081H/ccOgwLcbU1oK08zwD
+383QYo72QDJvOpoantYzlmJCvfdCGBX7nxJ+pwqmfJz07VlX4EytBZ71rPPYGfyJ
+v0vb//gg9imOmUqPhqo3EauZJSBTTwtweZ8xXBhJ696GYAQpQZBtFXC5dpQzYjPx
+rjpf2jzpmm6DL/ke7TkLX69T9tp14aNqWbWMKYf++9FmnJZ+L8ICA3TqnG6GXK7L
+K8Ls29xhJLUDIeKGGuEggWctRhv84uGXgLWZJ6erM1uSUwMvc9VP3dky1V3piWM3
+L0bk4VgJgUexJqN6x25zcnMuwcuVQQsTgzBOO1TEH5peOeFIffsoxK+b6ImPBQDE
+NpDsoRZSpq7+lpN6HKvJqE79pXa1Hk+HO+fQlVoezjdxM5YaYh2M7YLLz7l8sPdK
+mXaRVF9ZYe/jZM1CFBJZ
+=unZb
+-----END PGP SIGNATURE-----
 
-> > That leads to another problem that needs to get solved eventually: We
-> > need to have the build-id into PERF_RECORD_MMAP, because we're now using
-> > just the mmap filename as the key, not the contents, and for long
-> > running sessions, DSOs can get updated, etc.
-
-- Arnaldo
+--jQIvE3yXcK9X9HBh--
