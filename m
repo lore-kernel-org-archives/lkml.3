@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaIHPWr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:22:47 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:56809 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867AbaIHPWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:22:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc: pcf8563: fix uninitialized use warning
-Date: Mon, 08 Sep 2014 17:22:40 +0200
-Message-ID: <10094879.uvjB4Q3B81@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <540D8CA8.5020104@cogentembedded.com>
-References: <3640058.m4Rfp1dmTJ@wuerfel> <540D8CA8.5020104@cogentembedded.com>
+	id S1754104AbaIHPYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:24:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57978 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752973AbaIHPYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:24:06 -0400
+Message-ID: <540DC9F6.8090306@ti.com>
+Date: Mon, 8 Sep 2014 20:53:34 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:5fevMeS9DMcv5QoUX80g2EkCvmofzTn1Vl3YguTl52l
- QC6Js5zNV5GBVoU3ALY5YV8FwlTjtWDa9wV/rHhnp6k4DTj5QF
- EoaMuoZzRqt7juoRQbRb+0IWIIE1YstaeObTrYSrz1+OI4WIPd
- w+cPR0ZH6cAixSiXO1lnpp58sP0Qu1FByisu2wVwm8586IMHIf
- lqJV8pc9u5oEMxuyTdrfFMUocJZO4NR3Px1uHb9Yd+YKEDfN/W
- lR6au/MTaddMJuUpNokW+AObj9p8+fnK+2xkTL3tve1t0RmP5w
- 8e0Y2Er9P3FQB1mpd3aPnZ8uUYpBtQaMPVGBRTX+PRB459jAgr
- P9vd7nvi56kKItQytWmM=
-X-UI-Out-Filterresults: notjunk:1;
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <srinivas.kandagatla@gmail.com>, <maxime.coquelin@st.com>,
+        <patrice.chotard@st.com>
+CC: <lee.jones@linaro.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/3]  Add picoPHY usb phy driver found on stih407 family
+ SoC's
+References: <1409740079-16554-1-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1409740079-16554-1-git-send-email-peter.griffin@linaro.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 September 2014 15:02:00 Sergei Shtylyov wrote:
-> > diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
-> > index 5a197d9dc7e7..3a6f994c4da8 100644
-> > --- a/drivers/rtc/rtc-pcf8563.c
-> > +++ b/drivers/rtc/rtc-pcf8563.c
-> > @@ -167,7 +167,7 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
-> >       char pending;
-> >
-> >       err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
-> > -     if (err < 0)
-> > +     if (err)
-> >               return err;
+Hi,
+
+On Wednesday 03 September 2014 03:57 PM, Peter Griffin wrote:
+> This series adds support for the picoPHY usb phy which is used by the usb2
+> and usb3 host controllers when controlling usb2/1.1 devices. It is found on
+> stih407 family SoC's from the consumer electronics devision of STMicroelectronics.
+
+So miphy28lp is the PHY controller for USB3 device controller and picoPHY is
+the PHY controller for USB3 host controller?
+
+Thanks
+Kishon
+
 > 
->     Returning negative values from the IRQ handler doesn't seem valid.
-> Arbitrary positive value aren't good either. Perhaps should return IRQ_NONE 
-> instead?
-
-Good point. This is unrelated to the problem I was trying to fix, but it
-seems like a good idea to fix both.
-
-	Arnd
+> Peter Griffin (3):
+>   phy: phy-stih407-usb: Add usb picoPHY driver found on stih407 SoC
+>     family
+>   phy: phy-stih407-usb: Add dt documentation for USB picophy found on
+>     stih407 SoC family
+>   MAINTAINERS: Add phy-stih407-usb.c file to ARCH/STI architecture
+> 
+>  .../devicetree/bindings/phy/phy-stih407-usb.txt    |  37 +++++
+>  MAINTAINERS                                        |   1 +
+>  drivers/phy/Kconfig                                |   8 +
+>  drivers/phy/Makefile                               |   2 +
+>  drivers/phy/phy-stih407-usb.c                      | 185 +++++++++++++++++++++
+>  5 files changed, 233 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
+>  create mode 100644 drivers/phy/phy-stih407-usb.c
+> 
