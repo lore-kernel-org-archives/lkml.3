@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaIHJi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:38:26 -0400
-Received: from mail-bn1on0057.outbound.protection.outlook.com ([157.56.110.57]:44575
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1753810AbaIHJic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:38:32 -0400
+Received: from mail-bl2on0081.outbound.protection.outlook.com ([65.55.169.81]:38656
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753315AbaIHJiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:38:22 -0400
+	id S1753315AbaIHJi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:38:28 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v3 18/29] nios2: Signal handling support
-Date: Mon, 8 Sep 2014 17:22:29 +0800
-Message-ID: <1410168160-3624-19-git-send-email-lftan@altera.com>
+Subject: [PATCH v3 07/29] nios2: I/O Mapping
+Date: Mon, 8 Sep 2014 17:22:18 +0800
+Message-ID: <1410168160-3624-8-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
 References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(199003)(22564002)(189002)(77096002)(20776003)(92566001)(80022001)(86362001)(74662001)(85306004)(105596002)(77156001)(62966002)(6806004)(90102001)(95666004)(106466001)(33646002)(42186005)(31966008)(229853001)(97736003)(107046002)(50986999)(76176999)(2201001)(74502001)(99396002)(93916002)(47776003)(92726001)(81342001)(15202345003)(85852003)(83072002)(50466002)(36756003)(88136002)(48376002)(15975445006)(84676001)(79102001)(89996001)(87936001)(87286001)(77982001)(102836001)(104166001)(76482001)(50226001)(83322001)(4396001)(46102001)(68736004)(19580395003)(21056001)(19580405001)(44976005)(81542001)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB037;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(87936001)(47776003)(74502001)(77096002)(102836001)(83322001)(20776003)(86362001)(4396001)(19580405001)(80022001)(21056001)(81342001)(44976005)(92726001)(50466002)(107046002)(76482001)(77982001)(79102001)(90102001)(97736003)(104166001)(36756003)(87286001)(33646002)(89996001)(105596002)(93916002)(99396002)(19580395003)(77156001)(88136002)(85306004)(62966002)(76176999)(92566001)(83072002)(74662001)(31966008)(229853001)(68736004)(42186005)(50226001)(6806004)(84676001)(50986999)(81542001)(46102001)(48376002)(2201001)(85852003)(106466001)(95666004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB041;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 03283976A6
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,472 +31,444 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for signal handling.
+This patch adds several definitions for I/O accessors and ioremap().
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/signal.h          |  22 +++
- arch/nios2/include/asm/ucontext.h        |  32 ++++
- arch/nios2/include/uapi/asm/sigcontext.h |  28 +++
- arch/nios2/include/uapi/asm/signal.h     |  23 +++
- arch/nios2/kernel/signal.c               | 315 +++++++++++++++++++++++++++++++
- 5 files changed, 420 insertions(+)
- create mode 100644 arch/nios2/include/asm/signal.h
- create mode 100644 arch/nios2/include/asm/ucontext.h
- create mode 100644 arch/nios2/include/uapi/asm/sigcontext.h
- create mode 100644 arch/nios2/include/uapi/asm/signal.h
- create mode 100644 arch/nios2/kernel/signal.c
+ arch/nios2/include/asm/io.h |  84 ++++++++++++++++++++
+ arch/nios2/lib/io.c         | 138 ++++++++++++++++++++++++++++++++
+ arch/nios2/mm/ioremap.c     | 186 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 408 insertions(+)
+ create mode 100644 arch/nios2/include/asm/io.h
+ create mode 100644 arch/nios2/lib/io.c
+ create mode 100644 arch/nios2/mm/ioremap.c
 
-diff --git a/arch/nios2/include/asm/signal.h b/arch/nios2/include/asm/signal.h
+diff --git a/arch/nios2/include/asm/io.h b/arch/nios2/include/asm/io.h
 new file mode 100644
-index 0000000..bbcf11e
+index 0000000..c629226
 --- /dev/null
-+++ b/arch/nios2/include/asm/signal.h
-@@ -0,0 +1,22 @@
++++ b/arch/nios2/include/asm/io.h
+@@ -0,0 +1,84 @@
 +/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
++ * Copyright (C) 2014 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
-+#ifndef _NIOS2_SIGNAL_H
-+#define _NIOS2_SIGNAL_H
 +
-+#include <uapi/asm/signal.h>
++#ifndef _ASM_NIOS2_IO_H
++#define _ASM_NIOS2_IO_H
 +
-+#endif	/* _NIOS2_SIGNAL_H */
-diff --git a/arch/nios2/include/asm/ucontext.h b/arch/nios2/include/asm/ucontext.h
++#include <asm/pgtable-bits.h>
++
++/* PCI is not supported in nios2, set this to 0. */
++#define IO_SPACE_LIMIT 0
++
++extern void outsb(unsigned long addr, const void *buf, int len);
++extern void outsw(unsigned long addr, const void *buf, int len);
++extern void outsl(unsigned long addr, const void *buf, int len);
++extern void insb(unsigned long addr, void *buf, int len);
++extern void insw(unsigned long addr, void *buf, int len);
++extern void insl(unsigned long addr, void *buf, int len);
++#define outsb outsb
++#define outsw outsw
++#define outsl outsl
++#define insb insb
++#define insw insw
++#define insl insl
++
++#define readb_relaxed(addr)	readb(addr)
++#define readw_relaxed(addr)	readw(addr)
++#define readl_relaxed(addr)	readl(addr)
++
++#define writeb_relaxed(x, addr)	writeb(x, addr)
++#define writew_relaxed(x, addr)	writew(x, addr)
++#define writel_relaxed(x, addr)	writel(x, addr)
++
++#include <asm-generic/io.h>
++
++/*
++ * PCI is not enabled in nios2. Provide dummy implementation to get 'allyesconfig'
++ * to build successfully.
++ */
++#define inb(addr)	({ 0; })
++#define inw(addr)	({ 0; })
++#define inl(addr)	({ 0; })
++#define outb(x, addr)	do { } while (0)
++#define outw(x, addr)	do { } while (0)
++#define outl(x, addr)	do { } while (0)
++
++extern void __iomem *__ioremap(unsigned long physaddr, unsigned long size,
++			unsigned long cacheflag);
++extern void __iounmap(void __iomem *addr);
++
++static inline void __iomem *ioremap(unsigned long physaddr, unsigned long size)
++{
++	return __ioremap(physaddr, size, 0);
++}
++
++static inline void __iomem *ioremap_nocache(unsigned long physaddr,
++						unsigned long size)
++{
++	return __ioremap(physaddr, size, 0);
++}
++
++static inline void iounmap(void __iomem *addr)
++{
++	__iounmap(addr);
++}
++
++/* Pages to physical address... */
++# define page_to_phys(page)	virt_to_phys(page_to_virt(page))
++# define page_to_bus(page)	page_to_virt(page)
++
++/* Macros used for converting between virtual and physical mappings. */
++# define phys_to_virt(vaddr)	\
++	((void *)((unsigned long)(vaddr) | CONFIG_NIOS2_KERNEL_REGION_BASE))
++/* Clear top 3 bits */
++# define virt_to_phys(vaddr)	\
++	((unsigned long)((unsigned long)(vaddr) & ~0xE0000000))
++
++#endif /* _ASM_NIOS2_IO_H */
+diff --git a/arch/nios2/lib/io.c b/arch/nios2/lib/io.c
 new file mode 100644
-index 0000000..2c87614
+index 0000000..94db593
 --- /dev/null
-+++ b/arch/nios2/include/asm/ucontext.h
-@@ -0,0 +1,32 @@
++++ b/arch/nios2/lib/io.c
+@@ -0,0 +1,138 @@
++/*
++ * Copyright (C) 2014 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#include <linux/types.h>
++#include <asm/io.h>
++
++
++#ifndef CONFIG_CC_OPTIMIZE_FOR_SIZE
++#define __IO_USE_DUFFS
++#endif
++
++#ifdef __IO_USE_DUFFS
++
++/* Use "Duff's Device" to unroll the loops. */
++#define __IO_OUT_LOOP(a, b, l)				\
++	do {						\
++		if (l > 0) {				\
++			int _n = (l + 7) / 8;		\
++			switch (l % 8) {		\
++			case 0:				\
++				do {			\
++					*a = *b++;	\
++			case 7:				\
++					*a = *b++;	\
++			case 6:				\
++					*a = *b++;	\
++			case 5:				\
++					*a = *b++;	\
++			case 4:				\
++					*a = *b++;	\
++			case 3:				\
++					*a = *b++;	\
++			case 2:				\
++					*a = *b++;	\
++			case 1:				\
++					*a = *b++;	\
++				} while (--_n > 0);	\
++			}				\
++		}					\
++	} while (0)
++
++#define __IO_IN_LOOP(a, b, l)				\
++	do {						\
++		if (l > 0) {				\
++			int _n = (l + 7) / 8;		\
++			switch (l % 8) {		\
++			case 0:				\
++				do {			\
++					*b++ = *a;	\
++			case 7:				\
++					*b++ = *a;	\
++			case 6:				\
++					*b++ = *a;	\
++			case 5:				\
++					*b++ = *a;	\
++			case 4:				\
++					*b++ = *a;	\
++			case 3:				\
++					*b++ = *a;	\
++			case 2:				\
++					*b++ = *a;	\
++			case 1:				\
++					*b++ = *a;	\
++				} while (--_n > 0);	\
++			}				\
++		}					\
++	} while (0)
++
++#else /* __IO_USE_DUFFS */
++
++/* Use simple loops. */
++#define __IO_OUT_LOOP(a, b, l)				\
++	do {						\
++		while (l--)				\
++			*a = *b++;			\
++	} while (0)
++
++#define __IO_IN_LOOP(a, b, l)				\
++	do {						\
++		while (l--)				\
++			*b++ = *a;			\
++	} while (0)
++
++#endif /* __IO_USE_DUFFS */
++
++void outsb(unsigned long addr, const void *buf, int len)
++{
++	volatile unsigned char *ap = (volatile unsigned char *)addr;
++	unsigned char *bp = (unsigned char *)buf;
++	__IO_OUT_LOOP(ap, bp, len);
++}
++EXPORT_SYMBOL(outsb);
++
++void outsw(unsigned long addr, const void *buf, int len)
++{
++	volatile unsigned short *ap = (volatile unsigned short *)addr;
++	unsigned short *bp = (unsigned short *)buf;
++	__IO_OUT_LOOP(ap, bp, len);
++}
++EXPORT_SYMBOL(outsw);
++
++void outsl(unsigned long addr, const void *buf, int len)
++{
++	volatile unsigned int *ap = (volatile unsigned int *)addr;
++	unsigned int *bp = (unsigned int *)buf;
++	__IO_OUT_LOOP(ap, bp, len);
++}
++EXPORT_SYMBOL(outsl);
++
++void insb(unsigned long addr, void *buf, int len)
++{
++	volatile unsigned char *ap = (volatile unsigned char *)addr;
++	unsigned char *bp = (unsigned char *)buf;
++	__IO_IN_LOOP(ap, bp, len);
++}
++EXPORT_SYMBOL(insb);
++
++void insw(unsigned long addr, void *buf, int len)
++{
++	volatile unsigned short *ap = (volatile unsigned short *)addr;
++	unsigned short *bp = (unsigned short *)buf;
++	__IO_IN_LOOP(ap, bp, len);
++}
++EXPORT_SYMBOL(insw);
++
++void insl(unsigned long addr, void *buf, int len)
++{
++	volatile unsigned int *ap = (volatile unsigned int *)addr;
++	unsigned int *bp = (unsigned int *)buf;
++	__IO_IN_LOOP(ap, bp, len);
++}
++EXPORT_SYMBOL(insl);
+diff --git a/arch/nios2/mm/ioremap.c b/arch/nios2/mm/ioremap.c
+new file mode 100644
+index 0000000..a46bccf
+--- /dev/null
++++ b/arch/nios2/mm/ioremap.c
+@@ -0,0 +1,186 @@
 +/*
 + * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
++ * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_UCONTEXT_H
-+#define _ASM_NIOS2_UCONTEXT_H
++#include <linux/export.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/slab.h>
++#include <linux/vmalloc.h>
++#include <linux/io.h>
 +
-+typedef int greg_t;
-+#define NGREG 32
-+typedef greg_t gregset_t[NGREG];
-+
-+struct mcontext {
-+	int version;
-+	gregset_t gregs;
-+};
-+
-+#define MCONTEXT_VERSION 2
-+
-+struct ucontext {
-+	unsigned long	  uc_flags;
-+	struct ucontext  *uc_link;
-+	stack_t		  uc_stack;
-+	struct mcontext	  uc_mcontext;
-+	sigset_t	  uc_sigmask;	/* mask last for extensibility */
-+};
-+
-+#endif
-diff --git a/arch/nios2/include/uapi/asm/sigcontext.h b/arch/nios2/include/uapi/asm/sigcontext.h
-new file mode 100644
-index 0000000..7b8bb41
---- /dev/null
-+++ b/arch/nios2/include/uapi/asm/sigcontext.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright (C) 2004, Microtronix Datacom Ltd.
-+ *
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ */
-+
-+#ifndef _ASM_NIOS2_SIGCONTEXT_H
-+#define _ASM_NIOS2_SIGCONTEXT_H
-+
-+#include <asm/ptrace.h>
-+
-+struct sigcontext {
-+	struct pt_regs regs;
-+	unsigned long  sc_mask;	/* old sigmask */
-+};
-+
-+#endif
-diff --git a/arch/nios2/include/uapi/asm/signal.h b/arch/nios2/include/uapi/asm/signal.h
-new file mode 100644
-index 0000000..f29ee63
---- /dev/null
-+++ b/arch/nios2/include/uapi/asm/signal.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+#ifndef _ASM_NIOS2_SIGNAL_H
-+#define _ASM_NIOS2_SIGNAL_H
-+
-+#define SA_RESTORER 0x04000000
-+#include <asm-generic/signal.h>
-+
-+#endif /* _ASM_NIOS2_SIGNAL_H */
-diff --git a/arch/nios2/kernel/signal.c b/arch/nios2/kernel/signal.c
-new file mode 100644
-index 0000000..d074f85
---- /dev/null
-+++ b/arch/nios2/kernel/signal.c
-@@ -0,0 +1,315 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011-2012 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ * Copyright (C) 1991, 1992 Linus Torvalds
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file COPYING in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/signal.h>
-+#include <linux/errno.h>
-+#include <linux/ptrace.h>
-+#include <linux/uaccess.h>
-+#include <linux/unistd.h>
-+#include <linux/personality.h>
-+#include <linux/tracehook.h>
-+
-+#include <asm/ucontext.h>
 +#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
 +
-+#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
-+
-+/*
-+ * Do a signal return; undo the signal stack.
-+ *
-+ * Keep the return code on the stack quadword aligned!
-+ * That makes the cache flush below easier.
-+ */
-+
-+struct rt_sigframe {
-+	struct siginfo info;
-+	struct ucontext uc;
-+};
-+
-+static inline int rt_restore_ucontext(struct pt_regs *regs,
-+					struct switch_stack *sw,
-+					struct ucontext *uc, int *pr2)
++static inline void remap_area_pte(pte_t *pte, unsigned long address,
++				unsigned long size, unsigned long phys_addr,
++				unsigned long flags)
 +{
-+	int temp;
-+	greg_t *gregs = uc->uc_mcontext.gregs;
-+	int err;
++	unsigned long end;
++	unsigned long pfn;
++	pgprot_t pgprot = __pgprot(_PAGE_GLOBAL | _PAGE_PRESENT | _PAGE_READ
++				| _PAGE_WRITE | flags);
 +
-+	err = __get_user(temp, &uc->uc_mcontext.version);
-+	if (temp != MCONTEXT_VERSION)
-+		goto badframe;
-+	/* restore passed registers */
-+	err |= __get_user(regs->r1, &gregs[0]);
-+	err |= __get_user(regs->r2, &gregs[1]);
-+	err |= __get_user(regs->r3, &gregs[2]);
-+	err |= __get_user(regs->r4, &gregs[3]);
-+	err |= __get_user(regs->r5, &gregs[4]);
-+	err |= __get_user(regs->r6, &gregs[5]);
-+	err |= __get_user(regs->r7, &gregs[6]);
-+	err |= __get_user(regs->r8, &gregs[7]);
-+	err |= __get_user(regs->r9, &gregs[8]);
-+	err |= __get_user(regs->r10, &gregs[9]);
-+	err |= __get_user(regs->r11, &gregs[10]);
-+	err |= __get_user(regs->r12, &gregs[11]);
-+	err |= __get_user(regs->r13, &gregs[12]);
-+	err |= __get_user(regs->r14, &gregs[13]);
-+	err |= __get_user(regs->r15, &gregs[14]);
-+	err |= __get_user(sw->r16, &gregs[15]);
-+	err |= __get_user(sw->r17, &gregs[16]);
-+	err |= __get_user(sw->r18, &gregs[17]);
-+	err |= __get_user(sw->r19, &gregs[18]);
-+	err |= __get_user(sw->r20, &gregs[19]);
-+	err |= __get_user(sw->r21, &gregs[20]);
-+	err |= __get_user(sw->r22, &gregs[21]);
-+	err |= __get_user(sw->r23, &gregs[22]);
-+	/* gregs[23] is handled below */
-+	err |= __get_user(sw->fp, &gregs[24]);  /* Verify, should this be
-+							settable */
-+	err |= __get_user(sw->gp, &gregs[25]);  /* Verify, should this be
-+							settable */
-+
-+	err |= __get_user(temp, &gregs[26]);  /* Not really necessary no user
-+							settable bits */
-+	err |= __get_user(regs->ea, &gregs[27]);
-+
-+	err |= __get_user(regs->ra, &gregs[23]);
-+	err |= __get_user(regs->sp, &gregs[28]);
-+
-+	regs->estatus = (regs->estatus & 0xffffffff);
-+	regs->orig_r2 = -1;		/* disable syscall checks */
-+
-+	err |= restore_altstack(&uc->uc_stack);
-+	if (err)
-+		goto badframe;
-+
-+	*pr2 = regs->r2;
-+	return err;
-+
-+badframe:
-+	return 1;
++	address &= ~PMD_MASK;
++	end = address + size;
++	if (end > PMD_SIZE)
++		end = PMD_SIZE;
++	if (address >= end)
++		BUG();
++	pfn = PFN_DOWN(phys_addr);
++	do {
++		if (!pte_none(*pte)) {
++			pr_err("remap_area_pte: page already exists\n");
++			BUG();
++		}
++		set_pte(pte, pfn_pte(pfn, pgprot));
++		address += PAGE_SIZE;
++		pfn++;
++		pte++;
++	} while (address && (address < end));
 +}
 +
-+asmlinkage int do_rt_sigreturn(struct switch_stack *sw)
++static inline int remap_area_pmd(pmd_t *pmd, unsigned long address,
++				unsigned long size, unsigned long phys_addr,
++				unsigned long flags)
 +{
-+	struct pt_regs *regs = (struct pt_regs *)(sw + 1);
-+	/* Verify, can we follow the stack back */
-+	struct rt_sigframe *frame = (struct rt_sigframe *) regs->sp;
-+	sigset_t set;
-+	int rval;
++	unsigned long end;
 +
-+	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
-+		goto badframe;
-+
-+	if (__copy_from_user(&set, &frame->uc.uc_sigmask, sizeof(set)))
-+		goto badframe;
-+
-+	set_current_blocked(&set);
-+
-+	if (rt_restore_ucontext(regs, sw, &frame->uc, &rval))
-+		goto badframe;
-+
-+	return rval;
-+
-+badframe:
-+	force_sig(SIGSEGV, current);
++	address &= ~PGDIR_MASK;
++	end = address + size;
++	if (end > PGDIR_SIZE)
++		end = PGDIR_SIZE;
++	phys_addr -= address;
++	if (address >= end)
++		BUG();
++	do {
++		pte_t *pte = pte_alloc_kernel(pmd, address);
++		if (!pte)
++			return -ENOMEM;
++		remap_area_pte(pte, address, end - address, address + phys_addr,
++			flags);
++		address = (address + PMD_SIZE) & PMD_MASK;
++		pmd++;
++	} while (address && (address < end));
 +	return 0;
 +}
 +
-+static inline int rt_setup_ucontext(struct ucontext *uc, struct pt_regs *regs)
++static int remap_area_pages(unsigned long address, unsigned long phys_addr,
++				unsigned long size, unsigned long flags)
 +{
-+	struct switch_stack *sw = (struct switch_stack *)regs - 1;
-+	greg_t *gregs = uc->uc_mcontext.gregs;
-+	int err = 0;
++	int error;
++	pgd_t *dir;
++	unsigned long end = address + size;
 +
-+	err |= __put_user(MCONTEXT_VERSION, &uc->uc_mcontext.version);
-+	err |= __put_user(regs->r1, &gregs[0]);
-+	err |= __put_user(regs->r2, &gregs[1]);
-+	err |= __put_user(regs->r3, &gregs[2]);
-+	err |= __put_user(regs->r4, &gregs[3]);
-+	err |= __put_user(regs->r5, &gregs[4]);
-+	err |= __put_user(regs->r6, &gregs[5]);
-+	err |= __put_user(regs->r7, &gregs[6]);
-+	err |= __put_user(regs->r8, &gregs[7]);
-+	err |= __put_user(regs->r9, &gregs[8]);
-+	err |= __put_user(regs->r10, &gregs[9]);
-+	err |= __put_user(regs->r11, &gregs[10]);
-+	err |= __put_user(regs->r12, &gregs[11]);
-+	err |= __put_user(regs->r13, &gregs[12]);
-+	err |= __put_user(regs->r14, &gregs[13]);
-+	err |= __put_user(regs->r15, &gregs[14]);
-+	err |= __put_user(sw->r16, &gregs[15]);
-+	err |= __put_user(sw->r17, &gregs[16]);
-+	err |= __put_user(sw->r18, &gregs[17]);
-+	err |= __put_user(sw->r19, &gregs[18]);
-+	err |= __put_user(sw->r20, &gregs[19]);
-+	err |= __put_user(sw->r21, &gregs[20]);
-+	err |= __put_user(sw->r22, &gregs[21]);
-+	err |= __put_user(sw->r23, &gregs[22]);
-+	err |= __put_user(regs->ra, &gregs[23]);
-+	err |= __put_user(sw->fp, &gregs[24]);
-+	err |= __put_user(sw->gp, &gregs[25]);
-+	err |= __put_user(regs->ea, &gregs[27]);
-+	err |= __put_user(regs->sp, &gregs[28]);
-+	return err;
-+}
++	phys_addr -= address;
++	dir = pgd_offset(&init_mm, address);
++	flush_cache_all();
++	if (address >= end)
++		BUG();
++	do {
++		pud_t *pud;
++		pmd_t *pmd;
 +
-+static inline void push_cache(unsigned long vaddr)
-+{
-+	flush_dcache_range(vaddr, vaddr + 12);
-+	flush_icache_range(vaddr, vaddr + 12);
-+}
-+
-+static inline void *get_sigframe(struct ksignal *ksig, struct pt_regs *regs,
-+				 size_t frame_size)
-+{
-+	unsigned long usp;
-+
-+	/* Default to using normal stack.  */
-+	usp = regs->sp;
-+
-+	/* This is the X/Open sanctioned signal stack switching.  */
-+	usp = sigsp(usp, ksig);
-+
-+	/* Verify, is it 32 or 64 bit aligned */
-+	return (void *)((usp - frame_size) & -8UL);
-+}
-+
-+static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
-+			  struct pt_regs *regs)
-+{
-+	struct rt_sigframe *frame;
-+	int err = 0;
-+
-+	frame = get_sigframe(ksig, regs, sizeof(*frame));
-+
-+	if (ksig->ka.sa.sa_flags & SA_SIGINFO)
-+		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
-+
-+	/* Create the ucontext.  */
-+	err |= __put_user(0, &frame->uc.uc_flags);
-+	err |= __put_user(0, &frame->uc.uc_link);
-+	err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-+	err |= rt_setup_ucontext(&frame->uc, regs);
-+	err |= copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
-+
-+	if (err)
-+		goto give_sigsegv;
-+
-+	/* Set up to return from userspace; jump to fixed address sigreturn
-+	   trampoline on kuser page.  */
-+	regs->ra = (unsigned long) (0x1040);
-+
-+	/* Set up registers for signal handler */
-+	regs->sp = (unsigned long) frame;
-+	regs->r4 = (unsigned long) ksig->sig;
-+	regs->r5 = (unsigned long) &frame->info;
-+	regs->r6 = (unsigned long) &frame->uc;
-+	regs->ea = (unsigned long) ksig->ka.sa.sa_handler;
-+	return 0;
-+
-+give_sigsegv:
-+	force_sigsegv(ksig->sig, current);
-+	return -EFAULT;
-+}
-+
-+static inline void handle_restart(struct pt_regs *regs, struct k_sigaction *ka,
-+				  int has_handler)
-+{
-+	switch (regs->r2) {
-+	case ERESTART_RESTARTBLOCK:
-+	case ERESTARTNOHAND:
-+		regs->r2 = EINTR;
-+		regs->r7 = 1;
-+		break;
-+	case ERESTARTSYS:
-+		if (has_handler && !(ka->sa.sa_flags & SA_RESTART)) {
-+			regs->r2 = EINTR;
-+			regs->r7 = 1;
++		error = -ENOMEM;
++		pud = pud_alloc(&init_mm, dir, address);
++		if (!pud)
 +			break;
-+		}
-+	/* fallthrough */
-+	case ERESTARTNOINTR:
-+		regs->r2 = regs->orig_r2;
-+		regs->r7 = regs->orig_r7;
-+		regs->ea -= 4;
-+		break;
-+	}
++		pmd = pmd_alloc(&init_mm, pud, address);
++		if (!pmd)
++			break;
++		if (remap_area_pmd(pmd, address, end - address,
++			phys_addr + address, flags))
++			break;
++		error = 0;
++		address = (address + PGDIR_SIZE) & PGDIR_MASK;
++		dir++;
++	} while (address && (address < end));
++	flush_tlb_all();
++	return error;
 +}
++
++#define IS_MAPPABLE_UNCACHEABLE(addr) (addr < 0x20000000UL)
 +
 +/*
-+ * OK, we're invoking a handler
++ * Map some physical address range into the kernel address space.
 + */
-+static void handle_signal(struct ksignal *ksig, struct pt_regs *regs)
++void __iomem *__ioremap(unsigned long phys_addr, unsigned long size,
++			unsigned long cacheflag)
 +{
-+	int ret;
-+	sigset_t *oldset = sigmask_to_save();
++	struct vm_struct *area;
++	unsigned long offset;
++	unsigned long last_addr;
++	void *addr;
 +
-+	/* set up the stack frame */
-+	ret = setup_rt_frame(ksig, oldset, regs);
++	/* Don't allow wraparound or zero size */
++	last_addr = phys_addr + size - 1;
 +
-+	signal_setup_done(ret, ksig, 0);
-+}
++	if (!size || last_addr < phys_addr)
++		return NULL;
 +
-+static int do_signal(struct pt_regs *regs, int in_syscall)
-+{
-+	struct ksignal ksig;
++	/* Don't allow anybody to remap normal RAM that we're using */
++	if (phys_addr > PHYS_OFFSET && phys_addr < virt_to_phys(high_memory)) {
++		char *t_addr, *t_end;
++		struct page *page;
 +
-+	current->thread.kregs = regs;
-+
-+	if (get_signal(&ksig)) {
-+		/*
-+		 * Are we from a system call? If so, check system call
-+		 * restarting.
-+		 */
-+		if (in_syscall)
-+			handle_restart(regs, &ksig.ka, 1);
-+		/* Whee!  Actually deliver the signal.  */
-+		handle_signal(&ksig, regs);
-+		return 1;
++		t_addr = __va(phys_addr);
++		t_end = t_addr + (size - 1);
++		for (page = virt_to_page(t_addr);
++			page <= virt_to_page(t_end); page++)
++			if (!PageReserved(page))
++				return NULL;
 +	}
 +
 +	/*
-+	 * No signal to deliver to the process - restart the syscall.
++	 * Map uncached objects in the low part of address space to
++	 * CONFIG_NIOS2_IO_REGION_BASE
 +	 */
-+	if (in_syscall) {
-+		/* Did the syscall return an error code */
-+		if (regs->r7 == 1) {
-+			if (regs->r2 == ERESTARTNOHAND ||
-+				regs->r2 == ERESTARTSYS ||
-+				regs->r2 == ERESTARTNOINTR) {
-+				regs->r2 = regs->orig_r2;
-+				regs->r7 = regs->orig_r7;
-+				regs->ea -= 4;
-+			} else if (regs->r2 == ERESTART_RESTARTBLOCK) {
-+				regs->r2 = __NR_restart_syscall;
-+				regs->ea -= 4;
-+			}
-+		}
++	if (IS_MAPPABLE_UNCACHEABLE(phys_addr) &&
++	    IS_MAPPABLE_UNCACHEABLE(last_addr) &&
++	    !(cacheflag & _PAGE_CACHED))
++		return (void __iomem *)(CONFIG_NIOS2_IO_REGION_BASE + phys_addr);
++
++	/* Mappings have to be page-aligned */
++	offset = phys_addr & ~PAGE_MASK;
++	phys_addr &= PAGE_MASK;
++	size = PAGE_ALIGN(last_addr + 1) - phys_addr;
++
++	/* Ok, go for it */
++	area = get_vm_area(size, VM_IOREMAP);
++	if (!area)
++		return NULL;
++	addr = area->addr;
++	if (remap_area_pages((unsigned long) addr, phys_addr, size,
++		cacheflag)) {
++		vunmap(addr);
++		return NULL;
 +	}
-+
-+	return 0;
++	return (void __iomem *) (offset + (char *)addr);
 +}
++EXPORT_SYMBOL(__ioremap);
 +
-+asmlinkage void do_notify_resume(struct pt_regs *regs, int in_syscall)
++/*
++ * __iounmap unmaps nearly everything, so be careful
++ * it doesn't free currently pointer/page tables anymore but it
++ * wasn't used anyway and might be added later.
++ */
++void __iounmap(void __iomem *addr)
 +{
-+	/*
-+	 * We want the common case to go fast, which is why we may in certain
-+	 * cases get here from kernel mode. Just return without doing anything
-+	 * if so.
-+	 */
-+	if (!user_mode(regs))
++	struct vm_struct *p;
++
++	if ((unsigned long) addr > CONFIG_NIOS2_IO_REGION_BASE)
 +		return;
 +
-+	if (test_thread_flag(TIF_SIGPENDING))
-+		do_signal(regs, in_syscall);
-+
-+	if (test_and_clear_thread_flag(TIF_NOTIFY_RESUME))
-+		tracehook_notify_resume(regs);
++	p = remove_vm_area((void *) (PAGE_MASK & (unsigned long __force) addr));
++	if (!p)
++		pr_err("iounmap: bad address %p\n", addr);
++	kfree(p);
 +}
++EXPORT_SYMBOL(__iounmap);
 -- 
 1.8.2.1
 
