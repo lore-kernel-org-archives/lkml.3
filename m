@@ -1,157 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaIHOzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:55:09 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33678 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaIHOzG convert rfc822-to-8bit (ORCPT
+	id S1753846AbaIHOz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:55:26 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:52059 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446AbaIHOzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:55:06 -0400
-Date: Mon, 8 Sep 2014 15:54:59 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI
- domain_nr
-Message-ID: <20140908145459.GO27864@e106497-lin.cambridge.arm.com>
-References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
- <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com>
- <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Sep 2014 14:55:00.0595 (UTC) FILETIME=[DD44C430:01CFCB74]
-X-MC-Unique: 114090815550305401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Mon, 8 Sep 2014 10:55:21 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-0d-540dc3564939
+Message-id: <540DC356.5040907@samsung.com>
+Date: Mon, 08 Sep 2014 16:55:18 +0200
+From: Karol Wrona <k.wrona@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [RFC/PATCH 0/6] iio: Add sensorhub driver
+References: <1409756150-30889-1-git-send-email-k.wrona@samsung.com>
+ <476dc5c4-557d-467c-9583-201b10b7e1df@email.android.com>
+In-reply-to: <476dc5c4-557d-467c-9583-201b10b7e1df@email.android.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t/xa7phh3lDDL7fM7T4O+kYu8XGGetZ
+	LR40rWKyONv0ht1i3pF3LBaXd81hc2Dz+P1rEqPHplWdbB59W1YxenzeJBfAEsVlk5Kak1mW
+	WqRvl8CVsf7VX7aC/foVd0/vY21gvKrSxcjJISFgIrFv6iEmCFtM4sK99WxdjFwcQgJLGSXe
+	/vjPAuF8ZpT409HLClLFK6AlceffRqAODg4WAVWJhfN9QMJsAuoSzTsWM4PYogJhEs9+HWSC
+	KBeU+DH5HtgcEYFGRombi/vZQHqZBVIlZs/0BakRFjCTWLTyHVi9kECdxN1n38BKOAVcJRZ8
+	VAQJMwOVfHl5mBXClpfYvOYt8wRGgVlINsxCUjYLSdkCRuZVjKKppckFxUnpuUZ6xYm5xaV5
+	6XrJ+bmbGCHh/HUH49JjVocYBTgYlXh4E67yhAixJpYVV+YeYpTgYFYS4fVZxxsixJuSWFmV
+	WpQfX1Sak1p8iJGJg1OqgZEj5/q9ViUO5c0GW7qeGu/fL53y1T2kqXtNX8/ynn+FO1c4XTz3
+	SsdNJfnJfaH0+/uTXUoXxHvdFL25YGJt1tUzNh2WYiox9+P+c/lX9oTl2689+nXTyylOT7OP
+	JdT/ZPtskXOeNTrb2ubOpLdSc1yXpn1x7bm0w0NH959cf6s4R//5H8y975VYijMSDbWYi4oT
+	Ae1/cE9FAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 03:27:56PM +0100, Rob Herring wrote:
-> On Mon, Sep 8, 2014 at 8:54 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > Add of_pci_get_domain_nr() to retrieve the PCI domain number
-> > of a given device from DT. If the information is not present,
-> > the function can be requested to allocate a new domain number.
-> >
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > ---
-> >  drivers/of/of_pci.c    | 34 ++++++++++++++++++++++++++++++++++
-> >  include/linux/of_pci.h |  7 +++++++
-> >  2 files changed, 41 insertions(+)
-> >
-> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> > index 8481996..a107edb 100644
-> > --- a/drivers/of/of_pci.c
-> > +++ b/drivers/of/of_pci.c
-> > @@ -89,6 +89,40 @@ int of_pci_parse_bus_range(struct device_node *node, struct resource *res)
-> >  }
-> >  EXPORT_SYMBOL_GPL(of_pci_parse_bus_range);
-> >
-> > +static atomic_t of_domain_nr = ATOMIC_INIT(-1);
-> > +
-> > +/**
-> > + * This function will try to obtain the host bridge domain number by
-> > + * using of_alias_get_id() call with "pci-domain" as a stem. If that
-> > + * fails, a local allocator will be used. The local allocator can
-> > + * be requested to return a new domain_nr if the information is missing
-> > + * from the device tree.
-> > + *
-> > + * @node: device tree node with the domain information
-> > + * @allocate_if_missing: if DT lacks information about the domain nr,
-> > + * allocate a new number.
-> > + *
-> > + * Returns the associated domain number from DT, or a new domain number
-> > + * if DT information is missing and @allocate_if_missing is true. If
-> > + * @allocate_if_missing is false then the last allocated domain number
-> > + * will be returned.
-> > + */
-> > +int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
-> > +{
-> > +       int domain;
-> > +
-> > +       domain = of_alias_get_id(node, "pci-domain");
-> > +       if (domain == -ENODEV) {
-> > +               if (allocate_if_missing)
-> > +                       domain = atomic_inc_return(&of_domain_nr);
-> > +               else
-> > +                       domain = atomic_read(&of_domain_nr);
-> 
-> This function seems a bit broken to me. It is overloaded with too many
-> different outcomes. Think about how this would work if you have
-> multiple PCI buses and a mixture of having pci-domain aliases or not.
-> Aren't domain numbers global? Allocation should then start outside of
-> the range of alias ids.
-> 
-> Rob
-> 
+On 09/03/2014 09:52 PM, Jonathan Cameron wrote:
+>
+> On September 3, 2014 3:55:44 PM GMT+01:00, Karol Wrona <k.wrona@samsung.com> wrote:
+>> Hello,
+>>
+>> This patchset adds support for sensorhub. It is an external mcu which
+>> manages
+>> and collects data from several sensors i.e. on Galaxy Gear 2 watch.
+>>
+>> It contains:
+>> - spi driver for sensorhub device
+>> - DT binding for the device
+>> - IIO common utils for ssp sensors, a trigger module
+>> - IIO accelerometer driver
+>> - IIO gyroscope driver
+>>
+>> Generally this is an attempt to generalize sensors handling on some
+>> Samsung
+>> boards which have multiple sensors IC and also sensorhub does some data
+>> processing itself.
+>>
+>> I would like to get your opinion about such solution. The idea is that
+>> data communication layer gives control and data to proper IIO sensor
+>> devices.
+>> In this case I chose that sensor drivers are platform ones represented
+>> by
+>> child nodes of sensorhub in DT. These compatibles are used mainly to
+>> match
+>> sensor to driver. For example at this stage there is one accelerometer
+>> but on
+>> other board can have different one with changed data format etc. In
+>> this case
+>> ssp_accel_sensor driver could handle several physical devices of accel
+>> class.
+>> Unfortunately the firmware gives only an information about used sensor
+>> type,
+>> the driver can find out that there is an accelerometer on board but
+>> nothing
+>> specific about the sensor.
+> Will look at this later... In the meantime..
+Before code review I want to know your opinion if passing information
+about sensors in that way is ok - It's a hack but currently the firmware
+do not provide such information and I do not know if I will be able to
+change it.
+>> Other question:
+>> The sensorhub can implement some devices which are non common for IIO
+>> and hard
+>> to standardise. These ones need two way communication (raw write will
+>> not be
+>> proper for that) and can produce data packets with flexible size to
+>> 2KB).
+>> I'm wondering if it is worth to look for solution in IIO and implement
+>> something like IIO_BULK sensor with no standard channel description
+>> or solve this problem using cdev. This is the reason why the part of
+>> the
+>> patchset is intended to be placed in misc.
+> Out of curiosity, what are these other sensors, roughly?  If they are popular I am
+>   sure there will be more out there soon!  Ideally we would work out how to standardize these. So convince is it can't be
+>   done!
+These are very specific for Galaxy Gear watch like movement detector, 
+pedometer,
+put down motion etc. The functionalities are mainly implemented by sensorhub
+firmware, these ones are not physical chips. My first idea was to use 
+IIO for typical
+sensors only (I can have there a bunch of thermometers, accelerometers, 
+lightsensors ...)
+and one cdev for others. In this case data interpretation would be done 
+by userspace.
+So:
+- these specific "sensors" will be only implemented on some Samsung's boards
+and depend on firmware.
+- there will be a lot of it  - most of them are represented by an 
+integer value but there
+are some which can send much more data.
 
-Rob,
-
-Would this version make more sense?
-
-int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
-{
-       int domain;
-
-       domain = of_alias_get_id(node, "pci-domain");
-       if (domain == -ENODEV) {
-               if (allocate_if_missing)
-                       domain = atomic_inc_return(&of_domain_nr);
-               else
-                       domain = atomic_read(&of_domain_nr);
-       } else {
-               /* remember the largest value seen */
-               int d = atomic_read(&of_domain_nr);
-               atomic_set(&of_domain_nr, max(domain, d));
-       }
-
-       return domain;
-}
-EXPORT_SYMBOL_GPL(of_pci_get_domain_nr);
-
-It would still create gaps and possible duplicates, but this is just a number
-and trying to create a new root bus in an existing domain should fail. I have
-no clue on how to generate unique values without parsing the DT and filling
-a sparse array with values found there and then checking for allocated values
-on new requests. This function gets called quite a lot and I'm trying not to
-make it too heavy weight.
-
-
-Best regards,
-Liviu
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+>> Regards,
+>> Karol
+>>
+>> Karol Wrona (6):
+>>   iio:sensorhub: Add sensorhub common library
+>>   misc: sensorhub: Add sensorhub driver
+>>   sensorhub: Add sensorhub bindings
+>>   iio: sensorhub: Add sensorhub iio commons
+>>   iio: sensorhub: Add sensorhub accelerometer sensor
+>>   iio: sensorhub: Add sensorhub gyroscope sensor
+>>
+>> .../devicetree/bindings/misc/sensorhub.txt         |   51 ++
+>> drivers/iio/accel/Makefile                         |    2 +
+>> drivers/iio/accel/ssp_accel_sensor.c               |  240 ++++++
+>> drivers/iio/common/Kconfig                         |    1 +
+>> drivers/iio/common/Makefile                        |    1 +
+>> drivers/iio/common/ssp_sensors/Kconfig             |   15 +
+>> drivers/iio/common/ssp_sensors/Makefile            |    6 +
+>> .../iio/common/ssp_sensors/ssp-sensor-trigger.c    |   92 +++
+>> drivers/iio/common/ssp_sensors/ssp_iio.c           |   35 +
+>> drivers/iio/common/ssp_sensors/ssp_iio_sensor.h    |   62 ++
+>> drivers/iio/gyro/Makefile                          |    2 +
+>> drivers/iio/gyro/ssp_gyro_sensor.c                 |  225 ++++++
+>> drivers/misc/Kconfig                               |    1 +
+>> drivers/misc/Makefile                              |    1 +
+>> drivers/misc/sensorhub/Kconfig                     |   13 +
+>> drivers/misc/sensorhub/Makefile                    |    8 +
+>> drivers/misc/sensorhub/ssp.h                       |  323 ++++++++
+>> drivers/misc/sensorhub/ssp_data.c                  |   61 ++
+>> drivers/misc/sensorhub/ssp_dev.c                   |  782
+>> ++++++++++++++++++++
+>> drivers/misc/sensorhub/ssp_firmware.c              |  571
+>> ++++++++++++++
+>> drivers/misc/sensorhub/ssp_spi.c                   |  700
+>> ++++++++++++++++++
+>> include/linux/iio/common/ssp_sensors.h             |   82 ++
+>> 22 files changed, 3274 insertions(+)
+>> create mode 100644 Documentation/devicetree/bindings/misc/sensorhub.txt
+>> create mode 100644 drivers/iio/accel/ssp_accel_sensor.c
+>> create mode 100644 drivers/iio/common/ssp_sensors/Kconfig
+>> create mode 100644 drivers/iio/common/ssp_sensors/Makefile
+>> create mode 100644 drivers/iio/common/ssp_sensors/ssp-sensor-trigger.c
+>> create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio.c
+>> create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
+>> create mode 100644 drivers/iio/gyro/ssp_gyro_sensor.c
+>> create mode 100644 drivers/misc/sensorhub/Kconfig
+>> create mode 100644 drivers/misc/sensorhub/Makefile
+>> create mode 100644 drivers/misc/sensorhub/ssp.h
+>> create mode 100644 drivers/misc/sensorhub/ssp_data.c
+>> create mode 100644 drivers/misc/sensorhub/ssp_dev.c
+>> create mode 100644 drivers/misc/sensorhub/ssp_firmware.c
+>> create mode 100644 drivers/misc/sensorhub/ssp_spi.c
+>> create mode 100644 include/linux/iio/common/ssp_sensors.h
 
