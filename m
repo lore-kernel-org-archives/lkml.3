@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244AbaIHWjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:39:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39753 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036AbaIHWjK (ORCPT
+	id S1755268AbaIHWj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:39:58 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41207 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754843AbaIHWj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:39:10 -0400
-Date: Tue, 9 Sep 2014 01:38:53 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Hugues <morisset.hugues@gmail.com>, Oleg Drokin <oleg.drokin@intel.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
-Message-ID: <20140908223853.GN6600@mwanda>
-References: <540E27FB.2070206@gmail.com>
- <540E287D.5090101@gmail.com>
- <540E28AD.2060607@gmail.com>
- <540E29B1.6090005@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540E29B1.6090005@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 8 Sep 2014 18:39:56 -0400
+Message-ID: <1410215994.2027.86.camel@jarvis.lan>
+Subject: Re: bit fields && data tearing
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: paulmck@linux.vnet.ibm.com, Peter Hurley <peter@hurleysoftware.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Date: Mon, 08 Sep 2014 15:39:54 -0700
+In-Reply-To: <540DFFB2.4000509@zytor.com>
+References: <5408C0AB.6050801@hurleysoftware.com>
+			 <20140905001751.GL5001@linux.vnet.ibm.com>
+			 <1409883098.5078.14.camel@jarvis.lan>
+		 <5409243C.4080704@hurleysoftware.com>
+			 <20140905040645.GO5001@linux.vnet.ibm.com>
+			 <1410066442.12512.13.camel@jarvis.lan>
+			 <20140907162146.GK5001@linux.vnet.ibm.com>
+			 <1410116687.2027.19.camel@jarvis.lan>
+			 <20140907230019.GO5001@linux.vnet.ibm.com>
+			 <6092b453-e0c9-4f6d-922b-48bce988f774@email.android.com>
+			 <20140907233655.GR5001@linux.vnet.ibm.com>
+			 <154b540a-df47-4f3e-bdda-ab5d2e72723a@email.android.com>
+		 <1410155802.2027.36.camel@jarvis.lan> <540DF17C.9080509@zytor.com>
+	 <1410203369.2027.56.camel@jarvis.lan> <540DFFB2.4000509@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 12:12:01AM +0200, Hugues wrote:
-> Fix potential buffer underflow
+On Mon, 2014-09-08 at 12:12 -0700, H. Peter Anvin wrote:
+> On 09/08/2014 12:09 PM, James Bottomley wrote:
+> > 
+> > Um, I think you need to re-read the thread; that's not what I said at
+> > all. It's even written lower down: "PA can't do atomic bit sets (no
+> > atomic RMW except the ldcw operation) it can do atomic writes to
+> > fundamental sizes (byte, short, int, long) provided gcc emits the
+> > correct primitive".  The original question was whether atomicity
+> > required native bus width access, which we currently assume, so there's
+> > no extant problem.
+> > 
 > 
-> When the string 'name' start with a '-' ptr == name and so --ptr will
-> underflow, this patch corrected this by checking ptr before decrementing.
+> The issue at hand was whether or not partially overlapped (but natually
+> aligned) writes can pass each other.  *This* is the aggressive
+> relaxation to which I am referring.
 
-Good eye.  Please fix up the changelog and send it inline etc and
-resend.  I've added Oleg and Andreas to the CC list so that this doesn't
-get lost.
+I don't understand what you mean by "pass each other".  Atomicity
+guarantees are not ordering guarantees in a SMP environment.  The
+guarantee is that if you follow the rules when two CPUs update the same
+natural width aligned object simultaneously using the same primitive,
+the result is either one or the other of their updates.  Which one wins
+(the ordering) isn't defined.
 
-regards,
-dan carpenter
+James
 
-> >From 5786040323bd1dc3149fb4afbea9f01e2bf4cfdf Mon Sep 17 00:00:00 2001
-> From: Hugues Morisset <morisset.hugues@gmail.com>
-> Date: Mon, 8 Sep 2014 22:59:04 +0200
-> Subject: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
-> 
-> Signed-off-by: Hugues Morisset <morisset.hugues@gmail.com>
-> ---
->  drivers/staging/lustre/lustre/include/obd.h | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/include/obd.h b/drivers/staging/lustre/lustre/include/obd.h
-> index 409eae6..bb67e40 100644
-> --- a/drivers/staging/lustre/lustre/include/obd.h
-> +++ b/drivers/staging/lustre/lustre/include/obd.h
-> @@ -677,7 +677,12 @@ static inline int is_osp_on_mdt(char *name)
->  	if (strncmp(ptr + 1, "MDT", 3) != 0)
->  		return 0;
->  
-> -	while (*(--ptr) != '-' && ptr != name);
-> +	if (ptr == name)
-> +		return 0;
-> +
-> +	--ptr;
-> +	while (ptr != '-' && ptr != name)
-> +		--ptr;
->  
->  	if (ptr == name)
->  		return 0;
-> -- 
-> 2.1.0
-> 
 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> I would guess that that is a very unusual constraint.
+
 
