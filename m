@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696AbaIHUr6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 16:47:58 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:51643 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146AbaIHUr4 (ORCPT
+	id S1754803AbaIHUsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 16:48:06 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:50046 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717AbaIHUsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 16:47:56 -0400
-Message-ID: <540E15F8.2030900@converseincode.com>
-Date: Mon, 08 Sep 2014 15:47:52 -0500
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 8 Sep 2014 16:48:01 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        <linux-pm@vger.kernel.org>, <ben.dooks@codethink.co.uk>,
+        <laurent.pinchart@ideasonboard.com>, <grant.likely@secretlab.ca>,
+        <ulf.hansson@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>
+Subject: Re: [RFC PATCH 3/3] ARM: keystone: pm_domain: setup clk pm domain clocks from DT
+References: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
+	<1406313096-29761-4-git-send-email-grygorii.strashko@ti.com>
+Date: Mon, 08 Sep 2014 13:47:59 -0700
+In-Reply-To: <1406313096-29761-4-git-send-email-grygorii.strashko@ti.com>
+	(Grygorii Strashko's message of "Fri, 25 Jul 2014 21:31:36 +0300")
+Message-ID: <7hmwa9on40.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, james.l.morris@oracle.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, serge@hallyn.com,
-        torvalds@linux-foundation.org, Mark Charlebois <charlebm@gmail.com>,
-        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: [PATCH] security, crypto: LLVMLinux: Remove VLAIS from ima_crypto.c
-References: <1409958360-8061-1-git-send-email-behanw@converseincode.com>	 <alpine.DEB.2.10.1409060131260.5472@nanos>	 <540A590F.1030407@converseincode.com>	 <alpine.DEB.2.10.1409061152090.5472@nanos>	 <540BBD9E.6050708@converseincode.com> <540D73C9.3000906@samsung.com>	 <540DA051.2030701@converseincode.com> <1410183821.8054.27.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-Reply-To: <1410183821.8054.27.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/14 08:43, Mimi Zohar wrote:
+Grygorii Strashko <grygorii.strashko@ti.com> writes:
+
+> This patch implements custom pm_clk_notifier callback for Keystone 2
+> CLK PM domain which fills list of clocks for Device with all
+> clocks assigned to this Device in DT.
 >
-> Behan, thank you for the explanation.
-No worries. I should have explained better. My apologies.
+> After this patch .con_ids field in pm_clk_notifier_block is not
+> used and there are no limitation for clocks names in DT any more.
 
-> The same snippet of code used
-> here, and elsewhere in the kernel, is taken from the crypto subsystem.
-> Once it is resolved in the crypto subsystem, the same solution should be
-> propogated.
->
-> Mimi
-Indeed that is my intention. I have tglx's suggested solution coded 
-already. Just doing a bunch of allyesconfig builds to confirm all is 
-compiling correctly.
+OK, but this also assumes you want *every* clock associated with a
+device node managed by runtime PM.  Is that really what you want?  
 
-I will post all patches as a single patch set this time (posted to all 
-concerned).
+I may have misunderstood, but your previous attempts at solving this
+problem suggest you wanted finer grained control over which device
+clocks are runtime PM managed and which ones arent.
 
-I will repeat the explanation as well with the new patch set so everyone 
-else in other subsystems sees those reasons as well.
-
-If this works for everyone I'll also go back and update the crypto 
-patches for the subsystems that have already accepted my previous patches.
-
-Thanks,
-
-Behan
-
--- 
-Behan Webster
-behanw@converseincode.com
-
+Kevin
