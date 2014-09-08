@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755AbaIHLht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:37:49 -0400
-Received: from smtprelay0042.hostedemail.com ([216.40.44.42]:52772 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753395AbaIHLhs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:37:48 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shame24_26b456bf8fc3a
-X-Filterd-Recvd-Size: 1620
-Message-ID: <1410176264.12560.3.camel@joe-AO725>
-Subject: Re: [PATCH 2/3] staging: lustre: fix pointer whitespace style
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Spencer Baugh <sbaugh@andrew.cmu.edu>,
-        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        gregkh@linuxfoundation.org, Hongchao Zhang <hongchao.zhang@intel.com>,
-        Niu Yawei <yawei.niu@intel.com>,
-        Alex Zhuravlev <alexey.zhuravlev@intel.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Date: Mon, 08 Sep 2014 04:37:44 -0700
-In-Reply-To: <20140908103208.GK6600@mwanda>
-References: <1410025111-31422-1-git-send-email-sbaugh@andrew.cmu.edu>
-	 <1410025111-31422-2-git-send-email-sbaugh@andrew.cmu.edu>
-	 <1410027543.2723.8.camel@joe-AO725> <20140908103208.GK6600@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753834AbaIHLii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:38:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31121 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753256AbaIHLif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 07:38:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
+   d="scan'208";a="599616623"
+From: Huang Ying <ying.huang@intel.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Huang Ying <ying.huang@intel.com>, huang.ying.caritas@gmail.com
+Subject: [PATCH] f2fs: Fix recover when nid of non-inode dnode < nid of inode
+Date: Mon,  8 Sep 2014 19:38:26 +0800
+Message-Id: <1410176306-1689-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-08 at 13:32 +0300, Dan Carpenter wrote:
-> On Sat, Sep 06, 2014 at 11:19:03AM -0700, Joe Perches wrote:
-> > Indexing a string array with an enum is generally unsafe.
-> > I think it better to use a switch/case like:
-> The reverse side of that argument is that switch statements are slower
-> and uglier.
+For fsync, if the nid of a non-inode dnode < nid of inode and the
+inode is not checkpointed.  The non-inode dnode may be written before
+inode.  So in find_fsync_dnodes, f2fs_iget will fail, cause the
+recovery fail.
 
-Uglier is true, safer is true too.
-Slower depends.
-Sometimes the actual code is identical.
+Usually, inode will be allocated before non-inode dnode, so the nid of
+inode < nid of non-inode dnode.  But it is possible for the reverse.
+For example, because of alloc_nid_failed.
 
+This is fixed via ignoring non-inode dnode before inode dnode in
+find_fsync_dnodes.
 
+The patch was tested via allocating nid reversely via a debugging
+patch, that is, from big number to small number.
+
+Signed-off-by: Huang, Ying <ying.huang@intel.com>
+---
+ fs/f2fs/recovery.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -172,8 +172,8 @@ static int find_fsync_dnodes(struct f2fs
+ 			if (IS_INODE(page) && is_dent_dnode(page))
+ 				set_inode_flag(F2FS_I(entry->inode),
+ 							FI_INC_LINK);
+-		} else {
+-			if (IS_INODE(page) && is_dent_dnode(page)) {
++		} else if (IS_INODE(page)) {
++			if (is_dent_dnode(page)) {
+ 				err = recover_inode_page(sbi, page);
+ 				if (err)
+ 					break;
+@@ -193,7 +193,8 @@ static int find_fsync_dnodes(struct f2fs
+ 				break;
+ 			}
+ 			list_add_tail(&entry->list, head);
+-		}
++		} else
++			goto next;
+ 		entry->blkaddr = blkaddr;
+ 
+ 		err = recover_inode(entry->inode, page);
