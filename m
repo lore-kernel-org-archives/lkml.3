@@ -1,139 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713AbaIHNVB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:21:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39215 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208AbaIHNVA (ORCPT
+	id S1753835AbaIHNVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:21:19 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:62230 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783AbaIHNVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:21:00 -0400
-Date: Mon, 8 Sep 2014 15:20:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
- context_equiv
-Message-ID: <20140908132054.GF6758@twins.programming.kicks-ass.net>
-References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
- <1408977943-16594-2-git-send-email-jolsa@kernel.org>
- <20140902105036.GH5806@worktop.ger.corp.intel.com>
- <20140908094348.GB1172@krava.brq.redhat.com>
- <20140908094548.GA6758@twins.programming.kicks-ass.net>
- <20140908094855.GR3588@twins.programming.kicks-ass.net>
- <20140908100122.GS3588@twins.programming.kicks-ass.net>
- <20140908113958.GT3588@twins.programming.kicks-ass.net>
- <20140908121952.GB17728@krava.brq.redhat.com>
+	Mon, 8 Sep 2014 09:21:17 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FithOarzfhgx15NW"
-Content-Disposition: inline
-In-Reply-To: <20140908121952.GB17728@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140908124945.GD17728@krava.brq.redhat.com>
+References: <CABPqkBRREcix0TtLLUgiq8uabUqG=m2un79WKLqPXF=LccSQbw@mail.gmail.com>
+	<20140908124945.GD17728@krava.brq.redhat.com>
+Date: Mon, 8 Sep 2014 15:21:12 +0200
+Message-ID: <CABPqkBRPWh+=CfXBYaYW=P6FJke3KB-7y-U1ky8JAKjDY3JaEg@mail.gmail.com>
+Subject: Re: [BUG] perf: cannot read counts in per-process mode in 3.17-rcX
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 8, 2014 at 2:49 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>
+> On Mon, Sep 08, 2014 at 02:35:06PM +0200, Stephane Eranian wrote:
+> > Hi,
+> >
+> > It seems something is seriously broken with perf_events in
+> > 3.17-rcX. I have tried rc3, rc4. No way to get any counts
+> > out using perf stat in per-process mode. I am trying on Intel
+> > and the PMU is correctly detected:
+> >
+> > $ perf stat -e cycles ls
+> >       <not counted> cycles
+> >
+> > It is not a permission problem. It is a read problem!
+> > $ strace perf stat -e cycles ls
+> >
+> > perf_event_open(0x27d7e20, 2261, -1, -1, 0x8 /* PERF_FLAG_??? */) = 3
+> > write(6, "\0", 1)                       = 1
+> > close(6)                                = 0
+> > wait4(-1, [{WIFEXITED(s) && WEXITSTATUS(s) == 0}], 0, NULL) = 2261
+> > --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=2261,
+> > si_status=0, si_utime=0, si_stime=0} ---
+> > rt_sigreturn()                          = 2261
+> > read(3, "", 24)                         = 0
+> >  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>
+> ouch thats me.. sry :-\
+>
+> the PERF_EVENT_STATE_EXIT check should not go to the
+> read path.. could you please test attached patch?
+>
+> jirka
+>
+Works for me again now. Thanks for the quick fix. Please push it upstream.
 
---FithOarzfhgx15NW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Sep 08, 2014 at 02:19:52PM +0200, Jiri Olsa wrote:
-> > I have another 'problem' with 179033b3e064. What if you 'want' to
-> > continue monitoring after the initial task died? Eg. if you want to
-> > monitor crap that unconditionally daemonizes.
->=20
-> right.. did not think of that.. need to check more, but
-> seems like just the check for children should be enough
->=20
-
-Indeed, that should work.
-
+Acked-by: Stephane Eranian <eranian@google.com>
+>
+>
 > ---
 > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index bf482ccbdbe1..341d0b47ca14 100644
+> index d8cb4d2..6d1c9ce 100644
 > --- a/kernel/events/core.c
 > +++ b/kernel/events/core.c
-> @@ -3568,6 +3568,19 @@ static int perf_event_read_one(struct perf_event *=
-event,
->  	return n * sizeof(u64);
->  }
-> =20
-> +static bool is_event_hup(struct perf_event *event)
-> +{
-> +	bool no_children;
-> +
-> +	if (event->state !=3D PERF_EVENT_STATE_EXIT)
-> +		return false;
-> +
-> +	mutex_lock(&event->child_mutex);
-> +	no_children =3D list_empty(&event->child_list);
-> +	mutex_unlock(&event->child_mutex);
-> +	return no_children;
-> +}
-> +
->  /*
->   * Read the performance event - simple non blocking version for now
->   */
-> @@ -3582,8 +3595,7 @@ perf_read_hw(struct perf_event *event, char __user =
-*buf, size_t count)
->  	 * error state (i.e. because it was pinned but it couldn't be
->  	 * scheduled on to the CPU at some point).
->  	 */
-> -	if ((event->state =3D=3D PERF_EVENT_STATE_ERROR) ||
-> -	    (event->state =3D=3D PERF_EVENT_STATE_EXIT))
-> +	if ((event->state =3D=3D PERF_EVENT_STATE_ERROR) || (is_event_hup(event=
-)))
->  		return 0;
-
-Do we want this? It seems like a fairly sensible thing to start a
-counter and wait for the thing to die, only to then read the total
-count. But with this on we get 0s.
-
-I suppose Stephane's email got to you after you did this and we should
-be dropping this thing entirely?
-
->  	if (count < event->read_size)
-> @@ -3614,7 +3626,7 @@ static unsigned int perf_poll(struct file *file, po=
-ll_table *wait)
-> =20
->  	poll_wait(file, &event->waitq, wait);
-> =20
-> -	if (event->state =3D=3D PERF_EVENT_STATE_EXIT)
-> +	if (is_event_hup(event))
->  		return events;
-> =20
->  	/*
-
---FithOarzfhgx15NW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUDa02AAoJEHZH4aRLwOS6oWMP/inLLvMwjq2bfDAWLbK/igTo
-lmNKpQzZHfmH/xetejAeQQpkBaGjRqHbnKb1dUmRsxp/VLmvzL/4nhXUE4u7nBEP
-AooiH7SxBE4iD31tnQ5iapvV9/2IL8mTRCCVznQSSOobRNfKhCpm4CkOhldAPwrY
-vgEc+j3DWeLdCePeyfWyHJPFXZgi+y7GHJeumL1guq2X1xwOgCZ2CLgvnJ4agDSO
-Q0rGaEbXZKgtpqBlwxVCY88vlfVPlVdGi+bIjtWZYH6OGlVmSw42SViVXT22KxjG
-sVLvTeHPy5aq0UDUESBJZqn7hh3FY1lyQxoIp5PuRAALOU61m/hwOv5PPJfYvnBI
-DuB1X0F4lPdOqqFxNwh0nVat3Ii9T0itF9jQy4XOvpzMyoF13gCVRmKQqiOT1Lz5
-QILDyg+snfrUwPzELpmRRxjw93qG1e1gVdvMDmNeuzK5dqwjL88zAIbzEdG9E59U
-HNI/QGZFYU9Xu5f4IkX4+y0Ng12eZYatlenS4qouf29WIqmP3w2HXzoafvgaDPFz
-IP6XjJ6J0WZE+JTICLvSEAtn7CudDQQzAgFZYCHWGaoD1dfI3TDhcVi4mWr/oLDH
-/i2TuNgfAp/QHXT64cWIhyN/2igI/TWr5v4vklDH/tNSlab+PM5sv8uFclWLUUxs
-8ivZcf3yWGbIZiDMso3F
-=+Bl8
------END PGP SIGNATURE-----
-
---FithOarzfhgx15NW--
+> @@ -3600,8 +3600,7 @@ perf_read_hw(struct perf_event *event, char __user *buf, size_t count)
+>          * error state (i.e. because it was pinned but it couldn't be
+>          * scheduled on to the CPU at some point).
+>          */
+> -       if ((event->state == PERF_EVENT_STATE_ERROR) ||
+> -           (event->state == PERF_EVENT_STATE_EXIT))
+> +       if (event->state == PERF_EVENT_STATE_ERROR)
+>                 return 0;
+>
+>         if (count < event->read_size)
