@@ -1,265 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670AbaIHIQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:16:06 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:27075 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492AbaIHIQA (ORCPT
+	id S1753131AbaIHI13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:27:29 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:59453 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780AbaIHI11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 04:16:00 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-aa-540d65bd2bd7
-Message-id: <1410164155.4300.8.camel@AMDC1943>
-Subject: Re: [RFC PATCH] dma: pl330: add Power Management support
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Mon, 08 Sep 2014 10:15:55 +0200
-In-reply-to: <8b73ba80-c055-42c3-a784-96e120482319@BN1BFFO11FD058.protection.gbl>
-References: <1409929562-29583-1-git-send-email-k.kozlowski@samsung.com>
- <8b73ba80-c055-42c3-a784-96e120482319@BN1BFFO11FD058.protection.gbl>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xy7p7U3lDDN61GltsnLGe1eL1v+ks
-	FtOnXmC0WD31L6vF2aY37BZLJs9ntbi8aw6bxdojd9kt3r2MsHjZt5/Fgctj8Z6XTB5L3hxi
-	9fj49BaLR9+WVYwenzfJeez9/JslgC2KyyYlNSezLLVI3y6BK2PasS0sBY0WFU1XpjI2ME7W
-	6WLk5JAQMJGY9egsE4QtJnHh3nq2LkYuDiGBpYwSC1o2sEA4nxklPh3qZwap4hXQk+ic+BvM
-	FhZwlGhdOxGsm03AWGLz8iVsILaIgJbEp6brTCDNzALvmSS6+nvAGlgEVCX6bu4AK+IUCJbY
-	sfM4E8SGPkaJ5fv2gyWYBdQlJs1bBNTAAXSTskRjvxvEYkGJH5PvsUCUyEtsXvOWeQKjwCwk
-	HbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkg8fN3BuPSY1SFGAQ5GJR7e
-	hKs8IUKsiWXFlbmHGCU4mJVEeBnCeEOEeFMSK6tSi/Lji0pzUosPMTJxcEo1MO4K+DtpluVP
-	A837uxoZ/J6JCfB9i1kvP/FV9vSJggv/v8ndt8EyTXFP8hbthU9znvEllrEuv/DJRJJPo/Nf
-	QRPXB+9Qhq7GT/89XR9m34o6uil6qX3tx8JPttP6fy86fGbRlNyI3W8kTR3W+VnkRFtPrJ/X
-	OLFm/uuZU9LWCz4xaW4/t2/W30IlluKMREMt5qLiRABKpkBMZQIAAA==
+	Mon, 8 Sep 2014 04:27:27 -0400
+Date: Mon, 8 Sep 2014 01:25:36 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Hugh Dickins <hughd@google.com>, Chintan Pandya <cpandya@codeaurora.org>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+In-Reply-To: <20140903095815.GK4783@worktop.ger.corp.intel.com>
+Message-ID: <alpine.LSU.2.11.1409080023100.1610@eggly.anvils>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-09-08 at 10:06 +0200, Michal Simek wrote:
-> On 09/05/2014 05:06 PM, Krzysztof Kozlowski wrote:
-> > This patch adds both normal PM suspend/resume support and runtime PM
-> > support to pl330 DMA engine driver.
+On Wed, 3 Sep 2014, Peter Zijlstra wrote:
+> On Wed, Aug 27, 2014 at 11:02:20PM -0700, Hugh Dickins wrote:
+> > On Wed, 20 Aug 2014, Chintan Pandya wrote:
 > > 
-> > The runtime power management for pl330 DMA driver allows gating of AMBA
-> > clock (PDMA) in FSYS clock domain, when the device is not processing any
-> > requests. This is necessary to enter W-AFTR low power mode on Exynos3250.
+> > > KSM thread to scan pages is scheduled on definite timeout. That wakes up
+> > > CPU from idle state and hence may affect the power consumption. Provide
+> > > an optional support to use deferrable timer which suites low-power
+> > > use-cases.
+> > > 
+> > > Typically, on our setup we observed, 10% less power consumption with some
+> > > use-cases in which CPU goes to power collapse frequently. For example,
+> > > playing audio on Soc which has HW based Audio encoder/decoder, CPU
+> > > remains idle for longer duration of time. This idle state will save
+> > > significant CPU power consumption if KSM don't wakes them up
+> > > periodically.
+> > > 
+> > > Note that, deferrable timers won't be deferred if any CPU is active and
+> > > not in IDLE state.
+> > > 
+> > > By default, deferrable timers is enabled. To disable deferrable timers,
+> > > $ echo 0 > /sys/kernel/mm/ksm/deferrable_timer
 > > 
-> > The patch is based on previous work of Bartlomiej Zolnierkiewicz
-> > <b.zolnierkie@samsung.com>.
+> > I have now experimented.  And, much as I wanted to eliminate the
+> > tunable, and just have deferrable timers on, I have come right back
+> > to your original position.
 > > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/dma/pl330.c | 78 ++++++++++++++++++++++++++++++++++++++++++++++++++---
-> >  1 file changed, 74 insertions(+), 4 deletions(-)
+> > I was impressed by how quiet ksmd goes when there's nothing much
+> > happening on the machine; but equally, disappointed in how slow
+> > it then is to fulfil the outstanding merge work.  I agree with your
+> > original assessment, that not everybody will want deferrable timer,
+> > the way it is working at present.
 > > 
-> > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> > index 66e89f04504c..bdc6ff8ee2bf 100644
-> > --- a/drivers/dma/pl330.c
-> > +++ b/drivers/dma/pl330.c
-> > @@ -27,6 +27,7 @@
-> >  #include <linux/of.h>
-> >  #include <linux/of_dma.h>
-> >  #include <linux/err.h>
-> > +#include <linux/pm_runtime.h>
-> >  
-> >  #include "dmaengine.h"
-> >  #define PL330_MAX_CHAN		8
-> > @@ -1966,6 +1967,7 @@ static void pl330_tasklet(unsigned long data)
-> >  	struct dma_pl330_chan *pch = (struct dma_pl330_chan *)data;
-> >  	struct dma_pl330_desc *desc, *_dt;
-> >  	unsigned long flags;
-> > +	bool power_down = false;
-> >  
-> >  	spin_lock_irqsave(&pch->lock, flags);
-> >  
-> > @@ -1980,10 +1982,17 @@ static void pl330_tasklet(unsigned long data)
-> >  	/* Try to submit a req imm. next to the last completed cookie */
-> >  	fill_queue(pch);
-> >  
-> > -	/* Make sure the PL330 Channel thread is active */
-> > -	spin_lock(&pch->thread->dmac->lock);
-> > -	_start(pch->thread);
-> > -	spin_unlock(&pch->thread->dmac->lock);
-> > +	if (list_empty(&pch->work_list)) {
-> > +		spin_lock(&pch->thread->dmac->lock);
-> > +		_stop(pch->thread);
-> > +		spin_unlock(&pch->thread->dmac->lock);
-> > +		power_down = true;
-> > +	} else {
-> > +		/* Make sure the PL330 Channel thread is active */
-> > +		spin_lock(&pch->thread->dmac->lock);
-> > +		_start(pch->thread);
-> > +		spin_unlock(&pch->thread->dmac->lock);
-> > +	}
-> >  
-> >  	while (!list_empty(&pch->completed_list)) {
-> >  		dma_async_tx_callback callback;
-> > @@ -1998,6 +2007,12 @@ static void pl330_tasklet(unsigned long data)
-> >  		if (pch->cyclic) {
-> >  			desc->status = PREP;
-> >  			list_move_tail(&desc->node, &pch->work_list);
-> > +			if (power_down) {
-> > +				spin_lock(&pch->thread->dmac->lock);
-> > +				_start(pch->thread);
-> > +				spin_unlock(&pch->thread->dmac->lock);
-> > +				power_down = false;
-> > +			}
-> >  		} else {
-> >  			desc->status = FREE;
-> >  			list_move_tail(&desc->node, &pch->dmac->desc_pool);
-> > @@ -2012,6 +2027,10 @@ static void pl330_tasklet(unsigned long data)
-> >  		}
-> >  	}
-> >  	spin_unlock_irqrestore(&pch->lock, flags);
-> > +
-> > +	/* If work list empty, power down */
-> > +	if (power_down)
-> > +		pm_runtime_put(pch->dmac->ddma.dev);
-> >  }
-> >  
-> >  bool pl330_filter(struct dma_chan *chan, void *param)
-> > @@ -2077,10 +2096,12 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned
-> >  	unsigned long flags;
-> >  	struct pl330_dmac *pl330 = pch->dmac;
-> >  	struct dma_slave_config *slave_config;
-> > +	bool power_down = false;
-> >  	LIST_HEAD(list);
-> >  
-> >  	switch (cmd) {
-> >  	case DMA_TERMINATE_ALL:
-> > +		pm_runtime_get_sync(pl330->ddma.dev);
-> >  		spin_lock_irqsave(&pch->lock, flags);
-> >  
-> >  		spin_lock(&pl330->lock);
-> > @@ -2107,10 +2128,18 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned
-> >  			dma_cookie_complete(&desc->txd);
-> >  		}
-> >  
-> > +		if (!list_empty(&pch->work_list))
-> > +			power_down = true;
-> > +
-> >  		list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
-> >  		list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
-> >  		list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
-> >  		spin_unlock_irqrestore(&pch->lock, flags);
-> > +		pm_runtime_put(pl330->ddma.dev);
-> > +
-> > +		/* If work list empty, power down */
-> > +		if (power_down)
-> > +			pm_runtime_put(pl330->ddma.dev);
-> >  		break;
-> >  	case DMA_SLAVE_CONFIG:
-> >  		slave_config = (struct dma_slave_config *)arg;
-> > @@ -2146,6 +2175,7 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
-> >  
-> >  	tasklet_kill(&pch->task);
-> >  
-> > +	pm_runtime_get_sync(pch->dmac->ddma.dev);
-> >  	spin_lock_irqsave(&pch->lock, flags);
-> >  
-> >  	pl330_release_channel(pch->thread);
-> > @@ -2155,6 +2185,7 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
-> >  		list_splice_tail_init(&pch->work_list, &pch->dmac->desc_pool);
-> >  
-> >  	spin_unlock_irqrestore(&pch->lock, flags);
-> > +	pm_runtime_put(pch->dmac->ddma.dev);
-> >  }
-> >  
-> >  static enum dma_status
-> > @@ -2168,11 +2199,23 @@ static void pl330_issue_pending(struct dma_chan *chan)
-> >  {
-> >  	struct dma_pl330_chan *pch = to_pchan(chan);
-> >  	unsigned long flags;
-> > +	bool power_up;
-> >  
-> >  	spin_lock_irqsave(&pch->lock, flags);
-> > +	power_up = list_empty(&pch->work_list);
-> >  	list_splice_tail_init(&pch->submitted_list, &pch->work_list);
-> >  	spin_unlock_irqrestore(&pch->lock, flags);
-> >  
-> > +	if (power_up) {
-> > +		/*
-> > +		 * Warn on nothing pending. This may break our pm_runtime
-> > +		 * usage counter as it is updated on work_list emptiness
-> > +		 * status.
-> > +		 */
-> > +		WARN_ON(list_empty(&pch->work_list));
-> > +		pm_runtime_get_sync(pch->dmac->ddma.dev);
-> > +	}
-> > +
-> >  	pl330_tasklet((unsigned long)pch);
-> >  }
-> >  
-> > @@ -2205,6 +2248,7 @@ static dma_cookie_t pl330_tx_submit(struct dma_async_tx_descriptor *tx)
-> >  
-> >  	cookie = dma_cookie_assign(&last->txd);
-> >  	list_add_tail(&last->node, &pch->submitted_list);
-> > +
+> > I expect that can be fixed, partly by doing more work on wakeup from
+> > a deferred timer, according to how long it has been deferred; and
+> > partly by not deferring on idle until two passes of the list have been
+> > completed.  But that's easier said than done, and might turn out to
 > 
-> unrelated change.
+> So why not have the timer cancel itself when there is no more work to do
+> and start itself up again when there's work added?
 
-Right.
+Well, yes, but... how do we know when there is no more work to do?
+Further down I said:
 
-> 
-> >  	spin_unlock_irqrestore(&pch->lock, flags);
-> >  
-> >  	return cookie;
-> > @@ -2593,6 +2637,28 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
-> >  	return 0;
-> >  }
-> >  
-> > +#ifdef CONFIG_PM_SLEEP
-> 
-> remove this line
-> 
-> > +static int pl330_suspend(struct device *dev)
-> 
-> __maybe_unused here
-> 
-> > +{
-> > +	struct amba_device *pcdev = to_amba_device(dev);
-> > +
-> > +	if (!pm_runtime_suspended(dev))
-> > +		amba_pclk_disable(pcdev);
-> > +	return 0;
-> > +}
-> > +
-> > +static int pl330_resume(struct device *dev)
-> 
-> __maybe_unused here
-> 
-> > +{
-> > +	struct amba_device *pcdev = to_amba_device(dev);
-> > +
-> > +	if (!pm_runtime_suspended(dev))
-> > +		return amba_pclk_enable(pcdev);
-> > +	return 0;
-> > +}
-> > +#endif
-> 
-> remove this line
-> 
-> > +
-> > +static SIMPLE_DEV_PM_OPS(pl330_pm, pl330_suspend, pl330_resume);
-> 
-> Everything is handle inside this macro and your functions are not calling
-> anything what it is not defined for both cases.
+> > But fixing that might require ksm hooks in hot locations where nobody
+> > else would want them: I'm rather hoping we can strike a good enough
+> > balance with your deferrable timer, that nobody will need any better.
 
-Thank you for feedback. I'll fix this in next version.
+Thomas has given reason why KSM might simply fail to do its job if we
+rely on the deferrable timer.  So I've tried another approach, patch
+below; but I do not expect you to jump for joy at the sight of it!
 
-Best regards,
-Krzysztof
+I've tried to minimize the offensive KSM hook in context_switch().
+Why place it there, rather than do something near profile_tick() or
+account_process_tick()?  Because KSM is aware of mms not tasks, and
+context_switch() should have the next mm cachelines hot (if not, a
+slight regrouping in mm_struct should do it); whereas I can find
+no reference whatever to mm_struct in kernel/time, so hooking to
+KSM from there would drag in another few cachelines every tick.
 
+(Another approach would be to set up KSM hint faulting, along the
+lines of NUMA hint faulting.  Not a path I'm keen to go down.)
 
-> 
-> Thanks,
-> Michal
-> 
+I'm not thrilled with this patch, I think it's somewhat defective
+in several ways.  But maybe in practice it will prove good enough,
+and if so then I'd rather not waste effort on complicating it.
 
+My own testing is not realistic, nor representative of real KSM users;
+and I have no idea what values of pages_to_scan and sleep_millisecs
+people really use (and those may make quite a difference to how
+well it works).
+
+Chintan, even if the scheduler guys turn out to hate it, please would
+you give the patch below a try, to see how well it works in your
+environment, whether it seems to go better or worse than your own patch.
+
+If it works well enough for you, maybe we can come up with ideas to
+make it more palatable.  I do think your issue is an important one
+to fix, one way or another.
+
+Thanks,
+Hugh
+
+[PATCH] ksm: avoid periodic wakeup while mergeable mms are quiet
+
+Description yet to be written!
+
+Reported-by: Chintan Pandya <cpandya@codeaurora.org>
+Not-Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+
+ include/linux/ksm.h   |   14 +++++++++++
+ include/linux/sched.h |    1 
+ kernel/sched/core.c   |    9 ++++++-
+ mm/ksm.c              |   50 ++++++++++++++++++++++++++++------------
+ 4 files changed, 58 insertions(+), 16 deletions(-)
+
+--- 3.17-rc4/include/linux/ksm.h	2014-03-30 20:40:15.000000000 -0700
++++ linux/include/linux/ksm.h	2014-09-07 11:54:41.528003316 -0700
+@@ -12,6 +12,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/rmap.h>
+ #include <linux/sched.h>
++#include <linux/wait.h>
+ 
+ struct stable_node;
+ struct mem_cgroup;
+@@ -21,6 +22,7 @@ int ksm_madvise(struct vm_area_struct *v
+ 		unsigned long end, int advice, unsigned long *vm_flags);
+ int __ksm_enter(struct mm_struct *mm);
+ void __ksm_exit(struct mm_struct *mm);
++wait_queue_head_t *__ksm_switch(struct mm_struct *mm);
+ 
+ static inline int ksm_fork(struct mm_struct *mm, struct mm_struct *oldmm)
+ {
+@@ -35,6 +37,13 @@ static inline void ksm_exit(struct mm_st
+ 		__ksm_exit(mm);
+ }
+ 
++static inline wait_queue_head_t *ksm_switch(struct mm_struct *mm)
++{
++	if (unlikely(test_bit(MMF_SWITCH_TO_KSM, &mm->flags)))
++		return __ksm_switch(mm);
++	return NULL;
++}
++
+ /*
+  * A KSM page is one of those write-protected "shared pages" or "merged pages"
+  * which KSM maps into multiple mms, wherever identical anonymous page content
+@@ -87,6 +96,11 @@ static inline void ksm_exit(struct mm_st
+ {
+ }
+ 
++static inline wait_queue_head_t *ksm_switch(struct mm_struct *mm)
++{
++	return NULL;
++}
++
+ static inline int PageKsm(struct page *page)
+ {
+ 	return 0;
+--- 3.17-rc4/include/linux/sched.h	2014-08-16 16:00:53.909189060 -0700
++++ linux/include/linux/sched.h	2014-09-07 11:54:41.528003316 -0700
+@@ -453,6 +453,7 @@ static inline int get_dumpable(struct mm
+ 
+ #define MMF_HAS_UPROBES		19	/* has uprobes */
+ #define MMF_RECALC_UPROBES	20	/* MMF_HAS_UPROBES can be wrong */
++#define MMF_SWITCH_TO_KSM	21	/* notify KSM of switch to this mm */
+ 
+ #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
+ 
+--- 3.17-rc4/kernel/sched/core.c	2014-08-16 16:00:54.062189063 -0700
++++ linux/kernel/sched/core.c	2014-09-07 11:54:41.528003316 -0700
+@@ -61,6 +61,7 @@
+ #include <linux/times.h>
+ #include <linux/tsacct_kern.h>
+ #include <linux/kprobes.h>
++#include <linux/ksm.h>
+ #include <linux/delayacct.h>
+ #include <linux/unistd.h>
+ #include <linux/pagemap.h>
+@@ -2304,6 +2305,7 @@ context_switch(struct rq *rq, struct tas
+ 	       struct task_struct *next)
+ {
+ 	struct mm_struct *mm, *oldmm;
++	wait_queue_head_t *wake_ksm = NULL;
+ 
+ 	prepare_task_switch(rq, prev, next);
+ 
+@@ -2320,8 +2322,10 @@ context_switch(struct rq *rq, struct tas
+ 		next->active_mm = oldmm;
+ 		atomic_inc(&oldmm->mm_count);
+ 		enter_lazy_tlb(oldmm, next);
+-	} else
++	} else {
+ 		switch_mm(oldmm, mm, next);
++		wake_ksm = ksm_switch(mm);
++	}
+ 
+ 	if (!prev->mm) {
+ 		prev->active_mm = NULL;
+@@ -2348,6 +2352,9 @@ context_switch(struct rq *rq, struct tas
+ 	 * frame will be invalid.
+ 	 */
+ 	finish_task_switch(this_rq(), prev);
++
++	if (wake_ksm)
++		wake_up_interruptible(wake_ksm);
+ }
+ 
+ /*
+--- 3.17-rc4/mm/ksm.c	2014-08-16 16:00:54.132189065 -0700
++++ linux/mm/ksm.c	2014-09-07 11:54:41.528003316 -0700
+@@ -205,6 +205,9 @@ static struct kmem_cache *rmap_item_cach
+ static struct kmem_cache *stable_node_cache;
+ static struct kmem_cache *mm_slot_cache;
+ 
++/* The number of mergeable mms which have recently run */
++static atomic_t active_mergeable_mms = ATOMIC_INIT(0);
++
+ /* The number of nodes in the stable tree */
+ static unsigned long ksm_pages_shared;
+ 
+@@ -313,9 +316,13 @@ static inline struct mm_slot *alloc_mm_s
+ 	return kmem_cache_zalloc(mm_slot_cache, GFP_KERNEL);
+ }
+ 
+-static inline void free_mm_slot(struct mm_slot *mm_slot)
++static void free_mm_slot(struct mm_struct *mm, struct mm_slot *mm_slot)
+ {
+ 	kmem_cache_free(mm_slot_cache, mm_slot);
++
++	clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++	if (!test_and_clear_bit(MMF_SWITCH_TO_KSM, &mm->flags))
++		atomic_dec(&active_mergeable_mms);
+ }
+ 
+ static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+@@ -801,8 +808,7 @@ static int unmerge_and_remove_all_rmap_i
+ 			list_del(&mm_slot->mm_list);
+ 			spin_unlock(&ksm_mmlist_lock);
+ 
+-			free_mm_slot(mm_slot);
+-			clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++			free_mm_slot(mm, mm_slot);
+ 			up_read(&mm->mmap_sem);
+ 			mmdrop(mm);
+ 		} else {
+@@ -1668,12 +1674,20 @@ next_mm:
+ 		list_del(&slot->mm_list);
+ 		spin_unlock(&ksm_mmlist_lock);
+ 
+-		free_mm_slot(slot);
+-		clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++		free_mm_slot(mm, slot);
+ 		up_read(&mm->mmap_sem);
+ 		mmdrop(mm);
+ 	} else {
+ 		spin_unlock(&ksm_mmlist_lock);
++		/*
++		 * After completing its scan, assume this mm to be inactive,
++		 * but set a flag for context_switch() to notify us as soon
++		 * as it is used again: see ksm_switch().  If the number of
++		 * active_mergeable_mms goes down to zero, ksmd will sleep
++		 * to save power, until awoken by mergeable context_switch().
++		 */
++		if (!test_and_set_bit(MMF_SWITCH_TO_KSM, &mm->flags))
++			atomic_dec(&active_mergeable_mms);
+ 		up_read(&mm->mmap_sem);
+ 	}
+ 
+@@ -1707,7 +1721,7 @@ static void ksm_do_scan(unsigned int sca
+ 
+ static int ksmd_should_run(void)
+ {
+-	return (ksm_run & KSM_RUN_MERGE) && !list_empty(&ksm_mm_head.mm_list);
++	return (ksm_run & KSM_RUN_MERGE) && atomic_read(&active_mergeable_mms);
+ }
+ 
+ static int ksm_scan_thread(void *nothing)
+@@ -1785,15 +1799,11 @@ int ksm_madvise(struct vm_area_struct *v
+ int __ksm_enter(struct mm_struct *mm)
+ {
+ 	struct mm_slot *mm_slot;
+-	int needs_wakeup;
+ 
+ 	mm_slot = alloc_mm_slot();
+ 	if (!mm_slot)
+ 		return -ENOMEM;
+ 
+-	/* Check ksm_run too?  Would need tighter locking */
+-	needs_wakeup = list_empty(&ksm_mm_head.mm_list);
+-
+ 	spin_lock(&ksm_mmlist_lock);
+ 	insert_to_mm_slots_hash(mm, mm_slot);
+ 	/*
+@@ -1812,10 +1822,9 @@ int __ksm_enter(struct mm_struct *mm)
+ 		list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
+ 	spin_unlock(&ksm_mmlist_lock);
+ 
+-	set_bit(MMF_VM_MERGEABLE, &mm->flags);
+ 	atomic_inc(&mm->mm_count);
+-
+-	if (needs_wakeup)
++	set_bit(MMF_VM_MERGEABLE, &mm->flags);
++	if (atomic_inc_return(&active_mergeable_mms) == 1)
+ 		wake_up_interruptible(&ksm_thread_wait);
+ 
+ 	return 0;
+@@ -1850,8 +1859,7 @@ void __ksm_exit(struct mm_struct *mm)
+ 	spin_unlock(&ksm_mmlist_lock);
+ 
+ 	if (easy_to_free) {
+-		free_mm_slot(mm_slot);
+-		clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++		free_mm_slot(mm, mm_slot);
+ 		mmdrop(mm);
+ 	} else if (mm_slot) {
+ 		down_write(&mm->mmap_sem);
+@@ -1859,6 +1867,18 @@ void __ksm_exit(struct mm_struct *mm)
+ 	}
+ }
+ 
++wait_queue_head_t *__ksm_switch(struct mm_struct *mm)
++{
++	/*
++	 * Called by context_switch() to a hitherto inactive mergeable mm:
++	 * scheduler locks forbid immediate wakeup so leave that to caller.
++	 */
++	if (test_and_clear_bit(MMF_SWITCH_TO_KSM, &mm->flags) &&
++	    atomic_inc_return(&active_mergeable_mms) == 1)
++		return &ksm_thread_wait;
++	return NULL;
++}
++
+ struct page *ksm_might_need_to_copy(struct page *page,
+ 			struct vm_area_struct *vma, unsigned long address)
+ {
