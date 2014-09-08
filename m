@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaIHSIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:08:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58406 "EHLO mail.zytor.com"
+	id S1753500AbaIHSMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:12:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58465 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752665AbaIHSIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:08:35 -0400
-Message-ID: <540DF078.3030601@zytor.com>
-Date: Mon, 08 Sep 2014 11:07:52 -0700
+	id S1752183AbaIHSMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 14:12:42 -0400
+Message-ID: <540DF17C.9080509@zytor.com>
+Date: Mon, 08 Sep 2014 11:12:12 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Pavel Machek <pavel@ucw.cz>
-CC: John Stultz <john.stultz@linaro.org>,
-        ksummit-discuss@lists.linuxfoundation.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        "Joseph S. Myers" <joseph@codesourcery.com>
-Subject: Re: (Resend) 2038 Kernel Summit Discussion Fodder
-References: <53EAAC95.7080301@linaro.org>	<CALAqxLWvSn2_6dakGiQ4VEtYHH2Dt7BL0pn5XHgLWOV4ePqhBw@mail.gmail.com>	<20140823222640.GA1382@xo-6d-61-c0.localdomain> <20140908185544.621022b6@alan.etchedpixels.co.uk>
-In-Reply-To: <20140908185544.621022b6@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: paulmck@linux.vnet.ibm.com, Peter Hurley <peter@hurleysoftware.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <5408C0AB.6050801@hurleysoftware.com>	 <20140905001751.GL5001@linux.vnet.ibm.com>	 <1409883098.5078.14.camel@jarvis.lan> <5409243C.4080704@hurleysoftware.com>	 <20140905040645.GO5001@linux.vnet.ibm.com>	 <1410066442.12512.13.camel@jarvis.lan>	 <20140907162146.GK5001@linux.vnet.ibm.com>	 <1410116687.2027.19.camel@jarvis.lan>	 <20140907230019.GO5001@linux.vnet.ibm.com>	 <6092b453-e0c9-4f6d-922b-48bce988f774@email.android.com>	 <20140907233655.GR5001@linux.vnet.ibm.com>	 <154b540a-df47-4f3e-bdda-ab5d2e72723a@email.android.com> <1410155802.2027.36.camel@jarvis.lan>
+In-Reply-To: <1410155802.2027.36.camel@jarvis.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 10:55 AM, One Thousand Gnomes wrote:
->> Today, there's good chance there's linux somewhere in your car. (Dashboard,
->> entertainment system). People like to keep cars from 1910 working, and I suspect
->> that is not going to change.
->>
->> So yes, in 2038 people will be running 32bit linux.
->>
->> Whether there will be people putting 32bit linux into new devices is a question,
->> but I suspect answer is still yes.
+On 09/07/2014 10:56 PM, James Bottomley wrote:
+> On Sun, 2014-09-07 at 16:39 -0700, H. Peter Anvin wrote:
+>> How many PARISC systems do we have that actually do real work on Linux?
 > 
-> I'm currently trying to add 64bit longlong support to an initial PCC 8086
-> compiler port so I can fix that for some 16bit projects 8-)
-> 
-> My 8bit machines are mostly 2038 safe already.
-> 
+> I'd be very surprised if this problem didn't exist on all alignment
+> requiring architectures, like PPC and Sparc as well.  I know it would be
+> very convenient if all the world were an x86 ... but it would also be
+> very boring as well.
 
-Back in 1985 I decided to Y2K-test my ABC800 8-bit computer.  It passed
-(they had implemented a windowed year solution which breaks in 2070 or
-2080, as I recall.)
+I wouldn't be so sure about that.  That is a pretty aggressive
+relaxation of ordering that PARISC has enacted here, kind of like the
+Alpha "we don't need no stinking byte accesses".
+
+> The rules for coping with it are well known and a relaxation of what we
+> currently do in the kernel, so I don't see what the actual problem is.
+> 
+> In the context of this thread, PA can't do atomic bit sets (no atomic
+> RMW except the ldcw operation) it can do atomic writes to fundamental
+> sizes (byte, short, int, long) provided gcc emits the correct primitive
+> (there are lots of gotchas in this, but that's not an architectural
+> problem).  These atomicity guarantees depend on the underlying storage
+> and are respected for main memory but not for any other type of bus.
+
+So I'm not trying to push the "all the world is an x86"... certainly not
+given that x86 has abnormally strict ordering rules and so is itself an
+outlier.  What I *don't* really want to have to deal with is going
+through more than causal effort to accommodate outliers which no longer
+have any real value -- we have too much work to do.
 
 	-hpa
 
