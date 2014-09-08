@@ -1,113 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927AbaIHN4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:56:15 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:63050 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973AbaIHN4O (ORCPT
+	id S1754127AbaIHN42 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:56:28 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53614 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753267AbaIHN4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:56:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410183102-6969-1-git-send-email-msalter@redhat.com>
-References: <1410183102-6969-1-git-send-email-msalter@redhat.com>
-Date: Mon, 8 Sep 2014 15:56:12 +0200
-Message-ID: <CAKv+Gu9mNuCXo1mBH_m1nXZqLjRvMoq87mrB8mVCNOqoY8AVsg@mail.gmail.com>
-Subject: Re: [PATCH] efi/arm64: fix fdt-related memory reservation
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
+	Mon, 8 Sep 2014 09:56:23 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: [PATCH v10 06/10] PCI: Introduce generic domain handling for PCI busses.
+Date: Mon,  8 Sep 2014 14:54:28 +0100
+Message-Id: <1410184472-17630-7-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 September 2014 15:31, Mark Salter <msalter@redhat.com> wrote:
-> Commit 86c8b27a01cf:
->  "arm64: ignore DT memreserve entries when booting in UEFI mode
->
-> prevents early_init_fdt_scan_reserved_mem() from being called for
-> arm64 kernels booting via UEFI. This was done because the kernel
-> will use the UEFI memory map to determine reserved memory regions.
-> That approach has problems in that early_init_fdt_scan_reserved_mem()
-> also reserves the FDT itself and any node-specific reserved memory.
-> By chance of some kernel configs, the FDT may be overwritten before
-> it can be unflattened and the kernel will fail to boot. More subtle
-> problems will result if the FDT has node specific reserved memory
-> which is not really reserved.
->
-> This patch has the UEFI stub remove the memory reserve map entries
-> from the FDT as it does with the memory nodes. This allows
-> early_init_fdt_scan_reserved_mem() to be called unconditionally
-> so that the other needed reservations are made.
->
-> Signed-off-by: Mark Salter <msalter@redhat.com>
+The handling of PCI domains (or PCI segments in ACPI speak) is
+usually a straightforward affair but its implementation is
+currently left to the architectural code, with pci_domain_nr(b)
+querying the value of the domain associated with bus b.
 
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+This patch introduces CONFIG_PCI_DOMAINS_GENERIC as an
+option that can be selected if an architecture want a
+simple implementation where the value of the domain
+associated with a bus is stored in struct pci_bus.
 
-Interesting. I noticed the other day that my FDT got clobbered when
-accidentally booting with very little memory on QEMU , but I hadn't
-looked into it yet in more detail.
+The architectures that select CONFIG_PCI_DOMAINS_GENERIC will
+then have to implement pci_bus_assign_domain_nr() as a way
+of setting the domain number associated with a root bus.
+All child busses except the root bus will inherit the domain_nr
+value from their parent.
 
-Matt: could you put this in your 'urgent' queue as well, please?
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Catalin Marinas <Catalin.Marinas@arm.com>
+[Renamed pci_set_domain_nr() to pci_bus_assign_domain_nr()]
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+---
+ drivers/pci/probe.c | 11 ++++++++---
+ include/linux/pci.h | 21 +++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 3 deletions(-)
 
-Cheers,
-Ard.
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 5ff72ec..ef891d2 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -485,7 +485,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
+ 	}
+ }
+ 
+-static struct pci_bus *pci_alloc_bus(void)
++static struct pci_bus *pci_alloc_bus(struct pci_bus *parent)
+ {
+ 	struct pci_bus *b;
+ 
+@@ -500,6 +500,10 @@ static struct pci_bus *pci_alloc_bus(void)
+ 	INIT_LIST_HEAD(&b->resources);
+ 	b->max_bus_speed = PCI_SPEED_UNKNOWN;
+ 	b->cur_bus_speed = PCI_SPEED_UNKNOWN;
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++	if (parent)
++		b->domain_nr = parent->domain_nr;
++#endif
+ 	return b;
+ }
+ 
+@@ -672,7 +676,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	/*
+ 	 * Allocate a new bus, and inherit stuff from the parent..
+ 	 */
+-	child = pci_alloc_bus();
++	child = pci_alloc_bus(parent);
+ 	if (!child)
+ 		return NULL;
+ 
+@@ -1768,13 +1772,14 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 
+ 	bridge->dev.parent = parent;
+ 
+-	b = pci_alloc_bus();
++	b = pci_alloc_bus(NULL);
+ 	if (!b)
+ 		goto err_out;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+ 	b->number = b->busn_res.start = bus;
++	pci_bus_assign_domain_nr(b, parent);
+ 	b2 = pci_find_bus(pci_domain_nr(b), bus);
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 61978a4..a494e5d 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -456,6 +456,9 @@ struct pci_bus {
+ 	unsigned char	primary;	/* number of primary bridge */
+ 	unsigned char	max_bus_speed;	/* enum pci_bus_speed */
+ 	unsigned char	cur_bus_speed;	/* enum pci_bus_speed */
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++	int		domain_nr;
++#endif
+ 
+ 	char		name[48];
+ 
+@@ -1288,6 +1291,24 @@ static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
+ static inline int pci_proc_domain(struct pci_bus *bus) { return 0; }
+ #endif /* CONFIG_PCI_DOMAINS */
+ 
++/*
++ * Generic implementation for PCI domain support. If your
++ * architecture does not need custom management of PCI
++ * domains then this implementation will be used
++ */
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++static inline int pci_domain_nr(struct pci_bus *bus)
++{
++	return bus->domain_nr;
++}
++void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent);
++#else
++static inline void pci_bus_assign_domain_nr(struct pci_bus *bus,
++					struct device *parent)
++{
++}
++#endif
++
+ /* some architectures require additional setup to direct VGA traffic */
+ typedef int (*arch_set_vga_state_t)(struct pci_dev *pdev, bool decode,
+ 		      unsigned int command_bits, u32 flags);
+-- 
+2.0.4
 
-
-> ---
->  arch/arm64/mm/init.c               |  3 +--
->  drivers/firmware/efi/libstub/fdt.c | 10 +++++++++-
->  2 files changed, 10 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-> index 5472c24..a83061f 100644
-> --- a/arch/arm64/mm/init.c
-> +++ b/arch/arm64/mm/init.c
-> @@ -149,8 +149,7 @@ void __init arm64_memblock_init(void)
->                 memblock_reserve(__virt_to_phys(initrd_start), initrd_end - initrd_start);
->  #endif
->
-> -       if (!efi_enabled(EFI_MEMMAP))
-> -               early_init_fdt_scan_reserved_mem();
-> +       early_init_fdt_scan_reserved_mem();
->
->         /* 4GB maximum for 32-bit only capable devices */
->         if (IS_ENABLED(CONFIG_ZONE_DMA))
-> diff --git a/drivers/firmware/efi/libstub/fdt.c b/drivers/firmware/efi/libstub/fdt.c
-> index a56bb35..723c7da 100644
-> --- a/drivers/firmware/efi/libstub/fdt.c
-> +++ b/drivers/firmware/efi/libstub/fdt.c
-> @@ -22,7 +22,7 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
->                         unsigned long map_size, unsigned long desc_size,
->                         u32 desc_ver)
->  {
-> -       int node, prev;
-> +       int node, prev, i, num_rsv;
->         int status;
->         u32 fdt_val32;
->         u64 fdt_val64;
-> @@ -73,6 +73,14 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
->                 prev = node;
->         }
->
-> +       /*
-> +        * Delete all memory reserve map entries. When booting via UEFI,
-> +        * kernel will use the UEFI memory map to find reserved regions.
-> +        */
-> +       num_rsv = fdt_num_mem_rsv(fdt);
-> +       for (i = 0; i < num_rsv; i++)
-> +               fdt_del_mem_rsv(fdt, i);
-> +
->         node = fdt_subnode_offset(fdt, 0, "chosen");
->         if (node < 0) {
->                 node = fdt_add_subnode(fdt, 0, "chosen");
-> --
-> 1.8.3.1
->
