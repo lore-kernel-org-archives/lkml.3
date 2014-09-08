@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaIHQc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:32:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34119 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752925AbaIHQc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:32:56 -0400
-Message-ID: <540DDA1D.9070903@ti.com>
-Date: Mon, 8 Sep 2014 11:32:29 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754550AbaIHQdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:33:06 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:63769 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651AbaIHQdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 12:33:00 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 8 Sep 2014 18:30:58 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3 2/3] i2c: add support for Diolan DLN-2 USB-I2C adapter
+Message-ID: <20140908163058.GF9560@localhost>
+References: <1409930279-1382-1-git-send-email-octavian.purdila@intel.com>
+ <1409930279-1382-3-git-send-email-octavian.purdila@intel.com>
+ <20140908144447.GD9560@localhost>
+ <CAE1zot+R25OAu9d9WB2tOFqO9J9m-Vwo25msn6TD2HxseBTUzQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
-        =?windows-1252?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH 0/3] ARM: OMAP5+: pdata quirks for pinctrl
-References: <1408715725-25919-1-git-send-email-nm@ti.com>
-In-Reply-To: <1408715725-25919-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE1zot+R25OAu9d9WB2tOFqO9J9m-Vwo25msn6TD2HxseBTUzQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 08:55 AM, Nishanth Menon wrote:
-> The following series are various fixes and improvements for daisychain
-> support in OMAP5+ using pinctrl framework similar to that done for
-> OMAP3+
+On Mon, Sep 08, 2014 at 06:57:29PM +0300, Octavian Purdila wrote:
+> On Mon, Sep 8, 2014 at 5:44 PM, Johan Hovold <johan@kernel.org> wrote:
 > 
-> This is part 3/6 series which eventually enables framework for
-> suspend-to-ram and cpuidle for OMAP5 and DRA7
+> <snip>
 > 
-> Each of series is based on v3.17-rc1 and this specific series is available:
-> weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/v3.17/prm-pdata-quirks
+> Hi Johan,
 > 
-> git repo: https://github.com/nmenon/linux-2.6-playground.git push/v3.17/prm-pdata-quirks
+> Again, thanks for the detailed review, I am addressing your review
+> comments as we speak. Some questions below.
 > 
-> An complete integrated branch is available here: https://github.com/nmenon/linux-2.6-playground/commits/testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
+> <snip>
 > 
-> Minor note: thanks to existing style in pdata-quirks, new entries
-> continue to possess 'over 80 character' checkpatch warnings
+> > > +     int ret, len;
+> > > +     struct tx_data {
+> > > +             u8 port;
+> > > +             u8 addr;
+> > > +             u8 mem_addr_len;
+> > > +             __le32 mem_addr;
+> > > +             __le16 buf_len;
+> > > +             u8 buf[DLN2_I2C_MAX_XFER_SIZE];
+> > > +     } __packed tx;
+> >
+> > Allocate these buffers dynamically (possibly at probe).
+> >
 > 
-> Keerthy (1):
->   ARM: AM437x: use pdata quirks for pinctrl information
-> 
-> Nishanth Menon (2):
->   ARM: OMAP5: use pdata quirks for pinctrl information
->   ARM: DRA7: use pdata quirks for pinctrl information
-> 
->  arch/arm/mach-omap2/pdata-quirks.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
+> I double checked this, and DLN2_I2C_MAX_XFER_SIZE should actually be <
+> 64 as the USB endpoint configuration max packet size is 64. In this
+> case, can we keep it on the stack?
 
-Since there are no further comments (and the pinctrl side of the fixes
-were accepted by Linus W[1], will send this for merge to Tony.
+It's better to lift that restriction and allocate it dynamically. Using
+larger buffers (> EP size) is also more efficient.
 
+> <snip>
+> 
+> > > +     int ret, buf_len, rx_len = sizeof(rx);
+> >
+> > Again, one declaration per line.
+> 
+> AFAICS there are many places where declaration on the same line
+> (initialization included) are used. When did this became a coding
+> style issue?
 
-[1] http://marc.info/?l=linux-kernel&m=140871666506706&w=2 (acked by
-Tony, picked by Linus)
+It's ugly, hurts readability, and can also obfuscate the fact that your
+function really needs to be refactored.
 
--- 
-Regards,
-Nishanth Menon
+And it's in the CodingStyle:
+
+	"To this end, use just one data declaration per line (no commas
+	for multiple data declarations)."
+
+Johan
