@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407AbaIHJnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:43:50 -0400
-Received: from mail-bn1bon0095.outbound.protection.outlook.com ([157.56.111.95]:13040
+	id S1754504AbaIHJoj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:44:39 -0400
+Received: from mail-bn1bn0100.outbound.protection.outlook.com ([157.56.110.100]:48059
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753941AbaIHJjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:39:08 -0400
+	id S1753901AbaIHJi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:38:58 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH v3 29/29] nios2: Build infrastructure
-Date: Mon, 8 Sep 2014 17:22:40 +0800
-Message-ID: <1410168160-3624-30-git-send-email-lftan@altera.com>
+Subject: [PATCH v3 09/29] nios2: Page table management
+Date: Mon, 8 Sep 2014 17:22:20 +0800
+Message-ID: <1410168160-3624-10-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
 References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(199003)(189002)(31966008)(107046002)(4396001)(84676001)(21056001)(36756003)(95666004)(106466001)(77982001)(88136002)(86362001)(74502001)(85306004)(92726001)(42186005)(46102001)(2201001)(97736003)(87936001)(15975445006)(74662001)(89996001)(77096002)(68736004)(77156001)(92566001)(62966002)(80022001)(229853001)(15202345003)(105596002)(48376002)(50986999)(76176999)(81342001)(99396002)(81542001)(6806004)(19580405001)(50226001)(102836001)(93916002)(575784001)(85852003)(83072002)(76482001)(104166001)(47776003)(50466002)(79102001)(90102001)(20776003)(33646002)(44976005)(19580395003)(83322001)(87286001)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB045;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(22564002)(189002)(199003)(93916002)(87936001)(81342001)(68736004)(19580395003)(77096002)(19580405001)(83072002)(92566001)(92726001)(85852003)(21056001)(80022001)(86362001)(36756003)(81542001)(87286001)(77156001)(2201001)(47776003)(84676001)(97736003)(83322001)(44976005)(20776003)(95666004)(6806004)(50466002)(85306004)(90102001)(31966008)(74502001)(74662001)(42186005)(4396001)(50226001)(48376002)(50986999)(76482001)(104166001)(102836001)(99396002)(76176999)(89996001)(107046002)(88136002)(33646002)(62966002)(77982001)(79102001)(46102001)(229853001)(105596002)(106466001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB038;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
 X-Forefront-PRVS: 03283976A6
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -31,961 +31,543 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Makefile and Kconfig files required for building a
-nios2 kernel.
+This patch adds support for page table management.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/Kconfig                   | 201 +++++++++++++++++++++++++++++++++++
- arch/nios2/Kconfig.debug             |  17 +++
- arch/nios2/Makefile                  |  73 +++++++++++++
- arch/nios2/boot/Makefile             |  52 +++++++++
- arch/nios2/boot/install.sh           |  52 +++++++++
- arch/nios2/configs/3c120_defconfig   |  77 ++++++++++++++
- arch/nios2/include/asm/Kbuild        |  63 +++++++++++
- arch/nios2/include/uapi/asm/Kbuild   |   6 ++
- arch/nios2/kernel/Makefile           |  24 +++++
- arch/nios2/kernel/nios2_ksyms.c      |  35 ++++++
- arch/nios2/kernel/vmlinux.lds.S      |  75 +++++++++++++
- arch/nios2/lib/Makefile              |   9 ++
- arch/nios2/mm/Makefile               |  14 +++
- arch/nios2/platform/Kconfig.platform | 129 ++++++++++++++++++++++
- arch/nios2/platform/Makefile         |   1 +
- 15 files changed, 828 insertions(+)
- create mode 100644 arch/nios2/Kconfig
- create mode 100644 arch/nios2/Kconfig.debug
- create mode 100644 arch/nios2/Makefile
- create mode 100644 arch/nios2/boot/Makefile
- create mode 100644 arch/nios2/boot/install.sh
- create mode 100644 arch/nios2/configs/3c120_defconfig
- create mode 100644 arch/nios2/include/asm/Kbuild
- create mode 100644 arch/nios2/include/uapi/asm/Kbuild
- create mode 100644 arch/nios2/kernel/Makefile
- create mode 100644 arch/nios2/kernel/nios2_ksyms.c
- create mode 100644 arch/nios2/kernel/vmlinux.lds.S
- create mode 100644 arch/nios2/lib/Makefile
- create mode 100644 arch/nios2/mm/Makefile
- create mode 100644 arch/nios2/platform/Kconfig.platform
- create mode 100644 arch/nios2/platform/Makefile
+ arch/nios2/include/asm/pgalloc.h      |  86 ++++++++++
+ arch/nios2/include/asm/pgtable-bits.h |  35 ++++
+ arch/nios2/include/asm/pgtable.h      | 305 ++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/pgtable.c               |  73 ++++++++
+ 4 files changed, 499 insertions(+)
+ create mode 100644 arch/nios2/include/asm/pgalloc.h
+ create mode 100644 arch/nios2/include/asm/pgtable-bits.h
+ create mode 100644 arch/nios2/include/asm/pgtable.h
+ create mode 100644 arch/nios2/mm/pgtable.c
 
-diff --git a/arch/nios2/Kconfig b/arch/nios2/Kconfig
+diff --git a/arch/nios2/include/asm/pgalloc.h b/arch/nios2/include/asm/pgalloc.h
 new file mode 100644
-index 0000000..8a4889d
+index 0000000..6e2985e
 --- /dev/null
-+++ b/arch/nios2/Kconfig
-@@ -0,0 +1,201 @@
-+config NIOS2
-+	def_bool y
-+	select ARCH_WANT_OPTIONAL_GPIOLIB
-+	select CLKSRC_OF
-+	select GENERIC_ATOMIC64
-+	select GENERIC_CLOCKEVENTS
-+	select GENERIC_CPU_DEVICES
-+	select GENERIC_IRQ_PROBE
-+	select GENERIC_IRQ_SHOW
-+	select HAVE_ARCH_TRACEHOOK
-+	select IRQ_DOMAIN
-+	select MODULES_USE_ELF_RELA
-+	select OF
-+	select OF_EARLY_FLATTREE
-+	select SOC_BUS
-+	select SPARSE_IRQ
-+	select USB_ARCH_HAS_HCD if USB_SUPPORT
-+
-+config GENERIC_CSUM
-+	def_bool y
-+
-+config GENERIC_HWEIGHT
-+	def_bool y
-+
-+config GENERIC_CALIBRATE_DELAY
-+	def_bool y
-+
-+config NO_IOPORT_MAP
-+	def_bool y
-+
-+config HAS_DMA
-+	def_bool y
-+
-+config FPU
-+	def_bool n
-+
-+config SWAP
-+	def_bool n
-+
-+config RWSEM_GENERIC_SPINLOCK
-+	def_bool y
-+
-+config TRACE_IRQFLAGS_SUPPORT
-+	def_bool n
-+
-+source "init/Kconfig"
-+
-+menu "Kernel features"
-+
-+source "kernel/Kconfig.preempt"
-+
-+source "kernel/Kconfig.freezer"
-+
-+source "kernel/Kconfig.hz"
-+
-+source "mm/Kconfig"
-+
-+config FORCE_MAX_ZONEORDER
-+	int "Maximum zone order"
-+	range 9 20
-+	default "11"
-+	help
-+	  The kernel memory allocator divides physically contiguous memory
-+	  blocks into "zones", where each zone is a power of two number of
-+	  pages.  This option selects the largest power of two that the kernel
-+	  keeps in the memory allocator.  If you need to allocate very large
-+	  blocks of physically contiguous memory, then you may need to
-+	  increase this value.
-+
-+	  This config option is actually maximum order plus one. For example,
-+	  a value of 11 means that the largest free memory block is 2^10 pages.
-+
-+endmenu
-+
-+source "arch/nios2/platform/Kconfig.platform"
-+
-+menu "Processor type and features"
-+
-+config MMU
-+	def_bool y
-+
-+config NIOS2_ALIGNMENT_TRAP
-+	bool "Catch alignment trap"
-+	default y
-+	help
-+	  Nios II CPUs cannot fetch/store data which is not bus aligned,
-+	  i.e., a 2 or 4 byte fetch must start at an address divisible by
-+	  2 or 4. Any non-aligned load/store instructions will be trapped and
-+	  emulated in software if you say Y here, which has a performance
-+	  impact.
-+
-+comment "Boot options"
-+
-+config CMDLINE_BOOL
-+	bool "Default bootloader kernel arguments"
-+	default y
-+
-+config CMDLINE
-+	string "Default kernel command string"
-+	default ""
-+	depends on CMDLINE_BOOL
-+	help
-+	  On some platforms, there is currently no way for the boot loader to
-+	  pass arguments to the kernel. For these platforms, you can supply
-+	  some command-line options at build time by entering them here.  In
-+	  other cases you can specify kernel args so that you don't have
-+	  to set them up in board prom initialization routines.
-+
-+config CMDLINE_FORCE
-+	bool "Force default kernel command string"
-+	depends on CMDLINE_BOOL
-+	help
-+	  Set this to have arguments from the default kernel command string
-+	  override those passed by the boot loader.
-+
-+config NIOS2_CMDLINE_IGNORE_DTB
-+	bool "Ignore kernel command string from DTB"
-+	depends on !CMDLINE_FORCE
-+	default y
-+	help
-+	  Set this to ignore the bootargs property from the devicetree's
-+	  chosen node and fall back to CMDLINE if nothing is passed.
-+
-+config NIOS2_PASS_CMDLINE
-+	bool "Passed kernel command line from u-boot"
-+	default n
-+	help
-+	  Use bootargs env variable from u-boot for kernel command line.
-+	  will override "Default kernel command string".
-+	  Say N if you are unsure.
-+
-+endmenu
-+
-+menu "Advanced setup"
-+
-+config ADVANCED_OPTIONS
-+	bool "Prompt for advanced kernel configuration options"
-+	help
-+
-+comment "Default settings for advanced configuration options are used"
-+	depends on !ADVANCED_OPTIONS
-+
-+config NIOS2_KERNEL_MMU_REGION_BASE_BOOL
-+	bool "Set custom kernel MMU region base address"
-+	depends on ADVANCED_OPTIONS
-+	help
-+	  This option allows you to set the virtual address of the kernel MMU region.
-+
-+	  Say N here unless you know what you are doing.
-+
-+config NIOS2_KERNEL_MMU_REGION_BASE
-+	hex "Virtual base address of the kernel MMU region " if NIOS2_KERNEL_MMU_REGION_BASE_BOOL
-+	default "0x80000000"
-+	help
-+	  This option allows you to set the virtual base address of the kernel MMU region.
-+
-+config NIOS2_KERNEL_REGION_BASE_BOOL
-+	bool "Set custom kernel region base address"
-+	depends on ADVANCED_OPTIONS
-+	help
-+	  This option allows you to set the virtual address of the kernel region.
-+
-+	  Say N here unless you know what you are doing.
-+
-+config NIOS2_KERNEL_REGION_BASE
-+	hex "Virtual base address of the kernel region " if NIOS2_KERNEL_REGION_BASE_BOOL
-+	default "0xc0000000"
-+
-+config NIOS2_IO_REGION_BASE_BOOL
-+	bool "Set custom I/O region base address"
-+	depends on ADVANCED_OPTIONS
-+	help
-+	  This option allows you to set the virtual address of the I/O region.
-+
-+	  Say N here unless you know what you are doing.
-+
-+config NIOS2_IO_REGION_BASE
-+	hex "Virtual base address of the I/O region" if NIOS2_IO_REGION_BASE_BOOL
-+	default "0xe0000000"
-+
-+endmenu
-+
-+menu "Executable file formats"
-+
-+source "fs/Kconfig.binfmt"
-+
-+endmenu
-+
-+source "net/Kconfig"
-+
-+source "drivers/Kconfig"
-+
-+source "fs/Kconfig"
-+
-+source "arch/nios2/Kconfig.debug"
-+
-+source "security/Kconfig"
-+
-+source "crypto/Kconfig"
-+
-+source "lib/Kconfig"
-diff --git a/arch/nios2/Kconfig.debug b/arch/nios2/Kconfig.debug
-new file mode 100644
-index 0000000..8d4e6ba
---- /dev/null
-+++ b/arch/nios2/Kconfig.debug
-@@ -0,0 +1,17 @@
-+menu "Kernel hacking"
-+
-+config TRACE_IRQFLAGS_SUPPORT
-+	def_bool y
-+
-+source "lib/Kconfig.debug"
-+
-+config DEBUG_STACK_USAGE
-+	bool "Enable stack utilization instrumentation"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Enables the display of the minimum amount of free stack which each
-+	  task has ever had available in the sysrq-T and sysrq-P debug output.
-+
-+	  This option will slow down process creation somewhat.
-+
-+endmenu
-diff --git a/arch/nios2/Makefile b/arch/nios2/Makefile
-new file mode 100644
-index 0000000..e142c9ee
---- /dev/null
-+++ b/arch/nios2/Makefile
-@@ -0,0 +1,73 @@
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+# Copyright (C) 2013 Altera Corporation
-+# Copyright (C) 1994, 95, 96, 2003 by Wind River Systems
-+# Written by Fredrik Markstrom
-+#
-+# This file is included by the global makefile so that you can add your own
-+# architecture-specific flags and dependencies. Remember to do have actions
-+# for "archclean" cleaning up for this architecture.
-+#
-+# Nios2 port by Wind River Systems Inc trough:
-+#   fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+
-+UTS_SYSNAME = Linux
-+
-+export MMU
-+
-+LIBGCC		:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
-+
-+KBUILD_CFLAGS += -pipe -D__linux__ -D__ELF__
-+KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_HW_MUL_SUPPORT),-mhw-mul,-mno-hw-mul)
-+KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_HW_MULX_SUPPORT),-mhw-mulx,-mno-hw-mulx)
-+KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_HW_DIV_SUPPORT),-mhw-div,-mno-hw-div)
-+KBUILD_CFLAGS += $(if $(CONFIG_NIOS2_FPU_SUPPORT),-mcustom-fpu-cfg=60-1,)
-+
-+KBUILD_CFLAGS += -fno-optimize-sibling-calls
-+KBUILD_CFLAGS += -DUTS_SYSNAME=\"$(UTS_SYSNAME)\"
-+KBUILD_CFLAGS += -fno-builtin
-+KBUILD_CFLAGS += -G 0
-+
-+head-y		:= arch/nios2/kernel/head.o
-+libs-y		+= arch/nios2/lib/ $(LIBGCC)
-+core-y		+= arch/nios2/kernel/ arch/nios2/mm/
-+core-y		+= arch/nios2/platform/
-+
-+INSTALL_PATH ?= /tftpboot
-+nios2-boot := arch/$(ARCH)/boot
-+BOOT_TARGETS = vmImage zImage
-+PHONY += $(BOOT_TARGETS) install
-+KBUILD_IMAGE := $(nios2-boot)/vmImage
-+
-+ifneq ($(CONFIG_NIOS2_DTB_SOURCE),"")
-+	core-y	+= $(nios2-boot)/
-+endif
-+
-+all: vmImage
-+
-+archclean:
-+	$(Q)$(MAKE) $(clean)=$(nios2-boot)
-+
-+%.dtb:
-+	$(Q)$(MAKE) $(build)=$(nios2-boot) $(nios2-boot)/$@
-+
-+dtbs:
-+	$(Q)$(MAKE) $(build)=$(nios2-boot) $(nios2-boot)/$@
-+
-+$(BOOT_TARGETS): vmlinux
-+	$(Q)$(MAKE) $(build)=$(nios2-boot) $(nios2-boot)/$@
-+
-+install:
-+	$(Q)$(MAKE) $(build)=$(nios2-boot) BOOTIMAGE=$(KBUILD_IMAGE) install
-+
-+define archhelp
-+  echo  '* vmImage         - Kernel-only image for U-Boot ($(KBUILD_IMAGE))'
-+  echo  '  install         - Install kernel using'
-+  echo  '                     (your) ~/bin/$(INSTALLKERNEL) or'
-+  echo  '                     (distribution) /sbin/$(INSTALLKERNEL) or'
-+  echo  '                     install to $$(INSTALL_PATH)'
-+  echo  '  dtbs            - Build device tree blobs for enabled boards'
-+endef
-diff --git a/arch/nios2/boot/Makefile b/arch/nios2/boot/Makefile
-new file mode 100644
-index 0000000..59392dc
---- /dev/null
-+++ b/arch/nios2/boot/Makefile
-@@ -0,0 +1,52 @@
-+#
-+# arch/nios2/boot/Makefile
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+
-+UIMAGE_LOADADDR = $(shell $(NM) vmlinux | awk '$$NF == "_stext" {print $$1}')
-+UIMAGE_ENTRYADDR = $(shell $(NM) vmlinux | awk '$$NF == "_start" {print $$1}')
-+UIMAGE_COMPRESSION = gzip
-+
-+OBJCOPYFLAGS_vmlinux.bin := -O binary
-+
-+targets += vmlinux.bin vmlinux.gz vmImage
-+
-+$(obj)/vmlinux.bin: vmlinux FORCE
-+	$(call if_changed,objcopy)
-+
-+$(obj)/vmlinux.gz: $(obj)/vmlinux.bin FORCE
-+	$(call if_changed,gzip)
-+
-+$(obj)/vmImage: $(obj)/vmlinux.gz
-+	$(call if_changed,uimage)
-+	@$(kecho) 'Kernel: $@ is ready'
-+
-+# Rule to build device tree blobs
-+DTB_SRC := $(patsubst "%",%,$(CONFIG_NIOS2_DTB_SOURCE))
-+
-+# Make sure the generated dtb gets removed during clean
-+extra-$(CONFIG_NIOS2_DTB_SOURCE_BOOL) += system.dtb
-+
-+$(obj)/system.dtb: $(DTB_SRC) FORCE
-+	$(call cmd,dtc)
-+
-+# Ensure system.dtb exists
-+$(obj)/linked_dtb.o: $(obj)/system.dtb
-+
-+obj-$(CONFIG_NIOS2_DTB_SOURCE_BOOL) += linked_dtb.o
-+
-+targets += $(dtb-y)
-+
-+# Rule to build device tree blobs with make command
-+$(obj)/%.dtb: $(src)/dts/%.dts FORCE
-+	$(call if_changed_dep,dtc)
-+
-+$(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
-+
-+clean-files := *.dtb
-+
-+install:
-+	sh $(srctree)/$(src)/install.sh $(KERNELRELEASE) $(BOOTIMAGE) System.map "$(INSTALL_PATH)"
-diff --git a/arch/nios2/boot/install.sh b/arch/nios2/boot/install.sh
-new file mode 100644
-index 0000000..57d640d
---- /dev/null
-+++ b/arch/nios2/boot/install.sh
-@@ -0,0 +1,52 @@
-+#!/bin/sh
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+# Copyright (C) 1995 by Linus Torvalds
-+#
-+# Adapted from code in arch/i386/boot/Makefile by H. Peter Anvin
-+#
-+# "make install" script for m68k architecture
-+#
-+# Arguments:
-+#   $1 - kernel version
-+#   $2 - kernel image file
-+#   $3 - kernel map file
-+#   $4 - default install path (blank if root directory)
-+#
-+
-+verify () {
-+	if [ ! -f "$1" ]; then
-+		echo ""                                                   1>&2
-+		echo " *** Missing file: $1"                              1>&2
-+		echo ' *** You need to run "make" before "make install".' 1>&2
-+		echo ""                                                   1>&2
-+		exit 1
-+	fi
++++ b/arch/nios2/include/asm/pgalloc.h
+@@ -0,0 +1,86 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 2001, 2003 by Ralf Baechle
++ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ */
++
++#ifndef _ASM_NIOS2_PGALLOC_H
++#define _ASM_NIOS2_PGALLOC_H
++
++#include <linux/mm.h>
++
++static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
++	pte_t *pte)
++{
++	set_pmd(pmd, __pmd((unsigned long)pte));
 +}
 +
-+# Make sure the files actually exist
-+verify "$2"
-+verify "$3"
++static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
++	pgtable_t pte)
++{
++	set_pmd(pmd, __pmd((unsigned long)page_address(pte)));
++}
++#define pmd_pgtable(pmd) pmd_page(pmd)
 +
-+# User may have a custom install script
++/*
++ * Initialize a new pmd table with invalid pointers.
++ */
++extern void pmd_init(unsigned long page, unsigned long pagetable);
 +
-+if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
-+if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
++extern pgd_t *pgd_alloc(struct mm_struct *mm);
 +
-+# Default install - same as make zlilo
++static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
++{
++	free_pages((unsigned long)pgd, PGD_ORDER);
++}
 +
-+if [ -f $4/vmlinuz ]; then
-+	mv $4/vmlinuz $4/vmlinuz.old
-+fi
++static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
++	unsigned long address)
++{
++	pte_t *pte;
 +
-+if [ -f $4/System.map ]; then
-+	mv $4/System.map $4/System.old
-+fi
++	pte = (pte_t *) __get_free_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO,
++					PTE_ORDER);
 +
-+cat $2 > $4/vmlinuz
-+cp $3 $4/System.map
++	return pte;
++}
 +
-+sync
-diff --git a/arch/nios2/configs/3c120_defconfig b/arch/nios2/configs/3c120_defconfig
++static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
++	unsigned long address)
++{
++	struct page *pte;
++
++	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
++	if (pte) {
++		if (!pgtable_page_ctor(pte)) {
++			__free_page(pte);
++			return NULL;
++		}
++		clear_highpage(pte);
++	}
++	return pte;
++}
++
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	free_pages((unsigned long)pte, PTE_ORDER);
++}
++
++static inline void pte_free(struct mm_struct *mm, struct page *pte)
++{
++	pgtable_page_dtor(pte);
++	__free_pages(pte, PTE_ORDER);
++}
++
++#define __pte_free_tlb(tlb, pte, addr)				\
++	do {							\
++		pgtable_page_dtor(pte);				\
++		tlb_remove_page((tlb), (pte));			\
++	} while (0)
++
++#define check_pgt_cache()	do { } while (0)
++
++#endif /* _ASM_NIOS2_PGALLOC_H */
+diff --git a/arch/nios2/include/asm/pgtable-bits.h b/arch/nios2/include/asm/pgtable-bits.h
 new file mode 100644
-index 0000000..87541f0
+index 0000000..ce9e706
 --- /dev/null
-+++ b/arch/nios2/configs/3c120_defconfig
-@@ -0,0 +1,77 @@
-+CONFIG_SYSVIPC=y
-+CONFIG_NO_HZ_IDLE=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_SYSCTL_SYSCALL=y
-+# CONFIG_ELF_CORE is not set
-+# CONFIG_EPOLL is not set
-+# CONFIG_SIGNALFD is not set
-+# CONFIG_TIMERFD is not set
-+# CONFIG_EVENTFD is not set
-+# CONFIG_SHMEM is not set
-+# CONFIG_AIO is not set
-+CONFIG_EMBEDDED=y
-+CONFIG_SLAB=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_NIOS2_MEM_BASE=0x10000000
-+CONFIG_NIOS2_HW_MUL_SUPPORT=y
-+CONFIG_NIOS2_HW_DIV_SUPPORT=y
-+CONFIG_CUSTOM_CACHE_SETTINGS=y
-+CONFIG_NIOS2_DCACHE_SIZE=0x8000
-+CONFIG_NIOS2_ICACHE_SIZE=0x8000
-+# CONFIG_NIOS2_CMDLINE_IGNORE_DTB is not set
-+CONFIG_NIOS2_PASS_CMDLINE=y
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_MULTICAST=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+CONFIG_IP_PNP_BOOTP=y
-+CONFIG_IP_PNP_RARP=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_LRO is not set
-+# CONFIG_IPV6 is not set
-+# CONFIG_WIRELESS is not set
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+# CONFIG_FW_LOADER is not set
-+CONFIG_MTD=y
-+CONFIG_MTD_CMDLINE_PARTS=y
-+CONFIG_MTD_BLOCK=y
-+CONFIG_MTD_CFI=y
-+CONFIG_MTD_CFI_INTELEXT=y
-+CONFIG_MTD_CFI_AMDSTD=y
-+CONFIG_MTD_PHYSMAP_OF=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_NETDEVICES=y
-+CONFIG_ALTERA_TSE=y
-+CONFIG_MARVELL_PHY=y
-+# CONFIG_WLAN is not set
-+# CONFIG_INPUT_MOUSE is not set
-+# CONFIG_SERIO_SERPORT is not set
-+# CONFIG_VT is not set
-+CONFIG_SERIAL_ALTERA_JTAGUART=y
-+CONFIG_SERIAL_ALTERA_JTAGUART_CONSOLE=y
-+CONFIG_SERIAL_ALTERA_UART=y
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_USB_SUPPORT is not set
-+CONFIG_NEW_LEDS=y
-+CONFIG_LEDS_CLASS=y
-+CONFIG_LEDS_TRIGGERS=y
-+CONFIG_LEDS_TRIGGER_HEARTBEAT=y
-+# CONFIG_DNOTIFY is not set
-+# CONFIG_INOTIFY_USER is not set
-+CONFIG_JFFS2_FS=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V3_ACL=y
-+CONFIG_ROOT_NFS=y
-+CONFIG_SUNRPC_DEBUG=y
-+CONFIG_DEBUG_INFO=y
-+# CONFIG_ENABLE_WARN_DEPRECATED is not set
-diff --git a/arch/nios2/include/asm/Kbuild b/arch/nios2/include/asm/Kbuild
-new file mode 100644
-index 0000000..8cb4410
---- /dev/null
-+++ b/arch/nios2/include/asm/Kbuild
-@@ -0,0 +1,63 @@
-+generic-y += atomic.h
-+generic-y += auxvec.h
-+generic-y += barrier.h
-+generic-y += bitops.h
-+generic-y += bitsperlong.h
-+generic-y += bug.h
-+generic-y += bugs.h
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += device.h
-+generic-y += div64.h
-+generic-y += dma.h
-+generic-y += emergency-restart.h
-+generic-y += errno.h
-+generic-y += exec.h
-+generic-y += fb.h
-+generic-y += fcntl.h
-+generic-y += ftrace.h
-+generic-y += futex.h
-+generic-y += hardirq.h
-+generic-y += hash.h
-+generic-y += hw_irq.h
-+generic-y += ioctl.h
-+generic-y += ioctls.h
-+generic-y += ipcbuf.h
-+generic-y += irq_regs.h
-+generic-y += kdebug.h
-+generic-y += kmap_types.h
-+generic-y += kvm_para.h
-+generic-y += local.h
-+generic-y += mcs_spinlock.h
-+generic-y += mman.h
-+generic-y += module.h
-+generic-y += msgbuf.h
-+generic-y += param.h
-+generic-y += pci.h
-+generic-y += percpu.h
-+generic-y += poll.h
-+generic-y += posix_types.h
-+generic-y += preempt.h
-+generic-y += resource.h
-+generic-y += scatterlist.h
-+generic-y += sections.h
-+generic-y += segment.h
-+generic-y += sembuf.h
-+generic-y += serial.h
-+generic-y += shmbuf.h
-+generic-y += shmparam.h
-+generic-y += siginfo.h
-+generic-y += signal.h
-+generic-y += socket.h
-+generic-y += sockios.h
-+generic-y += spinlock.h
-+generic-y += stat.h
-+generic-y += statfs.h
-+generic-y += termbits.h
-+generic-y += termios.h
-+generic-y += topology.h
-+generic-y += trace_clock.h
-+generic-y += types.h
-+generic-y += unaligned.h
-+generic-y += user.h
-+generic-y += xor.h
-diff --git a/arch/nios2/include/uapi/asm/Kbuild b/arch/nios2/include/uapi/asm/Kbuild
-new file mode 100644
-index 0000000..1a6d0db
---- /dev/null
-+++ b/arch/nios2/include/uapi/asm/Kbuild
-@@ -0,0 +1,6 @@
-+include include/uapi/asm-generic/Kbuild.asm
-+
-+header-y += elf.h
-+header-y += processor.h
-+header-y += traps.h
-+header-y += ucontext.h
-diff --git a/arch/nios2/kernel/Makefile b/arch/nios2/kernel/Makefile
-new file mode 100644
-index 0000000..8ae7682
---- /dev/null
-+++ b/arch/nios2/kernel/Makefile
-@@ -0,0 +1,24 @@
-+#
-+# Makefile for the nios2 linux kernel.
-+#
-+
-+extra-y	+= head.o
-+extra-y	+= vmlinux.lds
-+
-+obj-y	+= cpuinfo.o
-+obj-y	+= entry.o
-+obj-y	+= insnemu.o
-+obj-y	+= irq.o
-+obj-y	+= nios2_ksyms.o
-+obj-y	+= process.o
-+obj-y	+= prom.o
-+obj-y	+= ptrace.o
-+obj-y	+= setup.o
-+obj-y	+= signal.o
-+obj-y	+= sys_nios2.o
-+obj-y	+= syscall_table.o
-+obj-y	+= time.o
-+obj-y	+= traps.o
-+
-+obj-$(CONFIG_MODULES)			+= module.o
-+obj-$(CONFIG_NIOS2_ALIGNMENT_TRAP)	+= misaligned.o
-diff --git a/arch/nios2/kernel/nios2_ksyms.c b/arch/nios2/kernel/nios2_ksyms.c
-new file mode 100644
-index 0000000..eaf7f0c
---- /dev/null
-+++ b/arch/nios2/kernel/nios2_ksyms.c
++++ b/arch/nios2/include/asm/pgtable-bits.h
 @@ -0,0 +1,35 @@
 +/*
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License. See the file COPYING in the main directory of this
-+ * archive for more details.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+#include <linux/export.h>
-+#include <linux/string.h>
-+
-+/* string functions */
-+
-+EXPORT_SYMBOL(memcpy);
-+EXPORT_SYMBOL(memset);
-+EXPORT_SYMBOL(memmove);
++#ifndef _ASM_NIOS2_PGTABLE_BITS_H
++#define _ASM_NIOS2_PGTABLE_BITS_H
 +
 +/*
-+ * libgcc functions - functions that are used internally by the
-+ * compiler...  (prototypes are not correct though, but that
-+ * doesn't really matter since they're not versioned).
++ * These are actual hardware defined protection bits in the tlbacc register
++ * which looks like this:
++ *
++ * 31 30 ... 26 25 24 23 22 21 20 19 18 ...  1  0
++ * ignored........  C  R  W  X  G PFN............
 + */
-+#define DECLARE_EXPORT(name)	extern void name(void); EXPORT_SYMBOL(name)
++#define _PAGE_GLOBAL	(1<<20)
++#define _PAGE_EXEC	(1<<21)
++#define _PAGE_WRITE	(1<<22)
++#define _PAGE_READ	(1<<23)
++#define _PAGE_CACHED	(1<<24)	/* C: data access cacheable */
 +
-+DECLARE_EXPORT(__gcc_bcmp);
-+DECLARE_EXPORT(__divdi3);
-+DECLARE_EXPORT(__divsi3);
-+DECLARE_EXPORT(__moddi3);
-+DECLARE_EXPORT(__modsi3);
-+DECLARE_EXPORT(__udivdi3);
-+DECLARE_EXPORT(__udivmoddi4);
-+DECLARE_EXPORT(__udivsi3);
-+DECLARE_EXPORT(__umoddi3);
-+DECLARE_EXPORT(__umodsi3);
-+DECLARE_EXPORT(__muldi3);
-diff --git a/arch/nios2/kernel/vmlinux.lds.S b/arch/nios2/kernel/vmlinux.lds.S
++/*
++ * Software defined bits. They are ignored by the hardware and always read back
++ * as zero, but can be written as non-zero.
++ */
++#define _PAGE_PRESENT	(1<<25)	/* PTE contains a translation */
++#define _PAGE_ACCESSED	(1<<26)	/* page referenced */
++#define _PAGE_DIRTY	(1<<27)	/* dirty page */
++#define _PAGE_FILE	(1<<28)	/* PTE used for file mapping or swap */
++
++#endif /* _ASM_NIOS2_PGTABLE_BITS_H */
+diff --git a/arch/nios2/include/asm/pgtable.h b/arch/nios2/include/asm/pgtable.h
 new file mode 100644
-index 0000000..326fab4
+index 0000000..ec85481
 --- /dev/null
-+++ b/arch/nios2/kernel/vmlinux.lds.S
-@@ -0,0 +1,75 @@
++++ b/arch/nios2/include/asm/pgtable.h
+@@ -0,0 +1,305 @@
 +/*
-+ * Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Based on asm/pgtable-32.h from mips which is:
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * Copyright (C) 1994, 95, 96, 97, 98, 99, 2000, 2003 Ralf Baechle
++ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_PGTABLE_H
++#define _ASM_NIOS2_PGTABLE_H
++
++#include <linux/io.h>
++#include <linux/bug.h>
++#include <asm/page.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++
++#include <asm/pgtable-bits.h>
++#include <asm-generic/pgtable-nopmd.h>
++
++#define FIRST_USER_ADDRESS	0
++
++#define VMALLOC_START		CONFIG_NIOS2_KERNEL_MMU_REGION_BASE
++#define VMALLOC_END		(CONFIG_NIOS2_KERNEL_REGION_BASE - 1)
++
++struct mm_struct;
++
++/* Helper macro */
++#define MKP(x, w, r) __pgprot(_PAGE_PRESENT | _PAGE_CACHED |		\
++				((x) ? _PAGE_EXEC : 0) |		\
++				((r) ? _PAGE_READ : 0) |		\
++				((w) ? _PAGE_WRITE : 0))
++/*
++ * These are the macros that generic kernel code needs
++ * (to populate protection_map[])
++ */
++
++/* Remove W bit on private pages for COW support */
++#define __P000	MKP(0, 0, 0)
++#define __P001	MKP(0, 0, 1)
++#define __P010	MKP(0, 0, 0)	/* COW */
++#define __P011	MKP(0, 0, 1)	/* COW */
++#define __P100	MKP(1, 0, 0)
++#define __P101	MKP(1, 0, 1)
++#define __P110	MKP(1, 0, 0)	/* COW */
++#define __P111	MKP(1, 0, 1)	/* COW */
++
++/* Shared pages can have exact HW mapping */
++#define __S000	MKP(0, 0, 0)
++#define __S001	MKP(0, 0, 1)
++#define __S010	MKP(0, 1, 0)
++#define __S011	MKP(0, 1, 1)
++#define __S100	MKP(1, 0, 0)
++#define __S101	MKP(1, 0, 1)
++#define __S110	MKP(1, 1, 0)
++#define __S111	MKP(1, 1, 1)
++
++/* Used all over the kernel */
++#define PAGE_KERNEL __pgprot(_PAGE_PRESENT | _PAGE_CACHED | _PAGE_READ | \
++			     _PAGE_WRITE | _PAGE_EXEC | _PAGE_GLOBAL)
++
++#define PAGE_COPY MKP(0, 0, 1)
++
++#define PGD_ORDER	0
++#define PTE_ORDER	0
++
++#define PTRS_PER_PGD	((PAGE_SIZE << PGD_ORDER) / sizeof(pgd_t))
++#define PTRS_PER_PTE	((PAGE_SIZE << PTE_ORDER) / sizeof(pte_t))
++
++#define USER_PTRS_PER_PGD	\
++	(CONFIG_NIOS2_KERNEL_MMU_REGION_BASE / PGDIR_SIZE)
++
++#define PGDIR_SHIFT	22
++#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
++#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++
++/*
++ * ZERO_PAGE is a global shared page that is always zero: used
++ * for zero-mapped memory areas etc..
++ */
++extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
++#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
++extern pte_t invalid_pte_table[PAGE_SIZE/sizeof(pte_t)];
++
++/*
++ * (pmds are folded into puds so this doesn't get actually called,
++ * but the define is needed for a generic inline function.)
++ */
++static inline void set_pmd(pmd_t *pmdptr, pmd_t pmdval)
++{
++	pmdptr->pud.pgd.pgd = pmdval.pud.pgd.pgd;
++}
++
++/* to find an entry in a page-table-directory */
++#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
++#define pgd_offset(mm, addr)	((mm)->pgd + pgd_index(addr))
++
++static inline int pte_write(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_WRITE; }
++static inline int pte_dirty(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_DIRTY; }
++static inline int pte_young(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_ACCESSED; }
++static inline int pte_file(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_FILE; }
++static inline int pte_special(pte_t pte)	{ return 0; }
++
++#define pgprot_noncached pgprot_noncached
++
++static inline pgprot_t pgprot_noncached(pgprot_t _prot)
++{
++	unsigned long prot = pgprot_val(_prot);
++
++	prot &= ~_PAGE_CACHED;
++
++	return __pgprot(prot);
++}
++
++static inline int pte_none(pte_t pte)
++{
++	return !(pte_val(pte) & ~(_PAGE_GLOBAL|0xf));
++}
++
++static inline int pte_present(pte_t pte)	\
++	{ return pte_val(pte) & _PAGE_PRESENT; }
++
++/*
++ * The following only work if pte_present() is true.
++ * Undefined behaviour if not..
++ */
++static inline pte_t pte_wrprotect(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_WRITE;
++	return pte;
++}
++
++static inline pte_t pte_mkclean(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_DIRTY;
++	return pte;
++}
++
++static inline pte_t pte_mkold(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_ACCESSED;
++	return pte;
++}
++
++static inline pte_t pte_mkwrite(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_WRITE;
++	return pte;
++}
++
++static inline pte_t pte_mkdirty(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_DIRTY;
++	return pte;
++}
++
++static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
++
++static inline pte_t pte_mkyoung(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_ACCESSED;
++	return pte;
++}
++
++static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++{
++	const unsigned long mask = _PAGE_READ | _PAGE_WRITE | _PAGE_EXEC;
++	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
++	return pte;
++}
++
++static inline int pmd_present(pmd_t pmd)
++{
++	return (pmd_val(pmd) != (unsigned long) invalid_pte_table)
++			&& (pmd_val(pmd) != 0UL);
++}
++
++static inline void pmd_clear(pmd_t *pmdp)
++{
++	pmd_val(*pmdp) = (unsigned long) invalid_pte_table;
++}
++
++#define pte_pfn(pte)		(pte_val(pte) & 0xfffff)
++#define pfn_pte(pfn, prot)	(__pte(pfn | pgprot_val(prot)))
++#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
++
++/*
++ * Store a linux PTE into the linux page table.
++ */
++static inline void set_pte(pte_t *ptep, pte_t pteval)
++{
++	*ptep = pteval;
++}
++
++static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
++			      pte_t *ptep, pte_t pteval)
++{
++	unsigned long paddr = page_to_virt(pte_page(pteval));
++	flush_dcache_range(paddr, paddr + PAGE_SIZE);
++	set_pte(ptep, pteval);
++}
++
++static inline int pmd_none(pmd_t pmd)
++{
++	return (pmd_val(pmd) ==
++		(unsigned long) invalid_pte_table) || (pmd_val(pmd) == 0UL);
++}
++
++#define pmd_bad(pmd)	(pmd_val(pmd) & ~PAGE_MASK)
++
++static inline void pte_clear(struct mm_struct *mm,
++				unsigned long addr, pte_t *ptep)
++{
++	pte_t null;
++
++	pte_val(null) = (addr >> PAGE_SHIFT) & 0xf;
++
++	set_pte_at(mm, addr, ptep, null);
++	flush_tlb_one(addr);
++}
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define mk_pte(page, prot)	(pfn_pte(page_to_pfn(page), prot))
++
++#define pte_unmap(pte)	do { } while (0)
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define pmd_phys(pmd)		virt_to_phys((void *)pmd_val(pmd))
++#define pmd_page(pmd)		(pfn_to_page(pmd_phys(pmd) >> PAGE_SHIFT))
++#define pmd_page_vaddr(pmd)	pmd_val(pmd)
++
++#define pte_offset_map(dir, addr)			\
++	((pte_t *) page_address(pmd_page(*dir)) +	\
++	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
++
++/* to find an entry in a kernel page-table-directory */
++#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
++
++/* Get the address to the PTE for a vaddr in specfic directory */
++#define pte_offset_kernel(dir, addr)			\
++	((pte_t *) pmd_page_vaddr(*(dir)) +		\
++	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
++
++#define pte_ERROR(e) \
++	pr_err("%s:%d: bad pte %08lx.\n", \
++		__FILE__, __LINE__, pte_val(e))
++#define pgd_ERROR(e) \
++	pr_err("%s:%d: bad pgd %08lx.\n", \
++		__FILE__, __LINE__, pgd_val(e))
++
++/*
++ * Encode and decode a swap entry (must be !pte_none(pte) && !pte_present(pte)
++ * && !pte_file(pte)):
++ *
++ * 31 30 29 28 27 26 25 24 23 22 21 20 19 18 ...  1  0
++ *  0  0  0  0 type.  0  0  0  0  0  0 offset.........
++ *
++ * This gives us up to 2**2 = 4 swap files and 2**20 * 4K = 4G per swap file.
++ *
++ * Note that the offset field is always non-zero, thus !pte_none(pte) is always
++ * true.
++ */
++#define __swp_type(swp)		(((swp).val >> 26) & 0x3)
++#define __swp_offset(swp)	((swp).val & 0xfffff)
++#define __swp_entry(type, off)	((swp_entry_t) { (((type) & 0x3) << 26) \
++						 | ((off) & 0xfffff) })
++#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
++#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
++
++/* Encode and decode a nonlinear file mapping entry */
++#define PTE_FILE_MAX_BITS	25
++#define pte_to_pgoff(pte)	(pte_val(pte) & 0x1ffffff)
++#define pgoff_to_pte(off)	__pte(((off) & 0x1ffffff) | _PAGE_FILE)
++
++#define kern_addr_valid(addr)		(1)
++
++#include <asm-generic/pgtable.h>
++
++#define pgtable_cache_init()		do { } while (0)
++
++extern void __init paging_init(void);
++extern void __init mmu_init(void);
++
++extern void update_mmu_cache(struct vm_area_struct *vma,
++			     unsigned long address, pte_t *pte);
++
++#endif /* _ASM_NIOS2_PGTABLE_H */
+diff --git a/arch/nios2/mm/pgtable.c b/arch/nios2/mm/pgtable.c
+new file mode 100644
+index 0000000..21e865f
+--- /dev/null
++++ b/arch/nios2/mm/pgtable.c
+@@ -0,0 +1,73 @@
++/*
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/mm.h>
++#include <linux/sched.h>
++
++#include <asm/pgtable.h>
++#include <asm/cpuinfo.h>
++
++/* pteaddr:
++ *   ptbase | vpn* | zero
++ *   31-22  | 21-2 | 1-0
++ *
++ *   *vpn is preserved on double fault
++ *
++ * tlbacc:
++ *   IG   |*flags| pfn
++ *   31-25|24-20 | 19-0
++ *
++ *   *crwxg
++ *
++ * tlbmisc:
++ *   resv  |way   |rd | we|pid |dbl|bad|perm|d
++ *   31-24 |23-20 |19 | 20|17-4|3  |2  |1   |0
 + *
 + */
-+#include <asm/page.h>
-+#include <asm-generic/vmlinux.lds.h>
-+#include <asm/cache.h>
-+#include <asm/thread_info.h>
 +
-+OUTPUT_FORMAT("elf32-littlenios2", "elf32-littlenios2", "elf32-littlenios2")
-+
-+OUTPUT_ARCH(nios)
-+ENTRY(_start)	/* Defined in head.S */
-+
-+jiffies = jiffies_64;
-+
-+SECTIONS
++/*
++ * Initialize a new pgd / pmd table with invalid pointers.
++ */
++static void pgd_init(pgd_t *pgd)
 +{
-+	. = CONFIG_NIOS2_MEM_BASE | CONFIG_NIOS2_KERNEL_REGION_BASE;
++	unsigned long *p = (unsigned long *) pgd;
++	int i;
 +
-+	_text = .;
-+	_stext = .;
-+	HEAD_TEXT_SECTION
-+	.text : {
-+		TEXT_TEXT
-+		SCHED_TEXT
-+		LOCK_TEXT
-+		IRQENTRY_TEXT
-+		KPROBES_TEXT
-+	} =0
-+	_etext = .;
++	for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
++		p[i + 0] = (unsigned long) invalid_pte_table;
++		p[i + 1] = (unsigned long) invalid_pte_table;
++		p[i + 2] = (unsigned long) invalid_pte_table;
++		p[i + 3] = (unsigned long) invalid_pte_table;
++		p[i + 4] = (unsigned long) invalid_pte_table;
++		p[i + 5] = (unsigned long) invalid_pte_table;
++		p[i + 6] = (unsigned long) invalid_pte_table;
++		p[i + 7] = (unsigned long) invalid_pte_table;
++	}
++}
 +
-+	.got : {
-+		*(.got.plt)
-+		*(.igot.plt)
-+		*(.got)
-+		*(.igot)
++pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	pgd_t *ret, *init;
++	ret = (pgd_t *) __get_free_pages(GFP_KERNEL, PGD_ORDER);
++	if (ret) {
++		init = pgd_offset(&init_mm, 0UL);
++		pgd_init(ret);
++		memcpy(ret + USER_PTRS_PER_PGD, init + USER_PTRS_PER_PGD,
++		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
 +	}
 +
-+	EXCEPTION_TABLE(L1_CACHE_BYTES)
-+
-+	. = ALIGN(PAGE_SIZE);
-+	__init_begin = .;
-+	INIT_TEXT_SECTION(PAGE_SIZE)
-+	INIT_DATA_SECTION(PAGE_SIZE)
-+	PERCPU_SECTION(L1_CACHE_BYTES)
-+	__init_end = .;
-+
-+	_sdata = .;
-+	RO_DATA_SECTION(PAGE_SIZE)
-+	RW_DATA_SECTION(L1_CACHE_BYTES, PAGE_SIZE, THREAD_SIZE)
-+	_edata = .;
-+
-+	BSS_SECTION(0, 0, 0)
-+	_end = .;
-+
-+	STABS_DEBUG
-+	DWARF_DEBUG
-+	NOTES
-+
-+	DISCARDS
++	return ret;
 +}
-diff --git a/arch/nios2/lib/Makefile b/arch/nios2/lib/Makefile
-new file mode 100644
-index 0000000..be4c64a
---- /dev/null
-+++ b/arch/nios2/lib/Makefile
-@@ -0,0 +1,9 @@
-+#
-+# Makefile for Nios2-specific library files.
-+#
 +
-+lib-y += delay.o
-+lib-y += io.o
-+lib-y += memcpy.o
-+lib-y += memmove.o
-+lib-y += memset.o
-diff --git a/arch/nios2/mm/Makefile b/arch/nios2/mm/Makefile
-new file mode 100644
-index 0000000..3cbd084
---- /dev/null
-+++ b/arch/nios2/mm/Makefile
-@@ -0,0 +1,14 @@
-+#
-+# Makefile for the Nios2-specific parts of the memory manager.
-+#
-+
-+obj-y	+= cacheflush.o
-+obj-y	+= dma-mapping.o
-+obj-y	+= extable.o
-+obj-y	+= fault.o
-+obj-y	+= init.o
-+obj-y	+= ioremap.o
-+obj-y	+= mmu_context.o
-+obj-y	+= pgtable.o
-+obj-y	+= tlb.o
-+obj-y	+= uaccess.o
-diff --git a/arch/nios2/platform/Kconfig.platform b/arch/nios2/platform/Kconfig.platform
-new file mode 100644
-index 0000000..a2c5cc8
---- /dev/null
-+++ b/arch/nios2/platform/Kconfig.platform
-@@ -0,0 +1,129 @@
-+menu "Platform options"
-+
-+comment "Memory settings"
-+
-+config NIOS2_MEM_BASE
-+	hex "Memory base address"
-+	default "0x00000000"
-+	help
-+	  This is the physical address of the memory that the kernel will run
-+	  from. This address is used to link the kernel and setup initial memory
-+	  management. You should take the raw memory address without any MMU
-+	  or cache bits set.
-+	  Please not that this address is used directly so you have to manually
-+	  do address translation if it's connected to a bridge.
-+
-+comment "Device tree"
-+
-+config NIOS2_DTB_AT_PHYS_ADDR
-+	bool "DTB at physical address"
-+	default n
-+	help
-+	  When enabled you can select a physical address to load the dtb from.
-+	  Normally this address is passed by a bootloader such as u-boot but
-+	  using this you can use a devicetree without a bootloader.
-+	  This way you can store a devicetree in NOR flash or an onchip rom.
-+	  Please note that this addres is used directly so you have to manually
-+	  do address translation if it's connected to a bridge. Also take into
-+	  account that when using an MMU you'd have to ad 0xC0000000 to your
-+	  address
-+
-+config NIOS2_DTB_PHYS_ADDR
-+	hex "DTB Address"
-+	depends on NIOS2_DTB_AT_PHYS_ADDR
-+	default "0xC0000000"
-+	help
-+	  Physical address of a dtb blob.
-+
-+config NIOS2_DTB_SOURCE_BOOL
-+	bool "Compile and link device tree into kernel image"
-+	default n
-+	help
-+	  This allows you to specify a dts (device tree source) file
-+	  which will be compiled and linked into the kernel image.
-+
-+config NIOS2_DTB_SOURCE
-+	string "Device tree source file"
-+	depends on NIOS2_DTB_SOURCE_BOOL
-+	default ""
-+	help
-+	  Absolute path to the device tree source (dts) file describing your
-+	  system.
-+
-+comment "Nios II instructions"
-+
-+config NIOS2_HW_MUL_SUPPORT
-+	bool "Enable MUL instruction"
-+	default n
-+	help
-+	  Set to true if you configured the Nios II to include the MUL
-+	  instruction.  This will enable the -mhw-mul compiler flag.
-+
-+config NIOS2_HW_MULX_SUPPORT
-+	bool "Enable MULX instruction"
-+	default n
-+	help
-+	  Set to true if you configured the Nios II to include the MULX
-+	  instruction.  Enables the -mhw-mulx compiler flag.
-+
-+config NIOS2_HW_DIV_SUPPORT
-+	bool "Enable DIV instruction"
-+	default n
-+	help
-+	  Set to true if you configured the Nios II to include the DIV
-+	  instruction.  Enables the -mhw-div compiler flag.
-+
-+config NIOS2_FPU_SUPPORT
-+	bool "Custom floating point instr support"
-+	default n
-+	help
-+	  Enables the -mcustom-fpu-cfg=60-1 compiler flag.
-+
-+config NIOS2_CI_SWAB_SUPPORT
-+	bool "Byteswap custom instruction"
-+	default n
-+	help
-+	  Use the byteswap (endian convertor) Nios II custom instruction provided
-+	  by Altera and which can be enabled in QSYS builder. This accelerates
-+	  endian conversions in the kernel (e.g. ntohs).
-+
-+config NIOS2_CI_SWAB_NO
-+	int "Byteswap custom instruction number" if NIOS2_CI_SWAB_SUPPORT
-+	default 0
-+	help
-+	  Number of the instruction as configured in QSYS Builder.
-+
-+comment "Cache settings"
-+
-+config CUSTOM_CACHE_SETTINGS
-+	bool "Custom cache settings"
-+	help
-+	  This option allows you to tweak the cache settings used during early
-+	  boot (where the information from device tree is not yet available).
-+	  There should be no reason to change these values. Linux will work
-+	  perfectly fine, even if the Nios II is configured with smaller caches.
-+
-+	  Say N here unless you know what you are doing.
-+
-+config NIOS2_DCACHE_SIZE
-+	hex "D-Cache size" if CUSTOM_CACHE_SETTINGS
-+	range 0x200 0x10000
-+	default "0x800"
-+	help
-+	  Maximum possible data cache size.
-+
-+config NIOS2_DCACHE_LINE_SIZE
-+	hex "D-Cache line size" if CUSTOM_CACHE_SETTINGS
-+	range 0x10 0x20
-+	default "0x20"
-+	help
-+	  Minimum possible data cache line size.
-+
-+config NIOS2_ICACHE_SIZE
-+	hex "I-Cache size" if CUSTOM_CACHE_SETTINGS
-+	range 0x200 0x10000
-+	default "0x1000"
-+	help
-+	  Maximum possible instruction cache size.
-+
-+endmenu
-diff --git a/arch/nios2/platform/Makefile b/arch/nios2/platform/Makefile
-new file mode 100644
-index 0000000..46364f1
---- /dev/null
-+++ b/arch/nios2/platform/Makefile
-@@ -0,0 +1 @@
-+obj-y += platform.o
++void __init pagetable_init(void)
++{
++	/* Initialize the entire pgd.  */
++	pgd_init(swapper_pg_dir);
++	pgd_init(swapper_pg_dir + USER_PTRS_PER_PGD);
++}
 -- 
 1.8.2.1
 
