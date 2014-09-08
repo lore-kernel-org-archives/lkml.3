@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaIHWqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:46:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59100 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009AbaIHWqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:46:01 -0400
-Date: Mon, 8 Sep 2014 17:45:24 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL 2/2] ARM: OMAP4+: PRM fixes, DRA7 suspend-to-ram
- support
-Message-ID: <20140908224524.GA31480@kahuna>
-References: <1410195620-6347-1-git-send-email-nm@ti.com>
- <1410195620-6347-2-git-send-email-nm@ti.com>
- <20140908223204.GN3238@atomide.com>
+	id S1755196AbaIHWro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:47:44 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:50240 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754881AbaIHWrm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 18:47:42 -0400
+Message-ID: <540E3207.7090007@hurleysoftware.com>
+Date: Mon, 08 Sep 2014 18:47:35 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140908223204.GN3238@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: David Laight <David.Laight@ACULAB.COM>, Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com>	<54079B70.4050200@hurleysoftware.com>	<1409785893.30640.118.camel@pasglop>	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>	<1409824374.4246.62.camel@pasglop>	<5408E458.3@zytor.com>	<54090AF4.7060406@hurleysoftware.com>	<54091B30.7080100@zytor.com>	<5409D76D.2070203@hurleysoftware.com>	<5409D9C0.7030403@zytor.com> <20140908185240.21f52ca0@alan.etchedpixels.co.uk> <540DEE6C.2060904@zytor.com>
+In-Reply-To: <540DEE6C.2060904@zytor.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:32-20140908, Tony Lindgren wrote:
-> * Nishanth Menon <nm@ti.com> [140908 10:02]:
-> > Hi Tony,
-> > Please pull the following changes.
-> > 
-> > part 2: "ARM: OMAP3+: PRM: fix up prm_handling"
-> > http://marc.info/?l=linux-kernel&m=140871580806186&w=2
-> > Status: Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > 
-> > part 3: "ARM: OMAP5+: pdata quirks for pinctrl"
-> > http://marc.info/?l=linux-kernel&m=140871598306262&w=2
-> > Status: Sending pull based on http://marc.info/?l=linux-kernel&m=140871666506706&w=2 (Acked by Tony, Pulled by Linus W)
-> > 
-> > part 5: "ARM: OMAP5 / DRA7: Add framework for suspend and cpuidle"
-> > http://marc.info/?l=linux-kernel&m=140871637106555&w=2
-> > Status: picked up kevin's tested and reviewed-by, dropped cpuidle for this pull
-> > 
-> > These could go into your tree for the branch  omap-for-v3.18/soc
-> > 
-> > The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> > 
-> >   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> > 
-> > are available in the git repository at:
-> > 
-> >   https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/for-omap-soc
+On 09/08/2014 01:59 PM, H. Peter Anvin wrote:
+> On 09/08/2014 10:52 AM, One Thousand Gnomes wrote:
+>> On Fri, 05 Sep 2014 08:41:52 -0700
+>> "H. Peter Anvin" <hpa@zytor.com> wrote:
+>>
+>>> On 09/05/2014 08:31 AM, Peter Hurley wrote:
+>>>>
+>>>> Which is a bit ironic because I remember when Digital had a team
+>>>> working on emulating native x86 apps on Alpha/NT.
+>>>>
+>>>
+>>> Right, because the x86 architecture was obsolete and would never scale...
+>>
+>> Talking about "not scaling" can anyone explain how a "you need to use
+>> set_bit() and friends" bug report scaled into a hundred message plus
+>> discussion about ambiguous properties of processors (and nobody has
+>> audited all the embedded platforms we support yet, or the weirder ARMs)
+>> and a propsal to remove Alpha support.
+>>
+>> Wouldn't it be *much* simpler to do what I suggested in the first place
+>> and use the existing intended for purpose, deliberately put there,
+>> functions for atomic bitops, because they are fast on sane processors and
+>> they work on everything else.
+>>
+>> I think the whole "removing Alpha EV5" support is basically bonkers. Just
+>> use set_bit in the tty layer. Alpha will continue to work as well as it
+>> always has done and you won't design out support for any future processor
+>> that turns out not to do byte aligned stores.
+>>
+>> Alan
+>>
 > 
-> Thanks pulling into omap-for-v3.18/soc.
+> Is *that* what we are talking about?  I was added to this conversation
+> in the middle where it had already generalized, so I had no idea.
 
-Tony, Apologies, I missed the last patch in the series:
+No, this is just what brought this craziness to my attention.
 
-https://patchwork.kernel.org/patch/4765011/
+For example, byte- and short-sized circular buffers could not possibly
+be safe either, when the head nears the tail.
 
-If you could cherry-pick the same with 
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-Tested-by: Kevin Hilman <khilman@linaro.org>
-based on Kevin's feedback:
-http://marc.info/?l=linux-arm-kernel&m=140916701909122&w=2
+Who has audited global storage and ensured that _every_ byte-sized write
+doesn't happen to be adjacent to some other storage that may not happen
+to be protected by the same (or any) lock?
 
--- 
 Regards,
-Nishanth Menon
+Peter Hurley
+
+
+
