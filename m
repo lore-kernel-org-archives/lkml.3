@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258AbaIHVTL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:19:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39186 "EHLO mail.kernel.org"
+	id S1755282AbaIHVTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:19:17 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39253 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755150AbaIHVTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:19:07 -0400
+	id S1755256AbaIHVTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 17:19:11 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/13] perf tools: Add support for 32-bit compatibility VDSOs
-Date: Mon,  8 Sep 2014 18:18:07 -0300
-Message-Id: <1410211089-28668-12-git-send-email-acme@kernel.org>
+Subject: [PATCH 12/13] perf tools: Let default config be defined for a PMU
+Date: Mon,  8 Sep 2014 18:18:08 -0300
+Message-Id: <1410211089-28668-13-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410211089-28668-1-git-send-email-acme@kernel.org>
 References: <1410211089-28668-1-git-send-email-acme@kernel.org>
@@ -27,27 +27,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-'perf record' post-processes the event stream  to create a list of
-build-ids for object files for which sample events have been recorded.
-That results in those object files being recorded in the build-id cache.
+This allows default config terms to be provided for a PMU. So, for
+example, when the Intel PT PMU is added, it will be possible to specify:
 
-In the case of VDSO, perf tools reads it from memory and copies it into
-a temporary file, which as decribed above, gets added to the build-id
-cache.
+	intel_pt//
 
-Then when the perf.data file is processed by other tools, the build-id
-of VDSO is listed in the perf.data file and the VDSO can be read from
-the build-id cache.  In that case the name of the map, the short name of
-the DSO, and the entry in the build-id cache are all "[vdso]".
+which will be the same as:
 
-However, in the 64-bit case, there also can be 32-bit compatibility
-VDSOs.
+	intel_pt/tsc=1,noretcomp=0/
 
-A previous patch added programs "perf-read-vdso32" and "perf
-read-vdsox32".  This patch uses those programs to read the correct VDSO
-for a thread and create a temporary file just as for the 64-bit VDSO.
-The map name and the entry in the build-id cache are still "[vdso]" but
-the DSO short name becomes "[vdso32]" and "[vdsox32]" respectively.
+meaning that the trace should contain TSC timestamps and perform 'return
+compression'.
+
+An important consideration of this patch is that it must be possible to
+overwrite the default values.  That has meant changing the logic so that
+a zero value can replace a non-zero value.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -57,253 +51,197 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-32-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406786474-9306-7-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/vdso.c | 170 ++++++++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/vdso.h |   4 +-
- 2 files changed, 172 insertions(+), 2 deletions(-)
+ tools/perf/tests/pmu.c         |  2 +-
+ tools/perf/util/parse-events.c |  7 ++++++-
+ tools/perf/util/pmu.c          | 42 ++++++++++++++++++++++++++----------------
+ tools/perf/util/pmu.h          |  9 ++++++++-
+ 4 files changed, 41 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index adca69384fcc..b721f4caa208 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -12,6 +12,7 @@
- #include "util.h"
- #include "symbol.h"
- #include "machine.h"
-+#include "thread.h"
- #include "linux/string.h"
- #include "debug.h"
+diff --git a/tools/perf/tests/pmu.c b/tools/perf/tests/pmu.c
+index 12b322fa3475..eeb68bb1972d 100644
+--- a/tools/perf/tests/pmu.c
++++ b/tools/perf/tests/pmu.c
+@@ -152,7 +152,7 @@ int test__pmu(void)
+ 		if (ret)
+ 			break;
  
-@@ -22,10 +23,15 @@ struct vdso_file {
- 	bool error;
- 	char temp_file_name[sizeof(VDSO__TEMP_FILE_NAME)];
- 	const char *dso_name;
-+	const char *read_prog;
- };
+-		ret = perf_pmu__config_terms(&formats, &attr, terms);
++		ret = perf_pmu__config_terms(&formats, &attr, terms, false);
+ 		if (ret)
+ 			break;
  
- struct vdso_info {
- 	struct vdso_file vdso;
-+#if BITS_PER_LONG == 64
-+	struct vdso_file vdso32;
-+	struct vdso_file vdsox32;
-+#endif
- };
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index e75628813968..61be3e695ec2 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -643,7 +643,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 	if (!pmu)
+ 		return -EINVAL;
  
- static struct vdso_info *vdso_info__new(void)
-@@ -35,6 +41,18 @@ static struct vdso_info *vdso_info__new(void)
- 			.temp_file_name = VDSO__TEMP_FILE_NAME,
- 			.dso_name = DSO__NAME_VDSO,
- 		},
-+#if BITS_PER_LONG == 64
-+		.vdso32  = {
-+			.temp_file_name = VDSO__TEMP_FILE_NAME,
-+			.dso_name = DSO__NAME_VDSO32,
-+			.read_prog = "perf-read-vdso32",
-+		},
-+		.vdsox32  = {
-+			.temp_file_name = VDSO__TEMP_FILE_NAME,
-+			.dso_name = DSO__NAME_VDSOX32,
-+			.read_prog = "perf-read-vdsox32",
-+		},
-+#endif
- 	};
+-	memset(&attr, 0, sizeof(attr));
++	if (pmu->default_config) {
++		memcpy(&attr, pmu->default_config,
++		       sizeof(struct perf_event_attr));
++	} else {
++		memset(&attr, 0, sizeof(attr));
++	}
  
- 	return memdup(&vdso_info_init, sizeof(vdso_info_init));
-@@ -117,6 +135,12 @@ void vdso__exit(struct machine *machine)
- 
- 	if (vdso_info->vdso.found)
- 		unlink(vdso_info->vdso.temp_file_name);
-+#if BITS_PER_LONG == 64
-+	if (vdso_info->vdso32.found)
-+		unlink(vdso_info->vdso.temp_file_name);
-+	if (vdso_info->vdsox32.found)
-+		unlink(vdso_info->vdso.temp_file_name);
-+#endif
- 
- 	zfree(&machine->vdso_info);
- }
-@@ -135,6 +159,143 @@ static struct dso *vdso__new(struct machine *machine, const char *short_name,
- 	return dso;
+ 	if (!head_config) {
+ 		attr.type = pmu->type;
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9bf582750561..438bb261f391 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -2,6 +2,7 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ #include <stdio.h>
++#include <stdbool.h>
+ #include <dirent.h>
+ #include <api/fs/fs.h>
+ #include <locale.h>
+@@ -387,6 +388,12 @@ static struct cpu_map *pmu_cpumask(const char *name)
+ 	return cpus;
  }
  
-+#if BITS_PER_LONG == 64
-+
-+static enum dso_type machine__thread_dso_type(struct machine *machine,
-+					      struct thread *thread)
++struct perf_event_attr *__attribute__((weak))
++perf_pmu__get_default_config(struct perf_pmu *pmu __maybe_unused)
 +{
-+	enum dso_type dso_type = DSO__TYPE_UNKNOWN;
-+	struct map *map;
-+	struct dso *dso;
-+
-+	map = map_groups__first(thread->mg, MAP__FUNCTION);
-+	for (; map ; map = map_groups__next(map)) {
-+		dso = map->dso;
-+		if (!dso || dso->long_name[0] != '/')
-+			continue;
-+		dso_type = dso__type(dso, machine);
-+		if (dso_type != DSO__TYPE_UNKNOWN)
-+			break;
-+	}
-+
-+	return dso_type;
++	return NULL;
 +}
 +
-+static int vdso__do_copy_compat(FILE *f, int fd)
-+{
-+	char buf[4096];
-+	size_t count;
-+
-+	while (1) {
-+		count = fread(buf, 1, sizeof(buf), f);
-+		if (ferror(f))
-+			return -errno;
-+		if (feof(f))
-+			break;
-+		if (count && writen(fd, buf, count) != (ssize_t)count)
-+			return -errno;
-+	}
-+
-+	return 0;
-+}
-+
-+static int vdso__copy_compat(const char *prog, int fd)
-+{
-+	FILE *f;
-+	int err;
-+
-+	f = popen(prog, "r");
-+	if (!f)
-+		return -errno;
-+
-+	err = vdso__do_copy_compat(f, fd);
-+
-+	if (pclose(f) == -1)
-+		return -errno;
-+
-+	return err;
-+}
-+
-+static int vdso__create_compat_file(const char *prog, char *temp_name)
-+{
-+	int fd, err;
-+
-+	fd = mkstemp(temp_name);
-+	if (fd < 0)
-+		return -errno;
-+
-+	err = vdso__copy_compat(prog, fd);
-+
-+	if (close(fd) == -1)
-+		return -errno;
-+
-+	return err;
-+}
-+
-+static const char *vdso__get_compat_file(struct vdso_file *vdso_file)
-+{
-+	int err;
-+
-+	if (vdso_file->found)
-+		return vdso_file->temp_file_name;
-+
-+	if (vdso_file->error)
-+		return NULL;
-+
-+	err = vdso__create_compat_file(vdso_file->read_prog,
-+				       vdso_file->temp_file_name);
-+	if (err) {
-+		pr_err("%s failed, error %d\n", vdso_file->read_prog, err);
-+		vdso_file->error = true;
-+		return NULL;
-+	}
-+
-+	vdso_file->found = true;
-+
-+	return vdso_file->temp_file_name;
-+}
-+
-+static struct dso *vdso__findnew_compat(struct machine *machine,
-+					struct vdso_file *vdso_file)
-+{
-+	const char *file_name;
-+	struct dso *dso;
-+
-+	dso = dsos__find(&machine->user_dsos, vdso_file->dso_name, true);
-+	if (dso)
-+		return dso;
-+
-+	file_name = vdso__get_compat_file(vdso_file);
-+	if (!file_name)
-+		return NULL;
-+
-+	return vdso__new(machine, vdso_file->dso_name, file_name);
-+}
-+
-+static int vdso__dso_findnew_compat(struct machine *machine,
-+				    struct thread *thread,
-+				    struct vdso_info *vdso_info,
-+				    struct dso **dso)
-+{
-+	enum dso_type dso_type;
-+
-+	dso_type = machine__thread_dso_type(machine, thread);
-+	switch (dso_type) {
-+	case DSO__TYPE_32BIT:
-+		*dso = vdso__findnew_compat(machine, &vdso_info->vdso32);
-+		return 1;
-+	case DSO__TYPE_X32BIT:
-+		*dso = vdso__findnew_compat(machine, &vdso_info->vdsox32);
-+		return 1;
-+	case DSO__TYPE_UNKNOWN:
-+	case DSO__TYPE_64BIT:
-+	default:
-+		return 0;
-+	}
-+}
-+
-+#endif
-+
- struct dso *vdso__dso_findnew(struct machine *machine,
- 			      struct thread *thread __maybe_unused)
+ static struct perf_pmu *pmu_lookup(const char *name)
  {
-@@ -148,6 +309,11 @@ struct dso *vdso__dso_findnew(struct machine *machine,
- 	if (!vdso_info)
- 		return NULL;
- 
-+#if BITS_PER_LONG == 64
-+	if (vdso__dso_findnew_compat(machine, thread, vdso_info, &dso))
-+		return dso;
-+#endif
+ 	struct perf_pmu *pmu;
+@@ -421,6 +428,9 @@ static struct perf_pmu *pmu_lookup(const char *name)
+ 	pmu->name = strdup(name);
+ 	pmu->type = type;
+ 	list_add_tail(&pmu->list, &pmus);
 +
- 	dso = dsos__find(&machine->user_dsos, DSO__NAME_VDSO, true);
- 	if (!dso) {
- 		char *file;
-@@ -164,5 +330,7 @@ struct dso *vdso__dso_findnew(struct machine *machine,
- 
- bool dso__is_vdso(struct dso *dso)
- {
--	return !strcmp(dso->short_name, DSO__NAME_VDSO);
-+	return !strcmp(dso->short_name, DSO__NAME_VDSO) ||
-+	       !strcmp(dso->short_name, DSO__NAME_VDSO32) ||
-+	       !strcmp(dso->short_name, DSO__NAME_VDSOX32);
++	pmu->default_config = perf_pmu__get_default_config(pmu);
++
+ 	return pmu;
  }
-diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
-index af9d6929a215..d97da1616f0c 100644
---- a/tools/perf/util/vdso.h
-+++ b/tools/perf/util/vdso.h
-@@ -7,7 +7,9 @@
  
- #define VDSO__MAP_NAME "[vdso]"
+@@ -479,28 +489,24 @@ pmu_find_format(struct list_head *formats, char *name)
+ }
  
--#define DSO__NAME_VDSO "[vdso]"
-+#define DSO__NAME_VDSO    "[vdso]"
-+#define DSO__NAME_VDSO32  "[vdso32]"
-+#define DSO__NAME_VDSOX32 "[vdsox32]"
- 
- static inline bool is_vdso_map(const char *filename)
+ /*
+- * Returns value based on the format definition (format parameter)
++ * Sets value based on the format definition (format parameter)
+  * and unformated value (value parameter).
+- *
+- * TODO maybe optimize a little ;)
+  */
+-static __u64 pmu_format_value(unsigned long *format, __u64 value)
++static void pmu_format_value(unsigned long *format, __u64 value, __u64 *v,
++			     bool zero)
  {
+ 	unsigned long fbit, vbit;
+-	__u64 v = 0;
+ 
+ 	for (fbit = 0, vbit = 0; fbit < PERF_PMU_FORMAT_BITS; fbit++) {
+ 
+ 		if (!test_bit(fbit, format))
+ 			continue;
+ 
+-		if (!(value & (1llu << vbit++)))
+-			continue;
+-
+-		v |= (1llu << fbit);
++		if (value & (1llu << vbit++))
++			*v |= (1llu << fbit);
++		else if (zero)
++			*v &= ~(1llu << fbit);
+ 	}
+-
+-	return v;
+ }
+ 
+ /*
+@@ -509,7 +515,8 @@ static __u64 pmu_format_value(unsigned long *format, __u64 value)
+  */
+ static int pmu_config_term(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct parse_events_term *term)
++			   struct parse_events_term *term,
++			   bool zero)
+ {
+ 	struct perf_pmu_format *format;
+ 	__u64 *vp;
+@@ -548,18 +555,19 @@ static int pmu_config_term(struct list_head *formats,
+ 	 * non-hardcoded terms, here's the place to translate
+ 	 * them into value.
+ 	 */
+-	*vp |= pmu_format_value(format->bits, term->val.num);
++	pmu_format_value(format->bits, term->val.num, vp, zero);
+ 	return 0;
+ }
+ 
+ int perf_pmu__config_terms(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct list_head *head_terms)
++			   struct list_head *head_terms,
++			   bool zero)
+ {
+ 	struct parse_events_term *term;
+ 
+ 	list_for_each_entry(term, head_terms, list)
+-		if (pmu_config_term(formats, attr, term))
++		if (pmu_config_term(formats, attr, term, zero))
+ 			return -EINVAL;
+ 
+ 	return 0;
+@@ -573,8 +581,10 @@ int perf_pmu__config_terms(struct list_head *formats,
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms)
+ {
++	bool zero = !!pmu->default_config;
++
+ 	attr->type = pmu->type;
+-	return perf_pmu__config_terms(&pmu->format, attr, head_terms);
++	return perf_pmu__config_terms(&pmu->format, attr, head_terms, zero);
+ }
+ 
+ static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 1c1e2eecbe1f..413b9a63c38d 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -13,9 +13,12 @@ enum {
+ 
+ #define PERF_PMU_FORMAT_BITS 64
+ 
++struct perf_event_attr;
++
+ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
++	struct perf_event_attr *default_config;
+ 	struct cpu_map *cpus;
+ 	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
+ 	struct list_head aliases; /* HEAD struct perf_pmu_alias -> list */
+@@ -27,7 +30,8 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
+ int perf_pmu__config_terms(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+-			   struct list_head *head_terms);
++			   struct list_head *head_terms,
++			   bool zero);
+ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+ 			  const char **unit, double *scale);
+ struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
+@@ -46,4 +50,7 @@ void print_pmu_events(const char *event_glob, bool name_only);
+ bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
++
++struct perf_event_attr *perf_pmu__get_default_config(struct perf_pmu *pmu);
++
+ #endif /* __PMU_H */
 -- 
 1.9.3
 
