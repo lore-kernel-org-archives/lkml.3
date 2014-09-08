@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaIHQ6l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:58:41 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33752 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092AbaIHQ6j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:58:39 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <jgunthorpe@obsidianresearch.com>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH - v3] PCI: keystone: add a pci quirk to limit mrrs
-Date: Mon, 8 Sep 2014 12:58:34 -0400
-Message-ID: <1410195514-29945-1-git-send-email-m-karicheri2@ti.com>
+	id S1754500AbaIHRAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:00:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36333 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754071AbaIHRAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 13:00:45 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [GIT PULL 1/2] ARM: OMAP 4+: powerdomain fixes
+Date: Mon, 8 Sep 2014 12:00:19 -0500
+Message-ID: <1410195620-6347-1-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,79 +20,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keystone PCI controller has a limitation that memory read request
-size must not exceed 256 bytes. This is a hardware limitation and
-add a quirk to force this limit on all downstream devices by
-updating mrrs.
+Hi Tony,
+Please pull the following changes.
+Series discussed in:
+http://marc.info/?l=linux-kernel&m=140871554106082&w=2
+Includes (v2 patch) https://patchwork.kernel.org/patch/4790541/
+Status: Acked by Santosh and Reviewed-by Kevin	
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
-  -v3: added check for vendor id and use pci_matc_id() to do matching
-  -v2: made the quirk happens after tuning
-  -v1: changed printk to indicate PCI bdf
- drivers/pci/host/pci-keystone.c |   47 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+These could go into your tree for the branch omap-for-v3.18/fixes-not-urgent
 
-diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-index c1cfaef..0a477e5 100644
---- a/drivers/pci/host/pci-keystone.c
-+++ b/drivers/pci/host/pci-keystone.c
-@@ -42,8 +42,55 @@
- /* DEV_STAT_CTRL */
- #define PCIE_CAP_BASE		0x70
- 
-+/* PCIE controller device IDs */
-+#define PCIE_RC_K2HK		0xb008
-+#define PCIE_RC_K2E		0xb009
-+#define PCIE_RC_K2L		0xb00a
-+
- #define to_keystone_pcie(x)	container_of(x, struct keystone_pcie, pp)
- 
-+
-+
-+static void quirk_limit_mrrs(struct pci_dev *dev)
-+{
-+	struct pci_bus *bus = dev->bus;
-+	struct pci_dev *bridge = bus->self;
-+	static const struct pci_device_id rc_pci_devids[] = {
-+		{ PCI_DEVICE(PCI_VENDOR_ID_TI, PCIE_RC_K2HK),
-+		 .class = PCI_CLASS_BRIDGE_PCI << 8, .class_mask = ~0, },
-+		{ PCI_DEVICE(PCI_VENDOR_ID_TI, PCIE_RC_K2E),
-+		 .class = PCI_CLASS_BRIDGE_PCI << 8, .class_mask = ~0, },
-+		{ PCI_DEVICE(PCI_VENDOR_ID_TI, PCIE_RC_K2L),
-+		 .class = PCI_CLASS_BRIDGE_PCI << 8, .class_mask = ~0, },
-+		{ 0, },
-+	};
-+
-+	if (pci_is_root_bus(bus))
-+		return;
-+
-+	/* look for the host bridge */
-+	while (!pci_is_root_bus(bus)) {
-+		bridge = bus->self;
-+		bus = bus->parent;
-+	}
-+
-+	if (bridge) {
-+		/*
-+		 * Keystone PCI controller has a h/w limitation of
-+		 * 256 bytes maximum read request size. It can't handle
-+		 * anything higher than this. So force this limit on
-+		 * all downstream devices
-+		 */
-+		if (pci_match_id(rc_pci_devids, bridge)) {
-+			if (pcie_get_readrq(dev) > 256) {
-+				dev_info(&dev->dev, "limiting mrrs to 256\n");
-+				pcie_set_readrq(dev, 256);
-+			}
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_ENABLE(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_mrrs);
-+
- static int ks_pcie_establish_link(struct keystone_pcie *ks_pcie)
- {
- 	struct pcie_port *pp = &ks_pcie->pp;
--- 
-1.7.9.5
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+
+are available in the git repository at:
+
+  https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/powerdomain-fixes
+
+for you to fetch changes up to 3e6a1c945950140926dd6e2cc667893de0a7fe3b:
+
+  ARM: OMAP4+: PM: Use only valid low power state for CPU hotplug (2014-09-08 11:22:43 -0500)
+
+----------------------------------------------------------------
+Nishanth Menon (7):
+      ARM: OMAP: DRA7: powerdomain data: fix powerdomain powerstate
+      ARM: OMAP5: powerdomain data: fix powerdomain powerstate
+      ARM: OMAP2+: powerdomain: pwrdm_for_each_clkdm iterate only valid clkdms
+      ARM: OMAP2+: powerdomain: introduce logic for finding valid power domain
+      ARM: OMAP4+: PM: Make logic state programmable
+      ARM: OMAP4+: PM: use only valid low power state for suspend
+      ARM: OMAP4+: PM: Use only valid low power state for CPU hotplug
+
+ arch/arm/mach-omap2/omap-mpuss-lowpower.c   |    4 ++
+ arch/arm/mach-omap2/pm44xx.c                |    9 ++-
+ arch/arm/mach-omap2/powerdomain.c           |   79 ++++++++++++++++++++++++++-
+ arch/arm/mach-omap2/powerdomain.h           |    4 ++
+ arch/arm/mach-omap2/powerdomains54xx_data.c |   12 ++--
+ arch/arm/mach-omap2/powerdomains7xx_data.c  |   14 ++---
+ 6 files changed, 106 insertions(+), 16 deletions(-)
+
+Regards,
+Nishanth Menon
