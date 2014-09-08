@@ -1,242 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbaIHXaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:30:22 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:55874 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755009AbaIHXaT (ORCPT
+	id S1755569AbaIHXcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:32:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56347 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755009AbaIHXcH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:30:19 -0400
-Message-ID: <540E3BFF.7080307@hurleysoftware.com>
-Date: Mon, 08 Sep 2014 19:30:07 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 8 Sep 2014 19:32:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,489,1406617200"; 
+   d="scan'208";a="570249843"
+From: "Drokin, Oleg" <oleg.drokin@intel.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Hugues <morisset.hugues@gmail.com>,
+        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
+        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>
+Subject: Re: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
+Thread-Topic: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
+Thread-Index: AQHPy7W3OeWcEqfvREW2FvQYu9Sycpv4WAIA
+Date: Mon, 8 Sep 2014 23:31:41 +0000
+Message-ID: <FB7D4E1C-31A3-4A86-9B3F-C00A59DCF339@intel.com>
+References: <540E27FB.2070206@gmail.com> <540E287D.5090101@gmail.com>
+ <540E28AD.2060607@gmail.com> <540E29B1.6090005@gmail.com>
+ <20140908223853.GN6600@mwanda>
+In-Reply-To: <20140908223853.GN6600@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.252.134.218]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <93382E1E6A7DFA4798FB88AFC858DC51@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <21512.10628.412205.873477@gargle.gargle.HOWL>		 <20140904090952.GW17454@tucnak.redhat.com>		 <540859EC.5000407@hurleysoftware.com>		 <20140904175044.4697aee4@alan.etchedpixels.co.uk>		 <5408C0AB.6050801@hurleysoftware.com>		 <20140905001751.GL5001@linux.vnet.ibm.com>		 <1409883098.5078.14.camel@jarvis.lan>	 <5409243C.4080704@hurleysoftware.com>		 <20140905040645.GO5001@linux.vnet.ibm.com>		 <1410066442.12512.13.camel@jarvis.lan>		 <20140907162146.GK5001@linux.vnet.ibm.com>	 <1410116687.2027.19.camel@jarvis.lan> <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>
-In-Reply-To: <1410155407.2027.29.camel@jarvis.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 01:50 AM, James Bottomley wrote:
-> On Sun, 2014-09-07 at 16:41 -0400, Peter Hurley wrote:
->> On 09/07/2014 03:04 PM, James Bottomley wrote:
->>> On Sun, 2014-09-07 at 09:21 -0700, Paul E. McKenney wrote:
->>>> On Sat, Sep 06, 2014 at 10:07:22PM -0700, James Bottomley wrote:
->>>>> On Thu, 2014-09-04 at 21:06 -0700, Paul E. McKenney wrote:
->>>>>> On Thu, Sep 04, 2014 at 10:47:24PM -0400, Peter Hurley wrote:
->>>>>>> Hi James,
->>>>>>>
->>>>>>> On 09/04/2014 10:11 PM, James Bottomley wrote:
->>>>>>>> On Thu, 2014-09-04 at 17:17 -0700, Paul E. McKenney wrote:
->>>>>>>>> +And there are anti-guarantees:
->>>>>>>>> +
->>>>>>>>> + (*) These guarantees do not apply to bitfields, because compilers often
->>>>>>>>> +     generate code to modify these using non-atomic read-modify-write
->>>>>>>>> +     sequences.  Do not attempt to use bitfields to synchronize parallel
->>>>>>>>> +     algorithms.
->>>>>>>>> +
->>>>>>>>> + (*) Even in cases where bitfields are protected by locks, all fields
->>>>>>>>> +     in a given bitfield must be protected by one lock.  If two fields
->>>>>>>>> +     in a given bitfield are protected by different locks, the compiler's
->>>>>>>>> +     non-atomic read-modify-write sequences can cause an update to one
->>>>>>>>> +     field to corrupt the value of an adjacent field.
->>>>>>>>> +
->>>>>>>>> + (*) These guarantees apply only to properly aligned and sized scalar
->>>>>>>>> +     variables.  "Properly sized" currently means "int" and "long",
->>>>>>>>> +     because some CPU families do not support loads and stores of
->>>>>>>>> +     other sizes.  ("Some CPU families" is currently believed to
->>>>>>>>> +     be only Alpha 21064.  If this is actually the case, a different
->>>>>>>>> +     non-guarantee is likely to be formulated.)
->>>>>>>>
->>>>>>>> This is a bit unclear.  Presumably you're talking about definiteness of
->>>>>>>> the outcome (as in what's seen after multiple stores to the same
->>>>>>>> variable).
->>>>>>>
->>>>>>> No, the last conditions refers to adjacent byte stores from different
->>>>>>> cpu contexts (either interrupt or SMP).
->>>>>>>
->>>>>>>> The guarantees are only for natural width on Parisc as well,
->>>>>>>> so you would get a mess if you did byte stores to adjacent memory
->>>>>>>> locations.
->>>>>>>
->>>>>>> For a simple test like:
->>>>>>>
->>>>>>> struct x {
->>>>>>> 	long a;
->>>>>>> 	char b;
->>>>>>> 	char c;
->>>>>>> 	char d;
->>>>>>> 	char e;
->>>>>>> };
->>>>>>>
->>>>>>> void store_bc(struct x *p) {
->>>>>>> 	p->b = 1;
->>>>>>> 	p->c = 2;
->>>>>>> }
->>>>>>>
->>>>>>> on parisc, gcc generates separate byte stores
->>>>>>>
->>>>>>> void store_bc(struct x *p) {
->>>>>>>    0:	34 1c 00 02 	ldi 1,ret0
->>>>>>>    4:	0f 5c 12 08 	stb ret0,4(r26)
->>>>>>>    8:	34 1c 00 04 	ldi 2,ret0
->>>>>>>    c:	e8 40 c0 00 	bv r0(rp)
->>>>>>>   10:	0f 5c 12 0a 	stb ret0,5(r26)
->>>>>>>
->>>>>>> which appears to confirm that on parisc adjacent byte data
->>>>>>> is safe from corruption by concurrent cpu updates; that is,
->>>>>>>
->>>>>>> CPU 0                | CPU 1
->>>>>>>                      |
->>>>>>> p->b = 1             | p->c = 2
->>>>>>>                      |
->>>>>>>
->>>>>>> will result in p->b == 1 && p->c == 2 (assume both values
->>>>>>> were 0 before the call to store_bc()).
->>>>>>
->>>>>> What Peter said.  I would ask for suggestions for better wording, but
->>>>>> I would much rather be able to say that single-byte reads and writes
->>>>>> are atomic and that aligned-short reads and writes are also atomic.
->>>>>>
->>>>>> Thus far, it looks like we lose only very old Alpha systems, so unless
->>>>>> I hear otherwise, I update my patch to outlaw these very old systems.
->>>>>
->>>>> This isn't universally true according to the architecture manual.  The
->>>>> PARISC CPU can make byte to long word stores atomic against the memory
->>>>> bus but not against the I/O bus for instance.  Atomicity is a property
->>>>> of the underlying substrate, not of the CPU.  Implying that atomicity is
->>>>> a CPU property is incorrect.
->>
->> To go back to this briefly, while it's true that atomicity is not
->> a CPU property, atomicity is not possible if the CPU is not cooperating.
+Thanks!
+
+Actually, I do't think this function is useful on the client.
+>From the name of it, it would have been used in the server code, but even there it was recently removed as I now see.
+
+I'll submit a removal patch.
+
+On Sep 8, 2014, at 6:38 PM, Dan Carpenter wrote:
+
+> On Tue, Sep 09, 2014 at 12:12:01AM +0200, Hugues wrote:
+>> Fix potential buffer underflow
+>> 
+>> When the string 'name' start with a '-' ptr == name and so --ptr will
+>> underflow, this patch corrected this by checking ptr before decrementing.
 > 
-> You mean if it doesn't have the bus logic to emit?  Like ia32 mostly
-> can't do 64 bit writes ... sure.
-
-Yeah, or Alphas that do rmw for byte storage.
-
->>>> OK, fair point.
->>>>
->>>> But are there in-use-for-Linux PARISC memory fabrics (for normal memory,
->>>> not I/O) that do not support single-byte and double-byte stores?
->>>
->>> For aligned access, I believe that's always the case for the memory bus
->>> (on both 32 and 64 bit systems).  However, it only applies to machine
->>> instruction loads and stores of the same width..  If you mix the widths
->>> on the loads and stores, all bets are off.  That means you have to
->>> beware of the gcc penchant for coalescing loads and stores: if it sees
->>> two adjacent byte stores it can coalesce them into a short store
->>> instead ... that screws up the atomicity guarantees.
->>
->> Two things: I think that gcc has given up on combining adjacent writes,
->> perhaps because unaligned writes on some arches are prohibitive, so
->> whatever minor optimization was believed to be gained was quickly lost,
->> multi-fold. (Although this might not be the reason since one would
->> expect that gcc would know the alignment of the promoted store).
+> Good eye.  Please fix up the changelog and send it inline etc and
+> resend.  I've added Oleg and Andreas to the CC list so that this doesn't
+> get lost.
 > 
-> Um, gcc assumes architecturally correct alignment; that's why it pads
-> structures.  Only when accessing packed structures will it use the
-> lowest unit load/store.
+> regards,
+> dan carpenter
 > 
-> if you have a struct { char a, char b }; and load first a then b with a
-> constant gcc will obligingly optimise to a short store.
-
-Um, please re-look at the test above. The exact test you describe is
-coded above and compiled with gcc 4.6.3 cross-compiler for parisc using
-the kernel compiler options.
-
-In the generated code, please note the _absence_ of a combined write
-to two adjacent byte stores.
-
-
->> But additionally, even if gcc combines adjacent writes _that are part
->> of the program flow_ then I believe the situation is no worse than
->> would otherwise exist.
->>
->> For instance, given the following:
->>
->> struct x {
->> 	spinlock_t lock;
->> 	long a;
->> 	byte b;
->> 	byte c;
->> };
->>
->> void locked_store_b(struct x *p)
->> {
->> 	spin_lock(&p->lock);
->> 	p->b = 1;
->> 	spin_unlock(&p->lock);
->> 	p->c = 2;
->> }
->>
->> Granted, the author probably expects ordered writes of
->> 	STORE B
->> 	STORE C
->> but that's not guaranteed because there is no memory barrier
->> ordering B before C.
+>>> From 5786040323bd1dc3149fb4afbea9f01e2bf4cfdf Mon Sep 17 00:00:00 2001
+>> From: Hugues Morisset <morisset.hugues@gmail.com>
+>> Date: Mon, 8 Sep 2014 22:59:04 +0200
+>> Subject: [PATCH 4/4] staging: lustre: Fix potential buffer underflow
+>> 
+>> Signed-off-by: Hugues Morisset <morisset.hugues@gmail.com>
+>> ---
+>> drivers/staging/lustre/lustre/include/obd.h | 7 ++++++-
+>> 1 file changed, 6 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/drivers/staging/lustre/lustre/include/obd.h b/drivers/staging/lustre/lustre/include/obd.h
+>> index 409eae6..bb67e40 100644
+>> --- a/drivers/staging/lustre/lustre/include/obd.h
+>> +++ b/drivers/staging/lustre/lustre/include/obd.h
+>> @@ -677,7 +677,12 @@ static inline int is_osp_on_mdt(char *name)
+>> 	if (strncmp(ptr + 1, "MDT", 3) != 0)
+>> 		return 0;
+>> 
+>> -	while (*(--ptr) != '-' && ptr != name);
+>> +	if (ptr == name)
+>> +		return 0;
+>> +
+>> +	--ptr;
+>> +	while (ptr != '-' && ptr != name)
+>> +		--ptr;
+>> 
+>> 	if (ptr == name)
+>> 		return 0;
+>> -- 
+>> 2.1.0
+>> 
 > 
-> Yes, there is: loads and stores may not migrate into or out of critical
-> sections.
-
-That's a common misconception.
-
-The processor is free to re-order this to:
-
-	STORE C
-	STORE B
-	UNLOCK
-
-That's because the unlock() only guarantees that:
-
-Stores before the unlock in program order are guaranteed to complete
-before the unlock completes. Stores after the unlock _may_ complete
-before the unlock completes.
-
-My point was that even if compiler barriers had the same semantics
-as memory barriers, the situation would be no worse. That is, code
-that is sensitive to memory barriers (like the example I gave above)
-would merely have the same fragility with one-way compiler barriers
-(with respect to the compiler combining writes).
-
-That's what I meant by "no worse than would otherwise exist".
-
->> I see no problem with gcc write-combining in the absence of
->> memory barriers (as long as alignment is still respected,
->> ie., the size-promoted write is still naturally aligned). The
->> combined write is still atomic.
+>> _______________________________________________
+>> devel mailing list
+>> devel@linuxdriverproject.org
+>> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
 > 
-> Actual alignment is pretty irrelevant.  That's why all architectures
-> which require alignment also have to implement misaligned traps ... this
-> is a fundamental requirement of the networking code, for instance.
-> 
-> The main problem is gcc thinking there's a misalignment (or a packed
-> structure).  That causes splitting of loads and stores and that destroys
-> atomicity.
-
-Yeah, the extra requirement I added is basically nonsense, since the
-only issue is what instructions the compiler is emitting. So if compiler
-thinks the alignment is natural and combines the writes -- ok. If the
-compiler thinks the alignment is off and doesn't combine the writes --
-also ok.
-
-Regards,
-Peter Hurley
 
