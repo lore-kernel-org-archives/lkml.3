@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654AbaIHPjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:39:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10614 "EHLO mx1.redhat.com"
+	id S1754680AbaIHPjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:39:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46255 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421AbaIHPi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:38:59 -0400
+	id S1754231AbaIHPjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:39:12 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 10/13] PKCS#7: Handle PKCS#7 messages that contain no X.509
- certs
+Subject: [PATCH 11/13] PKCS#7: Allow detached data to be supplied for
+ signature checking purposes
 From: David Howells <dhowells@redhat.com>
 To: rusty@rustcorp.com.au
 Cc: keyrings@linux-nfs.org, jwboyer@redhat.com, linux-kernel@vger.kernel.org,
         dhowells@redhat.com, linux-security-module@vger.kernel.org,
         pjones@redhat.com, vgoyal@redhat.com
-Date: Mon, 08 Sep 2014 16:38:51 +0100
-Message-ID: <20140908153851.28301.32053.stgit@warthog.procyon.org.uk>
+Date: Mon, 08 Sep 2014 16:39:02 +0100
+Message-ID: <20140908153902.28301.53297.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140908153704.28301.41578.stgit@warthog.procyon.org.uk>
 References: <20140908153704.28301.41578.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -29,138 +29,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The X.509 certificate list in a PKCS#7 message is optional.  To save space, we
-can omit the inclusion of any X.509 certificates if we are sure that we can
-look the relevant public key up by the serial number and issuer given in a
-signed info block.
-
-This also supports use of a signed info block for which we don't have a
-matching X.509 cert giving in a populated certificate list.
+It is possible for a PKCS#7 message to have detached data.  However, to verify
+the signatures on a PKCS#7 message, we have to be able to digest the data.
+Provide a function to supply that data.  An error is given if the PKCS#7
+message included embedded data.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/pkcs7_trust.c  |   48 +++++++++++++++++++++++++--------
- crypto/asymmetric_keys/pkcs7_verify.c |   16 ++++++++---
- 2 files changed, 47 insertions(+), 17 deletions(-)
+ crypto/asymmetric_keys/pkcs7_verify.c |   26 ++++++++++++++++++++++++++
+ include/crypto/pkcs7.h                |    3 +++
+ 2 files changed, 29 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
-index aa3da326bcdb..21c7ca74f5ba 100644
---- a/crypto/asymmetric_keys/pkcs7_trust.c
-+++ b/crypto/asymmetric_keys/pkcs7_trust.c
-@@ -55,13 +55,16 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 		 * keys.
- 		 */
- 		key = x509_request_asymmetric_key(trust_keyring, x509->id);
--		if (!IS_ERR(key))
-+		if (!IS_ERR(key)) {
- 			/* One of the X.509 certificates in the PKCS#7 message
- 			 * is apparently the same as one we already trust.
- 			 * Verify that the trusted variant can also validate
- 			 * the signature on the descendant.
- 			 */
-+			pr_devel("sinfo %u: Cert %u as key %x\n",
-+				 sinfo->index, x509->index, key_serial(key));
- 			goto matched;
-+		}
- 		if (key == ERR_PTR(-ENOMEM))
- 			return -ENOMEM;
- 
-@@ -81,15 +84,34 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 	/* No match - see if the root certificate has a signer amongst the
- 	 * trusted keys.
- 	 */
--	if (!last || !last->issuer || !last->authority) {
--		kleave(" = -ENOKEY [no backref]");
--		return -ENOKEY;
-+	if (last && last->authority) {
-+		key = x509_request_asymmetric_key(trust_keyring, last->authority);
-+		if (!IS_ERR(key)) {
-+			pr_devel("sinfo %u: Root cert %u signer is key %x\n",
-+				 sinfo->index, x509->index, key_serial(key));
-+			x509 = last;
-+			goto matched;
-+		}
-+		if (PTR_ERR(key) != -ENOKEY)
-+			return PTR_ERR(key);
- 	}
- 
--	key = x509_request_asymmetric_key(trust_keyring, last->authority);
--	if (IS_ERR(key))
--		return PTR_ERR(key) == -ENOMEM ? -ENOMEM : -ENOKEY;
--	x509 = last;
-+	/* As a last resort, see if we have a trusted public key that matches
-+	 * the signed info directly.
-+	 */
-+	key = x509_request_asymmetric_key(trust_keyring,
-+					  sinfo->signing_cert_id);
-+	if (!IS_ERR(key)) {
-+		pr_devel("sinfo %u: Direct signer is key %x\n",
-+			 sinfo->index, key_serial(key));
-+		x509 = NULL;
-+		goto matched;
-+	}
-+	if (PTR_ERR(key) != -ENOKEY)
-+		return PTR_ERR(key);
-+
-+	kleave(" = -ENOKEY [no backref]");
-+	return -ENOKEY;
- 
- matched:
- 	ret = verify_signature(key, sig);
-@@ -103,10 +125,12 @@ matched:
- 	}
- 
- verified:
--	x509->verified = true;
--	for (p = sinfo->signer; p != x509; p = p->signer) {
--		p->verified = true;
--		p->trusted = trusted;
-+	if (x509) {
-+		x509->verified = true;
-+		for (p = sinfo->signer; p != x509; p = p->signer) {
-+			p->verified = true;
-+			p->trusted = trusted;
-+		}
- 	}
- 	sinfo->trusted = trusted;
- 	kleave(" = 0");
 diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 73a75a5a0b98..b3059f2ad0f7 100644
+index b3059f2ad0f7..f7897272a5b2 100644
 --- a/crypto/asymmetric_keys/pkcs7_verify.c
 +++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -154,10 +154,13 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
- 		return 0;
- 	}
- 
--	pr_warn("Sig %u: Issuing X.509 cert not found (#%*ph)\n",
--		sinfo->index,
--		sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
--	return -ENOKEY;
-+	/* The relevant X.509 cert isn't found here, but it might be found in
-+	 * the trust keyring.
-+	 */
-+	pr_debug("Sig %u: Issuing X.509 cert not found (#%*phN)\n",
-+		 sinfo->index,
-+		 sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
-+	return 0;
+@@ -362,3 +362,29 @@ int pkcs7_verify(struct pkcs7_message *pkcs7)
+ 	return enopkg;
  }
- 
- /*
-@@ -277,11 +280,14 @@ static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
- 	if (ret < 0)
- 		return ret;
- 
--	/* Find the key for the signature */
-+	/* Find the key for the signature if there is one */
- 	ret = pkcs7_find_key(pkcs7, sinfo);
- 	if (ret < 0)
- 		return ret;
- 
-+	if (!sinfo->signer)
-+		return 0;
+ EXPORT_SYMBOL_GPL(pkcs7_verify);
 +
- 	pr_devel("Using X.509[%u] for sig %u\n",
- 		 sinfo->signer->index, sinfo->index);
- 
++/**
++ * pkcs7_supply_detached_data - Supply the data needed to verify a PKCS#7 message
++ * @pkcs7: The PKCS#7 message
++ * @data: The data to be verified
++ * @datalen: The amount of data
++ *
++ * Supply the detached data needed to verify a PKCS#7 message.  Note that no
++ * attempt to retain/pin the data is made.  That is left to the caller.  The
++ * data will not be modified by pkcs7_verify() and will not be freed when the
++ * PKCS#7 message is freed.
++ *
++ * Returns -EINVAL if data is already supplied in the message, 0 otherwise.
++ */
++int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
++			       const void *data, size_t datalen)
++{
++	if (pkcs7->data) {
++		pr_debug("Data already supplied\n");
++		return -EINVAL;
++	}
++	pkcs7->data = data;
++	pkcs7->data_len = datalen;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pkcs7_supply_detached_data);
+diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
+index 691c79172a26..e235ab4957ee 100644
+--- a/include/crypto/pkcs7.h
++++ b/include/crypto/pkcs7.h
+@@ -34,3 +34,6 @@ extern int pkcs7_validate_trust(struct pkcs7_message *pkcs7,
+  * pkcs7_verify.c
+  */
+ extern int pkcs7_verify(struct pkcs7_message *pkcs7);
++
++extern int pkcs7_supply_detached_data(struct pkcs7_message *pkcs7,
++				      const void *data, size_t datalen);
 
