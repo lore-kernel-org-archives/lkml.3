@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaIHPvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:51:21 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38676 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752986AbaIHPvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:51:20 -0400
-Message-ID: <1410191478.2027.28.camel@jarvis.lan>
-Subject: Re: WARNING in block layer triggered in 3.17-rc3
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
-Cc: Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Sep 2014 08:51:18 -0700
-In-Reply-To: <Pine.LNX.4.44L0.1409081047420.1433-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1409081047420.1433-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754428AbaIHPvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:51:52 -0400
+Received: from ozlabs.org ([103.22.144.67]:44266 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753681AbaIHPvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:51:51 -0400
+Date: Tue, 9 Sep 2014 01:51:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Sep 8
+Message-ID: <20140909015143.0eb18145@canb.auug.org.au>
+In-Reply-To: <20140908195309.1d883a30@canb.auug.org.au>
+References: <20140908195309.1d883a30@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/x.uMqznq36WNy0QW5yLa0xq"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-08 at 10:51 -0400, Alan Stern wrote:
-> On Sun, 7 Sep 2014, Shirish Pargaonkar wrote:
-> 
-> > I think the problem is, when a gendisk is detached, its request queue
-> > is not put in bypass mode
-> > cause when it is re-attached, code tries to put it out of bypass mode,
-> > hence the warning.
-> > 
-> > So either of these should work, I have not tested it, just coded it up.
-> 
-> I'm pretty sure that both of your solutions are wrong.
-> 
-> Jens and James, it appears the problem is in blk_register_queue().  The 
-> code does this:
-> 
-> 	/*
-> 	 * Initialization must be complete by now.  Finish the initial
-> 	 * bypass from queue allocation.
-> 	 */
-> 	queue_flag_set_unlocked(QUEUE_FLAG_INIT_DONE, q);
-> 	blk_queue_bypass_end(q);
-> 
-> This doesn't work well if the queue is unregistered later and then
-> registered again -- which is what happens when the sd driver is unbound
-> from a device and then bound again.  It looks like the code should be:
-> 
-> 	if (!queue_flag_test_and_set(QUEUE_FLAG_INIT_DONE, q))
-> 		blk_queue_bypass_end(q);
-> 
-> Do you agree?  If so, I'll send in patch.
+--Sig_/x.uMqznq36WNy0QW5yLa0xq
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This looks like a nasty hack.  In theory the QUEUE_FLAG_INIT_DONE should
-be unset on blk_unregister_queue() to match the teardown; it's only
-accident it isn't.  del_gendisk() in sd_remove() is supposed to tear a
-lot of queue stuff down.  However, the problem looks to be the mismatch
-in assumptions.  The way SCSI binding works, the queue belongs to the
-underlying device so we always assumed we could add and remove upper
-drivers ... there's even a case for this if you don't want a disk but
-want to attach sg instead.  However, it's not the common use case.
+Hi all,
 
-The block model now seems to tie a lot of queue set up and teardown to
-add and remove of the gendisk which is counter to these assumptions.  As
-long as we can go from del->add without calling the ->release function
-on the queue, everything works.  Most of the operations seem
-symmetrical, so perhaps this is only the bypass doing too much.
+On Mon, 8 Sep 2014 19:53:09 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> Changes since 20140905:
 
-The ideal is that disk teardown only does as much as disk setup, so the
-mid layer can still use the underlying queue on the device.
+In my haste to get home for dinner, I forgot to thank Mark Brown for
+stepping in again last week - the break was much appreciated.
 
-This bypass code is not very well documented.  However, your problem
-seems to be caused by this change:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-commit 776687bce42bb22cce48b5da950e48ebbb9a948f
-Author: Tejun Heo <tj@kernel.org>
-Date:   Tue Jul 1 10:29:17 2014 -0600
+--Sig_/x.uMqznq36WNy0QW5yLa0xq
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-    block, blk-mq: draining can't be skipped even if bypass_depth was
-non-zero
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Your hack seems to indicate that this doesn't work on the add->del->add
-transtion of a gendisk.
+iQIcBAEBCAAGBQJUDdCVAAoJEMDTa8Ir7ZwVwhYP/3gaHcCIzegZsqeUFcRgQ8uC
+FDc5RXNhfK6kYyIGaJNrDVa4l9Bzd2JaELXW/r+sh2EW2udqxITZyrPOjL5/L+mC
+HLSC77jVFzX724/4kNCA366Yfgs/UaTxC2ZFtGDjA0QQXAxY9rgbm7h28ddRBpSb
+x6nxJ79kOKool2OjTMvA7zOKUFd/qmbEpG8D+izgZ27CD9/3Z/pYHolWWumDPhRK
+Cbp9OBL51s/VpSJdw8LjZwH5Ty5dfcBV1epPbibHkFpkxokfdFhwzN2/u6miyClV
+xwfR706hA8/SJip4VYuxrr2TpVzSp0NdAK3xj1u94OGBEBOBQxZqDRxblIlghiWY
+r1uCoYvhMl7Lq9jTBte3duPIPNFIfHx9YkuDHmFLH0r0jyTJZGEM4tAan55YSS4O
+E8IXJxdYLI++C3kxpkdKQE2WbJ419DbZ/6uZ/A9sfENl4aQBPJK/KxxmZ7ui4U6a
+Pkr736qZxsLQwGtCoxvrD95HQohvyLY9ja+dXqnHEFClKcMiIJiA9B4LVddp3VPt
+UKvPtPy1SmOMJ0v/kcMdJ4125YWeojtOWioZLhhsT73HXvvv2RfNtYIb5wIScGD6
+spC2YgZrL2AjFZvZgDgstZZJbhHOiFQKv8b0J/tt7PfGwpFfk5FUo5qnbCZZKeyX
+FkR2Tu2rObivBjsij2tt
+=6cCa
+-----END PGP SIGNATURE-----
 
-James
-
-
-
+--Sig_/x.uMqznq36WNy0QW5yLa0xq--
