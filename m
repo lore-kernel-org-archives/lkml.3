@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaIHP5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:57:07 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:53751 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956AbaIHP5F (ORCPT
+	id S1754578AbaIHP5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:57:33 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63654 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531AbaIHP5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:57:05 -0400
-Message-ID: <540DD1D2.8060206@linaro.org>
-Date: Mon, 08 Sep 2014 16:57:06 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Mon, 8 Sep 2014 11:57:31 -0400
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 3/5] arm: fiq: Replace default FIQ handler
-References: <1409931198-22600-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-4-git-send-email-daniel.thompson@linaro.org> <alpine.LFD.2.11.1409081140360.16533@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1409081140360.16533@knanqh.ubzr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140908144447.GD9560@localhost>
+References: <1409930279-1382-1-git-send-email-octavian.purdila@intel.com>
+	<1409930279-1382-3-git-send-email-octavian.purdila@intel.com>
+	<20140908144447.GD9560@localhost>
+Date: Mon, 8 Sep 2014 18:57:29 +0300
+Message-ID: <CAE1zot+R25OAu9d9WB2tOFqO9J9m-Vwo25msn6TD2HxseBTUzQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] i2c: add support for Diolan DLN-2 USB-I2C adapter
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/14 16:49, Nicolas Pitre wrote:
-> On Mon, 8 Sep 2014, Daniel Thompson wrote:
-> 
->> +@
->> +@ Taking a FIQ in abort mode is similar to taking a FIQ in SVC mode
->> +@ and reuses the same macros. However in abort mode we must also
->> +@ save/restore lr_abt and spsr_abt to make nested aborts safe.
->> +@
->> +	.align 5
->> +__fiq_abt:
->> +	svc_entry 0, 0
->> +
->> + ARM(	msr	cpsr_c, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
->> + THUMB( mov	r0, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
->> + THUMB( msr	cpsr_c, r0 )
->> +	mov	r1, lr		@ Save lr_abt
->> +	mrs	r2, spsr	@ Save spsr_abt, abort is now safe
->> + ARM(	msr	cpsr_c, #SVC_MODE | PSR_I_BIT | PSR_F_BIT )
->> + THUMB( mov	r0, #SVC_MODE | PSR_I_BIT | PSR_F_BIT )
->> + THUMB( msr	cpsr_c, r0 )
->> +	push	{r1 - r2}
-> 
-> 	stmfd sp!, {r1 - r2}
-> 
->> +
->> +	sub	r0, sp, #8			@ struct pt_regs *regs
->> +	bl	handle_fiq_as_nmi
->> +
->> +	pop	{r1 - r2}
-> 
-> 	ldmfd sp!, {r1 - r2}
-> 
-> ... so that old binutils we still accept to compile the kernel (in ARM 
-> mode) are happy.
+On Mon, Sep 8, 2014 at 5:44 PM, Johan Hovold <johan@kernel.org> wrote:
 
-Will do.
+<snip>
+
+Hi Johan,
+
+Again, thanks for the detailed review, I am addressing your review
+comments as we speak. Some questions below.
+
+<snip>
+
+> > +     int ret, len;
+> > +     struct tx_data {
+> > +             u8 port;
+> > +             u8 addr;
+> > +             u8 mem_addr_len;
+> > +             __le32 mem_addr;
+> > +             __le16 buf_len;
+> > +             u8 buf[DLN2_I2C_MAX_XFER_SIZE];
+> > +     } __packed tx;
+>
+> Allocate these buffers dynamically (possibly at probe).
+>
+
+I double checked this, and DLN2_I2C_MAX_XFER_SIZE should actually be <
+64 as the USB endpoint configuration max packet size is 64. In this
+case, can we keep it on the stack?
+
+<snip>
+
+> > +     int ret, buf_len, rx_len = sizeof(rx);
+>
+> Again, one declaration per line.
+>
+
+AFAICS there are many places where declaration on the same line
+(initialization included) are used. When did this became a coding
+style issue?
 
 
-> Otherwise...
-> 
-> Acked-by: Nicolas Pitre <nico@linaro.org>
-
-Thanks :-)
-
+Thanks,
+Tavi
