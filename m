@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaIHOE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:04:26 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40469 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129AbaIHOEW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:04:22 -0400
-Date: Mon, 8 Sep 2014 15:04:15 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10] arm64: Add architectural support for PCIe
-Message-ID: <20140908140415.GL27864@e106497-lin.cambridge.arm.com>
-References: <1410184549-17690-1-git-send-email-Liviu.Dudau@arm.com>
- <1410184549-17690-2-git-send-email-Liviu.Dudau@arm.com>
- <20140908140129.GE22717@arm.com>
+	id S1754047AbaIHOEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:04:44 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:3921 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753882AbaIHOEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:04:43 -0400
+X-IronPort-AV: E=Sophos;i="5.04,486,1406592000"; 
+   d="scan'208";a="169328213"
+Message-ID: <540DB6B0.9000503@citrix.com>
+Date: Mon, 8 Sep 2014 15:01:20 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140908140129.GE22717@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Sep 2014 14:04:16.0958 (UTC) FILETIME=[C71E9DE0:01CFCB6D]
-X-MC-Unique: 114090815041904701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] xen/balloon: Remove unused pr_fmt() macro
+References: <1410182638-18820-1-git-send-email-daniel.kiper@oracle.com> <540DAE71.4060902@citrix.com> <20140908135811.GI3459@olila.local.net-space.pl>
+In-Reply-To: <20140908135811.GI3459@olila.local.net-space.pl>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 03:01:30PM +0100, Catalin Marinas wrote:
-> On Mon, Sep 08, 2014 at 02:55:49PM +0100, Liviu Dudau wrote:
-> > Use the generic PCI domain and OF functions
-> > to provide support for PCI Express on arm64.
-> > 
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > [Generic PCI domain support]
-> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+On 08/09/14 14:58, Daniel Kiper wrote:
+> On Mon, Sep 08, 2014 at 02:26:09PM +0100, David Vrabel wrote:
+>> On 08/09/14 14:23, Daniel Kiper wrote:
+>>> Remove unused pr_fmt() macro. Additionally, remove surplus empty
+>>> lines which left after earlier various fixes and cleanups.
+>>
+>> A patch in the 3.17 queue uses this.
 > 
-> Minor detail: when have I signed this patch off? I'm not the author
-> (maybe bits of it but I think most of it is yours). However, you can
-> add:
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> Hmmm... Which one? I am not able to find anything relevant in xen/tip.
+> Am I missing something?
 
-I've took the patch from here: https://lkml.org/lkml/2014/7/14/529
+The balloon driver already uses it.  It is used in the pr_info() and
+pr_warn() etc. macros.
 
-It does have your Signed-off-by, all I did was split it up into the
-relevant chunks.
-
-Best regards,
-Liviu
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+David
