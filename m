@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaIHKAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 06:00:34 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:35857 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989AbaIHKAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 06:00:33 -0400
-Date: Mon, 8 Sep 2014 15:30:19 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jiri Kosina <trivial@kernel.org>, Huang Shijie <shijie8@gmail.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] mtd: denali: fix indentations and other trivial
- things
-Message-ID: <20140908100019.GA3840@sudip-PC>
-References: <1410163813-31783-8-git-send-email-yamada.m@jp.panasonic.com>
- <20140908083920.GD5361@thin>
- <20140908181447.C428.AA925319@jp.panasonic.com>
+	id S1753248AbaIHKBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 06:01:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56137 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752640AbaIHKBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 06:01:15 -0400
+Date: Mon, 8 Sep 2014 12:00:19 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/9] perf: Deny optimized switch for events read by
+ PERF_SAMPLE_READ
+Message-ID: <20140908100018.GC1172@krava.brq.redhat.com>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-3-git-send-email-jolsa@kernel.org>
+ <20140902105244.GI5806@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140908181447.C428.AA925319@jp.panasonic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140902105244.GI5806@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 06:14:48PM +0900, Masahiro Yamada wrote:
-> Hi Josh,
-> 
-> 
-> On Mon, 8 Sep 2014 01:39:20 -0700
-> Josh Triplett <josh@joshtriplett.org> wrote:
-> 
-> > On Mon, Sep 08, 2014 at 05:10:13PM +0900, Masahiro Yamada wrote:
-> > > @@ -406,9 +404,9 @@ static void get_hynix_nand_para(struct denali_nand_info *denali,
-> > >  		break;
-> > >  	default:
-> > >  		dev_warn(denali->dev,
-> > > -			"Spectra: Unknown Hynix NAND (Device ID: 0x%x)."
-> > > -			"Will use default parameter values instead.\n",
-> > > -			device_id);
-> > > +			 "Spectra: Unknown Hynix NAND (Device ID: 0x%x)."
-> > > +			 "Will use default parameter values instead.\n",
-> > > +			 device_id);
+On Tue, Sep 02, 2014 at 12:52:44PM +0200, Peter Zijlstra wrote:
+> On Mon, Aug 25, 2014 at 04:45:36PM +0200, Jiri Olsa wrote:
+> > The optimized task context switch for cloned perf events just
+> > swaps whole perf event contexts (of current and next process)
+> > if it finds them suitable. Events from the 'current' context
+> > will now measure data of the 'next' context and vice versa.
 > > 
-> > Please join quoted strings into a single line.
+> > This is ok for cases where we are not directly interested in
+> > the event->count value of separate child events, like:
+> >   - standard sampling, where we take 'period' value for the
+> >     event count
+> >   - counting, where we accumulate all events (children)
+> >     into a single count value
 > > 
-> > > -		pr_err("Your NAND chip OOB is not large enough to \
-> > > -				contain 8bit ECC correction codes");
-> > > +		pr_err("Your NAND chip OOB is not large enough to "
-> > > +		       "contain 8bit ECC correction codes");
+> > But in case we read event by using the PERF_SAMPLE_READ sample
+> > type, we are interested in direct event->count value measured
+> > in specific task. Switching events within tasks for this kind
+> > of measurements corrupts data.
 > > 
-> > Likewise.
-> > 
+> > Fixing this by setting/unsetting pin_count for perf event context
+> > once cloned event with PERF_SAMPLE_READ read is added/removed.
+> > The pin_count value != 0 makes the context not suitable for
+> > optimized switch.
 > 
-> Thanks for your review, but
-> the quoted strings are too long to be joined into a single line.
-> (exceed 80 columns)
+> no.. so the value of the counter is the sum of all the inherited events.
+> It doesn't matter if you flip it or not the sum is not affected.
 > 
-These are user-visible strings and they can be more than 80 char.
-If you see CodingStyle document , it is mentioned that :
+> PERF_SAMPLE_READ should return the value.
 
-However, never break user-visible strings such as printk messages, because that breaks the ability to grep for them.
+so I want to be able to do the leader sampling over child processes
 
-thanks
-sudip
+that means:
+  - have event group with sampling leader, and the rest
+    of the group events' periods being read on leader's sample
+    via PERF_SAMPLE_READ sample_type
+  - for each child process created I want it to do the
+    same thing as the parent - sample on leader, read
+    values of other events in group via PERF_SAMPLE_READ
 
-> 
-> Best Regards
-> Masahiro Yamada
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Now, If I let the optimized switch enabled for above config,
+I'll get wrong data, because the period counts of group events
+are local to the child process. Optimized switch will move
+it to another child.
+
+jirka
