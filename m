@@ -1,116 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaIHWcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:32:12 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56837 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaIHWcK (ORCPT
+	id S1755296AbaIHWcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:32:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42925 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190AbaIHWcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:32:10 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19oNtz2xEDXQo4EfLaM9s2z
-Date: Mon, 8 Sep 2014 15:32:05 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL 2/2] ARM: OMAP4+: PRM fixes, DRA7 suspend-to-ram
- support
-Message-ID: <20140908223204.GN3238@atomide.com>
-References: <1410195620-6347-1-git-send-email-nm@ti.com>
- <1410195620-6347-2-git-send-email-nm@ti.com>
+	Mon, 8 Sep 2014 18:32:32 -0400
+Date: Mon, 8 Sep 2014 15:32:27 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Zhang Rui <rui.zhang@intel.com>, Darren Hart <dvhart@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device
+ objects
+Message-ID: <20140908223226.GA5645@vmdeb7>
+References: <5487060.QsgluucUH4@vostro.rjw.lan>
+ <3770704.uNPCcL4EDK@vostro.rjw.lan>
+ <1408807277.3315.43.camel@rzhang1-toshiba>
+ <1786905.chzpd7cfQ3@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410195620-6347-2-git-send-email-nm@ti.com>
+In-Reply-To: <1786905.chzpd7cfQ3@vostro.rjw.lan>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140908 10:02]:
-> Hi Tony,
-> Please pull the following changes.
+On Tue, Sep 09, 2014 at 12:14:04AM +0200, Rafael J. Wysocki wrote:
+> On Saturday, August 23, 2014 11:21:17 PM Zhang Rui wrote:
 > 
-> part 2: "ARM: OMAP3+: PRM: fix up prm_handling"
-> http://marc.info/?l=linux-kernel&m=140871580806186&w=2
-> Status: Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> [cut]
 > 
-> part 3: "ARM: OMAP5+: pdata quirks for pinctrl"
-> http://marc.info/?l=linux-kernel&m=140871598306262&w=2
-> Status: Sending pull based on http://marc.info/?l=linux-kernel&m=140871666506706&w=2 (Acked by Tony, Pulled by Linus W)
+> Darren, would there be any problems if I took the patch below from Rui for 3.18?
 > 
-> part 5: "ARM: OMAP5 / DRA7: Add framework for suspend and cpuidle"
-> http://marc.info/?l=linux-kernel&m=140871637106555&w=2
-> Status: picked up kevin's tested and reviewed-by, dropped cpuidle for this pull
-> 
-> These could go into your tree for the branch  omap-for-v3.18/soc
-> 
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> 
->   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> 
-> are available in the git repository at:
-> 
->   https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/for-omap-soc
 
-Thanks pulling into omap-for-v3.18/soc.
+No objection.
 
-Regards,
+Acked-by: Darren Hart <dvhart@linux.intel.com>
 
-Tony
- 
-> for you to fetch changes up to 628ed4717000789bff827c5799d1aac4c1008541:
+> > 
+> > So I guess the following patch can be upstream candidate, right?
+> > 
+> > From e32c2de37750d622dae6ef9d2f5c448a528a7edb Mon Sep 17 00:00:00 2001
+> > From: Zhang Rui <rui.zhang@intel.com>
+> > Date: Fri, 22 Aug 2014 09:06:10 +0800
+> > Subject: [PATCH] ACPI: remove Fujitsu backlight and hotkey device ID from ACPI
+> >  PNP id list
+> > 
+> > Fujitsu backlight and hotkey devices have ACPI drivers.
+> > The PNP MODULE_DEVICE_TABLE in fujitsu-laptop driver is just used as an
+> > indicator for module autoloading. But this is wrong because what we need is
+> > ACPI module device table instead because the driver is probing ACPI devices.
+> > 
+> > Thus remove those ids from ACPI PNP scan handler list as we don't
+> > have PNP driver for them, and convert the fujitsu-laptop PNP
+> > MODULE_DEVICE_TABLE to ACPI MODULE_DEVICE_TABLE.
+> > 
+> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=81971
+> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > Tested-by: Dirk Griesbach <spamthis@freenet.de>
+> > ---
+> >  drivers/acpi/acpi_pnp.c               |  4 ----
+> >  drivers/platform/x86/fujitsu-laptop.c | 16 +++++++---------
+> >  2 files changed, 7 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+> > index 1f8b204..b193f84 100644
+> > --- a/drivers/acpi/acpi_pnp.c
+> > +++ b/drivers/acpi/acpi_pnp.c
+> > @@ -130,10 +130,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+> >  	{"PNP0401"},		/* ECP Printer Port */
+> >  	/* apple-gmux */
+> >  	{"APP000B"},
+> > -	/* fujitsu-laptop.c */
+> > -	{"FUJ02bf"},
+> > -	{"FUJ02B1"},
+> > -	{"FUJ02E3"},
+> >  	/* system */
+> >  	{"PNP0c02"},		/* General ID for reserving resources */
+> >  	{"PNP0c01"},		/* memory controller */
+> > diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+> > index 87aa28c..2655d4a 100644
+> > --- a/drivers/platform/x86/fujitsu-laptop.c
+> > +++ b/drivers/platform/x86/fujitsu-laptop.c
+> > @@ -1050,6 +1050,13 @@ static struct acpi_driver acpi_fujitsu_hotkey_driver = {
+> >  		},
+> >  };
+> >  
+> > +static const struct acpi_device_id fujitsu_ids[] __used = {
+> > +	{ACPI_FUJITSU_HID, 0},
+> > +	{ACPI_FUJITSU_HOTKEY_HID, 0},
+> > +	{"", 0}
+> > +};
+> > +MODULE_DEVICE_TABLE(acpi, fujitsu_ids);
+> > +
+> >  static int __init fujitsu_init(void)
+> >  {
+> >  	int ret, result, max_brightness;
+> > @@ -1208,12 +1215,3 @@ MODULE_LICENSE("GPL");
+> >  MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1D3:*:cvrS6410:*");
+> >  MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1E6:*:cvrS6420:*");
+> >  MODULE_ALIAS("dmi:*:svnFUJITSU:*:pvr:rvnFUJITSU:rnFJNB19C:*:cvrS7020:*");
+> > -
+> > -static struct pnp_device_id pnp_ids[] __used = {
+> > -	{.id = "FUJ02bf"},
+> > -	{.id = "FUJ02B1"},
+> > -	{.id = "FUJ02E3"},
+> > -	{.id = ""}
+> > -};
+> > -
+> > -MODULE_DEVICE_TABLE(pnp, pnp_ids);
+> > 
 > 
->   ARM: OMAP5: Add hook in SoC initcalls to enable pm initialization (2014-09-08 11:38:43 -0500)
-> 
-> ----------------------------------------------------------------
-> Keerthy (1):
->       ARM: AM437x: use pdata quirks for pinctrl information
-> 
-> Nishanth Menon (8):
->       ARM: OMAP4+: prminst: provide function to find prm_dev instance offset
->       ARM: OMAP4: PRM: use the generic prm_inst to allow logic to be abstracted
->       ARM: OMAP4+: PRM: register interrupt information from DT
->       ARM: OMAP4+: PRM: remove "wkup" event
->       ARM: OMAP4+: PRM: Enable wakeup capability for OMAP5, DRA7
->       ARM: OMAP3+: PRM: register interrupt information from DT
->       ARM: OMAP5: use pdata quirks for pinctrl information
->       ARM: DRA7: use pdata quirks for pinctrl information
-> 
-> Rajendra Nayak (2):
->       ARM: OMAP5 / DRA7: PM: Avoid all SAR saves
->       ARM: OMAP5 / DRA7: Enable CPU RET on suspend
-> 
-> Santosh Shilimkar (6):
->       ARM: OMAP5 / DRA7: PM: Update CPU context register offset
->       ARM: OMAP5 / DRA7: PM: Set MPUSS-EMIF clock-domain static dependency
->       ARM: OMAP5 / DRA7: PM / wakeupgen: Enables ES2 PM mode by default
->       ARM: OMAP5 / DRA7: PM: Enable Mercury retention mode on CPUx powerdomains
->       ARM: OMAP5 / DRA7: PM: Provide a dummy startup function for CPU hotplug
->       ARM: OMAP5: Add hook in SoC initcalls to enable pm initialization
-> 
->  arch/arm/mach-omap2/common.h              |    2 +-
->  arch/arm/mach-omap2/io.c                  |    3 +
->  arch/arm/mach-omap2/omap-mpuss-lowpower.c |  102 ++++++++++++++++++++---------
->  arch/arm/mach-omap2/omap-secure.h         |    1 +
->  arch/arm/mach-omap2/omap-wakeupgen.c      |   20 +++++-
->  arch/arm/mach-omap2/omap-wakeupgen.h      |    1 +
->  arch/arm/mach-omap2/pdata-quirks.c        |   10 +++
->  arch/arm/mach-omap2/pm.h                  |    1 +
->  arch/arm/mach-omap2/pm44xx.c              |   48 ++++++++++++--
->  arch/arm/mach-omap2/prm3xxx.c             |   18 +++++
->  arch/arm/mach-omap2/prm44xx.c             |   90 +++++++++++++++++++++----
->  arch/arm/mach-omap2/prminst44xx.c         |   40 ++++++-----
->  arch/arm/mach-omap2/prminst44xx.h         |    3 +
->  13 files changed, 275 insertions(+), 64 deletions(-)
-> 
-> Regards,
-> Nishanth Menon
+> -- 
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
