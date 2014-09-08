@@ -1,420 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354AbaIHJmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:42:35 -0400
-Received: from mail-bl2on0068.outbound.protection.outlook.com ([65.55.169.68]:58084
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753288AbaIHJj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:39:28 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Subject: [PATCH v3 12/29] nios2: TLB handling
-Date: Mon, 8 Sep 2014 17:22:23 +0800
-Message-ID: <1410168160-3624-13-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+	id S1754368AbaIHJm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:42:59 -0400
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:46810 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754011AbaIHJjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:39:21 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <540D7A18.4030201@smartplayin.com>
+Date: Mon, 08 Sep 2014 15:12:48 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009017)(6009001)(199003)(189002)(22564002)(2201001)(36756003)(44976005)(77156001)(83322001)(50466002)(83072002)(48376002)(85852003)(62966002)(89996001)(104166001)(87936001)(92726001)(92566001)(97736003)(33646002)(88136002)(80022001)(102836001)(81342001)(76176999)(20776003)(85306004)(50986999)(47776003)(21056001)(105596002)(68736004)(107046002)(86362001)(106466001)(81542001)(31966008)(229853001)(15975445006)(76482001)(6806004)(50226001)(15202345003)(74502001)(95666004)(90102001)(74662001)(19580395003)(46102001)(77982001)(93916002)(99396002)(79102001)(84676001)(4396001)(42186005)(19580405001)(87286001)(77096002)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB034;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03283976A6
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-OriginatorOrg: altera.com
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 00/15] Krait clocks + Krait CPUfreq
+References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the TLB maintenance functions.
+Hi Stephen,
+Looks like one patch is missing from v1. Is this removed from v2
+patchset from some reason?
+	ARM: Add Krait L2 register accessor functions
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- arch/nios2/include/asm/tlb.h      |  34 +++++
- arch/nios2/include/asm/tlbflush.h |  46 +++++++
- arch/nios2/mm/tlb.c               | 274 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 354 insertions(+)
- create mode 100644 arch/nios2/include/asm/tlb.h
- create mode 100644 arch/nios2/include/asm/tlbflush.h
- create mode 100644 arch/nios2/mm/tlb.c
+But there are references to this in v2 set and build fails while
+compiling drivers/clk/qcom/clk-krait.c.
 
-diff --git a/arch/nios2/include/asm/tlb.h b/arch/nios2/include/asm/tlb.h
-new file mode 100644
-index 0000000..d3bc648
---- /dev/null
-+++ b/arch/nios2/include/asm/tlb.h
-@@ -0,0 +1,34 @@
-+/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_TLB_H
-+#define _ASM_NIOS2_TLB_H
-+
-+#define tlb_flush(tlb)	flush_tlb_mm((tlb)->mm)
-+
-+extern void set_mmu_pid(unsigned long pid);
-+
-+/*
-+ * NiosII doesn't need any special per-pte or per-vma handling, except
-+ * we need to flush cache for the area to be unmapped.
-+ */
-+#define tlb_start_vma(tlb, vma)					\
-+	do {							\
-+		if (!tlb->fullmm)				\
-+			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
-+	}  while (0)
-+
-+#define tlb_end_vma(tlb, vma)	do { } while (0)
-+#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
-+
-+#include <linux/pagemap.h>
-+#include <asm-generic/tlb.h>
-+
-+#endif /* _ASM_NIOS2_TLB_H */
-diff --git a/arch/nios2/include/asm/tlbflush.h b/arch/nios2/include/asm/tlbflush.h
-new file mode 100644
-index 0000000..e19652f
---- /dev/null
-+++ b/arch/nios2/include/asm/tlbflush.h
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#ifndef _ASM_NIOS2_TLBFLUSH_H
-+#define _ASM_NIOS2_TLBFLUSH_H
-+
-+struct mm_struct;
-+
-+/*
-+ * TLB flushing:
-+ *
-+ *  - flush_tlb_all() flushes all processes TLB entries
-+ *  - flush_tlb_mm(mm) flushes the specified mm context TLB entries
-+ *  - flush_tlb_page(vma, vmaddr) flushes one page
-+ *  - flush_tlb_range(vma, start, end) flushes a range of pages
-+ *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
-+ */
-+extern void flush_tlb_all(void);
-+extern void flush_tlb_mm(struct mm_struct *mm);
-+extern void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-+			    unsigned long end);
-+extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+extern void flush_tlb_one(unsigned long vaddr);
-+
-+static inline void flush_tlb_page(struct vm_area_struct *vma,
-+				unsigned long addr)
-+{
-+	flush_tlb_one(addr);
-+}
-+
-+#endif /* _ASM_NIOS2_TLBFLUSH_H */
-diff --git a/arch/nios2/mm/tlb.c b/arch/nios2/mm/tlb.c
-new file mode 100644
-index 0000000..642b6df
---- /dev/null
-+++ b/arch/nios2/mm/tlb.c
-@@ -0,0 +1,274 @@
-+/*
-+ * Nios2 TLB handling
-+ *
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/pagemap.h>
-+
-+#include <asm/tlb.h>
-+#include <asm/mmu_context.h>
-+#include <asm/pgtable.h>
-+#include <asm/cpuinfo.h>
-+
-+#define TLB_INDEX_MASK		\
-+	((((1UL << (cpuinfo.tlb_ptr_sz - cpuinfo.tlb_num_ways_log2))) - 1) \
-+		<< PAGE_SHIFT)
-+
-+/* Used as illegal PHYS_ADDR for TLB mappings
-+ */
-+#define MAX_PHYS_ADDR 0
-+
-+static void get_misc_and_pid(unsigned long *misc, unsigned long *pid)
-+{
-+	*misc  = RDCTL(CTL_TLBMISC);
-+	*misc &= (TLBMISC_PID | TLBMISC_WAY);
-+	*pid  = *misc & TLBMISC_PID;
-+}
-+
-+/*
-+ * All entries common to a mm share an asid.  To effectively flush these
-+ * entries, we just bump the asid.
-+ */
-+void flush_tlb_mm(struct mm_struct *mm)
-+{
-+	if (current->mm == mm)
-+		flush_tlb_all();
-+	else
-+		memset(&mm->context, 0, sizeof(mm_context_t));
-+}
-+
-+/*
-+ * This one is only used for pages with the global bit set so we don't care
-+ * much about the ASID.
-+ */
-+void flush_tlb_one_pid(unsigned long addr, unsigned long mmu_pid)
-+{
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc;
-+
-+	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
-+
-+	/* remember pid/way until we return. */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+
-+	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
-+
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		unsigned long pteaddr;
-+		unsigned long tlbmisc;
-+		unsigned long pid;
-+
-+		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
-+		WRCTL(CTL_TLBMISC, tlbmisc);
-+		pteaddr = RDCTL(CTL_PTEADDR);
-+		tlbmisc = RDCTL(CTL_TLBMISC);
-+		pid = (tlbmisc >> TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK;
-+		if (((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) &&
-+				pid == mmu_pid) {
-+			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
-+				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
-+				(addr & TLB_INDEX_MASK);
-+			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
-+				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
-+
-+			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
-+			tlbmisc = pid_misc | TLBMISC_WE |
-+				(way << TLBMISC_WAY_SHIFT);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
-+		}
-+	}
-+
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-+			unsigned long end)
-+{
-+	unsigned long mmu_pid = get_pid_from_context(&vma->vm_mm->context);
-+
-+	while (start < end) {
-+		flush_tlb_one_pid(start, mmu_pid);
-+		start += PAGE_SIZE;
-+	}
-+}
-+
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	while (start < end) {
-+		flush_tlb_one(start);
-+		start += PAGE_SIZE;
-+	}
-+}
-+
-+/*
-+ * This one is only used for pages with the global bit set so we don't care
-+ * much about the ASID.
-+ */
-+void flush_tlb_one(unsigned long addr)
-+{
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc;
-+
-+	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
-+
-+	/* remember pid/way until we return. */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+
-+	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
-+
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		unsigned long pteaddr;
-+		unsigned long tlbmisc;
-+
-+		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
-+		WRCTL(CTL_TLBMISC, tlbmisc);
-+		pteaddr = RDCTL(CTL_PTEADDR);
-+		tlbmisc = RDCTL(CTL_TLBMISC);
-+
-+		if ((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) {
-+			unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE +
-+				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
-+				(addr & TLB_INDEX_MASK);
-+
-+			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
-+				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
-+
-+			tlbmisc = pid_misc | TLBMISC_WE |
-+				(way << TLBMISC_WAY_SHIFT);
-+			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
-+		}
-+	}
-+
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void dump_tlb_line(unsigned long line)
-+{
-+	unsigned int way;
-+	unsigned long org_misc;
-+
-+	pr_debug("dump tlb-entries for line=%#lx (addr %08lx)\n", line,
-+		line << (PAGE_SHIFT + cpuinfo.tlb_num_ways_log2));
-+
-+	/* remember pid/way until we return */
-+	org_misc = (RDCTL(CTL_TLBMISC) & (TLBMISC_PID | TLBMISC_WAY));
-+
-+	WRCTL(CTL_PTEADDR, line << 2);
-+
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		unsigned long pteaddr;
-+		unsigned long tlbmisc;
-+		unsigned long tlbacc;
-+
-+		WRCTL(CTL_TLBMISC, TLBMISC_RD | (way << TLBMISC_WAY_SHIFT));
-+		pteaddr = RDCTL(CTL_PTEADDR);
-+		tlbmisc = RDCTL(CTL_TLBMISC);
-+		tlbacc = RDCTL(CTL_TLBACC);
-+
-+		if ((tlbacc << PAGE_SHIFT) != (MAX_PHYS_ADDR & PAGE_MASK)) {
-+			pr_debug("-- way:%02x vpn:0x%08lx phys:0x%08lx pid:0x%02lx flags:%c%c%c%c%c\n",
-+				way,
-+				(pteaddr << (PAGE_SHIFT-2)),
-+				(tlbacc << PAGE_SHIFT),
-+				((tlbmisc >> TLBMISC_PID_SHIFT) &
-+				TLBMISC_PID_MASK),
-+				(tlbacc & _PAGE_READ ? 'r' : '-'),
-+				(tlbacc & _PAGE_WRITE ? 'w' : '-'),
-+				(tlbacc & _PAGE_EXEC ? 'x' : '-'),
-+				(tlbacc & _PAGE_GLOBAL ? 'g' : '-'),
-+				(tlbacc & _PAGE_CACHED ? 'c' : '-'));
-+		}
-+	}
-+
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void dump_tlb(void)
-+{
-+	unsigned int i;
-+	for (i = 0; i < cpuinfo.tlb_num_lines; i++)
-+		dump_tlb_line(i);
-+}
-+
-+void flush_tlb_pid(unsigned long pid)
-+{
-+	unsigned int line;
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc;
-+
-+	/* remember pid/way until we return */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+
-+	for (line = 0; line < cpuinfo.tlb_num_lines; line++) {
-+		WRCTL(CTL_PTEADDR, line << 2);
-+
-+		for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+			unsigned long pteaddr;
-+			unsigned long tlbmisc;
-+			unsigned long tlbacc;
-+
-+			tlbmisc = pid_misc | TLBMISC_RD |
-+				(way << TLBMISC_WAY_SHIFT);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			pteaddr = RDCTL(CTL_PTEADDR);
-+			tlbmisc = RDCTL(CTL_TLBMISC);
-+			tlbacc = RDCTL(CTL_TLBACC);
-+
-+			if (((tlbmisc>>TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK)
-+				== pid) {
-+				tlbmisc = pid_misc | TLBMISC_WE |
-+					(way << TLBMISC_WAY_SHIFT);
-+				WRCTL(CTL_TLBMISC, tlbmisc);
-+				WRCTL(CTL_TLBACC,
-+					(MAX_PHYS_ADDR >> PAGE_SHIFT));
-+			}
-+		}
-+
-+		WRCTL(CTL_TLBMISC, org_misc);
-+	}
-+}
-+
-+void flush_tlb_all(void)
-+{
-+	int i;
-+	unsigned long vaddr = CONFIG_NIOS2_IO_REGION_BASE;
-+	unsigned int way;
-+	unsigned long org_misc, pid_misc, tlbmisc;
-+
-+	/* remember pid/way until we return */
-+	get_misc_and_pid(&org_misc, &pid_misc);
-+	pid_misc |= TLBMISC_WE;
-+
-+	/* Map each TLB entry to physcal address 0 with no-access and a
-+	   bad ptbase */
-+	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
-+		tlbmisc = pid_misc | (way << TLBMISC_WAY_SHIFT);
-+		for (i = 0; i < cpuinfo.tlb_num_lines; i++) {
-+			WRCTL(CTL_PTEADDR, ((vaddr) >> PAGE_SHIFT) << 2);
-+			WRCTL(CTL_TLBMISC, tlbmisc);
-+			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
-+			vaddr += 1UL << 12;
-+		}
-+	}
-+
-+	/* restore pid/way */
-+	WRCTL(CTL_TLBMISC, org_misc);
-+}
-+
-+void set_mmu_pid(unsigned long pid)
-+{
-+	WRCTL(CTL_TLBMISC, (RDCTL(CTL_TLBMISC) & TLBMISC_WAY) |
-+		((pid & TLBMISC_PID_MASK) << TLBMISC_PID_SHIFT));
-+}
--- 
-1.8.2.1
+Thanks and Regards
+Pramod
 
+On Saturday 06 September 2014 04:17 AM, Stephen Boyd wrote:
+> These patches provide cpufreq scaling on devices with Krait CPUs.
+> In Krait CPU designs there's one PLL and two muxes per CPU, allowing
+> us to switch CPU frequencies independently.
+> 
+> 				 secondary
+> 	 +-----+                    +
+> 	 | QSB |-------+------------|\
+> 	 +-----+       |            | |-+
+> 		       |    +-------|/  |
+> 		       |    |       +   |
+> 	 +-----+       |    |           |
+> 	 | PLL |----+-------+           |   primary
+> 	 +-----+    |  |                |     +
+> 		    |  |                +-----|\       +------+
+> 	 +-------+  |  |                      | \      |      |
+> 	 | HFPLL |----------+-----------------|  |-----| CPU0 |
+> 	 +-------+  |  |    |                 |  |     |      |
+> 		    |  |    | +-----+         | /      +------+
+> 		    |  |    +-| / 2 |---------|/
+> 		    |  |      +-----+         +
+> 		    |  |         secondary
+> 		    |  |            +
+> 		    |  +------------|\
+> 		    |               | |-+
+> 		    +---------------|/  |   primary
+> 				    +   |     +
+> 					+-----|\       +------+
+> 	 +-------+                            | \      |      |
+> 	 | HFPLL |----------------------------|  |-----| CPU1 |
+> 	 +-------+          |                 |  |     |      |
+> 			    | +-----+         | /      +------+
+> 			    +-| / 2 |---------|/
+> 			      +-----+         +
+> 
+> To support this in the common clock framework we model the muxes,
+> dividers, and PLLs as different clocks. CPUfreq only interacts
+> with the primary mux (farthest right in the diagram). When CPUfreq
+> sets a rate, the mux code finds the best parent that can provide the rate.
+> Due to the design, QSB and the top PLL are always a fixed rate and thus
+> only support one frequency each. These sources provide the lowest
+> frequencies for the CPUs. The HFPLLs are where we can make the CPU go
+> faster (GHz range). Sometimes we need to run the HFPLL twice as
+> fast and divide it by two to get a particular frequency.
+> 
+> When switching rates we can't leave the CPU clocked by the HFPLL because
+> we need to turn off the output of the PLL when changing its frequency.
+> This means we have to switch over to the secondary mux and use one of the
+> fixed sources. This is why we need something like the safe parent patch.
+> 
+> I plan to submit the DTS changes through arm-soc, but I've included everything
+> here to make it easier to pick things up for testing, etc. Please note
+> that these patches rely on the Krait L2 accessor patch I posted a while back
+> in another series[1]. This also relies on the cpufreq-generic patchset from
+> Viresh[2]. If anything can be picked up right now it would be better
+> to reduce the churn over time as other pieces settle. The series gets
+> progressively more controversial as it goes on, so I hope that things
+> near the beggining will be picked up earlier.
+> 
+> Changes since v1:
+>  * Added IPQ and APQ8064 support
+>  * Switched to cpufreq-generic
+>  * Added OPP parsing from DT (need to write binding though)
+>  * New patches to make clk-generic.c go away
+>   * Made mux and divider reusable for non-MMIO devices
+>   * Added a mux_determine_rate_closest (not sure if this is really needed)
+>   * Added unregistration of muxes
+>  * New patch to avoid sending high frequencies down to devices using clocks
+> 
+> TODO:
+>  * Add Krait regulator voltage scaling (not strictly necessary)
+>  * Document DT bindings
+>  * Use a new efuse/eeprom API instead of hardcoding the location in the driver
+>  * Add some thermal awareness
+> 
+> 
+> Stephen Boyd (15):
+>   clk: mux: Add unregistration API
+>   clk: mux: Split out register accessors for reuse
+>   clk: Add __clk_mux_determine_rate_closest
+>   clk: divider: Make generic for usage elsewhere
+>   clk: Add safe switch hook
+>   clk: Avoid sending high rates to downstream clocks during set_rate
+>   clk: qcom: Add support for High-Frequency PLLs (HFPLLs)
+>   clk: qcom: Add HFPLL driver
+>   clk: qcom: Add MSM8960/APQ8064's HFPLLs
+>   clk: qcom: Add IPQ806X's HFPLLs
+>   clk: qcom: Add support for Krait clocks
+>   clk: qcom: Add KPSS ACC/GCC driver
+>   clk: qcom: Add Krait clock controller driver
+>   cpufreq: Add module to register cpufreq on Krait CPUs
+>   ARM: dts: qcom: Add necessary DT data for Krait cpufreq
+> 
+>  arch/arm/boot/dts/qcom-apq8064.dtsi          | 230 +++++++++++++++++
+>  arch/arm/boot/dts/qcom-msm8960.dtsi          |  49 ++++
+>  arch/arm/boot/dts/qcom-msm8974.dtsi          | 311 ++++++++++++++++++++++-
+>  drivers/clk/clk-divider.c                    | 197 +++++++++------
+>  drivers/clk/clk-mux.c                        |  91 ++++---
+>  drivers/clk/clk.c                            | 133 +++++++---
+>  drivers/clk/qcom/Kconfig                     |  28 +++
+>  drivers/clk/qcom/Makefile                    |   5 +
+>  drivers/clk/qcom/clk-hfpll.c                 | 253 +++++++++++++++++++
+>  drivers/clk/qcom/clk-hfpll.h                 |  54 ++++
+>  drivers/clk/qcom/clk-krait.c                 | 166 +++++++++++++
+>  drivers/clk/qcom/clk-krait.h                 |  49 ++++
+>  drivers/clk/qcom/gcc-ipq806x.c               |  83 +++++++
+>  drivers/clk/qcom/gcc-msm8960.c               | 172 +++++++++++++
+>  drivers/clk/qcom/hfpll.c                     | 110 +++++++++
+>  drivers/clk/qcom/kpss-xcc.c                  |  94 +++++++
+>  drivers/clk/qcom/krait-cc.c                  | 357 +++++++++++++++++++++++++++
+>  drivers/cpufreq/Kconfig.arm                  |   9 +
+>  drivers/cpufreq/Makefile                     |   1 +
+>  drivers/cpufreq/qcom-cpufreq.c               | 199 +++++++++++++++
+>  include/dt-bindings/clock/qcom,gcc-msm8960.h |   2 +
+>  include/linux/clk-private.h                  |   2 +
+>  include/linux/clk-provider.h                 |  32 ++-
+>  23 files changed, 2486 insertions(+), 141 deletions(-)
+>  create mode 100644 drivers/clk/qcom/clk-hfpll.c
+>  create mode 100644 drivers/clk/qcom/clk-hfpll.h
+>  create mode 100644 drivers/clk/qcom/clk-krait.c
+>  create mode 100644 drivers/clk/qcom/clk-krait.h
+>  create mode 100644 drivers/clk/qcom/hfpll.c
+>  create mode 100644 drivers/clk/qcom/kpss-xcc.c
+>  create mode 100644 drivers/clk/qcom/krait-cc.c
+>  create mode 100644 drivers/cpufreq/qcom-cpufreq.c
+> 
+> [1] http://lkml.iu.edu/hypermail/linux/kernel/1404.0/02636.html
+> [2] git://git.linaro.org/people/viresh.kumar/linux cpufreq/cpu0-krait-v3
+> 
