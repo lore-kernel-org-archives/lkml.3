@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678AbaIHMaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:30:05 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:55836 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaIHMaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:30:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Robert Richter <rric@kernel.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Robert Richter <robert.richter@caviumnetworks.com>,
-        Olof Johansson <olof@lixom.net>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-Subject: Re: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
-Date: Mon, 08 Sep 2014 14:29:10 +0200
-Message-ID: <8282633.qB60Cj5UPD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140908110131.GX4703@rric.localhost>
-References: <1409903205-2762-1-git-send-email-rric@kernel.org> <2952834.1P42roDKD9@wuerfel> <20140908110131.GX4703@rric.localhost>
+	id S1753691AbaIHMcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:32:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781AbaIHMcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 08:32:50 -0400
+Date: Mon, 8 Sep 2014 14:32:00 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
+ context_equiv
+Message-ID: <20140908123200.GC17728@krava.brq.redhat.com>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-2-git-send-email-jolsa@kernel.org>
+ <20140902105036.GH5806@worktop.ger.corp.intel.com>
+ <20140908094348.GB1172@krava.brq.redhat.com>
+ <20140908094548.GA6758@twins.programming.kicks-ass.net>
+ <20140908094855.GR3588@twins.programming.kicks-ass.net>
+ <20140908100122.GS3588@twins.programming.kicks-ass.net>
+ <20140908113958.GT3588@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8G8kruEm7shLd0U+Rd2jjj9pz3yvnM3VoD5njNXgZdq
- TDuFKwQ3/QitBQ6o6R+muytwpKQOKEGfpgrhSdROyxRVBkIp5I
- Bp9khvG/iEtoSGqug7Pl8QFEE8kVMmWe5t11KkCzkIRlJ0vvY9
- uhc5A4VRsSxjOdPxqAr7M3oAyqNB8Uju17xxFwkPCM9M46/xHf
- 9VboA2h55yT/PMdUBYxMS9Y2sHcrwGeYIlQdx8FFZqzO3jgHtR
- 4RzqOwfmcP+wH9vgCVNGbW3cokbG+40IZ41zWGE5V1867FwoNo
- 2vF14a7v4LFkT2z41tkSKF5colN4JkPNMs/7UP1nOg4RK5Wf9F
- SoGHhXUhNrKj4Gp0/EXA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908113958.GT3588@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 September 2014 13:01:31 Robert Richter wrote:
-> This is well hidden on x86, but each vendor has a config option. For
-> AMD systems we have had our own option to disable vendor specific
-> code, see CPU_SUP_AMD for example. Disabling this will remove all AMD
-> specific code in the kernel. Of course this is enabled per default.
+On Mon, Sep 08, 2014 at 01:39:58PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 08, 2014 at 12:01:22PM +0200, Peter Zijlstra wrote:
+> > On Mon, Sep 08, 2014 at 11:48:55AM +0200, Peter Zijlstra wrote:
+> > 
+> > > > The thing is; I don't understand those reasons. That commit log doesn't
+> > > > explain.
+> > > 
+> > > Ah wait, I finally see. I think we want to fix that exit path, not
+> > > disallow the cloning.
+> > > 
+> > > The thing is, by not allowing this optimization simple things like eg.
+> > > pipe-test say very expensive.
+> > 
+> > So its 179033b3e064 ("perf: Add PERF_EVENT_STATE_EXIT state for events
+> > with exited task") that introduces the problem. Before that things would
+> > work correctly afaict.
+> > 
+> > The exit would remove from the context but leave the event in existence.
+> > Both the fd and the inherited events would have references to it, only
+> > once those are gone do we destroy the actual event.
 > 
-> With ARCH_THUNDER I intended to do the same (you could name this also
-> SOC_SUP_CAVIUM or so but I kept the current naming scheme). In patch
-> 4/4 I have added the option to defconfig. This enables this per
-> default and nobody has to deal with any option manually, just running
-> make defconfig is fine.
+> I have another 'problem' with 179033b3e064. What if you 'want' to
+> continue monitoring after the initial task died? Eg. if you want to
+> monitor crap that unconditionally daemonizes.
 > 
-> Also, at least to disable building the dtb file for foo, you will need
-> ARCH_FOO too. How else would you deal with dtb files then?
+> So at this point I would suggest we revert both 179033b3e064 and
+> 1f9a7268c67f so that the context switch optimization works again for
+> simple 2 task things (pipe-test).
+> 
+> If we re-introduce 179033b3e064 (which I think makes sense) we need to
+> make sure it works with the context switch optimization (we could add
+> perf_event::task I think, it would clean up a few other things iirc) and
+> we'd have to make it conditional so we can still monitor daemons.
+> 
+> Or am I totally missing things again?
 
-The only alternative I see is to build them all.
+as I said in previous email I dont think the 179033b3e064 introduced
+the issue and I think we should keep 1f9a7268c67f to have correct
+numbers ;-)
 
-> Having ARCH_FOO might not be necessary for drivers. One could enable
-> drivers manually, but this option is still a good reference for the
-> drivers needed by foo. At some point you will carry tons of enabled
-> drivers in your defconfig and you don't know which platform actually
-> is using it. For generic drivers this might be fine.  But in my point
-> of few, each soc specific driver should have an soc specific option
-> too. Then you easily can remove an soc from the defconfig.
+I'll think about the fix to keep non-cloned context in optimized switch
 
-Yes, that's what I had in my example.
-
-	Arnd
+jirka
