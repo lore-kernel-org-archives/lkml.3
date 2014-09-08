@@ -1,215 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaIHG3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 02:29:36 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:59426 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaIHG3e (ORCPT
+	id S1752790AbaIHGe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 02:34:27 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:40605 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbaIHGeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 02:29:34 -0400
-Date: Mon, 8 Sep 2014 10:32:24 +0300
-From: Matti Vaittinen <matti.vaittinen@nsn.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux@roeck-us.net" <linux@roeck-us.net>
-Cc: a.zummo@towertech.it, "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: [RESEND PATCH v3]     rtc: ds1307: add trickle charger device tree
- binding
-Message-ID: <20140908073216.GA20850@fi-ourus-dhcp00977.emea.nsn-net.net>
+	Mon, 8 Sep 2014 02:34:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 5959
-X-purgate-ID: 151667::1410157691-000023E0-85AD33F6/0/0
+In-Reply-To: <20140907.222841.1933004265241590374.davem@davemloft.net>
+References: <20140907180737.GA5057@salvia>
+	<CAMEtUuxJLDu8AAsZQdtG781vwC8y60Ygdt4ji5tbeyTE8YbWbQ@mail.gmail.com>
+	<20140908052329.GA30461@gmail.com>
+	<20140907.222841.1933004265241590374.davem@davemloft.net>
+Date: Sun, 7 Sep 2014 23:34:23 -0700
+Message-ID: <CAMEtUuzfhnKKbyMW8qDk4YxM3X_NWHU6Gkt1DDTSHXhcScXccQ@mail.gmail.com>
+Subject: Re: [PATCH v10 net-next 2/2] net: filter: split filter.h and expose
+ eBPF to user space
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: David Miller <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi dt bindings maintainers (and others interested in device-tree bindings),
+On Sun, Sep 7, 2014 at 10:28 PM, David Miller <davem@davemloft.net> wrote:
+> From: Ingo Molnar <mingo@kernel.org>
+> Date: Mon, 8 Sep 2014 07:23:29 +0200
+>
+>>
+>> * Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>
+>>> > I don't think the speed up of the llvm submission is a good
+>>> > argument, this sounds to me similar to the "please apply this
+>>> > patch that reserves this new netlink family in
+>>> > include/linux/netlink.h, I promise this new subsystem will be
+>>> > submitted soon though. Meanwhile this will speed up
+>>> > submission of my userspace software to distributions for
+>>> > packaging" argument.
+>>>
+>>> You're not correct here. I'm not saying 'I promise it will be
+>>> submitted'. There _were_ already submitted. [...]
+>>
+>> And this split-up smaller submissions was requested by David
+>> Miller, the networking maintainer, so if Pablo wants another
+>> submission format, he needs to take it up with David - we can't
+>> do both at once obviously.
+>
+> I think that just because I asked the submission size to be smaller,
+> it does not mean that you can submit things before you provide the
+> initial user as well.
+>
+> And how to work that out and keep the submission size reasonable is
+> the submitter's problem, not mine.
 
-   I would like to get this included in your tree. Do you think there is
-   still something I could improve/change in order to get this accepted?
-   Or do you think I should address this to someone else?
-
-
-
-
-
-
-
-
-
-Some DS13XX devices have "trickle chargers". Introduce a device tree binding
-for specifying the trickle charger configuration for ds1339.
-
-Signed-off-by: Matti Vaittinen <matti.vaittinen@nsn.com>
----
- .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
- .../devicetree/bindings/rtc/dallas,ds1339.txt      | 18 ++++++
- drivers/rtc/rtc-ds1307.c                           | 66 ++++++++++++++++++++--
- 3 files changed, 80 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index 6af570e..e9206a4 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -35,7 +35,6 @@ catalyst,24c32		i2c serial eeprom
- cirrus,cs42l51		Cirrus Logic CS42L51 audio codec
- dallas,ds1307		64 x 8, Serial, I2C Real-Time Clock
- dallas,ds1338		I2C RTC with 56-Byte NV RAM
--dallas,ds1339		I2C Serial Real-Time Clock
- dallas,ds1340		I2C RTC with Trickle Charger
- dallas,ds1374		I2C, 32-Bit Binary Counter Watchdog RTC with Trickle Charger and Reset Input/Output
- dallas,ds1631		High-Precision Digital Thermometer
-diff --git a/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-new file mode 100644
-index 0000000..fba65b2
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-@@ -0,0 +1,18 @@
-+* Dallas DS1339		I2C Serial Real-Time Clock
-+
-+Required properties:
-+- compatible: Should contain "dallas,ds1339".
-+- reg: I2C address for chip
-+
-+Optional properties:
-+- trickle-resistor-ohms : Selected resistor for trickle charger
-+	Values usable for ds1339 are 250, 2000, 4000
-+	Should be given if trickle charger should be enabled
-+- trickle-diode-enable : Use internal trickle charger diode
-+	Should be given if internal trickle charger diode should be enabled
-+Example:
-+	ds1339: rtc@68 {
-+		compatible = "dallas,ds1339";
-+		trickle-resistor-ohms = <250>;
-+		reg = <0x68>;
-+	};
-diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-index f03d5ba..b297c2c 100644
---- a/drivers/rtc/rtc-ds1307.c
-+++ b/drivers/rtc/rtc-ds1307.c
-@@ -126,9 +126,14 @@ struct chip_desc {
- 	u16			nvram_offset;
- 	u16			nvram_size;
- 	u16			trickle_charger_reg;
-+	u8			trickle_charger_setup;
-+	u8			(*do_trickle_setup)(struct i2c_client *, uint32_t, bool);
- };
- 
--static const struct chip_desc chips[last_ds_type] = {
-+static u8 do_trickle_setup_ds1339(struct i2c_client *,
-+				  uint32_t ohms, bool diode);
-+
-+static struct chip_desc chips[last_ds_type] = {
- 	[ds_1307] = {
- 		.nvram_offset	= 8,
- 		.nvram_size	= 56,
-@@ -143,6 +148,7 @@ static const struct chip_desc chips[last_ds_type] = {
- 	[ds_1339] = {
- 		.alarm		= 1,
- 		.trickle_charger_reg = 0x10,
-+		.do_trickle_setup = &do_trickle_setup_ds1339,
- 	},
- 	[ds_1340] = {
- 		.trickle_charger_reg = 0x08,
-@@ -833,15 +839,57 @@ ds1307_nvram_write(struct file *filp, struct kobject *kobj,
- 	return count;
- }
- 
-+
- /*----------------------------------------------------------------------*/
- 
-+static u8 do_trickle_setup_ds1339(struct i2c_client *client,
-+				  uint32_t ohms, bool diode)
-+{
-+	u8 setup = (diode) ? DS1307_TRICKLE_CHARGER_DIODE :
-+		DS1307_TRICKLE_CHARGER_NO_DIODE;
-+
-+	switch (ohms) {
-+	case 250:
-+		setup |= DS1307_TRICKLE_CHARGER_250_OHM;
-+		break;
-+	case 2000:
-+		setup |= DS1307_TRICKLE_CHARGER_2K_OHM;
-+		break;
-+	case 4000:
-+		setup |= DS1307_TRICKLE_CHARGER_4K_OHM;
-+		break;
-+	default:
-+		dev_warn(&client->dev,
-+			 "Unsupported ohm value %u in dt\n", ohms);
-+		return 0;
-+	}
-+	return setup;
-+}
-+
-+static void ds1307_trickle_of_init(struct i2c_client *client,
-+				   struct chip_desc *chip)
-+{
-+	uint32_t ohms = 0;
-+	bool diode = false;
-+
-+	if (!chip->do_trickle_setup)
-+		goto out;
-+	if (of_property_read_u32(client->dev.of_node, "trickle-resistor-ohms" , &ohms))
-+		goto out;
-+	diode = of_property_read_bool(client->dev.of_node, "diode-connected");
-+	chip->trickle_charger_setup = chip->do_trickle_setup(client,
-+							     ohms, diode);
-+out:
-+	return;
-+}
-+
- static int ds1307_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
- {
- 	struct ds1307		*ds1307;
- 	int			err = -ENODEV;
- 	int			tmp;
--	const struct chip_desc	*chip = &chips[id->driver_data];
-+	struct chip_desc	*chip = &chips[id->driver_data];
- 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
- 	bool			want_irq = false;
- 	unsigned char		*buf;
-@@ -866,9 +914,19 @@ static int ds1307_probe(struct i2c_client *client,
- 	ds1307->client	= client;
- 	ds1307->type	= id->driver_data;
- 
--	if (pdata && pdata->trickle_charger_setup && chip->trickle_charger_reg)
-+	if (!pdata && client->dev.of_node)
-+		ds1307_trickle_of_init(client, chip);
-+	else if (pdata && pdata->trickle_charger_setup)
-+		chip->trickle_charger_setup = pdata->trickle_charger_setup;
-+
-+	if (chip->trickle_charger_setup && chip->trickle_charger_reg) {
-+		dev_dbg(&client->dev, "writing trickle charger info 0x%x to 0x%x\n",
-+		    DS13XX_TRICKLE_CHARGER_MAGIC | chip->trickle_charger_setup,
-+		    chip->trickle_charger_reg);
- 		i2c_smbus_write_byte_data(client, chip->trickle_charger_reg,
--			DS13XX_TRICKLE_CHARGER_MAGIC | pdata->trickle_charger_setup);
-+		    DS13XX_TRICKLE_CHARGER_MAGIC |
-+		    chip->trickle_charger_setup);
-+	}
- 
- 	buf = ds1307->regs;
- 	if (i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
--- 
-1.8.3.1
-
-
--- 
-
+imo llvm is more than enough for the first user, no?
+I think I've explained that it's practically impossible to have
+first in-tree user in the first patch. What do you suggest?
+I'm listening, but currently I see no way out.
+The patch was large. I broke it down. The first patch is as tiny
+as it can get, but Pablo is stalling it, like he did for the last year.
+Honestly it doesn't feel fair.
+When there were technical arguments (like global vs fd) or
+(union attr vs long for syscall) I've listened and rewrote things.
+Now it doesn't sound technical.
