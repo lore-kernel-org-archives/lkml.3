@@ -1,49 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaIHO1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:27:34 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43948 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147AbaIHO1d (ORCPT
+	id S1754043AbaIHO2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:28:20 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:63254 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308AbaIHO2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:27:33 -0400
-Date: Mon, 8 Sep 2014 16:27:17 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, konrad.wilk@oracle.com
-Subject: Re: [PATCH] xen/balloon: Remove unused pr_fmt() macro
-Message-ID: <20140908141408.GJ3459@olila.local.net-space.pl>
-References: <1410182638-18820-1-git-send-email-daniel.kiper@oracle.com>
- <540DAE71.4060902@citrix.com>
- <20140908135811.GI3459@olila.local.net-space.pl>
- <540DB6B0.9000503@citrix.com>
+	Mon, 8 Sep 2014 10:28:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540DB6B0.9000503@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com>
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com> <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 8 Sep 2014 09:27:56 -0500
+Message-ID: <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com>
+Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI domain_nr
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 03:01:20PM +0100, David Vrabel wrote:
-> On 08/09/14 14:58, Daniel Kiper wrote:
-> > On Mon, Sep 08, 2014 at 02:26:09PM +0100, David Vrabel wrote:
-> >> On 08/09/14 14:23, Daniel Kiper wrote:
-> >>> Remove unused pr_fmt() macro. Additionally, remove surplus empty
-> >>> lines which left after earlier various fixes and cleanups.
-> >>
-> >> A patch in the 3.17 queue uses this.
-> >
-> > Hmmm... Which one? I am not able to find anything relevant in xen/tip.
-> > Am I missing something?
+On Mon, Sep 8, 2014 at 8:54 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> Add of_pci_get_domain_nr() to retrieve the PCI domain number
+> of a given device from DT. If the information is not present,
+> the function can be requested to allocate a new domain number.
 >
-> The balloon driver already uses it.  It is used in the pr_info() and
-> pr_warn() etc. macros.
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> ---
+>  drivers/of/of_pci.c    | 34 ++++++++++++++++++++++++++++++++++
+>  include/linux/of_pci.h |  7 +++++++
+>  2 files changed, 41 insertions(+)
+>
+> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> index 8481996..a107edb 100644
+> --- a/drivers/of/of_pci.c
+> +++ b/drivers/of/of_pci.c
+> @@ -89,6 +89,40 @@ int of_pci_parse_bus_range(struct device_node *node, struct resource *res)
+>  }
+>  EXPORT_SYMBOL_GPL(of_pci_parse_bus_range);
+>
+> +static atomic_t of_domain_nr = ATOMIC_INIT(-1);
+> +
+> +/**
+> + * This function will try to obtain the host bridge domain number by
+> + * using of_alias_get_id() call with "pci-domain" as a stem. If that
+> + * fails, a local allocator will be used. The local allocator can
+> + * be requested to return a new domain_nr if the information is missing
+> + * from the device tree.
+> + *
+> + * @node: device tree node with the domain information
+> + * @allocate_if_missing: if DT lacks information about the domain nr,
+> + * allocate a new number.
+> + *
+> + * Returns the associated domain number from DT, or a new domain number
+> + * if DT information is missing and @allocate_if_missing is true. If
+> + * @allocate_if_missing is false then the last allocated domain number
+> + * will be returned.
+> + */
+> +int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
+> +{
+> +       int domain;
+> +
+> +       domain = of_alias_get_id(node, "pci-domain");
+> +       if (domain == -ENODEV) {
+> +               if (allocate_if_missing)
+> +                       domain = atomic_inc_return(&of_domain_nr);
+> +               else
+> +                       domain = atomic_read(&of_domain_nr);
 
-Ahhh... OK, I see. We override default macro definition in include/linux/printk.h.
-So, forget about that patch. Sorry for confusion.
+This function seems a bit broken to me. It is overloaded with too many
+different outcomes. Think about how this would work if you have
+multiple PCI buses and a mixture of having pci-domain aliases or not.
+Aren't domain numbers global? Allocation should then start outside of
+the range of alias ids.
 
-Daniel
+Rob
