@@ -1,150 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbaIHHQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:16:11 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50941 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbaIHHQJ (ORCPT
+	id S1753087AbaIHHRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 03:17:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43421 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaIHHRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:16:09 -0400
-Date: Mon, 8 Sep 2014 00:13:16 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v3 2/6] mm/hugetlb: take page table lock in
- follow_huge_(addr|pmd|pud)()
-In-Reply-To: <20140905052751.GA6883@nhori.redhat.com>
-Message-ID: <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
-References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1409276340-7054-3-git-send-email-n-horiguchi@ah.jp.nec.com> <alpine.LSU.2.11.1409031243420.9023@eggly.anvils> <20140905052751.GA6883@nhori.redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 8 Sep 2014 03:17:21 -0400
+Date: Mon, 8 Sep 2014 09:17:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 04/22] perf: Add a capability for AUX_NO_SG pmus to do
+ software double buffering
+Message-ID: <20140908071712.GT19379@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1408538179-792-5-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hyYNmTt1S+8ZKAs8"
+Content-Disposition: inline
+In-Reply-To: <1408538179-792-5-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014, Naoya Horiguchi wrote:
-> On Wed, Sep 03, 2014 at 02:17:41PM -0700, Hugh Dickins wrote:
-> > On Thu, 28 Aug 2014, Naoya Horiguchi wrote:
-> > > 
-> > > Reported-by: Hugh Dickins <hughd@google.com>
-> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > Cc: <stable@vger.kernel.org>  # [3.12+]
-> > 
-> > No ack to this one yet, I'm afraid.
-> 
-> OK, I defer Reported-by until all the problems in this patch are solved.
-> I added this Reported-by because Andrew asked how In found this problem,
-> and advised me to show the reporter.
-> And I didn't intend by this Reported-by that you acked the patch.
-> In this case, should I have used some unofficial tag like
-> "Not-yet-Reported-by:" to avoid being rude?
 
-Sorry, misunderstanding, I chose that position to write "No ack to this
-one yet" because that is where I would insert my "Acked-by" to the patch
-when ready.  I just meant that I cannot yet give you my "Acked-by".
+--hyYNmTt1S+8ZKAs8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You were not being rude to me at all, quite the reverse.
+On Wed, Aug 20, 2014 at 03:36:01PM +0300, Alexander Shishkin wrote:
+> For pmus that don't support scatter-gather for AUX data in hardware, it
+> might still make sense to implement software double buffering to avoid
+> losing data while the user is reading data out. For this purpose, add
+> a pmu capability that guarantees multiple high-order chunks for AUX buffe=
+r,
+> so that the pmu driver can do switchover tricks.
 
-I have no objection to your writing "Reported-by: Hugh...": you are
-being polite to acknowledge me, and I was not objecting to that.
+Please expand this with more detail on how to use this.
 
-Although usually, we save "Reported-by"s for users who have
-reported a problem they saw in practice, rather than for fellow
-developers who have looked at the code and seen a potential bug -
-so I won't mind at all if you end up taking it out.
+> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> ---
+>  include/linux/perf_event.h  |  1 +
+>  kernel/events/ring_buffer.c | 15 ++++++++++++++-
+>  2 files changed, 15 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index fe10bf6f94..1e7b659b49 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -172,6 +172,7 @@ struct perf_event;
+>   */
+>  #define PERF_PMU_CAP_NO_INTERRUPT		0x01
+>  #define PERF_PMU_CAP_AUX_NO_SG			0x02
+> +#define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
+> =20
+>  /**
+>   * struct pmu - generic performance monitoring unit
+> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+> index d10919ca42..f5ee3669f8 100644
+> --- a/kernel/events/ring_buffer.c
+> +++ b/kernel/events/ring_buffer.c
+> @@ -286,9 +286,22 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf=
+_event *event,
+>  	if (!has_aux(event))
+>  		return -ENOTSUPP;
+> =20
+> -	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
+> +	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG) {
+>  		order =3D get_order(nr_pages * PAGE_SIZE);
+> =20
+> +		/*
+> +		 * PMU requests more than one contiguous chunks of memory
+> +		 * for SW double buffering
+> +		 */
+> +		if ((event->pmu->capabilities & PERF_PMU_CAP_AUX_SW_DOUBLEBUF) &&
+> +		    !overwrite) {
+> +			if (!order)
+> +				return -EINVAL;
+> +
+> +			order--;
+> +		}
+> +	}
 
-> 
-> > One subtlety to take care over: it's a long time since I've had to
-> > worry about pmd folding and pud folding (what happens when you only
-> > have 2 or 3 levels of page table instead of the full 4): macros get
-> > defined to each other, and levels get optimized out (perhaps
-> > differently on different architectures).
-> > 
-> > So although at first sight the lock to take in follow_huge_pud()
-> > would seem to be mm->page_table_lock, I am not at this point certain
-> > that that's necessarily so - sometimes pud_huge might be pmd_huge,
-> > and the size PMD_SIZE, and pmd_lockptr appropriate at what appears
-> > to be the pud level.  Maybe: needs checking through the architectures
-> > and their configs, not obvious to me.
-> 
-> I think that every architecture uses mm->page_table_lock for pud-level
-> locking at least for now, but that could be changed in the future,
-> for example when 1GB hugepages or pud-based hugepages become common and
-> someone are interested in splitting lock for pud level.
+In particular this looks like it will allocate double the total amount
+of pages and 'loose' half of them. There is no corresponding code in the
+free path to collect them.
 
-I'm not convinced by your answer, that you understand the (perhaps
-imaginary!) issue I'm referring to.  Try grep for __PAGETABLE_P.D_FOLDED.
 
-Our infrastructure allows for 4 levels of pagetable, pgd pud pmd pte,
-but many architectures/configurations support only 2 or 3 levels.
-What pud functions and pmd functions work out to be in those
-configs is confusing, and varies from architecture to architecture.
+--hyYNmTt1S+8ZKAs8
+Content-Type: application/pgp-signature
 
-In particular, pud and pmd may be different expressions of the same
-thing (with 1 pmd per pud, instead of say 512).  In that case PUD_SIZE
-will equal PMD_SIZE: and then at the pud level huge_pte_lockptr()
-will be using split locking instead of mm->page_table_lock.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Many of the hugetlb architectures have a pud_huge() which just returns
-0, and we need not worry about those, nor the follow_huge_addr() powerpc.
-But arm64, mips, tile, x86 look more interesting.
+iQIcBAEBAgAGBQJUDVf4AAoJEHZH4aRLwOS67DsQAKO8Tv0E/GnoWhCfvB/+AgJO
+4Sd5ng461RW49oDmidbYlEKeVEIi8vYZiYwbG3XBWGhqfnQHw8WG/7lDEY8zj+hz
+/4+z1VldDoMCbxHw2LVUhz9xc9g/CPItxLmeKa+d9d+2bGrUXKz+IowoI8G94hjt
+j150o4uv6KExWBSfb1Nat6l532N+JxhDODCZgdM9uMxOg8jpXf/qppebwsWb1H1Q
+F6hoB9ZfkHzX8T30C9ZrblmWiDA6BnYj9TC+8+SMknkEpfkcgGUoAdVepaSzdaiS
+ud0DgMxgkwv62Wy9EpM0/8hGVvd5l+4byKMY1sJ93MZtkZpf6JCIYI1EpUo787ys
+xBRKnqmmrlxqpuGr1gvzOiQ/ucW6bxqbk0bByTnbYyfu+VvoBZp4a9DyCq/pfjB5
+E4wt1BXVKfaz1mG/PrYykB9JC8LbgrCRmn/bdMSFI8HyN5+HB1DscYGu8kP/YOxo
+qgs9dL6pLmpMFDTp8q7MxjJzDLGfsm/+eIanaLRmTC/THN+UsaJ8AgDbGAUpRwhy
+KNmOvU4B5eZ2Dfj0i0Hu6z5fHi8Vl/99pOPKETVgtqQg0bkUsEaroX9DVKt0t9Vg
+IJX9Eb9G6WFuWdBUegyTt9vf+I0Ux2c8NBKEHc75ybggo9UUHonVqI2L8YQD1v46
+iFzTcBMTjFoKBsu0QNb+
+=tSBC
+-----END PGP SIGNATURE-----
 
-Frankly, I find myself too dumb to be sure of the right answer for all:
-and think that when we put the proper locking into follow_huge_pud(),
-we shall have to include a PUD_SIZE == PMD_SIZE test, to let the
-compiler decide for us which is the appropriate locking to match
-huge_pte_lockptr().
-
-Unless Kirill can illuminate: I may be afraid of complications
-where actually there are none.
-
-> So it would be helpful to introduce pud_lockptr() which just returns
-> mm->page_table_lock now, so that developers never forget to update it
-> when considering splitting pud lock.
-> 
-> > 
-> > I realize that I am asking for you (or I) to do more work, when using
-> > huge_pte_lock(hstate_vma(vma),,) would work it out "automatically";
-> > but I do feel quite strongly that that's the right approach here
-> > (and I'm not just trying to avoid a few edits of "mm" to "vma").
-> 
-> Yes, I agree.
-> 
-> > Cc'ing Kirill, who may have a strong view to the contrary,
-> > or a good insight on where the problems if any might be.
-> > 
-> > Also Cc'ing Kirill because I'm not convinced that huge_pte_lockptr()
-> > necessarily does the right thing on follow_huge_addr() architectures,
-> > ia64 and powerpc.  Do they, for example, allocate the memory for their
-> > hugetlb entries in such a way that we can indeed use pmd_lockptr() to
-> > point to a useable spinlock, in the case when huge_page_size(h) just
-> > happens to equal PMD_SIZE?
-> > 
-> > I don't know if this was thought through thoroughly
-> > (now that's a satisfying phrase hugh thinks hugh never wrote before!)
-> > when huge_pte_lockptr() was invented or not.  I think it would be safer
-> > if huge_pte_lockptr() just gave mm->page_table_lock on follow_huge_addr()
-> > architectures.
-> 
-> Yes, this seems a real problem and is worth discussing with maintainers
-> of these architectures. Maybe we can do this as a separate work.
-
-Perhaps, but I'm hoping Kirill can say, whether it's something he
-considered and felt safe with, or something he overlooked at the
-time and would prefer to change now.
-
-I suspect that either the follow_huge_addr() architectures should be
-constrained to use mm->page_table_lock; or, when we do introduce the
-proper locking into find_huge_addr() (you appear to be backing away
-from making any change there for now: yes, it's not needed urgently),
-that one will have to take vma instead of mm, so that it can be sure
-to match huge_pte_lockptr().
-
-Hugh
+--hyYNmTt1S+8ZKAs8--
