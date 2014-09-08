@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533AbaIHTC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 15:02:58 -0400
-Received: from scspc499.cs.uwaterloo.ca ([129.97.171.80]:52064 "EHLO
-	scspc499.cs.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251AbaIHTC5 (ORCPT
+	id S1754565AbaIHTDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 15:03:37 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:49496 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956AbaIHTDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 15:02:57 -0400
-Date: Mon, 8 Sep 2014 15:02:49 -0400
-From: Adrian Nicoara <anicoara@uwaterloo.ca>
-To: shigekatsu.tateno@atmel.com
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, tklauser@distanz.ch
-Subject: Re: [PATCH v2 4/4] staging: ozwpan: use kmalloc_array over kmalloc
- with multiply
-Message-ID: <20140908190249.GA17737@uwaterloo.ca>
+	Mon, 8 Sep 2014 15:03:34 -0400
+Message-ID: <540DFD8D.2020804@kernel.dk>
+Date: Mon, 08 Sep 2014 13:03:41 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ming Lei <ming.lei@canonical.com>, Christoph Hellwig <hch@lst.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 0/6] blk-mq: initialize pdu of flush req explicitly
+References: <1410079162-9872-1-git-send-email-ming.lei@canonical.com>	<20140907184956.GB23026@lst.de> <CACVXFVP-kUkCoW_pPrxqKWeoSKkxCACLLth2ycv87EVzfr2mUA@mail.gmail.com>
+In-Reply-To: <CACVXFVP-kUkCoW_pPrxqKWeoSKkxCACLLth2ycv87EVzfr2mUA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup checkpatch.pl warnings.
+On 09/08/2014 10:55 AM, Ming Lei wrote:
+> On Mon, Sep 8, 2014 at 2:49 AM, Christoph Hellwig <hch@lst.de> wrote:
+>> This works fine for me, although I still don't really like it very much.
+>>
+>> If you really want to go down the path of major surgery in this area we
+>> should probably allocate a flush request per hw_ctx, and initialize it
+>> using the normal init/exit functions.  If we want to have proper multiqueue
+>> performance on devices needing flushes we'll need something like that anyway.
+> 
+> Yes, that should be the final solution for the problem, and looks the whole
+> flush machinery need to move into hctx, I will try to figure out one patch to
+> do that.
 
-Signed-off-by: Adrian Nicoara <anicoara@uwaterloo.ca>
----
+I had not thought of that, but seems like a great way to clean this up a
+lot. It just never felt like the right thing to do.
 
-Somehow I missed the comment Tobias made on the line indentation. I fixed the
-patch, and added here as a reply - the previous patch should be ignored.
-
- drivers/staging/ozwpan/ozhcd.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index ba2168f..e880452 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -1315,8 +1315,8 @@ static int oz_build_endpoints_for_config(struct usb_hcd *hcd,
- 	if (num_iface) {
- 		struct oz_interface *iface;
-
--		iface = kmalloc(num_iface*sizeof(struct oz_interface),
--				mem_flags | __GFP_ZERO);
-+		iface = kmalloc_array(num_iface, sizeof(struct oz_interface),
-+					mem_flags | __GFP_ZERO);
- 		if (!iface)
- 			return -ENOMEM;
- 		spin_lock_bh(&ozhcd->hcd_lock);
---
-2.0.1
+-- 
+Jens Axboe
 
