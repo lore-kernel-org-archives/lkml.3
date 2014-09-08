@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483AbaIHXWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:22:35 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64682 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755099AbaIHXWe (ORCPT
+	id S1755536AbaIHXYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:24:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36423 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755079AbaIHXYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:22:34 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Tue, 09 Sep 2014 01:42 +0200
-Message-ID: <4809128.C6aPga5IjQ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAM_iQpXiJL=q6NFkiPF71dZHKXu=ReJ59Rbadc__+UX-GW2x8A@mail.gmail.com>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <1609685.fbsF6EQ3X7@vostro.rjw.lan> <CAM_iQpXiJL=q6NFkiPF71dZHKXu=ReJ59Rbadc__+UX-GW2x8A@mail.gmail.com>
+	Mon, 8 Sep 2014 19:24:46 -0400
+Date: Mon, 8 Sep 2014 16:24:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/26] tty/serial flow control fixes
+Message-ID: <20140908232445.GA28204@kroah.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 08, 2014 04:16:15 PM Cong Wang wrote:
-> On Mon, Sep 8, 2014 at 4:23 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >
-> > The reason why it matters for the suspend-time freezing is that we freeze tasks
-> > to take them out of the picture entirely until they are thawed.  Therefore we
-> > can't allow them to go back to the picture just for a while until they are
-> > killed.  Frozen tasks are not supposed to get back to the picture at all.
-> >
+On Tue, Sep 02, 2014 at 05:39:09PM -0400, Peter Hurley wrote:
+> Hi Greg,
 > 
+> This patch series reworks the internals of tty and serial flow control to
+> fix multiple races in both START/STOP flow control and RTS/CTS flow control.
 > 
-> Ok, then checking TIF_MEMDIE is unsafe for PM freeze, we should
-> keep the cgroup_freezing() test to make sure freeze request is from
-> cgroup not PM. Question got answered. :)
-
-Do I think correctly that cgroups freezing and system suspend are
-mutually exclusive?  If not, then this still is problematic.
-
-> I will put the following as a comment:
+> The main changes in this series are:
+> Patch 1
+>    Backs out the UPF_HARD_FLOW kludge for 8250. This revert should be
+>    for mainline and -next
 > 
-> /* OOM killer may decide to kill this process after it is frozen,
->    in this case SIGKILL can never be handled, so we should check
->   TIF_MEMDIE and if it is set, thaw and let SIGKILL kill it.
->   But for PM freeze, it is not allowed to get out even for a while,
->   so we have to keep it being frozen. */
+> Patches 3-7
+>    Fixes to x_char handling (ie., sending START/STOP) both in the serial
+>    core and to several UART drivers
 > 
-> Let me know if it looks good to you.
+> Patches 10-15
+>    Rename and move ASYNC_CTS_FLOW and ASYNC_CHECK_CD statuses into
+>    a private field for the serial core, and add helper functions to test
+>    those statuses for UART drivers.
+> 
+>    This is a necessary step toward making tty port->flags SMP-safe, without
+>    introducing a new lock.
 
-Well, it reflects the reality, so it's good enough.  But please adhere to the
-coding style rules for comments.
+I stopped applying at patch 13, due to the objections to that patch.
+Please redo the rest of the series and resend.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+thanks,
+
+greg k-h
