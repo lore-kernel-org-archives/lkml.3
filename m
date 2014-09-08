@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443AbaIHSs2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:48:28 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:57802 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550AbaIHSs0 (ORCPT
+	id S1754530AbaIHSsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:48:40 -0400
+Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:49704 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754471AbaIHSsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:48:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C4EA0@US01WEMBX2.internal.synopsys.com>
-References: <1407440891-29295-1-git-send-email-dianders@chromium.org>
-	<A2CA0424C0A6F04399FB9E1CD98E0304844C4EA0@US01WEMBX2.internal.synopsys.com>
-Date: Mon, 8 Sep 2014 11:48:25 -0700
-X-Google-Sender-Auth: M7cgcjAmnA8cROz1vJzKX_nQrhM
-Message-ID: <CAD=FV=Uh5a2oHTcrmUGOCiENnuOaJ5qQCnAxL2wKTGoLGDgVHg@mail.gmail.com>
-Subject: Re: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
-From: Doug Anderson <dianders@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dinh Nguyen <dinguyen@altera.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 8 Sep 2014 14:48:38 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3868:3870:3872:3874:4321:5007:6119:7652:7903:9010:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: gun61_10d63a7e02359
+X-Filterd-Recvd-Size: 1428
+Message-ID: <1410202114.12560.16.camel@joe-AO725>
+Subject: Re: [PATCH v2] checkpatch: look for common misspellings
+From: Joe Perches <joe@perches.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-doc <linux-doc@vger.kernel.org>
+Date: Mon, 08 Sep 2014 11:48:34 -0700
+In-Reply-To: <20140908181524.GA11839@www.outflux.net>
+References: <20140908181524.GA11839@www.outflux.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Mon, 2014-09-08 at 11:15 -0700, Kees Cook wrote:
+> Check for misspellings, based on Debian's lintian list. Several false
+> positives were removed, and several additional words added that were
+> common in the kernel:
+> 
+> 	backword backwords
+> 	invalide valide
+> 	recieves
+> 	singed unsinged
+> 
+> While going back and fixing existing spelling mistakes isn't a high
+> priority, it'd be nice to try to catch them before they hit the tree.
 
-On Thu, Aug 7, 2014 at 1:18 PM, Paul Zimmerman
-<Paul.Zimmerman@synopsys.com> wrote:
->> From: Doug Anderson [mailto:dianders@chromium.org]
->> Sent: Thursday, August 07, 2014 12:48 PM
->>
->> The documentation for GNPTXFSIZ says that "For host mode, this field
->> is always valid."  Since we're already switching to host mode for
->> HPTXFSIZ, let's also read GNPTXFSIZ in host mode.
->>
->> On an rk3288 SoC, without this change we see this at bootup:
->>   dwc2 ff580000.usb: gnptxfsiz=00100400
->>   dwc2 ff580000.usb: 128 invalid for host_nperio_tx_fifo_size. Check HW configuration.
->>
->> After this change we see:
->>   dwc2 ff580000.usb: gnptxfsiz=04000400
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  drivers/usb/dwc2/core.c | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
->> index 27d2c9b..c184ed43 100644
->> --- a/drivers/usb/dwc2/core.c
->> +++ b/drivers/usb/dwc2/core.c
->> @@ -2674,23 +2674,23 @@ int dwc2_get_hwparams(struct dwc2_hsotg *hsotg)
->>       hwcfg2 = readl(hsotg->regs + GHWCFG2);
->>       hwcfg3 = readl(hsotg->regs + GHWCFG3);
->>       hwcfg4 = readl(hsotg->regs + GHWCFG4);
->> -     gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
->>       grxfsiz = readl(hsotg->regs + GRXFSIZ);
->>
->>       dev_dbg(hsotg->dev, "hwcfg1=%08x\n", hwcfg1);
->>       dev_dbg(hsotg->dev, "hwcfg2=%08x\n", hwcfg2);
->>       dev_dbg(hsotg->dev, "hwcfg3=%08x\n", hwcfg3);
->>       dev_dbg(hsotg->dev, "hwcfg4=%08x\n", hwcfg4);
->> -     dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
->>       dev_dbg(hsotg->dev, "grxfsiz=%08x\n", grxfsiz);
->>
->> -     /* Force host mode to get HPTXFSIZ exact power on value */
->> +     /* Force host mode to get HPTXFSIZ / GNPTXFSIZ exact power on value */
->>       gusbcfg = readl(hsotg->regs + GUSBCFG);
->>       gusbcfg |= GUSBCFG_FORCEHOSTMODE;
->>       writel(gusbcfg, hsotg->regs + GUSBCFG);
->>       usleep_range(100000, 150000);
->>
->> +     gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
->>       hptxfsiz = readl(hsotg->regs + HPTXFSIZ);
->> +     dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
->>       dev_dbg(hsotg->dev, "hptxfsiz=%08x\n", hptxfsiz);
->>       gusbcfg = readl(hsotg->regs + GUSBCFG);
->>       gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
->
-> Nice! I wonder if this is a bug in the original driver, and they
-> actually meant to read this register instead of HPTXFSIZ? Well, it
-> doesn't really matter I guess.
->
-> Acked-by: Paul Zimmerman <paulz@synopsys.com>
->
-> You may want to resend this to Greg after -rc1 is out and he reopens
-> his usb-next tree.
+Seems sensible enough.
 
-Is this something you want me to resend with Paul's Acked-by and
-Kever's Reviewed-by?  Please let me know and I'm happy to repost.
+Acked-by: Joe Perches <joe@perches.com>
 
--Doug
+
