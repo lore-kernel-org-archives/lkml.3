@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101AbaIHW27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:28:59 -0400
-Received: from mail-yk0-f181.google.com ([209.85.160.181]:44655 "EHLO
-	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaIHW26 (ORCPT
+	id S1755225AbaIHW3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:29:04 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56725 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755149AbaIHW3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:28:58 -0400
+	Mon, 8 Sep 2014 18:29:01 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Date: Tue, 09 Sep 2014 00:48:28 +0200
+Message-ID: <2588099.AI1YmNFQ25@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140908222253.GB3806@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <3827451.ToKxd7Xb2J@vostro.rjw.lan> <20140908222253.GB3806@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1409307891-16523-1-git-send-email-alim.akhtar@samsung.com>
-References: <1409307891-16523-1-git-send-email-alim.akhtar@samsung.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Tue, 9 Sep 2014 03:58:17 +0530
-Message-ID: <CAGOxZ50__yVJPCF1f8fjFfX3uyZ+G_=VYA0UdCAcsLdcjLtewA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: add support for ARM64
-To: Alim Akhtar <alim.akhtar@samsung.com>
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chrish, Ulf, Arnd
+On Tuesday, September 09, 2014 07:22:53 AM Tejun Heo wrote:
+> On Mon, Sep 08, 2014 at 11:53:34PM +0200, Rafael J. Wysocki wrote:
+> > But please tell me this: If TIF_MEMDIE is set and we thaw the process,
+> > can it do *anything* before dying or will it die immediately?
+> 
+> The task could be in freezer from anywhere and there's no limit in
+> what the task may do before it eventually dies.
 
-Any comments/suggestions?
+Well, not exactly from anywhere.  Just from where try_to_freeze() is called
+I suppose?
 
-On Fri, Aug 29, 2014 at 3:54 PM, Alim Akhtar <alim.akhtar@samsung.com> wrote:
-> There are upcoming ARM64 SoCs with dw_mmc host controller.
->
-> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
-> ---
->  drivers/mmc/host/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index a43295c..72dd6c2 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -580,7 +580,7 @@ config SDH_BFIN_MISSING_CMD_PULLUP_WORKAROUND
->  config MMC_DW
->         tristate "Synopsys DesignWare Memory Card Interface"
->         depends on HAS_DMA
-> -       depends on ARC || ARM || MIPS || COMPILE_TEST
-> +       depends on ARC || ARM || ARM64 || MIPS || COMPILE_TEST
->         help
->           This selects support for the Synopsys DesignWare Mobile Storage IP
->           block, this provides host support for SD and MMC interfaces, in both
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Which means that if this is a user space task, it won't to a lot before dying,
+will it?
 
+Rafael
 
-
--- 
-Regards,
-Alim
