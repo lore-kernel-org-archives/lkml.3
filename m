@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaIHIeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:34:00 -0400
-Received: from ozlabs.org ([103.22.144.67]:48288 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934AbaIHId7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 04:33:59 -0400
-Date: Mon, 8 Sep 2014 18:33:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: linux-next: build failure after merge of the regulator tree
-Message-ID: <20140908183350.5a4e357c@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753353AbaIHIeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:34:08 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34128 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946AbaIHIeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 04:34:04 -0400
+Date: Mon, 8 Sep 2014 14:03:51 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jim Davis <jim.epost@gmail.com>
+Subject: Re: [PATCH] drivers: media: radio: radio-miropcm20.c: include
+ missing header file
+Message-ID: <20140908083351.GA27547@sudip-PC>
+References: <1409299681-28409-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <20140906112453.GA9405@sudip-PC>
+ <540D63D1.2010402@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/zoC2oSA/zefwwB98hUQTfbI"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540D63D1.2010402@xs4all.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/zoC2oSA/zefwwB98hUQTfbI
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 08, 2014 at 10:07:45AM +0200, Hans Verkuil wrote:
+> On 09/06/2014 01:24 PM, Sudip Mukherjee wrote:
+> > On Fri, Aug 29, 2014 at 01:38:01PM +0530, Sudip Mukherjee wrote:
+> >> with -Werror=implicit-function-declaration build failed with error :
+> >> error: implicit declaration of function 'inb'
+> >> error: implicit declaration of function 'outb'
+> >>
+> >> Reported-by: Jim Davis <jim.epost@gmail.com>
+> >> Signed-off-by: Sudip Mukherjee <sudip@vectorindi.org>
+> >> ---
+> >>
+> >> Jim reported for next-20140828 , but the error still persists in next-20140829 also.
+> >>
+> >>
+> >>  drivers/media/radio/radio-miropcm20.c | 1 +
+> >>  1 file changed, 1 insertion(+)
+> >>
+> >> diff --git a/drivers/media/radio/radio-miropcm20.c b/drivers/media/radio/radio-miropcm20.c
+> >> index 998919e..3309f7c 100644
+> >> --- a/drivers/media/radio/radio-miropcm20.c
+> >> +++ b/drivers/media/radio/radio-miropcm20.c
+> >> @@ -36,6 +36,7 @@
+> >>  #include <media/v4l2-fh.h>
+> >>  #include <media/v4l2-event.h>
+> >>  #include <sound/aci.h>
+> >> +#include<linux/io.h>
+> >>  
+> >>  #define RDS_DATASHIFT          2   /* Bit 2 */
+> >>  #define RDS_DATAMASK        (1 << RDS_DATASHIFT)
+> >> -- 
+> >> 1.8.1.2
+> >>
+> > 
+> > gentle ping.
+> > build fails on next-20140905 also with the attached config (-Werror=implicit-function-declaration)
+> 
+> I hadn't forgotten this. However, I will be taking the same patch from Randy Dunlap
+> instead of yours since his commit log was formatted better, so less work for me :-)
+> 
+i didnt see his patch before , but now i saw. Indeed his commit log is much more explanatory than mine.
 
-Hi all,
+thanks
+sudip
 
-After merging the regulator tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
 
-drivers/regulator/rk808-regulator.c:312:18: warning: 'struct rk808_board' d=
-eclared inside parameter list
-           struct rk808_board *pdata)
-                  ^
-drivers/regulator/rk808-regulator.c:312:18: warning: its scope is only this=
- definition or declaration, which is probably not what you want
-drivers/regulator/rk808-regulator.c: In function 'rk808_regulator_dts':
-drivers/regulator/rk808-regulator.c:340:8: error: dereferencing pointer to =
-incomplete type
-   pdata->rk808_init_data[i] =3D rk808_reg_matches[i].init_data;
-        ^
-drivers/regulator/rk808-regulator.c:341:8: error: dereferencing pointer to =
-incomplete type
-   pdata->of_node[i] =3D rk808_reg_matches[i].of_node;
-        ^
-drivers/regulator/rk808-regulator.c: In function 'rk808_regulator_probe':
-drivers/regulator/rk808-regulator.c:359:43: error: dereferencing pointer to=
- incomplete type
-   pdata =3D devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-                                           ^
-drivers/regulator/rk808-regulator.c:364:8: warning: passing argument 2 of '=
-rk808_regulator_dts' from incompatible pointer type
-  ret =3D rk808_regulator_dts(client, pdata);
-        ^
-drivers/regulator/rk808-regulator.c:311:12: note: expected 'struct rk808_bo=
-ard *' but argument is of type 'struct rk808_board *'
- static int rk808_regulator_dts(struct i2c_client *client,
-            ^
-drivers/regulator/rk808-regulator.c:370:19: error: dereferencing pointer to=
- incomplete type
-   reg_data =3D pdata->rk808_init_data[i];
-                   ^
-drivers/regulator/rk808-regulator.c:379:26: error: dereferencing pointer to=
- incomplete type
-    config.of_node =3D pdata->of_node[i];
-                          ^
-
-Caused by commit 2cd64ae3d57b ("regulator: RK808: Add regulator driver
-for RK808").
-
-I have reverted that commit and all the following ones in the regulator
-tree that touch this file.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/zoC2oSA/zefwwB98hUQTfbI
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUDWnzAAoJEMDTa8Ir7ZwV2eAP/2ocNK+Kg3vtAZsx2WNTAMpa
-yOnbfRkMITY/HgoRBrHgCzyxny/+F1IRdoV7LSmzS0twOBDs4AwQHG8xMBkaDgrs
-9XTH7ztXtIqnP28ff1IZTUCCMuVQ8i5ObrotkL3HZed8Xtmpg/912L23Z3MebNcd
-yLwsquIrFOFPS5+qmXQOlDMLoXNeGfhDxDL/Ar4kz+49rERW+ql9PgbNc2t6OEUo
-62yLH2ADE8tJ0C9a5AGgH+pFl4pryZNn9Iw4QhP3ftllM/twW+YL0sl94K5xXzfw
-rHAXRUrJxAL2D+2IE69ZSQ4Az9Y/307bsCHGcP0oguEFXPmeFl/teOpYC2K7Gb3G
-ffRHtZA2B0P6w9xdfR9ExR3wpkxbM792P6yvzNeiDG8GiMIzcwAHEpKHbDWcdWO2
-jib/tbynQXhNEfx3e4gHl9bw1biXJ+FMKR7lnPW4rvW+3OPhPijwlmvk2hseJ94K
-o9rI8Zco5LPhyConKAycp9QzMyU81P6+1Gr15zP9ivbWSfSIideQ0rVUwWFVfnoG
-nq4w77Mwu5YtLvMjtrr1Ch1Ro3rZjwgUbQ4uqN/UuK+C9W7829F9HAU9p10A9vUT
-KeGEYXTzYNoyokpOVWJDaOVYa9DYDbntfWR+wUDG6ZnJxgLY5/G7e7kCwoxGoUMG
-3YPO/T/z9KT20En74e0W
-=X1AE
------END PGP SIGNATURE-----
-
---Sig_/zoC2oSA/zefwwB98hUQTfbI--
+> Regards,
+> 
+> 	Hans
+> 
+> > 
+> > thanks
+> > sudip
+> > 
+> 
