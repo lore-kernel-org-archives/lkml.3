@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071AbaIHVxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:53:45 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:61663 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754942AbaIHVxn (ORCPT
+	id S1755115AbaIHVyj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:54:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63524 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754703AbaIHVyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:53:43 -0400
-Message-ID: <540E2563.8020909@converseincode.com>
-Date: Mon, 08 Sep 2014 16:53:39 -0500
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 8 Sep 2014 17:54:38 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
+Date: Tue, 09 Sep 2014 00:14:04 +0200
+Message-ID: <1786905.chzpd7cfQ3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1408807277.3315.43.camel@rzhang1-toshiba>
+References: <5487060.QsgluucUH4@vostro.rjw.lan> <3770704.uNPCcL4EDK@vostro.rjw.lan> <1408807277.3315.43.camel@rzhang1-toshiba>
 MIME-Version: 1.0
-To: Mark Charlebois <charlebm@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "zhichang.yuan@linaro.org" <zhichang.yuan@linaro.org>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: LLVMLinux: Provide __aeabi_* symbols which are
- needed for clang
-References: <1409959394-14936-1-git-send-email-behanw@converseincode.com>	<2954780.2t9bpyu7ov@wuerfel>	<CAFzeTN0AO40k2ObpMX3xPOmKaiGdiLREev1A2J0sE=B7z64qug@mail.gmail.com>	<56E276C7-8204-48DD-B5C5-BF5B1452248A@arm.com> <CAFzeTN10iz0eMTVqdRhzvqKagyB7srEZN8YAUOJzxzfJihv62Q@mail.gmail.com>
-In-Reply-To: <CAFzeTN10iz0eMTVqdRhzvqKagyB7srEZN8YAUOJzxzfJihv62Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/14 16:01, Mark Charlebois wrote:
-> On Sun, Sep 7, 2014 at 12:30 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
->> On 7 Sep 2014, at 03:30, Mark Charlebois <charlebm@gmail.com> wrote:
->>> On Sat, Sep 6, 2014 at 7:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>> On Friday 05 September 2014 16:23:14 behanw@converseincode.com wrote:
->>>>> + *  Copyright (C) 2012  Mark Charlebois
->>>>> + */
->>>>> +
->>>>> +/*
->>>>> + * EABI routines
->>>> Does EABI specify these function names? I would think that they are
->>>> just random libgcc (whatever that is called in clang) functions.
->>> http://infocenter.arm.com/help/topic/com.arm.doc.ihi0043d/IHI0043D_rtabi.pdf
->>>
->>> See section 4.3.4 Memory copying, clearing, and setting
->> What does this document have to do with arm64 (AArch64, A64)? We don’t
->> need such symbols on arm64. Also, the arm64 kernel links with libgcc (no
->> immediate need AFAICT but the compiler does not guarantee the intrinsics
->> would always be generated inline).
-> [reposting in plain text]
->
-> This patch was made early in the arm64 kernel support. I just retested
-> and you are correct, it is no longer needed.  My apologies to all.
+On Saturday, August 23, 2014 11:21:17 PM Zhang Rui wrote:
 
-Whoops. I normally check whether a patch is still needed before posting 
-them. I seem to have missed that step this time. My apologies as well.
+[cut]
 
-That all being said, I prefer to see patches no longer required, than 
-needing them to be upstreamed, so in that this is a win.
+Darren, would there be any problems if I took the patch below from Rui for 3.18?
 
-Behan
+> 
+> So I guess the following patch can be upstream candidate, right?
+> 
+> From e32c2de37750d622dae6ef9d2f5c448a528a7edb Mon Sep 17 00:00:00 2001
+> From: Zhang Rui <rui.zhang@intel.com>
+> Date: Fri, 22 Aug 2014 09:06:10 +0800
+> Subject: [PATCH] ACPI: remove Fujitsu backlight and hotkey device ID from ACPI
+>  PNP id list
+> 
+> Fujitsu backlight and hotkey devices have ACPI drivers.
+> The PNP MODULE_DEVICE_TABLE in fujitsu-laptop driver is just used as an
+> indicator for module autoloading. But this is wrong because what we need is
+> ACPI module device table instead because the driver is probing ACPI devices.
+> 
+> Thus remove those ids from ACPI PNP scan handler list as we don't
+> have PNP driver for them, and convert the fujitsu-laptop PNP
+> MODULE_DEVICE_TABLE to ACPI MODULE_DEVICE_TABLE.
+> 
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=81971
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> Tested-by: Dirk Griesbach <spamthis@freenet.de>
+> ---
+>  drivers/acpi/acpi_pnp.c               |  4 ----
+>  drivers/platform/x86/fujitsu-laptop.c | 16 +++++++---------
+>  2 files changed, 7 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+> index 1f8b204..b193f84 100644
+> --- a/drivers/acpi/acpi_pnp.c
+> +++ b/drivers/acpi/acpi_pnp.c
+> @@ -130,10 +130,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+>  	{"PNP0401"},		/* ECP Printer Port */
+>  	/* apple-gmux */
+>  	{"APP000B"},
+> -	/* fujitsu-laptop.c */
+> -	{"FUJ02bf"},
+> -	{"FUJ02B1"},
+> -	{"FUJ02E3"},
+>  	/* system */
+>  	{"PNP0c02"},		/* General ID for reserving resources */
+>  	{"PNP0c01"},		/* memory controller */
+> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+> index 87aa28c..2655d4a 100644
+> --- a/drivers/platform/x86/fujitsu-laptop.c
+> +++ b/drivers/platform/x86/fujitsu-laptop.c
+> @@ -1050,6 +1050,13 @@ static struct acpi_driver acpi_fujitsu_hotkey_driver = {
+>  		},
+>  };
+>  
+> +static const struct acpi_device_id fujitsu_ids[] __used = {
+> +	{ACPI_FUJITSU_HID, 0},
+> +	{ACPI_FUJITSU_HOTKEY_HID, 0},
+> +	{"", 0}
+> +};
+> +MODULE_DEVICE_TABLE(acpi, fujitsu_ids);
+> +
+>  static int __init fujitsu_init(void)
+>  {
+>  	int ret, result, max_brightness;
+> @@ -1208,12 +1215,3 @@ MODULE_LICENSE("GPL");
+>  MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1D3:*:cvrS6410:*");
+>  MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1E6:*:cvrS6420:*");
+>  MODULE_ALIAS("dmi:*:svnFUJITSU:*:pvr:rvnFUJITSU:rnFJNB19C:*:cvrS7020:*");
+> -
+> -static struct pnp_device_id pnp_ids[] __used = {
+> -	{.id = "FUJ02bf"},
+> -	{.id = "FUJ02B1"},
+> -	{.id = "FUJ02E3"},
+> -	{.id = ""}
+> -};
+> -
+> -MODULE_DEVICE_TABLE(pnp, pnp_ids);
+> 
 
 -- 
-Behan Webster
-behanw@converseincode.com
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
