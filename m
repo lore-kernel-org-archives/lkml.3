@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081AbaIHXQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:16:17 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:38479 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164AbaIHXQP (ORCPT
+	id S1755497AbaIHXRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 19:17:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36376 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345AbaIHXRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:16:15 -0400
+	Mon, 8 Sep 2014 19:17:34 -0400
+Date: Mon, 8 Sep 2014 16:17:33 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: serial: men_z135_uart: Fix driver for changes in
+ hardware
+Message-ID: <20140908231733.GB23907@kroah.com>
+References: <1409229140-14407-1-git-send-email-johannes.thumshirn@men.de>
 MIME-Version: 1.0
-In-Reply-To: <1609685.fbsF6EQ3X7@vostro.rjw.lan>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
-	<1899038.KOOHvy2XUu@vostro.rjw.lan>
-	<CAM_iQpXWeYtnT8_p4xJROom24u6G=i=0nkALx8tDfOhwA+zNqw@mail.gmail.com>
-	<1609685.fbsF6EQ3X7@vostro.rjw.lan>
-Date: Mon, 8 Sep 2014 16:16:15 -0700
-Message-ID: <CAM_iQpXiJL=q6NFkiPF71dZHKXu=ReJ59Rbadc__+UX-GW2x8A@mail.gmail.com>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409229140-14407-1-git-send-email-johannes.thumshirn@men.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 4:23 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->
-> The reason why it matters for the suspend-time freezing is that we freeze tasks
-> to take them out of the picture entirely until they are thawed.  Therefore we
-> can't allow them to go back to the picture just for a while until they are
-> killed.  Frozen tasks are not supposed to get back to the picture at all.
->
+On Thu, Aug 28, 2014 at 02:32:20PM +0200, Johannes Thumshirn wrote:
+> 16z135 IP Core has changed so the driver needs to be updated to respect
+> these changes. The following changes have been made:
+> 
+> * Don't invert the 16z135 modem status register when reading.
+> * Add module parameter to configure the (baud rate dependent) RX timeout.
+>   Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
+> * Enable the handling of UART core's automatic flow control feature.
+>   When AFE is active disable generation of modem status IRQs.
+> * Rework the handling of IRQs to be conform with newer FPGA versions and
+>   take precautions not to miss an interrupt because of the destructive read
+>   of the IIR register.
+> 
+> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> ---
+>  drivers/tty/serial/men_z135_uart.c | 87 +++++++++++++++++++++++---------------
+>  1 file changed, 53 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/men_z135_uart.c b/drivers/tty/serial/men_z135_uart.c
+> index 30e9e60..d31b8a4 100644
+> --- a/drivers/tty/serial/men_z135_uart.c
+> +++ b/drivers/tty/serial/men_z135_uart.c
+> @@ -34,12 +34,11 @@
+>  #define MEN_Z135_CONF_REG		0x808
+>  #define MEN_Z135_UART_FREQ		0x80c
+>  #define MEN_Z135_BAUD_REG		0x810
+> -#define MENZ135_TIMEOUT			0x814
+> +#define MEN_Z135_TIMEOUT		0x814
+>  
+>  #define MEN_Z135_MEM_SIZE		0x818
+>  
+> -#define IS_IRQ(x) ((x) & 1)
+> -#define IRQ_ID(x) (((x) >> 1) & 7)
+> +#define IRQ_ID(x) ((x) & 0x1f)
+>  
+>  #define MEN_Z135_IER_RXCIEN BIT(0)		/* RX Space IRQ */
+>  #define MEN_Z135_IER_TXCIEN BIT(1)		/* TX Space IRQ */
+> @@ -94,11 +93,11 @@
+>  #define MEN_Z135_LSR_TEXP BIT(6)
+>  #define MEN_Z135_LSR_RXFIFOERR BIT(7)
+>  
+> -#define MEN_Z135_IRQ_ID_MST 0
+> -#define MEN_Z135_IRQ_ID_TSA 1
+> -#define MEN_Z135_IRQ_ID_RDA 2
+> -#define MEN_Z135_IRQ_ID_RLS 3
+> -#define MEN_Z135_IRQ_ID_CTI 6
+> +#define MEN_Z135_IRQ_ID_RLS BIT(0)
+> +#define MEN_Z135_IRQ_ID_RDA BIT(1)
+> +#define MEN_Z135_IRQ_ID_CTI BIT(2)
+> +#define MEN_Z135_IRQ_ID_TSA BIT(3)
+> +#define MEN_Z135_IRQ_ID_MST BIT(4)
+>  
+>  #define LCR(x) (((x) >> MEN_Z135_LCR_SHIFT) & 0xff)
+>  
+> @@ -118,6 +117,10 @@ static int align;
+>  module_param(align, int, S_IRUGO);
+>  MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
+>  
+> +static int rx_timeout;
+> +module_param(rx_timeout, uint, S_IRUGO);
+> +MODULE_PARM_DESC(rx_timeout, "RX timeout");
 
+Why add a module parameter?  Who will know to set this?  And to what
+value?
 
-Ok, then checking TIF_MEMDIE is unsafe for PM freeze, we should
-keep the cgroup_freezing() test to make sure freeze request is from
-cgroup not PM. Question got answered. :)
+And what about this driver working on old hardware, didn't you just
+break this?
 
-I will put the following as a comment:
+thanks,
 
-/* OOM killer may decide to kill this process after it is frozen,
-   in this case SIGKILL can never be handled, so we should check
-  TIF_MEMDIE and if it is set, thaw and let SIGKILL kill it.
-  But for PM freeze, it is not allowed to get out even for a while,
-  so we have to keep it being frozen. */
-
-Let me know if it looks good to you.
+greg k-h
