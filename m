@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaIHPLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:11:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16054 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781AbaIHPLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:11:10 -0400
-Date: Mon, 8 Sep 2014 17:10:17 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+	id S1753819AbaIHPN3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:13:29 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35300 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974AbaIHPN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:13:28 -0400
+Date: Mon, 8 Sep 2014 17:13:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
-Message-ID: <20140908151016.GH17728@krava.brq.redhat.com>
-References: <1409781604-16778-1-git-send-email-acme@kernel.org>
- <1409781604-16778-5-git-send-email-acme@kernel.org>
- <54085BC8.40403@intel.com>
- <20140904151902.GE2997@kernel.org>
- <54097793.4050201@intel.com>
- <20140905140756.GD30520@kernel.org>
- <20140906203915.GA9843@krava.brq.redhat.com>
- <20140908134615.GD2773@kernel.org>
- <20140908140454.GF17728@krava.brq.redhat.com>
- <20140908143317.GE2773@kernel.org>
+Subject: Re: [PATCH 1/9] perf: Remove redundant parent context check from
+ context_equiv
+Message-ID: <20140908151305.GU3588@twins.programming.kicks-ass.net>
+References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
+ <1408977943-16594-2-git-send-email-jolsa@kernel.org>
+ <20140902105036.GH5806@worktop.ger.corp.intel.com>
+ <20140908094348.GB1172@krava.brq.redhat.com>
+ <20140908094548.GA6758@twins.programming.kicks-ass.net>
+ <20140908094855.GR3588@twins.programming.kicks-ass.net>
+ <20140908100122.GS3588@twins.programming.kicks-ass.net>
+ <20140908120140.GA17728@krava.brq.redhat.com>
+ <20140908133428.GG6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FC8SlEHQ+Zonp6pC"
 Content-Disposition: inline
-In-Reply-To: <20140908143317.GE2773@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140908133428.GG6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 11:33:17AM -0300, Arnaldo Carvalho de Melo wrote:
 
-SNIP
+--FC8SlEHQ+Zonp6pC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> So what you're saying is that we should have been polling all the fds
-> all the time?
-> 
-> Because after all we end up trying to consume everything in all the ring
-> buffers when just one of them gets a POLLRD anyway...
-> 
-> > > I'll look at the kernel code for that...
-> > >  
-> > > > > I.e. when we ask the kernel to point fd B to fd A's mmap (what you
-> > > > > called set-output) and fd B inserts an event into fd A's mmap ring
-> > > > > buffer, we get fd A poll return as POLLRD, no?
-> > > 
-> > > > > Have to check... Otherwise we would have to poll all fds all the time,
-> > > > > not just the ones mmaping, right?
-> > > 
-> > > > > > I think Jiri's patchset changed pollfds to include all fds for that reason.
-> > > 
-> > > > hm, I did not think of that.. ;-) I needed more grained feedback
-> > > > for future features like cpu hotplug
-> > > 
-> > > So this is good for something you didn't tried to fix (and document) but
-> > > good for something that may be nice in the future? Grumpf, we have
-> > > already way too much stuff that will be eventually used but is not used
-> > > right now :-\
->  
-> > IMO it's more clear to poll pm all event FDs.. and now with the
-> > case Adrian described it seems necessary anyway
-> 
-> I would have to check why was that we were polling just the one where
-> the mmap is done, I don't recall being the one to do it, probably who
-> did it thought that since the ring buffer is there, it was enough (and
-> possibly scaled better, dunno) to do the polling in just one of them.
+On Mon, Sep 08, 2014 at 03:34:28PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 08, 2014 at 02:01:41PM +0200, Jiri Olsa wrote:
+> > On Mon, Sep 08, 2014 at 12:01:22PM +0200, Peter Zijlstra wrote:
+> > > On Mon, Sep 08, 2014 at 11:48:55AM +0200, Peter Zijlstra wrote:
+> > >=20
+> > > > > The thing is; I don't understand those reasons. That commit log d=
+oesn't
+> > > > > explain.
+> > > >=20
+> > > > Ah wait, I finally see. I think we want to fix that exit path, not
+> > > > disallow the cloning.
+> > > >=20
+> > > > The thing is, by not allowing this optimization simple things like =
+eg.
+> > > > pipe-test say very expensive.
+> > >=20
+> > > So its 179033b3e064 ("perf: Add PERF_EVENT_STATE_EXIT state for events
+> > > with exited task") that introduces the problem. Before that things wo=
+uld
+> > > work correctly afaict.
+> >=20
+> > hum, I dont think so.. because the perf_remove_from_context set event
+> > to PERF_EVENT_STATE_OFF state anyway.. thus making any new cloned events
+> > disabled
+>=20
+> Urgh, see I knew I was missing something.
+>=20
+> Can't we fix that? Lemme check to see what relies on this.
 
-for read notification it's ok to poll just for one event, because they
-all share same ringbuffer and perf_poll checks if there's ANY new data
+2e2af50b1fab ("perf_events: Disable events when we detach them")
 
-for the hup notification I think we need to poll all of them
+Seems to be about it. And I think we should solve that differently, but
+the best I can come up with ties into the event->ctx mess we have in
+that other thread.
 
-jirka
+The thing is, IOC_ENABLE/DISABLE and read() and such should act
+(sanely and) independent from the attached state.
+
+Its just that the whole event->ctx migration mess is making this
+somewhat hard atm.
+
+So things like perf_event_read() should not only check ctx->is_active
+but also worry about event->attach_state & PERF_ATTACH_CONTEXT.
+
+Now the biggest problem is that we cannot tell if its a temporary state
+(move_group / migrate_context) or permanent (exit)...=20
+
+Urgh
+
+--FC8SlEHQ+Zonp6pC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUDceAAAoJEHZH4aRLwOS6rOIQAJsgLvCdbpxeiuxDNJUcTxiL
+exTKFa8iviiG1o5LPox0/URbQxLjGdDr8RIJbIErLtal1cz83bWLF1xcFX/afNhq
+uEt4bXRFTOdbIKZ5myv3hk5o1Wil7MiOmQTL3cEwMLs9nsF4CkiXoBg1yGqiTWzU
+0mfh/aT2xDjgcC2Mwhum6kHiTgXzo10PrCGRwlcAcf8Jm2a6vSQxOYHzDM/wVvnw
+Atn56fzI7TK+5o6WzOisuuGbUa6lSOhYuv5pbBkihoxRIVJC3wqNCmp/yoss8onx
+ZUZPoGmpSH1FazNQsK6qYkrPbtP0OzddzviI3dqQwaSYj9VJGrDk9JyRwDLMTcSY
+/M04fMGsr6dAsBk4nEiTL7NW6FyCswRG1BtwTEbywJEf9ODsa9nbRSNNPTBlJ5yD
+waS5P0F2w6M8awtjneQOyoPoZM0NwTt3pysPZc5A+MuKrjcIE5NT/H3euL4xICqb
+CgjG8mT0DW1JSkqvjcVj8c9P5gLeobqsJi3TSquUu5cNo6WyBh2VIugEy2d+rELG
+6PYTjUg/3PgT06Uj54Wk54T8pWj/0+QhxK91Ja2OtT7NeoHb5MuDefCk35fjSPJp
+m3CqZcEc3kHRdC7Rl8WsyLoS8Wowm3NUYsIav+RkHjOlMOZB9rP2II/blUMUTgw1
+FoHH4V7kK/LYPogfZw9c
+=i51j
+-----END PGP SIGNATURE-----
+
+--FC8SlEHQ+Zonp6pC--
