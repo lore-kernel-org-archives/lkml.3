@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaIHJPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 05:15:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51639 "EHLO mx2.suse.de"
+	id S1753523AbaIHJPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 05:15:54 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:39749 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093AbaIHJPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 05:15:40 -0400
-Date: Mon, 8 Sep 2014 11:15:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+	id S1753093AbaIHJPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 05:15:52 -0400
+Date: Mon, 08 Sep 2014 18:14:48 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH 7/7] mtd: denali: fix indentations and other trivial things
+Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jiri Kosina <trivial@kernel.org>, Huang Shijie <shijie8@gmail.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        "grmoore@altera.com" <grmoore@altera.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [dummy-irq] genirq: Flags mismatch irq 0. 00000080 (dummy_irq)
- vs. 00015a20 (timer)
-In-Reply-To: <20140908091248.GA23776@localhost>
-Message-ID: <alpine.LNX.2.00.1409081114290.5523@pobox.suse.cz>
-References: <20140908091248.GA23776@localhost>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+In-Reply-To: <20140908083920.GD5361@thin>
+References: <1410163813-31783-8-git-send-email-yamada.m@jp.panasonic.com> <20140908083920.GD5361@thin>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20140908181447.C428.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014, Fengguang Wu wrote:
+Hi Josh,
 
-> This patch is found to trigger a call trace dump during kernel boot.
-> Can it be possibly fixed? Thanks!
 
-Hi Fengguang,
+On Mon, 8 Sep 2014 01:39:20 -0700
+Josh Triplett <josh@joshtriplett.org> wrote:
 
-from the dmesg it's obvious that dummy-irq is requesting IRQ#0 by default. 
-This has been fixed back in 2013 via commit a7b594b490. Are you sure you 
-have that commit applied?
+> On Mon, Sep 08, 2014 at 05:10:13PM +0900, Masahiro Yamada wrote:
+> > @@ -406,9 +404,9 @@ static void get_hynix_nand_para(struct denali_nand_info *denali,
+> >  		break;
+> >  	default:
+> >  		dev_warn(denali->dev,
+> > -			"Spectra: Unknown Hynix NAND (Device ID: 0x%x)."
+> > -			"Will use default parameter values instead.\n",
+> > -			device_id);
+> > +			 "Spectra: Unknown Hynix NAND (Device ID: 0x%x)."
+> > +			 "Will use default parameter values instead.\n",
+> > +			 device_id);
+> 
+> Please join quoted strings into a single line.
+> 
+> > -		pr_err("Your NAND chip OOB is not large enough to \
+> > -				contain 8bit ECC correction codes");
+> > +		pr_err("Your NAND chip OOB is not large enough to "
+> > +		       "contain 8bit ECC correction codes");
+> 
+> Likewise.
+> 
 
-Thanks,
+Thanks for your review, but
+the quoted strings are too long to be joined into a single line.
+(exceed 80 columns)
 
--- 
-Jiri Kosina
-SUSE Labs
+
+Best Regards
+Masahiro Yamada
+
