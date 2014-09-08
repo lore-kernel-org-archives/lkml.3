@@ -1,82 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113AbaIHOak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:30:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46215 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817AbaIHOai (ORCPT
+	id S1754119AbaIHObo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:31:44 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:41544 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794AbaIHObn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:30:38 -0400
-Message-ID: <540DBD62.5040605@oracle.com>
-Date: Mon, 08 Sep 2014 10:29:54 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Mon, 8 Sep 2014 10:31:43 -0400
+Date: Mon, 8 Sep 2014 16:31:38 +0200
+From: Robert Richter <rric@kernel.org>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
         linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: "mm: introduce dump_vma fix 2" still broken
-References: <2815658.dHHBXc7oHP@wuerfel>
-In-Reply-To: <2815658.dHHBXc7oHP@wuerfel>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+        Robert Richter <rrichter@cavium.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ITS: Fixing 32 bit compatibility
+Message-ID: <20140908143138.GZ4703@rric.localhost>
+References: <1410185480-5153-1-git-send-email-rric@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410185480-5153-1-git-send-email-rric@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 07:02 AM, Arnd Bergmann wrote:
-> 
-> I saw this commit today in linux-next, which fixes a build error, but introduces
-> a new warning:
-> 
-> commit a60224c708f880dd937b352b7461cbf14e93012d
-> Author: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date:   Mon Sep 8 19:41:54 2014 +1000
-> 
->     mm: introduce dump_vma fix 2
->     
->     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index cb510c08073b..0de60769bcf6 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6739,7 +6739,7 @@ void dump_vma(const struct vm_area_struct *vma)
->                 "prot %lx anon_vma %p vm_ops %p\n"
->                 "pgoff %lx file %p private_data %p\n",
->                 vma, (void *)vma->vm_start, (void *)vma->vm_end, vma->vm_next,
-> -               vma->vm_prev, vma->vm_mm, vma->vm_page_prot.pgprot,
-> +               vma->vm_prev, vma->vm_mm, pgprot_val(vma->vm_page_prot),
->                 vma->anon_vma, vma->vm_ops, vma->vm_pgoff,
->                 vma->vm_file, vma->vm_private_data);
->         dump_flags(vma->vm_flags, vmaflags_names, ARRAY_SIZE(vmaflags_names));
-> 
-> 
-> /git/arm-soc/mm/page_alloc.c: In function 'dump_vma':
-> /git/arm-soc/mm/page_alloc.c:6744:3: warning: format '%lx' expects argument of type 'long unsigned int', but argument 8 has type 'pgprot_t' [-Wformat=]
->    vma->vm_file, vma->vm_private_data);
->    ^
-> 
-> This happens on machines that use ARM LPAE, where pgprot_t is in fact
-> a 64-bit integer. The simplest fix I see would be add a cast to u64
-> and always print this as a 64bit value.
+Marc,
 
-Hi Arnd,
+On 08.09.14 16:11:19, Robert Richter wrote:
+> From: Robert Richter <rrichter@cavium.com>
+> 
+> Fixing 32 bit compatibility by using ULL for u64 constants.
 
-The fix for the original issue would be:
+the same is true for gicv3-its (branch 'gicv3/its' of
+git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms). See
+the patch below. You may merge the fixes with your patches or apply it
+on top of yours.
 
-	http://ozlabs.org/~akpm/mmots/broken-out/introduce-dump_vma-fix-2.patch
-
-Which includes the casting that Stephen's patch didn't have.
-
-Stephen, in the future, is there a way to get build fixes faster to you? From
-what I understand -mm syncs up only once in a couple of days. It might make
-everyone’s life much easier if build errors wouldn't drag over a week.
+-Robert
 
 
-Thanks,
-Sasha
+
+>From 38a71030b9b93a14afada6979c709f6addac5112 Mon Sep 17 00:00:00 2001
+From: Robert Richter <rrichter@cavium.com>
+Date: Tue, 26 Aug 2014 18:08:56 +0200
+Subject: [PATCH] ITS: Fixing 32 bit compatibility
+
+Fixing 32 bit compatibility by using ULL for u64 constants.
+
+Signed-off-by: Robert Richter <rrichter@cavium.com>
+---
+ drivers/irqchip/irq-gic-v3-its.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
+index 26927521fc28..2fda6935ad32 100644
+--- a/drivers/irqchip/irq-gic-v3-its.c
++++ b/drivers/irqchip/irq-gic-v3-its.c
+@@ -173,55 +173,55 @@ static struct rdist *gic_rdist;
+ 
+ static void its_encode_cmd(struct its_cmd_block *cmd, u8 cmd_nr)
+ {
+-	cmd->raw_cmd[0] &= ~0xffUL;
++	cmd->raw_cmd[0] &= ~0xffULL;
+ 	cmd->raw_cmd[0] |= cmd_nr;
+ }
+ 
+ static void its_encode_devid(struct its_cmd_block *cmd, u32 devid)
+ {
+-	cmd->raw_cmd[0] &= 0xffffffffUL;
++	cmd->raw_cmd[0] &= 0xffffffffULL;
+ 	cmd->raw_cmd[0] |= ((u64)devid) << 32;
+ }
+ 
+ static void its_encode_event_id(struct its_cmd_block *cmd, u32 id)
+ {
+-	cmd->raw_cmd[1] &= ~0xffffffffUL;
++	cmd->raw_cmd[1] &= ~0xffffffffULL;
+ 	cmd->raw_cmd[1] |= id;
+ }
+ 
+ static void its_encode_phys_id(struct its_cmd_block *cmd, u32 phys_id)
+ {
+-	cmd->raw_cmd[1] &= 0xffffffffUL;
++	cmd->raw_cmd[1] &= 0xffffffffULL;
+ 	cmd->raw_cmd[1] |= ((u64)phys_id) << 32;
+ }
+ 
+ static void its_encode_size(struct its_cmd_block *cmd, u8 size)
+ {
+-	cmd->raw_cmd[1] &= ~0xffUL;
+-	cmd->raw_cmd[1] |= size & 0xff;
++	cmd->raw_cmd[1] &= ~0xffULL;
++	cmd->raw_cmd[1] |= size;
+ }
+ 
+ static void its_encode_itt(struct its_cmd_block *cmd, u64 itt_addr)
+ {
+-	cmd->raw_cmd[2] &= ~0xffffffffffffUL;
+-	cmd->raw_cmd[2] |= itt_addr & 0xffffffffff00UL;
++	cmd->raw_cmd[2] &= ~0xffffffffffffULL;
++	cmd->raw_cmd[2] |= itt_addr & 0xffffffffff00ULL;
+ }
+ 
+ static void its_encode_valid(struct its_cmd_block *cmd, int valid)
+ {
+-	cmd->raw_cmd[2] &= ~(1UL << 63);
++	cmd->raw_cmd[2] &= ~(1ULL << 63);
+ 	cmd->raw_cmd[2] |= ((u64)!!valid) << 63;
+ }
+ 
+ static void its_encode_target(struct its_cmd_block *cmd, u64 target_addr)
+ {
+-	cmd->raw_cmd[2] &= ~(0xffffffffUL << 16);
+-	cmd->raw_cmd[2] |= (target_addr & (0xffffffffUL << 16));
++	cmd->raw_cmd[2] &= ~(0xffffffffULL << 16);
++	cmd->raw_cmd[2] |= (target_addr & (0xffffffffULL << 16));
+ }
+ 
+ static void its_encode_collection(struct its_cmd_block *cmd, u16 col)
+ {
+-	cmd->raw_cmd[2] &= ~0xffffUL;
++	cmd->raw_cmd[2] &= ~0xffffULL;
+ 	cmd->raw_cmd[2] |= col;
+ }
+ 
+@@ -1221,8 +1221,8 @@ static int its_msi_setup_irq(struct msi_chip *chip,
+ 
+ 	addr = its->phys_base + GITS_TRANSLATER;
+ 
+-	msg.address_lo		= addr & ((1UL << 32) - 1);
+-	msg.address_hi		= addr >> 32;
++	msg.address_lo		= (u32)addr;
++	msg.address_hi		= (u32)(addr >> 32);
+ 	msg.data		= vec_nr;
+ 
+ 	write_msi_msg(irq, &msg);
+-- 
+2.0.1
+
