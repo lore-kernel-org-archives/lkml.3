@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaIHH7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 03:59:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:35625 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752995AbaIHH7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 03:59:21 -0400
-Date: Mon, 8 Sep 2014 17:59:13 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Peter Foley <pefoley2@pefoley.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Willem de Bruijn <willemb@google.com>
-Subject: linux-next: manual merge of the rd-docs tree with the net-next tree
-Message-ID: <20140908175913.42603191@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753218AbaIHIAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:00:38 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:42807 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaIHIAh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 04:00:37 -0400
+Date: Mon, 8 Sep 2014 09:00:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH] mfd: tps65217: Tell regmap what registers are valid
+Message-ID: <20140908080030.GK1397@lee--X1>
+References: <1409951778-30513-1-git-send-email-broonie@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ubLhkEWkDM/WYMowOA=QCiz"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409951778-30513-1-git-send-email-broonie@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ubLhkEWkDM/WYMowOA=QCiz
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 05 Sep 2014, Mark Brown wrote:
 
-Hi Randy,
+> Allow regmap to provide debugfs access to the register map by telling it
+> what registers are valid.
+> 
+> Signed-off-by: Mark Brown <broonie@kernel.org>
+> ---
+>  drivers/mfd/tps65217.c       | 2 ++
+>  include/linux/mfd/tps65217.h | 2 ++
+>  2 files changed, 4 insertions(+)
 
-Today's linux-next merge of the rd-docs tree got a conflict in
-Documentation/networking/timestamping/Makefile between commit
-8fe2f761cae9 ("net-timestamp: expand documentation") from the net-next
-tree and commits 429cbe7863ad ("Documentation: use subdir-y to avoid
-unnecessary built-in.o files") and b07a884ea14d ("Documentation: add
-makefiles for more targets") from the rd-docs tree.
+Applied, thanks.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+> index 3cc4c7084b92..a8ee52c95f2f 100644
+> --- a/drivers/mfd/tps65217.c
+> +++ b/drivers/mfd/tps65217.c
+> @@ -146,6 +146,8 @@ EXPORT_SYMBOL_GPL(tps65217_clear_bits);
+>  static struct regmap_config tps65217_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+> +
+> +	.max_register = TPS65217_REG_MAX,
+>  };
+>  
+>  static const struct of_device_id tps65217_of_match[] = {
+> diff --git a/include/linux/mfd/tps65217.h b/include/linux/mfd/tps65217.h
+> index 95d6938737fd..ac7fba44d7e4 100644
+> --- a/include/linux/mfd/tps65217.h
+> +++ b/include/linux/mfd/tps65217.h
+> @@ -60,6 +60,8 @@
+>  #define TPS65217_REG_SEQ5		0X1D
+>  #define TPS65217_REG_SEQ6		0X1E
+>  
+> +#define TPS65217_REG_MAX		TPS65217_REG_SEQ6
+> +
+>  /* Register field definitions */
+>  #define TPS65217_CHIPID_CHIP_MASK	0xF0
+>  #define TPS65217_CHIPID_REV_MASK	0x0F
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc Documentation/networking/timestamping/Makefile
-index 95e239c70076,52ac67da9315..000000000000
---- a/Documentation/networking/timestamping/Makefile
-+++ b/Documentation/networking/timestamping/Makefile
-@@@ -1,20 -1,8 +1,14 @@@
- +# To compile, from the source root
- +#
- +#    make headers_install
- +#    make M=3Ddocumentation
- +
-- # kbuild trick to avoid linker error. Can be omitted if a module is built.
-- obj- :=3D dummy.o
--=20
-  # List of programs to build
-- hostprogs-y :=3D timestamping txtimestamp hwtstamp_config
- -hostprogs-y :=3D hwtstamp_config timestamping
-++hostprogs-y :=3D hwtstamp_config timestamping txtimestamp
- =20
-  # Tell kbuild to always build the programs
-  always :=3D $(hostprogs-y)
- =20
-  HOSTCFLAGS_timestamping.o +=3D -I$(objtree)/usr/include
- +HOSTCFLAGS_txtimestamp.o +=3D -I$(objtree)/usr/include
-  HOSTCFLAGS_hwtstamp_config.o +=3D -I$(objtree)/usr/include
--=20
-- clean:
-- 	rm -f timestamping txtimestamp hwtstamp_config
-
---Sig_/ubLhkEWkDM/WYMowOA=QCiz
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUDWHWAAoJEMDTa8Ir7ZwVLKQP/2pDg7ZUUQaBG14pqSJk6H3/
-A9I5c1sve+pUcLOmJyUSEDZ6etd4s25nmTS2e00eGnFv7mcrefMMP4E547f8tYqg
-5dK1WZzRTB02AGWjq41iRMbscipxFpEGkPeaNCOR82EYOXeVysVyREpXuPX9jD+N
-R73/y+8ilr/z1UbvtJAe0Rm6Jnsh5nthJ0KPW3IN3iYtgICrGIlTMIaMPg3zxNnr
-dAqoZMg6PlCOzxoJxgETq1Yi84CCVZ08Q/BCAc5aX+4ezNj45TnbuS0xj8jECOiz
-1X2r1w0thbbFKDMP1l1vXzDceuJ3VpMCzfXYVIFkXKZRRS0fst3/e5zpqqB8ehxO
-Zhn0boNpSFG7uC6qmUt2vazzAtVy68IGDq2d/jITCI1YjKmOrCPEZuiRefCLnE2k
-BU7LtA2e2FgluQ4woLGvwTyBaRaVZiIuZ6FPn/uEs9arYxm62JarzFeJdbNeLztC
-OBb0kwkw5GoSoY7ZxlR0haOk5X/E++Qyjg1sKFcFg7gUy1PVWDRLy3mLPKrU/U6d
-KKyqzj1vFRPdlsl3bD0+Oyo0Y1k4b24VLMaXttkv5n87V/vA4AoOW7M31YEfAWaX
-H+biJFBKHvYVClOSCIJJLbpPIetg+s8QlnBvDD/MLO5BJ/OMIUTabq3Qy5M08T74
-S3z9GBTs0pouZL8IwpZq
-=GC/k
------END PGP SIGNATURE-----
-
---Sig_/ubLhkEWkDM/WYMowOA=QCiz--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
