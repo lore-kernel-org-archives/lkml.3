@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaIHInT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:43:19 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32504 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980AbaIHInN (ORCPT
+	id S1753559AbaIHInW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:43:22 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:29000 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaIHInN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Sep 2014 04:43:13 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-39-540d6c1fb1a6
+X-AuditID: cbfec7f4-b7f156d0000063c7-37-540d6c1ee436
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
         dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
@@ -16,29 +16,37 @@ Cc: Lars-Peter Clausen <lars@metafoo.de>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 2/4] dmaengine: pl330: Remove unused 'regs' variable in
- pl330_submit_req()
-Date: Mon, 08 Sep 2014 10:42:48 +0200
-Message-id: <1410165770-4452-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 1/4] dmaengine: pl330: Remove non-NULL check for
+ pl330_submit_req parameters
+Date: Mon, 08 Sep 2014 10:42:47 +0200
+Message-id: <1410165770-4452-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1410165770-4452-1-git-send-email-k.kozlowski@samsung.com>
-References: <1410165770-4452-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t/xy7ryObwhBu+aeS02zljPajF96gVG
-	i9VT/7JavH5haHG26Q27xZLJ81ktLu+aw2ax9shddouXfftZHDg9Fu95yeSx5M0hVo++LasY
-	PT5vkgtgieKySUnNySxLLdK3S+DKaNs6m7HgHFvFu8Z9TA2Ma1i7GDk5JARMJM6samaHsMUk
-	Ltxbz9bFyMUhJLCUUaKnewsThNPHJLH3534WkCo2AWOJzcuXgFWJCHQySnycfJIVxGEWeMso
-	8eHwZrBZwgLxEuvnbGDsYuTgYBFQlbjS4QAS5hVwk9g66zjUajmJk8cmg9mcAu4SbQ0rGEFs
-	IaCai49PMk9g5F3AyLCKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyTAvuxgXHzM6hCjAAej
-	Eg9vwlWeECHWxLLiytxDjBIczEoivAxhvCFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGJce8ixj
-	2BJ61eOQVa5skEwVa4zohpVTFhacdJqaMPvB7MlRGx891Jz1oWFphI24/c4czrtSxrcdHzh+
-	TZn8vNXvZuNRa079bR3vPUVcmGeHSjpevF5uxL3pxmaxhLk3PObtXmEYOLHz6ZP7Z+S9ldam
-	bfz6fcvNRQrLajlerd/IzatTWLYg+JMSS3FGoqEWc1FxIgCeMJfjDgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t/xy7pyObwhBree6lhsnLGe1WL61AuM
+	Fqun/mW1eP3C0OJs0xt2iyWT57NaXN41h81i7ZG77BYv+/azOHB6LN7zksljyZtDrB59W1Yx
+	enzeJBfAEsVlk5Kak1mWWqRvl8CVsfnxM7aCK1wVc88eZ2xgfMrRxcjBISFgInHpXXoXIyeQ
+	KSZx4d56ti5GLg4hgaWMEn1rlrBAOH1MEoenXWMDqWITMJbYvHwJWJWIQCejxMfJJ1lBHGaB
+	t4wSHw5vZgepEhZIlNjQPpcJxGYRUJXoXbWUBcTmFXCTuL/4OyvEPjmJk8cms05g5F7AyLCK
+	UTS1NLmgOCk911CvODG3uDQvXS85P3cTIyRgvuxgXHzM6hCjAAejEg9vwlWeECHWxLLiytxD
+	jBIczEoivAxhvCFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGEsZFvd+fsU/6/t23zkO9dGhursK
+	HRPicsqlggXXrn9Zv2u/12UTF701297N1knYET8jhN1T7PYyk4mCsh/PqInbPgyplJx89HfS
+	hJzr2xZcu7s/Q3fhp6jTXzYu3v/UPa+feZr1DL3DNjv2x5gsuduv9PPS8tknDXwunssSmSk2
+	bR/XTsUjf74rsRRnJBpqMRcVJwIAlIRc0PYBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'void __iomem *regs' is not used in pl330_submit_req() function.
-Remove it.
+The pl330_submit_req() checked supplied 'struct pl330_thread thrd' and
+'struct dma_pl330_desc desc' parameters for non-NULL. However these
+checks are useless because supplied arguments won't be NULL.
+
+The pl330_submit_req() is called in only one place and:
+1. 'desc' is already dereferenced in fill_queue() before calling
+   pl330_submit_req().
+2. 'thrd' is always dereferenced after calling
+   fill_queue()->pl330_submit_req().
+
+Removing the checks for non-NULL values fixes following warning:
+drivers/dma/pl330.c:1376 pl330_submit_req() warn: variable dereferenced before check 'thrd' (see line 1367)
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
@@ -46,29 +54,27 @@ Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
 Changes since v1:
 =================
-1. New patch.
+1. Remove the checks for non-NULL completely instead of moving them
+   before dereference. Suggested by Lars-Peter Clausen.
 ---
- drivers/dma/pl330.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/dma/pl330.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
 diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 57049f84d0c0..28e3775888a6 100644
+index d5149aacd2fe..57049f84d0c0 100644
 --- a/drivers/dma/pl330.c
 +++ b/drivers/dma/pl330.c
-@@ -1367,13 +1367,10 @@ static int pl330_submit_req(struct pl330_thread *thrd,
- 	struct pl330_dmac *pl330 = thrd->dmac;
- 	struct _xfer_spec xs;
- 	unsigned long flags;
--	void __iomem *regs;
- 	unsigned idx;
+@@ -1372,10 +1372,6 @@ static int pl330_submit_req(struct pl330_thread *thrd,
  	u32 ccr;
  	int ret = 0;
  
--	regs = thrd->dmac->base;
+-	/* No Req or Unacquired Channel or DMAC */
+-	if (!desc || !thrd || thrd->free)
+-		return -EINVAL;
 -
+ 	regs = thrd->dmac->base;
+ 
  	if (pl330->state == DYING
- 		|| pl330->dmac_tbd.reset_chan & (1 << thrd->id)) {
- 		dev_info(thrd->dmac->ddma.dev, "%s:%d\n",
 -- 
 1.9.1
 
