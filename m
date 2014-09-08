@@ -1,75 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaIHINW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:13:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50376 "EHLO mx2.suse.de"
+	id S1753572AbaIHINr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:13:47 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:57731 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192AbaIHINU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 04:13:20 -0400
-Date: Mon, 8 Sep 2014 10:13:17 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: Andrew Duggan <aduggan@synaptics.com>, linux-input@vger.kernel.org,
+	id S1753124AbaIHINo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 04:13:44 -0400
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-mtd@lists.infradead.org
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jiri Kosina <trivial@kernel.org>, Huang Shijie <shijie8@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        "grmoore@altera.com" <grmoore@altera.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: rmi: check sanity of the incoming report
-In-Reply-To: <1409925435-6556-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1409081012160.5523@pobox.suse.cz>
-References: <1409925435-6556-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: [PATCH 7/7] mtd: denali: fix indentations and other trivial things
+Date: Mon,  8 Sep 2014 17:10:13 +0900
+Message-Id: <1410163813-31783-8-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410163813-31783-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1410163813-31783-1-git-send-email-yamada.m@jp.panasonic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Sep 2014, Benjamin Tissoires wrote:
+- Fix indentations
+- Do not break a line unless it is longer than 80 columns
+- Do not insert a whitespace before ';'
+- Use braces for a "else" block where the "if" block uses ones.
 
-> In the Dell XPS 13 9333, it appears that sometimes the bus get confused
-> and corrupts the incoming data. It fills the input report with the
-> sentinel value "ff". Synaptics told us that such behavior does not comes
-> from the touchpad itself, so we filter out such reports here.
-> 
-> Unfortunately, we can not simply discard the incoming data because they
-> may contain useful information. Most of the time, the misbehavior is
-> quite near the end of the report, so we can still use the valid part of
-> it.
-> 
-> Fixes:
-> https://bugzilla.redhat.com/show_bug.cgi?id=1123584
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-rmi.c | 31 ++++++++++++++++++++++++++-----
->  1 file changed, 26 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-> index 8389e81..db92c3b 100644
-> --- a/drivers/hid/hid-rmi.c
-> +++ b/drivers/hid/hid-rmi.c
-> @@ -320,9 +320,6 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
->  	int offset;
->  	int i;
->  
-> -	if (size < hdata->f11.report_size)
-> -		return 0;
-> -
->  	if (!(irq & hdata->f11.irq_mask))
->  		return 0;
->  
-> @@ -332,9 +329,13 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
->  		int fs_bit_position = (i & 0x3) << 1;
->  		int finger_state = (data[fs_byte_position] >> fs_bit_position) &
->  					0x03;
-> +		int position = offset + 5 * i;
-> +
-> +		if (position + 5 > size)
-> +			/* partial report, go on with what we received */
-> +			break;
+Additionally, fix the following "checkpatch.pl" warnings:
+- WARNING: else is not generally useful after a break or return
+- WARNING: Missing a blank line after declarations
+- WARNING: Avoid line continuations in quoted strings
 
-Do you perhaps want to warn the user here, so that he knows that things 
-are getting a little bit hairy? Or is this happening so often that it 
-makes no sense to warn about it?
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+---
 
+ drivers/mtd/nand/denali.c | 113 ++++++++++++++++++++--------------------------
+ 1 file changed, 50 insertions(+), 63 deletions(-)
+
+diff --git a/drivers/mtd/nand/denali.c b/drivers/mtd/nand/denali.c
+index ed37b76..4d26e11 100644
+--- a/drivers/mtd/nand/denali.c
++++ b/drivers/mtd/nand/denali.c
+@@ -162,8 +162,7 @@ static void read_status(struct denali_nand_info *denali)
+ static void reset_bank(struct denali_nand_info *denali)
+ {
+ 	uint32_t irq_status;
+-	uint32_t irq_mask = INTR_STATUS__RST_COMP |
+-			    INTR_STATUS__TIME_OUT;
++	uint32_t irq_mask = INTR_STATUS__RST_COMP | INTR_STATUS__TIME_OUT;
+ 
+ 	clear_interrupts(denali);
+ 
+@@ -181,16 +180,15 @@ static uint16_t denali_nand_reset(struct denali_nand_info *denali)
+ 	int i;
+ 
+ 	dev_dbg(denali->dev, "%s, Line %d, Function: %s\n",
+-		       __FILE__, __LINE__, __func__);
++		__FILE__, __LINE__, __func__);
+ 
+-	for (i = 0 ; i < denali->max_banks; i++)
++	for (i = 0; i < denali->max_banks; i++)
+ 		iowrite32(INTR_STATUS__RST_COMP | INTR_STATUS__TIME_OUT,
+ 		denali->flash_reg + INTR_STATUS(i));
+ 
+-	for (i = 0 ; i < denali->max_banks; i++) {
++	for (i = 0; i < denali->max_banks; i++) {
+ 		iowrite32(1 << i, denali->flash_reg + DEVICE_RESET);
+-		while (!(ioread32(denali->flash_reg +
+-				INTR_STATUS(i)) &
++		while (!(ioread32(denali->flash_reg + INTR_STATUS(i)) &
+ 			(INTR_STATUS__RST_COMP | INTR_STATUS__TIME_OUT)))
+ 			cpu_relax();
+ 		if (ioread32(denali->flash_reg + INTR_STATUS(i)) &
+@@ -201,7 +199,7 @@ static uint16_t denali_nand_reset(struct denali_nand_info *denali)
+ 
+ 	for (i = 0; i < denali->max_banks; i++)
+ 		iowrite32(INTR_STATUS__RST_COMP | INTR_STATUS__TIME_OUT,
+-			denali->flash_reg + INTR_STATUS(i));
++			  denali->flash_reg + INTR_STATUS(i));
+ 
+ 	return PASS;
+ }
+@@ -235,7 +233,7 @@ static void nand_onfi_timing_set(struct denali_nand_info *denali,
+ 	uint16_t addr_2_data, re_2_we, re_2_re, we_2_re, cs_cnt;
+ 
+ 	dev_dbg(denali->dev, "%s, Line %d, Function: %s\n",
+-		       __FILE__, __LINE__, __func__);
++		__FILE__, __LINE__, __func__);
+ 
+ 	en_lo = CEIL_DIV(Trp[mode], CLK_X);
+ 	en_hi = CEIL_DIV(Treh[mode], CLK_X);
+@@ -272,7 +270,7 @@ static void nand_onfi_timing_set(struct denali_nand_info *denali,
+ 
+ 	if (data_invalid - acc_clks * CLK_X < 2)
+ 		dev_warn(denali->dev, "%s, Line %d: Warning!\n",
+-			__FILE__, __LINE__);
++			 __FILE__, __LINE__);
+ 
+ 	addr_2_data = CEIL_DIV(Tadl[mode], CLK_X);
+ 	re_2_we = CEIL_DIV(Trhw[mode], CLK_X);
+@@ -406,9 +404,9 @@ static void get_hynix_nand_para(struct denali_nand_info *denali,
+ 		break;
+ 	default:
+ 		dev_warn(denali->dev,
+-			"Spectra: Unknown Hynix NAND (Device ID: 0x%x)."
+-			"Will use default parameter values instead.\n",
+-			device_id);
++			 "Spectra: Unknown Hynix NAND (Device ID: 0x%x)."
++			 "Will use default parameter values instead.\n",
++			 device_id);
+ 	}
+ }
+ 
+@@ -425,8 +423,7 @@ static void find_valid_banks(struct denali_nand_info *denali)
+ 	for (i = 0; i < denali->max_banks; i++) {
+ 		index_addr(denali, MODE_11 | (i << 24) | 0, 0x90);
+ 		index_addr(denali, MODE_11 | (i << 24) | 1, 0);
+-		index_addr_read_data(denali,
+-				MODE_11 | (i << 24) | 2, &id[i]);
++		index_addr_read_data(denali, MODE_11 | (i << 24) | 2, &id[i]);
+ 
+ 		dev_dbg(denali->dev,
+ 			"Return 1st ID for bank[%d]: %x\n", i, id[i]);
+@@ -489,10 +486,12 @@ static void detect_partition_feature(struct denali_nand_info *denali)
+ 			    +
+ 			    (ioread32(denali->flash_reg + MIN_BLK_ADDR(1)) &
+ 			    MIN_BLK_ADDR__VALUE);
+-		} else
++		} else {
+ 			denali->fwblks = SPECTRA_START_BLOCK;
+-	} else
++		}
++	} else {
+ 		denali->fwblks = SPECTRA_START_BLOCK;
++	}
+ }
+ 
+ static uint16_t denali_nand_timing_set(struct denali_nand_info *denali)
+@@ -502,8 +501,7 @@ static uint16_t denali_nand_timing_set(struct denali_nand_info *denali)
+ 	uint8_t maf_id, device_id;
+ 	int i;
+ 
+-	dev_dbg(denali->dev,
+-			"%s, Line %d, Function: %s\n",
++	dev_dbg(denali->dev, "%s, Line %d, Function: %s\n",
+ 			__FILE__, __LINE__, __func__);
+ 
+ 	/*
+@@ -563,7 +561,7 @@ static void denali_set_intr_modes(struct denali_nand_info *denali,
+ 					uint16_t INT_ENABLE)
+ {
+ 	dev_dbg(denali->dev, "%s, Line %d, Function: %s\n",
+-		       __FILE__, __LINE__, __func__);
++		__FILE__, __LINE__, __func__);
+ 
+ 	if (INT_ENABLE)
+ 		iowrite32(1, denali->flash_reg + GLOBAL_INT_ENABLE);
+@@ -710,13 +708,13 @@ static uint32_t wait_for_irq(struct denali_nand_info *denali, uint32_t irq_mask)
+ 			spin_unlock_irq(&denali->irq_lock);
+ 			/* our interrupt was detected */
+ 			break;
+-		} else {
+-			/*
+-			 * these are not the interrupts you are looking for -
+-			 * need to wait again
+-			 */
+-			spin_unlock_irq(&denali->irq_lock);
+ 		}
++
++		/*
++		 * these are not the interrupts you are looking for -
++		 * need to wait again
++		 */
++		spin_unlock_irq(&denali->irq_lock);
+ 	} while (comp_res != 0);
+ 
+ 	if (comp_res == 0) {
+@@ -744,8 +742,7 @@ static void setup_ecc_for_xfer(struct denali_nand_info *denali, bool ecc_en,
+ 
+ 	/* Enable spare area/ECC per user's request. */
+ 	iowrite32(ecc_en_flag, denali->flash_reg + ECC_ENABLE);
+-	iowrite32(transfer_spare_flag,
+-			denali->flash_reg + TRANSFER_SPARE_REG);
++	iowrite32(transfer_spare_flag, denali->flash_reg + TRANSFER_SPARE_REG);
+ }
+ 
+ /*
+@@ -753,10 +750,8 @@ static void setup_ecc_for_xfer(struct denali_nand_info *denali, bool ecc_en,
+  * controller's user guide for more information (section 4.2.3.6).
+  */
+ static int denali_send_pipeline_cmd(struct denali_nand_info *denali,
+-							bool ecc_en,
+-							bool transfer_spare,
+-							int access_type,
+-							int op)
++				    bool ecc_en, bool transfer_spare,
++				    int access_type, int op)
+ {
+ 	int status = PASS;
+ 	uint32_t page_count = 1;
+@@ -826,8 +821,7 @@ static int denali_send_pipeline_cmd(struct denali_nand_info *denali,
+ 
+ /* helper function that simply writes a buffer to the flash */
+ static int write_data_to_flash_mem(struct denali_nand_info *denali,
+-							const uint8_t *buf,
+-							int len)
++				   const uint8_t *buf, int len)
+ {
+ 	uint32_t *buf32;
+ 	int i;
+@@ -842,13 +836,12 @@ static int write_data_to_flash_mem(struct denali_nand_info *denali,
+ 	buf32 = (uint32_t *)buf;
+ 	for (i = 0; i < len / 4; i++)
+ 		iowrite32(*buf32++, denali->flash_mem + 0x10);
+-	return i*4; /* intent is to return the number of bytes read */
++	return i * 4; /* intent is to return the number of bytes read */
+ }
+ 
+ /* helper function that simply reads a buffer from the flash */
+ static int read_data_from_flash_mem(struct denali_nand_info *denali,
+-								uint8_t *buf,
+-								int len)
++				    uint8_t *buf, int len)
+ {
+ 	uint32_t *buf32;
+ 	int i;
+@@ -865,7 +858,7 @@ static int read_data_from_flash_mem(struct denali_nand_info *denali,
+ 	buf32 = (uint32_t *)buf;
+ 	for (i = 0; i < len / 4; i++)
+ 		*buf32++ = ioread32(denali->flash_mem + 0x10);
+-	return i*4; /* intent is to return the number of bytes read */
++	return i * 4; /* intent is to return the number of bytes read */
+ }
+ 
+ /* writes OOB data to the device */
+@@ -941,6 +934,7 @@ static void read_oob_data(struct mtd_info *mtd, uint8_t *buf, int page)
+ static bool is_erased(uint8_t *buf, int len)
+ {
+ 	int i;
++
+ 	for (i = 0; i < len; i++)
+ 		if (buf[i] != 0xFF)
+ 			return false;
+@@ -990,6 +984,7 @@ static bool handle_ecc(struct denali_nand_info *denali, uint8_t *buf,
+ 				 */
+ 				if (err_byte < ECC_SECTOR_SIZE) {
+ 					int offset;
++
+ 					offset = (err_sector *
+ 							ECC_SECTOR_SIZE +
+ 							err_byte) *
+@@ -1063,10 +1058,8 @@ static int write_page(struct mtd_info *mtd, struct nand_chip *chip,
+ 			const uint8_t *buf, bool raw_xfer)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-
+ 	dma_addr_t addr = denali->buf.dma_buf;
+ 	size_t size = denali->mtd.writesize + denali->mtd.oobsize;
+-
+ 	uint32_t irq_status;
+ 	uint32_t irq_mask = INTR_STATUS__DMA_CMD_COMP |
+ 						INTR_STATUS__PROGRAM_FAIL;
+@@ -1099,12 +1092,10 @@ static int write_page(struct mtd_info *mtd, struct nand_chip *chip,
+ 	irq_status = wait_for_irq(denali, irq_mask);
+ 
+ 	if (irq_status == 0) {
+-		dev_err(denali->dev,
+-				"timeout on write_page (type = %d)\n",
+-				raw_xfer);
+-		denali->status =
+-			irq_status & INTR_STATUS__PROGRAM_FAIL ?
+-			NAND_STATUS_FAIL : PASS;
++		dev_err(denali->dev, "timeout on write_page (type = %d)\n",
++			raw_xfer);
++		denali->status = irq_status & INTR_STATUS__PROGRAM_FAIL ?
++				 NAND_STATUS_FAIL : PASS;
+ 	}
+ 
+ 	denali_enable_dma(denali, false);
+@@ -1216,10 +1207,8 @@ static int denali_read_page_raw(struct mtd_info *mtd, struct nand_chip *chip,
+ 				uint8_t *buf, int oob_required, int page)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-
+ 	dma_addr_t addr = denali->buf.dma_buf;
+ 	size_t size = denali->mtd.writesize + denali->mtd.oobsize;
+-
+ 	uint32_t irq_status;
+ 	uint32_t irq_mask = INTR_STATUS__DMA_CMD_COMP;
+ 
+@@ -1275,6 +1264,7 @@ static int denali_waitfunc(struct mtd_info *mtd, struct nand_chip *chip)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+ 	int status = denali->status;
++
+ 	denali->status = 0;
+ 
+ 	return status;
+@@ -1324,9 +1314,7 @@ static void denali_cmdfunc(struct mtd_info *mtd, unsigned int cmd, int col,
+ 		index_addr(denali, addr | 0, 0x90);
+ 		index_addr(denali, addr | 1, 0);
+ 		for (i = 0; i < 8; i++) {
+-			index_addr_read_data(denali,
+-						addr | 2,
+-						&id);
++			index_addr_read_data(denali, addr | 2, &id);
+ 			write_byte_to_buf(denali, id);
+ 		}
+ 		break;
+@@ -1351,8 +1339,8 @@ static int denali_ecc_calculate(struct mtd_info *mtd, const uint8_t *data,
+ 				uint8_t *ecc_code)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-	dev_err(denali->dev,
+-			"denali_ecc_calculate called unexpectedly\n");
++
++	dev_err(denali->dev, "denali_ecc_calculate called unexpectedly\n");
+ 	BUG();
+ 	return -EIO;
+ }
+@@ -1361,8 +1349,8 @@ static int denali_ecc_correct(struct mtd_info *mtd, uint8_t *data,
+ 				uint8_t *read_ecc, uint8_t *calc_ecc)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-	dev_err(denali->dev,
+-			"denali_ecc_correct called unexpectedly\n");
++
++	dev_err(denali->dev, "denali_ecc_correct called unexpectedly\n");
+ 	BUG();
+ 	return -EIO;
+ }
+@@ -1370,8 +1358,8 @@ static int denali_ecc_correct(struct mtd_info *mtd, uint8_t *data,
+ static void denali_ecc_hwctl(struct mtd_info *mtd, int mode)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-	dev_err(denali->dev,
+-			"denali_ecc_hwctl called unexpectedly\n");
++
++	dev_err(denali->dev, "denali_ecc_hwctl called unexpectedly\n");
+ 	BUG();
+ }
+ /* end NAND core entry points */
+@@ -1599,8 +1587,8 @@ int denali_init(struct denali_nand_info *denali)
+ 	} else if (denali->mtd.oobsize < (denali->bbtskipbytes +
+ 			ECC_8BITS * (denali->mtd.writesize /
+ 			ECC_SECTOR_SIZE))) {
+-		pr_err("Your NAND chip OOB is not large enough to \
+-				contain 8bit ECC correction codes");
++		pr_err("Your NAND chip OOB is not large enough to "
++		       "contain 8bit ECC correction codes");
+ 		goto failed_req_irq;
+ 	} else {
+ 		denali->nand.ecc.strength = 8;
+@@ -1624,8 +1612,7 @@ int denali_init(struct denali_nand_info *denali)
+ 	 * contained by each nand chip. blksperchip will help driver to
+ 	 * know how many blocks is taken by FW.
+ 	 */
+-	denali->totalblks = denali->mtd.size >>
+-				denali->nand.phys_erase_shift;
++	denali->totalblks = denali->mtd.size >> denali->nand.phys_erase_shift;
+ 	denali->blksperchip = denali->totalblks / denali->nand.numchips;
+ 
+ 	/*
+@@ -1672,7 +1659,7 @@ void denali_remove(struct denali_nand_info *denali)
+ {
+ 	denali_irq_cleanup(denali->irq, denali);
+ 	dma_unmap_single(denali->dev, denali->buf.dma_buf,
+-			denali->mtd.writesize + denali->mtd.oobsize,
+-			DMA_BIDIRECTIONAL);
++			 denali->mtd.writesize + denali->mtd.oobsize,
++			 DMA_BIDIRECTIONAL);
+ }
+ EXPORT_SYMBOL(denali_remove);
 -- 
-Jiri Kosina
-SUSE Labs
+1.9.1
+
