@@ -1,124 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518AbaIHPaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:30:08 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58701 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754474AbaIHPaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:30:03 -0400
-Message-ID: <540DCB78.8060206@mm-sol.com>
-Date: Mon, 08 Sep 2014 18:30:00 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754525AbaIHPag (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:30:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32820 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178AbaIHP27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:28:59 -0400
+Message-ID: <540DCB35.7080405@canonical.com>
+Date: Mon, 08 Sep 2014 10:28:53 -0500
+From: Chris J Arges <chris.j.arges@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Fugang Duan <B38611@freescale.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
-        Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-References: <1409919274-13419-1-git-send-email-svarbanov@mm-sol.com> <3495079.hWGRuSPgx7@wuerfel> <540D653E.7070509@mm-sol.com> <3899885.YaIxR1zelv@wuerfel>
-In-Reply-To: <3899885.YaIxR1zelv@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paolo Bonzini <pbonzini@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] KVM: x86: fix kvmclock breakage from timers branch merge
+References: <1409835487-14371-1-git-send-email-pbonzini@redhat.com> <alpine.DEB.2.10.1409042230020.3333@nanos> <5408D815.9090105@redhat.com> <alpine.DEB.2.10.1409050000570.3333@nanos> <5409E755.4040905@redhat.com> <alpine.DEB.2.10.1409052031140.5472@nanos> <540A1F22.7020107@redhat.com> <alpine.DEB.2.10.1409052239330.5472@nanos> <540A2474.7060306@redhat.com>
+In-Reply-To: <540A2474.7060306@redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 01:19 PM, Arnd Bergmann wrote:
-> On Monday 08 September 2014 11:13:50 Stanimir Varbanov wrote:
->> On 09/05/2014 03:26 PM, Arnd Bergmann wrote:
->>> On Friday 05 September 2014 15:14:33 Stanimir Varbanov wrote:
->>>> +       VADC_CHAN(LR_MUX1_BAT_THERM, 0)                 /* 0x30 */
->>>> +       VADC_CHAN(LR_MUX2_BAT_ID, 0)
->>>> +       VADC_CHAN(LR_MUX3_XO_THERM, 0)
->>>> +       VADC_CHAN(LR_MUX4_AMUX_THM1, 0)
->>>> +       VADC_CHAN(LR_MUX5_AMUX_THM2,by you  0)
->>>> +       VADC_CHAN(LR_MUX6_AMUX_THM3, 0)
->>>> +       VADC_CHAN(LR_MUX7_HW_ID, 0)
->>>> +       VADC_CHAN(LR_MUX8_AMUX_THM4, 0)
->>>> +       VADC_CHAN(LR_MUX9_AMUX_THM5, 0)
->>>> +       VADC_CHAN(AMUX_PU1, 0)
->>>> +       VADC_CHAN(AMUX_PU2, 0)
->>>> +       VADC_CHAN(LR_MUX3_BUF_XO_THERM_BUF, 0)          /* 0x3c */
->>>> +
->>>> +       VADC_CHAN(LR_MUX1_PU1_BAT_THERM, 0)             /* 0x70 */
->>>> +       VADC_CHAN(LR_MUX2_PU1_BAT_ID, 0)
->>>> +       VADC_CHAN(LR_MUX3_PU1_XO_THERM, 0)
->>>> +       VADC_CHAN(LR_MUX4_PU1_AMUX_THM1, 0)
->>>> +       VADC_CHAN(LR_MUX5_PU1_AMUX_THM2, 0)
->>>> +       VADC_CHAN(LR_MUX6_PU1_AMUX_THM3, 0)
->>>> +       VADC_CHAN(LR_MUX7_PU1_AMUX_HW_ID, 0)
->>>> +       VADC_CHAN(LR_MUX8_PU1_AMUX_THM4, 0)
->>>> +       VADC_CHAN(LR_MUX9_PU1_AMUX_THM5, 0)
->>>> +       VADC_CHAN(LR_MUX10_PU1_AMUX_USB_ID, 0)          /* 0x79 */
->>>> +       VADC_CHAN(LR_MUX3_BUF_PU1_XO_THERM_BUF, 0)      /* 0x7c */
->>>>
->>>
->>> These numbers all look hardware specific, so why put macros into the
->>> device tree rather than using them directly?
->>
->> The idea was to use #defines in DT nodes when we need to overwrite the
->> adc channel parameters, see example in 2/2 how it will be used.
+On 09/05/2014 04:00 PM, Paolo Bonzini wrote:
+> Il 05/09/2014 22:41, Thomas Gleixner ha scritto:
+>> No, it needs to be above update_vsyscall(). Here is the patch again
+>> which I sent before. [https://lkml.org/lkml/2014/9/5/395]
 > 
-> I don't understand. The node in the example has
+> Ah, I missed it after your signature.  Thanks, I'll test yours then next
+> week.
 > 
-> +               /* Channel node */
-> +               usb_id_nopull@39 {
-> +                       qcom,channel = <VADC_LR_MUX10_USB_ID>;
-> ...
-> +               };
+> Paolo
 > 
-> 
-> And VADC_LR_MUX10_USB_ID is defined to 0x39.  How is this helping anything?
-> You just introduce an artificial dependency on the header file, which makes
-> it a mess to merge the patches or do updates, and anybody who needs to
-> make updates to this now has to go through the same pain, to update the
-> dts files, the driver and the binding document in lockstep.
-> 
-> Why not remove the qcom,channel property completely and use a 'reg'
-> property with #address-cells=<1>, #size-cells=<0> and put the number
-> directly in there, with no need for obfuscation macros?
+Paolo, Thomas,
 
-OK thanks for the remarks. I will fix this mess.
+Thanks again. I can confirm that Thomas' "timekeeping: Update timekeeper
+before updating vsyscall and pvclock" indeed allows the kvmclock test to
+pass on my machine.
 
-I hope you are expecting to see this:
-
-pmic_vadc: vadc@3100 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	#io-channel-cells = <1>;
-	io-channel-ranges;
-
-	usb_id_nopull@39 {
-		reg = <0x39>;
-	};
-};
-
-and use the vadc channel from usb device node
-
-usb {
-	...
-	io-channels = <&pmic_vadc 0x39>;
-	io-channel-names = "usbidnopull";
-};
-
-
--- 
-regards,
-Stan
+--chris j arges
