@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649AbaIHQaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 12:30:52 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.104]:43190 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754214AbaIHQav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 12:30:51 -0400
-X-Env-Sender: Benjamin.Romer@unisys.com
-X-Msg-Ref: server-9.tower-201.messagelabs.com!1410193849!16082115!1
-X-Originating-IP: [192.61.61.104]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-CC: "Kershner, David A" <David.Kershner@unisys.com>,
-        *S-Par-Maintainer <SParMaintainer@unisys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 8 Sep 2014 11:30:48 -0500
-Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
- context imbalance
-Thread-Topic: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
- context imbalance
-Thread-Index: Ac/Lgj9NJGjpkFwcR8irDKF/rYcEXw==
-Message-ID: <C97001BC43954D438ACB059713BA5CDFC97127E0E3@USEA-EXCH7.na.uis.unisys.com>
-References: <1409908966-23148-1-git-send-email-sudipm.mukherjee@gmail.com>
- <C97001BC43954D438ACB059713BA5CDFC97127E0E1@USEA-EXCH7.na.uis.unisys.com>
- <20140908162714.GA5497@fool>
-In-Reply-To: <20140908162714.GA5497@fool>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754258AbaIHQc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 12:32:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34119 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925AbaIHQc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 12:32:56 -0400
+Message-ID: <540DDA1D.9070903@ti.com>
+Date: Mon, 8 Sep 2014 11:32:29 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        =?windows-1252?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH 0/3] ARM: OMAP5+: pdata quirks for pinctrl
+References: <1408715725-25919-1-git-send-email-nm@ti.com>
+In-Reply-To: <1408715725-25919-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s88GUuPT032269
 
-On Mon, 2014-09-08 at 21:57 +0530, Sudip Mukherjee wrote:
-> Hi Ben,
-> thanks. the same file is having two more similar warnings. if you want i can
-> resend a patch fixing all the three warnings , or i can send two separate
-> patches. 
-> I personally will prefer two separate patches , as that will be
-> easier for you to test and review.
+On 08/22/2014 08:55 AM, Nishanth Menon wrote:
+> The following series are various fixes and improvements for daisychain
+> support in OMAP5+ using pinctrl framework similar to that done for
+> OMAP3+
 > 
-> thanks
-> sudip
+> This is part 3/6 series which eventually enables framework for
+> suspend-to-ram and cpuidle for OMAP5 and DRA7
+> 
+> Each of series is based on v3.17-rc1 and this specific series is available:
+> weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/v3.17/prm-pdata-quirks
+> 
+> git repo: https://github.com/nmenon/linux-2.6-playground.git push/v3.17/prm-pdata-quirks
+> 
+> An complete integrated branch is available here: https://github.com/nmenon/linux-2.6-playground/commits/testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
+> 
+> Minor note: thanks to existing style in pdata-quirks, new entries
+> continue to possess 'over 80 character' checkpatch warnings
+> 
+> Keerthy (1):
+>   ARM: AM437x: use pdata quirks for pinctrl information
+> 
+> Nishanth Menon (2):
+>   ARM: OMAP5: use pdata quirks for pinctrl information
+>   ARM: DRA7: use pdata quirks for pinctrl information
+> 
+>  arch/arm/mach-omap2/pdata-quirks.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
 
-That would be perfect, thanks. :)
+Since there are no further comments (and the pinctrl side of the fixes
+were accepted by Linus W[1], will send this for merge to Tony.
 
--- Ben
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+[1] http://marc.info/?l=linux-kernel&m=140871666506706&w=2 (acked by
+Tony, picked by Linus)
+
+-- 
+Regards,
+Nishanth Menon
