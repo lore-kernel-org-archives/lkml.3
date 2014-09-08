@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaIHM50 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:57:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33575 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826AbaIHM5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:57:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="476054088"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 02/22] perf: Add AUX area to ring buffer for raw data streams
-In-Reply-To: <20140908113422.GD6758@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com> <20140908070242.GS19379@twins.programming.kicks-ass.net> <87lhpuuztj.fsf@ashishki-desk.ger.corp.intel.com> <20140908113422.GD6758@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 08 Sep 2014 15:55:11 +0300
-Message-ID: <87a96auv9s.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754020AbaIHM54 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:57:56 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:44560 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753237AbaIHM5y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 08:57:54 -0400
+X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 08:57:54 EDT
+X-Sasl-enc: a+rbTYi3X1tE5b3vKWB8lcuJPmfbXsnbtbGNaPmfclJJ 1410180546
+From: Ilja Sidoroff <ilja.sidoroff@iki.fi>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, Ilja Sidoroff <ilja.sidoroff@iki.fi>
+Subject: [PATCH] Staging: wlan-ng: Remove redundant break/goto statements in hfa384x_usb.c
+Date: Mon,  8 Sep 2014 15:48:09 +0300
+Message-Id: <1410180489-12140-1-git-send-email-ilja.sidoroff@iki.fi>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+This patch removes redundant goto or break statements in hfa384x_usb.c as found by checkpatch.pl
 
-> On Mon, Sep 08, 2014 at 02:16:56PM +0300, Alexander Shishkin wrote:
->> Peter Zijlstra <peterz@infradead.org> writes:
->> 
->> > On Wed, Aug 20, 2014 at 03:35:59PM +0300, Alexander Shishkin wrote:
->> >> From: Peter Zijlstra <peterz@infradead.org>
->> >> 
->> >> This patch introduces "AUX space" in the perf mmap buffer, intended for
->> >> exporting high bandwidth data streams to userspace, such as instruction
->> >> flow traces.
->> >> 
->> >> AUX space is a ring buffer, defined by aux_{offset,size} fields in the
->> >> user_page structure, and read/write pointers aux_{head,tail}, which abide
->> >> by the same rules as data_* counterparts of the main perf buffer.
->> >> 
->> >> In order to allocate/mmap AUX, userspace needs to set up aux_offset to
->> >> such an offset that will be greater than data_offset+data_size and
->> >> aux_size to be the desired buffer size. Both need to be page aligned.
->> >> Then, same aux_offset and aux_size should be passed to mmap() call and
->> >> if everything adds up, you should have an AUX buffer as a result.
->> >> 
->> >> Pages that are mapped into this buffer also come out of user's mlock
->> >> rlimit plus perf_event_mlock_kb allowance.
->> >> 
->> >> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
->> >> ---
->> >
->> >> +void rb_free_aux(struct ring_buffer *rb, struct perf_event *event)
->> >> +{
->> >> +	struct perf_event *iter;
->> >> +	int pg;
->> >> +
->> >> +	if (rb->aux_priv) {
->> >> +		/* disable all potential writers before freeing */
->> >> +		rcu_read_lock();
->> >> +		list_for_each_entry_rcu(iter, &rb->event_list, rb_entry)
->> >> +			perf_event_disable(iter);
->> >> +		rcu_read_unlock();
->> >
->> > Hmm, I cannot remember this from the last time; and its not explained
->> > why this was added.
->> >
->> > This would change semantics between munmap of a buffer with and without
->> > AUX bits in. 
->> 
->> Indeed, but this seems fair: if an event is generating AUX data while we
->> unmap the AUX buffer, there is no reason to keep it on, because chances
->> are, AUX data is the only thing this event is generating. The
->> alternative would be to have a separate callback for this, but then
->> again, that would race with other pmu callbacks, since it would be
->> called from munmap() path. I should add an elaborate comment about this.
->> 
->> Does this sound reasonable?
->
-> Well, the same is true for regular buffers, if you munmap() them while
-> in use the events are pointless.
->
-> Still we keep them enabled, we simply skip generating output.
->
-> I would much like not to create deviating behaviour if you don't
-> absolutely have to. In both cases its an explicit user request, so you
-> don't need to go hold hands. He did it, he gets to keep whatever pieces
-> it generates.
+Signed-off-by: Ilja Sidoroff <ilja.sidoroff@iki.fi>
+---
+ drivers/staging/wlan-ng/hfa384x_usb.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-Fair enough. Then I'd like to disable the ACTIVE ones before freeing AUX
-stuff and then re-enabling them since perf_event_{en,dis}able() already
-provide the convenient cross-cpu calls, which would also avoid
-concurrency between pmu::{add,del} callbacks and this unmap path. Makes
-sense?
+diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
+index 2f63e0c..7f4ca1b 100644
+--- a/drivers/staging/wlan-ng/hfa384x_usb.c
++++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+@@ -3528,7 +3528,6 @@ static void hfa384x_usbin_rx(wlandevice_t *wlandev, struct sk_buff *skb)
+ 		netdev_warn(hw->wlandev->netdev, "Received frame on unsupported port=%d\n",
+ 			    HFA384x_RXSTATUS_MACPORT_GET(
+ 				    usbin->rxfrm.desc.status));
+-		goto done;
+ 		break;
+ 	}
+ 
+@@ -4127,7 +4126,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
+ 	case HFA384x_PDR_HFA3861_MANF_TESTI:
+ 		/* code is OK */
+ 		return 1;
+-		break;
+ 	default:
+ 		if (pdrcode < 0x1000) {
+ 			/* code is OK, but we don't know exactly what it is */
+@@ -4140,7 +4138,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
+ 				 pdrcode);
+ 			return 0;
+ 		}
+-		break;
+ 	}
+ 	return 0;		/* avoid compiler warnings */
+ }
+-- 
+1.9.1
 
-Regards,
---
-Alex
