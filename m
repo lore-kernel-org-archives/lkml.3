@@ -1,44 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884AbaIHRlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 13:41:12 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:39793 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592AbaIHRlK (ORCPT
+	id S1753197AbaIHRmq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 13:42:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49472 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752251AbaIHRmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 13:41:10 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Mon, 8 Sep 2014 13:47:11 -0400 (EDT)
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: perf: perf_fuzzer triggers instant reboot
-Message-ID: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 8 Sep 2014 13:42:45 -0400
+Date: Mon, 8 Sep 2014 13:42:44 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Tejun Heo <tj@kernel.org>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING in block layer triggered in 3.17-rc3
+In-Reply-To: <1410191478.2027.28.camel@jarvis.lan>
+Message-ID: <Pine.LNX.4.44L0.1409081335450.1433-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Mon, 8 Sep 2014, James Bottomley wrote:
 
-so I finally had time to run my perf_fuzzer again and it has rapidly 
-turned up an alarming crash that instant-reboots my core2 test machine.
+> > Jens and James, it appears the problem is in blk_register_queue().  The 
+> > code does this:
+> > 
+> > 	/*
+> > 	 * Initialization must be complete by now.  Finish the initial
+> > 	 * bypass from queue allocation.
+> > 	 */
+> > 	queue_flag_set_unlocked(QUEUE_FLAG_INIT_DONE, q);
+> > 	blk_queue_bypass_end(q);
+> > 
+> > This doesn't work well if the queue is unregistered later and then
+> > registered again -- which is what happens when the sd driver is unbound
+> > from a device and then bound again.  It looks like the code should be:
+> > 
+> > 	if (!queue_flag_test_and_set(QUEUE_FLAG_INIT_DONE, q))
+> > 		blk_queue_bypass_end(q);
+> > 
+> > Do you agree?  If so, I'll send in patch.
+> 
+> This looks like a nasty hack.  In theory the QUEUE_FLAG_INIT_DONE should
+> be unset on blk_unregister_queue() to match the teardown; it's only
+> accident it isn't.  del_gendisk() in sd_remove() is supposed to tear a
+> lot of queue stuff down.
 
-This is on 3.17-rc4.  It is reproducible.
+It's not clear what the operative assumptions are.  The comment in
+blk_register_queue() implies that bypass is active only because it was
+set up that way when the queue was created.  The fact that
+blk_unregister_queue() doesn't call blk_queue_bypass_start() seems to
+support this view -- although it could also be a simple oversight.
 
-The first time all that appeared on the serial console was:
+Hopefully Tejun can clear this iup.
 
-[ 2616.535995] Kernel panic - not syncing: Lost physical address for unconsumed uncorrectable error
+>  However, the problem looks to be the mismatch
+> in assumptions.  The way SCSI binding works, the queue belongs to the
+> underlying device so we always assumed we could add and remove upper
+> drivers ... there's even a case for this if you don't want a disk but
+> want to attach sg instead.  However, it's not the common use case.
+> 
+> The block model now seems to tie a lot of queue set up and teardown to
+> add and remove of the gendisk which is counter to these assumptions.  As
+> long as we can go from del->add without calling the ->release function
+> on the queue, everything works.  Most of the operations seem
+> symmetrical, so perhaps this is only the bypass doing too much.
+> 
+> The ideal is that disk teardown only does as much as disk setup, so the
+> mid layer can still use the underlying queue on the device.
+> 
+> This bypass code is not very well documented.  However, your problem
+> seems to be caused by this change:
+> 
+> commit 776687bce42bb22cce48b5da950e48ebbb9a948f
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Tue Jul 1 10:29:17 2014 -0600
+> 
+>     block, blk-mq: draining can't be skipped even if bypass_depth was
+> non-zero
+> 
+> Your hack seems to indicate that this doesn't work on the add->del->add
+> transtion of a gendisk.
 
-The second time this happened instead:
+Indeed, it does not work.
 
-[  756.009271] traps: perf_fuzzer[4236] trap invalid opcode ip:4044c0 sp:7fffb0ed6f90 error:0
-[  756.017590] BUG: unable to handle kernel paging request
+Tejun, for more details about the failure see the initial message in 
+this thread:
 
-I'll work on trying to narrow this down a bit.
+	http://marc.info/?l=linux-kernel&m=140993911413862&w=2
 
-Vince
+Alan Stern
+
