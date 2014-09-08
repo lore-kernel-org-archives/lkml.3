@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaIHLBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 07:01:50 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:41729 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaIHLBr (ORCPT
+	id S1753459AbaIHLCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 07:02:09 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:45752 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaIHLCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 07:01:47 -0400
-Date: Mon, 8 Sep 2014 15:01:31 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] memory cgroup: my thoughts on memsw
-Message-ID: <20140908110131.GA11812@esperanza>
-References: <20140904143055.GA20099@esperanza>
- <5408E1CD.3090004@jp.fujitsu.com>
- <20140905082846.GA25641@esperanza>
- <5409C6BB.7060009@jp.fujitsu.com>
- <20140905160029.GF25641@esperanza>
- <540A4420.2030504@jp.fujitsu.com>
+	Mon, 8 Sep 2014 07:02:07 -0400
+Message-ID: <540D8CA8.5020104@cogentembedded.com>
+Date: Mon, 08 Sep 2014 15:02:00 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <540A4420.2030504@jp.fujitsu.com>
+To: Arnd Bergmann <arnd@arndb.de>, Alessandro Zummo <a.zummo@towertech.it>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH] rtc: pcf8563: fix uninitialized use warning
+References: <3640058.m4Rfp1dmTJ@wuerfel>
+In-Reply-To: <3640058.m4Rfp1dmTJ@wuerfel>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 06, 2014 at 08:15:44AM +0900, Kamezawa Hiroyuki wrote:
-> As you noticed, hitting anon+swap limit just means oom-kill.
-> My point is that using oom-killer for "server management" just seems crazy.
-> 
-> Let my clarify things. your proposal was.
->  1. soft-limit will be a main feature for server management.
->  2. Because of soft-limit, global memory reclaim runs.
->  3. Using swap at global memory reclaim can cause poor performance.
->  4. So, making use of OOM-Killer for avoiding swap.
-> 
-> I can't agree "4". I think
-> 
->  - don't configure swap.
+Hello.
 
-Suppose there are two containers, each having soft limit set to 50% of
-total system RAM. One of the containers eats 90% of the system RAM by
-allocating anonymous pages. Another starts using file caches and wants
-more than 10% of RAM to work w/o issuing disk reads. So what should we
-do then? We won't be able to shrink the first container to its soft
-limit, because there's no swap. Leaving it as is would be unfair from
-the second container's point of view. Kill it? But the whole system is
-going OK, because the working set of the second container is easily
-shrinkable. Besides there may be some progress in shrinking file caches
-from the first container.
+On 9/8/2014 12:42 AM, Arnd Bergmann wrote:
 
->  - use zram
+> gcc-4.9 found a potential condition under which the 'pending'
+> variable may be used uninitialized:
 
-In fact this isn't different from the previous proposal (working w/o
-swap). ZRAM only compresses data while still storing them in RAM so we
-eventually may get into a situation where almost all RAM is full of
-compressed anon pages.
+> drivers/rtc/rtc-pcf8563.c: In function 'pcf8563_irq':
+> drivers/rtc/rtc-pcf8563.c:173:5: warning: 'pending' may be used uninitialized in this function [-Wmaybe-uninitialized]
 
->  - use SSD for swap
+> This is because in the pcf8563_get_alarm_mode() function, we
+> check any nonzero return of pcf8563_read_block_data, but
+> in the irq function we only check for negative values, so
+> a possible positive value does not get detected if the compiler
+> chooses not to inline the entire call chain.
 
-Such a requirement might be OK in enterprise, but forcing SMB to update
-their hardware to run a piece of software is a no go. And again, SSD
-isn't infinite, we may use it up.
+> Checking for any non-zero value in the interrupt handler as well
+> is just as correct and lets the compiler know what we are doing,
+> without needing a bogus initialization.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>
+> diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
+> index 5a197d9dc7e7..3a6f994c4da8 100644
+> --- a/drivers/rtc/rtc-pcf8563.c
+> +++ b/drivers/rtc/rtc-pcf8563.c
+> @@ -167,7 +167,7 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
+>   	char pending;
+>
+>   	err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
+> -	if (err < 0)
+> +	if (err)
+>   		return err;
 
-> Or
->  - provide a way to notify usage of "anon+swap" to container management software.
-> 
->    Now we have "vmpressure". Container management software can kill or respawn container
->    with using user-defined policy for avoidng swap.
-> 
->    If you don't want to run kswapd at all, threshold notifier enhancement may be required.
-> 
-> /proc/meminfo provides total number of ANON/CACHE pages.
-> Many things can be done in userland.
+    Returning negative values from the IRQ handler doesn't seem valid.
+Arbitrary positive value aren't good either. Perhaps should return IRQ_NONE 
+instead?
 
-AFAIK OOM-in-userspace-handling has been discussed many times, but
-there's still no agreement upon it. Basically it isn't reliable, because
-it can lead to a deadlock if the userspace handler won't be able to
-allocate memory to proceed or will get stuck in some other way. IMO
-there must be in-kernel OOM-handling as a last resort anyway. And
-actually we already have one - we may kill processes when they hit the
-memsw limit.
+WBR, Sergei
 
-But OK, you don't like OOM on hitting anon+swap limit and propose to
-introduce a kind of userspace notification instead, but the problem
-actually isn't *WHAT* we should do on hitting anon+swap limit, but *HOW*
-we should implement it (or should we implement it at all). No matter
-which way we go, in-kernel OOM or userland notifications, we have to
-*INTRODUCE ANON+SWAP ACCOUNTING* to achieve that so that on breaching a
-predefined threshold we could invoke OOM or issue a userland
-notification or both. And here goes the problem: there's anon+file and
-anon+file+swap resource counters, but no anon+swap counter. To react on
-anon+swap limit breaching, we must introduce one. I propose to *REUSE*
-memsw instead by slightly modifying its meaning.
-
-What we would get then is the ability to react on potentially
-unreclaimable memory growth inside a container. What we would loose is
-the current implementation of memory+swap limit, *BUT* we would still be
-able to limit memory+swap usage by imposing limits on total memory and
-anon+swap usage.
-
-> And your idea can't help swap-out caused by memory pressure comes from "zones".
-
-It would help limit swap-out to a sane value.
-
-
-I'm sorry if I'm not clear or don't understand something that looks
-trivial to you.
-
-Thanks,
-Vladimir
