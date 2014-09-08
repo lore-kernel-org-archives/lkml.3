@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaIHKcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 06:32:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25723 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbaIHKcc (ORCPT
+	id S1753346AbaIHKdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 06:33:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64330 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776AbaIHKdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 06:32:32 -0400
-Date: Mon, 8 Sep 2014 13:32:08 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Spencer Baugh <sbaugh@andrew.cmu.edu>,
-        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        gregkh@linuxfoundation.org, Hongchao Zhang <hongchao.zhang@intel.com>,
-        Niu Yawei <yawei.niu@intel.com>,
-        Alex Zhuravlev <alexey.zhuravlev@intel.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: Re: [PATCH 2/3] staging: lustre: fix pointer whitespace style
-Message-ID: <20140908103208.GK6600@mwanda>
-References: <1410025111-31422-1-git-send-email-sbaugh@andrew.cmu.edu>
- <1410025111-31422-2-git-send-email-sbaugh@andrew.cmu.edu>
- <1410027543.2723.8.camel@joe-AO725>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410027543.2723.8.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 8 Sep 2014 06:33:07 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
+Subject: [PATCH v4 0/4]   Add usb phy support for STiH41x SoCs.
+Date: Mon,  8 Sep 2014 11:32:59 +0100
+Message-Id: <1410172383-17306-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 06, 2014 at 11:19:03AM -0700, Joe Perches wrote:
-> 
-> Indexing a string array with an enum is generally unsafe.
-> 
-> I think it better to use a switch/case like:
-> 
+This series adds support for the on-chip PHY used for USB 1.1 and 2.0 found
+on STiH415 and STiH416 consumer electronics SoC's from STMicroelectronics.
 
-The reverse side of that argument is that switch statements are slower
-and uglier.
+Changes since v3:
+ - Fix copy/paste typo whereby phy is registered twice
+ - Remove .owner field, as device is registered using module_platform_driver API
 
-My understanding is that according to the c spec, "state" could be
-signed but in this case GCC defines it as unsigned int.  So the ASSERT
-is ok in real life, but in theory it should check for negatives as well.
+Changes since v2:
+ - Rebased on top of 3.17-rc3
+ - Enable driver in multi_v7_defconfig
 
-regards,
-dan carpenter
+Changes since v1:
+ - Change to select GENERIC_PHY rather than depends for uniformity
+ - Ensure phy_provider_register is called  after PHY is created
+ - Add extra commit message for MAINTAINERS patch
+
+Peter Griffin (4):
+  phy: phy-stih41x-usb: Add usb phy support for STiH41x SoCs.
+  phy: phy-stih41x-usb: Add dt documentation for USB phy on STiH415/6
+  MAINTAINERS: Add phy-stih41x-usb.c to ARCH/STI architecture
+  ARM: multi_v7_defconfig: Enable stih41x usb phy driver.
+
+Peter Griffin (4):
+  phy: phy-stih41x-usb: Add usb phy support for STiH41x SoCs.
+  phy: phy-stih41x-usb: Add dt documentation for USB phy on STiH415/6
+  MAINTAINERS: Add phy-stih41x-usb.c to ARCH/STI architecture
+  ARM: multi_v7_defconfig: Enable stih41x usb phy driver.
+
+ .../devicetree/bindings/phy/phy-stih41x-usb.txt    |  24 +++
+ MAINTAINERS                                        |   1 +
+ arch/arm/configs/multi_v7_defconfig                |   1 +
+ drivers/phy/Kconfig                                |   8 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-stih41x-usb.c                      | 187 +++++++++++++++++++++
+ 6 files changed, 222 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-stih41x-usb.txt
+ create mode 100644 drivers/phy/phy-stih41x-usb.c
+
+-- 
+1.9.1
 
