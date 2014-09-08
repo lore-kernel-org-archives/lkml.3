@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbaIHNuP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:50:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45292 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781AbaIHNuN convert rfc822-to-8bit (ORCPT
+	id S1753948AbaIHNwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:52:47 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56539 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795AbaIHNwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:50:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,486,1406617200"; 
-   d="scan'208";a="599667624"
-From: "Tirdea, Irina" <irina.tirdea@intel.com>
-To: Hartmut Knaack <knaack.h@gmx.de>
-CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+	Mon, 8 Sep 2014 09:52:45 -0400
+Date: Mon, 8 Sep 2014 15:52:42 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
+        ext Guenter Roeck <linux@roeck-us.net>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
+        "san@rosetechnology.dk" <san@rosetechnology.dk>,
+        "hs@denx.de" <hs@denx.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jonathan Cameron" <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: RE: [PATCH] iio: gyro: bmg160: only set power state if PM_RUNTIME
- is defined
-Thread-Topic: [PATCH] iio: gyro: bmg160: only set power state if PM_RUNTIME
- is defined
-Thread-Index: AQHPycvSvKCYo0vvNUezL4CGyo06tZv3Qwsg
-Date: Mon, 8 Sep 2014 13:50:01 +0000
-Deferred-Delivery: Mon, 8 Sep 2014 13:49:00 +0000
-Message-ID: <1F3AC3675D538145B1661F571FE1805F199761AE@IRSMSX105.ger.corp.intel.com>
-References: <1409655759-28849-1-git-send-email-irina.tirdea@intel.com>
- <540AFA13.6010207@gmx.de>
-In-Reply-To: <540AFA13.6010207@gmx.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
+Message-ID: <20140908135242.GA21412@amd>
+References: <20140828124237.GA29102@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140828125915.GJ14650@leverpostej>
+ <20140828155157.GB23677@roeck-us.net>
+ <20140828161025.GO14650@leverpostej>
+ <20140828164825.GA12153@roeck-us.net>
+ <20140828172842.GF12769@titan.lakedaemon.net>
+ <20140828174034.GC15307@roeck-us.net>
+ <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140829104001.GB19424@leverpostej>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140829104001.GB19424@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-> -----Original Message-----
-> From: linux-iio-owner@vger.kernel.org [mailto:linux-iio-owner@vger.kernel.org] On Behalf Of Hartmut Knaack
-> Sent: 06 September, 2014 15:12
-> To: Tirdea, Irina; Jonathan Cameron; linux-iio@vger.kernel.org
-> Cc: Lars-Peter Clausen; Peter Meerwald; Srinivas Pandruvada; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] iio: gyro: bmg160: only set power state if PM_RUNTIME is defined
+> I would suggest we have two properties that describe the resistor's
+> rating and whether or not there is a diode:
 > 
-> Irina Tirdea schrieb:
-> > When CONFIG_PM_RUNTIME is not defined and bmg160 tries to power
-> > off the device, bmg160_set_power_state will call pm_runtime_put_autosuspend,
-> > which is not implemented (wil return -ENOSYS).
-> >
-> > Only call bmg160_set_power_state when CONFIG_PM_RUNTIME is defined.
-> Unless there is anything more to come, what about putting the #ifdef into first line inside bmg160_set_power_state() and just an
-> #endif before the return 0 at the end? Saves 5 lines.
+> trickle-resistor-ohms = <250>
+> diode-connected;
+> 
+> That's easy for a human to write and/or validate, we can easily extend
+> it in future, requires no proliferation of macros, and describes the
+> hardware rather than telling software what to do.
+> 
+> The driver becomes a little more complicated, but gains sanity checking,
+> which is a good thing.
 
-Thanks for the suggestion! Will fix it in v2.
+Certainly looks better than register bit defines.
 
-> > Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-> > Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-> > ---
+As rtc-bq32k has similar options, I'm interested, too. I believe we
+should add
 
+trickle-charge-enable;
 
-Thanks,
-Irina
+(we may not want to charge at all), and I believe the diode should be
 
+disconnect-diode;
+
+... With diode connected, charge is slower, and that probably should
+be the default value. We don't want to give too much current in
+default case.  (bq32k has hard-coded resistor value for
+diode/not-diode case).
+
+Thanks and best regards,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
