@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaIHOiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:38:25 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56065 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753289AbaIHOiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:38:24 -0400
-X-Sasl-enc: k+34tBvFY6VRTvMQj1TJ2bJ9gxUqpR00QTB/cwcXRz/W 1410187103
-From: Ilja Sidoroff <ilja.sidoroff@iki.fi>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, Ilja Sidoroff <ilja.sidoroff@iki.fi>
-Subject: [PATCH v2] Staging: wlan-ng: Remove redundant break/goto statements in hfa384x_usb.c
-Date: Mon,  8 Sep 2014 17:37:53 +0300
-Message-Id: <1410187073-12576-1-git-send-email-ilja.sidoroff@iki.fi>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410184074.12560.6.camel@joe-AO725>
-References: <1410184074.12560.6.camel@joe-AO725>
+	id S1753790AbaIHOlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:41:51 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52808 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751982AbaIHOlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:41:49 -0400
+Message-ID: <540DC00F.1080103@ti.com>
+Date: Mon, 8 Sep 2014 10:41:19 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <sandeep_n@ti.com>
+Subject: Re: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
+References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com> <20140821.163612.282672926741753926.davem@davemloft.net> <53F79DC5.8030003@ti.com>
+In-Reply-To: <53F79DC5.8030003@ti.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes redundant goto or break statements in hfa384x_usb.c as found by checkpatch.pl
+Hi Dave,
 
-Signed-off-by: Ilja Sidoroff <ilja.sidoroff@iki.fi>
----
-Changes in v2:
-   * replaced goto with break and so got rid of a label
+On 8/22/14 3:45 PM, Santosh Shilimkar wrote:
+> Hi David,
+>
+> On Thursday 21 August 2014 07:36 PM, David Miller wrote:
+>> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Date: Fri, 15 Aug 2014 11:12:39 -0400
+>>
+>>> Update version after incorporating David Miller's comment from earlier
+>>> posting [1]. I would like to get these merged for upcoming 3.18 merge
+>>> window if there are no concerns on this version.
+>>>
+>>> The network coprocessor (NetCP) is a hardware accelerator that processes
+>>> Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
+>>> switch sub-module to send and receive packets. NetCP also includes a packet
+>>> accelerator (PA) module to perform packet classification operations such as
+>>> header matching, and packet modification operations such as checksum
+>>> generation. NetCP can also optionally include a Security Accelerator(SA)
+>>> capable of performing IPSec operations on ingress/egress packets.
+>>>
+>>> Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
+>>> includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
+>>> 1Gb/s rates per Ethernet port.
+>>>
+>>> NetCP driver has a plug-in module architecture where each of the NetCP
+>>> sub-modules exist as a loadable kernel module which plug in to the netcp
+>>> core. These sub-modules are represented as "netcp-devices" in the dts
+>>> bindings. It is mandatory to have the ethernet switch sub-module for
+>>> the ethernet interface to be operational. Any other sub-module like the
+>>> PA is optional.
+>>>
+>>> Both GBE and XGBE network processors supported using common driver. It
+>>> is also designed to handle future variants of NetCP.
+>>
+>> I don't want to see an offload driver that doesn't plug into the existing
+>> generic frameworks for configuration et al.
+>>
+>> If no existing facility exists to support what you need, you must work
+>> with the upstream maintainers to design and create one.
+>>
+>> It is absolutely no reasonable for every "switch on a chip" driver to
+>> export it's own configuration knob, we need a standard interface all
+>> such drivers will plug into and provide.
+>>
+> The NetCP plugin module infrastructure use all the standard kernel
+> infrastructure and its very tiny. To best represent the Network processor
+> and its sub module hardware which have inter dependency and ordering
+> needs, we needed such infrastructure. This lets us handle all the
+> hardware needs without any code duplication per module.
+>
+> To elaborate more, there are 4 variants of network switch modules and
+> then few accelerator modules like Packet accelerator, QOS and Security
+> accelerator. There can be multiple instances of switches on same SOC.
+> Example 1 Gbe and 10 Gbe switches. Then additional accelerator modules
+> are inter connected with switch, streaming fabric and packet DMA.
+> Packet routing changes based on the various offload modules presence and hence
+> needs hooks for tx/rx to be called in particular order with special
+> handling. This scheme is very hardware specific and doesn't have ways
+> to isolate the modules from each other.
+>
+> On the other hand, we definitely wanted to have minimal code
+> instead of duplicating ndo operations and core packet processing logic
+> in multiple drivers or layers. The module approach helps
+> to isolate the code based on the customer choice who can choose
+> say not to build 10 Gbe hardware or say don't need QOS or Security
+> accelerators. That way we keep the packet processing hot path as
+> what we need without any overhead.
+>
+> As you can see, the tiny module handling was added more to represent
+> the hardware, keep the modularity and avoid code duplication. The
+> infrastructure is very minimal and NETCP specific. With this small
+> infrastructure we are able to re-use code for NetCP1.0, NetCP1.5,
+> 10 GBe and upcoming NetCP variants from just *one* driver.
+>
+> Hope this gives you a better idea and rationale behind the design.
+>
+Did you happen to see the reply ?
+I am hoping to get this driver in for upcoming merge window.
 
- drivers/staging/wlan-ng/hfa384x_usb.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 2f63e0c..cac55c6 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -3474,7 +3474,7 @@ static void hfa384x_usbin_rx(wlandevice_t *wlandev, struct sk_buff *skb)
- 		/* If exclude and we receive an unencrypted, drop it */
- 		if ((wlandev->hostwep & HOSTWEP_EXCLUDEUNENCRYPTED) &&
- 		    !WLAN_GET_FC_ISWEP(fc)) {
--			goto done;
-+			break;
- 		}
- 
- 		data_len = le16_to_cpu(usbin->rxfrm.desc.data_len);
-@@ -3528,11 +3528,9 @@ static void hfa384x_usbin_rx(wlandevice_t *wlandev, struct sk_buff *skb)
- 		netdev_warn(hw->wlandev->netdev, "Received frame on unsupported port=%d\n",
- 			    HFA384x_RXSTATUS_MACPORT_GET(
- 				    usbin->rxfrm.desc.status));
--		goto done;
- 		break;
- 	}
- 
--done:
- 	return;
- }
- 
-@@ -4127,7 +4125,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
- 	case HFA384x_PDR_HFA3861_MANF_TESTI:
- 		/* code is OK */
- 		return 1;
--		break;
- 	default:
- 		if (pdrcode < 0x1000) {
- 			/* code is OK, but we don't know exactly what it is */
-@@ -4140,7 +4137,6 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
- 				 pdrcode);
- 			return 0;
- 		}
--		break;
- 	}
- 	return 0;		/* avoid compiler warnings */
- }
--- 
-1.9.1
+Regards,
+Santosh
 
