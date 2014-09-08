@@ -1,144 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaIHMDR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 08:03:17 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:43861 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237AbaIHMDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 08:03:16 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH] fs: don't remove inotify watchers from alive inode-s
-Date: Mon,  8 Sep 2014 16:01:56 +0400
-Message-Id: <1410177716-3965-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.9.3
+	id S1753862AbaIHMEz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 08:04:55 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54835 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaIHMEx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 08:04:53 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, arnd@arndb.de
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH v6 0/5]  Add EHCI and OHCI drivers for STi SoC's
+Date: Mon,  8 Sep 2014 13:04:43 +0100
+Message-Id: <1410177888-26710-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently watchers are removed in dentry_iput(), if n_link is zero.
-But other detries can be linked with this inode. For example if we
-create two hard links, open the first one and set a watcher on the
-second one. Then if we remove both links, the watcher will be removed.
-But we will have the alive file descriptor, which allows us to generate
-more events.
+Hi,
 
-With this patch, watchers will be removed, only if nlink is zero and
-i_dentry list is empty.
+I believe all feedback has been incorporated, and this series has also been rebased on
+3.17-rc3.
 
-Look at a following example:
+It was re-worked from v2 onwards to split out the ehci and ohci parts
+into their own drivers / devices like most other ARM platforms based on
+feedback from Arnd Bergmann (see here http://www.spinics.net/lists/linux-usb/msg111124.html. 
 
-	fd = inotify_init1(IN_NONBLOCK);
-	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
-	link(path, path_link);
+The ehci-platform & ohci-platform have been used as a basis for this in case we
+wish to merge the drivers again in the future.
 
-	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
+Changes since v5:
+ - Remove shared header file and duplicate private structure to help readability
+   and keep driver self contained, based on Arnd feedback.
+ - Rebased on 3.17-rc3
 
-	unlink(path);
-	unlink(path_link);
+Changes since v4:
+ - Ensure suspend / resume callbacks are wrapped in #ifdef CONFIG_PM_SLEEP as otherwise we
+   will get linker 'unused function' warnings when this option is disabled.
+ - Only declare and reference pm_ops struct if CONFIG_PM_SLEEP is enabled, this saves a few bytes
 
-	printf(" --- unlink\n");
-	read_evetns(fd);
+Changes since v3:
+ - Make reset / power, clocks etc non optional dt options to simplify code
+ - Get rid of non DT boot code left over from *hci-platform drivers
+ - Remove DMA mask code
+ - Remove pre_setup func ptr and configure ahb2st bus convertor in ehci_platform_reset
+ - Unabstract and remove usb-st-common.c
+ - Have one kconfig which enables both ehci-st & ohci-st drivers
 
-	close(deleted);
-	printf(" --- close\n");
-	read_evetns(fd);
+Changes since v2:
+ - Based on Arnd Berghman feedback, split out into 2 devices / drivers
+ - Base drivers oh ehci-platform.c & ohci-platform.c with required extensions
+   to allow possible re-merge in the furture.
 
-Without this patch:
- --- unlink
-4	(IN_ATTRIB)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- close
-FAIL
+Changes since v1:
+ - Correct s/OCHI/OHCI/ spelling
+ - Improve kconfig help message
+ - Various formating / spelling nits identified by Lee Jones
+ - Make driver depend on OF & remove node checks in code
+ - Use devm_ioremap_resource
+ - Remove unnecessary header files
 
-With this patch:
- --- unlink
-4	(IN_ATTRIB)
-400	(IN_DELETE_SELF)
- --- close
-8	(IN_CLOSE_WRITE)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
-PASS
+Peter Griffin (5):
+  usb: host: ehci-st: Add EHCI support for ST STB devices
+  usb: host: ohci-st: Add OHCI driver support for ST STB devices
+  usb: host: ehci-st: Add ehci-st devicetree bindings documentation
+  usb: host: ohci-st: Add ohci-st devicetree bindings documentation
+  MAINTAINERS: Add ehci-st.c and ohci-st.c to ARCH/STI architecture
 
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/dcache.c              | 10 ++++++++--
- include/linux/fsnotify.h |  5 +++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ Documentation/devicetree/bindings/usb/ehci-st.txt |  39 +++
+ Documentation/devicetree/bindings/usb/ohci-st.txt |  37 +++
+ MAINTAINERS                                       |   2 +
+ drivers/usb/host/Kconfig                          |   8 +
+ drivers/usb/host/Makefile                         |   1 +
+ drivers/usb/host/ehci-st.c                        | 375 ++++++++++++++++++++++
+ drivers/usb/host/ohci-st.c                        | 349 ++++++++++++++++++++
+ 7 files changed, 811 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ehci-st.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ohci-st.txt
+ create mode 100644 drivers/usb/host/ehci-st.c
+ create mode 100644 drivers/usb/host/ohci-st.c
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index d30ce69..fb1ee58 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -279,13 +279,16 @@ static void dentry_iput(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	if (inode) {
- 		dentry->d_inode = NULL;
- 		hlist_del_init(&dentry->d_alias);
-+		last_dentry = hlist_empty(&inode->i_dentry);
- 		spin_unlock(&dentry->d_lock);
- 		spin_unlock(&inode->i_lock);
- 		if (!inode->i_nlink)
--			fsnotify_inoderemove(inode);
-+			fsnotify_inoderemove(inode, last_dentry);
- 		if (dentry->d_op && dentry->d_op->d_iput)
- 			dentry->d_op->d_iput(dentry, inode);
- 		else
-@@ -304,14 +307,17 @@ static void dentry_unlink_inode(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	__d_clear_type(dentry);
- 	dentry->d_inode = NULL;
- 	hlist_del_init(&dentry->d_alias);
- 	dentry_rcuwalk_barrier(dentry);
-+	last_dentry = hlist_empty(&inode->i_dentry);
- 	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&inode->i_lock);
- 	if (!inode->i_nlink)
--		fsnotify_inoderemove(inode);
-+		fsnotify_inoderemove(inode, last_dentry);
- 	if (dentry->d_op && dentry->d_op->d_iput)
- 		dentry->d_op->d_iput(dentry, inode);
- 	else
-diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
-index 1c804b0..63dae9d 100644
---- a/include/linux/fsnotify.h
-+++ b/include/linux/fsnotify.h
-@@ -144,10 +144,11 @@ static inline void fsnotify_nameremove(struct dentry *dentry, int isdir)
- /*
-  * fsnotify_inoderemove - an inode is going away
-  */
--static inline void fsnotify_inoderemove(struct inode *inode)
-+static inline void fsnotify_inoderemove(struct inode *inode, bool delete)
- {
- 	fsnotify(inode, FS_DELETE_SELF, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
--	__fsnotify_inode_delete(inode);
-+	if (delete)
-+		__fsnotify_inode_delete(inode);
- }
- 
- /*
 -- 
-1.9.3
+1.9.1
 
