@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238AbaIHSEL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:04:11 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:52418 "EHLO quartz.orcorp.ca"
+	id S1753267AbaIHSIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:08:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58406 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891AbaIHSEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:04:09 -0400
-Date: Mon, 8 Sep 2014 12:03:57 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Rostislav Lisovy <lisovy@gmail.com>,
-        Mike Rapoport <mike.rapoport@ravellosystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RESEND] ARM: PCI: Use PCI_CLASS_* defines for PCI class
-Message-ID: <20140908180357.GA6159@obsidianresearch.com>
-References: <1410163532-31057-1-git-send-email-lisovy@gmail.com>
- <CAErSpo7sOc72V3g5tOov8Yj4nKiuJupaUTKEEecHMcqEUrzh_g@mail.gmail.com>
+	id S1752665AbaIHSIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 14:08:35 -0400
+Message-ID: <540DF078.3030601@zytor.com>
+Date: Mon, 08 Sep 2014 11:07:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7sOc72V3g5tOov8Yj4nKiuJupaUTKEEecHMcqEUrzh_g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Pavel Machek <pavel@ucw.cz>
+CC: John Stultz <john.stultz@linaro.org>,
+        ksummit-discuss@lists.linuxfoundation.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        "Joseph S. Myers" <joseph@codesourcery.com>
+Subject: Re: (Resend) 2038 Kernel Summit Discussion Fodder
+References: <53EAAC95.7080301@linaro.org>	<CALAqxLWvSn2_6dakGiQ4VEtYHH2Dt7BL0pn5XHgLWOV4ePqhBw@mail.gmail.com>	<20140823222640.GA1382@xo-6d-61-c0.localdomain> <20140908185544.621022b6@alan.etchedpixels.co.uk>
+In-Reply-To: <20140908185544.621022b6@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 10:36:36AM -0600, Bjorn Helgaas wrote:
+On 09/08/2014 10:55 AM, One Thousand Gnomes wrote:
+>> Today, there's good chance there's linux somewhere in your car. (Dashboard,
+>> entertainment system). People like to keep cars from 1910 working, and I suspect
+>> that is not going to change.
+>>
+>> So yes, in 2038 people will be running 32bit linux.
+>>
+>> Whether there will be people putting 32bit linux into new devices is a question,
+>> but I suspect answer is still yes.
+> 
+> I'm currently trying to add 64bit longlong support to an initial PCC 8086
+> compiler port so I can fix that for some 16bit projects 8-)
+> 
+> My 8bit machines are mostly 2038 safe already.
+> 
 
-> Presumably these devices have PCI BARs (since that's how dev->resource
-> got filled in), and we want to somehow ignore them, not assign
-> resources to them, and not allow drivers to use whatever is mapped by
-> the BARs.  But clearing out the struct resources isn't really safe by
-> itself.  The hardware BAR still contains some value, and may still be
-> enabled, which means that it may conflict with other devices.
+Back in 1985 I decided to Y2K-test my ABC800 8-bit computer.  It passed
+(they had implemented a windowed year solution which breaks in 2070 or
+2080, as I recall.)
 
-I've seen this pattern before in the old mvebu stuff.
+	-hpa
 
-Essentially for that case the mvebu HW is a repurposed end port core,
-so when working as a root port it presents an end port config space
-(not a root port bridge config space). The BAR in that config space is
-not relevant, so the old mvebu used code like this to hide it from the
-PCI core. Otherwise the core will try to program it from the aperture,
-and the default BAR size is really big, so it runs out of space.
 
-Not sure if this is the same for this driver, but it looks very
-similar..
-
-Jason
