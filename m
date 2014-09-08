@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaIHUfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 16:35:23 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50060 "HELO
+	id S1754568AbaIHUkt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 16:40:49 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49871 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753531AbaIHUfW (ORCPT
+	with SMTP id S1753416AbaIHUkr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 16:35:22 -0400
+	Mon, 8 Sep 2014 16:40:47 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Mon, 08 Sep 2014 22:54:48 +0200
-Message-ID: <1534583.H3bxpdPhXK@vostro.rjw.lan>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Len Brown <lenb@kernel.org>, Robert Moore <robert.moore@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch v4 04/16] ACPI: Rename processor_core.c as apic_id.c
+Date: Mon, 08 Sep 2014 23:00:14 +0200
+Message-ID: <1537817.rgZoClELVE@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAM_iQpXUDt1eM-R-Ofr3OzxjB=9K3JZ-XupJ916c7k_NzMK5WQ@mail.gmail.com>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <8615268.1yl5ssmHZO@vostro.rjw.lan> <CAM_iQpXUDt1eM-R-Ofr3OzxjB=9K3JZ-XupJ916c7k_NzMK5WQ@mail.gmail.com>
+In-Reply-To: <540DA653.2000901@linaro.org>
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1957879.bE3ICM6HKO@vostro.rjw.lan> <540DA653.2000901@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 08, 2014 10:40:17 AM Cong Wang wrote:
-> On Fri, Sep 5, 2014 at 4:32 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Saturday, September 06, 2014 07:45:54 AM Tejun Heo wrote:
-> >> Hello,
-> >>
-> >> On Fri, Sep 05, 2014 at 11:12:24AM -0700, Cong Wang wrote:
-> >> > > Rafael, can you please help?
-> >> >
-> >> > Rafael is known not responsive at least for this topic. :)
-> >>
-> >> :(
-> >
-> > Well, am I?
-> >
-> > I haven't commented patches in this thread so far, mostly because other
-> > people have.
-> >
-> > How can I help actually?
+On Monday, September 08, 2014 08:51:31 PM Hanjun Guo wrote:
+> Hi Gerry, Rafael,
 > 
+> On 2014年09月08日 06:37, Rafael J. Wysocki wrote:
+> > On Thursday, August 28, 2014 10:22:29 AM Jiang Liu wrote:
+> >> Now all code in processor_core.c is APIC ID related, so rename it as
+> >> apic_id.c. Later IOAPIC ID related code will be added into apic_id.c.
+> > Actually, I'm not sure about this one.
+> >
+> > Renames like this make it difficult to backport things in general
+> > and kind of break "git blame", so do we have to do that?
+> >
+> > What's wrong with leaving the name as is and adding a comment
+> > about the contents being related to IOAPIC ID?
 > 
-> We asked you to comment on either if this patch is safe for PM freeze
-> if we don't have the cgroup_freezing() check, or if it is not safe why (so that
-> I can put it in the comment).
+> It will be thankful for not renaming the file into apic_id.c, because apic id is x86 specific,
+> and platform like ARM will also add some code to get cpu hardware id via GICC structure
+> in MADT table in that file, apic id is not a generic name for both x86 and ARM, I prefer to
+> keep it as it is :)
 
-OK, which version of it?  Anything that has been posted as a complete patch you
-have a link to?  Or am I supposed to go through the whole thread and figure out
-how the patch *might* have looked had it been posted and then comment?
-
-> >> > > Shouldn't the primary goal of the comment be explaining why we need
-> >> > > TIF_MEMDIE check there at all anyway?  The deadlock possiblity is not
-> >> > > very obvious.
-> >> >
-> >> > The changelog is not long enough?? ;-) I hate to copy+paste changelog
-> >> > into comments, changelog is essentially necessary for people to understand
-> >> > kernel code (at least networking) , so I don't think we have to move it
-> >> > into comments in this case.
-> >>
-> >> It doesn't have to be the same text but the current comment is
-> >> basically content-less.  e.g. it can just say "OOM killer may get
-> >> stuck trying to kill a cgroup frozen task" and actualy provide
-> >> information on what condition the conditional tries to address.
-> >
-> > Or something like "We need to check X to prevent Y from happening".
-> >
-> 
-> OK, maybe just one or two sentences. Let me know if the following
-> comment is okay for you:
-> 
-> /* OOM killer might decide to kill this process after it is frozen,
->   in this case it should thaw and die. */
-
-I don't think it's sufficient.  In particular, what does "thaw and die" mean
-exactly?  It should be thawed immediately and then die or it should die right
-after it's thawed (at one point in the future)?
+Well, that's a good argument too.
 
 Rafael
 
