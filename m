@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216AbaIHVzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 17:55:40 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:59612 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877AbaIHVzi (ORCPT
+	id S1755033AbaIHV50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 17:57:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35787 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735AbaIHV5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 17:55:38 -0400
-Date: Mon, 8 Sep 2014 22:55:35 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI urgent fixes
-Message-ID: <20140908215535.GD18582@console-pimps.org>
+	Mon, 8 Sep 2014 17:57:24 -0400
+Date: Mon, 8 Sep 2014 14:57:23 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Darren Hart <dvhart@infradead.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] eeepc-laptop: remove disp attribute show function
+Message-ID: <20140908215723.GA21556@kroah.com>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+ <1409814488.5546.63.camel@x220>
+ <20140906021757.GA9197@vmdeb7>
+ <7288841.ayNsq2yeGO@vostro.rjw.lan>
+ <1410210762-2487-1-git-send-email-fransklaver@gmail.com>
+ <20140908211627.GA23619@kroah.com>
+ <20140908212306.GA22145@gmail.com>
+ <20140908214438.GB22145@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140908214438.GB22145@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Folks,
+On Mon, Sep 08, 2014 at 11:44:38PM +0200, Frans Klaver wrote:
+> On Mon, Sep 08, 2014 at 11:23:06PM +0200, Frans Klaver wrote:
+> > On Mon, Sep 08, 2014 at 02:16:27PM -0700, Greg Kroah-Hartman wrote:
+> > > On Mon, Sep 08, 2014 at 11:12:42PM +0200, Frans Klaver wrote:
+> > > >
+> > > >  EEEPC_CREATE_DEVICE_ATTR(camera, 0644, CM_ASL_CAMERA);
+> > > >  EEEPC_CREATE_DEVICE_ATTR(cardr, 0644, CM_ASL_CARDREADER);
+> > > > -EEEPC_CREATE_DEVICE_ATTR(disp, 0200, CM_ASL_DISPLAYSWITCH);
+> > > > +
+> > > > +static ssize_t store_disp(struct device *dev,
+> > > > +			  struct device_attribute *attr,
+> > > > +			  const char *buf, size_t count)
+> > > > +{
+> > > > +	return store_sys_acpi(dev, CM_ASL_DISPLAYSWITCH, buf, count);
+> > > > +}
+> > > > +
+> > > > +static struct device_attribute dev_attr_disp = {
+> > > > +	.attr = {
+> > > > +		.name = "disp",
+> > > > +		.mode = 0200 },
+> > > > +	.store  = store_disp,
+> > > > +};
+> > > 
+> > > DEVICE_ATTR()?
+> > 
+> > That would make sense, wouldn't it? The only defense I have is that it
+> > isn't used in EEEPC_CREATE_DEVICE_ATTR() either.
+> 
+> I might as well fix that as well, and the fact that the octal
+> permissions are used instead of S_IRUGO and friends. Would you prefer
+> that in a separate patch?
 
-Please queue up the following fixes, mainly for regressions introduced
-in the merge window or -rc2.
-
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
-
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
-
-for you to fetch changes up to 5d6012d8d72b4107bbc68d9e761aa5e2ddd73b05:
-
-  efi/arm64: Fix fdt-related memory reservation (2014-09-08 20:52:48 +0100)
-
-----------------------------------------------------------------
- * Fix early boot regression affecting x86 EFI boot stub when loading
-   initrds above 4GB - Yinghai Lu
-
- * Relocate GOT entries in the x86 EFI boot stub now that we have
-   symbols with global visibility - Matt Fleming
-
- * Fixes for compiler warnings caused by parameter and variable names
-   shadowing types - Mark Rustad
-
- * General EFI cleanups and simplifications - Mathias Krause
-
- * fdt memory reservation fix for arm64 - Mark Salter
-
-----------------------------------------------------------------
-Mark Rustad (1):
-      efi: Resolve some shadow warnings
-
-Mark Salter (1):
-      efi/arm64: Fix fdt-related memory reservation
-
-Mathias Krause (4):
-      x86/efi: Remove unused efi_call* macros
-      x86/efi: Unexport add_efi_memmap variable
-      x86/efi: Update comment regarding required phys mapped EFI services
-      x86/efi: Mark initialization code as such
-
-Matt Fleming (1):
-      x86/efi: Fixup GOT in all boot code paths
-
-Yinghai Lu (1):
-      x86/efi: Only load initrd above 4g on second try
-
- arch/arm64/mm/init.c                |  3 +-
- arch/x86/boot/compressed/eboot.c    | 18 +++++++-----
- arch/x86/boot/compressed/head_32.S  | 54 +++++++++++++++++++++++++----------
- arch/x86/boot/compressed/head_64.S  | 56 +++++++++++++++++++++++++++----------
- arch/x86/include/asm/efi.h          | 31 +++++++-------------
- arch/x86/platform/efi/efi.c         | 20 ++++++-------
- arch/x86/platform/efi/efi_32.c      | 12 ++++----
- arch/x86/platform/efi/efi_64.c      |  6 ++--
- arch/x86/platform/efi/efi_stub_32.S |  4 +--
- drivers/firmware/efi/libstub/fdt.c  | 10 ++++++-
- drivers/firmware/efi/vars.c         | 14 +++++-----
- 11 files changed, 140 insertions(+), 88 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+I'm not taking these patches, so I can't answer that...
