@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaIHSlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:41:46 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:42524 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992AbaIHSlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:41:44 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Kever Yang <kever.yang@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Paul Zimmerman <paulz@synopsys.com>, dianders@chromium.org, olof@lixom.net,
-        sonnyrao@chromium.org, addy.ke@rock-chips.com, cf@rock-chips.com,
-        xjq@rock-chips.com, wulf@rock-chips.com, lyz@rock-chips.com,
-        hj@rock-chips.com, huangtao@rock-chips.com, devicetree@vger.kernel.org,
-        Matt Porter <mporter@linaro.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        linux-usb@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/4] Patches to add support for Rockchip dwc2 controller
-Date: Mon, 08 Sep 2014 20:43:40 +0200
-Message-ID: <4508852.pY5QcWPyfZ@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1407470159-14722-1-git-send-email-kever.yang@rock-chips.com>
-References: <1407470159-14722-1-git-send-email-kever.yang@rock-chips.com>
+	id S1754186AbaIHSl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:41:57 -0400
+Received: from scspc499.cs.uwaterloo.ca ([129.97.171.80]:52033 "EHLO
+	scspc499.cs.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977AbaIHSlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 14:41:55 -0400
+Date: Mon, 8 Sep 2014 14:41:48 -0400
+From: Adrian Nicoara <anicoara@uwaterloo.ca>
+To: shigekatsu.tateno@atmel.com
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, tklauser@distanz.ch
+Subject: [PATCH v2 2/4] staging: ozwpan: fix redundant else after break or
+ return
+Message-ID: <20140908184148.GB17486@uwaterloo.ca>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Cleanup checkpatch.pl warnings.
 
-Am Freitag, 8. August 2014, 11:55:55 schrieb Kever Yang:
-> These patches to add support for dwc2 controller found in
-> Rockchip processors rk3066, rk3188 and rk3288,
-> and enable dts for rk3288 evb.
+Signed-off-by: Adrian Nicoara <anicoara@uwaterloo.ca>
+---
+ drivers/staging/ozwpan/ozhcd.c |  8 +++-----
+ drivers/staging/ozwpan/ozpd.c  | 10 ++++------
+ 2 files changed, 7 insertions(+), 11 deletions(-)
 
-will you take patches 1 and 2?
+diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
+index b30c4d87..ba2168f 100644
+--- a/drivers/staging/ozwpan/ozhcd.c
++++ b/drivers/staging/ozwpan/ozhcd.c
+@@ -1010,10 +1010,9 @@ void oz_hcd_data_ind(void *hport, u8 endpoint, const u8 *data, int data_len)
+ 			urb->actual_length = copy_len;
+ 			oz_complete_urb(port->ozhcd->hcd, urb, 0);
+ 			return;
+-		} else {
+-			oz_dbg(ON, "buffering frame as URB is not available\n");
+-			oz_hcd_buffer_data(ep, data, data_len);
+ 		}
++		oz_dbg(ON, "buffering frame as URB is not available\n");
++		oz_hcd_buffer_data(ep, data, data_len);
+ 		break;
+ 	case USB_ENDPOINT_XFER_ISOC:
+ 		oz_hcd_buffer_data(ep, data, data_len);
+@@ -1903,8 +1902,7 @@ static int oz_hcd_hub_status_data(struct usb_hcd *hcd, char *buf)
+ 	spin_unlock_bh(&ozhcd->hcd_lock);
+ 	if (buf[0] != 0 || buf[1] != 0)
+ 		return 2;
+-	else
+-		return 0;
++	return 0;
+ }
 
+ /*
+diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
+index 26c1049..852c288 100644
+--- a/drivers/staging/ozwpan/ozpd.c
++++ b/drivers/staging/ozwpan/ozpd.c
+@@ -496,11 +496,10 @@ static int oz_send_next_queued_frame(struct oz_pd *pd, int more_data)
+ 			oz_dbg(TX_FRAMES, "Sending ISOC Frame, nb_isoc= %d\n",
+ 			       pd->nb_queued_isoc_frames);
+ 			return 0;
+-		} else {
+-			kfree_skb(skb);
+-			oz_dbg(TX_FRAMES, "Dropping ISOC Frame>\n");
+-			return -1;
+ 		}
++		kfree_skb(skb);
++		oz_dbg(TX_FRAMES, "Dropping ISOC Frame>\n");
++		return -1;
+ 	}
 
-Thanks
-Heiko
+ 	pd->last_sent_frame = e;
+@@ -813,8 +812,7 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, const u8 *data, int len)
+ 			atomic_inc(&g_submitted_isoc);
+ 			if (dev_queue_xmit(skb) < 0)
+ 				return -1;
+-			else
+-				return 0;
++			return 0;
+ 		}
 
-
-> 
-> Changes in v5:
-> - max_transfer_size change to 65535 to met the requirement of
->   header file
-> - change the sort order of dwc2 in rk3288.dtsi
-> - don't enable otg port for evb
-> 
-> Changes in v4:
-> - max_transfer_size change to 65536, this should be enough
->   for most transfer, the hardware auto-detect will set this
->   to 0x7ffff which may make dma_alloc_coherent fail when
->   non-dword aligned buf from driver like usbnet happen.
-> - remove EHCI and HSIC dts patch for Doug had post it seprately.
-> 
-> Changes in v3:
-> - EHCI and HSIC move new for version 3.
-> - Rebase
-> 
-> Changes in v2:
-> - Split out dr_mode and rk3288 bindings.
-> - add compatible "snps,dwc2" bingding info
-> - set most parameters as driver auto-detect
-> - evb patch added in version 2
-> 
-> Kever Yang (4):
->   Documentation: dt-bindings: add dt binding info for Rockchip dwc2
->   usb: dwc2: add compatible data for rockchip soc
->   ARM: dts: add rk3288 dwc2 controller support
->   ARM: dts: Enable USB host1(dwc) on rk3288-evb
-> 
->  Documentation/devicetree/bindings/usb/dwc2.txt |  3 +++
->  arch/arm/boot/dts/rk3288-evb.dtsi              |  4 ++++
->  arch/arm/boot/dts/rk3288.dtsi                  | 20 ++++++++++++++++++
->  drivers/usb/dwc2/platform.c                    | 29
-> ++++++++++++++++++++++++++ 4 files changed, 56 insertions(+)
+ out:	kfree_skb(skb);
+--
+2.0.1
 
