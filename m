@@ -1,72 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaIHPiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:38:50 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52119 "EHLO mail.kernel.org"
+	id S1754654AbaIHPjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:39:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10614 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421AbaIHPir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:38:47 -0400
-Date: Mon, 8 Sep 2014 12:38:24 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
-Message-ID: <20140908153824.GG2773@kernel.org>
-References: <1409781604-16778-5-git-send-email-acme@kernel.org>
- <54085BC8.40403@intel.com>
- <20140904151902.GE2997@kernel.org>
- <54097793.4050201@intel.com>
- <20140905140756.GD30520@kernel.org>
- <20140906203915.GA9843@krava.brq.redhat.com>
- <20140908134615.GD2773@kernel.org>
- <20140908140454.GF17728@krava.brq.redhat.com>
- <20140908143317.GE2773@kernel.org>
- <20140908151016.GH17728@krava.brq.redhat.com>
+	id S1753421AbaIHPi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 11:38:59 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 10/13] PKCS#7: Handle PKCS#7 messages that contain no X.509
+ certs
+From: David Howells <dhowells@redhat.com>
+To: rusty@rustcorp.com.au
+Cc: keyrings@linux-nfs.org, jwboyer@redhat.com, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        pjones@redhat.com, vgoyal@redhat.com
+Date: Mon, 08 Sep 2014 16:38:51 +0100
+Message-ID: <20140908153851.28301.32053.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20140908153704.28301.41578.stgit@warthog.procyon.org.uk>
+References: <20140908153704.28301.41578.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140908151016.GH17728@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Sep 08, 2014 at 05:10:17PM +0200, Jiri Olsa escreveu:
-> On Mon, Sep 08, 2014 at 11:33:17AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > IMO it's more clear to poll pm all event FDs.. and now with the
-> > > case Adrian described it seems necessary anyway
+The X.509 certificate list in a PKCS#7 message is optional.  To save space, we
+can omit the inclusion of any X.509 certificates if we are sure that we can
+look the relevant public key up by the serial number and issuer given in a
+signed info block.
 
-> > I would have to check why was that we were polling just the one where
-> > the mmap is done, I don't recall being the one to do it, probably who
-> > did it thought that since the ring buffer is there, it was enough (and
-> > possibly scaled better, dunno) to do the polling in just one of them.
+This also supports use of a signed info block for which we don't have a
+matching X.509 cert giving in a populated certificate list.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ crypto/asymmetric_keys/pkcs7_trust.c  |   48 +++++++++++++++++++++++++--------
+ crypto/asymmetric_keys/pkcs7_verify.c |   16 ++++++++---
+ 2 files changed, 47 insertions(+), 17 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
+index aa3da326bcdb..21c7ca74f5ba 100644
+--- a/crypto/asymmetric_keys/pkcs7_trust.c
++++ b/crypto/asymmetric_keys/pkcs7_trust.c
+@@ -55,13 +55,16 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
+ 		 * keys.
+ 		 */
+ 		key = x509_request_asymmetric_key(trust_keyring, x509->id);
+-		if (!IS_ERR(key))
++		if (!IS_ERR(key)) {
+ 			/* One of the X.509 certificates in the PKCS#7 message
+ 			 * is apparently the same as one we already trust.
+ 			 * Verify that the trusted variant can also validate
+ 			 * the signature on the descendant.
+ 			 */
++			pr_devel("sinfo %u: Cert %u as key %x\n",
++				 sinfo->index, x509->index, key_serial(key));
+ 			goto matched;
++		}
+ 		if (key == ERR_PTR(-ENOMEM))
+ 			return -ENOMEM;
  
-> for read notification it's ok to poll just for one event, because they
-> all share same ringbuffer and perf_poll checks if there's ANY new data
+@@ -81,15 +84,34 @@ int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
+ 	/* No match - see if the root certificate has a signer amongst the
+ 	 * trusted keys.
+ 	 */
+-	if (!last || !last->issuer || !last->authority) {
+-		kleave(" = -ENOKEY [no backref]");
+-		return -ENOKEY;
++	if (last && last->authority) {
++		key = x509_request_asymmetric_key(trust_keyring, last->authority);
++		if (!IS_ERR(key)) {
++			pr_devel("sinfo %u: Root cert %u signer is key %x\n",
++				 sinfo->index, x509->index, key_serial(key));
++			x509 = last;
++			goto matched;
++		}
++		if (PTR_ERR(key) != -ENOKEY)
++			return PTR_ERR(key);
+ 	}
  
-> for the hup notification I think we need to poll all of them
+-	key = x509_request_asymmetric_key(trust_keyring, last->authority);
+-	if (IS_ERR(key))
+-		return PTR_ERR(key) == -ENOMEM ? -ENOMEM : -ENOKEY;
+-	x509 = last;
++	/* As a last resort, see if we have a trusted public key that matches
++	 * the signed info directly.
++	 */
++	key = x509_request_asymmetric_key(trust_keyring,
++					  sinfo->signing_cert_id);
++	if (!IS_ERR(key)) {
++		pr_devel("sinfo %u: Direct signer is key %x\n",
++			 sinfo->index, key_serial(key));
++		x509 = NULL;
++		goto matched;
++	}
++	if (PTR_ERR(key) != -ENOKEY)
++		return PTR_ERR(key);
++
++	kleave(" = -ENOKEY [no backref]");
++	return -ENOKEY;
+ 
+ matched:
+ 	ret = verify_signature(key, sig);
+@@ -103,10 +125,12 @@ matched:
+ 	}
+ 
+ verified:
+-	x509->verified = true;
+-	for (p = sinfo->signer; p != x509; p = p->signer) {
+-		p->verified = true;
+-		p->trusted = trusted;
++	if (x509) {
++		x509->verified = true;
++		for (p = sinfo->signer; p != x509; p = p->signer) {
++			p->verified = true;
++			p->trusted = trusted;
++		}
+ 	}
+ 	sinfo->trusted = trusted;
+ 	kleave(" = 0");
+diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
+index 73a75a5a0b98..b3059f2ad0f7 100644
+--- a/crypto/asymmetric_keys/pkcs7_verify.c
++++ b/crypto/asymmetric_keys/pkcs7_verify.c
+@@ -154,10 +154,13 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
+ 		return 0;
+ 	}
+ 
+-	pr_warn("Sig %u: Issuing X.509 cert not found (#%*ph)\n",
+-		sinfo->index,
+-		sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
+-	return -ENOKEY;
++	/* The relevant X.509 cert isn't found here, but it might be found in
++	 * the trust keyring.
++	 */
++	pr_debug("Sig %u: Issuing X.509 cert not found (#%*phN)\n",
++		 sinfo->index,
++		 sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
++	return 0;
+ }
+ 
+ /*
+@@ -277,11 +280,14 @@ static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/* Find the key for the signature */
++	/* Find the key for the signature if there is one */
+ 	ret = pkcs7_find_key(pkcs7, sinfo);
+ 	if (ret < 0)
+ 		return ret;
+ 
++	if (!sinfo->signer)
++		return 0;
++
+ 	pr_devel("Using X.509[%u] for sig %u\n",
+ 		 sinfo->signer->index, sinfo->index);
+ 
 
-Yeah, I'm convinced of this, I'm working on a patch to make it look at
-all file descriptors at poll time.
-
-I'm doing it on top of a patch that will close the mmap when it gets a
-POLLHUP, as discussed recently on this thread, in a response I gave to
-Adrian.
-
-But since multiple fds share an mmap, we can only close that mmap when
-all fds are HUPed, i.e. we need to reference count struct perf_mmap,
-which is what I am doing.
-
-I.e. the fist mmaps and sets perf_mmap.nfds to 1, the next one, just
-after doing that PERF_EVENT_IOC_SET_OUTPUT will bump perf_mmap.nfds,
-unmap gets replaced by mmap_put, that decs and calls munmap when it
-hits zero, yadda, yadda.
-
-- Arnaldo
