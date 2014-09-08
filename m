@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133AbaIHPtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 11:49:46 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:44422 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaIHPto (ORCPT
+	id S1754325AbaIHPvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 11:51:21 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38676 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752986AbaIHPvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 11:49:44 -0400
-Date: Mon, 8 Sep 2014 11:49:39 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 3/5] arm: fiq: Replace default FIQ handler
-In-Reply-To: <1410190115-32604-4-git-send-email-daniel.thompson@linaro.org>
-Message-ID: <alpine.LFD.2.11.1409081140360.16533@knanqh.ubzr>
-References: <1409931198-22600-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-4-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 8 Sep 2014 11:51:20 -0400
+Message-ID: <1410191478.2027.28.camel@jarvis.lan>
+Subject: Re: WARNING in block layer triggered in 3.17-rc3
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Sep 2014 08:51:18 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1409081047420.1433-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1409081047420.1433-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014, Daniel Thompson wrote:
+On Mon, 2014-09-08 at 10:51 -0400, Alan Stern wrote:
+> On Sun, 7 Sep 2014, Shirish Pargaonkar wrote:
+> 
+> > I think the problem is, when a gendisk is detached, its request queue
+> > is not put in bypass mode
+> > cause when it is re-attached, code tries to put it out of bypass mode,
+> > hence the warning.
+> > 
+> > So either of these should work, I have not tested it, just coded it up.
+> 
+> I'm pretty sure that both of your solutions are wrong.
+> 
+> Jens and James, it appears the problem is in blk_register_queue().  The 
+> code does this:
+> 
+> 	/*
+> 	 * Initialization must be complete by now.  Finish the initial
+> 	 * bypass from queue allocation.
+> 	 */
+> 	queue_flag_set_unlocked(QUEUE_FLAG_INIT_DONE, q);
+> 	blk_queue_bypass_end(q);
+> 
+> This doesn't work well if the queue is unregistered later and then
+> registered again -- which is what happens when the sd driver is unbound
+> from a device and then bound again.  It looks like the code should be:
+> 
+> 	if (!queue_flag_test_and_set(QUEUE_FLAG_INIT_DONE, q))
+> 		blk_queue_bypass_end(q);
+> 
+> Do you agree?  If so, I'll send in patch.
 
-> +@
-> +@ Taking a FIQ in abort mode is similar to taking a FIQ in SVC mode
-> +@ and reuses the same macros. However in abort mode we must also
-> +@ save/restore lr_abt and spsr_abt to make nested aborts safe.
-> +@
-> +	.align 5
-> +__fiq_abt:
-> +	svc_entry 0, 0
-> +
-> + ARM(	msr	cpsr_c, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
-> + THUMB( mov	r0, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
-> + THUMB( msr	cpsr_c, r0 )
-> +	mov	r1, lr		@ Save lr_abt
-> +	mrs	r2, spsr	@ Save spsr_abt, abort is now safe
-> + ARM(	msr	cpsr_c, #SVC_MODE | PSR_I_BIT | PSR_F_BIT )
-> + THUMB( mov	r0, #SVC_MODE | PSR_I_BIT | PSR_F_BIT )
-> + THUMB( msr	cpsr_c, r0 )
-> +	push	{r1 - r2}
+This looks like a nasty hack.  In theory the QUEUE_FLAG_INIT_DONE should
+be unset on blk_unregister_queue() to match the teardown; it's only
+accident it isn't.  del_gendisk() in sd_remove() is supposed to tear a
+lot of queue stuff down.  However, the problem looks to be the mismatch
+in assumptions.  The way SCSI binding works, the queue belongs to the
+underlying device so we always assumed we could add and remove upper
+drivers ... there's even a case for this if you don't want a disk but
+want to attach sg instead.  However, it's not the common use case.
 
-	stmfd sp!, {r1 - r2}
+The block model now seems to tie a lot of queue set up and teardown to
+add and remove of the gendisk which is counter to these assumptions.  As
+long as we can go from del->add without calling the ->release function
+on the queue, everything works.  Most of the operations seem
+symmetrical, so perhaps this is only the bypass doing too much.
 
-> +
-> +	sub	r0, sp, #8			@ struct pt_regs *regs
-> +	bl	handle_fiq_as_nmi
-> +
-> +	pop	{r1 - r2}
+The ideal is that disk teardown only does as much as disk setup, so the
+mid layer can still use the underlying queue on the device.
 
-	ldmfd sp!, {r1 - r2}
+This bypass code is not very well documented.  However, your problem
+seems to be caused by this change:
 
-... so that old binutils we still accept to compile the kernel (in ARM 
-mode) are happy.
+commit 776687bce42bb22cce48b5da950e48ebbb9a948f
+Author: Tejun Heo <tj@kernel.org>
+Date:   Tue Jul 1 10:29:17 2014 -0600
 
-Otherwise...
+    block, blk-mq: draining can't be skipped even if bypass_depth was
+non-zero
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Your hack seems to indicate that this doesn't work on the add->del->add
+transtion of a gendisk.
+
+James
 
 
-Nicolas
+
