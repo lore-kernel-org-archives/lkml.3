@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaIHKLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 06:11:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49516 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325AbaIHKLl (ORCPT
+	id S1753260AbaIHKT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 06:19:27 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:62410 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084AbaIHKTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 06:11:41 -0400
-Date: Mon, 8 Sep 2014 12:11:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/9] perf: Deny optimized switch for events read by
- PERF_SAMPLE_READ
-Message-ID: <20140908101119.GB6758@twins.programming.kicks-ass.net>
-References: <1408977943-16594-1-git-send-email-jolsa@kernel.org>
- <1408977943-16594-3-git-send-email-jolsa@kernel.org>
- <20140902105244.GI5806@worktop.ger.corp.intel.com>
- <20140908100018.GC1172@krava.brq.redhat.com>
+	Mon, 8 Sep 2014 06:19:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Fugang Duan <B38611@freescale.com>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: Re: [PATCH 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+Date: Mon, 08 Sep 2014 12:19:05 +0200
+Message-ID: <3899885.YaIxR1zelv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540D653E.7070509@mm-sol.com>
+References: <1409919274-13419-1-git-send-email-svarbanov@mm-sol.com> <3495079.hWGRuSPgx7@wuerfel> <540D653E.7070509@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uHr6nJLCB5hydKEi"
-Content-Disposition: inline
-In-Reply-To: <20140908100018.GC1172@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LWn7WzuIMfFYmSJKEorYUJWxqxuttPjNPrUlQG2T0lJ
+ tcKCnY9Tw8r8SlihPZ/OtHg2oGG1BSjs1mgswvTOahFtJMZAa+
+ 27xcmjXFZ4BZnn6WRRm3MTBI7iEVK9vxvQ9H6bRZp9NuFyMmTw
+ sKbS7PPvOUl5p26tGpN0G96+rsPu0lrzAeQ3fwTa5p2sWklRAN
+ iFgEazTLHHKQdOb/30aPHvIKbImYuqeeTq0NXVEYfvZDLsCidS
+ 8+2/5M7o6dMtiS3VQlHc9FS/Pz+kh1PmMLrivOaMgZDSnfwCaQ
+ /6eTcEXyJ2nAoP+g/sayVB88JyNrWlPR1jmwlhtoXSRSLtDEZC
+ be8ShAiewTURnL1c0PWA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 08 September 2014 11:13:50 Stanimir Varbanov wrote:
+> On 09/05/2014 03:26 PM, Arnd Bergmann wrote:
+> > On Friday 05 September 2014 15:14:33 Stanimir Varbanov wrote:
+> >> +       VADC_CHAN(LR_MUX1_BAT_THERM, 0)                 /* 0x30 */
+> >> +       VADC_CHAN(LR_MUX2_BAT_ID, 0)
+> >> +       VADC_CHAN(LR_MUX3_XO_THERM, 0)
+> >> +       VADC_CHAN(LR_MUX4_AMUX_THM1, 0)
+> >> +       VADC_CHAN(LR_MUX5_AMUX_THM2,by you  0)
+> >> +       VADC_CHAN(LR_MUX6_AMUX_THM3, 0)
+> >> +       VADC_CHAN(LR_MUX7_HW_ID, 0)
+> >> +       VADC_CHAN(LR_MUX8_AMUX_THM4, 0)
+> >> +       VADC_CHAN(LR_MUX9_AMUX_THM5, 0)
+> >> +       VADC_CHAN(AMUX_PU1, 0)
+> >> +       VADC_CHAN(AMUX_PU2, 0)
+> >> +       VADC_CHAN(LR_MUX3_BUF_XO_THERM_BUF, 0)          /* 0x3c */
+> >> +
+> >> +       VADC_CHAN(LR_MUX1_PU1_BAT_THERM, 0)             /* 0x70 */
+> >> +       VADC_CHAN(LR_MUX2_PU1_BAT_ID, 0)
+> >> +       VADC_CHAN(LR_MUX3_PU1_XO_THERM, 0)
+> >> +       VADC_CHAN(LR_MUX4_PU1_AMUX_THM1, 0)
+> >> +       VADC_CHAN(LR_MUX5_PU1_AMUX_THM2, 0)
+> >> +       VADC_CHAN(LR_MUX6_PU1_AMUX_THM3, 0)
+> >> +       VADC_CHAN(LR_MUX7_PU1_AMUX_HW_ID, 0)
+> >> +       VADC_CHAN(LR_MUX8_PU1_AMUX_THM4, 0)
+> >> +       VADC_CHAN(LR_MUX9_PU1_AMUX_THM5, 0)
+> >> +       VADC_CHAN(LR_MUX10_PU1_AMUX_USB_ID, 0)          /* 0x79 */
+> >> +       VADC_CHAN(LR_MUX3_BUF_PU1_XO_THERM_BUF, 0)      /* 0x7c */
+> >>
+> > 
+> > These numbers all look hardware specific, so why put macros into the
+> > device tree rather than using them directly?
+> 
+> The idea was to use #defines in DT nodes when we need to overwrite the
+> adc channel parameters, see example in 2/2 how it will be used.
 
---uHr6nJLCB5hydKEi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't understand. The node in the example has
 
-On Mon, Sep 08, 2014 at 12:00:19PM +0200, Jiri Olsa wrote:
++               /* Channel node */
++               usb_id_nopull@39 {
++                       qcom,channel = <VADC_LR_MUX10_USB_ID>;
+...
++               };
 
-> > no.. so the value of the counter is the sum of all the inherited events.
-> > It doesn't matter if you flip it or not the sum is not affected.
-> >=20
-> > PERF_SAMPLE_READ should return the value.
->=20
-> so I want to be able to do the leader sampling over child processes
-> that means:
->   - have event group with sampling leader, and the rest
->     of the group events' periods being read on leader's sample
->     via PERF_SAMPLE_READ sample_type
->   - for each child process created I want it to do the
->     same thing as the parent - sample on leader, read
->     values of other events in group via PERF_SAMPLE_READ
 
-The thing is, PERF_SAMPLE_READ should return the exact same thing as an
-actual read(), and for read() the value reported is the sum of all
-events.
+And VADC_LR_MUX10_USB_ID is defined to 0x39.  How is this helping anything?
+You just introduce an artificial dependency on the header file, which makes
+it a mess to merge the patches or do updates, and anybody who needs to
+make updates to this now has to go through the same pain, to update the
+dts files, the driver and the binding document in lockstep.
 
-I _think_ I know what you want, and I think I see why you'd want that,
-but I'm not sure how to best do that.. Hmm.. maybe look at
-'perf_event_attr::inherit_stat' that appears to be similar.
+Why not remove the qcom,channel property completely and use a 'reg'
+property with #address-cells=<1>, #size-cells=<0> and put the number
+directly in there, with no need for obfuscation macros?
 
-At which point read() vs inherit_stat might be 'broken'. Hard to know if
-anybody uses that :-(
-
---uHr6nJLCB5hydKEi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUDYDHAAoJEHZH4aRLwOS6LNoP/jFs66dp6qUDfwbHfXn7d55k
-b3ykb8rTN7W5kF1KQI8xj+ANOXscO4s1eNAOwsW0T0J8XzGNl8+f2lr96F6pxlTo
-Jk38xMmdREI89W9xgK+iBg4OMIZjcnvMYoZJUPwGxCwOExn6k5kSjj6pF3q5eIvP
-1xt/6AYkYzQtd/lNs8niztTkhmpytkcavfQiVO3WD33fLtpgdQ40O4Z/Nw/GhbrM
-hEGdcx3OxLonloY4wXA/W6GbrHZBHjOOt9hE7r52vIZCV+nXhypi1Ko57Nzf5zDC
-8AWSt2P76kTWvX017kdMldM0goNsfguFzMUE9NT1jO2OeI9kfBnh3pX/6yUxgTOU
-U1zzpJ4w6QYA2RC5ZmQ8Qt9FrVRjQ43xgwKi/556VB+fR6Sv+e7hrjJt7rivd2Zm
-20BCHEU3dye01Wn42upO8050cF3Zsr+/dQvZ5O84QNpV7USykj6RihaAXRkKx/3s
-7uEQKqDlGyFsB/RFnmgSBUZOGg0LAprsA+LAUViJduqPuU1DyZK0gwsVC78W14Zu
-R8wlJPeHtjZmdCw1v4MlGWZcY8ZfjkqtYOdv66iGUNTUJZJ5mWqp4N+6G7YXU0Bi
-4hvF2VlnNa0kBdkF/lCNcoYIYcDORfq+X6Ef1gaR9tCmrqPRiU0Z2TXLhxbZBqok
-cPxL7lAUPZNB2CfBfe2M
-=muzv
------END PGP SIGNATURE-----
-
---uHr6nJLCB5hydKEi--
+	Arnd
