@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaIHInE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 04:43:04 -0400
-Received: from ozlabs.org ([103.22.144.67]:47885 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869AbaIHInA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 04:43:00 -0400
-Date: Mon, 8 Sep 2014 18:42:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jade Bilkey <herself@thefumon.com>, Guenter Roeck <linux@roeck-us.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: linux-next: build failure after merge of the wireless-next tree
-Message-ID: <20140908184253.74ff5470@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/GSXtvqE015B/HL/RWWbr6=3"; protocol="application/pgp-signature"
+	id S1753445AbaIHInT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 04:43:19 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:32504 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980AbaIHInN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 04:43:13 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-39-540d6c1fb1a6
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 2/4] dmaengine: pl330: Remove unused 'regs' variable in
+ pl330_submit_req()
+Date: Mon, 08 Sep 2014 10:42:48 +0200
+Message-id: <1410165770-4452-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1410165770-4452-1-git-send-email-k.kozlowski@samsung.com>
+References: <1410165770-4452-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t/xy7ryObwhBu+aeS02zljPajF96gVG
+	i9VT/7JavH5haHG26Q27xZLJ81ktLu+aw2ax9shddouXfftZHDg9Fu95yeSx5M0hVo++LasY
+	PT5vkgtgieKySUnNySxLLdK3S+DKaNs6m7HgHFvFu8Z9TA2Ma1i7GDk5JARMJM6samaHsMUk
+	Ltxbz9bFyMUhJLCUUaKnewsThNPHJLH3534WkCo2AWOJzcuXgFWJCHQySnycfJIVxGEWeMso
+	8eHwZrBZwgLxEuvnbGDsYuTgYBFQlbjS4QAS5hVwk9g66zjUajmJk8cmg9mcAu4SbQ0rGEFs
+	IaCai49PMk9g5F3AyLCKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyTAvuxgXHzM6hCjAAej
+	Eg9vwlWeECHWxLLiytxDjBIczEoivAxhvCFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGJce8ixj
+	2BJ61eOQVa5skEwVa4zohpVTFhacdJqaMPvB7MlRGx891Jz1oWFphI24/c4czrtSxrcdHzh+
+	TZn8vNXvZuNRa079bR3vPUVcmGeHSjpevF5uxL3pxmaxhLk3PObtXmEYOLHz6ZP7Z+S9ldam
+	bfz6fcvNRQrLajlerd/IzatTWLYg+JMSS3FGoqEWc1FxIgCeMJfjDgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GSXtvqE015B/HL/RWWbr6=3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The 'void __iomem *regs' is not used in pl330_submit_req() function.
+Remove it.
 
-Hi John,
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-After merging the wireless-next tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
-
-drivers/net/wireless/ath/ath5k/debug.c: In function 'open_file_eeprom':
-drivers/net/wireless/ath/ath5k/debug.c:933:2: error: implicit declaration o=
-f function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
-  buf =3D vmalloc(eesize);
-  ^
-drivers/net/wireless/ath/ath5k/debug.c:933:6: warning: assignment makes poi=
-nter from integer without a cast
-  buf =3D vmalloc(eesize);
-      ^
-drivers/net/wireless/ath/ath5k/debug.c:960:2: error: implicit declaration o=
-f function 'vfree' [-Werror=3Dimplicit-function-declaration]
-  vfree(buf);
-  ^
-
-Caused by commit db906eb2101b ("ath5k: added debugfs file for dumping
-eeprom").  Also reported by Guenter Roeck.
-
-I have used Geert Uytterhoeven's suggested fix of including vmalloc.h
-and so added this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 8 Sep 2014 18:39:23 +1000
-Subject: [PATCH] ath5k: fix debugfs addition
-
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Suggested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/net/wireless/ath/ath5k/debug.c | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/ath/ath5k/debug.c b/drivers/net/wireless/=
-ath/ath5k/debug.c
-index 30e4e1fd4b04..399728618fb9 100644
---- a/drivers/net/wireless/ath/ath5k/debug.c
-+++ b/drivers/net/wireless/ath/ath5k/debug.c
-@@ -62,6 +62,7 @@
-=20
- #include <linux/export.h>
- #include <linux/moduleparam.h>
-+#include <linux/vmalloc.h>
-=20
- #include <linux/seq_file.h>
- #include <linux/list.h>
---=20
-2.1.0
+Changes since v1:
+=================
+1. New patch.
+---
+ drivers/dma/pl330.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 57049f84d0c0..28e3775888a6 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -1367,13 +1367,10 @@ static int pl330_submit_req(struct pl330_thread *thrd,
+ 	struct pl330_dmac *pl330 = thrd->dmac;
+ 	struct _xfer_spec xs;
+ 	unsigned long flags;
+-	void __iomem *regs;
+ 	unsigned idx;
+ 	u32 ccr;
+ 	int ret = 0;
+ 
+-	regs = thrd->dmac->base;
+-
+ 	if (pl330->state == DYING
+ 		|| pl330->dmac_tbd.reset_chan & (1 << thrd->id)) {
+ 		dev_info(thrd->dmac->ddma.dev, "%s:%d\n",
+-- 
+1.9.1
 
---Sig_/GSXtvqE015B/HL/RWWbr6=3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUDWwRAAoJEMDTa8Ir7ZwVO5sP/RamhCBC8S+fpfgmqs2Td4dZ
-MKCJvuWO07XItTeVJyHhTWCJ660Pn7RK5z2mIH6kZvaACDIoMbq92Ovu0BLs3PaQ
-jKS4wub6l0E2DFARi+av/usv2/z9e/jNjK9IC5+03XW65+nH2t2mCLdEQ7a9omKB
-bea3E6fnvEo9mdaqt7uIWI4mhBlYy42okDGxhN2DV0fllu+lHM++knBIJK2UMxBx
-QD9NGd6VtKib/BmO9JZXlkM5neU9b5jCMJbe1LWwSmXq96poQ9MTwTLf2ObhavNi
-K1Fffdk/UDkUFogPU3IIc0VEckK23r/VNpz2vyENcyMCedGM2RSOFfjJD6WdtRnE
-SqZtltVyh+xsE7jnp/6yKBNQizWP+a+KF8o8Yu6EhJWXcxr5ShZtBt9jwnYD55X7
-CvPrUJWQ/w+Ru1YBCt508x6tC8pXws+9ESKoaZ8EoSkcgIP4vo2GRFwJpNlxHHx0
-ZQC1wMtZ03XSH4rgApWMGmrkWGZzQ8KHiixgcyTjOUBBiYIVqn7bm/wP0horm/K1
-LpqPooSuZXrRlgc99GSjC8ts0xMiH5NQ7SZ0o7fri52EQHTcJMKF8AhAzDDGQoMi
-DLRuVUfo1AtG69yMnvsuHVAzK2+ePV2FIEeli1WIh/Ssna+8o45BF/Txp/SXkuOj
-vrwripzW0nCEWBV7nCoL
-=g0Bl
------END PGP SIGNATURE-----
-
---Sig_/GSXtvqE015B/HL/RWWbr6=3--
