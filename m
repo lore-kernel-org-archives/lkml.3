@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaIHWj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 18:39:58 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41207 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754843AbaIHWj4 (ORCPT
+	id S1755325AbaIHWks (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 18:40:48 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:65291 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaIHWko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 18:39:56 -0400
-Message-ID: <1410215994.2027.86.camel@jarvis.lan>
-Subject: Re: bit fields && data tearing
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: paulmck@linux.vnet.ibm.com, Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Date: Mon, 08 Sep 2014 15:39:54 -0700
-In-Reply-To: <540DFFB2.4000509@zytor.com>
-References: <5408C0AB.6050801@hurleysoftware.com>
-			 <20140905001751.GL5001@linux.vnet.ibm.com>
-			 <1409883098.5078.14.camel@jarvis.lan>
-		 <5409243C.4080704@hurleysoftware.com>
-			 <20140905040645.GO5001@linux.vnet.ibm.com>
-			 <1410066442.12512.13.camel@jarvis.lan>
-			 <20140907162146.GK5001@linux.vnet.ibm.com>
-			 <1410116687.2027.19.camel@jarvis.lan>
-			 <20140907230019.GO5001@linux.vnet.ibm.com>
-			 <6092b453-e0c9-4f6d-922b-48bce988f774@email.android.com>
-			 <20140907233655.GR5001@linux.vnet.ibm.com>
-			 <154b540a-df47-4f3e-bdda-ab5d2e72723a@email.android.com>
-		 <1410155802.2027.36.camel@jarvis.lan> <540DF17C.9080509@zytor.com>
-	 <1410203369.2027.56.camel@jarvis.lan> <540DFFB2.4000509@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Sep 2014 18:40:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140908215506.GA4759@dator>
+References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+	<1409781429-27593-4-git-send-email-keescook@chromium.org>
+	<20140904170349.GL7156@arm.com>
+	<CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
+	<20140904172748.GO7156@arm.com>
+	<20140908191634.GV5598@outflux.net>
+	<20140908215506.GA4759@dator>
+Date: Mon, 8 Sep 2014 15:40:43 -0700
+X-Google-Sender-Auth: TwppV_nngsLMtV-d9kQDrMztWrE
+Message-ID: <CAGXu5jJFB+pcDVkcMoRZ9DnJu7MQuN=kceDhpkGrO=6ZLFy6Kw@mail.gmail.com>
+Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+From: Kees Cook <keescook@chromium.org>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-08 at 12:12 -0700, H. Peter Anvin wrote:
-> On 09/08/2014 12:09 PM, James Bottomley wrote:
-> > 
-> > Um, I think you need to re-read the thread; that's not what I said at
-> > all. It's even written lower down: "PA can't do atomic bit sets (no
-> > atomic RMW except the ldcw operation) it can do atomic writes to
-> > fundamental sizes (byte, short, int, long) provided gcc emits the
-> > correct primitive".  The original question was whether atomicity
-> > required native bus width access, which we currently assume, so there's
-> > no extant problem.
-> > 
-> 
-> The issue at hand was whether or not partially overlapped (but natually
-> aligned) writes can pass each other.  *This* is the aggressive
-> relaxation to which I am referring.
+On Mon, Sep 8, 2014 at 2:55 PM, Rabin Vincent <rabin@rab.in> wrote:
+> On Mon, Sep 08, 2014 at 12:16:34PM -0700, Kees Cook wrote:
+>> On Thu, Sep 04, 2014 at 06:27:48PM +0100, Will Deacon wrote:
+>> > On Thu, Sep 04, 2014 at 06:23:42PM +0100, Kees Cook wrote:
+>> > > Ah! If this is the case, perhaps we can get away with
+>> > > local_flush_tlb_kernel_range() then?
+>> >
+>> > That's a bit tricky, since you need to ensure that preemption is disabled
+>> > until the mapping is put back like it was.
+>>
+>> Okay, under both real hardware with the errata, and under QEMU, things seem
+>> to work with this change to the series. What do you think?
+>
+> Preemption is already disabled until the mapping is put back in this
+> patch.c code because interrupts are disabled from before the time
+> set_fixmap() is called until after clear_fixmap() is called.
 
-I don't understand what you mean by "pass each other".  Atomicity
-guarantees are not ordering guarantees in a SMP environment.  The
-guarantee is that if you follow the rules when two CPUs update the same
-natural width aligned object simultaneously using the same primitive,
-the result is either one or the other of their updates.  Which one wins
-(the ordering) isn't defined.
+Should I drop the preempt_disable/enable(), and just add a comment to
+set_fixmap()?
 
-James
+> I'd guess that Will meant other (future) callers of set_fixmap() would
+> have to ensure similar behaviour with set_fixmap() / clear_fixmap().
+>
+> Unless I'm missing something set/clear_fixmap() seem to be quite arch
+> specific and only really used on x86, so we could ensure that future
+> users on ARM perform the correct tlb flush:  the first user on ARM with
+> a non-atomic context (or you) could implement a set_fixmap() which does
+> the global flush and have this patch.c (and any other atomic context
+> callers) call __set_fixmap() directly.
+>
+> The change to local_flush_tlb_kernel_range() in __set_fixmap() would of
+> course be needed in that case, and IIRC that was what my original patch
+> had (via set_top_pte()).
 
+Ah, so it was, yes! Will, which version of this logic would you prefer?
 
-> I would guess that that is a very unusual constraint.
+Thanks!
 
+-Kees
 
+-- 
+Kees Cook
+Chrome OS Security
