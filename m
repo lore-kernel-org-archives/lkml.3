@@ -1,335 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaIHNjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:39:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46173 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbaIHNjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:39:11 -0400
-Date: Mon, 8 Sep 2014 08:38:56 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, Todd Poynor <toddpoynor@google.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
-        Benoit Goby <benoit@android.com>
-Subject: Re: [RFC v3 1/2] usb: phy: Hold wakeupsource when USB is enumerated
- in peripheral mode
-Message-ID: <20140908133855.GH22409@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410170963-14182-1-git-send-email-kiran.kumar@linaro.org>
+	id S1753980AbaIHNjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:39:54 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44361 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753084AbaIHNjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 09:39:53 -0400
+Date: Mon, 8 Sep 2014 10:38:47 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
+Message-ID: <20140908133847.GA2773@kernel.org>
+References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
+ <540964C0.1050702@intel.com>
+ <20140905141123.GE30520@kernel.org>
+ <1409930200.1662.16.camel@leonhard>
+ <20140905154402.GF30520@kernel.org>
+ <CABPqkBQxcTK7YFhcaV5PORx7ub+scwpkd3Rd=bAPgTK6Cvh1Rg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZYOWEO2dMm2Af3e3"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410170963-14182-1-git-send-email-kiran.kumar@linaro.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBQxcTK7YFhcaV5PORx7ub+scwpkd3Rd=bAPgTK6Cvh1Rg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ZYOWEO2dMm2Af3e3
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Em Sun, Sep 07, 2014 at 10:24:12PM +0200, Stephane Eranian escreveu:
+> On Fri, Sep 5, 2014 at 5:44 PM, Arnaldo Carvalho de Melo
+> <acme@kernel.org> wrote:
+> > Em Sat, Sep 06, 2014 at 12:16:40AM +0900, Namhyung Kim escreveu:
+> >> Hi Adrian and Arnaldo,
+> >>
+> >> 2014-09-05 (금), 11:11 -0300, Arnaldo Carvalho de Melo:
+> >> > Em Fri, Sep 05, 2014 at 10:22:40AM +0300, Adrian Hunter escreveu:
+> >> > > On 09/05/2014 07:59 AM, Namhyung Kim wrote:
+> >> > > > +++ b/tools/perf/util/machine.c
+> >> > > > @@ -1060,10 +1060,14 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+> >> > > >                                 strlen(kmmap_prefix));
+> >> > > >                 /*
+> >> > > >                  * Should be there already, from the build-id table in
+> >> > > > -                * the header.
+> >> > > > +                * the header (but maybe with a different name: "vmlinux").
+> >> > > >                  */
+> >> > > > -               struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+> >> > > > -                                                    kmmap_prefix);
+> >> > > > +               struct dso *kernel = dsos__find(&machine->kernel_dsos,
+> >> > > > +                                               "vmlinux", true);
+> >> >
+> >> > > Isn't "vmlinux" just the basename of the original file name, so if it had a
+> >> > > different name this wouldn't work e.g. if the filename had been
+> >> > > /boot/vmlinuz-3.11.0-26-generic then you would need
+> >> > > "vmlinuz-3.11.0-26-generic" for this to work?
+> >> >
+> >> > Yeah, looking for well known pathnames to then check if the build-id
+> >> > matches the one we're looking for, be it because we obtained it from
+> >> > /sys/kernel/notes (for the running kernel), or from the perf.data file
+> >> > build-id table is ok, as we don't know where it is.
+> >> >
+> >> > Plain sticking "vmlinux" there is not.
+> >>
+> >> I don't get it.  AFAIK when perf record runs, it uses [kernel.kallsyms]
+> >> name for kernel map.  But it can be changed only if it found a "vmlinux"
+> >> file in the vmlinux_path[].  So short name will always be "vmlinux" -
+> >> okay, it might be vmlinux-$(uname -r) too; I can add it.
+> >>
+> >> As you know, the vmlinux file is a ELF image that created during kernel
+> >> build process so I guess its name is fixed.  It's different from the
+> >> vmlinu"z" which resides in /boot directory.
+> >>
+> >> Am I missing something?
+> >
+> > [acme@zoo linux]$ perf report --help 2>&1 | grep vmlin
+> >        -k, --vmlinux=<file>
+> >            vmlinux pathname
+> > [acme@zoo linux]$
+> >
+> > Yes, it is using [kernel.kallsyms].ref_reloc_sym for the synthesized
+> > KERNEL mmap event, but it stores the full path in the build-id table.
+> >
+> > It seems we need a way to state that an entry in the build-id table is
+> > for the kernel, without looking at its file name. That or to put the
+> > build-id into the synthesized kernel mmap event. Which is better,
+> > because:
+> >
+> Can't you figure out it is from the kernel (in perf record) by remembering
+> you got the buildid from /sys/kernel/notes?
 
-Hi,
+Sure, the question was more about how to encode that in the build-id
+table in the perf.data file, i.e. we don't have a flags field there that
+we could use a bit for this purpose (hey, this entry is for the kernel,
+please match it to the PERF_RECORD_MMAP [kernel_kallsyms] synthesized
+for the kernel).
 
-On Mon, Sep 08, 2014 at 03:39:23PM +0530, Kiran Kumar Raparthy wrote:
-> From: Todd Poynor <toddpoynor@google.com>
->=20
-> usb: phy: Hold wakeupsource when USB is enumerated in peripheral mode
->=20
-> Purpose of this is to prevent the system to enter into suspend state from=
- USB
-> peripheral traffic by hodling a wakeupsource when USB is connected and
-> enumerated in peripheral mode(say adb).
->=20
-> Disabled by default, can enable with:
->    echo Y > /sys/module/otg_wakeupsource/parameters/enabled
->=20
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-usb@vger.kernel.org
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Sumit Semwal <sumit.semwal@linaro.org>
-> Cc: Arve Hj=EF=BF=BDnnev=EF=BF=BDg <arve@android.com>
-> Cc: Benoit Goby <benoit@android.com>
-> Signed-off-by: Todd Poynor <toddpoynor@google.com>
-> [kiran: Added context to commit message, squished build fixes
-> from Benoit Goby and Arve Hj=EF=BF=BDnnev=EF=BF=BDg, changed wakelocks us=
-age
-> to wakeupsource, merged Todd's refactoring logic and simplified
-> the structures and code and addressed community feedback]
-> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
-> ---
-> v3:
-> * As per the feedback,no global phy pointer used.
-> * called the one-liner wakeupsource handling calls
->   directly instead of indirect functions implemented in v2.
-> * Removed indirect function get_phy_hook and used usb_get_phy
->   to get the phy handle..
->=20
-> v2:
-> * wakeupsource handling implemeted per-PHY
-> * Implemented wakeupsource handling calls in phy
-> * included Todd's refactoring logic.
->=20
-> v1:
-> * changed to "disabled by default" from "enable by default".
-> * Kconfig help text modified
-> * Included better commit text
-> * otgws_nb moved to otg_wakeupsource_init function
-> * Introduced get_phy_hook to handle otgws_xceiv per-PHY
->=20
-> RFC:
-> * Included build fix from Benoit Goby and Arve Hj=EF=BF=BDnnev=EF=BF=BDg
-> * Removed lock->held field in driver as this mechanism is
->   provided in wakeupsource driver.
-> * wakelock(wl) terminology replaced with wakeup_source(ws).
->=20
->  drivers/usb/phy/Kconfig            |   8 +++
->  drivers/usb/phy/Makefile           |   1 +
->  drivers/usb/phy/otg-wakeupsource.c | 136 +++++++++++++++++++++++++++++++=
-++++++
->  include/linux/usb/phy.h            |   4 ++
->  4 files changed, 149 insertions(+)
->  create mode 100644 drivers/usb/phy/otg-wakeupsource.c
->=20
-> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-> index e253fa0..d9ddd85 100644
-> --- a/drivers/usb/phy/Kconfig
-> +++ b/drivers/usb/phy/Kconfig
-> @@ -6,6 +6,14 @@ menu "USB Physical Layer drivers"
->  config USB_PHY
->  	def_bool n
-> =20
-> +config USB_OTG_WAKEUPSOURCE
-> +	bool "Hold wakeupsource when USB is enumerated in peripheral mode"
-> +	depends on PM_SLEEP
-> +	select USB_PHY
-> +	help
-> +	  Prevent the system going into automatic suspend while
-> +	  it is attached as a USB peripheral by holding a wakeupsource.
-> +
->  #
->  # USB Transceiver Drivers
->  #
-> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-> index 24a9133..ca2fbaf 100644
-> --- a/drivers/usb/phy/Makefile
-> +++ b/drivers/usb/phy/Makefile
-> @@ -3,6 +3,7 @@
->  #
->  obj-$(CONFIG_USB_PHY)			+=3D phy.o
->  obj-$(CONFIG_OF)			+=3D of.o
-> +obj-$(CONFIG_USB_OTG_WAKEUPSOURCE)		+=3D otg-wakeupsource.o
-> =20
->  # transceiver drivers, keep the list sorted
-> =20
-> diff --git a/drivers/usb/phy/otg-wakeupsource.c b/drivers/usb/phy/otg-wak=
-eupsource.c
-> new file mode 100644
-> index 0000000..d9a1720
-> --- /dev/null
-> +++ b/drivers/usb/phy/otg-wakeupsource.c
-> @@ -0,0 +1,136 @@
-> +/*
-> + * otg-wakeupsource.c
-> + *
-> + * Copyright (C) 2011 Google, Inc.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/device.h>
-> +#include <linux/module.h>
-> +#include <linux/notifier.h>
-> +#include <linux/pm_wakeup.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/usb/otg.h>
-> +
-> +bool enabled =3D false;
-> +
-> +static DEFINE_SPINLOCK(otgws_spinlock);
+We know it is a kernel because the name is [kernel.kallsyms] in the
+synthesized PERF_RECORD_MMAP. So perhaps we should have the kernel
+pathname right after the reference relocation symbol, that way we would
+use it to get the entry in the build-id table.
 
-why do you continue to ignore my comment that this should be built
-*into* struct usb_phy so it's a per-PHY setting ? Is this some sort of a
-joke that I'm not getting ?
+I.e. parts of what we need are in the synthesized PERF_RECORD_MMAP (how
+to do relocation, start-end kernel mmap, and we have parts of it in the
+build-id table: the build-id and the full pathname. How to connect both
+is what we're trying to achieve here, and in a backwards compatible
+way.
 
-> +static void otgws_handle_event(struct usb_phy *otgws_xceiv, unsigned lon=
-g event)
-> +{
-> +	unsigned long irqflags;
-> +
-> +	spin_lock_irqsave(&otgws_spinlock, irqflags);
-> +
-> +	if (!enabled) {
-> +		__pm_relax(&otgws_xceiv->wsource);
-> +		spin_unlock_irqrestore(&otgws_spinlock, irqflags);
-> +		return;
-> +	}
-> +
-> +	switch (event) {
-> +	case USB_EVENT_VBUS:
-> +	case USB_EVENT_ENUMERATED:
-> +		__pm_stay_awake(&otgws_xceiv->wsource);
-> +		break;
-> +
-> +	case USB_EVENT_NONE:
-> +	case USB_EVENT_ID:
-> +	case USB_EVENT_CHARGER:
-> +		__pm_relax(&otgws_xceiv->wsource);
-> +		break;
-> +
-> +	default:
-> +		break;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&otgws_spinlock, irqflags);
-> +}
-> +
-> +static int otgws_otg_notifications(struct notifier_block *nb,
-> +				unsigned long event, void *unused)
-> +{
-> +	static struct usb_phy *otgws_xceiv;
-> +
-> +	otgws_xceiv =3D usb_get_phy(USB_PHY_TYPE_USB2);
-> +
-> +	if (IS_ERR(otgws_xceiv)) {
-> +		pr_err("%s: No OTG transceiver found\n", __func__);
-> +		return PTR_ERR(otgws_xceiv);
-> +	}
-> +
-> +	otgws_handle_event(otgws_xceiv, event);
-> +
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static int set_enabled(const char *val, const struct kernel_param *kp)
-> +{
-> +	int rv =3D param_set_bool(val, kp);
-> +	static struct usb_phy *otgws_xceiv;
-> +
-> +	if (rv)
-> +		return rv;
-> +
-> +	otgws_xceiv =3D usb_get_phy(USB_PHY_TYPE_USB2);
-> +
-> +	if (IS_ERR(otgws_xceiv)) {
-> +		pr_err("%s: No OTG transceiver found\n", __func__);
-> +		return PTR_ERR(otgws_xceiv);
-> +	}
-> +
-> +	otgws_handle_event(otgws_xceiv, otgws_xceiv->last_event);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct kernel_param_ops enabled_param_ops =3D {
-> +	.set =3D set_enabled,
-> +	.get =3D param_get_bool,
-> +};
-> +
-> +module_param_cb(enabled, &enabled_param_ops, &enabled, 0644);
-> +MODULE_PARM_DESC(enabled, "Hold wakeupsource when VBUS present");
+The (ugly) way I found to achieve all this is to concatenate the full
+pathname right after the ref reloc symbol in the synthesized
+PERF_RECORD_MMAP for the kernel mmap.
 
-should *not* be a kernel parameter.
+Older tools would just ignore what is after the ref reloc symbol (need
+to check if we put the zero there, if not, we can add the zero + the
+full pathname.).
 
-> +static int __init otg_wakeupsource_init(void)
+Newer tools would look if the size of the record is longer than the
+strlen(ref_reloc_symbol), and if it is, it means we have the kernel full
+pathname after the ref_reloc_symbol, that we can use to find the
+build-id in the build-id table.
 
-no __init
+In the future this is all moot if we add the build-id to all
+PERF_RECORD_MMAP events, as described below:
 
-> +{
-> +	int ret;
-> +	char wsource_name[40];
-> +	static struct usb_phy *otgws_xceiv;
-> +
-> +	otgws_xceiv =3D usb_get_phy(USB_PHY_TYPE_USB2);
-> +
-> +	if (IS_ERR(otgws_xceiv)) {
-> +		pr_err("%s: No OTG transceiver found\n", __func__);
-> +		return PTR_ERR(otgws_xceiv);
-> +	}
-> +
-> +	snprintf(wsource_name, sizeof(wsource_name), "vbus-%s",
-> +		dev_name(otgws_xceiv->dev));
-> +	wakeup_source_init(&otgws_xceiv->wsource, wsource_name);
-> +
-> +	otgws_xceiv->otgws_nb.notifier_call =3D otgws_otg_notifications;
-> +	ret =3D usb_register_notifier(otgws_xceiv, &otgws_xceiv->otgws_nb);
-> +
-> +	if (ret) {
-> +		pr_err("%s: usb_register_notifier on transceiver %s failed\n",
-> +			 __func__, dev_name(otgws_xceiv->dev));
-> +		wakeup_source_trash(&otgws_xceiv->wsource);
-> +		otgws_xceiv =3D NULL;
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +late_initcall(otg_wakeupsource_init);
-> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-> index 353053a..c71cf15 100644
-> --- a/include/linux/usb/phy.h
-> +++ b/include/linux/usb/phy.h
-> @@ -88,6 +88,10 @@ struct usb_phy {
-> =20
->  	/* for notification of usb_phy_events */
->  	struct atomic_notifier_head	notifier;
-> +	struct notifier_block	otgws_nb;
-> +
-> +	/* wakeup source */
-> +	struct wakeup_source	wsource;
-> =20
->  	/* to pass extra port status to the root hub */
->  	u16			port_status;
-> --=20
-> 1.8.2.1
->=20
+> > That leads to another problem that needs to get solved eventually: We
+> > need to have the build-id into PERF_RECORD_MMAP, because we're now using
+> > just the mmap filename as the key, not the contents, and for long
+> > running sessions, DSOs can get updated, etc.
 
---=20
-balbi
-
---ZYOWEO2dMm2Af3e3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUDbFvAAoJEIaOsuA1yqREYSEP/RZD6/rLQfYHQwtRoNJa5+v0
-TcVsKQjY4wT8si8ReIttbF1mWHTapNJ1/PcMa/C6Og3nG/Z7I/eYuVK9ISWIK2ve
-MTBBx2w8OcmleRUYYFI1p7baMvXXRukWSuzJzpp80tnIXEw+99BUXZQ4hGCxfIVh
-evxgWNF9qTJMFqwzYNlSqlc2K5RY//DAX+IR6gtIcsHO2MtfTt5qqv4msfXl/6ke
-O7D1IK6jo79YSVlC/Sl6t4Ak0n9tefBq92wNj9BIoHaffDXmZXcJHm2AHEmQANGw
-SyWIPqAxq868Q6ERqRTjnR9/eKpsVNmhQaug9FkcAEJTZGZYH7LFFDRENXo63hN2
-e/NIxOtEyKEiCUlpz//xoWdklSoN7ZPtVKEcxwOVL5VbpZss+ObuF6CPTWc9lG4e
-jf5DPYxIqcpZdb54+88UeREW+ltTMH2wOm6KXvluutYnxYb52wrDa/RK08CItKs3
-nqgLjHx4Aov5HTFCXkyBV1xXu649WlD6uG673ym+VLJlZwCP3x8ILieajIFnezOb
-VyJL9iSP4xslW/N5mm0rGRXKaQizTt+prau6fCDUz9FEbbvWur0rDAyPTFGrnLNZ
-U1HaeLpFNS7HBcWg0GGpgquPAlq6fxwosoCw9hWDvwP/xBb1fyPW9pNGBbxqjkYD
-okHo8MxGdGsmDH/RUPqd
-=3jdb
------END PGP SIGNATURE-----
-
---ZYOWEO2dMm2Af3e3--
+- Arnaldo
