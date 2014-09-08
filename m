@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaIHDfJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Sep 2014 23:35:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36812 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaIHDfI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Sep 2014 23:35:08 -0400
-Message-ID: <540D23E5.80208@infradead.org>
-Date: Sun, 07 Sep 2014 20:35:01 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752287AbaIHDuZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Sep 2014 23:50:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52110 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750715AbaIHDuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Sep 2014 23:50:24 -0400
+Date: Sun, 7 Sep 2014 20:50:24 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Changman Lee <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2] f2fs: Remove lock from check_valid_map
+Message-ID: <20140908035024.GA13009@jaegeuk-mac02.hsd1.ca.comcast.net>
+References: <1410059104-9060-1-git-send-email-ying.huang@intel.com>
+ <1410061110-31081-1-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Pete Clements <clem@clem.clem-digital.net>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: 3.17-rc4 fails compile (arch/x86/pci/irq.c)
-References: <201409080225.s882Pntx019152@clem.clem-digital.net> <1410145932.5157.3.camel@marge.simpson.net>
-In-Reply-To: <1410145932.5157.3.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410061110-31081-1-git-send-email-ying.huang@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/14 20:12, Mike Galbraith wrote:
-> (adds CC)
+Hi,
+
+On Sun, Sep 07, 2014 at 11:38:30AM +0800, Huang Ying wrote:
+> Only one bit is read in check_valid_map, holding a lock to do that
+> doesn't help anything except decreasing performance.
 > 
-> On Sun, 2014-09-07 at 22:25 -0400, Pete Clements wrote: 
->> Fyi: i386 up  -- problem introduced in rc3.
->>
->>   CC      arch/x86/pci/irq.o
->> arch/x86/pci/irq.c: In function 'pirq_disable_irq':
->> arch/x86/pci/irq.c:1259:2: error: implicit declaration of function 'mp_should_keep_irq' [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->> make[1]: *** [arch/x86/pci/irq.o] Error 1
->> make: *** [arch/x86/pci] Error 2
+> Signed-off-by: Huang, Ying <ying.huang@intel.com>
+> ---
+> 
+> v2: Fixed a build warning.
+> 
+> ---
+>  fs/f2fs/gc.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> --- a/fs/f2fs/gc.c
+> +++ b/fs/f2fs/gc.c
+> @@ -378,14 +378,11 @@ static void put_gc_inode(struct list_hea
+>  static int check_valid_map(struct f2fs_sb_info *sbi,
+>  				unsigned int segno, int offset)
+>  {
+> -	struct sit_info *sit_i = SIT_I(sbi);
+>  	struct seg_entry *sentry;
+>  	int ret;
+>  
+> -	mutex_lock(&sit_i->sentry_lock);
+>  	sentry = get_seg_entry(sbi, segno);
+>  	ret = f2fs_test_bit(offset, sentry->cur_valid_map);
+> -	mutex_unlock(&sit_i->sentry_lock);
+>  	return ret;
 
-fix is at:
-http://marc.info/?l=linux-kernel&m=140938277815528&w=2
+The f2fs_test_bit is not atomic, so I'm not sure this is a good approach.
+How about introducing rw_semaphore?
 
-
--- 
-~Randy
+>  }
+>  
