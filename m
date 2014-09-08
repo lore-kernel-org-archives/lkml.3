@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811AbaIHSZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 14:25:11 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:56755 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251AbaIHSZJ (ORCPT
+	id S1753848AbaIHSZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 14:25:56 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:43627 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665AbaIHSZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 14:25:09 -0400
-X-ASG-Debug-ID: 1410200704-0759e778ba1619f40002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-Date: Mon, 8 Sep 2014 20:25:03 +0200
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <linux-serial@vger.kernel.org>, <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 00/18] 8250-core based serial driver for OMAP + DMA
-Message-ID: <20140908182503.GA4686@ci00147.xsens-tech.local>
-X-ASG-Orig-Subj: Re: [PATCH v8 00/18] 8250-core based serial driver for OMAP + DMA
-References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de>
- <20140908144616.GA22315@ci00147.xsens-tech.local>
- <20140908151501.GA22584@linutronix.de>
- <20140908163313.GA25724@linutronix.de>
+	Mon, 8 Sep 2014 14:25:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20140908163313.GA25724@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1410200705
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9288
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20140908110131.GX4703@rric.localhost>
+References: <1409903205-2762-1-git-send-email-rric@kernel.org>
+ <7863371.EMkUuntQWU@wuerfel> <20140905142245.GG20164@leverpostej>
+ <2952834.1P42roDKD9@wuerfel> <20140908110131.GX4703@rric.localhost>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 8 Sep 2014 13:25:34 -0500
+Message-ID: <CAL_JsqLgimdX0Ff4Wsyx68-8NaFDx=0CN36qnLUtXNTicybAgA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] arm64, thunder: Add Kconfig option for Cavium
+ Thunder SoC Family
+To: Robert Richter <rric@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Robert Richter <robert.richter@caviumnetworks.com>,
+        Olof Johansson <olof@lixom.net>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 06:33:13PM +0200, Sebastian Andrzej Siewior wrote:
-> * Sebastian Andrzej Siewior | 2014-09-08 17:15:01 [+0200]:
-> 
-> >* Frans Klaver | 2014-09-08 16:46:18 [+0200]:
-> >
-> >>- ncurses based applications (vi, less) don't play nice for me on the
-> >>  console with this series. less doesn't show me anything. vi doesn't
-> >>  return to console properly.
-> >
-> >Can you give a test case 
-> 
-> Okay. less. My am335x-evm freezes after a while for no obvious reason.
-> The data that hits the RX fifo is still received but the TX won't do
-> anything. The DMA request is pending, the FIFO level is @64 bytes and
-> the UART doesn't make any progress.
-> On beagle-board I see what you described: less on a file and nothing
-> happens.
+On Mon, Sep 8, 2014 at 6:01 AM, Robert Richter <rric@kernel.org> wrote:
+> On 05.09.14 18:25:35, Arnd Bergmann wrote:
+>> On Friday 05 September 2014 15:22:46 Mark Rutland wrote:
+>> >
+>> > > A common pattern these days is to do dependencies like
+>> > >
+>> > > arch/*/Kconfig:
+>> > >       config ARCH_FOO
+>> > >       bool "Enable support for Foo platform"
+>> > >       help
+>> > >         ...
+>> > >
+>> > >
+>> > > drivers/*/Kconfig
+>> > >       config SUBSYS_FOO
+>> > >       bool "SUBSYS driver for Foo"
+>> > >       depends on ARCH_FOO || COMPILE_TEST
+>> > >       depends on OF && REGULATOR && GENERIC_PHY # or whatever
+>> >
+>> > Russell's comments w.r.t. Kconfig warnings when config names change
+>> > still holds regardless of select vs depends on.
+>>
+>> Yes, that's what I wrote in my reply as well.
+>>
+>> > > That way we can enable everything in the defconfig, but someone
+>> > > who likes to build a more specialized kernel can disable the
+>> > > other platforms and won't get the drivers that are specific to
+>> > > those.
+>> > >
+>> > > I personally think this is a bit more verbose than what we need, but
+>> > > I don't strongly object doing it that way.
+>> >
+>> > You'd still be able to do this without ARCH_FOO, though you would need
+>> > to know which drivers are necessary for a particular SoC. That seems to
+>> > be the way things are handled on x86; I don't recall having to select
+>> > support for specific machines there, just the individual drivers.
+>
+> This is well hidden on x86, but each vendor has a config option. For
+> AMD systems we have had our own option to disable vendor specific
+> code, see CPU_SUP_AMD for example. Disabling this will remove all AMD
+> specific code in the kernel. Of course this is enabled per default.
+>
+> With ARCH_THUNDER I intended to do the same (you could name this also
+> SOC_SUP_CAVIUM or so but I kept the current naming scheme). In patch
+> 4/4 I have added the option to defconfig. This enables this per
+> default and nobody has to deal with any option manually, just running
+> make defconfig is fine.
+>
+> Also, at least to disable building the dtb file for foo, you will need
+> ARCH_FOO too. How else would you deal with dtb files then?
 
-Exactly that, yes.
+dtb builds are quick and don't affect the image size at all.
+Personally, I would prefer to see all dtb's get built for the dtbs
+rule. You can still specify the specific dtb you want in the case of
+only caring about 1 platform.
 
-Frans
+Rob
