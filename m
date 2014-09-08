@@ -1,141 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaIHObo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 10:31:44 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:41544 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaIHObn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 10:31:43 -0400
-Date: Mon, 8 Sep 2014 16:31:38 +0200
-From: Robert Richter <rric@kernel.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org,
-        Robert Richter <rrichter@cavium.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ITS: Fixing 32 bit compatibility
-Message-ID: <20140908143138.GZ4703@rric.localhost>
-References: <1410185480-5153-1-git-send-email-rric@kernel.org>
+	id S1753851AbaIHOdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 10:33:39 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48377 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753188AbaIHOdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 10:33:38 -0400
+Date: Mon, 8 Sep 2014 11:33:17 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
+Message-ID: <20140908143317.GE2773@kernel.org>
+References: <1409781604-16778-1-git-send-email-acme@kernel.org>
+ <1409781604-16778-5-git-send-email-acme@kernel.org>
+ <54085BC8.40403@intel.com>
+ <20140904151902.GE2997@kernel.org>
+ <54097793.4050201@intel.com>
+ <20140905140756.GD30520@kernel.org>
+ <20140906203915.GA9843@krava.brq.redhat.com>
+ <20140908134615.GD2773@kernel.org>
+ <20140908140454.GF17728@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410185480-5153-1-git-send-email-rric@kernel.org>
+In-Reply-To: <20140908140454.GF17728@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc,
+Em Mon, Sep 08, 2014 at 04:04:54PM +0200, Jiri Olsa escreveu:
+> On Mon, Sep 08, 2014 at 10:46:16AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Sat, Sep 06, 2014 at 10:39:15PM +0200, Jiri Olsa escreveu:
+> > > On Fri, Sep 05, 2014 at 11:07:56AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Fri, Sep 05, 2014 at 11:42:59AM +0300, Adrian Hunter escreveu:
+> > > > > On 09/04/2014 06:19 PM, Arnaldo Carvalho de Melo wrote:
+> > > > > > Em Thu, Sep 04, 2014 at 03:32:08PM +0300, Adrian Hunter escreveu:
+> > > > > No I was meaning something different. For example, 'perf record' opens an
+> > > > > event for 2 processes per-cpu and gets 4 file descriptors:
 
-On 08.09.14 16:11:19, Robert Richter wrote:
-> From: Robert Richter <rrichter@cavium.com>
-> 
-> Fixing 32 bit compatibility by using ULL for u64 constants.
+> > > > > 	task1	task2
+> > > > > cpu0	fd0	fd1
+> > > > > cpu1	fd2	fd3
 
-the same is true for gicv3-its (branch 'gicv3/its' of
-git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms). See
-the patch below. You may merge the fixes with your patches or apply it
-on top of yours.
+> > > > > Now, perf record will mmap fd0 and fd2 and set-output fd1->fd0
+> > > > > and fd3->fd2.
 
--Robert
+> > > > > pollfds includes only fd0 and fd2.
 
+> > > > > But if task2 exits, the POLLHUP will appear on fd1 and fd3.
 
+> > > > So? We are not interested in fd1 and fd3, since all our reading is done
+> > > > on fd0 and fd2 mmaps, no?
 
->From 38a71030b9b93a14afada6979c709f6addac5112 Mon Sep 17 00:00:00 2001
-From: Robert Richter <rrichter@cavium.com>
-Date: Tue, 26 Aug 2014 18:08:56 +0200
-Subject: [PATCH] ITS: Fixing 32 bit compatibility
+> > > hm, what if task1 (fd0, fd2) exits first.. perf record will exit,
+> > > but it still has to read task2..?
 
-Fixing 32 bit compatibility by using ULL for u64 constants.
+> > Ok, what happens in that case, i.e. when the fds that were set to be the
+> > ones to be polled, gets nuked, does the set-output command gets just
+> > undone? Or does the mmap stands, receiving the events from the remaining
+> > fds and the polling notifications get sent to, in this case, fd3 and
+> > fd1?
+ 
+> mmaps stays for fd1 and fd3.. and they get poll notifications as well,
+> we just do not check/poll them now
 
-Signed-off-by: Robert Richter <rrichter@cavium.com>
----
- drivers/irqchip/irq-gic-v3-its.c | 28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+So what you're saying is that we should have been polling all the fds
+all the time?
 
-diff --git a/drivers/irqchip/irq-gic-v3-its.c b/drivers/irqchip/irq-gic-v3-its.c
-index 26927521fc28..2fda6935ad32 100644
---- a/drivers/irqchip/irq-gic-v3-its.c
-+++ b/drivers/irqchip/irq-gic-v3-its.c
-@@ -173,55 +173,55 @@ static struct rdist *gic_rdist;
- 
- static void its_encode_cmd(struct its_cmd_block *cmd, u8 cmd_nr)
- {
--	cmd->raw_cmd[0] &= ~0xffUL;
-+	cmd->raw_cmd[0] &= ~0xffULL;
- 	cmd->raw_cmd[0] |= cmd_nr;
- }
- 
- static void its_encode_devid(struct its_cmd_block *cmd, u32 devid)
- {
--	cmd->raw_cmd[0] &= 0xffffffffUL;
-+	cmd->raw_cmd[0] &= 0xffffffffULL;
- 	cmd->raw_cmd[0] |= ((u64)devid) << 32;
- }
- 
- static void its_encode_event_id(struct its_cmd_block *cmd, u32 id)
- {
--	cmd->raw_cmd[1] &= ~0xffffffffUL;
-+	cmd->raw_cmd[1] &= ~0xffffffffULL;
- 	cmd->raw_cmd[1] |= id;
- }
- 
- static void its_encode_phys_id(struct its_cmd_block *cmd, u32 phys_id)
- {
--	cmd->raw_cmd[1] &= 0xffffffffUL;
-+	cmd->raw_cmd[1] &= 0xffffffffULL;
- 	cmd->raw_cmd[1] |= ((u64)phys_id) << 32;
- }
- 
- static void its_encode_size(struct its_cmd_block *cmd, u8 size)
- {
--	cmd->raw_cmd[1] &= ~0xffUL;
--	cmd->raw_cmd[1] |= size & 0xff;
-+	cmd->raw_cmd[1] &= ~0xffULL;
-+	cmd->raw_cmd[1] |= size;
- }
- 
- static void its_encode_itt(struct its_cmd_block *cmd, u64 itt_addr)
- {
--	cmd->raw_cmd[2] &= ~0xffffffffffffUL;
--	cmd->raw_cmd[2] |= itt_addr & 0xffffffffff00UL;
-+	cmd->raw_cmd[2] &= ~0xffffffffffffULL;
-+	cmd->raw_cmd[2] |= itt_addr & 0xffffffffff00ULL;
- }
- 
- static void its_encode_valid(struct its_cmd_block *cmd, int valid)
- {
--	cmd->raw_cmd[2] &= ~(1UL << 63);
-+	cmd->raw_cmd[2] &= ~(1ULL << 63);
- 	cmd->raw_cmd[2] |= ((u64)!!valid) << 63;
- }
- 
- static void its_encode_target(struct its_cmd_block *cmd, u64 target_addr)
- {
--	cmd->raw_cmd[2] &= ~(0xffffffffUL << 16);
--	cmd->raw_cmd[2] |= (target_addr & (0xffffffffUL << 16));
-+	cmd->raw_cmd[2] &= ~(0xffffffffULL << 16);
-+	cmd->raw_cmd[2] |= (target_addr & (0xffffffffULL << 16));
- }
- 
- static void its_encode_collection(struct its_cmd_block *cmd, u16 col)
- {
--	cmd->raw_cmd[2] &= ~0xffffUL;
-+	cmd->raw_cmd[2] &= ~0xffffULL;
- 	cmd->raw_cmd[2] |= col;
- }
- 
-@@ -1221,8 +1221,8 @@ static int its_msi_setup_irq(struct msi_chip *chip,
- 
- 	addr = its->phys_base + GITS_TRANSLATER;
- 
--	msg.address_lo		= addr & ((1UL << 32) - 1);
--	msg.address_hi		= addr >> 32;
-+	msg.address_lo		= (u32)addr;
-+	msg.address_hi		= (u32)(addr >> 32);
- 	msg.data		= vec_nr;
- 
- 	write_msi_msg(irq, &msg);
--- 
-2.0.1
+Because after all we end up trying to consume everything in all the ring
+buffers when just one of them gets a POLLRD anyway...
 
+> > I'll look at the kernel code for that...
+> >  
+> > > > I.e. when we ask the kernel to point fd B to fd A's mmap (what you
+> > > > called set-output) and fd B inserts an event into fd A's mmap ring
+> > > > buffer, we get fd A poll return as POLLRD, no?
+> > 
+> > > > Have to check... Otherwise we would have to poll all fds all the time,
+> > > > not just the ones mmaping, right?
+> > 
+> > > > > I think Jiri's patchset changed pollfds to include all fds for that reason.
+> > 
+> > > hm, I did not think of that.. ;-) I needed more grained feedback
+> > > for future features like cpu hotplug
+> > 
+> > So this is good for something you didn't tried to fix (and document) but
+> > good for something that may be nice in the future? Grumpf, we have
+> > already way too much stuff that will be eventually used but is not used
+> > right now :-\
+ 
+> IMO it's more clear to poll pm all event FDs.. and now with the
+> case Adrian described it seems necessary anyway
+
+I would have to check why was that we were polling just the one where
+the mmap is done, I don't recall being the one to do it, probably who
+did it thought that since the ring buffer is there, it was enough (and
+possibly scaled better, dunno) to do the polling in just one of them.
+
+- Arnaldo
