@@ -1,410 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaIHNgC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:36:02 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:39505 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761AbaIHNf5 (ORCPT
+	id S1754076AbaIHNgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:36:13 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:45760 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708AbaIHNgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:35:57 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH/RFC 5/5] ARM: shmobile: r8a7740 dtsi: Add PM domain support
-Date: Mon,  8 Sep 2014 15:35:44 +0200
-Message-Id: <1410183344-14756-6-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410183344-14756-1-git-send-email-geert+renesas@glider.be>
-References: <1410183344-14756-1-git-send-email-geert+renesas@glider.be>
+	Mon, 8 Sep 2014 09:36:10 -0400
+Message-ID: <540DB0BE.2050505@roeck-us.net>
+Date: Mon, 08 Sep 2014 06:35:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Xuetao Guan <gxt@pku.edu.cn>
+CC: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFJlOiDlm57lpI3vvJogUmU6IOWbnuWkje+8miA=?=
+ =?UTF-8?B?UmU6IOWbnuWkje+8miBSZTog5Zue5aSN77yaIFN0YXR1cyBvZiAndW5pY29yZTM=?=
+ =?UTF-8?B?MicgYXJjaGl0ZWN0dXJlIGluIExpbnV4IGtlcm5lbA==?=
+References: <174974381.13596.1410181022043.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <174974381.13596.1410181022043.JavaMail.root@bj-mail03.pku.edu.cn>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.540DB0CA.0009,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 11
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a device node for the System Controller, with subnodes that
-represent the hardware power area hierarchy.
-Hook up all devices to their respective PM domains.
+On 09/08/2014 05:57 AM, Xuetao Guan  wrote:
+>
+> ----- Guenter Roeck <linux@roeck-us.net> 写道：
+>> On 09/04/2014 11:13 PM, Xuetao Guan  wrote:
+>> Hi,
+>>
+>> I made everything I have available at http://server.roeck-us.net/qemu/unicore32/.
+>> I tried multiple variants for creating the root file system, including the one
+>> on https://github.com/gxt/UniCore32.git and the one using mkrootfs.sh in
+>> the link above. No difference - I always see the same crash. Note that the
+>> 'init' program is loading, but crashes with above error (0x0000000b is SIGSEGV
+>> unless I am missing something).
+>>
+>> Note that I used the latest qemu for unicore from upstream sources; I was unable
+>> to compile it from git@github.com:gxt/QEMU.git. Qemu configuration did not seem
+>> to make a difference. The toolchain was extracted from uc4-1.0.5-hard.tgz.
+>>
+>> Hope this helps,
+>> Guenter
+>>
+> I guess you used the newest kernel to run busybox.
+> However, as for unicore32, the newest kernel uses different ABI with uc4-1.0.5 toolchain.
+> I'm sorry to make it so confusing.
+> I'll update and submit another-ABI patches asap.
+>
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- arch/arm/boot/dts/r8a7740.dtsi | 121 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 121 insertions(+)
+Whatever is more recent. Guess you'll have to either update the toolchain
+or the kernel. If the plan is to update the kernel, can you send me a patch
+to do that so I can test it ?
 
-diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
-index 1067a96c8425..35cf1fac01b5 100644
---- a/arch/arm/boot/dts/r8a7740.dtsi
-+++ b/arch/arm/boot/dts/r8a7740.dtsi
-@@ -25,6 +25,7 @@
- 			device_type = "cpu";
- 			reg = <0x0>;
- 			clock-frequency = <800000000>;
-+			power-domains = <&pd_a3sm>;
- 		};
- 	};
- 
-@@ -46,6 +47,7 @@
- 		reg = <0xe6138000 0x170>;
- 		interrupts = <0 58 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp3_clks R8A7740_CLK_CMT1>;
-+		power-domains = <&pd_c5>;
- 		clock-names = "fck";
- 
- 		renesas,channels-mask = <0x3f>;
-@@ -71,6 +73,7 @@
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH>;
-+		power-domains = <&pd_a4s>;
- 	};
- 
- 	/* irqpin1: IRQ8 - IRQ15 */
-@@ -91,6 +94,7 @@
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH>;
-+		power-domains = <&pd_a4s>;
- 	};
- 
- 	/* irqpin2: IRQ16 - IRQ23 */
-@@ -111,6 +115,7 @@
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH>;
-+		power-domains = <&pd_a4s>;
- 	};
- 
- 	/* irqpin3: IRQ24 - IRQ31 */
-@@ -131,6 +136,7 @@
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH
- 			      0 149 IRQ_TYPE_LEVEL_HIGH>;
-+		power-domains = <&pd_a4s>;
- 	};
- 
- 	ether: ethernet@e9a00000 {
-@@ -139,6 +145,7 @@
- 		      <0xe9a01800 0x800>;
- 		interrupts = <0 110 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp3_clks R8A7740_CLK_GETHER>;
-+		power-domains = <&pd_a4s>;
- 		phy-mode = "mii";
- 		#address-cells = <1>;
- 		#size-cells = <0>;
-@@ -155,6 +162,7 @@
- 			      0 203 IRQ_TYPE_LEVEL_HIGH
- 			      0 204 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp1_clks R8A7740_CLK_IIC0>;
-+		power-domains = <&pd_a4r>;
- 		status = "disabled";
- 	};
- 
-@@ -168,6 +176,7 @@
- 			      0 72 IRQ_TYPE_LEVEL_HIGH
- 			      0 73 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp3_clks R8A7740_CLK_IIC1>;
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -177,6 +186,7 @@
- 		interrupts = <0 100 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA0>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -186,6 +196,7 @@
- 		interrupts = <0 101 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA1>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -195,6 +206,7 @@
- 		interrupts = <0 102 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA0>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -204,6 +216,7 @@
- 		interrupts = <0 103 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA3>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -213,6 +226,7 @@
- 		interrupts = <0 104 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA4>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -222,6 +236,7 @@
- 		interrupts = <0 105 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA5>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -231,6 +246,7 @@
- 		interrupts = <0 106 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA6>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -240,6 +256,7 @@
- 		interrupts = <0 107 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFA7>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -249,6 +266,7 @@
- 		interrupts = <0 108 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp2_clks R8A7740_CLK_SCIFB>;
- 		clock-names = "sci_ick";
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -267,12 +285,14 @@
- 			<&irqpin2 4 0>, <&irqpin2 5 0>, <&irqpin2 6 0>, <&irqpin2 7 0>,
- 			<&irqpin3 0 0>, <&irqpin3 1 0>, <&irqpin3 2 0>, <&irqpin3 3 0>,
- 			<&irqpin3 4 0>, <&irqpin3 5 0>, <&irqpin3 6 0>, <&irqpin3 7 0>;
-+			power-domains = <&pd_c5>;
- 	};
- 
- 	tpu: pwm@e6600000 {
- 		compatible = "renesas,tpu-r8a7740", "renesas,tpu";
- 		reg = <0xe6600000 0x100>;
- 		clocks = <&mstp3_clks R8A7740_CLK_TPU0>;
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 		#pwm-cells = <3>;
- 	};
-@@ -283,6 +303,7 @@
- 		interrupts = <0 56 IRQ_TYPE_LEVEL_HIGH
- 			      0 57 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp3_clks R8A7740_CLK_MMC>;
-+		power-domains = <&pd_a3sp>;
- 		status = "disabled";
- 	};
- 
-@@ -293,6 +314,7 @@
- 			      0 118 IRQ_TYPE_LEVEL_HIGH
- 			      0 119 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp3_clks R8A7740_CLK_SDHI0>;
-+		power-domains = <&pd_a3sp>;
- 		cap-sd-highspeed;
- 		cap-sdio-irq;
- 		status = "disabled";
-@@ -305,6 +327,7 @@
- 			      0 122 IRQ_TYPE_LEVEL_HIGH
- 			      0 123 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp3_clks R8A7740_CLK_SDHI1>;
-+		power-domains = <&pd_a3sp>;
- 		cap-sd-highspeed;
- 		cap-sdio-irq;
- 		status = "disabled";
-@@ -317,6 +340,7 @@
- 			      0 126 IRQ_TYPE_LEVEL_HIGH
- 			      0 127 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&mstp4_clks R8A7740_CLK_SDHI2>;
-+		power-domains = <&pd_a3sp>;
- 		cap-sd-highspeed;
- 		cap-sdio-irq;
- 		status = "disabled";
-@@ -328,6 +352,7 @@
- 		reg = <0xfe1f0000 0x400>;
- 		interrupts = <0 9 0x4>;
- 		clocks = <&mstp3_clks R8A7740_CLK_FSI>;
-+		power-domains = <&pd_a4mp>;
- 		status = "disabled";
- 	};
- 
-@@ -379,6 +404,7 @@
- 			compatible = "renesas,r8a7740-cpg-clocks";
- 			reg = <0xe6150000 0x10000>;
- 			clocks = <&extal1_clk>, <&extalr_clk>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <1>;
- 			clock-output-names = "system", "pllc0", "pllc1",
- 					     "pllc2", "r",
-@@ -393,6 +419,7 @@
- 			compatible = "renesas,r8a7740-div6-clock", "renesas,cpg-div6-clock";
- 			reg = <0xe6150080 4>;
- 			clocks = <&pllc1_div2_clk>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <0>;
- 			clock-output-names = "sub";
- 		};
-@@ -401,6 +428,7 @@
- 		pllc1_div2_clk: pllc1_div2_clk {
- 			compatible = "fixed-factor-clock";
- 			clocks = <&cpg_clocks R8A7740_CLK_PLLC1>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <0>;
- 			clock-div = <2>;
- 			clock-mult = <1>;
-@@ -409,6 +437,7 @@
- 		extal1_div2_clk: extal1_div2_clk {
- 			compatible = "fixed-factor-clock";
- 			clocks = <&extal1_clk>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <0>;
- 			clock-div = <2>;
- 			clock-mult = <1>;
-@@ -420,6 +449,7 @@
- 			compatible = "renesas,r8a7740-mstp-clocks", "renesas,cpg-mstp-clocks";
- 			reg = <0xe6150080 4>;
- 			clocks = <&sub_clk>, <&sub_clk>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <1>;
- 			renesas,clock-indices = <
- 				R8A7740_CLK_SUBCK R8A7740_CLK_SUBCK2
-@@ -435,6 +465,7 @@
- 				 <&cpg_clocks R8A7740_CLK_B>,
- 				 <&sub_clk>, <&sub_clk>,
- 				 <&cpg_clocks R8A7740_CLK_B>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <1>;
- 			renesas,clock-indices = <
- 				R8A7740_CLK_CEU21 R8A7740_CLK_CEU20 R8A7740_CLK_TMU0
-@@ -456,6 +487,7 @@
- 				 <&sub_clk>, <&sub_clk>, <&sub_clk>,
- 				 <&sub_clk>, <&sub_clk>, <&sub_clk>,
- 				 <&sub_clk>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <1>;
- 			renesas,clock-indices = <
- 				R8A7740_CLK_SCIFA6 R8A7740_CLK_SCIFA7
-@@ -483,6 +515,7 @@
- 				 <&cpg_clocks R8A7740_CLK_HP>,
- 				 <&cpg_clocks R8A7740_CLK_HP>,
- 				 <&cpg_clocks R8A7740_CLK_HP>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <1>;
- 			renesas,clock-indices = <
- 				R8A7740_CLK_CMT1 R8A7740_CLK_FSI R8A7740_CLK_IIC1
-@@ -500,6 +533,7 @@
- 				 <&cpg_clocks R8A7740_CLK_HP>,
- 				 <&cpg_clocks R8A7740_CLK_HP>,
- 				 <&cpg_clocks R8A7740_CLK_HP>;
-+			power-domains = <&pd_c5>;
- 			#clock-cells = <1>;
- 			renesas,clock-indices = <
- 				R8A7740_CLK_USBH R8A7740_CLK_SDHI2
-@@ -509,4 +543,91 @@
- 				"usbhost", "sdhi2", "usbfunc", "usphy";
- 		};
- 	};
-+
-+	sysc: system-controller@e6180000 {
-+		compatible = "renesas,sysc-r8a7740", "renesas,sysc-rmobile";
-+		reg = <0xe6180000 8000>, <0xe6188000 8000>;
-+
-+		pm-domains {
-+			pd_c5: c5 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				#power-domain-cells = <0>;
-+
-+				pd_a4lc: a4lc@1 {
-+					reg = <1>;
-+					#power-domain-cells = <0>;
-+					power-on-latency = <250000>;
-+					power-off-latency = <250000>;
-+				};
-+
-+				pd_a4mp: a4mp@2 {
-+					reg = <2>;
-+					#power-domain-cells = <0>;
-+					power-on-latency = <250000>;
-+					power-off-latency = <250000>;
-+				};
-+
-+				pd_d4: d4@3 {
-+					reg = <3>;
-+					#power-domain-cells = <0>;
-+					power-on-latency = <250000>;
-+					power-off-latency = <250000>;
-+				};
-+
-+				pd_a4r: a4r@5 {
-+					reg = <5>;
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+					#power-domain-cells = <0>;
-+					power-on-latency = <250000>;
-+					power-off-latency = <250000>;
-+
-+					pd_a3rv: a3rv@6 {
-+						reg = <6>;
-+						#power-domain-cells = <0>;
-+						power-on-latency = <250000>;
-+						power-off-latency = <250000>;
-+					};
-+				};
-+
-+				pd_a4s: a4s@10 {
-+					reg = <10>;
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+					#power-domain-cells = <0>;
-+					power-on-latency = <250000>;
-+					power-off-latency = <250000>;
-+
-+					pd_a3sp: a3sp@11 {
-+						reg = <11>;
-+						#power-domain-cells = <0>;
-+						power-on-latency = <250000>;
-+						power-off-latency = <250000>;
-+					};
-+
-+					pd_a3sm: a3sm@12 {
-+						reg = <12>;
-+						#power-domain-cells = <0>;
-+						power-on-latency = <250000>;
-+						power-off-latency = <250000>;
-+					};
-+
-+					pd_a3sg: a3sg@13 {
-+						reg = <13>;
-+						#power-domain-cells = <0>;
-+						power-on-latency = <250000>;
-+						power-off-latency = <250000>;
-+					};
-+				};
-+
-+				pd_a4su: a4su@20 {
-+					reg = <20>;
-+					#power-domain-cells = <0>;
-+					power-on-latency = <250000>;
-+					power-off-latency = <250000>;
-+				};
-+			};
-+		};
-+	};
- };
--- 
-1.9.1
+Thanks,
+Guenter
 
