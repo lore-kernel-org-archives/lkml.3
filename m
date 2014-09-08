@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbaIHNqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 09:46:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48180 "EHLO bear.ext.ti.com"
+	id S1753873AbaIHNq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 09:46:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44636 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121AbaIHNqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 09:46:12 -0400
-Date: Mon, 8 Sep 2014 08:44:54 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for
- exynos5420/5800
-Message-ID: <20140908134454.GK22409@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1409656338-20337-1-git-send-email-gautam.vivek@samsung.com>
- <1409656338-20337-5-git-send-email-gautam.vivek@samsung.com>
- <20140902143438.GB16872@saruman.home>
- <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
- <20140903144225.GD31855@saruman.home>
- <CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
- <20140905175651.GK24449@saruman.home>
- <CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
+	id S1753308AbaIHNqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 09:46:24 -0400
+Date: Mon, 8 Sep 2014 10:46:16 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
+Message-ID: <20140908134615.GD2773@kernel.org>
+References: <1409781604-16778-1-git-send-email-acme@kernel.org>
+ <1409781604-16778-5-git-send-email-acme@kernel.org>
+ <54085BC8.40403@intel.com>
+ <20140904151902.GE2997@kernel.org>
+ <54097793.4050201@intel.com>
+ <20140905140756.GD30520@kernel.org>
+ <20140906203915.GA9843@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tBhgiDt8dP1efIIJ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
+In-Reply-To: <20140906203915.GA9843@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tBhgiDt8dP1efIIJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Em Sat, Sep 06, 2014 at 10:39:15PM +0200, Jiri Olsa escreveu:
+> On Fri, Sep 05, 2014 at 11:07:56AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Fri, Sep 05, 2014 at 11:42:59AM +0300, Adrian Hunter escreveu:
+> > > On 09/04/2014 06:19 PM, Arnaldo Carvalho de Melo wrote:
+> > > > Em Thu, Sep 04, 2014 at 03:32:08PM +0300, Adrian Hunter escreveu:
+> > > No I was meaning something different. For example, 'perf record' opens an
+> > > event for 2 processes per-cpu and gets 4 file descriptors:
 
-Hi,
+> > > 	task1	task2
+> > > cpu0	fd0	fd1
+> > > cpu1	fd2	fd3
 
-On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
-> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
-> >> > Don't we have phy_power_on()
-> >> > for that ? It looks like you could just as well do this from
-> >> > phy_power_on() ?
-> >>
-> >> No, unfortunately keeping these calibration settings in phy_power_on()
-> >> doesn't help, since we need to do this after XHCI reset has happened.
-> >
-> > teach xHCI about PHYs ?
->=20
-> sorry i couldn't understand you here.
-> Aren't we trying to do the same with Heikki's patch about dwc3 :
-> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
->=20
-> and the 2nd patch in this series :
-> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
->=20
-> Is there something else that is expected ?
+> > > Now, perf record will mmap fd0 and fd2 and set-output fd1->fd0
+> > > and fd3->fd2.
 
-right, use that to call phy_init() at the right time, then you need to
-add a new ->calibrate() method which, likely, will only be used by you
-;-)
+> > > pollfds includes only fd0 and fd2.
 
---=20
-balbi
+> > > But if task2 exits, the POLLHUP will appear on fd1 and fd3.
 
---tBhgiDt8dP1efIIJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > So? We are not interested in fd1 and fd3, since all our reading is done
+> > on fd0 and fd2 mmaps, no?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> hm, what if task1 (fd0, fd2) exits first.. perf record will exit,
+> but it still has to read task2..?
 
-iQIcBAEBAgAGBQJUDbLWAAoJEIaOsuA1yqRE8c8P/1ZtYbUpQZ4fWetW61TQPWu4
-MYK6RzBzeCwaJQNjELvEZpdDVZJY0tIrm9YqYs2pDtujMLi3Y8F7gR2YBKR9qXhd
-60pBMljyhYzh7j23kuzTzW7z9WpKMAKvQntlXz9mbpw5OnUXV07WQJQYPbiarxDC
-96N3OVwmX70qzAbkFdJSD/VVh13xzplhX7YYnubpliU82X+h5JewpmXNvjBf8lyS
-vSLV/gLDwCrCgg7m9ZfvuPUDjvz4uY6z4c7t8pfHE1Ol/Sj34lovN4l8FR8qnSkU
-BTkt8q/gO1BrjbOGIksf2tU+mv7LNnJTk0VUfCIS2zZAq9OEy1senGk6dniAT/tS
-6yzYhghnVn8S+X0AL+6OXIvqjRT2Qonvf2TIdHW+8Laye6cdtS1MdsCWv4mjJqlz
-UJXhRV1RufFCAlBnk/y41YIei9qBfWubxJD1YHW/otdSDaETB3oSwzLrfh4iPJ2m
-wySbDrNIl19V2asJ7Ii/ATILYzfhQ1tyMdsJaLgLo6V79XrkSeCxceCJRdsuEFNM
-iAcyAs25GICVZmVuECWnGEG8aMiYH3dYJIn3qB87DUT7flV+tI9ba+bl5gMVNs06
-rvlaB5nQoPbTbp4RmOUq9t/vJPPRNBD5L7ee0YM2ZTIc0nJe31YnAzarCwgT754A
-pBdrbtUiD5Fb7HjoHdkq
-=GOVy
------END PGP SIGNATURE-----
+Ok, what happens in that case, i.e. when the fds that were set to be the
+ones to be polled, gets nuked, does the set-output command gets just
+undone? Or does the mmap stands, receiving the events from the remaining
+fds and the polling notifications get sent to, in this case, fd3 and
+fd1?
 
---tBhgiDt8dP1efIIJ--
+I'll look at the kernel code for that...
+ 
+> > I.e. when we ask the kernel to point fd B to fd A's mmap (what you
+> > called set-output) and fd B inserts an event into fd A's mmap ring
+> > buffer, we get fd A poll return as POLLRD, no?
+
+> > Have to check... Otherwise we would have to poll all fds all the time,
+> > not just the ones mmaping, right?
+
+> > > I think Jiri's patchset changed pollfds to include all fds for that reason.
+
+> hm, I did not think of that.. ;-) I needed more grained feedback
+> for future features like cpu hotplug
+
+So this is good for something you didn't tried to fix (and document) but
+good for something that may be nice in the future? Grumpf, we have
+already way too much stuff that will be eventually used but is not used
+right now :-\
+ 
+> > It did? I have to look again, probably went together with other changes,
+> > has it?
+> 
+> it was done by replacing 'int' with 'struct poll_item' for evsel::fd xyarray
+
+Well, will look into that as soon as I see the need for it. I.e. after I
+clarify the discussion above.
+
+- Arnaldo
