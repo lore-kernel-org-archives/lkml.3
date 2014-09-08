@@ -1,139 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaIHGlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 02:41:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51520 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024AbaIHGlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 02:41:13 -0400
-Date: Sun, 7 Sep 2014 23:39:40 -0700
-From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-90ed9cbe765ad358b3151a12b8bf889a3cbcd573@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        guillaume@morinfr.org, mschmidt@redhat.com, riel@redhat.com,
-        akpm@linux-foundation.org, ionut.m.alexa@gmail.com, tglx@linutronix.de,
-        oleg@redhat.com, mhocko@suse.cz, rientjes@google.com,
-        lizefan@huawei.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        guillaume@morinfr.org, mschmidt@redhat.com, riel@redhat.com,
-        akpm@linux-foundation.org, ionut.m.alexa@gmail.com, oleg@redhat.com,
-        tglx@linutronix.de, rientjes@google.com, mhocko@suse.cz,
-        lizefan@huawei.com
-In-Reply-To: <1408133138-22048-2-git-send-email-riel@redhat.com>
-References: <1408133138-22048-2-git-send-email-riel@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] exit:
-  Always reap resource stats in __exit_signal()
-Git-Commit-ID: 90ed9cbe765ad358b3151a12b8bf889a3cbcd573
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753137AbaIHGl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 02:41:26 -0400
+Received: from ozlabs.org ([103.22.144.67]:51629 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753070AbaIHGlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 02:41:24 -0400
+Date: Mon, 8 Sep 2014 16:41:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: linux-next: manual merge of the percpu tree with the ext4 tree
+Message-ID: <20140908164114.262bb178@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  90ed9cbe765ad358b3151a12b8bf889a3cbcd573
-Gitweb:     http://git.kernel.org/tip/90ed9cbe765ad358b3151a12b8bf889a3cbcd573
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Fri, 15 Aug 2014 16:05:36 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Sep 2014 08:17:00 +0200
+--Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-exit: Always reap resource stats in __exit_signal()
+Hi all,
 
-Oleg pointed out that wait_task_zombie adds a task's usage statistics
-to the parent's signal struct, but the task's own signal struct should
-also propagate the statistics at exit time.
+Today's linux-next merge of the percpu tree got a conflict in
+fs/ext4/super.c between commit eb68d0e2fc5a ("ext4: track extent status
+tree shrinker delay statictics") from the ext4 tree and commit
+908c7f1949cb ("percpu_counter: add @gfp to percpu_counter_init()") from
+the percpu tree.
 
-This allows thread_group_cputime(reaped_zombie) to get the statistics
-after __unhash_process() has made the task invisible to for_each_thread,
-but before the thread has actually been rcu freed, making sure no
-non-monotonic results are returned inside that window.
+I fixed it up (the former removed a reference to percpu_counter_init)
+and can carry the fix as necessary (no action is required).
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Guillaume Morin <guillaume@morinfr.org>
-Cc: Ionut Alexa <ionut.m.alexa@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Michal Schmidt <mschmidt@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: umgwanakikbuti@gmail.com
-Cc: fweisbec@gmail.com
-Cc: srao@redhat.com
-Cc: lwoodman@redhat.com
-Cc: atheurer@redhat.com
-Link: http://lkml.kernel.org/r/1408133138-22048-2-git-send-email-riel@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+That commit also added two references in fs/ext4/extents_status.c (thus
+proving that modifying a little used API causes it to be used
+more :-)), so I added the following merge fix patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 8 Sep 2014 16:25:46 +1000
+Subject: [PATCH] percpu_counter: fix for ext4 updates
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- kernel/exit.c | 43 +++++++++++++++++++++----------------------
- 1 file changed, 21 insertions(+), 22 deletions(-)
+ fs/ext4/extents_status.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 32c58f7..b93d46d 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -115,30 +115,29 @@ static void __exit_signal(struct task_struct *tsk)
- 
- 		if (tsk == sig->curr_target)
- 			sig->curr_target = next_thread(tsk);
--		/*
--		 * Accumulate here the counters for all threads but the
--		 * group leader as they die, so they can be added into
--		 * the process-wide totals when those are taken.
--		 * The group leader stays around as a zombie as long
--		 * as there are other threads.  When it gets reaped,
--		 * the exit.c code will add its counts into these totals.
--		 * We won't ever get here for the group leader, since it
--		 * will have been the last reference on the signal_struct.
--		 */
--		task_cputime(tsk, &utime, &stime);
--		sig->utime += utime;
--		sig->stime += stime;
--		sig->gtime += task_gtime(tsk);
--		sig->min_flt += tsk->min_flt;
--		sig->maj_flt += tsk->maj_flt;
--		sig->nvcsw += tsk->nvcsw;
--		sig->nivcsw += tsk->nivcsw;
--		sig->inblock += task_io_get_inblock(tsk);
--		sig->oublock += task_io_get_oublock(tsk);
--		task_io_accounting_add(&sig->ioac, &tsk->ioac);
--		sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
- 	}
- 
-+	/*
-+	 * Accumulate here the counters for all threads but the group leader
-+	 * as they die, so they can be added into the process-wide totals
-+	 * when those are taken.  The group leader stays around as a zombie as
-+	 * long as there are other threads.  When it gets reaped, the exit.c
-+	 * code will add its counts into these totals.  We won't ever get here
-+	 * for the group leader, since it will have been the last reference on
-+	 * the signal_struct.
-+	 */
-+	task_cputime(tsk, &utime, &stime);
-+	sig->utime += utime;
-+	sig->stime += stime;
-+	sig->gtime += task_gtime(tsk);
-+	sig->min_flt += tsk->min_flt;
-+	sig->maj_flt += tsk->maj_flt;
-+	sig->nvcsw += tsk->nvcsw;
-+	sig->nivcsw += tsk->nivcsw;
-+	sig->inblock += task_io_get_inblock(tsk);
-+	sig->oublock += task_io_get_oublock(tsk);
-+	task_io_accounting_add(&sig->ioac, &tsk->ioac);
-+	sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
- 	sig->nr_threads--;
- 	__unhash_process(tsk, group_dead);
- 
+diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c
+index 09fd57667262..3777f7eda5cf 100644
+--- a/fs/ext4/extents_status.c
++++ b/fs/ext4/extents_status.c
+@@ -13,6 +13,7 @@
+ #include <linux/list_sort.h>
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
++#include <linux/gfp.h>
+ #include "ext4.h"
+ #include "extents_status.h"
+=20
+@@ -1189,10 +1190,10 @@ int ext4_es_register_shrinker(struct ext4_sb_info *=
+sbi)
+ 	sbi->s_es_stats.es_stats_cache_misses =3D 0;
+ 	sbi->s_es_stats.es_stats_scan_time =3D 0;
+ 	sbi->s_es_stats.es_stats_max_scan_time =3D 0;
+-	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_all_cnt, 0);
++	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_all_cnt, 0, GFP_KER=
+NEL);
+ 	if (err)
+ 		return err;
+-	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_lru_cnt, 0);
++	err =3D percpu_counter_init(&sbi->s_es_stats.es_stats_lru_cnt, 0, GFP_KER=
+NEL);
+ 	if (err)
+ 		goto err1;
+=20
+--=20
+2.1.0
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUDU+QAAoJEMDTa8Ir7ZwVbCIP/1djJ3itqnb7r2qtLkGlgHNf
+33rcaeRReP+8InsiSILxZTtO1AL8yPQs+vxdNfnf4z2ho7T4tpFsJCFwV/ieiTfx
+3j8acFliN/h6QdaHtnH+1uaDFO0Te1FHBjiSBGrGEoILhrWdGxvXRa2mXRjRoQJE
+MJATjsEAJYbeEo49udL8q5sK3u6cUCNajfG3iRjEHUC53Lp8JvwU8GOHGFOLOjqJ
+0NELqGukiKUXqTG9oh/Fw9rf7t+o6tY2RXUySWBBe/bpR8ZbIzZLPFtIwQKeyj58
+ApMiKXluj4ukipsTIg1q4ONEl/rEy4I0xrPMHumS0kBmZAKvPQT7Tmgm3C2zqzuS
+Ycn4Aan6hAboLyUNOnVw3TshdSvGzA2l9Fl3qLoXEptCKU4jxiSldyu1MhtG3R+n
+Kv9FMrUxYuxcoT2vKXpAMHJKCrJvFsAXoyRo8jUAkNxmMp6QG/oBLAv9gFsUu194
+f/XfdHTuN8qCNndIaxHqaMpvg0Ln/MCiK+cywxQ7wkk1qR62l3hSDG/Qp6zkRzAc
+nCa3AZKl/IWn6LKRV8hZuxH01r1ZtUO5/7IBCmzPgvb9+p28Xz0dQ8n4HtNMMn9W
+Y6+7osQj50o3ayfMPu+8O+tJi9Isjvbid0OIrQ+jQD1Oitu6oAfn58qLq62YLW++
+zIqArsLtRjhgfDHyPQLP
+=dkVS
+-----END PGP SIGNATURE-----
+
+--Sig_/+kQfF.xFU4/IgZ2W1GuD4Q9--
