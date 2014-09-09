@@ -1,107 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338AbaIIQFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:05:53 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:49455 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757131AbaIIQFv (ORCPT
+	id S1757400AbaIIQGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:06:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45999 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757345AbaIIQGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:05:51 -0400
-Date: Tue, 9 Sep 2014 18:05:30 +0200
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
+	Tue, 9 Sep 2014 12:06:08 -0400
+Date: Tue, 9 Sep 2014 17:05:48 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
         Kumar Gala <galak@codeaurora.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Roland Stigge <stigge@antcom.de>
+        Pawel Moll <Pawel.Moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Roland Stigge <stigge@antcom.de>
 Subject: Re: [PATCH V3] pwm: lpc32xx - Add a driver for the motor PWM
-Message-ID: <20140909180530.635ce6f7@avionic-0020>
-In-Reply-To: <2942175.JkZcLDKfiR@wuerfel>
+Message-ID: <20140909160548.GB3896@leverpostej>
 References: <1410277361-26848-1-git-send-email-alban.bedel@avionic-design.de>
-	<2942175.JkZcLDKfiR@wuerfel>
-Organization: Avionic Design
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/qnSqLzvmEtFs1iliWt5Amnf"; protocol="application/pgp-signature"
-X-Provags-ID: V02:K0:zPaHyqXvyhH3p80pAVRyn5U7Uiu4PZ/5Z65Lqj8oTnm
- pgc0mxF0l1cXidSW+XABFO13Q2yiU76ANZKnwcKyKUEqy8mbpt
- YA+PjFBz4X0evJnl/Ijr1IZW8sBDLneSsxuA8ThQQLe6BfTltp
- x3YPjsjXgXO86Js/IZORElPGNnGzap6CFLmxYgbMyoeWX0/1yU
- Yt71rJEQ43TXh9CE5FiRTQwPK0uibe5e04FDJNhITjqq4rvBMt
- VsO01V8uz/RV+Sva/sjUmARcq2Nbpvsqqr9IviZG3C2tMXWudM
- ZSTqQdKI4cn+2EO/BuZ+dau1SpYx+6egeo2XXpDN9BNT0JPKji
- EEqQ1neLW4/rjfzrqrPiEyByxIbo3CEzp/rE8gN4KC7N83/zxv
- d0NYNJKLHftsA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410277361-26848-1-git-send-email-alban.bedel@avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/qnSqLzvmEtFs1iliWt5Amnf
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 09, 2014 at 04:42:41PM +0100, Alban Bedel wrote:
+> The LPC32xx motor PWMs have two output pin, A and B, with B = !A.
+> The driver can switch the polarity to allow use either output pin A
+> or output pin B.
+> 
+> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+> ---
+> V3: * Updated to current mainline API
+>     * Fixed LPC32xx vs. LPC32XX
+>     * Various coding style fix
+> V2: * Splitted the DTS to its own patch
+> ---
+>  .../devicetree/bindings/pwm/lpc32xx-motor-pwm.txt  |  24 +++
+>  drivers/pwm/Kconfig                                |  10 +
+>  drivers/pwm/Makefile                               |   1 +
+>  drivers/pwm/pwm-lpc32xx-motor.c                    | 210 +++++++++++++++++++++
+>  4 files changed, 245 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt
+>  create mode 100644 drivers/pwm/pwm-lpc32xx-motor.c
+> 
+> diff --git a/Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt b/Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt
+> new file mode 100644
+> index 0000000..decc27c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt
+> @@ -0,0 +1,24 @@
+> +LPC32xx Motor PWM controller
+> +
+> +The LPC32xx motor PWMs have two output pin, A and B, with B = !A.
+> +By default, output A should be used, if output B is used the PWM
+> +polarity should be inverted using the linux,polarity property.
+> +
+> +Required properties:
+> +- compatible: should be "nxp,lpc3220-motor-pwm"
+> +- reg: physical base address and length of the controller's registers
+> +
+> +Optional properties:
+> +- linux,polarity: Bit mask of the polarity to use for each output,
+> +      a bit set to 0 indicate the default polarity, a bit set to 1
+> +      indicate an inverted polarity. In other word this set if output
+> +      pin A or output pin B has the correct polarity.
 
-On Tue, 09 Sep 2014 17:47:53 +0200
-Arnd Bergmann <arnd@arndb.de> wrote:
+What exactly does linux have to do with the choice of pin? Why should
+this be "linux,polarity"?
 
-> On Tuesday 09 September 2014 17:42:41 Alban Bedel wrote:
-> > +config PWM_LPC32XX_MOTOR
-> > +	tristate "LPC32xx Motor PWM support"
-> > +	depends on ARCH_LPC32XX
-> > +	help
-> > +	  Generic PWM framework driver for LPC32xx motor PWM. The LPC32xx SOC
-> > +	  has one motor PWM controllers.
-> > +
-> > +	  To compile this driver as a module, choose M here: the module
-> > +	  will be called pwm-lpc32xx-motor.
-> > +
->=20
-> Can you change the dependency to ARCH_LPC32XX || COMPILE_TEST and
-> add explicit dependencies for the subsystems the driver depends
-> on (pwm and clk, I guess)? That would give us better build-time
-> coverage with allmodconfig.
+> +
+> +Examples:
+> +
+> +mpwm@400e8000 {
+> +	compatible = "nxp,lpc3220-motor-pwm";
+> +	reg = <0x400E8000 0x78>;
+> +	linux,polarity = <0x5>; /* Use outputs B0, A1 and B2 */
 
-I'll add COMPILE_TEST, PWM is already there because this is in an if
-PWM block. However I'm not sure for the clk, the LPC32xx use its own
-implementation of the clk functions, what should I add in this case?
+This doesn't match the description of there being two output pins. I
+take it the description above is somewhat misleading?
 
-> > +	/* Write to limit register -> period */
-> > +	__raw_writel(period, lpc32xx->base + MCLIM_REG_OFFSET(pwm));
-> > +
-> > +	/* Write to match register -> duty */
-> > +	__raw_writel(period - duty, lpc32xx->base + MCMAT_REG_OFFSET(pwm));
->=20
-> Please don't use __raw_{writel,readl} in driver, and change that to use
-> readl_relaxed()/writel_relaxed().
+> +	#pwm-cells = <2>;
 
-Will do.
+The format of these cells should be described.
 
-Alban
+Wouldn't it make more sense to describe the polarity in the
+pwm-specifier? It seems like a property of the connection rather than
+the PWM controller itself.
 
---Sig_/qnSqLzvmEtFs1iliWt5Amnf
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+[...]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> +	lpc32xx->clk = devm_clk_get(&pdev->dev, NULL);
 
-iQIcBAEBAgAGBQJUDyVKAAoJEHSUmkuduC28jhIP/Ar3A4SeSSsdhn3fCPxfG102
-ZHk5+Vl1L3Z8rQhMZHpGY7O3Vkgfdpnt07iIAWRGt1bLsReo11N43Bz4FD0lefNq
-fyVu5O1RZrnlfiA+oe3jSHZqoVHbxC0+S2LcKNRGzVN1YWWpOjWYNbPlsbiLEies
-79IGPyXgBrIu4kyU7kWfG1WEiE02Q0JzFrEfKimNAEKUHgTycfTyzvk+lCUYOICi
-fYtrYB9Lgyl7vtP15tCkbfREHh0KT28WOcTqutkoj8+UokBlwF3AhARaeazIZFcX
-RlQcahci5v3NgkpskufW+iYtd5wRUJWccGGuXVIAGKHaJqn7XgwkYo10T1KbRQc8
-oEessTQ5xlite6OAinm2KLjIFYKw9YeRETojuggOpPXyNnps3bB+3AtfmaGqcQu4
-oonIVYouflQudwtCA8+DeOc4XchQpX2/kj8Fmc03CmpvBMXI+orX5kZBzQAVTt86
-KIxyFv6klNeoIudxfVnadB1eceXwc3EKjr4GUmLcOuuDRm9+njK50OxA14RnjujJ
-51MBKdL/65u5AWtuQTyz4PKzvDfYdDkkNl1Jd2vT04XKr07b26cHs115I4LjblJx
-pXfLAOtlVT9oMmev12rz4N+NVwNNXCu96TNuilF1Y56kgVuGD9sjYm7qIQ6h+KNu
-YreJrV3jMinKjSjHXxsO
-=HG99
------END PGP SIGNATURE-----
+No clock was described in the binding.
 
---Sig_/qnSqLzvmEtFs1iliWt5Amnf--
+Is there only the one clock feeding the pwm? (rather than separate
+interface and pwm clocks).
+
+Please describe clocks in the binding. If the clock inputs are named,
+please use clock-names.
+
+Thanks,
+Mark.
