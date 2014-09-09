@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031AbaIIMKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:10:25 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:50268 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274AbaIIMKX (ORCPT
+	id S1756424AbaIIMKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:10:33 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59006 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756129AbaIIMKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:10:23 -0400
-Message-ID: <540EEE2C.1090801@plexistor.com>
-Date: Tue, 09 Sep 2014 15:10:20 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 9 Sep 2014 08:10:31 -0400
+Date: Tue, 9 Sep 2014 13:09:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: perex@perex.cz, lgirdwood@gmail.com, tiwai@suse.de, moinejf@free.fr,
+        andrew@lunn.ch, kuninori.morimoto.gx@renesas.com, jsarha@ti.com,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140909120948.GZ2601@sirena.org.uk>
+References: <1409711021-19277-1-git-send-email-Li.Xiubo@freescale.com>
+ <1409711021-19277-4-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCHSET 0/5 v2] brd: partition fixes
-References: <53FDF7AD.5000709@plexistor.com> <54044759.9080103@gmail.com>
-In-Reply-To: <54044759.9080103@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aSM3KCOUSI0G0tph"
+Content-Disposition: inline
+In-Reply-To: <1409711021-19277-4-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 109.152.174.147
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv3 3/3] ASoC: simple-card: binding: update binding to
+ support the new style.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 01:15 PM, Boaz Harrosh wrote:
-> On 08/27/2014 06:22 PM, Boaz Harrosh wrote:
->> Jens Hi
->>
->> What do you intend to do with these fixes? These are real bugs on devices
->> shipped for a while now. I think they need to go into current 3.17-rcX Kernel.
->>
-> 
-> Jens hi
-> 
-> I have seen that the brd patch went into rc3.
-> 
-> I should insist then, that these patches go into this rc cycle ASAP.
-> For one they fix real *hard* unexpected bugs with brd that make it trash data.
-> 
-> But specially because the patch to brd that just went into Kernel introduces
-> a wrong module parameter "show_part" which must be removed. If we release a Kernel
-> with it, it will be pain, we will need to deprecate it which is long and annoying
-> procedure. It is wrong because it must be always on. Pleas see below
-> 
-> This patchset is based on what just went into Kernel.
-> Also on git here: git://git.open-osd.org/pmem.git brd-partitions branch
-> 
-> [http://git.open-osd.org/gitweb.cgi?p=pmem.git;a=shortlog;h=refs/heads/brd-partitions]
-> 
-> Thanks
-> Boaz
-> 
-<>
->> list of patches:
->> [PATCH 1/5] axonram: Fix bug in direct_access
->> [PATCH 2/5] Change direct_access calling convention
-<>
->> [PATCH 3/5] brd: Add getgeo to block ops
-<>
->> [PATCH 4/5] brd: Fix all partitions BUGs
->> [PATCH 5/5] brd: Request from fdisk 4k alignment
 
-Ping Jens?
+--aSM3KCOUSI0G0tph
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Please tell me what you want to do with these patches. They must go into this Kernel
-cycle before brd is released with wrong user-mode visible nub
+On Wed, Sep 03, 2014 at 10:23:41AM +0800, Xiubo Li wrote:
+> This update patch will split the DT node into old style and new style:
+> The new style will will be easier to add muti DAI links from old single
+> DAI link DTs.
 
-If you want you can drop the [PATCH 3/5] which is not important and can go in next
-cycle, but the others are real BUG fixes.
+> This patch will maintian compatibility with the old DTs.
 
-Thanks
-Boaz
+Is everyone happy with this new style binding?
 
+--aSM3KCOUSI0G0tph
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUDu4LAAoJECTWi3JdVIfQ0u8H/iDNEPtFnuRUGXXCxZjgT0lY
+V92sNeDnbDc61qLYRQGTVPaOjMZoVFvr9NvUKQjeE+iRzHvZwtPipFgkBsp+EmC9
+YTVumOxWtDMn6sqQkuoJIdI9ZHZbBnQj1dI9Y4pDfgdPk8UqFZdS1ejGPRHr7dwC
+jbtS5PG6iBxAQHyw6xlRFLTP0RWBGOSb1gbVzs6/n7JIvr86NRCbM2kq8Wp9Dy2v
+2Eb6xxnCRIH8251FZJcLnZX252nFjoK9tTpcmeuorJw0zvnDRHmvLW7rXpTtPLyk
+1QqK6otYCfLn2LcBTYs40M9kxA3YsquACdRy5VX3jwIObHgAy8N3LkLhBC31tlg=
+=Ey16
+-----END PGP SIGNATURE-----
+
+--aSM3KCOUSI0G0tph--
