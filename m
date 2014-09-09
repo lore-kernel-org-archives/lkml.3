@@ -1,111 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311AbaIIHmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:42:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36870 "EHLO mail.zytor.com"
+	id S1755987AbaIIHo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:44:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21465 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932103AbaIIHmJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:42:09 -0400
-Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH RESEND v4] sched: fix llc shared map unreleased during cpu hotplug
-From: "H. Peter Anvin" <hpa@zytor.com>
-X-Mailer: iPad Mail (11D257)
-In-Reply-To: <20140909072405.GA20678@kernel>
-Date: Tue, 9 Sep 2014 00:40:22 -0700
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "x86@kernel.org" <x86@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        Zhang Yang <yang.z.zhang@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EE221C32-71B2-477F-BF02-78B6F29157E4@zytor.com>
-References: <1408945776-92404-1-git-send-email-wanpeng.li@linux.intel.com> <1410246392.5088.18.camel@marge.simpson.net> <20140909072405.GA20678@kernel>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+	id S1755571AbaIIHo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 03:44:27 -0400
+Message-ID: <540EAFD1.2040307@redhat.com>
+Date: Tue, 09 Sep 2014 09:44:17 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
+CC: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org,
+        Andrew Duggan <aduggan@synaptics.com>
+Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
+References: <20140908165520.GA35051@core.coreip.homeip.net>
+In-Reply-To: <20140908165520.GA35051@core.coreip.homeip.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't look at it that hard since it claimed to be a sched patch.  I prioritize things in my inbox which say x86 for obvious reasons.  Since I have over 12,000 unread messages in my inbox alone...
+Hi,
 
-Sent from my tablet, pardon any formatting problems.
+On 09/08/2014 06:55 PM, Dmitry Torokhov wrote:
+> ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
+> physical buttons, instead they generate primary button click when user
+> presses somewhat hard on the surface of the touchpad. Unfortunately they
+> also report primary button click whenever there are 2 or more contacts
+> on the pad, messing up all multi-finger gestures (2-finger scrolling,
+> multi-finger tapping, etc). To cope with this behavior we introduce a
+> delay (currently 50 msecs) in reporting primary press in case more
+> contacts appear.
+> 
+> For now we are using DMI matching to detect ForcePads, hopefully we'll
+> be able to figure a better way down the road.
 
-> On Sep 9, 2014, at 0:24, Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
+What about using the pnp-id, in my experience with the recent lenovo
+laptops that tends to be more reliable.
+
+Christopher, Andrew (added to the CC), can one of you tell us if there
+is a capability bit to detect this, and if not can you perhaps provide
+a list of pnp-ids of devices which behave like this ?
+
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>  drivers/input/mouse/synaptics.c | 80 ++++++++++++++++++++++++++++++++---------
+>  drivers/input/mouse/synaptics.h |  5 +++
+>  2 files changed, 69 insertions(+), 16 deletions(-)
 > 
-> Hi Mike,
->> On Tue, Sep 09, 2014 at 09:06:32AM +0200, Mike Galbraith wrote:
->> Hm, this patchlet seems to be having trouble taking wing.
->> 
->> (tosses it up in the air.. flap yer little wings patchlet)
->> 
->> I thought you had changed the title to..
->> 
->> x86,cpu-hotplug: clear llc_shared_mask at CPU hotplug
->> 
->> ..due to Peter saying sched is only a consumer, but v4 somehow reverted
->> back to being a sched patch.
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index e8573c6..5de1bb6 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -618,6 +618,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
+>  	priv->agm_pending = true;
+>  }
+>  
+> +static bool is_forcepad;
+> +
+>  static int synaptics_parse_hw_state(const unsigned char buf[],
+>  				    struct synaptics_data *priv,
+>  				    struct synaptics_hw_state *hw)
+> @@ -629,10 +631,58 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>  			 ((buf[0] & 0x04) >> 1) |
+>  			 ((buf[3] & 0x04) >> 2));
+>  
+> +		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+> +			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
+> +		    hw->w == 2) {
+> +			synaptics_parse_agm(buf, priv, hw);
+> +			return 1;
+> +		}
+> +
+> +		hw->x = (((buf[3] & 0x10) << 8) |
+> +			 ((buf[1] & 0x0f) << 8) |
+> +			 buf[4]);
+> +		hw->y = (((buf[3] & 0x20) << 7) |
+> +			 ((buf[1] & 0xf0) << 4) |
+> +			 buf[5]);
+> +		hw->z = buf[2];
+> +
+>  		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+>  		hw->right = (buf[0] & 0x02) ? 1 : 0;
+>  
+
+Moving this up means that on clickpads the button will no longer
+be checked + set for hw->w == 2 packets. That seems like an unintended
+side effect. If this is intended then this should probably be in its own
+patch.
+
+> -		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+> +		if (is_forcepad) {
+> +			/* XXX is there a proper capability bit for this? */
+> +			/*
+> +			 * ForcePads, like Clickpads, use middle button
+> +			 * bits to report primary button clicks.
+> +			 * Unfortunately they report primary button not only
+> +			 * when user presses on the pad above certain threshold,
+> +			 * but also when there are more than one finger on the
+> +			 * touchpad, which interferes with out multi-finger
+> +			 * gestures.
+> +			 */
+> +			if (hw->z == 0) {
+> +				/* No contacts */
+> +				priv->press = priv->report_press = false;
+> +			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
+> +				/*
+> +				 * Single-finger touch with pressure above
+> +				 * the threshold.
+> +				 */
+> +				if  (!priv->press) {
+> +					priv->press_start = jiffies;
+> +					priv->press = true;
+> +				} else if (time_after(jiffies,
+> +						priv->press_start +
+> +							msecs_to_jiffies(50))) {
+> +					priv->report_press = true;
+> +				}
+
+You're not setting a timer here, instead relying on there to be further events,
+that is probably ok, but maybe put a comment to that extent here ?
+
+> +			} else {
+> +				priv->press = false;
+> +			}
+> +
+> +			hw->left = priv->report_press;
+> +
+> +		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+>  			/*
+>  			 * Clickpad's button is transmitted as middle button,
+>  			 * however, since it is primary button, we will report
+> @@ -651,21 +701,6 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>  			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
+>  		}
+>  
+> -		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+> -			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
+> -		    hw->w == 2) {
+> -			synaptics_parse_agm(buf, priv, hw);
+> -			return 1;
+> -		}
+> -
+> -		hw->x = (((buf[3] & 0x10) << 8) |
+> -			 ((buf[1] & 0x0f) << 8) |
+> -			 buf[4]);
+> -		hw->y = (((buf[3] & 0x20) << 7) |
+> -			 ((buf[1] & 0xf0) << 4) |
+> -			 buf[5]);
+> -		hw->z = buf[2];
+> -
+>  		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
+>  		    ((buf[0] ^ buf[3]) & 0x02)) {
+>  			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
+> @@ -1642,11 +1677,24 @@ static const struct dmi_system_id __initconst cr48_dmi_table[] = {
+>  	{ }
+>  };
+>  
+> +static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
+> +#if defined(CONFIG_DMI) && defined(CONFIG_X86)
+> +	{
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
+> +		},
+> +	},
+> +#endif
+> +	{ }
+> +};
+> +
+>  void __init synaptics_module_init(void)
+>  {
+>  	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+>  	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
+>  	cr48_profile_sensor = dmi_check_system(cr48_dmi_table);
+> +	is_forcepad = dmi_check_system(forcepad_dmi_table);
+>  }
+>  
+>  static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+> index e594af0..adc80c9 100644
+> --- a/drivers/input/mouse/synaptics.h
+> +++ b/drivers/input/mouse/synaptics.h
+> @@ -177,6 +177,11 @@ struct synaptics_data {
+>  	 */
+>  	struct synaptics_hw_state agm;
+>  	bool agm_pending;			/* new AGM packet received */
+> +
+> +	/* ForcePad handling */
+> +	unsigned long				press_start;
+> +	bool					press;
+> +	bool					report_press;
+>  };
+>  
+>  void synaptics_module_init(void);
 > 
-> I send out the RESEND v4 by a mistake, please refer the below link for the patch.
-> https://lkml.org/lkml/2014/7/29/159
-> 
-> Regards,
-> Wanpeng Li 
-> 
->>> On Mon, 2014-08-25 at 13:49 +0800, Wanpeng Li wrote: 
->>> [  220.262245] Call Trace:
->>> [  220.262252]  [<ffffffff810e8396>] load_balance+0x156/0x980
->>> [  220.262259]  [<ffffffff816eeffe>] ? _raw_spin_unlock_irqrestore+0x2e/0xa0
->>> [  220.262266]  [<ffffffff810e9aa3>] idle_balance+0xe3/0x150
->>> [  220.262270]  [<ffffffff816ec4e7>] __schedule+0x797/0x8d0
->>> [  220.262277]  [<ffffffff816ec934>] schedule+0x24/0x70
->>> [  220.262283]  [<ffffffff816e9cd9>] schedule_timeout+0x119/0x1f0
->>> [  220.262294]  [<ffffffff810bb6e0>] ? lock_timer_base+0x70/0x70
->>> [  220.262301]  [<ffffffff816e9dc9>] schedule_timeout_uninterruptible+0x19/0x20
->>> [  220.262308]  [<ffffffff810bd3e8>] msleep+0x18/0x20
->>> [  220.262317]  [<ffffffff813aa11a>] lock_device_hotplug_sysfs+0x2a/0x50
->>> [  220.262323]  [<ffffffff813aa16e>] online_store+0x2e/0x80
->>> [  220.262358]  [<ffffffff813a873b>] dev_attr_store+0x1b/0x20
->>> 
->>> Last level cache shared map is built during cpu up and build sched domain 
->>> routine takes advantage of it to setup sched domain cpu topology, however, 
->>> llc shared map is unreleased during cpu disable which lead to invalid sched 
->>> domain cpu topology. This patch fix it by release llc shared map correctly
->>> during cpu disable.
->>> 
->>> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
->>> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>> Tested-by: Linn Crosetto <linn@hp.com>
->>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>> ---
->>> v3 -> v4:
->>> * simplify backtrace
->>> v2 -> v3:
->>> * simplify backtrace 
->>> v1 -> v2:
->>> * fix subject line
->>> 
->>> arch/x86/kernel/smpboot.c | 3 +++
->>> 1 file changed, 3 insertions(+)
->>> 
->>> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
->>> index 5492798..0134ec7 100644
->>> --- a/arch/x86/kernel/smpboot.c
->>> +++ b/arch/x86/kernel/smpboot.c
->>> @@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
->>> 
->>>    for_each_cpu(sibling, cpu_sibling_mask(cpu))
->>>        cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
->>> +    for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
->>> +        cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
->>> +    cpumask_clear(cpu_llc_shared_mask(cpu));
->>>    cpumask_clear(cpu_sibling_mask(cpu));
->>>    cpumask_clear(cpu_core_mask(cpu));
->>>    c->phys_proc_id = 0;
->> 
+
+Regards,
+
+Hans
