@@ -1,130 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762AbaIIFiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:38:15 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58618 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaIIFiN (ORCPT
+	id S932145AbaIIFii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:38:38 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42956 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755826AbaIIFig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:38:13 -0400
-Date: Mon, 8 Sep 2014 23:38:08 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rajat Jain <rajatxjain@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Tue, 9 Sep 2014 01:38:36 -0400
+Message-ID: <1410241109.2028.22.camel@jarvis.lan>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Richard Yang <weiyang@linux.vnet.ibm.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH v2] pci/probe: Enable CRS for root port if it is supported
-Message-ID: <20140909053808.GQ8080@google.com>
-References: <53FFA54D.9000907@gmail.com>
- <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
- <54065208.3080309@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54065208.3080309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 08 Sep 2014 22:38:29 -0700
+In-Reply-To: <20140909011059.GB11706@mtj.dyndns.org>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+	 <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+	 <20140905141241.GC10455@mtj.dyndns.org>
+	 <20140905164405.GA28964@core.coreip.homeip.net>
+	 <20140905174925.GA12991@mtj.dyndns.org>
+	 <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+	 <20140905224047.GC15723@mtj.dyndns.org>
+	 <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+	 <20140909011059.GB11706@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 04:26:00PM -0700, Rajat Jain wrote:
+On Tue, 2014-09-09 at 10:10 +0900, Tejun Heo wrote:
+> Hello, Luis.
 > 
-> As per the PCIe spec, an endpoint may return the configuration cycles
-> with CRS if it is not yet fully ready to be accessed. If the CRS visibility
-> is not enabled at the root port, the spec leaves the retry behaviour open
-> to implementation in such a case. The Intel root ports have chosen to retry
-> endlessly in this situation. Thus, the root controller may "hang" (repeatedly
-> retrying the configuration requests until it gets a status other than CRS) if
-> a device returns CRS for a long time. This can cause a broken endpoint to bring
-> down the whole PCI hierarchy.
+> On Mon, Sep 08, 2014 at 06:04:23PM -0700, Luis R. Rodriguez wrote:
+> > > I have no idea how the selection should be.  It could be per-insmod or
+> > > maybe just a system-wide flag with explicit exceptions marked on
+> > > drivers is good enough.  I don't know.
+> > 
+> > Its perfectly understandable if we don't know what path to take yet
+> > and its also understandable for it to take time to figure out --
+> > meanwhile though systemd already has merged a policy of a 30 second
+> > timeout for *all drivers* though so we therefore need:
 > 
-> This was recently known to cause problems on Intel systems and
-> was discussed here:
-> http://marc.info/?t=140926298500002&r=1&w=2
+> I'm not too convinced this is such a difficult problem to figure out.
+> We already have most of logic in place and the only thing missing is
+> how to switch it.  Wouldn't something like the following work?
 > 
-> Ref1:
-> https://www.pcisig.com/specifications/pciexpress/ECN_CRS_Software_Visibility_No27.pdf
+> * Add a sysctl knob to enable asynchronous device probing on module
+>   load and enable asynchronous probing globally if the knob is set.
 > 
-> Ref2:
-> PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status"
-> 
-> Thus enable the CRS visibility for the root ports that support it. This
-> patch reverts the following commit, but enables CRS visibility only
-> when the root port supports it:
-> 
-> ad7edfe04908 ("[PCI] Do not enable CRS Software Visibility by default")
-> 
-> (Linus' response: http://marc.info/?l=linux-pci&m=140968622520192&w=2)
-> 
-> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> Signed-off-by: Guenter Roeck <groeck@juniper.net>
+> * Identify cases which can't be asynchronous and make them
+>   synchronous.  e.g. keep who's doing request_module() and avoid
+>   asynchronous probing if current is probing one of those.
 
-I put this and the "only look at Vendor ID" patch on a pci/enumeration
-branch [1].  I rewrote the changelogs to reflect my understanding of what's
-going on, so probably the real truth is somewhere between your original and
-mine.  Let me know what should be fixed.
+What's wrong with just fixing systemd?  Arbitrary timeouts in init
+scripts for system bring up are plain wrong ... I thought we had this
+sorted out ten years ago when we were first having the arguments about
+how long to wait for root; I'm surprised it's coming back again.
 
-We should figure out an easy way for Josh to test these.  Ideally, he could
-test the second patch by itself first, then both together.
+If we want to sort out some sync/async mechanism for probing devices, as
+an agreement between the init systems and the kernel, that's fine, but
+its a to-be negotiated enhancement.  For the current bug fix, just fix
+the component that broke ... which would be systemd.
 
-[1] https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/enumeration
+James
 
-> ---
-> v2: Remove the white list, that was enabling the CRS for certain known Intel systems.
->     Rather now enable it for all systems that support this capability.
-> v1: Enable CRS for only some given Intel systems (maintain a whitelist)
-> 
->  drivers/pci/probe.c           |   13 +++++++++++++
->  include/uapi/linux/pci_regs.h |    1 +
->  2 files changed, 14 insertions(+)
-> 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index e3cf8a2..3c4c35c 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -740,6 +740,17 @@ struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
->  }
->  EXPORT_SYMBOL(pci_add_new_bus);
->  
-> +static void pci_enable_crs(struct pci_dev *pdev)
-> +{
-> +	u16 root_cap = 0;
-> +
-> +	/* Enable CRS Software visibility if supported */
-> +	pcie_capability_read_word(pdev, PCI_EXP_RTCAP, &root_cap);
-> +	if (root_cap & PCI_EXP_RTCAP_CRSVIS)
-> +		pcie_capability_set_word(pdev, PCI_EXP_RTCTL,
-> +					 PCI_EXP_RTCTL_CRSSVE);
-> +}
-> +
->  /*
->   * If it's a bridge, configure it and scan the bus behind it.
->   * For CardBus bridges, we don't scan behind as the devices will
-> @@ -787,6 +798,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
->  	pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
->  			      bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
->  
-> +	pci_enable_crs(dev);
-> +
->  	if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
->  	    !is_cardbus && !broken) {
->  		unsigned int cmax;
-> diff --git a/include/uapi/linux/pci_regs.h b/include/uapi/linux/pci_regs.h
-> index 30db069..a75106d 100644
-> --- a/include/uapi/linux/pci_regs.h
-> +++ b/include/uapi/linux/pci_regs.h
-> @@ -552,6 +552,7 @@
->  #define  PCI_EXP_RTCTL_PMEIE	0x0008	/* PME Interrupt Enable */
->  #define  PCI_EXP_RTCTL_CRSSVE	0x0010	/* CRS Software Visibility Enable */
->  #define PCI_EXP_RTCAP		30	/* Root Capabilities */
-> +#define  PCI_EXP_RTCAP_CRSVIS	0x0001	/* CRS software visibility capability */
->  #define PCI_EXP_RTSTA		32	/* Root Status */
->  #define PCI_EXP_RTSTA_PME	0x00010000 /* PME status */
->  #define PCI_EXP_RTSTA_PENDING	0x00020000 /* PME pending */
-> -- 
-> 1.7.9.5
+
