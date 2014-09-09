@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508AbaIILmV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:42:21 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18253 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504AbaIILmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:42:20 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+/kDdyUFqWQYCeKBX7zKDOOlZRokGSoOo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan BE28D5DC2D4
-Date: Tue, 9 Sep 2014 07:42:03 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Pavel Machek <pavel@denx.de>
-Cc: Matti Vaittinen <matti.vaittinen@nsn.com>,
-        ext Mark Rutland <mark.rutland@arm.com>,
-        ext Guenter Roeck <linux@roeck-us.net>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "san@rosetechnology.dk" <san@rosetechnology.dk>,
-        "hs@denx.de" <hs@denx.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
-Message-ID: <20140909114203.GL30828@titan.lakedaemon.net>
-References: <20140828161025.GO14650@leverpostej>
- <20140828164825.GA12153@roeck-us.net>
- <20140828172842.GF12769@titan.lakedaemon.net>
- <20140828174034.GC15307@roeck-us.net>
- <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140829104001.GB19424@leverpostej>
- <20140908135242.GA21412@amd>
- <20140908145825.GO12081@leverpostej>
- <20140909062158.GB21342@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140909113425.GC15404@amd>
+	id S1756590AbaIILm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:42:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44255 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931AbaIILm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 07:42:56 -0400
+Date: Tue, 9 Sep 2014 13:42:50 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: dougthompson@xmission.com, m.chehab@samsung.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] edac, amd64_edac: Modify usage of
+ amd64_read_dct_pci_cfg()
+Message-ID: <20140909114250.GA30662@nazgul.tnic>
+References: <1409679957-3536-1-git-send-email-aravind.gopalakrishnan@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140909113425.GC15404@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1409679957-3536-1-git-send-email-aravind.gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 01:34:25PM +0200, Pavel Machek wrote:
-...
-> > _Maybe_ 
-> > diode-connected = <1>; or 
-> > diode-connected = <0>; 
-> 
-> That should work.
+On Tue, Sep 02, 2014 at 12:45:57PM -0500, Aravind Gopalakrishnan wrote:
+> @@ -495,15 +493,56 @@ int __amd64_read_pci_cfg_dword(struct pci_dev *pdev, int offset,
+>  			       u32 *val, const char *func);
+>  int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
+>  				u32 val, const char *func);
+> -
+> +void f15h_select_dct(struct amd64_pvt *pvt, u8 dct);
+>  #define amd64_read_pci_cfg(pdev, offset, val)	\
+>  	__amd64_read_pci_cfg_dword(pdev, offset, val, __func__)
+>  
+>  #define amd64_write_pci_cfg(pdev, offset, val)	\
+>  	__amd64_write_pci_cfg_dword(pdev, offset, val, __func__)
+>  
+> -#define amd64_read_dct_pci_cfg(pvt, offset, val) \
+> -	pvt->ops->read_dct_pci_cfg(pvt, offset, val, __func__)
+> +/*
+> + * Depending on the family, F2 DCT reads need special handling:
+> + *
+> + * K8: has a single DCT only and no address offsets >= 0x100
+> + *
+> + * F10h: each DCT has its own set of regs
+> + *	DCT0 -> F2x040..
+> + *	DCT1 -> F2x140..
+> + *
+> + * F16h: has only 1 DCT
+> + *
+> + * For all above families, we should use the 'raw' version
+> + * i.e, amd64_read_pci_cfg() function
+> + */
+> +static inline int amd64_read_dct_pci_cfg(struct amd64_pvt *pvt, u8 dct,
+> +					 int offset, u32 *val)
 
-meh.  The presence or absence of the property should express the
-boolean.
+Why is this function in the header since it is being used only in
+amd64_edac.c, AFAICT?
 
-The safe state should be the default (property absent), and the property
-name should describe the state when the property is present.
+This makes you export f15h_select_dct() too, for no apparent reason.
 
-thx,
+> +{
+> +	if (pvt->fam == 0xf) {
+> +		if (dct || offset >= 0x100)
+> +			return -EINVAL;
+> +	} else if (pvt->fam == 0x10 && dct) {
+> +		/*
+> +		 * Note: If ganging is enabled, barring the regs
+> +		 * F2x[1,0]98 and F2x[1,0]9C; reads reads to F2x1xx
+> +		 * return 0. (cf. Section 2.8.1 F10h BKDG)
+> +		 */
+> +		if (dct_ganging_enabled(pvt))
+> +			return 0;
+> +
+> +		offset += 0x100;
+> +	} else if (pvt->fam == 0x15) {
+> +		/*
+> +		 * F15h: F2x1xx addresses do not map explicitly to DCT1.
+> +		 * We should select which DCT we access using F1x10C[DctCfgSel]
+> +		 */
+> +		dct = (dct && pvt->model == 0x30) ? 3 : dct;
+> +		f15h_select_dct(pvt, dct);
+> +
+> +	} else if (pvt->fam == 0x16 && dct)
+> +		return -EINVAL;
+> +
+> +	return amd64_read_pci_cfg(pvt->F2, offset, val);
+> +}
+>  
+>  int amd64_get_dram_hole_info(struct mem_ctl_info *mci, u64 *hole_base,
+>  			     u64 *hole_offset, u64 *hole_size);
 
-Jason.
+-- 
+Regards/Gruss,
+    Boris.
+--
