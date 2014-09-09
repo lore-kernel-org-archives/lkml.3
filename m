@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766AbaIINEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:04:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47843 "EHLO mga01.intel.com"
+	id S1756793AbaIINE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:04:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50422 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744AbaIINEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:04:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
-   d="scan'208";a="588546289"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v2 3/4] regulator/axp20x: use axp2xx consolidated header
-Date: Tue,  9 Sep 2014 06:02:54 -0700
-Message-Id: <1410267775-4683-4-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1753640AbaIINEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 09:04:55 -0400
+Message-ID: <540EFAF1.40703@ti.com>
+Date: Tue, 9 Sep 2014 08:04:49 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Mugunthan V N <mugunthanvnm@ti.com>
+CC: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
+        dt list <devicetree@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [resend PATCH 0/3] Add DRA7xx CPSW Ethernet support in Device
+ Tree
+References: <1410203998-8700-1-git-send-email-mugunthanvnm@ti.com>	<20140908193440.GC12150@kahuna>	<540EE4B0.70207@ti.com> <CAGo_u6riiMVTW2y1qZWdJ2QUVdxX7uZyaTO3tRTGivX8Pjni1w@mail.gmail.com> <540EF904.5070701@ti.com>
+In-Reply-To: <540EF904.5070701@ti.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AXP20x driver has been extended to support axp288 variant. Header file
-and common data structures has also been renamed to suit the new
-scope of devices supported.
+On 09/09/2014 07:56 AM, Mugunthan V N wrote:
+> On Tuesday 09 September 2014 05:45 PM, Nishanth Menon wrote:
+>> On Tue, Sep 9, 2014 at 6:29 AM, Mugunthan V N <mugunthanvnm@ti.com> wrote:
+>>>
+>>>> Sorry this is now blocked inside TI. could you explain the testing done
+>>>> for sleep state? did you attempt sleep mode before testing this?
+>>>>
+>>>
+>>> I have not tested sleep mode, just tested boot and ping test.
+>>
+>> I must NAK then for the reason that this is a patch that is just build
+>> tested and is not tested for the feature it claims to introduce.
+>>
+>>
+> 
+> Is suspend/resume supported in mainline, i was not able to test it.
+> 
+> root@dra7xx-evm:~# echo mem > /sys/power/state
+> -sh: echo: write error: Invalid argument
+> 
+> I was not able to use rtc wake also as the rtc device is not created.
 
-This patch makes use of the renamed header and structure.
+Right.. that is why I was curious how you posted a patch that
+supposedly supports sleep pin configurations in a kernel that does not
+support suspend-resume?
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- drivers/regulator/axp20x-regulator.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Hopefully we will have it supported in 3.18 kernel[1] - still need out
+of tree wakeup timer patch[2] for testing though..
 
-diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
-index 004aadb..c9b6803 100644
---- a/drivers/regulator/axp20x-regulator.c
-+++ b/drivers/regulator/axp20x-regulator.c
-@@ -20,7 +20,7 @@
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/regmap.h>
--#include <linux/mfd/axp20x.h>
-+#include <linux/mfd/axp2xx.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/of_regulator.h>
- 
-@@ -161,7 +161,7 @@ static struct of_regulator_match axp20x_matches[] = {
- 
- static int axp20x_set_dcdc_freq(struct platform_device *pdev, u32 dcdcfreq)
- {
--	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
-+	struct axp2xx_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
- 
- 	if (dcdcfreq < 750) {
- 		dcdcfreq = 750;
-@@ -232,7 +232,7 @@ static int axp20x_set_dcdc_workmode(struct regulator_dev *rdev, int id, u32 work
- static int axp20x_regulator_probe(struct platform_device *pdev)
- {
- 	struct regulator_dev *rdev;
--	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
-+	struct axp2xx_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
- 	struct regulator_config config = { };
- 	struct regulator_init_data *init_data;
- 	int ret, i;
+If you have at least tested on relevant branch which has the feature
+expected for 3.18, I might still be OK with the patch.
+
+[1]http://marc.info/?l=linux-kernel&m=141019565513129&w=2 and
+http://marc.info/?l=linux-kernel&m=141019566913133&w=2
+[2] details in http://marc.info/?l=linux-kernel&m=140871637106555&w=2
+
 -- 
-1.9.1
-
+Regards,
+Nishanth Menon
