@@ -1,170 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500AbaIINGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:06:30 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14639 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932455AbaIING0 (ORCPT
+	id S932544AbaIINGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:06:48 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52740 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932496AbaIINGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:06:26 -0400
-X-IronPort-AV: E=Sophos;i="5.04,491,1406584800"; 
-   d="scan'208";a="93756306"
-Date: Tue, 9 Sep 2014 15:05:41 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Dan Carpenter <dan.carpenter@oracle.com>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Drokin, Oleg" <oleg.drokin@intel.com>
-Subject: Re: [PATCH 6/7] staging: lustre: obdclass: expand the GOTO macro +
- break
-In-Reply-To: <20140909125410.GJ6549@mwanda>
-Message-ID: <alpine.DEB.2.10.1409091501300.2766@hadrien>
-References: <1410106715-9573-6-git-send-email-Julia.Lawall@lip6.fr> <20140909125410.GJ6549@mwanda>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 9 Sep 2014 09:06:30 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 8/8] blk-mq: support per-distpatch_queue flush machinery
+Date: Tue,  9 Sep 2014 21:05:49 +0800
+Message-Id: <1410267949-21904-9-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
+References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch supports to run one single lush machinery for
+each blk-mq dispatch queue, so that:
 
+- current init_request and exit_request callbacks can
+cover flush request too, then the ugly and buggy way of
+initializing flush request's pdu can be fixed
 
-On Tue, 9 Sep 2014, Dan Carpenter wrote:
+- flushing performance gets improved in case of multi hw-queue
 
-> On Sun, Sep 07, 2014 at 06:18:34PM +0200, Julia Lawall wrote:
-> > diff --git a/drivers/staging/lustre/lustre/obdclass/obd_config.c b/drivers/staging/lustre/lustre/obdclass/obd_config.c
-> > index f41695d..8a9752f 100644
-> > --- a/drivers/staging/lustre/lustre/obdclass/obd_config.c
-> > +++ b/drivers/staging/lustre/lustre/obdclass/obd_config.c
-> > @@ -1226,25 +1226,25 @@ int class_process_config(struct lustre_cfg *lcfg)
-> >  	}
-> >  	case LCFG_POOL_NEW: {
-> >  		err = obd_pool_new(obd, lustre_cfg_string(lcfg, 2));
-> > -		GOTO(out, err = 0);
-> > -		break;
-> > +		err = 0;
-> > +		goto out;
->
-> [ Warning:  this email is long and not related to your code.  It's just
->   the frustrations of dealing with lustre.  ]
->
-> So now the code reads:
->
-> 		err = obd_pool_new(obd, lustre_cfg_string(lcfg, 2));
-> 		err = 0;
->
-> That was there in the original code, and your patch is correct to leave
-> the suspicous looking code as is.  We used to have a GCC warning for
-> this but the linux kernel source has too much bad code so we had to
-> disable the warning.
->
-> I wonder what happens if obd_pool_new() fails?  Unfortunately "make
-> cscope" and "vim -t obd_pool_new" doesn't work with lustre so you have
-> to grep for it.
->
-> grep obd_pool_new drivers/staging/lustre/ -R |egrep '\.[ch]:'
->
-> This is the only caller so we can't compare with the other callers to
-> see if they check the return value.
->
-> Here is how the obd_pool_new() function is implemented.
->
->   1051  static inline int obd_pool_new(struct obd_device *obd, char *poolname)
->   1052  {
->   1053          int rc;
->   1054
->   1055          OBD_CHECK_DT_OP(obd, pool_new, -EOPNOTSUPP);
->   1056          OBD_COUNTER_INCREMENT(obd, pool_new);
->   1057
->   1058          rc = OBP(obd, pool_new)(obd, poolname);
->   1059          return rc;
->   1060  }
->
-> This whole function is just macros.  Let's see what they do:
->
->    460  #define OBD_CHECK_DT_OP(obd, op, err)                      \
->    461  do {                                                        \
->    462          if (!OBT(obd) || !OBP((obd), op)) {                  \
->    463                  if (err)                                        \
->    464                          CERROR("obd_" #op ": dev %d no operation\n",    \
->    465                                 obd->obd_minor);          \
->    466                  return err;                                 \
->    467          }                                                      \
->    468  } while (0)
->
-> Wow!  What a terrible macro!  None of the '\' are in a line.  There is
-> a hidden return statement in it which is a terrible thing and flow
-> control statements are not allowed inside macros.
->
-> I can't tell what OBT() and OBP() because the names are very ambiguous.
->
->    328  #define OBT(dev)        (dev)->obd_type
->    329  #define OBP(dev, op)    (dev)->obd_type->typ_dt_ops->o_ ## op
->    330  #define MDP(dev, op)    (dev)->obd_type->typ_md_ops->m_ ## op
->
-> Ok.  "OB" stands for "obd".  T stands for "type".  The "P" probably
-> stands for pointer or operation.  MD is clear enough.
->
-> The OBP() macro adds an "o_" to the function pointer and the MDP() macro
-> adds an "m_".  That totally sucks because it makes the function pointer
-> hard to grep for.  There isn't another explanation, whoever wrote this
-> code is just being ornery.
->
-> Summary so far:  OBD_CHECK_DT_OP() checks to see if a function pointer
-> is NULL.
->
-> Let's see what OBD_COUNTER_INCREMENT() does.
->
->    361  #define OBD_COUNTER_INCREMENT(obdx, op)                    \
->    362          if ((obdx)->obd_stats != NULL) {                          \
->    363                  unsigned int coffset;                        \
->    364                  coffset = (unsigned int)((obdx)->obd_cntr_base) + \
->    365                          OBD_COUNTER_OFFSET(op);            \
->    366                  LASSERT(coffset < (obdx)->obd_stats->ls_num);     \
->    367                  lprocfs_counter_incr((obdx)->obd_stats, coffset); \
->    368          }
->    369
->
-> That's a densely packed block of messy code but it basically does what
-> you'd expect from the name.  Fair enough.
->
-> So the obd_pool_new() function verifies that ->o_pool_new is non-NULL,
-> it increments a counter and calls ->o_pool_new().  Let's take a look at
-> which functions implement ->o_pool_new().
->
-> grep -w o_pool_new drivers/staging/lustre/ -R | egrep '\.[ch]:'
->
-> The only implementation of this function is lov_pool_new().  Why do
-> we have a function pointer if there is only one implementation?  We
-> should remove this.
->
-> The lov_pool_new() function definitely can fail unexpectedly with
-> -ENOMEM.
->
-> Let's go back to the original code and see how the error should be
-> handled...  Oh...  Apparently this is an optional thing so we would
-> just ignore the error and continue.  The code is fine.
->
-> In any other subsystem it would have taken 30 seconds to read the code
-> because cscope would work and there wouldn't be the layers of
-> indirection.
->
-> I'm not convinced that having a function counter for calls to
-> lov_pool_new() is useful.  We could get the same information from ftrace
-> or other tools.  In my view, we could get rid of all the horrible macros
-> and the function pointers and the splitting names into half and the
-> layers of indirection and the debugging code and just call
-> lov_pool_new() directly.
+In both fio write and randwrite test over virtio-blk(4 hw queues,
+backed by nullblk) with sync=1, ioengine=sync, iodepth=64, numjobs=4,
+it is observed that througput gets increased by 70% in the VM
+over my laptop environment.
 
-I will look into it.  I can try to study up on several of the functions,
-and submit patches making a few changes, to be sure that I have not gotten
-rid of anything that seems important.
+The multi virtqueue feature isn't merged to QEMU yet, and patches for
+the feature can be found in below tree:
 
-If anyone knows the code well enough to know some of these
-transformations in advance, that would  be very helpful.
+	git://kernel.ubuntu.com/ming/qemu.git  	v2.1.0-mq.3
 
-julia
+And simply passing 'num_queues=4 vectors=5' should be enough to
+enable multi queue feature for QEMU virtio-blk.
+
+Suggested-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ block/blk-flush.c      |  141 ++++++++++++++++++++++++++++++++++++++----------
+ block/blk.h            |   12 ++++-
+ include/linux/blk-mq.h |    2 +
+ 3 files changed, 125 insertions(+), 30 deletions(-)
+
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 4a445a1..2fc79bf 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -482,57 +482,143 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
+ }
+ EXPORT_SYMBOL(blkdev_issue_flush);
+ 
+-static int blk_mq_init_flush(struct request_queue *q)
++static int blk_alloc_flush_queue(struct request_queue *q,
++		struct blk_mq_hw_ctx *hctx,
++		struct blk_flush_queue **pfq)
+ {
+-	struct blk_mq_tag_set *set = q->tag_set;
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q, NULL);
++	struct blk_flush_queue *fq;
++	int rq_sz = sizeof(struct request);
+ 
+-	spin_lock_init(&fq->mq_flush_lock);
++	if (hctx) {
++		int cmd_sz = q->tag_set->cmd_size;
++		int node = hctx->numa_node;
++
++		fq = kzalloc_node(sizeof(*fq), GFP_KERNEL, node);
++		if (!fq)
++			goto failed;
++
++		rq_sz = round_up(rq_sz + cmd_sz, cache_line_size());
++		fq->flush_rq = kzalloc_node(rq_sz, GFP_KERNEL, node);
++		if (!fq->flush_rq)
++			goto rq_failed;
++
++		spin_lock_init(&fq->mq_flush_lock);
++	} else {
++		fq = kzalloc(sizeof(*fq), GFP_KERNEL);
++		if (!fq)
++			goto failed;
++
++		fq->flush_rq = kzalloc(rq_sz, GFP_KERNEL);
++		if (!fq->flush_rq)
++			goto rq_failed;
++	}
++
++	INIT_LIST_HEAD(&fq->flush_queue[0]);
++	INIT_LIST_HEAD(&fq->flush_queue[1]);
++	INIT_LIST_HEAD(&fq->flush_data_in_flight);
+ 
+-	fq->flush_rq = kzalloc(round_up(sizeof(struct request) +
+-				set->cmd_size, cache_line_size()),
+-				GFP_KERNEL);
+-	if (!fq->flush_rq)
+-		return -ENOMEM;
++	*pfq = fq;
+ 	return 0;
++
++ rq_failed:
++	kfree(fq);
++ failed:
++	return -ENOMEM;
+ }
+ 
+-static void blk_mq_exit_flush(struct request_queue *q)
++static void blk_free_flush_queue(struct blk_flush_queue *fq)
+ {
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q, NULL);
++	if (!fq)
++		return;
+ 	kfree(fq->flush_rq);
+ 	kfree(fq);
+ }
+ 
+-int blk_init_flush(struct request_queue *q)
++static void __blk_mq_exit_flush(struct request_queue *q,
++		unsigned free_end, unsigned int exit_end)
++{
++	struct blk_mq_hw_ctx *hctx;
++	unsigned int k;
++	struct blk_flush_queue *fq;
++	struct blk_mq_tag_set *set = q->tag_set;
++	unsigned start_idx = set->queue_depth;
++
++	queue_for_each_hw_ctx(q, hctx, k) {
++		if (k >= free_end)
++			break;
++
++		fq = hctx->fq;
++		if (k < exit_end && set->ops->exit_request)
++			set->ops->exit_request(set->driver_data,
++					fq->flush_rq, k,
++					start_idx + k);
++
++		blk_free_flush_queue(fq);
++	}
++
++}
++
++static int blk_mq_init_flush(struct request_queue *q)
+ {
++	struct blk_mq_hw_ctx *hctx;
++	unsigned int i, j = 0;
++	struct blk_flush_queue *fq;
+ 	int ret;
+-	struct blk_flush_queue *fq = kzalloc(sizeof(*fq), GFP_KERNEL);
++	struct blk_mq_tag_set *set = q->tag_set;
++	unsigned start_idx = set->queue_depth;
+ 
+-	if (!fq)
+-		return -ENOMEM;
++	queue_for_each_hw_ctx(q, hctx, i) {
++		ret = blk_alloc_flush_queue(q, hctx, &fq);
++		if (ret)
++			goto fail;
++		hctx->fq = fq;
++	}
+ 
+-	q->fq = fq;
+-	INIT_LIST_HEAD(&fq->flush_queue[0]);
+-	INIT_LIST_HEAD(&fq->flush_queue[1]);
+-	INIT_LIST_HEAD(&fq->flush_data_in_flight);
++	queue_for_each_hw_ctx(q, hctx, j) {
++		fq = hctx->fq;
++		if (set->ops->init_request) {
++			ret = set->ops->init_request(set->driver_data,
++					fq->flush_rq, j, start_idx + j,
++					hctx->numa_node);
++			if (ret)
++				goto fail;
++		}
++	}
++
++	return 0;
++
++ fail:
++	__blk_mq_exit_flush(q, i, j);
++	return ret;
++}
++
++static void blk_mq_exit_flush(struct request_queue *q)
++{
++	struct blk_mq_tag_set *set = q->tag_set;
++
++	__blk_mq_exit_flush(q, set->nr_hw_queues, set->nr_hw_queues);
++}
++
++int blk_init_flush(struct request_queue *q)
++{
++	int ret;
+ 
+ 	if (q->mq_ops) {
+ 		ret = blk_mq_init_flush(q);
+ 		if (ret)
+ 			goto failed;
+ 	} else {
+-		ret = -ENOMEM;
+-		fq->flush_rq = kzalloc(sizeof(struct request), GFP_KERNEL);
+-		if (!fq->flush_rq)
++		struct blk_flush_queue *fq;
++
++		ret = blk_alloc_flush_queue(q, NULL, &fq);
++		if (ret)
+ 			goto failed;
++		q->fq = fq;
+ 	}
+ 
+ 	return 0;
+ 
+  failed:
+-	kfree(fq);
+-	q->fq = NULL;
+ 	return ret;
+ }
+ 
+@@ -540,9 +626,6 @@ void blk_exit_flush(struct request_queue *q)
+ {
+ 	if (q->mq_ops)
+ 		blk_mq_exit_flush(q);
+-	else {
+-		struct blk_flush_queue *fq = blk_get_flush_queue(q, NULL);
+-		kfree(fq->flush_rq);
+-		kfree(fq);
+-	}
++	else
++		blk_free_flush_queue(q->fq);
+ }
+diff --git a/block/blk.h b/block/blk.h
+index 30f8033..9dcc11c 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -2,6 +2,8 @@
+ #define BLK_INTERNAL_H
+ 
+ #include <linux/idr.h>
++#include <linux/blk-mq.h>
++#include "blk-mq.h"
+ 
+ /* Amount of time in which a process may batch requests */
+ #define BLK_BATCH_TIME	(HZ/50UL)
+@@ -31,7 +33,15 @@ extern struct ida blk_queue_ida;
+ static inline struct blk_flush_queue *blk_get_flush_queue(
+ 		struct request_queue *q, struct blk_mq_ctx *ctx)
+ {
+-	return q->fq;
++	struct blk_mq_hw_ctx *hctx;
++
++	if (!q->mq_ops)
++		return q->fq;
++	WARN_ON(!ctx);
++
++	hctx = q->mq_ops->map_queue(q, ctx->cpu);
++
++	return hctx->fq;
+ }
+ 
+ static inline void __blk_get_queue(struct request_queue *q)
+diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
+index a1e31f2..1f3c523 100644
+--- a/include/linux/blk-mq.h
++++ b/include/linux/blk-mq.h
+@@ -4,6 +4,7 @@
+ #include <linux/blkdev.h>
+ 
+ struct blk_mq_tags;
++struct blk_flush_queue;
+ 
+ struct blk_mq_cpu_notifier {
+ 	struct list_head list;
+@@ -34,6 +35,7 @@ struct blk_mq_hw_ctx {
+ 
+ 	struct request_queue	*queue;
+ 	unsigned int		queue_num;
++	struct blk_flush_queue	*fq;
+ 
+ 	void			*driver_data;
+ 
+-- 
+1.7.9.5
+
