@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368AbaIIRMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:12:19 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:64330 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164AbaIIRMR (ORCPT
+	id S1757226AbaIIROx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:14:53 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:34387 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055AbaIIROv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:12:17 -0400
-Date: Tue, 9 Sep 2014 19:12:13 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Message-ID: <20140909171213.GA19174@dhcp22.suse.cz>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
- <3827451.ToKxd7Xb2J@vostro.rjw.lan>
- <20140908222253.GB3806@mtj.dyndns.org>
- <2588099.AI1YmNFQ25@vostro.rjw.lan>
- <20140908225012.GE3806@mtj.dyndns.org>
- <20140909151655.GB4851@dhcp22.suse.cz>
- <20140909152336.GB8890@mtj.dyndns.org>
- <20140909160625.GC4851@dhcp22.suse.cz>
- <20140909164658.GB11748@mtj.dyndns.org>
+	Tue, 9 Sep 2014 13:14:51 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 9 Sep 2014 13:20:42 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: perf_fuzzer triggers instant reboot
+In-Reply-To: <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909164658.GB11748@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-09-14 01:46:58, Tejun Heo wrote:
-> Hello,
+On Tue, 9 Sep 2014, Vince Weaver wrote:
 > 
-> On Tue, Sep 09, 2014 at 06:06:25PM +0200, Michal Hocko wrote:
-> > > Even for userland tasks, try_to_freeze() can currently be anywhere in
-> > > the kernel.  The frequently used ones are few but there are some odd
-> > 
-> > I always thought that user space tasks can be in the fridge only on the
-> > way out from the kernel (get_signal_to_deliver). I have quickly greped
-> 
-> It *can* be anywhere.  We used to have some deep in nfs.  They got
-> removed later due to deadlocks but in theory they still can be
-> anywhere.
-> 
-> > the code and the only place I can see seems to be run_guest but that
-> > one bails out quickly when there are signals pending so it should be
-> > safe in this context.
-> > cifs is doing something suspicious (cifs_reconnect) but I didn't check
-> > more closely all the contexts it is called from.
-> 
-> Prolly something similar with what nfs was doing?
-> 
-> > > ones out, and, again, there's nothing enforcing any structure on
-> > > try_to_freeze() usage. 
-> > 
-> > Would it make sense to have try_to_freeze_user_task or similar and check
-> > for kernel thread in try_to_freeze and complain loudly if called from
-> > user task context? I mean does it even make sense to call try_to_freeze
-> > in the middle of kernel operation for a user task?
-> 
-> I personally think the whole try_to_freeze() was a mistake at least
-> for userland tasks.  We should have collected them in a (mostly)
-> single place like a jobctl stop.  I'm not sure whether distinguishing
-> the two interfaces would buy us much tho.
+> [  751.656861] NOHZ: local_softirq_pending 100
+> [  756.009271] traps: perf_fuzzer[4236] trap invalid opcode ip:4044c0 sp:7fffb0ed6f90 error:0
+> [  756.017590] BUG: unable to handle kernel paging request
 
-We can at least catch those who are doing something dubious. Then we
-would have only a single place for user tasks and signal handling code
-makes sense to me.
+so it turns out that while it seems reproducible, it must be some sort of 
+race condition and only happens like 75% of the time on a 3.17-rc4 kernel.
 
-> > > The other thing is that we may do quite a bit during exiting including
-> > > allocating memory. 
-> > 
-> > yes, we can allocate memory and even page fault on the exit path. But
-> > TIF_MEMDIE will make sure that the allocation will be successful if
-> > there is some memory left.
-> 
-> TIF_MEMDIE ensures forward progress so that the task can exit;
-> however, I'm not sure whether all the things that a task does during
-> exit are safe for PM freezes.
+Almost managed to get an oops that last time:
 
-Last time we were discussing this it was safe (I cannot
-find the particular discussion but here is the Rafael's
-Ack for the previous patch which handled the same case
-http://lkml.iu.edu//hypermail/linux/kernel/1109.3/00448.html)
--- 
-Michal Hocko
-SUSE Labs
+[  222.457213] NOHZ: local_softirq_pending 100
+[  222.712448] NOHZ: local_softirq_pending 100
+[  222.947573] NOHZ: local_softirq_pending 100
+[  229.168047] BUG: unable to handle kernel NULL pointer dereference at 0000000000000087
+[  229.172003] IP: [<ffffffff81062cde>] scheduler_tick+0x56/0xbb
+[  229.172003] PGD c4b72067 PUD c52df067 PMD 0 
+[  229.172003] Thread overran stack, or stack corrupted
+[  229.172003] Oops: 0000 [#1] SMP 
+[  229.172003] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg mcs7830 usbnet coretemp evdev psmouse pcspkr ohci_pci ohci_hcd  
+^P<C0><FF><FF><E8><FF><FF><A8>A!^A<88><FF><FF>hA!^A<88><FF>
+<FF>^P}<CB>7(OCE) 
+
+any advice on tracking this down?  I can fire up ftrace but it's unclear 
+to me I will get anything useful as the system insta-reboots pretty 
+quickly.
+
+Vince
