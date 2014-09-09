@@ -1,159 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108AbaIIWQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:16:26 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:28424 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752691AbaIIWQJ (ORCPT
+	id S1752621AbaIIWUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:20:19 -0400
+Received: from smtprelay0193.hostedemail.com ([216.40.44.193]:40632 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752099AbaIIWUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:16:09 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Tue, 09 Sep 2014 15:30:28 -0700
-Message-ID: <540F7A19.3070704@synaptics.com>
-Date: Tue, 9 Sep 2014 15:07:21 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>
-CC: <linux-input@vger.kernel.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
-References: <20140908165520.GA35051@core.coreip.homeip.net> <540EAFD1.2040307@redhat.com> <20140909170636.GA28774@core.coreip.homeip.net>
-In-Reply-To: <20140909170636.GA28774@core.coreip.homeip.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+	Tue, 9 Sep 2014 18:20:17 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1568:1593:1594:1711:1714:1730:1747:1777:1792:1801:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3871:3872:3873:3874:4250:4321:4605:5007:7652:7903:9040:9149:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: vest84_1f4ec42a7595a
+X-Filterd-Recvd-Size: 2046
+Message-ID: <1410301213.22675.4.camel@joe-AO725>
+Subject: Re: [PATCH] tracing: fix typo in pr_warning() message
+From: Joe Perches <joe@perches.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 09 Sep 2014 15:20:13 -0700
+In-Reply-To: <1410299369-20029-1-git-send-email-luis.henriques@canonical.com>
+References: <1410299369-20029-1-git-send-email-luis.henriques@canonical.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.2.20.38]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 10:06 AM, Dmitry Torokhov wrote:
-> On Tue, Sep 09, 2014 at 09:44:17AM +0200, Hans de Goede wrote:
->> Hi,
->>
->> On 09/08/2014 06:55 PM, Dmitry Torokhov wrote:
->>> ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
->>> physical buttons, instead they generate primary button click when user
->>> presses somewhat hard on the surface of the touchpad. Unfortunately they
->>> also report primary button click whenever there are 2 or more contacts
->>> on the pad, messing up all multi-finger gestures (2-finger scrolling,
->>> multi-finger tapping, etc). To cope with this behavior we introduce a
->>> delay (currently 50 msecs) in reporting primary press in case more
->>> contacts appear.
->>>
->>> For now we are using DMI matching to detect ForcePads, hopefully we'll
->>> be able to figure a better way down the road.
->> What about using the pnp-id, in my experience with the recent lenovo
->> laptops that tends to be more reliable.
-> Not sure. So far I only know of HP 1040 having it. FWIW:
->
-> dtor@dtor-glaptop:~$ cat /sys/bus/pnp/drivers/i8042\ aux/00\:07/id
-> SYN300d
-> SYN0100
-> SYN0002
-> PNP0f13
->
-> I think if we see generalities we can switch over later. I hope
-> Chris/Andrew will come with a capability bit though :)
+On Tue, 2014-09-09 at 22:49 +0100, Luis Henriques wrote:
+> Replace 'produciton' by 'production'
+> 
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  kernel/trace/trace.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 8a528392b1f4..f3ef80c8914c 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2028,7 +2028,7 @@ void trace_printk_init_buffers(void)
+>  	pr_warning("** trace_printk() being used. Allocating extra memory.  **\n");
+>  	pr_warning("**                                                      **\n");
+>  	pr_warning("** This means that this is a DEBUG kernel and it is     **\n");
+> -	pr_warning("** unsafe for produciton use.                           **\n");
+> +	pr_warning("** unsafe for production use.                           **\n");
+>  	pr_warning("**                                                      **\n");
+>  	pr_warning("** If you see this message and you are not debugging    **\n");
+>  	pr_warning("** the kernel, report this immediately to your vendor!  **\n");
 
-The ForcePad capabilities bit is 1 << 15.
+Perhaps s/pr_warning/pr_warn/ too?
 
->
->> Christopher, Andrew (added to the CC), can one of you tell us if there
->> is a capability bit to detect this, and if not can you perhaps provide
->> a list of pnp-ids of devices which behave like this ?
->>
->>> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->>> ---
->>>   drivers/input/mouse/synaptics.c | 80 ++++++++++++++++++++++++++++++++---------
->>>   drivers/input/mouse/synaptics.h |  5 +++
->>>   2 files changed, 69 insertions(+), 16 deletions(-)
->>>
->>> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
->>> index e8573c6..5de1bb6 100644
->>> --- a/drivers/input/mouse/synaptics.c
->>> +++ b/drivers/input/mouse/synaptics.c
->>> @@ -618,6 +618,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
->>>   	priv->agm_pending = true;
->>>   }
->>>   
->>> +static bool is_forcepad;
->>> +
->>>   static int synaptics_parse_hw_state(const unsigned char buf[],
->>>   				    struct synaptics_data *priv,
->>>   				    struct synaptics_hw_state *hw)
->>> @@ -629,10 +631,58 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->>>   			 ((buf[0] & 0x04) >> 1) |
->>>   			 ((buf[3] & 0x04) >> 2));
->>>   
->>> +		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
->>> +			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
->>> +		    hw->w == 2) {
->>> +			synaptics_parse_agm(buf, priv, hw);
->>> +			return 1;
->>> +		}
->>> +
->>> +		hw->x = (((buf[3] & 0x10) << 8) |
->>> +			 ((buf[1] & 0x0f) << 8) |
->>> +			 buf[4]);
->>> +		hw->y = (((buf[3] & 0x20) << 7) |
->>> +			 ((buf[1] & 0xf0) << 4) |
->>> +			 buf[5]);
->>> +		hw->z = buf[2];
->>> +
->>>   		hw->left  = (buf[0] & 0x01) ? 1 : 0;
->>>   		hw->right = (buf[0] & 0x02) ? 1 : 0;
->>>   
->> Moving this up means that on clickpads the button will no longer
->> be checked + set for hw->w == 2 packets. That seems like an unintended
->> side effect.
-> I guess we can call it a side effect, but it is fine - we parse AGM and
-> stash the data, then when 2nd packet comes we parse and act upon it. In
-> the old code we'd parse x, y, z, in AGM etc. and then have it
-> overwritten with the data from the 2nd packet, here we do not bother.
->
->> If this is intended then this should probably be in its own
->> patch.
-> It does not make sense on its own as ForcePad support needs to know
-> values of Z and W when deciding how to handle primary click, otherwise
-> the old code was just fine.
->
->>> -		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
->>> +		if (is_forcepad) {
->>> +			/* XXX is there a proper capability bit for this? */
->>> +			/*
->>> +			 * ForcePads, like Clickpads, use middle button
->>> +			 * bits to report primary button clicks.
->>> +			 * Unfortunately they report primary button not only
->>> +			 * when user presses on the pad above certain threshold,
->>> +			 * but also when there are more than one finger on the
->>> +			 * touchpad, which interferes with out multi-finger
->>> +			 * gestures.
->>> +			 */
->>> +			if (hw->z == 0) {
->>> +				/* No contacts */
->>> +				priv->press = priv->report_press = false;
->>> +			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
->>> +				/*
->>> +				 * Single-finger touch with pressure above
->>> +				 * the threshold.
->>> +				 */
->>> +				if  (!priv->press) {
->>> +					priv->press_start = jiffies;
->>> +					priv->press = true;
->>> +				} else if (time_after(jiffies,
->>> +						priv->press_start +
->>> +							msecs_to_jiffies(50))) {
->>> +					priv->report_press = true;
->>> +				}
->> You're not setting a timer here, instead relying on there to be further events,
->> that is probably ok, but maybe put a comment to that extent here ?
-> I can, any suggestion on what you want me to say? "If single point
-> contact held pressure long enough start reporting primary click"?
->
-> Thanks.
->
 
