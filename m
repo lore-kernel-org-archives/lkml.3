@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498AbaIIDTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 23:19:36 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:53526 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754931AbaIIDTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 23:19:34 -0400
+	id S1755555AbaIIDVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 23:21:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34958 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753171AbaIIDVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 23:21:20 -0400
+Message-ID: <540E7211.9020909@zytor.com>
+Date: Mon, 08 Sep 2014 20:20:49 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <20140909030353.GI11706@mtj.dyndns.org>
-References: <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
- <20140909011059.GB11706@mtj.dyndns.org> <20140909012227.GE11706@mtj.dyndns.org>
- <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
- <20140909012933.GF11706@mtj.dyndns.org> <CAB=NE6V+of_RLQtjFpkLN49nKgfONx0T4cbu8kkNU69tUyNozw@mail.gmail.com>
- <20140909014754.GG11706@mtj.dyndns.org> <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
- <20140909023943.GH11706@mtj.dyndns.org> <CAB=NE6XH64QLfwoE3r7uf3SYKNJMzP-tjUkrxDwVca7G2zOxBQ@mail.gmail.com>
- <20140909030353.GI11706@mtj.dyndns.org>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 8 Sep 2014 20:19:12 -0700
-X-Google-Sender-Auth: UHtqmd_7uFz7Ja3KE5-8Puydt6Y
-Message-ID: <CAB=NE6UGNC7VHnkuv8huaVHLX3Kuh2kOTK92SCw07ehJ3LdXFg@mail.gmail.com>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-To: Tejun Heo <tj@kernel.org>
-Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+CC: paulmck@linux.vnet.ibm.com,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>			 <20140904090952.GW17454@tucnak.redhat.com>			 <540859EC.5000407@hurleysoftware.com>			 <20140904175044.4697aee4@alan.etchedpixels.co.uk>			 <5408C0AB.6050801@hurleysoftware.com>			 <20140905001751.GL5001@linux.vnet.ibm.com>			 <1409883098.5078.14.camel@jarvis.lan>		 <5409243C.4080704@hurleysoftware.com>			 <20140905040645.GO5001@linux.vnet.ibm.com>			 <1410066442.12512.13.camel@jarvis.lan>			 <20140907162146.GK5001@linux.vnet.ibm.com>		 <1410116687.2027.19.camel@jarvis.lan>	 <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>	 <540E3BFF.7080307@hurleysoftware.com> <1410231392.2028.15.camel@jarvis.lan>
+In-Reply-To: <1410231392.2028.15.camel@jarvis.lan>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 8:03 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Sep 08, 2014 at 07:57:28PM -0700, Luis R. Rodriguez wrote:
->> > I think we
->> > just should make exceptions sensible so that it works fine in practice
->> > for now (and I don't think that'd be too hard).  So, the only
->> > cooperation necessary from userland would be just saying "I don't
->> > wanna wait for device probing on module load."
+On 09/08/2014 07:56 PM, James Bottomley wrote:
 >>
->> But we're talking about drivers that have a flag that says 'you gotta
->> wait sucker', what do we want systemd to do then? I'd be happy if it'd
->> would not send the sigkill for these drivers, for example.
->
-> Hah?  Can you give me an example?  I'm having hard time imagining a
-> driver with such requirement given our current driver core
-> implementation.
+>> Yeah, the extra requirement I added is basically nonsense, since the
+>> only issue is what instructions the compiler is emitting. So if compiler
+>> thinks the alignment is natural and combines the writes -- ok. If the
+>> compiler thinks the alignment is off and doesn't combine the writes --
+>> also ok.
+> 
+> Yes, I think I can agree that the only real problem is gcc thinking the
+> store or load needs splitting.
+> 
 
-I didn't say I had one in mind, but if you're certain these *shouldn't
-exist* that's sufficient by me as well.
+That seems much saner, and yes, that applies to any architecture which
+needs unaligned references.  Now, if the references are *actually*
+unaligned they can end up being split even on x86, especially if they
+cross cache line boundaries.
 
-OK so I'll respin this series to enable a sysctl that would enable
-async probe for *all drivers* using queue_work(system_unbound_wq) and
-only use sync probe for now on request_module() users, we'll address
-scheduling issues as they come up. I'll be ignoring built-in.
+	-hpa
 
-On the systemd side of things it should enable this sysctl and for
-older kernels what should it do?
 
- Luis
