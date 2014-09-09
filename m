@@ -1,37 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaIIXhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 19:37:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33795 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaIIXhi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 19:37:38 -0400
-Date: Tue, 09 Sep 2014 16:37:33 -0700 (PDT)
-Message-Id: <20140909.163733.1827908634029213952.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linville@tuxdriver.com, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, herself@thefumon.com, linux@roeck-us.net,
-        geert@linux-m68k.org, broonie@kernel.org
-Subject: Re: linux-next: build failure after merge of the wireless-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140910092819.7b0b0ae7@canb.auug.org.au>
-References: <20140908184253.74ff5470@canb.auug.org.au>
-	<20140910092819.7b0b0ae7@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Sep 2014 16:37:37 -0700 (PDT)
+	id S1751818AbaIIXhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 19:37:37 -0400
+Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:28312
+	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750978AbaIIXhf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 19:37:35 -0400
+From: Anish Bhatt <anish@chelsio.com>
+To: Michael Chan <mchan@broadcom.com>
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        "eddie.wai@broadcom.com" <eddie.wai@broadcom.com>,
+        Jim Davis <jim.epost@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: RE: randconfig build error with next-20140909, in
+ drivers/net/ethernet/broadcom/cnic.c
+Thread-Topic: randconfig build error with next-20140909, in
+ drivers/net/ethernet/broadcom/cnic.c
+Thread-Index: AQHPzDvJUu4bLmC2JEOt957Ln3rhrpv5OvG1gACAmgD//4+vrYAAlBwA//+Nz0SAAHkMgP//jHnA
+Date: Tue, 9 Sep 2014 23:36:41 +0000
+Message-ID: <525DB349B3FB5444AE057A887CB2A8D88E3EB8@nice.asicdesigners.com>
+References: <CA+r1ZhhZynUKSeZnya67z9sph4+tpjO4E7jLZKc0EG4azxFdYA@mail.gmail.com>
+	 <525DB349B3FB5444AE057A887CB2A8D88E0BFB@nice.asicdesigners.com>
+	 ,<1410295676.7520.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <525DB349B3FB5444AE057A887CB2A8D88E3CEC@nice.asicdesigners.com>
+	 ,<540F8582.50703@infradead.org>
+	 <525DB349B3FB5444AE057A887CB2A8D88E3E42@nice.asicdesigners.com>
+ <1410304835.7520.27.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+In-Reply-To: <1410304835.7520.27.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.161.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 10 Sep 2014 09:28:19 +1000
 
-> Hi Dave,
- ...
-> This fix patch is now needed in the net-next tree ...
 
-Applied thanks Stephen.
+> -----Original Message-----
+> From: Michael Chan [mailto:mchan@broadcom.com]
+> Sent: Tuesday, September 9, 2014 4:21 PM
+> To: Anish Bhatt
+> Cc: Randy Dunlap; eddie.wai@broadcom.com; Jim Davis; Stephen Rothwell;
+> linux-next; linux-kernel; David S. Miller; netdev; James Bottomley
+> Subject: RE: randconfig build error with next-20140909, in
+> drivers/net/ethernet/broadcom/cnic.c
+> 
+> On Tue, 2014-09-09 at 23:16 +0000, Anish Bhatt wrote:
+> > > It would be really good if SCSI_NETLINK depended on NET instead of
+> selected NET.
+> > > We shouldn't have kconfig symbols that use 'select' on entire
+> subsystems.
+> >
+> > As a test, I was able to fix this by this approach : change
+> > SCSI_NETLINK to depend on NET instead of selecting NET, and replacing
+> > 'select NETDEVICES ETHERNET NET_VENDOR_BROADCOM CNIC' to
+> 'depends on
+> > CNIC' in bnx2i & bnx2fc. (as CNIC already has a dependency on those).
+> > This removes the need to check for IPV6 in bnx2i/fc Kconfigs as well.
+> >
+> > The side effect is that you won't see BNX2 drivers unless CNIC is
+> > selected, similar for SCSI_NETLINK as well, not sure if there are any other
+> implications.
+> 
+> Right.  I think it is more user-friendly for BNX2I and BNX2FC to select CNIC.
+> CNIC is not useful by itself and it makes more sense to select it automatically
+> when BNX2I/BNX2FC are enabled.
+> 
+
+Ok, it can work leaving 'select CNIC' as is, the key is changing the dependency
+for SCSI_NETLINK from 'select  NET' to 'depends on NET' and is basically what 
+fixes the issue with make.   removing  'select NETDEVICES ETHERNET 
+NET_VENDOR_BROADCOM' from the bnx2i/fc modules is just cleanup.
+
+bnx2i/bnx2fc need a check on IPV6 if we leave 'select CNIC' as is.
+
+I have a patch for this ready, but I don't know too much about SCSI_NETLINK,
+so maybe some else can chime in if this is a good idea ?
+-Anish
