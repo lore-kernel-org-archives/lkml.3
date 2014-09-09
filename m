@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544AbaIIMNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:13:12 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:43244 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101AbaIIMNL (ORCPT
+	id S1756506AbaIIMOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:14:19 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:12423 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352AbaIIMOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:13:11 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org
-Subject: [PATCH] asm-generic/io.h: Implement read[bwlq]_relaxed()
-Date: Tue,  9 Sep 2014 13:12:40 +0100
-Message-Id: <1410264760-29756-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Tue, 9 Sep 2014 08:14:17 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-ad-540eef140149
+Message-id: <540EEF0B.3040202@samsung.com>
+Date: Tue, 09 Sep 2014 14:14:03 +0200
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, s.nawrocki@samsung.com,
+        mturquette@linaro.org, naushad@samsung.com
+Subject: Re: [PATCH] clk: samsung: exynos3250: fix width field of mout_mmc0/1
+References: <1409918081-2464-1-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1409918081-2464-1-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t/xy7oi7/lCDFpXCVq8fmFo0bvgKpvF
+	psfXWC0u75rDZjHj/D4mi6cTLrJZfDr6n9Vi0dYv7BaH37SzWqza9YfRgctj56y77B53ru1h
+	89i8pN6jb8sqRo/Pm+QCWKO4bFJSczLLUov07RK4MhatbGApaOCsuHHrMVsD4zH2LkYODgkB
+	E4mji3y6GDmBTDGJC/fWs3UxcnEICSxllFi16zgjhPOZUWLHtTNsIFW8AloSm5YtYgKxWQRU
+	Jeb+7gCLswkYS2xevgTMFhUIk3j26yATRL2gxI/J91hABokITGOUuHjpNjtIglmgTGLhjWlg
+	RcICvhK72k6B2UIC7hJzPzxhBbE5BTwk/m64xgJRbybx5eVhVghbXmLzmrfMExgFZiHZMQtJ
+	2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihETAlx2Mi49ZHWIU4GBU4uFtyOAL
+	EWJNLCuuzD3EKMHBrCTCa/0CKMSbklhZlVqUH19UmpNafIiRiYNTqoExKGj5MbHHRmmirs/6
+	zr28bLp399Hvfj9taxsDe3xbWPPMb8vYm0l9dfnUImd0TkQ1tr+c1+phzNbtu4putzycuEjR
+	T+/p6Xf6D8peCq1tl1pdY1qZWbn7wDf7nw/2X50/uZGX7Yq+nduGTUWXlhhq7iw0OrT3f0Fk
+	Pu8NNq6PF5Sv/TGQu9ijxFKckWioxVxUnAgAqasTd14CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the read[bwlq]_relaxed() family are implemented on every
-architecture except blackfin, m68k[1], metag, openrisc, s390[2] and
-score. Increasingly drivers are being optimized to exploit relaxed
-reads putting these architectures at risk of compilation failures for
-shared drivers.
+On 05.09.2014 13:54, Pankaj Dubey wrote:
+> As per Exynos3250 user manual mmc0/1 mux selection has 4 bit wide.
+>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>   drivers/clk/samsung/clk-exynos3250.c |    4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
 
-This patch addresses this by providing implementations of
-read[bwlq]_relaxed() that are identical to the equivalent read[bwlq]().
-All the above architectures include asm-generic/io.h .
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Note that currently only eight architectures (alpha, arm, arm64, avr32,
-hexagon, microblaze, mips and sh) implement write[bwlq]_relaxed() meaning
-these functions are deliberately not included in this patch.
+Best regards,
+Krzysztof
 
-[1] m68k includes the relaxed family only when configured *without* MMU.
-[2] s390 requires CONFIG_PCI to include the relaxed family.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org
----
- include/asm-generic/io.h | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 975e1cc..85ea117 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -66,6 +66,16 @@ static inline u32 readl(const volatile void __iomem *addr)
- 	return __le32_to_cpu(__raw_readl(addr));
- }
-
-+#ifndef readb_relaxed
-+#define readb_relaxed __raw_readb
-+#endif
-+#ifndef readw_relaxed
-+#define readw_relaxed readw
-+#endif
-+#ifndef readl_relaxed
-+#define readl_relaxed readl
-+#endif
-+
- #ifndef __raw_writeb
- static inline void __raw_writeb(u8 b, volatile void __iomem *addr)
- {
-@@ -105,6 +115,10 @@ static inline u64 readq(const volatile void __iomem *addr)
- 	return __le64_to_cpu(__raw_readq(addr));
- }
-
-+#ifndef readq_relaxed
-+#define readq_relaxed readq
-+#endif
-+
- #ifndef __raw_writeq
- static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
- {
---
-1.9.3
+>
+> diff --git a/drivers/clk/samsung/clk-exynos3250.c b/drivers/clk/samsung/clk-exynos3250.c
+> index 7a17bd4..e1cb464 100644
+> --- a/drivers/clk/samsung/clk-exynos3250.c
+> +++ b/drivers/clk/samsung/clk-exynos3250.c
+> @@ -335,8 +335,8 @@ static struct samsung_mux_clock mux_clks[] __initdata = {
+>
+>   	/* SRC_FSYS */
+>   	MUX(CLK_MOUT_TSADC, "mout_tsadc", group_sclk_p, SRC_FSYS, 28, 4),
+> -	MUX(CLK_MOUT_MMC1, "mout_mmc1", group_sclk_p, SRC_FSYS, 4, 3),
+> -	MUX(CLK_MOUT_MMC0, "mout_mmc0", group_sclk_p, SRC_FSYS, 0, 3),
+> +	MUX(CLK_MOUT_MMC1, "mout_mmc1", group_sclk_p, SRC_FSYS, 4, 4),
+> +	MUX(CLK_MOUT_MMC0, "mout_mmc0", group_sclk_p, SRC_FSYS, 0, 4),
+>
+>   	/* SRC_PERIL0 */
+>   	MUX(CLK_MOUT_UART1, "mout_uart1", group_sclk_p, SRC_PERIL0, 4, 4),
+>
 
