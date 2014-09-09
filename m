@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692AbaIIKkz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:40:55 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:36167 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785AbaIIK1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:27:15 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 12/48] staging: comedi: amplc_pci224: replace comedi_board() calls
-Date: Tue,  9 Sep 2014 11:26:21 +0100
-Message-Id: <1410258417-28230-13-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
-References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
+	id S1756896AbaIIKlB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:41:01 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33613 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756699AbaIIKk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:40:58 -0400
+Message-ID: <540ED929.5040305@hurleysoftware.com>
+Date: Tue, 09 Sep 2014 06:40:41 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>			 <20140904090952.GW17454@tucnak.redhat.com>			 <540859EC.5000407@hurleysoftware.com>			 <20140904175044.4697aee4@alan.etchedpixels.co.uk>			 <5408C0AB.6050801@hurleysoftware.com>			 <20140905001751.GL5001@linux.vnet.ibm.com>			 <1409883098.5078.14.camel@jarvis.lan>		 <5409243C.4080704@hurleysoftware.com>			 <20140905040645.GO5001@linux.vnet.ibm.com>			 <1410066442.12512.13.camel@jarvis.lan>			 <20140907162146.GK5001@linux.vnet.ibm.com>		 <1410116687.2027.19.camel@jarvis.lan>	 <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>	 <540E3BFF.7080307@hurleysoftware.com> <1410231392.2028.15.camel@jarvis.lan>
+In-Reply-To: <1410231392.2028.15.camel@jarvis.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The `comedi_board(dev)` inline function calls just return
-`dev->board_ptr`.  Expand the inline function calls.
+On 09/08/2014 10:56 PM, James Bottomley wrote:
+> On Mon, 2014-09-08 at 19:30 -0400, Peter Hurley wrote:
+>> On 09/08/2014 01:50 AM, James Bottomley wrote:
+>>>> But additionally, even if gcc combines adjacent writes _that are part
+>>>> of the program flow_ then I believe the situation is no worse than
+>>>> would otherwise exist.
+>>>>
+>>>> For instance, given the following:
+>>>>
+>>>> struct x {
+>>>> 	spinlock_t lock;
+>>>> 	long a;
+>>>> 	byte b;
+>>>> 	byte c;
+>>>> };
+>>>>
+>>>> void locked_store_b(struct x *p)
+>>>> {
+>>>> 	spin_lock(&p->lock);
+>>>> 	p->b = 1;
+>>>> 	spin_unlock(&p->lock);
+>>>> 	p->c = 2;
+>>>> }
+>>>>
+>>>> Granted, the author probably expects ordered writes of
+>>>> 	STORE B
+>>>> 	STORE C
+>>>> but that's not guaranteed because there is no memory barrier
+>>>> ordering B before C.
+>>>
+>>> Yes, there is: loads and stores may not migrate into or out of critical
+>>> sections.
+>>
+>> That's a common misconception.
+>>
+>> The processor is free to re-order this to:
+>>
+>> 	STORE C
+>> 	STORE B
+>> 	UNLOCK
+>>
+>> That's because the unlock() only guarantees that:
+>>
+>> Stores before the unlock in program order are guaranteed to complete
+>> before the unlock completes. Stores after the unlock _may_ complete
+>> before the unlock completes.
+>>
+>> My point was that even if compiler barriers had the same semantics
+>> as memory barriers, the situation would be no worse. That is, code
+>> that is sensitive to memory barriers (like the example I gave above)
+>> would merely have the same fragility with one-way compiler barriers
+>> (with respect to the compiler combining writes).
+>>
+>> That's what I meant by "no worse than would otherwise exist".
+> 
+> Actually, that's not correct.  This is actually deja vu with me on the
+> other side of the argument.  When we first did spinlocks on PA, I argued
+> as you did: lock only a barrier for code after and unlock for code
+> before.  The failing case is that you can have a critical section which
+> performs an atomically required operation and a following unit which
+> depends on it being performed.  If you begin the following unit before
+> the atomic requirement, you may end up losing.  It turns out this kind
+> of pattern is inherent in a lot of mail box device drivers: you need to
+> set up the mailbox atomically then poke it.  Setup is usually atomic,
+> deciding which mailbox to prime and actually poking it is in the
+> following unit.  Priming often involves an I/O bus transaction and if
+> you poke before priming, you get a misfire.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/amplc_pci224.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Take it up with the man because this was discussed extensively last
+year and it was decided that unlocks would not be full barriers.
+Thus the changes to memory-barriers.txt that explicitly note this
+and the addition of smp_mb__after_unlock_lock() (for two different
+locks; an unlock followed by a lock on the same lock is a full barrier).
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/staging/comedi/drivers/amplc_pci224.c
-index b65cd48..fa179d9 100644
---- a/drivers/staging/comedi/drivers/amplc_pci224.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci224.c
-@@ -393,7 +393,7 @@ static void
- pci224_ao_set_data(struct comedi_device *dev, int chan, int range,
- 		   unsigned int data)
- {
--	const struct pci224_board *thisboard = comedi_board(dev);
-+	const struct pci224_board *thisboard = dev->board_ptr;
- 	struct pci224_private *devpriv = dev->private;
- 	unsigned short mangled;
- 
-@@ -645,7 +645,7 @@ static int pci224_ao_check_chanlist(struct comedi_device *dev,
- 				    struct comedi_subdevice *s,
- 				    struct comedi_cmd *cmd)
- {
--	const struct pci224_board *thisboard = comedi_board(dev);
-+	const struct pci224_board *thisboard = dev->board_ptr;
- 	unsigned int range_check_0;
- 	unsigned int chan_mask = 0;
- 	int i;
-@@ -859,7 +859,7 @@ static void pci224_ao_start_pacer(struct comedi_device *dev,
- 
- static int pci224_ao_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- {
--	const struct pci224_board *thisboard = comedi_board(dev);
-+	const struct pci224_board *thisboard = dev->board_ptr;
- 	struct pci224_private *devpriv = dev->private;
- 	struct comedi_cmd *cmd = &s->async->cmd;
- 	int range;
-@@ -951,7 +951,7 @@ static void
- pci224_ao_munge(struct comedi_device *dev, struct comedi_subdevice *s,
- 		void *data, unsigned int num_bytes, unsigned int chan_index)
- {
--	const struct pci224_board *thisboard = comedi_board(dev);
-+	const struct pci224_board *thisboard = dev->board_ptr;
- 	struct comedi_cmd *cmd = &s->async->cmd;
- 	unsigned short *array = data;
- 	unsigned int length = num_bytes / sizeof(*array);
--- 
-2.1.0
+Code that expects ordered writes after an unlock needs to explicitly
+add the memory barrier.
+
+Regards,
+Peter Hurley
 
