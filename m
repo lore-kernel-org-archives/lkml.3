@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376AbaIIMgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:36:33 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:38146 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753585AbaIIMgb (ORCPT
+	id S1756512AbaIIMhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:37:17 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:60413 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933AbaIIMhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:36:31 -0400
-Message-ID: <540EF44B.4070907@itdev.co.uk>
-Date: Tue, 09 Sep 2014 13:36:27 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 9 Sep 2014 08:37:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: [PATCH v3 1/2] rtc: pcf8563: fix uninitialized use warning
+Date: Tue, 09 Sep 2014 14:36:30 +0200
+Message-ID: <19416272.eCNUZ3hTWV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540DCEB0.6030108@cogentembedded.com>
+References: <2750370.rlMuFcoBUA@wuerfel> <540DCEB0.6030108@cogentembedded.com>
 MIME-Version: 1.0
-To: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
-References: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
-In-Reply-To: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:SF7J1OFxCT/OyuB/bk9mLH8OeM7mtmpMowzwmUhmOdp
+ IkszEO1iW3YL82qbazc/HNT2bJGlPerBdnhyx0QSoLuHML7xB+
+ y4ENDnVe5/vYSzScJoJ8KekzszhAn60YgyEVhQrmBW4a50tECi
+ sNYBjsFspJj6Nt/AC6YdowOLBZsqntqkWkESSv2Wa1oXrTfRUQ
+ Da45bwtbJJVT+Qpa5FjfuWkrLjVEibvJTLzbAaQXpW/c3Cg/3m
+ 69vkmv0t4XZaZEhGU568/0YtbD9g40DnLDscvhFNnmgYAV23AF
+ 0sLBVt9VxMGMUIR+AFTGDLaHTPnuw8cou4juzPCI3HyaQvzwye
+ upRKLYqvj9BH6Ab8iDeA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 08:52, Sjoerd Simons wrote:
-> For i2c devices in OF the modalias exposed to userspace is i2c:<node
-> type>, for the Maxtouch driver this is i2c:maxtouch.
-> 
-> Add maxtouch to the i2c id table such that userspace can correctly
-> load the module for the device and drop the OF table as it's not
-> needed for i2c devices.
-> 
-> Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+gcc-4.9 found a potential condition under which the 'pending'
+variable may be used uninitialized:
 
-I've tested this and it does work. In fact, it seems that you can use
-	compatible = "i2c:atmel,maxtouch";
+drivers/rtc/rtc-pcf8563.c: In function 'pcf8563_irq':
+drivers/rtc/rtc-pcf8563.c:173:5: warning: 'pending' may be used uninitialized in this function [-Wmaybe-uninitialized]
 
-because the "atmel," is ignored in the matching.
+This is because in the pcf8563_get_alarm_mode() function, we
+check any nonzero return of pcf8563_read_block_data, but
+in the irq function we only check for negative values, so
+a possible positive value does not get detected if the compiler
+chooses not to inline the entire call chain.
 
-Before I could ack this patch, we will need to update this dts file:
-	arch/arm/boot/dts/s5pv210-goni.dts
-and this documentation file:
-	Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+Checking for any non-zero value in the interrupt handler as well
+is just as correct and lets the compiler know what we are doing,
+without needing a bogus initialization.
 
-thanks!
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
+index 5a197d9dc7e7..3a6f994c4da8 100644
+--- a/drivers/rtc/rtc-pcf8563.c
++++ b/drivers/rtc/rtc-pcf8563.c
+@@ -167,7 +167,7 @@ static irqreturn_t pcf8563_irq(int irq, void *dev_id)
+ 	char pending;
+ 
+ 	err = pcf8563_get_alarm_mode(pcf8563->client, NULL, &pending);
+-	if (err < 0)
++	if (err)
+ 		return err;
+ 
+ 	if (pending) {
+
