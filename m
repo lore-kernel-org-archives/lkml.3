@@ -1,209 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaIITbF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:31:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26005 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaIITbB convert rfc822-to-8bit (ORCPT
+	id S1751824AbaIITcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:32:11 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:36486 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaIITcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:31:01 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: 3.17-rc1 oops during network interface configuration
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <53F47917.8080003@mellanox.com>
-Date: Tue, 9 Sep 2014 15:30:51 -0400
-Cc: linux-rdma <linux-rdma@vger.kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Saeed Mahameed <saeedm@mellanox.com>, Tal Alon <talal@mellanox.com>,
-        Yevgeny Petrilin <yevgenyp@mellanox.com>, _govind@gmx.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F580F466-28A5-4BDD-A338-D5C065A760C1@oracle.com>
-References: <53F1EF18.7010909@acm.org> <53F47917.8080003@mellanox.com>
-To: netdev@vger.kernel.org, LKML Kernel <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.1878.6)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 9 Sep 2014 15:32:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140908200422.GA6204@obsidianresearch.com>
+References: <1410163532-31057-1-git-send-email-lisovy@gmail.com>
+ <CAErSpo7sOc72V3g5tOov8Yj4nKiuJupaUTKEEecHMcqEUrzh_g@mail.gmail.com>
+ <20140908180357.GA6159@obsidianresearch.com> <CAErSpo7QQMRFKSk4vQCkDeEQQXX87Gq5YAKR+P4bxxcqMSJeDw@mail.gmail.com>
+ <20140908200422.GA6204@obsidianresearch.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 9 Sep 2014 13:31:46 -0600
+Message-ID: <CAErSpo56jB1Bf2JtYCGKXZBZqRF1jXFxGmeewPX_e6vSXueGyA@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ARM: PCI: Use PCI_CLASS_* defines for PCI class
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Rostislav Lisovy <lisovy@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 8, 2014 at 2:04 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> On Mon, Sep 08, 2014 at 01:39:40PM -0600, Bjorn Helgaas wrote:
+>
+>> > Essentially for that case the mvebu HW is a repurposed end port core,
+>> > so when working as a root port it presents an end port config space
+>> > (not a root port bridge config space). The BAR in that config space is
+>> > not relevant, so the old mvebu used code like this to hide it from the
+>> > PCI core. Otherwise the core will try to program it from the aperture,
+>> > and the default BAR size is really big, so it runs out of space.
 
-On Aug 20, 2014, at 6:31 AM, Or Gerlitz <ogerlitz@mellanox.com> wrote:
+This is a bit of a tangent, but an endpoint has a type 0 config
+header, while a root port is a bridge and has a type 1 config header.
+I don't understand how the PCI core can operate a root port correctly
+if that port has a type 0 config header.
 
-> On 18/08/2014 15:18, Bart Van Assche wrote:
->> Has anyone else already tried to boot kernel 3.17-rc1 on an IB system ? The
->> following call trace is triggered during boot on a system on which kernel
->> 3.16 runs fine:
-> 
-> Yep, I see it on my systems too.
-> 
-> I narrowed this down a bit to happen only when the port link type (these nodes have ConnectX) is IB and IPoIB gets to load.
-> 
-> I reverted (below) all the IPoIB changes since 3.16 (except for the trivial commit c835a67) and the crash still exists.
-> 
-> I guess this needs to go through systematic bisection.
+>> How does mvebu deal with this now?  I don't see anything similar in
+>> pci-mvebu.c.
+>
+> The new driver doesn't allow the core directly access to the end point
+> config space registers, the entire config space is managed by the
+> driver directly, exactly how the HW requires it to be set for root
+> port operation. The core sees the config space of a root port bridge
+> that is created by the driver.
+>
+>> If the BAR is still a functioning PCI BAR, i.e., it decodes address
+>> space and potentially responds to accesses there, we really should pay
+>> attention to it.  That doesn't mean we have to assign space to it, but
+>> for example, we might want to make sure we have PCI_COMMAND_MEM turned
+>> off.  If we just clear out the resource start/end/flags, the PCI core
+>> doesn't have enough information to do that.
+>
+> In mvebu land, the BAR does need to have a proper value. IIRC, with
+> the old driver the bootloader was expected to configure PCI to an
+> operational state, and the kernel was expected not to touch that BAR
+> register at all.
+>
+> For mvebu the new driver explicitly sets that BAR properly like this:
+>
+>         /* Setup BAR[1] to all DRAM banks. */
+>         mvebu_writel(port, dram->cs[0].base, PCIE_BAR_LO_OFF(1));
+>         mvebu_writel(port, 0, PCIE_BAR_HI_OFF(1));
+>         mvebu_writel(port, ((size - 1) & 0xffff0000) | 1,
+>                      PCIE_BAR_CTRL_OFF(1));
+>
+> [Note: mvebu has a memory mapped alias for the end port config space,
+>  which is what PCIE_BAR_LO_OFF is referencing.]
+>
+> Eg, it is matching the DRAM. This is because in an end port the BAR
+> claims incoming MemRd/MemWr TLPs, and for root port operation you want
+> the HW to claim all TLPs related to system memory.
+>
+> The old driver (linux/arch/arm/mach-orion5x/pci.c) did this:
+>
+> static void rc_pci_fixup(struct pci_dev *dev)
+> {
+>         /*
+>          * Prevent enumeration of root complex.
+>          */
+>         if (dev->bus->parent == NULL && dev->devfn == 0) {
+>                 int i;
+>
+>                 for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+>                         dev->resource[i].start = 0;
+>                         dev->resource[i].end   = 0;
+>                         dev->resource[i].flags = 0;
+>                 }
+>         }
+> }
+> DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL, PCI_ANY_ID, rc_pci_fixup);
+>
+> Which seems very similar to what you quoted?
 
-This crash happens when booting v3.17-rcN on any of my IB-enabled
-systems. I have both ConnectX-2 and mthca systems, all are affected.
+I haven't worked with devices like this before, so pardon my ignorance.
 
-I bisected this to:
+It sounds like when these devices are configured as root ports, they
+have BARs visible to the host, which is how dev->resource[] would get
+filled in to begin with.  We manage normal BARs so the CPU can perform
+MMIO accesses to the device.  In this case, it sounds like the BARs
+are more for the benefit of devices below the bridge that want to
+perform DMA.  The PCI core certainly wouldn't know what to do about
+something like that, so I agree the best thing to do is to clear out
+the resource completely and pretend it doesn't exist.  I guess a new
+(not repurposed) design would probably put stuff like this in
+device-specific config space, not in architected BARs.
 
-commit e0f31d8498676fda36289603a054d0d490aa2679
-Author:     Govindarajulu Varadarajan <_govind@gmx.com>
-AuthorDate: Mon Jun 23 16:07:58 2014 +0530
-Commit:     David S. Miller <davem@davemloft.net>
-CommitDate: Mon Jun 23 14:32:19 2014 -0700
-
-    flow_keys: Record IP layer protocol in skb_flow_dissect()
-
-    skb_flow_dissect() dissects only transport header type in ip_proto. It dose not
-    give any information about IPv4 or IPv6.
-    This patch adds new member, n_proto, to struct flow_keys. Which records the
-    IP layer type. i.e IPv4 or IPv6.
-    This can be used in netdev->ndo_rx_flow_steer driver function to dissect flow.
-    Adding new member to flow_keys increases the struct size by around 4 bytes.
-    This causes BUILD_BUG_ON(sizeof(qcb->data) < sz); to fail in
-    qdisc_cb_private_validate()
-    So increase data size by 4
-
-    Signed-off-by: Govindarajulu Varadarajan <_govind@gmx.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-
-This commit includes a hunk that increases the size of struct qdisc_skb_cb
-by at least 4 bytes:
-
-> diff --git a/include/net/sch_generic.h b/include/net/sch_generic.h
-> index 624f985..a3cfb8e 100644
-> --- a/include/net/sch_generic.h
-> +++ b/include/net/sch_generic.h
-> @@ -231,7 +231,7 @@ struct qdisc_skb_cb {
->         unsigned int            pkt_len;
->         u16                     slave_dev_queue_mapping;
->         u16                     _pad;
-> -       unsigned char           data[20];
-> +       unsigned char           data[24];
->  };
->  
->  static inline void qdisc_cb_private_validate(const struct sk_buff *skb, int sz)
-
-
-
-IPoIB defines the following structure in drivers/infiniband/ulp/ipoib/ipoib.h:
-
-> struct ipoib_cb {
->         struct qdisc_skb_cb     qdisc_cb;
->         u8                      hwaddr[INFINIBAND_ALEN];
-> };
-
-IPoIB keeps this in the sk_buff:cb field, which is exactly 48 bytes.
-After commit e0f31d84, the size of struct ipoib_cb on x86_64 becomes
-52 bytes.
-
-Thus IPoIB overruns sk_buff:cb, and trashes the sk_buff::_skb_refdst
-field, which contains a pointer. By the time we get into
-__dev_queue_xmit() and try to use the result of skb_dst(), that pointer
-is garbage, and we oops.
-
-Obviously, cb[] could be increased to 56 bytes to accommodate struct
-ipoib_cb. I tried this, and it is effective in preventing the oops on
-one of my systems.
-
-But I suspect there is an historical reason I’m not aware of that it
-has remained 48 bytes for years.
-
-
-> Or.
-> 
->> net.git]# git log --oneline --no-merges v3.16.. drivers/infiniband/ulp/ipoib/
->> 8a118a4 Revert "IB/ipoib: Use P_Key change event instead of P_Key polling mechanism"
->> 90e6f39 Revert "IB/ipoib: Avoid flushing the workqueue from worker context"
->> 030ade7 Revert "IB/ipoib: Avoid multicast join attempts with invalid P_key"
->> 97ba2ff Revert "IPoIB: Remove unnecessary test for NULL before debugfs_remove()"
->> e42fa20 IPoIB: Remove unnecessary test for NULL before debugfs_remove()
->> dd57c93 IB/ipoib: Avoid multicast join attempts with invalid P_key
->> 4eae374 IB/ipoib: Avoid flushing the workqueue from worker context
->> db84f88 IB/ipoib: Use P_Key change event instead of P_Key polling mechanism
->> c835a67 net: set name_assign_type in alloc_netdev()
-> 
-> 
->> BUG: unable to handle kernel paging request at ffff88090000007e
->> IP: __dev_queue_xmit+0x519
->> Call Trace:
->> ? __dev_queue_xmit+0x49
->> dev_queue_xmit+0x10
->> neigh_connected_output
->> ? ip_finish_output
->> ip_finish_output
->> ? ip_finish_output
->> ? netif_rx_ni
->> ip_mc_output
->> ip_local_out_sk
->> ip_send_skb
->> udp_send_skb
->> udp_sendmsg
->> ? ip_reply_glue_bits
->> ? __lock_is_held
->> inet_sendmsg
->> ? inet_sendmsg
->> sock_sendmsg
->> ? might_fault
->> ? might_fault
->> ? move_addr_to_kernel.part.38
->> SYSC_sendto
->> ? sysret_check
->> ? trace_hardirqs_on_caller
->> ? trace_hardirqs_on_thunk
->> SyS_sendto
->> system_call_fastpath
->> 
->> Kernel panic - not syncing: Fatal exception in interrupt
->> Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
->> drm_kms_helper: panic occurred, switching back to text console
->> 
->> A screenshot of this kernel oops can be found here:
->> https://drive.google.com/file/d/0B1YQOreL3_FxVDB5UTNwekF6LVU/
->> 
->> gdb translates the crash address into the following (not sure this makes sense
->> since offset 0x519 is past the end of __dev_queue_xmit()):
->> 
->> (gdb) list *(__dev_queue_xmit+0x519)
->> 0xffffffff8136bc89 is in netdev_adjacent_rename_links (net/core/dev.c:5167).
->> 5162    void netdev_adjacent_rename_links(struct net_device *dev, char *oldname)
->> 5163    {
->> 5164            struct netdev_adjacent *iter;
->> 5165
->> 5166            list_for_each_entry(iter, &dev->adj_list.upper, list) {
->> 5167                    netdev_adjacent_sysfs_del(iter->dev, oldname,
->> 5168                                              &iter->dev->adj_list.lower);
->> 5169                    netdev_adjacent_sysfs_add(iter->dev, dev,
->> 5170                                              &iter->dev->adj_list.lower);
->> 5171            }
->> 
->> And the address __dev_queue_xmit+0x49 is translated by gdb into:
->> 
->> (gdb) list *(__dev_queue_xmit+0x49)
->> 0xffffffff8136b7b9 is in __dev_queue_xmit (./arch/x86/include/asm/preempt.h:75).
->> 70       * The various preempt_count add/sub methods
->> 71       */
->> 72
->> 73      static __always_inline void __preempt_count_add(int val)
->> 74      {
->> 75              raw_cpu_add_4(__preempt_count, val);
->> 76      }
->> 77
->> 78      static __always_inline void __preempt_count_sub(int val)
->> 79      {
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
---
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+Bjorn
