@@ -1,62 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaIIC7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:59:10 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:54953 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198AbaIIC7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:59:09 -0400
+	id S1755280AbaIIDCq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 23:02:46 -0400
+Received: from mail-bn1on0141.outbound.protection.outlook.com ([157.56.110.141]:9680
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753802AbaIIDCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 23:02:44 -0400
+X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 23:02:44 EDT
+From: "Hong-Xing.Zhu@freescale.com" <Hong-Xing.Zhu@freescale.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Shawn Guo <Shawn.Guo@freescale.com>
+CC: Raymond van der Rots <raymond@electrocompaniet.no>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Tim Harvey <tharvey@gateworks.com>
+Subject: RE: [PATCH] imx6 PCI Host initialisation order
+Thread-Topic: [PATCH] imx6 PCI Host initialisation order
+Thread-Index: AQHPy0TIlq5CYJg2AkKj34Cl9RDVGJv3GWeAgABaOQCAAKX+sA==
+Date: Tue, 9 Sep 2014 02:47:03 +0000
+Message-ID: <9d6437c810424c6fb558179dac09cb2e@DM2PR0301MB0862.namprd03.prod.outlook.com>
+References: <BD2B99C7-743D-429F-801E-FCFAFAE4A7DB@electrocompaniet.no>
+ <20140908112810.GA2799@dragon>
+ <CAErSpo4scddSydpoVqb73pBvJshOq=YJcV17ePGe0uyQ+xymhw@mail.gmail.com>
+In-Reply-To: <CAErSpo4scddSydpoVqb73pBvJshOq=YJcV17ePGe0uyQ+xymhw@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0329B15C8A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019018)(6009001)(13464003)(24454002)(189002)(51704005)(199003)(377454003)(85306004)(86362001)(76576001)(108616004)(66066001)(74316001)(106116001)(15202345003)(107046002)(15975445006)(106356001)(2656002)(85852003)(92566001)(90102001)(87936001)(77096002)(31966008)(20776003)(74502001)(74662001)(64706001)(80022001)(81542001)(4396001)(99286002)(101416001)(54356999)(99396002)(19580405001)(95666004)(83072002)(77982001)(33646002)(76176999)(105586002)(81342001)(79102001)(21056001)(46102001)(19580395003)(50986999)(76482001)(97736003)(83322001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB351;H:DM2PR0301MB0862.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAHQdGtSkHuw22tLecFmo+aRafMM3CXDME-tU_5xoWLgstEnEZw@mail.gmail.com>
-References: <1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com>
-	<87ppfvrdux.fsf@x220.int.ebiederm.org>
-	<20140828014123.GF18016@ZenIV.linux.org.uk>
-	<CAHQdGtSkHuw22tLecFmo+aRafMM3CXDME-tU_5xoWLgstEnEZw@mail.gmail.com>
-Date: Mon, 8 Sep 2014 19:59:08 -0700
-Message-ID: <CAM_iQpUfHGvHfC9Omew7QM-npbSNs67cmpEgZW_q_r6+qQfU4g@mail.gmail.com>
-Subject: Re: [PATCH v2] nfs: fix kernel warning when removing proc entry
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Dan Aloni <dan@kernelim.com>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8932pJE003061
 
-On Mon, Sep 8, 2014 at 4:54 PM, Trond Myklebust
-<trond.myklebust@primarydata.com> wrote:
-> On Wed, Aug 27, 2014 at 6:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> On Tue, Aug 19, 2014 at 09:20:38PM -0700, Eric W. Biederman wrote:
->>> Cong Wang <xiyou.wangcong@gmail.com> writes:
->>>
->>> > I saw the following kernel warning:
->>>
->>> Cong thanks for finding and tracking this.  I was clearly asleep at the
->>> switch when I was testing my fix to the nfs client code :(
->>>
->>> I have applied this patch and will push it to Linus after it has a
->>> little bit to sit in linux-next.
->>
->>         Why does that code wank with one-by-one remove_proc_entry(), BTW?
->> remove_proc_subtree("nfsfs", net->proc_net) will take care of the whole pile
->> just fine, TYVM...  While we are it, there's no need to keep ->proc_nfsfs
->> at all - just have it in a local variable in nfs_fs_proc_net_init().
->
-> Since nobody sent me an updated version with the remove_proc_subtree
-> fix, I went ahead and edited the patch myself (see attachment). Cong,
-> please let me know if you disagree with that change, otherwise, that
-> will be the final patch sent upstream and Cc: stable # 3.4+.
->
-> I'll schedule cleanup patches to make the same changes to the original
-> nfs_fs_proc_exit() and nfs_fs_proc_init() and to remove (struct
-> nfs_net)->proc_nfsfs for merging in 3.18.
->
 
-Oops, I missed Al's reply and didn't know remove_proc_subtree() either.
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Tuesday, September 09, 2014 12:51 AM
+> To: Guo Shawn-R65073
+> Cc: Raymond van der Rots; Zhu Richard-R65037; linux-kernel@vger.kernel.org;
+> Lucas Stach; Tim Harvey
+> Subject: Re: [PATCH] imx6 PCI Host initialisation order
+> 
+> On Mon, Sep 8, 2014 at 5:28 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> > Hi Raymond,
+> >
+> > It seems that there is already a similar patch [1] from Tim floating
+> > on the list.
+> >
+> > Shawn
+> >
+> > [1] http://www.spinics.net/lists/linux-pci/msg33520.html
+> 
+> Yes.  MAINTAINERS lists Richard Zhu <r65037@freescale.com> and Shawn Guo
+> <shawn.guo@freescale.com> (hi Shawn :)) as the caretakers for pci-imx6.c.
+> Neither has acked it yet, and Richard asked for a comment update, which I
+> haven't seen yet.  So I haven't applied it yet.
+> 
+[Richard] Yes it is. I recommended to add one comment used to describe why
+the modification is required.
 
-Thanks for the update and it definitely looks good to me!
+> > On Mon, Sep 08, 2014 at 11:10:37AM +0200, Raymond van der Rots wrote:
+> >> Hi,
+> >>
+> >> The imx6dl on our hardware board frequently had problems bringing up the
+> PCI link, with or without peripherals connected. I found these issues to be
+> due to the initialisation order of the PCI Host.
+> >>
+> >> The host driver first enables the phy, and then enables its clocks. However,
+> according to the reference manual (IMX6SDLRM, page 2033):
+> >> > The phy_ref_ssp_en signal must remain deasserted until the reference
+> clock is running at the appropriate frequency, at which point phy_ref_ssp_en
+> can be asserted.
+> >>
+> >>
+> >> Which implies that the clocks should be brought up first, after which the
+> peripheral should be enabled.
+> >> This patch changes that initialisation order.
+> >>
+> >> I do not have other hardware with an imx6dl, so this patch has only been
+> tested on our board. Could someone confirm that this is more technically
+> correct or improves behaviour?
+> >>
+> >> Signed-off-by: Raymond van der Rots <raymond@electrocompaniet.no>
+> >> ---
+> >> diff --git a/drivers/pci/host/pci-imx6.c
+> >> b/drivers/pci/host/pci-imx6.c index a568efa..17c35b4 100644
+> >> --- a/drivers/pci/host/pci-imx6.c
+> >> +++ b/drivers/pci/host/pci-imx6.c
+> >> @@ -228,11 +228,6 @@ static int imx6_pcie_deassert_core_reset(struct
+> pcie_port *pp)
+> >>       struct imx6_pcie *imx6_pcie = to_imx6_pcie(pp);
+> >>       int ret;
+> >>
+> >> -     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
+> >> -                     IMX6Q_GPR1_PCIE_TEST_PD, 0 << 18);
+> >> -     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
+> >> -                     IMX6Q_GPR1_PCIE_REF_CLK_EN, 1 << 16);
+> >> -
+> >>       ret = clk_prepare_enable(imx6_pcie->pcie_phy);
+> >>       if (ret) {
+> >>               dev_err(pp->dev, "unable to enable pcie_phy clock\n");
+> >> @@ -254,6 +249,11 @@ static int imx6_pcie_deassert_core_reset(struct
+> pcie_port *pp)
+> >>       /* allow the clocks to stabilize */
+> >>       usleep_range(200, 500);
+> >>
+> >> +     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
+> >> +                     IMX6Q_GPR1_PCIE_TEST_PD, 0 << 18);
+> >> +     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
+> >> +                     IMX6Q_GPR1_PCIE_REF_CLK_EN, 1 << 16);
+> >> +
+> >>       /* Some boards don't have PCIe reset GPIO. */
+> >>       if (gpio_is_valid(imx6_pcie->reset_gpio)) {
+> >>               gpio_set_value(imx6_pcie->reset_gpio, 0);
+> >>
+> >>
+
+Best Regards
+Richard Zhu
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
