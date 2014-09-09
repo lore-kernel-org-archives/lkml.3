@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719AbaIINbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:31:24 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:52435 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168AbaIINbW (ORCPT
+	id S1756790AbaIINbc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:31:32 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:38438 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaIINb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:31:22 -0400
+	Tue, 9 Sep 2014 09:31:29 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
         acme@redhat.com, cebbert.lkml@gmail.com
-Subject: [PATCH v5 0/6] perf: add ability to sample interrupted machine state
-Date: Tue,  9 Sep 2014 15:30:51 +0200
-Message-Id: <1410269457-14426-1-git-send-email-eranian@google.com>
+Subject: [PATCH v5 2/6] perf/x86: add support for sampling PEBS machine state registers
+Date: Tue,  9 Sep 2014 15:30:53 +0200
+Message-Id: <1410269457-14426-3-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410269457-14426-1-git-send-email-eranian@google.com>
+References: <1410269457-14426-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This short patch series add the ability to sample the interrupted
-machine state for each hardware sample. This is useful to analyze
-the state after certain events, for instance for function value
-profiling after a call instruction.
+PEBS can capture machine state regs at retiremnt of the sampled
+instructions. When precise sampling is enabled on an event, PEBS
+is used, so substitute the interrupted state with the PEBS state.
+Note that not all registers are captured by PEBS. Those missing
+are replaced by the interrupt state counter-parts.
 
-The patch extends the interface with a new PERF_SAMPLE_REGS_INTR 
-smaple_type flag. The register to sample can be named in the
-sample_regs_intr bitmask for each event. The name and bit
-position for each register is architecture dependent and
-provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-The support is similar to PERF_SAMPLE_REGS_USER.
-
-On Intel x86, the series includes support for capturing the
-PEBS state as well. When precise sampling is used, the interrupted
-state is collect from the PEBS records, at least partially.
-The PEBS machine state is a subset of the machine state.
-
-The series provides access to this new feature in perf record
-with the -I option. It is possible to display the sampled
-register values using perf report -D.
-
-This patch series is the fundation for a future series adding
-function value profiling.
-
-In V2, we address the issues raised during reviews:
- - add sample parsing test
- - shorten perf record option to --intr-regs
- - added man page for perf record -I/--intr-regs option
- - refactor register printf code between user and intr regs
- - rebase to v3.16-rc3
-
-In V3, we rebase to 3.16.0+ and made the modifications suggested
-by PeterZ. We also integrated his patch to improve the layout
-of perf_sample_data.
-
-In V4, we rebase to 3.17-rc3 and we fix the ABI change issue 
-reported by Namhyung Kim.
-
-In V5, the patch is rebased to 3.17-rc4 and the bugs reported
-on LKML about the PEBS machine state copying code have been fixed
-(a few registers were missing).
-
-Peter Zijlstra (1):
-  perf: improve perf_sample_data struct layout
-
-Stephane Eranian (5):
-  perf: add ability to sample machine state on interrupt
-  perf/x86: add support for sampling PEBS machine state registers
-  perf tools: add core support for sampling intr machine state regs
-  perf/tests: add interrupted state sample parsing test
-  perf record: add new -I option to sample interrupted machine state
-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   20 +++++++++++
- include/linux/perf_event.h                |   37 ++++++++++---------
- include/uapi/linux/perf_event.h           |   15 +++++++-
- kernel/events/core.c                      |   49 +++++++++++++++++++++++--
- tools/perf/Documentation/perf-record.txt  |    6 ++++
- tools/perf/builtin-record.c               |    2 ++
- tools/perf/perf.h                         |    1 +
- tools/perf/tests/sample-parsing.c         |   55 +++++++++++++++++++++--------
- tools/perf/util/event.h                   |    1 +
- tools/perf/util/evsel.c                   |   46 +++++++++++++++++++++++-
- tools/perf/util/header.c                  |    1 +
- tools/perf/util/session.c                 |   44 ++++++++++++++++++++---
- 12 files changed, 235 insertions(+), 42 deletions(-)
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 9dc4199..285aaf4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -886,6 +886,26 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.bp = pebs->bp;
+ 	regs.sp = pebs->sp;
+ 
++	if (sample_type & PERF_SAMPLE_REGS_INTR) {
++		regs.ax = pebs->ax;
++		regs.bx = pebs->bx;
++		regs.cx = pebs->cx;
++		regs.dx = pebs->dx;
++		regs.si = pebs->si;
++		regs.di = pebs->di;
++		regs.sp = pebs->sp;
++		regs.bp = pebs->bp;
++
++		regs.r8 = pebs->r8;
++		regs.r9 = pebs->r9;
++		regs.r10 = pebs->r10;
++		regs.r11 = pebs->r11;
++		regs.r12 = pebs->r12;
++		regs.r13 = pebs->r13;
++		regs.r14 = pebs->r14;
++		regs.r15 = pebs->r15;
++	}
++
+ 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
+ 		regs.ip = pebs->real_ip;
+ 		regs.flags |= PERF_EFLAGS_EXACT;
 -- 
 1.7.9.5
 
