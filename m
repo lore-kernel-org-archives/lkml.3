@@ -1,61 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbaIIArU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:47:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8833 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477AbaIIArS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:47:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="383270707"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
-        "atull@opensource.altera.com" <atull@opensource.altera.com>
-Subject: RE: [PATCH 2/3 v2] GPIO: gpio-dwapb: Support Debounce
-Thread-Topic: [PATCH 2/3 v2] GPIO: gpio-dwapb: Support Debounce
-Thread-Index: AQHPyNcp8n6awOMU40SWtvGXv+WZgZvyM52AgAAS5sCAABnogIAFnQIw
-Date: Tue, 9 Sep 2014 00:47:11 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E983231@SHSMSX101.ccr.corp.intel.com>
-References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
-	 <1409928798-31895-3-git-send-email-alvin.chen@intel.com>
-	 <1409908999.30155.85.camel@intel.com>
-	 <4656BEB6164FC34F8171C6538F1A595B2E98298B@SHSMSX101.ccr.corp.intel.com>
- <1409918621.30155.90.camel@intel.com>
-In-Reply-To: <1409918621.30155.90.camel@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1755664AbaIIAsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:48:13 -0400
+Received: from us-mx2.synaptics.com ([192.147.44.131]:28871 "EHLO
+	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755318AbaIIAsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 20:48:12 -0400
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Mon, 08 Sep 2014 18:02:22 -0700
+Message-ID: <540E4C3A.3000408@synaptics.com>
+Date: Mon, 8 Sep 2014 17:39:22 -0700
+From: Andrew Duggan <aduggan@synaptics.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HID: rmi: check sanity of the incoming report
+References: <1409925435-6556-1-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1409925435-6556-1-git-send-email-benjamin.tissoires@redhat.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.2.20.38]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s890lSqI002351
 
-> > Since the 'debounce' feature also needs read/write, if we splite this
-> > patch, then for 'debounce', One patch use readl/writel, and another
-> > patch change to dwapb_read/write. It seems duplicate since the previous
-> patch use readl/writel and the fllowing one change it immediately.
-> > Since this patch is small, could we just make them together? How do you
-> think?
-> 
-> Make the dwapb_writel/readl patch goes first in the series.
-> 
-OK.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On 09/05/2014 06:57 AM, Benjamin Tissoires wrote:
+> In the Dell XPS 13 9333, it appears that sometimes the bus get confused
+> and corrupts the incoming data. It fills the input report with the
+> sentinel value "ff". Synaptics told us that such behavior does not comes
+> from the touchpad itself, so we filter out such reports here.
+>
+> Unfortunately, we can not simply discard the incoming data because they
+> may contain useful information. Most of the time, the misbehavior is
+> quite near the end of the report, so we can still use the valid part of
+> it.
+>
+> Fixes:
+> https://bugzilla.redhat.com/show_bug.cgi?id=1123584
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>   drivers/hid/hid-rmi.c | 31 ++++++++++++++++++++++++++-----
+>   1 file changed, 26 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+> index 8389e81..db92c3b 100644
+> --- a/drivers/hid/hid-rmi.c
+> +++ b/drivers/hid/hid-rmi.c
+> @@ -320,9 +320,6 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
+>   	int offset;
+>   	int i;
+>   
+> -	if (size < hdata->f11.report_size)
+> -		return 0;
+> -
+>   	if (!(irq & hdata->f11.irq_mask))
+>   		return 0;
+>   
+> @@ -332,9 +329,13 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
+>   		int fs_bit_position = (i & 0x3) << 1;
+>   		int finger_state = (data[fs_byte_position] >> fs_bit_position) &
+>   					0x03;
+> +		int position = offset + 5 * i;
+> +
+> +		if (position + 5 > size)
+> +			/* partial report, go on with what we received */
+> +			break;
+>   
+> -		rmi_f11_process_touch(hdata, i, finger_state,
+> -				&data[offset + 5 * i]);
+> +		rmi_f11_process_touch(hdata, i, finger_state, &data[position]);
+>   	}
+>   	input_mt_sync_frame(hdata->input);
+>   	input_sync(hdata->input);
+> @@ -412,9 +413,29 @@ static int rmi_read_data_event(struct hid_device *hdev, u8 *data, int size)
+>   	return 1;
+>   }
+>   
+> +static int rmi_check_sanity(struct hid_device *hdev, u8 *data, int size)
+> +{
+> +	int valid_size = size;
+> +	/*
+> +	 * On the Dell XPS 13 9333, the bus sometimes get confused and fills
+> +	 * the report with a sentinel value "ff". Synaptics told us that such
+> +	 * behavior does not comes from the touchpad itself, so we filter out
+> +	 * such reports here.
+> +	 */
+> +
+> +	while ((data[valid_size - 1] == 0xff) && valid_size > 0)
+> +		valid_size--;
+> +
+> +	return valid_size;
+> +}
+> +
+>   static int rmi_raw_event(struct hid_device *hdev,
+>   		struct hid_report *report, u8 *data, int size)
+>   {
+> +	size = rmi_check_sanity(hdev, data, size);
+> +	if (size < 2)
+> +		return 0;
+> +
+>   	switch (data[0]) {
+>   	case RMI_READ_DATA_REPORT_ID:
+>   		return rmi_read_data_event(hdev, data, size);
+I think there should also be a check in rmi_f30_input_event to make sure 
+that the F30 data is also valid. The F30 data is at the end of the HID 
+report so if the F30 interrupt bit is set, but the value in the report 
+is FF then there might be some unintended button events. I think 
+checking that size > 0 would be sufficient to make sure the F30 data is 
+valid.
+
+Other then that, the sanity check and validation in rmi_f11_input_event 
+look good to me.
+
+Andrew
