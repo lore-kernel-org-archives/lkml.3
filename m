@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaIIUsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:48:05 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:9299 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227AbaIIUsD (ORCPT
+	id S1752380AbaIIU4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:56:25 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55621 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaIIU4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:48:03 -0400
-X-IronPort-AV: E=Sophos;i="5.04,493,1406617200"; 
-   d="scan'208";a="45178467"
-Subject: RE: randconfig build error with next-20140909, in
- drivers/net/ethernet/broadcom/cnic.c
-From: Michael Chan <mchan@broadcom.com>
-To: Anish Bhatt <anish@chelsio.com>, <eddie.wai@broadcom.com>
-CC: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <525DB349B3FB5444AE057A887CB2A8D88E0BFB@nice.asicdesigners.com>
-References: <CA+r1ZhhZynUKSeZnya67z9sph4+tpjO4E7jLZKc0EG4azxFdYA@mail.gmail.com>
-	 <525DB349B3FB5444AE057A887CB2A8D88E0BFB@nice.asicdesigners.com>
-Content-Type: text/plain; charset="cp1252"
-Date: Tue, 9 Sep 2014 13:47:56 -0700
-Message-ID: <1410295676.7520.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	Tue, 9 Sep 2014 16:56:24 -0400
+Date: Tue, 9 Sep 2014 22:56:19 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Olof Johansson <olof@lixom.net>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek =?utf-8?B?VmHFoXV0?= <marex@denx.de>
+Subject: Re: [PATCH] fix mmc hang during boot on socfpga
+Message-ID: <20140909205618.GA32688@amd>
+References: <20140909121902.GA22965@amd>
+ <CAOesGMgvqvQw2WzdQWQ7NSE_CKgH0MR-46UABkck0cQbpV4P=g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMgvqvQw2WzdQWQ7NSE_CKgH0MR-46UABkck0cQbpV4P=g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-09 at 20:24 +0000, Anish Bhatt wrote: 
-> This is caused by c99d667e8527  ("cnic : Cleanup CONFIG_IPV6 & VLAN check")
+On Tue 2014-09-09 10:32:14, Olof Johansson wrote:
+> On Tue, Sep 9, 2014 at 5:19 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> >
+> > Without this patch, boot hangs when trying to mount root filesystem on
+> > socfpga platform in about 50% cases.
 > 
-> So I'm not really sure what the fix for this is. CNIC will properly only support 
-> [m] or [n] when IPV6 is compiled as a module, but if you set SCSI_BNX2X_FCOE or 
-> SCSI_BNX2_ISCSI to be in built, there is a 'select CNIC' that forces CNIC to be 
-> inbuilt, even though this is not supported by Kconfig. I was under the 
-> assumption that select will not forcibly change m to inbuilt (or perhaps I'm 
-> missing some syntax suboption ?)
-> 
-> This is still fixable in SCSI_BNX2_ISCSI using the same logic used in the above 
-> mentioned commit, but not so in SCSI_BNX2X_FCOE where it causes a recursive 
-> dependency error (thought it is fixing the issue nevertheless), and none of the 
->  other solutions I tried seemed to work either. 
+> I think this should have a better description than this -- this is too
+> vague. Did it use to always work, is this a new failure? You enable
+> some more error checking and improved stop handling, why was the
+> previous one inadequate on this platform?
 
-Adding depends on IPV6 || IPV6=n doesn't work for SCSI_BNX2X_FCOE, but
-works for SCSI_BNX2_ISCSI?
+I don't think it ever worked reliably. I don't know what is different
+for socfpga, or if it is broken on other platforms, too. I have two
+socfpga boards here, but no other dw_mmc board.
 
+Patch was separated from rocketboards.org repository.
+
+Hope this helps,
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
