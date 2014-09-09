@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790AbaIINbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:31:32 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:38438 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbaIINb3 (ORCPT
+	id S1756860AbaIINbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:31:40 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:63245 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756816AbaIINbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:31:29 -0400
+	Tue, 9 Sep 2014 09:31:37 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
         acme@redhat.com, cebbert.lkml@gmail.com
-Subject: [PATCH v5 2/6] perf/x86: add support for sampling PEBS machine state registers
-Date: Tue,  9 Sep 2014 15:30:53 +0200
-Message-Id: <1410269457-14426-3-git-send-email-eranian@google.com>
+Subject: [PATCH v5 5/6] perf record: add new -I option to sample interrupted machine state
+Date: Tue,  9 Sep 2014 15:30:56 +0200
+Message-Id: <1410269457-14426-6-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410269457-14426-1-git-send-email-eranian@google.com>
 References: <1410269457-14426-1-git-send-email-eranian@google.com>
@@ -21,48 +21,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PEBS can capture machine state regs at retiremnt of the sampled
-instructions. When precise sampling is enabled on an event, PEBS
-is used, so substitute the interrupted state with the PEBS state.
-Note that not all registers are captured by PEBS. Those missing
-are replaced by the interrupt state counter-parts.
+Add -I/--intr-regs option to capture machine state registers at
+interrupt.
+
+Add the corresponding man page description
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ tools/perf/Documentation/perf-record.txt |    6 ++++++
+ tools/perf/builtin-record.c              |    2 ++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 9dc4199..285aaf4 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -886,6 +886,26 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	regs.bp = pebs->bp;
- 	regs.sp = pebs->sp;
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index d460049..1a36259 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -214,6 +214,12 @@ if combined with -a or -C options.
+ After starting the program, wait msecs before measuring. This is useful to
+ filter out the startup phase of the program, which is often very different.
  
-+	if (sample_type & PERF_SAMPLE_REGS_INTR) {
-+		regs.ax = pebs->ax;
-+		regs.bx = pebs->bx;
-+		regs.cx = pebs->cx;
-+		regs.dx = pebs->dx;
-+		regs.si = pebs->si;
-+		regs.di = pebs->di;
-+		regs.sp = pebs->sp;
-+		regs.bp = pebs->bp;
++-I::
++--intr-regs::
++Capture machine state (registers) at interrupt, i.e., on counter overflows for
++each sample. List of captured registers depends on the architecture. This option
++is off by default.
 +
-+		regs.r8 = pebs->r8;
-+		regs.r9 = pebs->r9;
-+		regs.r10 = pebs->r10;
-+		regs.r11 = pebs->r11;
-+		regs.r12 = pebs->r12;
-+		regs.r13 = pebs->r13;
-+		regs.r14 = pebs->r14;
-+		regs.r15 = pebs->r15;
-+	}
-+
- 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
- 		regs.ip = pebs->real_ip;
- 		regs.flags |= PERF_EFLAGS_EXACT;
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 87e28a4..27378d5 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -883,6 +883,8 @@ const struct option record_options[] = {
+ 		    "sample transaction flags (special events only)"),
+ 	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
+ 		    "use per-thread mmaps"),
++	OPT_BOOLEAN('I', "intr-regs", &record.opts.sample_intr_regs,
++		    "Sample machine registers on interrupt"),
+ 	OPT_END()
+ };
+ 
 -- 
 1.7.9.5
 
