@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480AbaIIQbF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:31:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41118 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749AbaIIQbC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:31:02 -0400
-Date: Tue, 9 Sep 2014 09:30:57 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: Ching Huang <ching2048@areca.com.tw>, hch@infradead.org,
-        jbottomley@parallels.com, dan.carpenter@oracle.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
-Message-ID: <20140909163057.GA25745@infradead.org>
-References: <1408433122.4748.73.camel@Centos6.3-64>
- <53FDE490.1070201@redhat.com>
- <1409240809.4762.259.camel@Centos6.3-64>
- <53FF2544.8020601@redhat.com>
+	id S1757123AbaIIQeH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:34:07 -0400
+Received: from sauhun.de ([89.238.76.85]:35393 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753814AbaIIQeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 12:34:05 -0400
+Date: Tue, 9 Sep 2014 18:34:15 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Jean Delvare <jdelvare@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [RFC 2/4] i2c: slave: add eeprom simulator driver
+Message-ID: <20140909163415.GA1781@katana>
+References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
+ <1410274470-12712-3-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
 Content-Disposition: inline
-In-Reply-To: <53FF2544.8020601@redhat.com>
+In-Reply-To: <1410274470-12712-3-git-send-email-wsa@the-dreams.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ching,
 
-do you have a chance to address Thomas second concern below?  As
-far as I can tell (Thomas, please correct me) that's the last
-outstanding concern, and I'd really like to merge the arcmsr updates
-for the Linux 3.18 merge window.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+
+> +config I2C_SLAVE_EEPROM
+> +	bool "I2C eeprom slave driver"
+
+This should be "tristate". Fixed in my branch.
+
+
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUDywHAAoJEBQN5MwUoCm2AkQP+wXcw+8bfng9AY654kJpP2f4
+l2rpU2Dy1TUlXeNJnLQc8g5NnB55vTxamBYsLLBVWOC2n6d5Dmd0HvyoPXzAjCPl
+ecUzBxmUtGk9zbDvFRzSpsJB6LbHqmUSrBL6J/7dFpc8FVOI/piURwCdom9uVStw
+67f687huNm2s580A8niRqryWKeSH+dpF85kGhCLF4VYvGgNQhB3fcHvrRkxU5FYy
+qUGTs+kdVRjwn8gSLS1kOiovyRHir/Db8OwlAl7KSW2XZDea8ZNb6w5tuUK4UfKP
+h3Vymbes8k8q5Oguekbbi+ZAWj4EwGydNKdxmeSSv4Cf5IhBXf9O4XdliyfNs06P
+dwWlQvyF9LF0Uy25K8DxjzzeJ4UdV13BljYhxQr99PJDMYvjtEAbmKmYkQiMIxii
+sUgB23AZKl9b8eOGtLB5J2NmMegSZg8uNDGLVfasJ8Qdn8FEETga5dGqQUith7ta
+tht4u0+KGRn8eK6MKoU8o4X5r3jY4U+22OEYKtnVxoZzVnOMvfj0tV4rxwrJIwGB
+7mBAsrO85oFG8EXxZrevnn3y0uXzJq84LpHswfamWvC871o7grQs8djXowc/FfYa
+9p0hS3OZS4ha2tYIA/MtCGARxtDlRAuw5tCSW9K7rMNRh7MP7qq54W8YUyla0MGP
+E1qf9XH5l3B41zkIyMZN
+=Of2l
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
