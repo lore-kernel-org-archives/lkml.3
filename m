@@ -1,138 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbaIIUjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:39:41 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:33687 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbaIIUjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:39:37 -0400
-Date: Tue, 9 Sep 2014 13:37:55 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Chintan Pandya <cpandya@codeaurora.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
- for scanner thread
-In-Reply-To: <540F141B.9060603@codeaurora.org>
-Message-ID: <alpine.LSU.2.11.1409091315240.8432@eggly.anvils>
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
- <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net> <540F141B.9060603@codeaurora.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752404AbaIIUnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:43:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52976 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751965AbaIIUnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 16:43:04 -0400
+Message-ID: <540F6646.3010607@ti.com>
+Date: Tue, 9 Sep 2014 16:42:46 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <bhelgaas@google.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] PCI: keystone: update to support multiple pci
+ ports
+References: <1410293835-13050-1-git-send-email-m-karicheri2@ti.com> <1410293835-13050-2-git-send-email-m-karicheri2@ti.com> <3294679.puV171E8qx@wuerfel>
+In-Reply-To: <3294679.puV171E8qx@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Sep 2014, Chintan Pandya wrote:
-> Hello All,
-> 
-> Before its too late to discuss this basic question, allow me to share my view
-> on the deferrable timer approach.
-> 
-> I believe KSM at this point is tunable with predictable outcomes. When it
-> will get triggered, how many pages it will scan etc. This aggression control
-> is with user who can implement any complex logic based on its own flashy
-> parameters. Along the same line, I was seeing this deferrable timer knob.
-> 
-> Here I was hoping the same level of predictability with this knob. Kernel
-> still won't do smart work and user is free to play smart/complex with the
-> knob. I believe that there are many use-cases where a single strategy of "to
-> make KSM perform better while saving power at the same time" may not work.
-> So,
+On 09/09/2014 04:28 PM, Arnd Bergmann wrote:
+> On Tuesday 09 September 2014 16:17:15 Murali Karicheri wrote:
+>> K2E SoC has two PCI ports. The SATA controller is connected to second
+>> PCI port (port 1). This patch enhances the driver to support multiple
+>> ports.
+>>
+>> Update the DT Documentation for the new attribute, ti,pcie-port and
+>> remove the note for bootargs as this is no longer needed.
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>> ---
+>>   - updated based on comment against v1
+>>   .../devicetree/bindings/pci/pci-keystone.txt       |    8 +++++---
+>>   drivers/pci/host/pci-keystone.c                    |   15 ++++++++++-----
+>>   drivers/pci/host/pci-keystone.h                    |    4 ++--
+>>   3 files changed, 17 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/pci/pci-keystone.txt b/Documentation/devicetree/bindings/pci/pci-keystone.txt
+>> index bedacf0..c8f5773 100644
+>> --- a/Documentation/devicetree/bindings/pci/pci-keystone.txt
+>> +++ b/Documentation/devicetree/bindings/pci/pci-keystone.txt
+>> @@ -56,11 +56,13 @@ Optional properties:-
+>>   	phy-names: name of the Generic Keystine SerDes phy for PCI
+>>   	  - If boot loader already does PCI link establishment, then phys and
+>>   	    phy-names shouldn't be present.
+>> +	ti,pcie-port: PCI port number. This is used to configure the PCI port
+>> +	    number. For example K2E SoC supports 2 PCI ports and PCI bindings
+>> +	    for the second port adds ti,pcie-port =<1>  to identify second port
+>> +	    and driver uses this to configure the PCI mode register for second
+>> +	    port. If not present, port number 0 is assumed.
+>
+> Is this still needed? I thought with patch 1 removed, we no longer had
+> a reason to know the port number.
+>
+You are right. I will remove it and re-send.
 
-Understood.  Whereas seasoned developers grow increasingly sick and
-sceptical of such knobs, preferring to make an effort to get things
-working well without them.  Both attitudes are valid.
+>> -=========================
+>> -Driver requires pci=pcie_bus_perf in the bootargs for proper functioning.
+>> diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
+>> index f1119eb..893820d 100644
+>> --- a/drivers/pci/host/pci-keystone.c
+>> +++ b/drivers/pci/host/pci-keystone.c
+>> @@ -253,8 +253,8 @@ static int keystone_pcie_fault(unsigned long addr, unsigned int fsr,
+>>
+>>   static void __init ks_pcie_host_init(struct pcie_port *pp)
+>>   {
+>> -	u32 vendor_device_id, val;
+>>   	struct keystone_pcie *ks_pcie = to_keystone_pcie(pp);
+>> +	u32 val;
+>>
+>>   	ks_pcie_establish_link(ks_pcie);
+>>   	ks_dw_pcie_setup_rc_app_regs(ks_pcie);
+>> @@ -263,8 +263,7 @@ static void __init ks_pcie_host_init(struct pcie_port *pp)
+>>   			pp->dbi_base + PCI_IO_BASE);
+>>
+>>   	/* update the Vendor ID */
+>> -	vendor_device_id = readl(ks_pcie->va_reg_pciid);
+>> -	writew((vendor_device_id>>  16), pp->dbi_base + PCI_DEVICE_ID);
+>> +	writew(ks_pcie->device_id, pp->dbi_base + PCI_DEVICE_ID);
+>>
+>>   	/* update the DEV_STAT_CTRL to publish right mrrs */
+>>   	val = readl(pp->dbi_base + PCIE_CAP_BASE + PCI_EXP_DEVCTL);
+>
+> This change must have slipped in accidentally, at least it's not
+> described in the changelog. Should this be another patch?
+> The change seems useful.
+Are you referring to mrrs or update to device id?  device id is in a SoC 
+register at index2 and is read and updated by the driver here. MRRS 
+update was originally in the code.
 
-> 
-> > On Mon, Sep 08, 2014 at 01:25:36AM -0700, Hugh Dickins wrote:
-> > > Well, yes, but... how do we know when there is no more work to do?
-> > 
-> > Yeah, I figured that out _after_ I send that email..
-> > 
-> > > Thomas has given reason why KSM might simply fail to do its job if we
-> > > rely on the deferrable timer.
-> 
-> With deferrable timer, KSM thread will be scheduled on the 'active' CPU at
-> that very same time. Yes, I understood from Thomas's clarification that if
-> that very CPU goes IDLE, KSM task will get deferred even if at the timeout,
-> we have some CPUs running. I think, this situation can be avoided potentially
-> very small timeout value (?). But in totality, this is where KSM will be idle
-> for sure, may be that is unwanted.
+Murali
+>
+> 	Arnd
 
-I don't get how a very small timeout value would solve that.  But I am
-all for a KSM which works well even with timeout value 0: responsive,
-but not power hungry.
-
-> 
-> > > 
-> > > Chintan, even if the scheduler guys turn out to hate it, please would
-> > > you give the patch below a try, to see how well it works in your
-> > > environment, whether it seems to go better or worse than your own patch.
-> > > 
-> > > If it works well enough for you, maybe we can come up with ideas to
-> > > make it more palatable.  I do think your issue is an important one
-> > > to fix, one way or another.
-> 
-> It is taking a little more time for me to grasp your change :)
-
-Grasping the intent should be easy: I thought that was in the title,
-"ksm: avoid periodic wakeup while mergeable mms are quiet": just go
-to sleep until at least one of the MMF_VM_MERGEABLE tasks gets run.
-
-Checking the details, whether I'm accomplishing that intent, yes,
-that needs more understanding of ksm.c, which your deferrable timer
-approach did not need to get involved with at all (to its credit).
-
-> So, after Peter's comment, do you want me to try this out
-
-Certainly yes, please do.  I'm not saying that's a patch which will
-ever go into the kernel itself, but we do want to know whether it does
-the job for you or not, whether it's a worthwhile attempt in the right
-direction.  Does it save as much as your patch?  Does it save more?
-
-> or you are looking forward for even better idea ?
-
-I'd love a better idea: assuming mine works, is there some other way
-of accomplishing it, which does not pollute sched/core.c, but does
-not drag in mm_struct cachelines for a frequent flags check?
-
-> BTW, if deferrable timer patch gets any green signal,
-> I will publish new patch with your comments on v4.
-
-It seems to be a red light at present: but lights do change ;)
-
-> 
-> > > 
-> > > Thanks,
-> > > Hugh
-> > > 
-> > > [PATCH] ksm: avoid periodic wakeup while mergeable mms are quiet
-> > > 
-> > > Description yet to be written!
-> > > 
-> > > Reported-by: Chintan Pandya<cpandya@codeaurora.org>
-> > > Not-Signed-off-by: Hugh Dickins<hughd@google.com>
-> 
-> 
-> >>> So looking at Hughs test results I'm quite sure that the deferrable
-> >>> timer is just another tunable bandaid with dubious value and the
-> >>> potential of predictable bug/regresssion reports.
-> 
-> Here I am naive in understanding the obvious disadvantages of 'one more
-> knob'. And hence was inclined towards deferrable timer knob. Thomas, could
-> you explain what kind of bug/regression you foresee with such approach ?
-> 
-> -- 
-> Chintan Pandya
-> 
-> QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-> member of the Code Aurora Forum, hosted by The Linux Foundation
