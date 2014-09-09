@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232AbaIIJj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:39:28 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55535 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756034AbaIIJj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:39:26 -0400
-Date: Tue, 9 Sep 2014 11:39:20 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/6] rtc: at91sam9: add DT support
-Message-ID: <20140909093920.GI14623@piout.net>
-References: <1410255035-26775-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1756285AbaIIJkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:40:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15429 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755191AbaIIJkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:40:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="588457417"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
+In-Reply-To: <20140909084436.GY19379@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com> <20140909084436.GY19379@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 09 Sep 2014 12:40:39 +0300
+Message-ID: <87y4ttt9m0.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410255035-26775-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 at 11:30:29 +0200, Boris Brezillon wrote :
-> Hello,
-> 
-> This patch series adds DT support to the atmel at91sam9 RTC driver.
-> 
-> It also removes any machine specific inclusions to prepare the migration
-> to multi platform kernel support, and retain the slow clock to prevent
-> the CCF from disabling it at the end of boot.
-> 
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Whole series is:
+> On Wed, Aug 20, 2014 at 03:36:06PM +0300, Alexander Shishkin wrote:
+>
+>> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+>> index 925f369947..5006caba63 100644
+>> --- a/kernel/events/ring_buffer.c
+>> +++ b/kernel/events/ring_buffer.c
+>
+>> @@ -294,9 +295,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
+>>  			 bool truncated)
+>>  {
+>>  	struct ring_buffer *rb = handle->rb;
+>> +	unsigned long aux_head;
+>>  
+>> +	aux_head = local_read(&rb->aux_head);
+>> +
+>> +	if (rb->aux_overwrite) {
+>> +		local_set(&rb->aux_head, size);
+>> +
+>> +		/*
+>> +		 * Send a RECORD_AUX with size==0 to communicate aux_head
+>> +		 * of this snapshot to userspace
+>> +		 */
+>> +		perf_event_aux_event(handle->event, size, 0, truncated);
+>
+> Humm.. why not write a 'normal' AUX record?
 
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+In this mode, the hardware is running in a circular buffer mode,
+overwriting old data, so we don't actually know the size of the
+snapshot, we have userspace figure it out later on (based on timestamps,
+for example). I didn't want to configure PMI for this mode to avoid
+overhead, but with PMI we can try to keep track of the overwrites and
+try to infer the actual snapshot size in the kernel. For Intel PT. As
+far as I can tell, ARM's scatter-gather trace-to-memory storing block
+does not generate interrupts at all.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> Also, you didn't mention this in your Changelog _at_all_.
+
+Will do.
+
+Regards,
+--
+Alex
