@@ -1,174 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaIIT3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:29:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119AbaIIT3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:29:52 -0400
-Message-ID: <540F5526.8050902@redhat.com>
-Date: Tue, 09 Sep 2014 21:29:42 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752705AbaIITaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:30:15 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51800 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564AbaIITaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 15:30:11 -0400
+Date: Tue, 9 Sep 2014 15:16:12 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2014-09-09
+Message-ID: <20140909191612.GM29412@tuxdriver.com>
+References: <20140909155449.GA7412@t440s>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org,
-        Andrew Duggan <aduggan@synaptics.com>
-Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
-References: <20140908165520.GA35051@core.coreip.homeip.net> <540EAFD1.2040307@redhat.com> <20140909170636.GA28774@core.coreip.homeip.net>
-In-Reply-To: <20140909170636.GA28774@core.coreip.homeip.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909155449.GA7412@t440s>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Sep 09, 2014 at 08:54:49AM -0700, Johan Hedberg wrote:
+> Hi John,
+> 
+> This set of patches is intended for 3.18. Most of the patches are LE SMP
+> (Security Manager Protocol) fixes/improvements, but there are also some
+> 6lowpan fixes as well as a fix for the btusb HCI driver.
+> 
+> Please let me know if there are any issues pulling. Thanks.
+> 
+> Johan
+> 
+> ---
+> The following changes since commit 61a3d4f9d52c00b2016bc27fc66b10a194043f76:
+> 
+>   Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless (2014-09-08 11:14:56 -0400)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+> 
+> for you to fetch changes up to 39e90c77637b3892a39f2908aea57539e961c50e:
+> 
+>   Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device (2014-09-09 15:51:47 +0200)
+> 
+> ----------------------------------------------------------------
+> Behan Webster (1):
+>       Bluetooth: LLVMLinux: Remove VLAIS from bluetooth/amp.c
+> 
+> Champion Chen (1):
+>       Bluetooth: Fix issue with USB suspend in btusb driver
+> 
+> Johan Hedberg (31):
+>       Bluetooth: Fix incorrect LE CoC PDU length restriction based on HCI MTU
+>       Bluetooth: Remove unnecessary l2cap_chan_unlock before l2cap_chan_add
+>       Bluetooth: Fix hci_conn reference counting for fixed channels
+>       Bluetooth: Set addr_type only when it's needed
+>       Bluetooth: Optimize connection parameter lookup for LE connections
+>       Bluetooth: Improve *_get() functions to return the object type
+>       Bluetooth: Fix using hci_conn_get() for hci_conn pointers
+>       Bluetooth: Refactor connection parameter freeing into its own function
+>       Bluetooth: Use zero timeout for immediate scheduling
+>       Bluetooth: Fix hci_conn reference counting with hci_chan
+>       Bluetooth: Set disc_timeout to 0 when calling hci_chan_del
+>       Bluetooth: Ignore incoming data after initiating disconnection
+>       Bluetooth: Remove hci_conn_hold/drop from hci_chan
+>       Bluetooth: Set discon_timeout to 0 in l2cap_conn_del
+>       Bluetooth: Use hci_disconnect for immediate disconnection from SMP
+>       Bluetooth: Remove unused l2cap_conn_shutdown API
+>       Bluetooth: Fix SMP error and response to be mutually exclusive
+>       Bluetooth: Update hci_disconnect() to return an error value
+>       Bluetooth: Use hci_disconnect() for mgmt_disconnect_device()
+>       Bluetooth: Move clock offset reading into hci_disconnect()
+>       Bluetooth: Add clarifying comment for LE CoC result value
+>       Bluetooth: Remove unnecessary checks after canceling SMP security timer
+>       Bluetooth: Don't take any action in smp_resume_cb if not encrypted
+>       Bluetooth: Move identity address update behind a workqueue
+>       Bluetooth: Remove unnecessary deferred work for SMP key distribution
+>       Bluetooth: Fix locking of the SMP context
+>       Bluetooth: Add define for key distribution mask
+>       Bluetooth: Fix calling smp_distribute_keys() when still waiting for keys
+>       Bluetooth: Add strict checks for allowed SMP PDUs
+>       Bluetooth: Fix dereferencing conn variable before NULL check
+>       Bluetooth: Fix mgmt pairing failure when authentication fails
+> 
+> Jukka Rissanen (3):
+>       Bluetooth: 6lowpan: Increase the connection timeout value
+>       Bluetooth: 6lowpan: Set the peer IPv6 address correctly
+>       Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device
 
-On 09/09/2014 07:06 PM, Dmitry Torokhov wrote:
-> On Tue, Sep 09, 2014 at 09:44:17AM +0200, Hans de Goede wrote:
->> Hi,
->>
->> On 09/08/2014 06:55 PM, Dmitry Torokhov wrote:
->>> ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
->>> physical buttons, instead they generate primary button click when user
->>> presses somewhat hard on the surface of the touchpad. Unfortunately they
->>> also report primary button click whenever there are 2 or more contacts
->>> on the pad, messing up all multi-finger gestures (2-finger scrolling,
->>> multi-finger tapping, etc). To cope with this behavior we introduce a
->>> delay (currently 50 msecs) in reporting primary press in case more
->>> contacts appear.
->>>
->>> For now we are using DMI matching to detect ForcePads, hopefully we'll
->>> be able to figure a better way down the road.
->>
->> What about using the pnp-id, in my experience with the recent lenovo
->> laptops that tends to be more reliable.
->
-> Not sure. So far I only know of HP 1040 having it. FWIW:
->
-> dtor@dtor-glaptop:~$ cat /sys/bus/pnp/drivers/i8042\ aux/00\:07/id
-> SYN300d
-> SYN0100
-> SYN0002
-> PNP0f13
+Pulling now...
 
-Hmm, those look pretty generic. Maybe the 300d is specific.
-
-> I think if we see generalities we can switch over later. I hope
-> Chris/Andrew will come with a capability bit though :)
->
->>
->> Christopher, Andrew (added to the CC), can one of you tell us if there
->> is a capability bit to detect this, and if not can you perhaps provide
->> a list of pnp-ids of devices which behave like this ?
->>
->>> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->>> ---
->>>   drivers/input/mouse/synaptics.c | 80 ++++++++++++++++++++++++++++++++---------
->>>   drivers/input/mouse/synaptics.h |  5 +++
->>>   2 files changed, 69 insertions(+), 16 deletions(-)
->>>
->>> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
->>> index e8573c6..5de1bb6 100644
->>> --- a/drivers/input/mouse/synaptics.c
->>> +++ b/drivers/input/mouse/synaptics.c
->>> @@ -618,6 +618,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
->>>   	priv->agm_pending = true;
->>>   }
->>>
->>> +static bool is_forcepad;
->>> +
->>>   static int synaptics_parse_hw_state(const unsigned char buf[],
->>>   				    struct synaptics_data *priv,
->>>   				    struct synaptics_hw_state *hw)
->>> @@ -629,10 +631,58 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->>>   			 ((buf[0] & 0x04) >> 1) |
->>>   			 ((buf[3] & 0x04) >> 2));
->>>
->>> +		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
->>> +			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
->>> +		    hw->w == 2) {
->>> +			synaptics_parse_agm(buf, priv, hw);
->>> +			return 1;
->>> +		}
->>> +
->>> +		hw->x = (((buf[3] & 0x10) << 8) |
->>> +			 ((buf[1] & 0x0f) << 8) |
->>> +			 buf[4]);
->>> +		hw->y = (((buf[3] & 0x20) << 7) |
->>> +			 ((buf[1] & 0xf0) << 4) |
->>> +			 buf[5]);
->>> +		hw->z = buf[2];
->>> +
->>>   		hw->left  = (buf[0] & 0x01) ? 1 : 0;
->>>   		hw->right = (buf[0] & 0x02) ? 1 : 0;
->>>
->>
->> Moving this up means that on clickpads the button will no longer
->> be checked + set for hw->w == 2 packets. That seems like an unintended
->> side effect.
->
-> I guess we can call it a side effect, but it is fine - we parse AGM and
-> stash the data, then when 2nd packet comes we parse and act upon it. In
-> the old code we'd parse x, y, z, in AGM etc. and then have it
-> overwritten with the data from the 2nd packet, here we do not bother.
->
->> If this is intended then this should probably be in its own
->> patch.
->
-> It does not make sense on its own as ForcePad support needs to know
-> values of Z and W when deciding how to handle primary click, otherwise
-> the old code was just fine.
-
-Ok.
-
->
->>
->>> -		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
->>> +		if (is_forcepad) {
->>> +			/* XXX is there a proper capability bit for this? */
->>> +			/*
->>> +			 * ForcePads, like Clickpads, use middle button
->>> +			 * bits to report primary button clicks.
->>> +			 * Unfortunately they report primary button not only
->>> +			 * when user presses on the pad above certain threshold,
->>> +			 * but also when there are more than one finger on the
->>> +			 * touchpad, which interferes with out multi-finger
->>> +			 * gestures.
->>> +			 */
->>> +			if (hw->z == 0) {
->>> +				/* No contacts */
->>> +				priv->press = priv->report_press = false;
->>> +			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
->>> +				/*
->>> +				 * Single-finger touch with pressure above
->>> +				 * the threshold.
->>> +				 */
->>> +				if  (!priv->press) {
->>> +					priv->press_start = jiffies;
->>> +					priv->press = true;
->>> +				} else if (time_after(jiffies,
->>> +						priv->press_start +
->>> +							msecs_to_jiffies(50))) {
->>> +					priv->report_press = true;
->>> +				}
->>
->> You're not setting a timer here, instead relying on there to be further events,
->> that is probably ok, but maybe put a comment to that extent here ?
->
-> I can, any suggestion on what you want me to say? "If single point
-> contact held pressure long enough start reporting primary click"?
-
-What I mean is that this will not work if the finger is held perfectly still,
-at least AFAIK no more packets will be send in that case, but maybe that is
-me thinking too much in userspace terms where no evdev events will be
-generated in that case. If the touchpad will continue repeating events with
-exact the same location + pressure, then there is nothing to worry about
-and you can ignore my request for a comment.
-
-Regards,
-
-Hans
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
