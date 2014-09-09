@@ -1,152 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaIIUQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:16:51 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:36866 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824AbaIIUQt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:16:49 -0400
-Date: Tue, 9 Sep 2014 13:14:50 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Hugh Dickins <hughd@google.com>, Chintan Pandya <cpandya@codeaurora.org>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
- for scanner thread
-In-Reply-To: <20140908093949.GZ6758@twins.programming.kicks-ass.net>
-Message-ID: <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
- <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752463AbaIIURc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:17:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51782 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752373AbaIIURb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 16:17:31 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <bhelgaas@google.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH v2 2/2] PCI: keystone: update to support multiple pci ports
+Date: Tue, 9 Sep 2014 16:17:15 -0400
+Message-ID: <1410293835-13050-2-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410293835-13050-1-git-send-email-m-karicheri2@ti.com>
+References: <1410293835-13050-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014, Peter Zijlstra wrote:
-> On Mon, Sep 08, 2014 at 01:25:36AM -0700, Hugh Dickins wrote:
-> > 
-> > --- 3.17-rc4/include/linux/ksm.h	2014-03-30 20:40:15.000000000 -0700
-> > +++ linux/include/linux/ksm.h	2014-09-07 11:54:41.528003316 -0700
-> 
-> > @@ -87,6 +96,11 @@ static inline void ksm_exit(struct mm_st
-> >  {
-> >  }
-> >  
-> > +static inline wait_queue_head_t *ksm_switch(struct mm_struct *mm)
-> 
-> s/ksm_switch/__&/
+K2E SoC has two PCI ports. The SATA controller is connected to second
+PCI port (port 1). This patch enhances the driver to support multiple
+ports.
 
-I don't think so (and I did try building with CONFIG_KSM off too).
+Update the DT Documentation for the new attribute, ti,pcie-port and
+remove the note for bootargs as this is no longer needed.
 
-> 
-> > +{
-> > +	return NULL;
-> > +}
-> > +
-> >  static inline int PageKsm(struct page *page)
-> >  {
-> >  	return 0;
-> 
-> > --- 3.17-rc4/kernel/sched/core.c	2014-08-16 16:00:54.062189063 -0700
-> > +++ linux/kernel/sched/core.c	2014-09-07 11:54:41.528003316 -0700
-> 
-> > @@ -2304,6 +2305,7 @@ context_switch(struct rq *rq, struct tas
-> >  	       struct task_struct *next)
-> >  {
-> >  	struct mm_struct *mm, *oldmm;
-> > +	wait_queue_head_t *wake_ksm = NULL;
-> >  
-> >  	prepare_task_switch(rq, prev, next);
-> >  
-> > @@ -2320,8 +2322,10 @@ context_switch(struct rq *rq, struct tas
-> >  		next->active_mm = oldmm;
-> >  		atomic_inc(&oldmm->mm_count);
-> >  		enter_lazy_tlb(oldmm, next);
-> > -	} else
-> > +	} else {
-> >  		switch_mm(oldmm, mm, next);
-> > +		wake_ksm = ksm_switch(mm);
-> 
-> Is this the right mm?
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+---
+ - updated based on comment against v1
+ .../devicetree/bindings/pci/pci-keystone.txt       |    8 +++++---
+ drivers/pci/host/pci-keystone.c                    |   15 ++++++++++-----
+ drivers/pci/host/pci-keystone.h                    |    4 ++--
+ 3 files changed, 17 insertions(+), 10 deletions(-)
 
-It's next->mm, that's the one I intended (though the patch might
-be equally workable using prev->mm instead: given free rein, I'd
-have opted for hooking into both prev and next, but free rein is
-definitely not what should be granted around here!).
+diff --git a/Documentation/devicetree/bindings/pci/pci-keystone.txt b/Documentation/devicetree/bindings/pci/pci-keystone.txt
+index bedacf0..c8f5773 100644
+--- a/Documentation/devicetree/bindings/pci/pci-keystone.txt
++++ b/Documentation/devicetree/bindings/pci/pci-keystone.txt
+@@ -56,11 +56,13 @@ Optional properties:-
+ 	phy-names: name of the Generic Keystine SerDes phy for PCI
+ 	  - If boot loader already does PCI link establishment, then phys and
+ 	    phy-names shouldn't be present.
++	ti,pcie-port: PCI port number. This is used to configure the PCI port
++	    number. For example K2E SoC supports 2 PCI ports and PCI bindings
++	    for the second port adds ti,pcie-port = <1> to identify second port
++	    and driver uses this to configure the PCI mode register for second
++	    port. If not present, port number 0 is assumed.
+ 
+ Designware DT Properties not applicable for Keystone PCI
+ 
+ 1. pcie_bus clock-names not used.  Instead, a phandle to phys is used.
+ 
+-Note for PCI driver usage
+-=========================
+-Driver requires pci=pcie_bus_perf in the bootargs for proper functioning.
+diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
+index f1119eb..893820d 100644
+--- a/drivers/pci/host/pci-keystone.c
++++ b/drivers/pci/host/pci-keystone.c
+@@ -253,8 +253,8 @@ static int keystone_pcie_fault(unsigned long addr, unsigned int fsr,
+ 
+ static void __init ks_pcie_host_init(struct pcie_port *pp)
+ {
+-	u32 vendor_device_id, val;
+ 	struct keystone_pcie *ks_pcie = to_keystone_pcie(pp);
++	u32 val;
+ 
+ 	ks_pcie_establish_link(ks_pcie);
+ 	ks_dw_pcie_setup_rc_app_regs(ks_pcie);
+@@ -263,8 +263,7 @@ static void __init ks_pcie_host_init(struct pcie_port *pp)
+ 			pp->dbi_base + PCI_IO_BASE);
+ 
+ 	/* update the Vendor ID */
+-	vendor_device_id = readl(ks_pcie->va_reg_pciid);
+-	writew((vendor_device_id >> 16), pp->dbi_base + PCI_DEVICE_ID);
++	writew(ks_pcie->device_id, pp->dbi_base + PCI_DEVICE_ID);
+ 
+ 	/* update the DEV_STAT_CTRL to publish right mrrs */
+ 	val = readl(pp->dbi_base + PCIE_CAP_BASE + PCI_EXP_DEVCTL);
+@@ -345,12 +344,13 @@ static int __exit ks_pcie_remove(struct platform_device *pdev)
+ static int __init ks_pcie_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
+ 	struct keystone_pcie *ks_pcie;
++	int ret = 0, port_id = 0;
+ 	struct pcie_port *pp;
+ 	struct resource *res;
+ 	void __iomem *reg_p;
+ 	struct phy *phy;
+-	int ret = 0;
+ 
+ 	ks_pcie = devm_kzalloc(&pdev->dev, sizeof(*ks_pcie),
+ 				GFP_KERNEL);
+@@ -360,6 +360,9 @@ static int __init ks_pcie_probe(struct platform_device *pdev)
+ 	}
+ 	pp = &ks_pcie->pp;
+ 
++	/* read the PCI port id */
++	of_property_read_u32(np, "ti,pcie-port", &port_id);
++
+ 	/* initialize SerDes Phy if present */
+ 	phy = devm_phy_get(dev, "pcie-phy");
+ 	if (!IS_ERR_OR_NULL(phy)) {
+@@ -373,7 +376,9 @@ static int __init ks_pcie_probe(struct platform_device *pdev)
+ 	reg_p = devm_ioremap_resource(dev, res);
+ 	if (IS_ERR(reg_p))
+ 		return PTR_ERR(reg_p);
+-	ks_pcie->va_reg_pciid = reg_p;
++	ks_pcie->device_id = readl(reg_p) >> 16;
++	devm_iounmap(dev, reg_p);
++	devm_release_mem_region(dev, res->start, resource_size(res));
+ 
+ 	pp->dev = dev;
+ 	platform_set_drvdata(pdev, ks_pcie);
+diff --git a/drivers/pci/host/pci-keystone.h b/drivers/pci/host/pci-keystone.h
+index 729ea7d..80cfa8e 100644
+--- a/drivers/pci/host/pci-keystone.h
++++ b/drivers/pci/host/pci-keystone.h
+@@ -19,8 +19,8 @@
+ struct keystone_pcie {
+ 	struct	clk		*clk;
+ 	struct	pcie_port	pp;
+-	void __iomem		*va_reg_pciid;
+-
++	/* PCI Device ID */
++	u32			device_id;
+ 	int			num_legacy_host_irqs;
+ 	int			legacy_host_irqs[MAX_LEGACY_HOST_IRQS];
+ 	struct			device_node *legacy_intc_np;
+-- 
+1.7.9.5
 
-> We've just switched the stack,
-
-I thought that came in switch_to() a few lines further down,
-but don't think it matters for this.
-
-> so we're looing at next->mm when we switched away from current.
-> That might not exist anymore.
-
-I fail to see how that can be.  Looking at the x86 switch_mm(),
-I can see it referencing (unsurprisingly!) both old and new mms
-at this point, and no reference to an mm is dropped before the
-ksm_switch().  oldmm (there called mm) is mmdropped later in
-finish_task_switch().
-
-> 
-> > +	}
-> >  
-> >  	if (!prev->mm) {
-> >  		prev->active_mm = NULL;
-> > @@ -2348,6 +2352,9 @@ context_switch(struct rq *rq, struct tas
-> >  	 * frame will be invalid.
-> >  	 */
-> >  	finish_task_switch(this_rq(), prev);
-> > +
-> > +	if (wake_ksm)
-> > +		wake_up_interruptible(wake_ksm);
-> >  }
-> 
-> Quite horrible for sure. I really hate seeing KSM cruft all the way down
-
-Yes, I expected that, and I would certainly feel the same way.
-
-And even worse, imagine if this were successful, we might come along
-and ask to do something similar for khugepaged.  Though if it comes to
-that, I'm sure we would generalize into one hook which does not say
-"ksm" or "khugepaged" on it, but would still a present a single unlikely
-flag to be tested at this level.  Maybe you would even prefer the
-generalized version, but I don't want to complicate the prototype yet.
-
-If it weren't for the "we already have the mm cachelines here" argument,
-I by now feel fairly sure that I would be going for hooking into timer
-tick instead (where Thomas could then express his horror!).
-
-Do you think I should just forget about cacheline micro-optimizations
-and go in that direction instead?
-
-> here. Can't we create a new (timer) infrastructure that does the right
-> thing? Surely this isn't the only such case.
-
-A sleep-walking timer, that goes to sleep in one bed, but may wake in
-another; and defers while beds are empty?  I'd be happy to try using
-that for KSM if it already existed, and no doubt Chintan would too
-
-But I don't think KSM presents a very good case for developing it.
-I think KSM's use of a sleep_millisecs timer is really just an apology
-for the amount of often wasted work that it does, and dates from before
-we niced it down 5.  I prefer the idea of a KSM which waits on activity
-amongst the restricted set of tasks it is tracking: as this patch tries.
-
-But my preference may be naive: doing lots of unnecessary work doesn't
-matter as much as waking cpus from deep sleep.
-
-> 
-> I know both RCU and some NOHZ_FULL muck already track when the system is
-> completely idle. This is yet another case of that.
-
-Hugh
