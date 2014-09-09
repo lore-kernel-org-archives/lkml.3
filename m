@@ -1,130 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662AbaIINOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:14:54 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:54543 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaIINOw (ORCPT
+	id S1756072AbaIINQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:16:59 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:38620 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaIINQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:14:52 -0400
-Message-ID: <540EFD4E.50804@linaro.org>
-Date: Tue, 09 Sep 2014 14:14:54 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] asm-generic/io.h: Implement read[bwlq]_relaxed()
-References: <1410264760-29756-1-git-send-email-daniel.thompson@linaro.org> <20140909122818.GI1754@arm.com> <540EFA94.1010905@linaro.org>
-In-Reply-To: <540EFA94.1010905@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Tue, 9 Sep 2014 09:16:57 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-d8-540efdc62544
+From: Andrzej Hajda <a.hajda@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org (open list),
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
+Subject: [PATCH 0/9] drm/exynos: initialization/deinitialization fixes
+Date: Tue, 09 Sep 2014 15:16:04 +0200
+Message-id: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xK7rH/vKFGGz4zGdxa905VosrX9+z
+	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
+	F8AcxWWTkpqTWZZapG+XwJXx80EjY8EUroqL346zNTBu4+hi5OSQEDCRmL14GTOELSZx4d56
+	NhBbSGApo8TPxSpdjFxAdh+TxPrZf5lAEmwCmhJ/N98EKxIRUJZYta+dHaSIWeAjk8SVpW/A
+	JgkLuEl8XfoUqIiDg0VAVWLGRFuQMK+Ak8S9ixOZIJbJSZw8Npl1AiP3AkaGVYyiqaXJBcVJ
+	6blGesWJucWleel6yfm5mxghQfJ1B+PSY1aHGAU4GJV4eCeW8YUIsSaWFVfmHmKU4GBWEuG1
+	fgEU4k1JrKxKLcqPLyrNSS0+xMjEwSnVwDhf44hh1++30pnRnHELr7ywPLo7dI3706wSH151
+	m4KnaY17llzee2dKyNv8kh5haY44pdPVnGvOWzxY8Jvjjmnui4KnC9SDd91wvrhwyla187mP
+	q1cvlkmcuf7HCUnRK4dZjs1On6nHIvH9Blv+6gmZrx79uHCfQWfTGm6bgHuPX/JPan5o3OCg
+	xFKckWioxVxUnAgANLyEdfABAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 14:03, Daniel Thompson wrote:
-> On 09/09/14 13:28, Will Deacon wrote:
->> Hi Daniel,
->>
->> On Tue, Sep 09, 2014 at 01:12:40PM +0100, Daniel Thompson wrote:
->>> Currently the read[bwlq]_relaxed() family are implemented on every
->>> architecture except blackfin, m68k[1], metag, openrisc, s390[2] and
->>> score. Increasingly drivers are being optimized to exploit relaxed
->>> reads putting these architectures at risk of compilation failures for
->>> shared drivers.
->>>
->>> This patch addresses this by providing implementations of
->>> read[bwlq]_relaxed() that are identical to the equivalent read[bwlq]().
->>> All the above architectures include asm-generic/io.h .
->>>
->>> Note that currently only eight architectures (alpha, arm, arm64, avr32,
->>> hexagon, microblaze, mips and sh) implement write[bwlq]_relaxed() meaning
->>> these functions are deliberately not included in this patch.
->>>
->>> [1] m68k includes the relaxed family only when configured *without* MMU.
->>> [2] s390 requires CONFIG_PCI to include the relaxed family.
->>>
->>> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
->>> Cc: Will Deacon <will.deacon@arm.com>
->>> Cc: Arnd Bergmann <arnd@arndb.de>
->>> Cc: linux-arch@vger.kernel.org
->>> ---
->>>  include/asm-generic/io.h | 14 ++++++++++++++
->>>  1 file changed, 14 insertions(+)
->>
->> I have a larger series adding these (and the write equivalents) to all
->> architectures that I periodically post and then fail to get on top of.
-> 
-> That's why you're on Cc:...
-> 
-> 
->> The key part you're missing is defining some generic semantics for these
->> accessors. Without those, I don't think it makes sense to put them into
->> asm-generic, because drivers can't safely infer any meaning from the relaxed
->> definition.
-> 
-> Currently the semantics are described as:
-> --- cut here ---
-> PCI ordering rules also guarantee that PIO read responses arrive after
-> any outstanding DMA writes from that bus, since for some devices the
-> result of a readb call may signal to the driver that a DMA transaction
-> is complete. In many cases, however, the driver may want to indicate
-> that the next readb call has no relation to any previous DMA writes
-> performed by the device. The driver can use readb_relaxed for these
-> cases, although only some platforms will honor the relaxed semantics.
-> Using the relaxed read functions will provide significant performance
-> benefits on platforms that support it. The qla2xxx driver provides
-> examples of how to use readX_relaxed . In many cases, a majority of the
-> driver’s readX calls can safely be converted to readX_relaxed calls,
-> since only a few will indicate or depend on DMA completion.
-> --- cut here ---
-> 
-> The implementation provided in the patch trivially meets this definition
-> (by not honouring the relaxedness).
-> 
-> 
->> Ben and I agreed on something back in May:
->>
->>   https://lkml.org/lkml/2014/5/22/468
-> 
-> ... and didn't you also conclude with hpa that the very relaxed x86
-> implementation of readl_relaxed() already meets this definition (as do
-> these changes to asm-generic/io.h).
+This set of patches contains fixes of initialization and deinitialization
+code of exynos_drm core and components.
+It is based on exynos-drm-next branch.
 
-Sorry. "very relaxed" is always a very stupid thing to say about x86
-(especially to an arm guy).
+Patchset has been tested on trats and universal_c210 platforms.
 
-More exactly I was referring to the absence of memory clobber in x86
-readl_relaxed().
+Regards
+Andrzej
 
 
-> 
-> Thus allowing its use to perculate more widely really shouldn't do an harm.
-> 
-> 
->> but I need to send a new version including:
->>
->>   - ioreadX_relaxed and iowriteX_relaxed
->>   - Strengthening non-relaxed I/O accessors on architectures with non-empty
->>     mmiowb()
->>
->> I'll bump it up the list. In the meantime, you can have a look at my io
->> branch on kernel.org
-> 
-> I'd really like to see your work included (which I spotted after I wrote
-> the patch and when it occured to me to visit
-> https://www.google.com/search?q=asm-generic+readl_relaxed to see if
-> there was a well known reason not to make this change).
-> 
-> However... I really can't see why we should delay introducing an already
-> documented function to the remaining architectures.
-> 
-> 
-> Daniel.
-> 
+Andrzej Hajda (9):
+  drm/exynos/ipp: traverse ipp drivers list safely
+  drm/exynos: fix drm driver de-initialization order
+  drm/exynos/fbdev: fix fbdev gem object cleanup
+  drm/exynos/fb: free exynos framebuffer on error
+  drm/exynos/crtc: fix framebuffer reference sequence
+  drm/exynos/dsi: unregister connector on removal
+  drm/exynos/dpi: unregister connector and panel on removal
+  drm/exynos/dp: unregister connector on removal
+  drm/exynos/hdmi: unregister connector on removal
+
+ drivers/gpu/drm/exynos/exynos_dp_core.c   | 4 +++-
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c  | 6 ++++++
+ drivers/gpu/drm/exynos/exynos_drm_dpi.c   | 6 +++++-
+ drivers/gpu/drm/exynos/exynos_drm_drv.c   | 8 ++++----
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c   | 9 ++++++---
+ drivers/gpu/drm/exynos/exynos_drm_fb.c    | 1 +
+ drivers/gpu/drm/exynos/exynos_drm_fbdev.c | 3 ---
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c   | 4 ++--
+ drivers/gpu/drm/exynos/exynos_hdmi.c      | 4 +++-
+ 9 files changed, 30 insertions(+), 15 deletions(-)
+
+-- 
+1.9.1
 
