@@ -1,96 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378AbaIITD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:03:59 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:44597 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaIITD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:03:57 -0400
-Message-ID: <540F4F0E.8050306@gmail.com>
-Date: Tue, 09 Sep 2014 21:03:42 +0200
-From: Imre Palik <imrep.amz@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752400AbaIITE4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:04:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751782AbaIITEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 15:04:52 -0400
+Message-ID: <540F39DA.9040802@redhat.com>
+Date: Tue, 09 Sep 2014 13:33:14 -0400
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: drbd-dev@lists.linbit.com, Philipp Reisner <philipp.reisner@linbit.com>,
-        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
-        Matt Wilson <msw@amazon.com>
-Subject: Re: [PATCH v3] drbd: fix throttling on newly created DM backing devices
-References: <1409942478-29135-1-git-send-email-imrep.amz@gmail.com> <20140907095834.GA2332@hein> <540DA998.7060807@gmail.com> <20140908133816.GF9353@soda.linbit>
-In-Reply-To: <20140908133816.GF9353@soda.linbit>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org> <20140909162648.GE2910@arm.com> <540F2DCF.1010104@redhat.com> <20140909171541.GD3896@leverpostej>
+In-Reply-To: <20140909171541.GD3896@leverpostej>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/14 15:38, Lars wrote:
-> On Mon, Sep 08, 2014 at 03:05:28PM +0200, Imre Palik wrote:
->> On 09/07/14 11:58, Lars wrote:
->>> On Fri, Sep 05, 2014 at 08:41:18PM +0200, Imre Palik wrote:
->>>> From: "Palik, Imre" <imrep@amazon.de>
->>>>
->>>> If the drbd backing device is a new device mapper device (e.g., a
->>>> dm-linear mapping of an existing block device that contains data), the
->>>> counters are initially 0 even though the device contains useful
->>>> data. This causes throttling until something accesses the drbd device
->>>> or the backing device.
+On 09/09/2014 01:15 PM, Mark Rutland wrote:
+> On Tue, Sep 09, 2014 at 05:41:51PM +0100, Jon Masters wrote:
+>> On 09/09/2014 12:26 PM, Catalin Marinas wrote:
+>>> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
+>>>> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
+>>>> new file mode 100644
+>>>> index 0000000..3899ee6
+>>>> --- /dev/null
+>>>> +++ b/arch/arm64/include/asm/acenv.h
+>>>> @@ -0,0 +1,18 @@
+>>>> +/*
+>>>> + * ARM64 specific ACPICA environments and implementation
+>>>> + *
+>>>> + * Copyright (C) 2014, Linaro Ltd.
+>>>> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
+>>>> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
+>>>> + *
+>>>> + * This program is free software; you can redistribute it and/or modify
+>>>> + * it under the terms of the GNU General Public License version 2 as
+>>>> + * published by the Free Software Foundation.
+>>>> + */
+>>>> +
+>>>> +#ifndef _ASM_ACENV_H
+>>>> +#define _ASM_ACENV_H
+>>>> +
+>>>> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
 >>>
->>> What was wrong with my previous proposal?
+>>> Does this mean that it will be supported at some point? Looking at the
+>>> places where this function is called, I don't really see how this would
+>>> ever work on ARM. Which means that we add such macro just to be able to
+>>> compile code that would never be used on arm64. I would rather see the
+>>> relevant ACPI files only compiled on x86/IA-64 rather than arm64.
 >>
->> Sorry, I haven't realised you added a proposal to your reply.  It
->> seems, I really needed that extra sleep during the weekend ...
->>
->> Your proposal is good.  Of course, I like my last one a slightly
->> better.  But as they say, beauty is in the eye of the beholder :-)
->>
->>> How does changing the signedness help with
->>> rs_last_events not being properly initialized?
->>
->> It only helps with reasoning.  I reason with modular arithmetic way
->> easier than with signed integer overflows.  Accidentally, 0 is a
->> good initialisation value in case of unsigned arithmetic.
->>
->>> Are you sure you have also considered all wrap-around cases?
->>>
->>> Maybe you are too focused on your particular corner case
->>> (disk_stats starting with 0).
->>> Maybe I'm just thick right now, so please explain.
->>
->> The idea is that 0 is the smallest possible value for an unsigned,
->> and curr_events is monotonically increasing (mod 2^32) .
->
-> The problem is: it is not :-(
->
-> It's a difference between stats that are increased by the
-> block core at (usually) completion time, and an atomic_t
-> that is increased by DRBD at just before (or just after) submittion.
->
-> Depending very much on stress in the IO subsystem,
-> and overall timing of events, a later call may see a smaller
-> "curr_events" (because rs_last_sect_ev has already increased,
-> but the disk stats have not yet noticed).
->
-> With unsigned, that may wrap around to UINT_MAX, which we don't want.
+>> That specific cache behavior is a part of e.g. ACPI C3 state support
+>> (e.g. ACPI5.1 8.1.4 Processor Power State C3).
+> 
+> Per table 5-35, if neither WBINVD or WBINVD_FLUSH are set in the FADT,
+> we don't get S1, S2, or S3 states either.
 
-I see.  You hide the jitter behind the signedness.  Thanks for the 
-explanation.
+That's not quite what it says. You could still define an \_S1 state on
+such a system. That table simply makes an assumption that if the stride
+parameters are not defined and neither is wbindv then there's no way to
+reliably flush caches, which of course isn't a valid conclusion, it's
+just language that needs to be updated to reflect reality. So it's not
+"don't get", it's "machine cannot support", which is an assumption.
 
->> This
->> means, initially either curr_events > 64, that is, we enter the
->> loop, and do the initialisation, or it will be bigger than 64 at
->> most when we want to start throttle in an ideal world (after no more
->> than 64 sectors of activity).
->>
->> Basically, while you initialise rs_last_events to an ideal value
->> with some calculation, I choose a safe static value.  I am content
->> with both approaches.  I think, as a subsystem maintainer, you
->> should choose the one you like better.  If you choose yours, then
->> you can add
->> Reviewed-by: Imre Palik <imrep@amazon.de>
->
-> Thanks,
->
-> 	Lars
->
+>> As you note, it's not going to work on 64-bit ARM as it does on x86,
+>> but it's optional to implement C3 and early 64-bit ARM systems should
+>> not report Wbindv flags in the FADT anyway.
+> 
+> Unless the arm cache architecture changes, I wouldn't expect any 64-bit
+> ARM system to set either of the WBINVD flags.
+
+Indeed.
+
+>> They can also set FADT.P_LVL3_LAT > 1000, which has the effect of
+>> disabling C3 support, while also allowing for use of _CST objects to
+>> define more flexible C-States later on.
+> 
+> It sounds like we should be sanity checking these in the arm64 ACPI code
+> for the moment. I don't want us to discover that current platforms
+> report the wrong thing only when new platforms come out that might
+> actually report things correctly.
+
+It's reasonable to do this sooner rather than later, sure.
+
+Jon.
 
