@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226AbaIIROx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:14:53 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:34387 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055AbaIIROv (ORCPT
+	id S1754895AbaIIRPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:15:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47045 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750980AbaIIRPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:14:51 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Tue, 9 Sep 2014 13:20:42 -0400 (EDT)
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-In-Reply-To: <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 9 Sep 2014 13:15:46 -0400
+Date: Tue, 9 Sep 2014 18:15:41 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jon Masters <jcm@redhat.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+Message-ID: <20140909171541.GD3896@leverpostej>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org>
+ <20140909162648.GE2910@arm.com>
+ <540F2DCF.1010104@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540F2DCF.1010104@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Sep 2014, Vince Weaver wrote:
+On Tue, Sep 09, 2014 at 05:41:51PM +0100, Jon Masters wrote:
+> On 09/09/2014 12:26 PM, Catalin Marinas wrote:
+> > On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
+> >> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
+> >> new file mode 100644
+> >> index 0000000..3899ee6
+> >> --- /dev/null
+> >> +++ b/arch/arm64/include/asm/acenv.h
+> >> @@ -0,0 +1,18 @@
+> >> +/*
+> >> + * ARM64 specific ACPICA environments and implementation
+> >> + *
+> >> + * Copyright (C) 2014, Linaro Ltd.
+> >> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
+> >> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
+> >> + *
+> >> + * This program is free software; you can redistribute it and/or modify
+> >> + * it under the terms of the GNU General Public License version 2 as
+> >> + * published by the Free Software Foundation.
+> >> + */
+> >> +
+> >> +#ifndef _ASM_ACENV_H
+> >> +#define _ASM_ACENV_H
+> >> +
+> >> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
+> > 
+> > Does this mean that it will be supported at some point? Looking at the
+> > places where this function is called, I don't really see how this would
+> > ever work on ARM. Which means that we add such macro just to be able to
+> > compile code that would never be used on arm64. I would rather see the
+> > relevant ACPI files only compiled on x86/IA-64 rather than arm64.
 > 
-> [  751.656861] NOHZ: local_softirq_pending 100
-> [  756.009271] traps: perf_fuzzer[4236] trap invalid opcode ip:4044c0 sp:7fffb0ed6f90 error:0
-> [  756.017590] BUG: unable to handle kernel paging request
+> That specific cache behavior is a part of e.g. ACPI C3 state support
+> (e.g. ACPI5.1 8.1.4 Processor Power State C3).
 
-so it turns out that while it seems reproducible, it must be some sort of 
-race condition and only happens like 75% of the time on a 3.17-rc4 kernel.
+Per table 5-35, if neither WBINVD or WBINVD_FLUSH are set in the FADT,
+we don't get S1, S2, or S3 states either.
 
-Almost managed to get an oops that last time:
+> As you note, it's not going to work on 64-bit ARM as it does on x86,
+> but it's optional to implement C3 and early 64-bit ARM systems should
+> not report Wbindv flags in the FADT anyway.
 
-[  222.457213] NOHZ: local_softirq_pending 100
-[  222.712448] NOHZ: local_softirq_pending 100
-[  222.947573] NOHZ: local_softirq_pending 100
-[  229.168047] BUG: unable to handle kernel NULL pointer dereference at 0000000000000087
-[  229.172003] IP: [<ffffffff81062cde>] scheduler_tick+0x56/0xbb
-[  229.172003] PGD c4b72067 PUD c52df067 PMD 0 
-[  229.172003] Thread overran stack, or stack corrupted
-[  229.172003] Oops: 0000 [#1] SMP 
-[  229.172003] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg mcs7830 usbnet coretemp evdev psmouse pcspkr ohci_pci ohci_hcd  
-^P<C0><FF><FF><E8><FF><FF><A8>A!^A<88><FF><FF>hA!^A<88><FF>
-<FF>^P}<CB>7(OCE) 
+Unless the arm cache architecture changes, I wouldn't expect any 64-bit
+ARM system to set either of the WBINVD flags.
 
-any advice on tracking this down?  I can fire up ftrace but it's unclear 
-to me I will get anything useful as the system insta-reboots pretty 
-quickly.
+> They can also set FADT.P_LVL3_LAT > 1000, which has the effect of
+> disabling C3 support, while also allowing for use of _CST objects to
+> define more flexible C-States later on.
 
-Vince
+It sounds like we should be sanity checking these in the arm64 ACPI code
+for the moment. I don't want us to discover that current platforms
+report the wrong thing only when new platforms come out that might
+actually report things correctly.
+
+Mark.
