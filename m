@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaIIXRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 19:17:18 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:55641
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaIIXRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 19:17:17 -0400
-Date: Wed, 10 Sep 2014 01:17:15 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC PATCH 1/3] procfs: check uniq proc_dir_entry subdir name
-Message-ID: <20140909231715.GA25668@mail.hallyn.com>
-References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1409740200-26461-2-git-send-email-chenhanxiao@cn.fujitsu.com>
+	id S1752905AbaIIXRt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 19:17:49 -0400
+Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:12399
+	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752732AbaIIXRr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 19:17:47 -0400
+From: Anish Bhatt <anish@chelsio.com>
+To: Randy Dunlap <rdunlap@infradead.org>, Michael Chan <mchan@broadcom.com>,
+        "eddie.wai@broadcom.com" <eddie.wai@broadcom.com>
+CC: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: RE: randconfig build error with next-20140909, in
+ drivers/net/ethernet/broadcom/cnic.c
+Thread-Topic: randconfig build error with next-20140909, in
+ drivers/net/ethernet/broadcom/cnic.c
+Thread-Index: AQHPzDvJUu4bLmC2JEOt957Ln3rhrpv5OvG1gACAmgD//4+vrYAAlBwA//+Nz0Q=
+Date: Tue, 9 Sep 2014 23:16:43 +0000
+Message-ID: <525DB349B3FB5444AE057A887CB2A8D88E3E42@nice.asicdesigners.com>
+References: <CA+r1ZhhZynUKSeZnya67z9sph4+tpjO4E7jLZKc0EG4azxFdYA@mail.gmail.com>
+	 <525DB349B3FB5444AE057A887CB2A8D88E0BFB@nice.asicdesigners.com>,<1410295676.7520.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+ <525DB349B3FB5444AE057A887CB2A8D88E3CEC@nice.asicdesigners.com>,<540F8582.50703@infradead.org>
+In-Reply-To: <540F8582.50703@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.164.225]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409740200-26461-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Chen Hanxiao (chenhanxiao@cn.fujitsu.com):
-> Check whether a proc dir has a subdir
-> with a specific name.
-> Will be used in a later patch.
-> 
-> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-> ---
->  fs/proc/generic.c       | 15 +++++++++++++++
->  include/linux/proc_fs.h |  3 +++
->  2 files changed, 18 insertions(+)
-> 
-> diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-> index b7f268e..4d576c2 100644
-> --- a/fs/proc/generic.c
-> +++ b/fs/proc/generic.c
-> @@ -173,6 +173,21 @@ static const struct inode_operations proc_link_inode_operations = {
->  	.follow_link	= proc_follow_link,
->  };
->  
-> +/* check whether dir has @name member */
-> +struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *de, char *name)
-> +{
-> +	spin_lock(&proc_subdir_lock);
-> +	for (de = de->subdir; de ; de = de->next) {
-> +		if (!strcmp(de->name, name)) {
+> It would be really good if SCSI_NETLINK depended on NET instead of selected NET.
+> We shouldn't have kconfig symbols that use 'select' on entire subsystems.
 
-Should you pde_get(de) here?
+As a test, I was able to fix this by this approach : change SCSI_NETLINK to depend  
+on NET instead of selecting NET, and replacing 'select NETDEVICES ETHERNET 
+NET_VENDOR_BROADCOM CNIC' to 'depends on CNIC' in bnx2i & bnx2fc. (as CNIC 
+already has a dependency on those). This removes the need to check for IPV6 in 
+bnx2i/fc Kconfigs as well.
 
-> +			spin_unlock(&proc_subdir_lock);
-> +			return de;
-> +		}
-> +	}
-> +	spin_unlock(&proc_subdir_lock);
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL(proc_uniq_dir);
-> +
->  /*
->   * Don't create negative dentries here, return -ENOENT by hand
->   * instead.
-> diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-> index 9d117f6..38e87aa 100644
-> --- a/include/linux/proc_fs.h
-> +++ b/include/linux/proc_fs.h
-> @@ -41,6 +41,7 @@ extern void *proc_get_parent_data(const struct inode *);
->  extern void proc_remove(struct proc_dir_entry *);
->  extern void remove_proc_entry(const char *, struct proc_dir_entry *);
->  extern int remove_proc_subtree(const char *, struct proc_dir_entry *);
-> +extern struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *, char *);
->  
->  #else /* CONFIG_PROC_FS */
->  
-> @@ -71,6 +72,8 @@ static inline void *proc_get_parent_data(const struct inode *inode) { BUG(); ret
->  static inline void proc_remove(struct proc_dir_entry *de) {}
->  #define remove_proc_entry(name, parent) do {} while (0)
->  static inline int remove_proc_subtree(const char *name, struct proc_dir_entry *parent) { return 0; }
-> +static inline struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *,
-> +	char *) {return 0; }
->  
->  #endif /* CONFIG_PROC_FS */
->  
-> -- 
-> 1.9.0
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+The side effect is that you won't see BNX2 drivers unless CNIC is selected, similar
+for SCSI_NETLINK as well, not sure if there are any other implications.
+-Anish
