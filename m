@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995AbaIICh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:37:57 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49867 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802AbaIIChz (ORCPT
+	id S1756022AbaIICj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:39:56 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:49590 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755634AbaIICjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:37:55 -0400
-Date: Tue, 9 Sep 2014 10:37:40 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-gpio@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Lejun Zhu <lejun.zhu@intel.com>,
-        Radivoje Jovanovic <radivoje.jovanovic@intel.com>,
-        Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
-        linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH 0/2] Support CrystalCove PMIC ACPI operation region
-Message-ID: <20140909023658.GA11705@aaronlu.sh.intel.com>
-References: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
+	Mon, 8 Sep 2014 22:39:53 -0400
+Date: Tue, 9 Sep 2014 11:39:43 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140909023943.GH11706@mtj.dyndns.org>
+References: <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org>
+ <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org>
+ <20140909012227.GE11706@mtj.dyndns.org>
+ <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
+ <20140909012933.GF11706@mtj.dyndns.org>
+ <CAB=NE6V+of_RLQtjFpkLN49nKgfONx0T4cbu8kkNU69tUyNozw@mail.gmail.com>
+ <20140909014754.GG11706@mtj.dyndns.org>
+ <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
+In-Reply-To: <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to cc linux-acpi in the last series so please reply to this
-thread, sorry for the inconvenience.
+Hello,
 
-Regards,
-Aaron
+On Mon, Sep 08, 2014 at 07:28:58PM -0700, Luis R. Rodriguez wrote:
+> > Given that the behvaior change is from driver core and that device
+> > probing can happen post-loading anyway,
+> 
+> Ah but lets not forget Dmitry's requirement which is for in-kernel
+> drivers. We'd need to deal with both built-in and modules. Dmitry's
+> case is completely orthogonal to the systemd issue and is just needed
+> to help not stall boot but I see no reason to blend these two issues
+> into one requirement together.
 
-On Tue, Sep 09, 2014 at 10:32:46AM +0800, Aaron Lu wrote:
-> The two patches add support for CrystalCove PMIC ACPI operation region.
-> The PMIC chip has two customized operation regions: one for power rail
-> manipulation and one for thermal purpose: sensor temperature reading
-> and trip point value reading/setting.
+Maybe we can piggy back the two on the same mechanism but as you said
+the two issues are orthogonal.  Let's keep it that way for now.  We
+need them separate anyway for backports.
+
+> In terms of approach we would still need to decide on a path for how
+> to do asynch probing for both in-kernel drivers and modules, do we
+> want async_schedule(), or queue_work()? If async_schedule() do we want
+> to use a new domain or a new one shared for all drivers? Priority on
+
+I don't think async_schedule() is the right mechanism for this use
+case as the mechanism is inherently opportunistic.  It also gets
+tangled up with async synchronization at the end of module loading.
+
+> the schedular was one of my other concerns which we'd need to make
+> right to match existing load on drivers through finit_module() and
+> synchronous probe.
+
+Why do we care about the priority of probing tasks?  Does that
+actually make any meaningful difference?  If so, how?
+
+> > Userland could backport a fix to set the sysctl.  Given that we need
+> > both synchrnous and asynchronous behaviors, it's unlikely that we can
+> > come up with a solution which doesn't need cooperation from userland.
 > 
-> For an example ASL code on ASUS T100 with CrystalCove PMIC, see here:
-> https://gist.github.com/aaronlu/f5f65771a6c3251fae5d
-> 
-> Aaron Lu (2):
->   gpio / CrystalCove: support virtual GPIO
->   PMIC / opregion: support PMIC customized operation region for
->     CrystalCove
-> 
->  drivers/gpio/gpio-crystalcove.c           |  19 +-
->  drivers/mfd/Kconfig                       |  11 +
->  drivers/mfd/Makefile                      |   1 +
->  drivers/mfd/intel_soc_pmic_crc.c          |   3 +
->  drivers/mfd/intel_soc_pmic_crc_opregion.c | 229 +++++++++++++++++++
->  drivers/mfd/intel_soc_pmic_opregion.c     | 350 ++++++++++++++++++++++++++++++
->  drivers/mfd/intel_soc_pmic_opregion.h     |  35 +++
->  include/asm-generic/gpio.h                |   2 +-
->  8 files changed, 646 insertions(+), 4 deletions(-)
->  create mode 100644 drivers/mfd/intel_soc_pmic_crc_opregion.c
->  create mode 100644 drivers/mfd/intel_soc_pmic_opregion.c
->  create mode 100644 drivers/mfd/intel_soc_pmic_opregion.h
-> 
-> -- 
-> 1.9.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> True and then the timeout would also have to be skipped for device
+> drivers that have the sync_probe flag set, so I guess we'd need to
+
+I'm not sure about skipping for sync_probe flag.  That seems like an
+implementation detail to me.  Sure, we do that now because we don't
+have a better way of figuring out whether request_module() is waiting
+for it or not but hopefully we'd be able to in the future.  I think we
+just should make exceptions sensible so that it works fine in practice
+for now (and I don't think that'd be too hard).  So, the only
+cooperation necessary from userland would be just saying "I don't
+wanna wait for device probing on module load."
+
+Thanks.
+
+-- 
+tejun
