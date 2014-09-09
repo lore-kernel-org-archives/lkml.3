@@ -1,170 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaIISRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:17:10 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:59629 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaIISRH (ORCPT
+	id S1751448AbaIISTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:19:35 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:54642 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881AbaIISTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:17:07 -0400
-Message-ID: <540F4420.9090505@mvista.com>
-Date: Tue, 09 Sep 2014 13:17:04 -0500
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 9 Sep 2014 14:19:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH V3] pwm: lpc32xx - Add a driver for the motor PWM
+Date: Tue, 09 Sep 2014 20:19:25 +0200
+Message-ID: <79685201.RtYEqhYoTB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140909180530.635ce6f7@avionic-0020>
+References: <1410277361-26848-1-git-send-email-alban.bedel@avionic-design.de> <2942175.JkZcLDKfiR@wuerfel> <20140909180530.635ce6f7@avionic-0020>
 MIME-Version: 1.0
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        gouji.masayuki@jp.fujitsu.com
-Subject: Re: [RESEND PATCH] ipmi: Clear drvdata when interface is removed
- by hotmod
-References: <1410221957-4120-1-git-send-email-indou.takao@jp.fujitsu.com>
-In-Reply-To: <1410221957-4120-1-git-send-email-indou.takao@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:296gSYSC5BpGiWUhi3FdK8mjDlGulYsfmnyii3+xxTj
+ AgQ42/T3miXgLGCiwUDJcU9ZqwZU9f87L3jkchRx1TGNz/rbYd
+ c1pnWfCQzSVnJZDEQp1oTqW9QgKibBWehARvE2ate32XqWNqM1
+ 0Txg6QVF6U4ECIMigjtcoWiG/4BqUQpZNlnb1r22WYnR4rq2o1
+ DxNg0rQ2odOOuJqYHSrDk3GI+qKK7LtY9peotqfZnH8nXGrAg0
+ 3NEfX2cKyqnk0evU4Fqbmc0+pNBXpYfql0mg2UqaeYYeAOj7bn
+ 2AVSYXS80cCoubJsjxnuP5xS6mrmaNcNiElTJM/ajVEmf/UQiZ
+ OGVFS5SF78khwUqTx05U=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, I can see the problem.  Instead of the change you have, can you add
-something like:
+On Tuesday 09 September 2014 18:05:30 Alban Bedel wrote:
+> 
+> I'll add COMPILE_TEST, PWM is already there because this is in an if
+> PWM block. However I'm not sure for the clk, the LPC32xx use its own
+> implementation of the clk functions, what should I add in this case?
 
-if (!info)
-        return;
-if (info->dev)
-        dev_set_drvdata(info->dev, NULL);
+You can add a dependency on CLKDEV_LOOKUP, which is set by both LPC32xx
+and by COMMON_CLK.
 
-to the top of cleanup_one_si() instead?  I think that would be a cleaner
-and more general.
-
--corey
-
-
-On 09/08/2014 07:19 PM, Takao Indoh wrote:
-> Add another email of maintainer just in case.
->
->
-> This patch fixes a bug on hotmod removing.
->
-> After ipmi interface is removed using hotmod, kernel panic occurs when
-> rmmod impi_si. For example, try this:
->
->  # echo "remove,"`cat /proc/ipmi/0/params` > \
->  /sys/module/ipmi_si/parameters/hotmod
->  # rmmod ipmi_si
->
-> Then, rmmod fails with the following messages.
->
-> ------------[ cut here ]------------
-> WARNING: CPU: 12 PID: 10819 at /mnt/repos/linux/lib/list_debug.c:53
-> __list_del_entry+0x63/0xd0()
-> (snip)
-> CPU: 12 PID: 10819 Comm: rmmod Not tainted 3.17.0-rc1 #19
-> Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015
-> Rev.3D81.3030 02/10/2012
->  0000000000000009 ffff88022d547d40 ffffffff81575778 ffff88022d547d88
->  ffff88022d547d78 ffffffff8104ec5d ffff88023908cdb0 ffffffffa06fa4e0
->  ffff8800bac20860 0000000000000000 0000000002046090 ffff88022d547dd8
-> Call Trace:
->  [<ffffffff81575778>] dump_stack+0x45/0x56
->  [<ffffffff8104ec5d>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff8104eccc>] warn_slowpath_fmt+0x4c/0x50
->  [<ffffffff811f60bf>] ? __kernfs_remove+0xdf/0x220
->  [<ffffffff81291213>] __list_del_entry+0x63/0xd0
->  [<ffffffff8129128d>] list_del+0xd/0x30
->  [<ffffffffa06f285a>] cleanup_one_si+0x2a/0x230 [ipmi_si]
->  [<ffffffffa06f2f05>] ipmi_pnp_remove+0x15/0x20 [ipmi_si]
->  [<ffffffff8131c7d4>] pnp_device_remove+0x24/0x40
->  [<ffffffff8137175f>] __device_release_driver+0x7f/0xf0
->  [<ffffffff81372100>] driver_detach+0xb0/0xc0
->  [<ffffffff81371415>] bus_remove_driver+0x55/0xd0
->  [<ffffffff8137283c>] driver_unregister+0x2c/0x50
->  [<ffffffff8131ca02>] pnp_unregister_driver+0x12/0x20
->  [<ffffffffa06f347c>] cleanup_ipmi_si+0xbc/0xf0 [ipmi_si]
->  [<ffffffff810c33f2>] SyS_delete_module+0x132/0x1c0
->  [<ffffffff81002ab9>] ? do_notify_resume+0x59/0x80
->  [<ffffffff8157c45a>] ? int_signal+0x12/0x17
->  [<ffffffff8157c1d2>] system_call_fastpath+0x16/0x1b
-> ---[ end trace 70b4377268f85c23 ]---
->
-> list_del in cleanup_one_si() fails because the smi_info is already
-> removed when hotmod removing.
->
-> When ipmi interface is removed by hotmod, smi_info is removed by
-> cleanup_one_si(), but it is still set in drvdata. Therefore when rmmod
-> ipmi_si, ipmi_pnp_remove tries to remove it again and fails.
->
-> By this patch, a pointer to smi_info in drvdata is cleared when hotmod
-> removing so that it will be not accessed when rmmod.
->
-> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-> ---
->  drivers/char/ipmi/ipmi_si_intf.c | 27 +++++++++++++++++++++------
->  1 file changed, 21 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index 5d66568..20a3739 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -1904,8 +1904,14 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
->  					continue;
->  				if (e->si_type != si_type)
->  					continue;
-> -				if (e->io.addr_data == addr)
-> -					cleanup_one_si(e);
-> +				if (e->io.addr_data != addr)
-> +					continue;
-> +
-> +				/* Clear driver data */
-> +				if (e->dev)
-> +					dev_set_drvdata(e->dev, NULL);
-> +
-> +				cleanup_one_si(e);
->  			}
->  			mutex_unlock(&smi_infos_lock);
->  		}
-> @@ -2316,7 +2322,8 @@ static void ipmi_pnp_remove(struct pnp_dev *dev)
->  {
->  	struct smi_info *info = pnp_get_drvdata(dev);
->  
-> -	cleanup_one_si(info);
-> +	if (info)
-> +		cleanup_one_si(info);
->  }
->  
->  static const struct pnp_device_id pnp_dev_table[] = {
-> @@ -2621,7 +2628,8 @@ static int ipmi_pci_probe(struct pci_dev *pdev,
->  static void ipmi_pci_remove(struct pci_dev *pdev)
->  {
->  	struct smi_info *info = pci_get_drvdata(pdev);
-> -	cleanup_one_si(info);
-> +	if (info)
-> +		cleanup_one_si(info);
->  	pci_disable_device(pdev);
->  }
->  
-> @@ -2729,7 +2737,10 @@ static int ipmi_probe(struct platform_device *dev)
->  static int ipmi_remove(struct platform_device *dev)
->  {
->  #ifdef CONFIG_OF
-> -	cleanup_one_si(dev_get_drvdata(&dev->dev));
-> +	struct smi_info *info = dev_get_drvdata(&dev->dev);
-> +
-> +	if (info)
-> +		cleanup_one_si(info);
->  #endif
->  	return 0;
->  }
-> @@ -2796,7 +2807,11 @@ static int ipmi_parisc_probe(struct parisc_device *dev)
->  
->  static int ipmi_parisc_remove(struct parisc_device *dev)
->  {
-> -	cleanup_one_si(dev_get_drvdata(&dev->dev));
-> +	struct smi_info *info = dev_get_drvdata(&dev->dev);
-> +
-> +	if (info)
-> +		cleanup_one_si(info);
-> +
->  	return 0;
->  }
->  
-
+	Arnd
