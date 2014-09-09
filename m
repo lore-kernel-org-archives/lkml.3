@@ -1,103 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaIIPJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:09:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59580 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaIIPJS (ORCPT
+	id S1757069AbaIIPJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:09:40 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:65306 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495AbaIIPJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:09:18 -0400
-Date: Tue, 9 Sep 2014 10:09:01 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Robert Baldyga <r.baldyga@samsung.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 1/3] usb: gadget: f_fs: fix the redundant ep files
- problem
-Message-ID: <20140909150901.GL6151@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410243797-9719-1-git-send-email-r.baldyga@samsung.com>
- <1410243797-9719-2-git-send-email-r.baldyga@samsung.com>
- <20140909150425.GK6151@saruman.home>
+	Tue, 9 Sep 2014 11:09:37 -0400
+Date: Tue, 9 Sep 2014 11:09:18 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Zhang Rui <rui.zhang@intel.com>, Caesar Wang <caesar.wang@rock-chips.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
+        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
+        zhaoyifeng <zyf@rock-chips.com>
+Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
+Message-ID: <20140909150916.GA6095@developer>
+References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
+ <5407BA10.2030402@rock-chips.com>
+ <1410229637.8085.158.camel@rzhang1-toshiba>
+ <8397565.n78cHk4EtL@diego>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GeDkoc8jIzHasOdk"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140909150425.GK6151@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <8397565.n78cHk4EtL@diego>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GeDkoc8jIzHasOdk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello
 
-On Tue, Sep 09, 2014 at 10:04:26AM -0500, Felipe Balbi wrote:
-> On Tue, Sep 09, 2014 at 08:23:15AM +0200, Robert Baldyga wrote:
-> > Up to now, when endpoint addresses in descriptors were non-consecutive,
-> > there were created redundant files, which could cause problems in kerne=
-l,
-> > when user tried to read/write to them. It was result of fact that maxim=
-um
-> > endpoint address was taken as total number of endpoints in funciton.
-> >=20
-> > This patch adds endpoint descriptors counting and storing their address=
-es
-> > in eps_addrmap to verify their cohesion in each speed.
-> >=20
-> > Endpoint address map would be also useful for further features, just li=
-ke
-> > vitual endpoint address mapping.
-> >=20
-> > Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
->=20
-> This is a fix, which sits in my 'fixes' branch. You can't include it
-> here. This series should be rebased on top of my 'next' but it should
-> not include any fixes, only new code.
->=20
-> This is why we generally ask people to split the series up into fixes
-> and new code and not make them depend on each other. You need to
-> remember that, rather frequently, my 'next' branch is based off of -rc1.
->=20
-> I only merge an -rc back into my 'next' when the conflicts start to
-> become non-trivial because of all the dependencies people add :-)
->=20
-> I'll see if I can fix this up myself, but if I can't, then we either
-> postpone this series to v3.19 or you get it done properly and without
-> any cross-dependencies :-)
+On Tue, Sep 09, 2014 at 01:35:31PM +0200, Heiko Stübner wrote:
+> Am Dienstag, 9. September 2014, 10:27:17 schrieb Zhang Rui:
+> > On Thu, 2014-09-04 at 09:02 +0800, Caesar Wang wrote:
+> > > 在 2014年09月03日 16:07, Heiko Stübner 写道:
+> > > > Am Mittwoch, 3. September 2014, 10:10:37 schrieb Caesar Wang:
+> > > >> This add the necessary binding documentation for the thermal
+> > > >> found on Rockchip SoCs
+> > > >> 
+> > > >> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> > > >> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> > > >> ---
+> > > >> 
+> > > >>   .../devicetree/bindings/thermal/rockchip-thermal.txt | 20
+> > > >> 
+> > > >> ++++++++++++++++++++ 1 file changed, 20 insertions(+)
+> > > >> 
+> > > >>   create mode 100644
+> > > >> 
+> > > >> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> > > >> 
+> > > >> diff --git
+> > > >> a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> > > >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new
+> > > >> file
+> > > >> mode 100644
+> > > >> index 0000000..1ed4d4c
+> > > >> --- /dev/null
+> > > >> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> > > >> @@ -0,0 +1,20 @@
+> > > >> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
+> > > >> +
+> > > >> +Required properties:
+> > > >> +- compatible: "rockchip,rk3288-tsadc"
+> > > >> +- reg: physical base address of the controller and length of memory
+> > > >> mapped
+> > > >> +       region.
+> > > >> +- interrupts: The interrupt number to the cpu. The interrupt specifier
+> > > >> format +	      depends on the interrupt controller.
+> > > >> +- clocks: Must contain an entry for each entry in clock-names.
+> > > >> +- clock-names: Shall be "tsadc" for the converter-clock, and
+> > > >> "apb_pclk" for +	       the peripheral clock.
+> > > > 
+> > > > You're using the passive-temp, critical-temp and force-shut-temp
+> > > > properties in your driver without declaring them here.
+> > > 
+> > > frankly,the about are need be declared. but  there are 4 types[0] for
+> > > trip in thermal framework,
+> > > there is no force-shut for me. So I want to change it three additional
+> > > properties in [PATCH V4 4/4],
+> > > 
+> > > 
+> > > [0]
+> > > {
+> > > 
+> > >      THERMAL_TRIP_CRITICAL,
+> > >      THERMAL_TRIP_HOT,
+> > >      THERMAL_TRIP_PASSIVE,
+> > >      THERMAL_TRIP_ACTIVE,
+> > > 
+> > > }
+> > 
+> > this sounds reasonable to me.
+> > 
+> > > > But more importantly, please use the generic trip-points for this. I
+> > > > guess it shouldn't be a problem to introduce a "forced-shutdown"
+> > > > trippoint [0] for the additional trip-point you have - thermal
+> > > > maintainers, please shout if I'm wrong :-)
+> > 
+> > what is the difference between a critical trip point and a
+> > "forced-shutdown" trip point?
+> > Thermal core will do a shutdown in case the critical trip point is
+> > triggered.
+> 
+> The forced-shutdown is where the thermal controller is supposed to also do a 
 
-alright, so patch 2 I can apply. Patch 3 I really cannot because it
-depends on epaddr_map to create proper files on the filesystem.
+Currently, there is no discrimination between hardware configured /
+triggered thermal shutdown and software detected / triggered thermal shutdown.
+One way to implement it though is to reuse the critical trip type. Even
+if you use more than one trip type it is doable, it will depend on the
+priorities you give to software triggered and hardware triggered.
 
-I'll see if I can wait for -rc5 before merging patch 3, but it's likely
-it'll slip into v3.19.
+> shutdown in hardware. As you said the thermal core will also shutdown at the 
+> critical trip point, I guess we could map Caesar's value like
+> 
+> trip-point		tsadc
+> critical		forced-shutdown (the 120 degrees in patch 4)
 
---=20
-balbi
+> hot			critical (the 100 degrees)
+> ...
+> 
+> 
 
---GeDkoc8jIzHasOdk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+In the case we are planing to expand the trip type range, adding one
+specific to hardware configurable shutdown makes sense to me too.
+Alhtough, as I mention, I believe with the current generic trip types,
+this situation can be covered already. Besides, I believe
+'forced-shutdown' does not sound a descriptive enough though. I would
+suggest something more specific, say 'hardware-shutdown'. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> > 
+> > thanks,
+> > rui
+> > 
+> > > It's a good option.
+> > > I can send a patch,but I don't know whether the thermal maintainers will
+> > > accept it.
+> > > 
+> > > Maybe,they have a better way to suggest it.:-)
+> > > 
+> > > 
+> > > PS:I will sent a new patch If I still have no received their suggestions
+> > > in two days.
+> > > 
+> > > > Heiko
+> > > > 
+> > > > 
+> > > > [0] in a separate patch, changing
+> > > > - thermal_trip_type enum in include/linux/thermal.h
+> > > > - trip_types mapping in drivers/thermal/of-thermal.c
+> > > > - Documentation/devicetree/bindings/thermal/thermal.txt
+> > > > 
+> > > >> +
+> > > >> +Example:
+> > > >> +tsadc: tsadc@ff280000 {
+> > > >> +	compatible = "rockchip,rk3288-tsadc";
+> > > >> +	reg = <0xff280000 0x100>;
+> > > >> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+> > > >> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
+> > > >> +	clock-names = "tsadc", "apb_pclk";
+> > > >> +};
+> 
 
-iQIcBAEBAgAGBQJUDxgNAAoJEIaOsuA1yqRE9UQP/0mai4F6bnEB6NDbu629RvaU
-WKkvRx9cYXuzB+h9qRWTJtykqGoeqTAIHmHDOiQ3xNaxqY33FTZ4VsmTt+5yNcqc
-vSqSb1QRb5dl1pw84AXDOVlMAqLJRUBwaOKYg071BWNJbJhlKRCF45id9G3IFARm
-G4dMbRSnnRwg2ajsT2P5jYmNd4mx6sXDxRFPMWrGCTV0JXXOMOA9x3EyYypgNFJO
-EBynfzouHa/MJ5bgz3RAKJgKtuRAbvDMApO3GepEJSxSwFFeKjTdWNtyLiurimST
-MWmqwIJp1JOMNIgsXwwdNpwct5eLd185r5vkcE/5AFG2LYKwylZCZb0jQQ7nbYE8
-E3j6c79XS2Vr/hFvfCzgAHKpwilfA9suC3plaTpgGgIzdFmJdRLutGBlrX0RPvoC
-OJZn52jlZ65HVV/kYRfMxRHvFBpbaBmYNhMSwVw5fME0xhWG3se07Aq4umq5D7R5
-rWLLBehftCIAAS3ftiFkQNVMe5NVWEe3cXhpDffcg2kTZb/QE+j3v5KJBKtmsnTH
-QK2fSyTtTUxBaFrPE9PNya67Uugwg7fPM3QPWA9657HdT5n5NAryXdz3IpQRiKOe
-E83ETOXuhV1uZ3qEVdfKyxzH1+W7hJM0p9wCoNDmwayhJxJo4r/PIn+qYOyXcPoV
-7sbJ66lUHgh2N21Du1Cp
-=W7C/
------END PGP SIGNATURE-----
-
---GeDkoc8jIzHasOdk--
