@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198AbaIIJnw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:43:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44865 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036AbaIIJnv (ORCPT
+	id S1756247AbaIIJoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:44:22 -0400
+Received: from demumfd002.nsn-inter.net ([93.183.12.31]:43950 "EHLO
+	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126AbaIIJoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:43:51 -0400
-Date: Tue, 9 Sep 2014 11:43:39 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Robert Richter <robert.richter@caviumnetworks.com>
-Cc: Robert Richter <rric@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] GICv3: Fixing 32 bit compatibility
-Message-ID: <20140909094339.GR23009@pengutronix.de>
-References: <1410185480-5153-1-git-send-email-rric@kernel.org>
- <20140909080042.GO23009@pengutronix.de>
- <20140909091201.GA4527@rric.localhost>
- <20140909091912.GQ23009@pengutronix.de>
- <20140909092653.GC4588@rric.localhost>
+	Tue, 9 Sep 2014 05:44:20 -0400
+Date: Tue, 9 Sep 2014 13:47:46 +0300
+From: Matti Vaittinen <matti.vaittinen@nsn.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "linux@roeck-us.net" <linux@roeck-us.net>
+Cc: a.zummo@towertech.it, "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [PATCH v4 2/2] rtc: ds1307: add trickle charger device tree
+ binding.
+Message-ID: <20140909104746.GE21342@fi-ourus-dhcp00977.emea.nsn-net.net>
+References: <20140909103832.GA338@fi-ourus-dhcp00977.emea.nsn-net.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140909092653.GC4588@rric.localhost>
+In-Reply-To: <20140909103832.GA338@fi-ourus-dhcp00977.emea.nsn-net.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 938
+X-purgate-ID: 151667::1410255809-00005326-3EDBE209/0/0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 11:26:53AM +0200, Robert Richter wrote:
-> On 09.09.14 11:19:12, Uwe Kleine-König wrote:
-> > On Tue, Sep 09, 2014 at 11:12:01AM +0200, Robert Richter wrote:
-> > > On 09.09.14 10:00:42, Uwe Kleine-König wrote:
-> > > > On Mon, Sep 08, 2014 at 04:11:19PM +0200, Robert Richter wrote:
-> > > 
-> > > > > @@ -479,7 +479,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
-> > > > >     smp_wmb();
-> > > > >  
-> > > > >     for_each_cpu_mask(cpu, *mask) {
-> > > > > -           u64 cluster_id = cpu_logical_map(cpu) & ~0xffUL;
-> > > > > +           u64 cluster_id = cpu_logical_map(cpu) & ~0xffULL;
-> > > > This doesn't change anything, does it?
-> > > 
-> > > It does, not in 64 bit but in 32 bit there unsigned long is 32
-> > > bit. So, bit masks are broken if you compile a 32 bit kernel.
-> > Can you make an example where the result actually changes?
+On Tue, Sep 09, 2014 at 01:38:39PM +0300, Matti Vaittinen wrote:
+> rtc: ds1307: add trickle charger device tree binding.
 > 
-> Upper 32 bits will be cleared above.
-ah, I missed the ~ while thinking about the difference.
-
-> > > > I wonder if it would be cleaner to use (u64)0xff here.
-> > > 
-> > > No, that's ULL for. This is commonly used in x86 too.
-> > I don't care much here, but I'd say ULL is to force an unsigned long
-> > long. If you want to make it obvious that you want a 64bit value, a cast
-> > to u64 makes this more clear.
+> Some DS13XX devices have "trickle chargers". Introduce a device tree
+> binding for specifying the trickle charger configuration for ds1339.
 > 
-> ULL is no cast at all.
-That's irrelevant here if it's a cast or not. It makes the constant be
-an unsigned long long one.
+> Only ds1339 dt binding is supported because this is the only chip I have.
+> I _assume_ the code would have worked on other allready supported chips.
+> However I cannot check the resistor values for the other chips or test them.
+> For other chips the driver code works as earlier Eg. it does not check the
+> dt bindings at all.
+> 
 
-If you want an unsigned long long value, use ULL (or a cast to unsigned
-long long if the value permits), if you want an u64 use a cast to u64.
+I forgot to mention changes compared to patch v3:
+    -Splitted patch to two. Documentation and driver changes both in own
+    patches.
+    -Switched the diode-connected to be the default when charging is
+    used.
+    -Fixed the property name to match the one in the documentation.
 
-Probably it doesn't make sense to continue to argue here. The type of
-cpu_logical_map(cpu) varies per architecture but is always <= 64 bits
-wide and IIRC unsigned long long is guaranteed to be >= 64 bits wide so
-everything is fine with your patch today.
+    Br.
+    Matti Vaittinen
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
