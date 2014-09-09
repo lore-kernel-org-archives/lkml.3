@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234AbaIIJMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:12:08 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:48380 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961AbaIIJMG (ORCPT
+	id S1756073AbaIIJPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:15:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55103 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752484AbaIIJPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:12:06 -0400
-Date: Tue, 9 Sep 2014 11:12:01 +0200
-From: Robert Richter <rric@kernel.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Robert Richter <rrichter@cavium.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] GICv3: Fixing 32 bit compatibility
-Message-ID: <20140909091201.GA4527@rric.localhost>
-References: <1410185480-5153-1-git-send-email-rric@kernel.org>
- <20140909080042.GO23009@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140909080042.GO23009@pengutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 9 Sep 2014 05:15:03 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH] ARM: at91: enable new AIC driver even if the old one is selected
+Date: Tue,  9 Sep 2014 11:14:59 +0200
+Message-Id: <1410254099-24680-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.09.14 10:00:42, Uwe Kleine-König wrote:
-> On Mon, Sep 08, 2014 at 04:11:19PM +0200, Robert Richter wrote:
+The new AIC driver is currently only selected when only DT board support
+is enabled (and not when both DT and non-DT boards are supported), thus,
+when booting a "DT + non-DT" kernel with a dtb, the irqchip is never
+initialized/registered which then triggers a panic.
 
-> > @@ -479,7 +479,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
-> >     smp_wmb();
-> >  
-> >     for_each_cpu_mask(cpu, *mask) {
-> > -           u64 cluster_id = cpu_logical_map(cpu) & ~0xffUL;
-> > +           u64 cluster_id = cpu_logical_map(cpu) & ~0xffULL;
-> This doesn't change anything, does it?
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ arch/arm/mach-at91/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-It does, not in 64 bit but in 32 bit there unsigned long is 32
-bit. So, bit masks are broken if you compile a 32 bit kernel.
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 7df2c9b..cd7c0cb 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -51,7 +51,7 @@ config HAVE_AT91_SMD
+ config SOC_AT91SAM9
+ 	bool
+ 	select AT91_SAM9_TIME
+-	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
++	select ATMEL_AIC_IRQ
+ 	select CPU_ARM926T
+ 	select GENERIC_CLOCKEVENTS
+ 
+@@ -111,7 +111,7 @@ endif
+ if SOC_SAM_V4_V5
+ config SOC_AT91RM9200
+ 	bool "AT91RM9200"
+-	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
++	select ATMEL_AIC_IRQ
+ 	select CPU_ARM920T
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_AT91_DBGU0
+-- 
+1.9.1
 
-> I wonder if it would be cleaner to use (u64)0xff here.
-
-No, that's ULL for. This is commonly used in x86 too.
-
--Robert
