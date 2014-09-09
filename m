@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448AbaIISTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:19:35 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:54642 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaIISTd (ORCPT
+	id S1751715AbaIISVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:21:23 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:54038 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195AbaIISVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:19:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alban Bedel <alban.bedel@avionic-design.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH V3] pwm: lpc32xx - Add a driver for the motor PWM
-Date: Tue, 09 Sep 2014 20:19:25 +0200
-Message-ID: <79685201.RtYEqhYoTB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140909180530.635ce6f7@avionic-0020>
-References: <1410277361-26848-1-git-send-email-alban.bedel@avionic-design.de> <2942175.JkZcLDKfiR@wuerfel> <20140909180530.635ce6f7@avionic-0020>
+	Tue, 9 Sep 2014 14:21:22 -0400
+Message-ID: <540F4520.9090308@mvista.com>
+Date: Tue, 09 Sep 2014 13:21:20 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:296gSYSC5BpGiWUhi3FdK8mjDlGulYsfmnyii3+xxTj
- AgQ42/T3miXgLGCiwUDJcU9ZqwZU9f87L3jkchRx1TGNz/rbYd
- c1pnWfCQzSVnJZDEQp1oTqW9QgKibBWehARvE2ate32XqWNqM1
- 0Txg6QVF6U4ECIMigjtcoWiG/4BqUQpZNlnb1r22WYnR4rq2o1
- DxNg0rQ2odOOuJqYHSrDk3GI+qKK7LtY9peotqfZnH8nXGrAg0
- 3NEfX2cKyqnk0evU4Fqbmc0+pNBXpYfql0mg2UqaeYYeAOj7bn
- 2AVSYXS80cCoubJsjxnuP5xS6mrmaNcNiElTJM/ajVEmf/UQiZ
- OGVFS5SF78khwUqTx05U=
-X-UI-Out-Filterresults: notjunk:1;
+To: Arnd Bergmann <arnd@arndb.de>
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ipmi: work around gcc-4.9 build warning
+References: <58708252.p9ogO3naVQ@wuerfel>
+In-Reply-To: <58708252.p9ogO3naVQ@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 September 2014 18:05:30 Alban Bedel wrote:
-> 
-> I'll add COMPILE_TEST, PWM is already there because this is in an if
-> PWM block. However I'm not sure for the clk, the LPC32xx use its own
-> implementation of the clk functions, what should I add in this case?
+I'd prefer to fix gcc, but I understand.  This change is probably better
+in general, anyway.
 
-You can add a dependency on CLKDEV_LOOKUP, which is set by both LPC32xx
-and by COMMON_CLK.
+Queued for 3.18.  Thanks.
 
-	Arnd
+-corey
+
+On 08/23/2014 02:04 PM, Arnd Bergmann wrote:
+> Building ipmi on arm with gcc-4.9 results in this warning
+> for an allmodconfig build:
+>
+> drivers/char/ipmi/ipmi_si_intf.c: In function 'ipmi_thread':
+> include/linux/time.h:28:5: warning: 'busy_until.tv_sec' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>   if (lhs->tv_sec > rhs->tv_sec)
+>      ^
+> drivers/char/ipmi/ipmi_si_intf.c:1007:18: note: 'busy_until.tv_sec' was declared here
+>   struct timespec busy_until;
+>                   ^
+>
+> The warning is bogus and this case can not occur. Apparently
+> this is a false positive resulting from gcc getting a little
+> smarter about tracking assignments but not smart enough. Marking
+> the ipmi_thread_busy_wait function as inline gives the gcc
+> optimization logic enough information to figure out for itself
+> that the case cannot happen, which gets rid of the warning
+> without adding any fake initialization.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+> index 5d665680ae33..539ff0db52fc 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -965,9 +965,9 @@ static inline int ipmi_si_is_busy(struct timespec *ts)
+>  	return ts->tv_nsec != -1;
+>  }
+>  
+> -static int ipmi_thread_busy_wait(enum si_sm_result smi_result,
+> -				 const struct smi_info *smi_info,
+> -				 struct timespec *busy_until)
+> +static inline int ipmi_thread_busy_wait(enum si_sm_result smi_result,
+> +					const struct smi_info *smi_info,
+> +					struct timespec *busy_until)
+>  {
+>  	unsigned int max_busy_us = 0;
+>  
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
