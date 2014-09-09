@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247AbaIIJoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:44:22 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:43950 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126AbaIIJoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:44:20 -0400
-Date: Tue, 9 Sep 2014 13:47:46 +0300
-From: Matti Vaittinen <matti.vaittinen@nsn.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux@roeck-us.net" <linux@roeck-us.net>
-Cc: a.zummo@towertech.it, "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH v4 2/2] rtc: ds1307: add trickle charger device tree
- binding.
-Message-ID: <20140909104746.GE21342@fi-ourus-dhcp00977.emea.nsn-net.net>
-References: <20140909103832.GA338@fi-ourus-dhcp00977.emea.nsn-net.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909103832.GA338@fi-ourus-dhcp00977.emea.nsn-net.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 938
-X-purgate-ID: 151667::1410255809-00005326-3EDBE209/0/0
+	id S932199AbaIIJpH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:45:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754036AbaIIJpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:45:04 -0400
+From: Aaron Tomlin <atomlin@redhat.com>
+To: peterz@infradead.org
+Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
+        atomlin@redhat.com, oleg@redhat.com, pzijlstr@redhat.com,
+        riel@redhat.com, prarit@redhat.com, jgh@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
+        rostedt@goodmis.org, hannes@cmpxchg.org,
+        aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
+Subject: [PATCH v2 3/3] sched: BUG when stack end location is over written
+Date: Tue,  9 Sep 2014 10:42:29 +0100
+Message-Id: <1410255749-2956-4-git-send-email-atomlin@redhat.com>
+In-Reply-To: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
+References: <20140904161124.GD1436@atomlin.usersys.redhat.com>
+ <1410255749-2956-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 01:38:39PM +0300, Matti Vaittinen wrote:
-> rtc: ds1307: add trickle charger device tree binding.
-> 
-> Some DS13XX devices have "trickle chargers". Introduce a device tree
-> binding for specifying the trickle charger configuration for ds1339.
-> 
-> Only ds1339 dt binding is supported because this is the only chip I have.
-> I _assume_ the code would have worked on other allready supported chips.
-> However I cannot check the resistor values for the other chips or test them.
-> For other chips the driver code works as earlier Eg. it does not check the
-> dt bindings at all.
-> 
+Currently in the event of a stack overrun a call to schedule()
+does not check for this type of corruption. This corruption is
+often silent and can go unnoticed. However once the corrupted
+region is examined at a later stage, the outcome is undefined
+and often results in a sporadic page fault which cannot be
+handled.
 
-I forgot to mention changes compared to patch v3:
-    -Splitted patch to two. Documentation and driver changes both in own
-    patches.
-    -Switched the diode-connected to be the default when charging is
-    used.
-    -Fixed the property name to match the one in the documentation.
+This patch checks for a stack overrun and takes appropriate
+action since the damage is already done, there is no point
+in continuing.
 
-    Br.
-    Matti Vaittinen
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+---
+ kernel/sched/core.c |  4 ++++
+ lib/Kconfig.debug   | 12 ++++++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ec1a286..182b2d1 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2660,6 +2660,10 @@ static noinline void __schedule_bug(struct task_struct *prev)
+  */
+ static inline void schedule_debug(struct task_struct *prev)
+ {
++#ifdef CONFIG_SCHED_STACK_END_CHECK
++	if (unlikely(task_stack_end_corrupted(prev)))
++		BUG();
++#endif
+ 	/*
+ 	 * Test if we are atomic. Since do_exit() needs to call into
+ 	 * schedule() atomically, we ignore that path. Otherwise whine
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a285900..2a8280a 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -824,6 +824,18 @@ config SCHEDSTATS
+ 	  application, you can say N to avoid the very slight overhead
+ 	  this adds.
+ 
++config SCHED_STACK_END_CHECK
++	bool "Detect stack corruption on calls to schedule()"
++	depends on DEBUG_KERNEL
++	default y
++	help
++	  This option checks for a stack overrun on calls to schedule().
++	  If the stack end location is found to be over written always panic as
++	  the content of the corrupted region can no longer be trusted.
++	  This is to ensure no erroneous behaviour occurs which could result in
++	  data corruption or a sporadic crash at a later stage once the region
++	  is examined. The runtime overhead introduced is minimal.
++
+ config TIMER_STATS
+ 	bool "Collect kernel timers statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
+-- 
+1.9.3
 
