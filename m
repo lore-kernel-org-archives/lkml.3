@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781AbaIIESY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 00:18:24 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50163 "EHLO arroyo.ext.ti.com"
+	id S1751556AbaIIEYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 00:24:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21777 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755709AbaIIESV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 00:18:21 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <cw00.choi@samsung.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <myungjoo.ham@samsung.com>,
-        <grant.likely@linaro.org>, <rongjun.ying@csr.com>,
-        <linux@roeck-us.net>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH 5/5] extcon: gpio: Add support for using cable names
-Date: Tue, 9 Sep 2014 09:44:38 +0530
-Message-ID: <1410236078-11713-6-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1410236078-11713-1-git-send-email-george.cherian@ti.com>
-References: <1410236078-11713-1-git-send-email-george.cherian@ti.com>
+	id S1750850AbaIIEYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 00:24:39 -0400
+Message-ID: <540E80BD.20801@redhat.com>
+Date: Tue, 09 Sep 2014 00:23:25 -0400
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>
+CC: linaro-acpi@lists.linaro.org, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Lv Zheng <lv.zheng@intel.com>, Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 09/17] ARM64 / ACPI: Parse MADT for SMP initialization
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for using cable names. Enables other drivers to register interest
-and get notified using extcon provided notifier call backs.
+On 09/01/2014 10:57 AM, Hanjun Guo wrote:
+> MADT contains the information for MPIDR which is essential for
+> SMP initialization, parse the GIC cpu interface structures to
+> get the MPIDR value and map it to cpu_logical_map(), and add
+> enabled cpu with valid MPIDR into cpu_possible_map.
+> 
+> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
+> Parking protocol, but the Parking protocol is only specified for
+> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
+> before some updates for the ACPI spec or the Parking protocol spec.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- Documentation/devicetree/bindings/extcon/extcon-gpio.txt | 2 ++
- drivers/extcon/extcon-gpio.c                             | 4 ++++
- 2 files changed, 6 insertions(+)
+> +	/* CPU 0 was already initialized */
+> +	if (cpu) {
+> +		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
+> +			return -EOPNOTSUPP;
+> +
+> +		/* map the logical cpu id to cpu MPIDR */
+> +		cpu_logical_map(cpu) = mpidr;
 
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-index 30aa2e1..2c9d29f 100644
---- a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-+++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-@@ -7,6 +7,7 @@ Required Properties:
-  - compatible: should be:
- 	* "linux,extcon-gpio"
-  - gpios: specifies the gpio pin used.
-+ - cable-name: Name of the cable used.
- 
- Optional Properties:
-  - debounce: Debounce time for GPIO IRQ in ms
-@@ -18,4 +19,5 @@ Eg:
- 		compatible = "linux,extcon-gpio";
- 		gpios = <&gpio3 12 GPIO_ACTIVE_HIGH>;
- 		debounce = <20>;
-+		cable-name = "USB-HOST";
- 		};
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 3839749..c0ab8e7 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -42,6 +42,7 @@ struct gpio_extcon_data {
- 	struct delayed_work work;
- 	unsigned long debounce_jiffies;
- 	bool check_on_resume;
-+	const char *cable_name[1];
- };
- 
- static void gpio_extcon_work(struct work_struct *work)
-@@ -111,6 +112,9 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 		of_property_read_u32(np, "debounce", &debounce);
- 		irq = gpiod_to_irq(extcon_data->gpiod);
- 		irq_flags = irq_get_trigger_type(irq);
-+		of_property_read_string_index(np, "cable-name", 0,
-+					      extcon_data->cable_name);
-+		extcon_data->edev->supported_cable = extcon_data->cable_name;
- 	} else {
- 		if (!pdata)
- 			return -EBUSY;
--- 
-1.8.3.1
+I'm not sure it's worth noting in a comment or just in the dialogue that
+none of these MPIDR values is literally the value in the MPIDR. Linux
+doesn't store that anyway (even in the cpu_logical_map), since it is
+pre-filtered against MPIDR_HWID_BITMASK to remove the non-affinity level
+bits. And since the ACPI5.1 specification requires that non-affinity
+bits be zero everything works. But it relies upon this assumption so it
+might be worth explicitly masking out the bits when making the call into:
+
+       acpi_map_gic_cpu_interface(processor->arm_mpidr,
+               processor->flags & ACPI_MADT_ENABLED);
+
+During the parsing of the processor object's MPIDR value.
+
+Jon.
 
