@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274AbaIIJpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:45:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36965 "EHLO mx1.redhat.com"
+	id S932310AbaIIJqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:46:51 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55968 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755985AbaIIJpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:45:05 -0400
-From: Aaron Tomlin <atomlin@redhat.com>
-To: peterz@infradead.org
-Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
-        atomlin@redhat.com, oleg@redhat.com, pzijlstr@redhat.com,
-        riel@redhat.com, prarit@redhat.com, jgh@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
-        rostedt@goodmis.org, hannes@cmpxchg.org,
-        aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
-Subject: [PATCH v2 0/3] sched: Always check the integrity of the canary
-Date: Tue,  9 Sep 2014 10:42:26 +0100
-Message-Id: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
-In-Reply-To: <20140904161124.GD1436@atomlin.usersys.redhat.com>
-References: <20140904161124.GD1436@atomlin.usersys.redhat.com>
+	id S1755007AbaIIJqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:46:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="476288433"
+Date: Tue, 9 Sep 2014 12:46:44 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Ning Li <ning.li@intel.com>,
+        Alan Cox <alan@linux.intel.com>, Mark Brown <broonie@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86, gpio: Increase ARCH_NR_GPIOs to 512
+Message-ID: <20140909094644.GP13406@lahna.fi.intel.com>
+References: <1410176880-22524-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdb=yO3TbStfEesJCGDL3D_bq6_C0jwPUmKVuE+Otg8G4g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdb=yO3TbStfEesJCGDL3D_bq6_C0jwPUmKVuE+Otg8G4g@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending with "v2" added to each subject line:
+On Tue, Sep 09, 2014 at 09:24:59AM +0200, Linus Walleij wrote:
+> On Mon, Sep 8, 2014 at 1:47 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> > Some newer Intel SoCs like Braswell already have more than 256 GPIOs
+> > available so the default limit is exceeded. In order to support these add
+> > back the custom GPIO header with limit of 512 GPIOs for x86.
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Argh! This is the kind of stuff I want to get rid of ....
+> 
+> Preferably gpio should be a subsystem without a lot of hooks all over
+> the place with arch-specific modifications for this and that, including
+> the max number of GPIOs.
+> 
+> I would actually prefer if you bump the value in
+> include/asm-generic/gpio.h to 512 over this.
 
+OK, this makes sense and I can do the change for the next revision of
+the patch.
 
-Currently in the event of a stack overrun a call to schedule()
-does not check for this type of corruption. This corruption is
-often silent and can go unnoticed. However once the corrupted
-region is examined at a later stage, the outcome is undefined
-and often results in a sporadic page fault which cannot be
-handled.
+> But better still, now that we have descriptors etc would be to define
+> some new per-arch selectable config option like
+> CONFIG_ONLY_DYNAMIC_GPIO that changes the GPIO
+> core to use something like a radix tree to store and retrieve
+> descriptors.
+> 
+> I.e. in drivers/gpio/gpiolib.c get rid of this:
+> static struct gpio_desc gpio_desc[ARCH_NR_GPIOS];
+> 
+> Replace it with a radix tree of descriptors.
+> 
+> This however makes it *impossible* to use things like desc_to_gpio()
+> and/or gpio_to_desc() so the code has to be augmented all over the
+> place to avoid any uses of GPIO numbers on that architecture,
+> but I am sure it *can* be done on pure ACPI or device tree
+> systems, and that's what we should aim for.
+> 
+> Comments?
 
-The first patch adds a canary to init_task's end of stack.
-While the second patch provides a helper to determine the
-integrity of the canary. The third checks for a stack
-overrun and takes appropriate action since the damage
-is already done, there is no point in continuing.
-
-Changes since v1:
-
- * Rebased against v3.17-rc4
- * Add a canary to init_task - Oleg Nesterov
- * Fix various code formatting issues - Peter Zijlstra
- * Introduce Kconfig option - Peter Zijlstra
-
-Aaron Tomlin (3):
-  init/main.c: Give init_task a canary
-  sched: Add helper for task stack page overrun checking
-  sched: BUG when stack end location is over written
-
- arch/powerpc/mm/fault.c    |  5 +----
- arch/x86/mm/fault.c        |  5 +----
- include/linux/sched.h      |  4 ++++
- init/main.c                |  1 +
- kernel/fork.c              | 12 +++++++++---
- kernel/sched/core.c        |  4 ++++
- kernel/trace/trace_stack.c |  4 +---
- lib/Kconfig.debug          | 12 ++++++++++++
- 8 files changed, 33 insertions(+), 14 deletions(-)
-
--- 
-1.9.3
-
+That's a rather big rework to the GPIO subsystem and its users. I agree
+that it should be the goal eventually. For x86 such conversion is not
+that simple because we have systems out there that have neither ACPI nor
+DT available.
