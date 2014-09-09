@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648AbaIINEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:04:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7811 "EHLO mga01.intel.com"
+	id S1756681AbaIINES (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:04:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43390 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756531AbaIINEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:04:04 -0400
+	id S1756271AbaIINEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 09:04:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
-   d="scan'208";a="588545995"
+   d="scan'208";a="588546080"
 From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 To: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         DEVICE TREE <devicetree@vger.kernel.org>,
@@ -32,55 +32,85 @@ Cc: Carlo Caione <carlo@caione.org>,
         Doug Anderson <dianders@chromium.org>,
         Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
         Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v2 0/4] Initial support for XPowers AXP288 PMIC
-Date: Tue,  9 Sep 2014 06:02:51 -0700
-Message-Id: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v2 1/4] mfd/axp20x: rename files to support more devices
+Date: Tue,  9 Sep 2014 06:02:52 -0700
+Message-Id: <1410267775-4683-2-git-send-email-jacob.jun.pan@linux.intel.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-XPowers AXP288 is a customized PMIC found on some Intel Baytrail-CR platforms.
-It comes with sub-functions such as USB charging, fuel gauge, ADC, and many LDO
-and BUCK channels.
+More XPowers PMIC devices can be supported by extending this driver, so
+rename it to axp2xx to cover axp288 variant.
 
-By extending the existing AXP20x driver, this patchset adds basic support
-for AXP288 PMIC with GPADC as one MFD cell device driver. It also adds hooks
-for ACPI opregion handler driver which can be used to handle ACPI requests.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ drivers/mfd/Kconfig                      | 7 ++++---
+ drivers/mfd/Makefile                     | 2 +-
+ drivers/mfd/{axp20x.c => axp2xx.c}       | 2 +-
+ include/linux/mfd/{axp20x.h => axp2xx.h} | 0
+ 4 files changed, 6 insertions(+), 5 deletions(-)
+ rename drivers/mfd/{axp20x.c => axp2xx.c} (99%)
+ rename include/linux/mfd/{axp20x.h => axp2xx.h} (100%)
 
-Currently, the PMIC driver in this patchset does not support platform data
-enumeration. But when ACPI _DSD and unified device properties become available,
-cell devices with platform data will be added.
-
-This patch does not use intel_soc_pmic core for i2c and regmap handling in that
-axp288 shares similar programming interface with other Xpower PMICs supported in
-axp20x.c. Therefore, extending axp20x.c to include axp288 makes more sense.
-
-Changes v2:
-	- use format -M for 1/4
-	- minor tweak based on Maxime's review
-
-Jacob Pan (4):
-  mfd/axp20x: rename files to support more devices
-  mfd/axp2xx: extend axp20x to support axp288 pmic
-  regulator/axp20x: use axp2xx consolidated header
-  iio/adc/axp288: add support for axp288 gpadc
-
- drivers/iio/adc/Kconfig                  |   8 +
- drivers/iio/adc/Makefile                 |   1 +
- drivers/iio/adc/axp288_gpadc.c           | 250 ++++++++++++++++
- drivers/mfd/Kconfig                      |   7 +-
- drivers/mfd/Makefile                     |   2 +-
- drivers/mfd/axp20x.c                     | 258 ----------------
- drivers/mfd/axp2xx.c                     | 496 +++++++++++++++++++++++++++++++
- drivers/regulator/axp20x-regulator.c     |   6 +-
- include/linux/mfd/{axp20x.h => axp2xx.h} |  57 +++-
- 9 files changed, 819 insertions(+), 266 deletions(-)
- create mode 100644 drivers/iio/adc/axp288_gpadc.c
- delete mode 100644 drivers/mfd/axp20x.c
- create mode 100644 drivers/mfd/axp2xx.c
- rename include/linux/mfd/{axp20x.h => axp2xx.h} (79%)
-
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index de5abf2..42a70a3 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -67,14 +67,15 @@ config MFD_BCM590XX
+ 	help
+ 	  Support for the BCM590xx PMUs from Broadcom
+ 
+-config MFD_AXP20X
+-	bool "X-Powers AXP20X"
++config MFD_AXP2XX
++	bool "X-Powers AXP2XX"
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	select REGMAP_IRQ
+ 	depends on I2C=y
+ 	help
+-	  If you say Y here you get support for the X-Powers AXP202 and AXP209.
++	  If you say Y here you get support for the X-Powers AXP202, AXP209 and
++	  AXP288 power management IC (PMIC).
+ 	  This driver include only the core APIs. You have to select individual
+ 	  components like regulators or the PEK (Power Enable Key) under the
+ 	  corresponding menus.
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index f001487..55d76b3 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -103,7 +103,7 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-irq.o
+ obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
+ obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
+ obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
+-obj-$(CONFIG_MFD_AXP20X)	+= axp20x.o
++obj-$(CONFIG_MFD_AXP2XX)	+= axp2xx.o
+ 
+ obj-$(CONFIG_MFD_LP3943)	+= lp3943.o
+ obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
+diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp2xx.c
+similarity index 99%
+rename from drivers/mfd/axp20x.c
+rename to drivers/mfd/axp2xx.c
+index dee6539..c534443 100644
+--- a/drivers/mfd/axp20x.c
++++ b/drivers/mfd/axp2xx.c
+@@ -21,7 +21,7 @@
+ #include <linux/regmap.h>
+ #include <linux/slab.h>
+ #include <linux/regulator/consumer.h>
+-#include <linux/mfd/axp20x.h>
++#include <linux/mfd/axp2xx.h>
+ #include <linux/mfd/core.h>
+ #include <linux/of_device.h>
+ #include <linux/of_irq.h>
+diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp2xx.h
+similarity index 100%
+rename from include/linux/mfd/axp20x.h
+rename to include/linux/mfd/axp2xx.h
 -- 
 1.9.1
 
