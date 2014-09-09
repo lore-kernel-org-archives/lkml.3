@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216AbaIIHkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:40:43 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:56882 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079AbaIIHkl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:40:41 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: linux-leds@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Bryan Wu <cooloney@gmail.com>,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH 1/2] leds: trigger: gpio: fix warning in gpio trigger for gpios whose accessor function may sleep
-Date: Tue,  9 Sep 2014 09:40:32 +0200
-Message-Id: <1410248433-24005-2-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1410248433-24005-1-git-send-email-LW@KARO-electronics.de>
-References: <1410248433-24005-1-git-send-email-LW@KARO-electronics.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932332AbaIIHmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:42:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36871 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932185AbaIIHmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 03:42:09 -0400
+Content-Type: text/plain;
+	charset=us-ascii
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH 1/2] x86, gpio: Increase ARCH_NR_GPIOs to 512
+From: "H. Peter Anvin" <hpa@zytor.com>
+X-Mailer: iPad Mail (11D257)
+In-Reply-To: <CACRpkdb=yO3TbStfEesJCGDL3D_bq6_C0jwPUmKVuE+Otg8G4g@mail.gmail.com>
+Date: Tue, 9 Sep 2014 00:41:47 -0700
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Ning Li <ning.li@intel.com>,
+        Alan Cox <alan@linux.intel.com>, Mark Brown <broonie@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Transfer-Encoding: 7bit
+Message-Id: <8B06FF90-41FC-49F8-B330-EC3911BEA2AE@zytor.com>
+References: <1410176880-22524-1-git-send-email-mika.westerberg@linux.intel.com> <CACRpkdb=yO3TbStfEesJCGDL3D_bq6_C0jwPUmKVuE+Otg8G4g@mail.gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using a GPIO driver whose accessor functions may sleep (e.g. an
-I2C GPIO extender like PCA9554) the following warning is issued:
-WARNING: CPU: 0 PID: 665 at drivers/gpio/gpiolib.c:2274 gpiod_get_raw_value+0x3c/0x48()
-Modules linked in:
-CPU: 0 PID: 665 Comm: kworker/0:2 Not tainted 3.16.0-karo+ #115
-Workqueue: events gpio_trig_work
-[<c00142cc>] (unwind_backtrace) from [<c00118f8>] (show_stack+0x10/0x14)
-[<c00118f8>] (show_stack) from [<c001bf10>] (warn_slowpath_common+0x64/0x84)
-[<c001bf10>] (warn_slowpath_common) from [<c001bf4c>] (warn_slowpath_null+0x1c/0x24)
-[<c001bf4c>] (warn_slowpath_null) from [<c020a1b8>] (gpiod_get_raw_value+0x3c/0x48)
-[<c020a1b8>] (gpiod_get_raw_value) from [<c02f68a0>] (gpio_trig_work+0x1c/0xb0)
-[<c02f68a0>] (gpio_trig_work) from [<c0030c1c>] (process_one_work+0x144/0x38c)
-[<c0030c1c>] (process_one_work) from [<c0030ef8>] (worker_thread+0x60/0x5cc)
-[<c0030ef8>] (worker_thread) from [<c0036dd4>] (kthread+0xb4/0xd0)
-[<c0036dd4>] (kthread) from [<c000f0f0>] (ret_from_fork+0x14/0x24)
----[ end trace cd51a1dad8b86c9c ]---
+Isn't this exactly what ida is for?
 
-Fix this by using the _cansleep() variant of gpio_get_value().
+Sent from my tablet, pardon any formatting problems.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/leds/trigger/ledtrig-gpio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/leds/trigger/ledtrig-gpio.c b/drivers/leds/trigger/ledtrig-gpio.c
-index 35812e3..c86c418 100644
---- a/drivers/leds/trigger/ledtrig-gpio.c
-+++ b/drivers/leds/trigger/ledtrig-gpio.c
-@@ -48,7 +48,7 @@ static void gpio_trig_work(struct work_struct *work)
- 	if (!gpio_data->gpio)
- 		return;
- 
--	tmp = gpio_get_value(gpio_data->gpio);
-+	tmp = gpio_get_value_cansleep(gpio_data->gpio);
- 	if (gpio_data->inverted)
- 		tmp = !tmp;
- 
--- 
-1.7.10.4
-
+> On Sep 9, 2014, at 0:24, Linus Walleij <linus.walleij@linaro.org> wrote:
+> 
+> On Mon, Sep 8, 2014 at 1:47 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+>> Some newer Intel SoCs like Braswell already have more than 256 GPIOs
+>> available so the default limit is exceeded. In order to support these add
+>> back the custom GPIO header with limit of 512 GPIOs for x86.
+>> 
+>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Argh! This is the kind of stuff I want to get rid of ....
+> 
+> Preferably gpio should be a subsystem without a lot of hooks all over
+> the place with arch-specific modifications for this and that, including
+> the max number of GPIOs.
+> 
+> I would actually prefer if you bump the value in
+> include/asm-generic/gpio.h to 512 over this.
+> 
+> But better still, now that we have descriptors etc would be to define
+> some new per-arch selectable config option like
+> CONFIG_ONLY_DYNAMIC_GPIO that changes the GPIO
+> core to use something like a radix tree to store and retrieve
+> descriptors.
+> 
+> I.e. in drivers/gpio/gpiolib.c get rid of this:
+> static struct gpio_desc gpio_desc[ARCH_NR_GPIOS];
+> 
+> Replace it with a radix tree of descriptors.
+> 
+> This however makes it *impossible* to use things like desc_to_gpio()
+> and/or gpio_to_desc() so the code has to be augmented all over the
+> place to avoid any uses of GPIO numbers on that architecture,
+> but I am sure it *can* be done on pure ACPI or device tree
+> systems, and that's what we should aim for.
+> 
+> Comments?
+> 
+> Yours,
+> Linus Walleij
