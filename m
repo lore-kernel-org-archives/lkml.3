@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaIIUYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:24:34 -0400
-Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:19536
-	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752438AbaIIUYb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:24:31 -0400
-From: Anish Bhatt <anish@chelsio.com>
-To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "mchan@broadcom.com" <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
-Subject: RE: randconfig build error with next-20140909, in
- drivers/net/ethernet/broadcom/cnic.c
-Thread-Topic: randconfig build error with next-20140909, in
- drivers/net/ethernet/broadcom/cnic.c
-Thread-Index: AQHPzDvJUu4bLmC2JEOt957Ln3rhrpv5OvG1
-Date: Tue, 9 Sep 2014 20:24:21 +0000
-Message-ID: <525DB349B3FB5444AE057A887CB2A8D88E0BFB@nice.asicdesigners.com>
-References: <CA+r1ZhhZynUKSeZnya67z9sph4+tpjO4E7jLZKc0EG4azxFdYA@mail.gmail.com>
-In-Reply-To: <CA+r1ZhhZynUKSeZnya67z9sph4+tpjO4E7jLZKc0EG4azxFdYA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.164.225]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752442AbaIIU1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:27:23 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:50533 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999AbaIIU1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 16:27:22 -0400
+Date: Tue, 9 Sep 2014 13:27:10 -0700
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Timur Tabi <timur@tabi.org>
+Cc: Shengjiu Wang <shengjiu.wang@freescale.com>, Li.Xiubo@freescale.com,
+        lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, mpa@pengutronix.de
+Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
+Message-ID: <20140909202710.GB5224@Asurada>
+References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+ <20140909183804.GA6944@Asurada>
+ <540F5706.1050303@tabi.org>
+ <20140909195928.GA5224@Asurada>
+ <540F5D29.7040309@tabi.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540F5D29.7040309@tabi.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is caused by c99d667e8527  ("cnic : Cleanup CONFIG_IPV6 & VLAN check")
+On Tue, Sep 09, 2014 at 03:03:53PM -0500, Timur Tabi wrote:
+> On 09/09/2014 02:59 PM, Nicolin Chen wrote:
+> >+	/*
+> >+	 * Initially mark the clock to NULL for all platforms so that later
+> >+	 * clk_prepare_enable() will ignore and return 0 for non-clock cases.
+> >+	 */
+> >+	ssi_private->clk = NULL;
+> 
+> According to Mark, NULL is a valid clock, so this should be instead:
+> 
+> 	ssi_private->clk = PTR_ERR(-EINVAL);
+> 
+> although that doesn't sit well with me.
 
-So I'm not really sure what the fix for this is. CNIC will properly only support 
-[m] or [n] when IPV6 is compiled as a module, but if you set SCSI_BNX2X_FCOE or 
-SCSI_BNX2_ISCSI to be in built, there is a 'select CNIC' that forces CNIC to be 
-inbuilt, even though this is not supported by Kconfig. I was under the 
-assumption that select will not forcibly change m to inbuilt (or perhaps I'm 
-missing some syntax suboption ?)
+I guess Mark's comment is merely against the check for clk validation
+because if talking about clk validation, we should check IS_ERR(clk)
+rather than check !=NULL directly.
 
-This is still fixable in SCSI_BNX2_ISCSI using the same logic used in the above 
-mentioned commit, but not so in SCSI_BNX2X_FCOE where it causes a recursive 
-dependency error (thought it is fixing the issue nevertheless), and none of the 
- other solutions I tried seemed to work either.
+However, my approach doesn't need any check. The open() or pm_resume()
+can just call clk_prepare_enable() directly. The __clk_enable() will
+then handle the 'clk == NULL' case:
 
-Looking at previous code, the earlier approach used to just disable ipv6 code 
-in such a situation.
--Anish
+static int __clk_enable(struct clk *clk)
+{
+	int ret = 0;
 
-________________________________________
-From: Jim Davis [jim.epost@gmail.com]
-Sent: Tuesday, September 09, 2014 7:38 AM
-To: Stephen Rothwell; linux-next; linux-kernel; Anish Bhatt; mchan@broadcom.com; David S. Miller; netdev
-Subject: randconfig build error with next-20140909, in drivers/net/ethernet/broadcom/cnic.c
-
-Building with the attached random configuration file,
-
-drivers/built-in.o: In function `cnic_get_v6_route':
-cnic.c:(.text+0x3a4168): undefined reference to `ip6_route_output'
-make: *** [vmlinux] Error 1
+	if (!clk)
+		return 0;
