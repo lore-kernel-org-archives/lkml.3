@@ -1,59 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948AbaIICCc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:02:32 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45257 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681AbaIICCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:02:30 -0400
-Date: Tue, 9 Sep 2014 03:02:25 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH v3 00/29] nios2 Linux kernel port
-Message-ID: <20140909020225.GW7996@ZenIV.linux.org.uk>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932102AbaIICCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:02:49 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:42486 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755883AbaIICCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:02:44 -0400
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-mtd@lists.infradead.org
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Huang Shijie <shijie8@gmail.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/7] mtd: denali: remove unnecessary variable initializations
+Date: Tue,  9 Sep 2014 11:01:52 +0900
+Message-Id: <1410228117-14820-3-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410228117-14820-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1410228117-14820-1-git-send-email-yamada.m@jp.panasonic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 05:22:11PM +0800, Ley Foon Tan wrote:
-> This is the 3rd version of patchset adds the Linux kernel port for Nios II processor from
-> Altera. All of the feedback from v2 patchseries has been addressed. Thanks to all who
-> provided feedback on the previous version.
+All of these variables are initialized to zero and then
+set to a different value below.
+Zero-initializing is redundant.
 
-a) signal caught in rt_sigreturn() (e.g. from change of the set of blocked
-signals) should *NOT* trigger syscall restart.  IOW, wrt syscall restart
-logics, rt_sigreturn() acts as exception, not as a syscall.  You are
-setting ->orig_r2 to -1, but that doesn't affect your syscall restart
-logics.
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+---
 
-As the matter of fact, your 'in_syscall' argument is bogus - it's always
-1.  For return from interrupt as well as that from syscall.  And syscall
-restart logics _really_ shouldn't apply to return from interrupts - it's
-not only wrong, but very hard to debug.
+Changes in v2: None
 
-b) multiple pending signals should be all handled before return to
-userland.  Only the first one might have syscall restart logics triggered.
-The effect should be identical to what you'd get if e.g. a timer interrupt
-had hit just as you were returning to userland (possibly into handler)
-after handling the first one, etc.  At the absolute least, SIGSEGV from
-failing attempt to build a sigframe should be handled before returning
-to userland.
+ drivers/mtd/nand/denali.c | 59 ++++++++++++++++++++++-------------------------
+ 1 file changed, 27 insertions(+), 32 deletions(-)
 
-c) rt_sigreturn() should reset ->restart_block.fn to do_no_restart_syscall
+diff --git a/drivers/mtd/nand/denali.c b/drivers/mtd/nand/denali.c
+index 44a5f159..3836828 100644
+--- a/drivers/mtd/nand/denali.c
++++ b/drivers/mtd/nand/denali.c
+@@ -146,7 +146,7 @@ static void write_byte_to_buf(struct denali_nand_info *denali, uint8_t byte)
+ /* reads the status of the device */
+ static void read_status(struct denali_nand_info *denali)
+ {
+-	uint32_t cmd = 0x0;
++	uint32_t cmd;
+ 
+ 	/* initialize the data buffer to store status */
+ 	reset_buf(denali);
+@@ -161,7 +161,7 @@ static void read_status(struct denali_nand_info *denali)
+ /* resets a specific device connected to the core */
+ static void reset_bank(struct denali_nand_info *denali)
+ {
+-	uint32_t irq_status = 0;
++	uint32_t irq_status;
+ 	uint32_t irq_mask = INTR_STATUS__RST_COMP |
+ 			    INTR_STATUS__TIME_OUT;
+ 
+@@ -581,7 +581,7 @@ static inline bool is_flash_bank_valid(int flash_bank)
+ 
+ static void denali_irq_init(struct denali_nand_info *denali)
+ {
+-	uint32_t int_mask = 0;
++	uint32_t int_mask;
+ 	int i;
+ 
+ 	/* Disable global interrupts */
+@@ -624,7 +624,7 @@ static inline uint32_t denali_irq_detected(struct denali_nand_info *denali)
+ static inline void clear_interrupt(struct denali_nand_info *denali,
+ 							uint32_t irq_mask)
+ {
+-	uint32_t intr_status_reg = 0;
++	uint32_t intr_status_reg;
+ 
+ 	intr_status_reg = INTR_STATUS(denali->flash_bank);
+ 
+@@ -633,7 +633,8 @@ static inline void clear_interrupt(struct denali_nand_info *denali,
+ 
+ static void clear_interrupts(struct denali_nand_info *denali)
+ {
+-	uint32_t status = 0x0;
++	uint32_t status;
++
+ 	spin_lock_irq(&denali->irq_lock);
+ 
+ 	status = read_interrupt_status(denali);
+@@ -645,7 +646,7 @@ static void clear_interrupts(struct denali_nand_info *denali)
+ 
+ static uint32_t read_interrupt_status(struct denali_nand_info *denali)
+ {
+-	uint32_t intr_status_reg = 0;
++	uint32_t intr_status_reg;
+ 
+ 	intr_status_reg = INTR_STATUS(denali->flash_bank);
+ 
+@@ -659,7 +660,7 @@ static uint32_t read_interrupt_status(struct denali_nand_info *denali)
+ static irqreturn_t denali_isr(int irq, void *dev_id)
+ {
+ 	struct denali_nand_info *denali = dev_id;
+-	uint32_t irq_status = 0x0;
++	uint32_t irq_status;
+ 	irqreturn_t result = IRQ_NONE;
+ 
+ 	spin_lock(&denali->irq_lock);
+@@ -693,8 +694,8 @@ static irqreturn_t denali_isr(int irq, void *dev_id)
+ 
+ static uint32_t wait_for_irq(struct denali_nand_info *denali, uint32_t irq_mask)
+ {
+-	unsigned long comp_res = 0;
+-	uint32_t intr_status = 0;
++	unsigned long comp_res;
++	uint32_t intr_status;
+ 	bool retry = false;
+ 	unsigned long timeout = msecs_to_jiffies(1000);
+ 
+@@ -736,7 +737,7 @@ static uint32_t wait_for_irq(struct denali_nand_info *denali, uint32_t irq_mask)
+ static void setup_ecc_for_xfer(struct denali_nand_info *denali, bool ecc_en,
+ 				bool transfer_spare)
+ {
+-	int ecc_en_flag = 0, transfer_spare_flag = 0;
++	int ecc_en_flag, transfer_spare_flag;
+ 
+ 	/* set ECC, transfer spare bits if needed */
+ 	ecc_en_flag = ecc_en ? ECC_ENABLE__FLAG : 0;
+@@ -759,8 +760,8 @@ static int denali_send_pipeline_cmd(struct denali_nand_info *denali,
+ 							int op)
+ {
+ 	int status = PASS;
+-	uint32_t addr = 0x0, cmd = 0x0, page_count = 1, irq_status = 0,
+-		 irq_mask = 0;
++	uint32_t page_count = 1;
++	uint32_t addr, cmd, irq_status, irq_mask;
+ 
+ 	if (op == DENALI_READ)
+ 		irq_mask = INTR_STATUS__LOAD_COMP;
+@@ -829,7 +830,7 @@ static int write_data_to_flash_mem(struct denali_nand_info *denali,
+ 							const uint8_t *buf,
+ 							int len)
+ {
+-	uint32_t i = 0, *buf32;
++	uint32_t i, *buf32;
+ 
+ 	/*
+ 	 * verify that the len is a multiple of 4.
+@@ -849,7 +850,7 @@ static int read_data_from_flash_mem(struct denali_nand_info *denali,
+ 								uint8_t *buf,
+ 								int len)
+ {
+-	uint32_t i = 0, *buf32;
++	uint32_t i, *buf32;
+ 
+ 	/*
+ 	 * we assume that len will be a multiple of 4, if not it would be nice
+@@ -870,7 +871,7 @@ static int read_data_from_flash_mem(struct denali_nand_info *denali,
+ static int write_oob_data(struct mtd_info *mtd, uint8_t *buf, int page)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-	uint32_t irq_status = 0;
++	uint32_t irq_status;
+ 	uint32_t irq_mask = INTR_STATUS__PROGRAM_COMP |
+ 						INTR_STATUS__PROGRAM_FAIL;
+ 	int status = 0;
+@@ -899,8 +900,8 @@ static int write_oob_data(struct mtd_info *mtd, uint8_t *buf, int page)
+ static void read_oob_data(struct mtd_info *mtd, uint8_t *buf, int page)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-	uint32_t irq_mask = INTR_STATUS__LOAD_COMP,
+-			 irq_status = 0, addr = 0x0, cmd = 0x0;
++	uint32_t irq_mask = INTR_STATUS__LOAD_COMP;
++	uint32_t irq_status, addr, cmd;
+ 
+ 	denali->page = page;
+ 
+@@ -938,7 +939,7 @@ static void read_oob_data(struct mtd_info *mtd, uint8_t *buf, int page)
+  */
+ static bool is_erased(uint8_t *buf, int len)
+ {
+-	int i = 0;
++	int i;
+ 	for (i = 0; i < len; i++)
+ 		if (buf[i] != 0xFF)
+ 			return false;
+@@ -961,9 +962,8 @@ static bool handle_ecc(struct denali_nand_info *denali, uint8_t *buf,
+ 
+ 	if (irq_status & INTR_STATUS__ECC_ERR) {
+ 		/* read the ECC errors. we'll ignore them for now */
+-		uint32_t err_address = 0, err_correction_info = 0;
+-		uint32_t err_byte = 0, err_sector = 0, err_device = 0;
+-		uint32_t err_correction_value = 0;
++		uint32_t err_address, err_correction_info, err_byte,
++			 err_sector, err_device, err_correction_value;
+ 		denali_set_intr_modes(denali, false);
+ 
+ 		do {
+@@ -1026,19 +1026,14 @@ static bool handle_ecc(struct denali_nand_info *denali, uint8_t *buf,
+ /* programs the controller to either enable/disable DMA transfers */
+ static void denali_enable_dma(struct denali_nand_info *denali, bool en)
+ {
+-	uint32_t reg_val = 0x0;
+-
+-	if (en)
+-		reg_val = DMA_ENABLE__FLAG;
+-
+-	iowrite32(reg_val, denali->flash_reg + DMA_ENABLE);
++	iowrite32(en ? DMA_ENABLE__FLAG : 0, denali->flash_reg + DMA_ENABLE);
+ 	ioread32(denali->flash_reg + DMA_ENABLE);
+ }
+ 
+ /* setups the HW to perform the data DMA */
+ static void denali_setup_dma(struct denali_nand_info *denali, int op)
+ {
+-	uint32_t mode = 0x0;
++	uint32_t mode;
+ 	const int page_count = 1;
+ 	dma_addr_t addr = denali->buf.dma_buf;
+ 
+@@ -1071,7 +1066,7 @@ static int write_page(struct mtd_info *mtd, struct nand_chip *chip,
+ 	dma_addr_t addr = denali->buf.dma_buf;
+ 	size_t size = denali->mtd.writesize + denali->mtd.oobsize;
+ 
+-	uint32_t irq_status = 0;
++	uint32_t irq_status;
+ 	uint32_t irq_mask = INTR_STATUS__DMA_CMD_COMP |
+ 						INTR_STATUS__PROGRAM_FAIL;
+ 
+@@ -1172,7 +1167,7 @@ static int denali_read_page(struct mtd_info *mtd, struct nand_chip *chip,
+ 	dma_addr_t addr = denali->buf.dma_buf;
+ 	size_t size = denali->mtd.writesize + denali->mtd.oobsize;
+ 
+-	uint32_t irq_status = 0;
++	uint32_t irq_status;
+ 	uint32_t irq_mask = INTR_STATUS__ECC_TRANSACTION_DONE |
+ 			    INTR_STATUS__ECC_ERR;
+ 	bool check_erased_page = false;
+@@ -1224,7 +1219,7 @@ static int denali_read_page_raw(struct mtd_info *mtd, struct nand_chip *chip,
+ 	dma_addr_t addr = denali->buf.dma_buf;
+ 	size_t size = denali->mtd.writesize + denali->mtd.oobsize;
+ 
+-	uint32_t irq_status = 0;
++	uint32_t irq_status;
+ 	uint32_t irq_mask = INTR_STATUS__DMA_CMD_COMP;
+ 
+ 	if (page != denali->page) {
+@@ -1288,7 +1283,7 @@ static int denali_erase(struct mtd_info *mtd, int page)
+ {
+ 	struct denali_nand_info *denali = mtd_to_denali(mtd);
+ 
+-	uint32_t cmd = 0x0, irq_status = 0;
++	uint32_t cmd, irq_status;
+ 
+ 	clear_interrupts(denali);
+ 
+-- 
+1.9.1
 
-d) what's
-+       regs->estatus = (regs->estatus & 0xffffffff);
-in rt_restore_ucontext() about?
-
-e) restart in handlerless case is better off without leaving the kernel
-mode.  See what e.g. arm and s390 are doing.
