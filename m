@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381AbaIILxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:53:01 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:12207 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaIILw7 (ORCPT
+	id S1756552AbaIILxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:53:10 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:40215 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424AbaIILxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:52:59 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-24-540eea183cd8
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Peter Griffin <peter.griffin@linaro.org>, linux-kernel@vger.kernel.org,
-        kishon@ti.com, srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, peppe.cavallaro@st.com, lee.jones@linaro.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] phy: phy-stih407-usb: Add usb picoPHY driver found
- on stih407 SoC family
-Date: Tue, 09 Sep 2014 13:52:54 +0200
-Message-id: <1706244.K6iQdujHby@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1410253218-18318-2-git-send-email-peter.griffin@linaro.org>
-References: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org>
- <1410253218-18318-2-git-send-email-peter.griffin@linaro.org>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jAV3JV3whBiu6GC3mHznHanHhaQ+b
-	xf2vRxktNj2+xmpxedccNotHpxezWcw5cZXR4v/rrYwWG2b8Y7Fo+xbnwOWxc9Zddo871/aw
-	eWxeUu/x9MdeZo/jN7YzeXzeJBfAFsVlk5Kak1mWWqRvl8CVcf3zAcaCL9wV82+uZWlgPMzZ
-	xcjJISFgIjF7zwtmCFtM4sK99WxdjFwcQgKLGCUWvt7ECOG0MEn8+NLGAlLFJmAlMbF9FSOI
-	LSKgITGl6zE7SBGzwA9GiQWtk9hAEsICaRKtJxeDFbEIqEpsWnMSrJlXQFPi49spYDWiAp4S
-	O7avBLM5geynq79DbWtnlHi6dAErRIOgxI/J98CamQXkJfbtn8oKYWtJrN95nGkCo8AsJGWz
-	kJTNQlK2gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwPDyT2sG4ssHiEKMAB6MSD29G
-	MF+IEGtiWXFl7iFGCQ5mJRFe6xdAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tS
-	s1NTC1KLYLJMHJxSDYycYVKrc8vlX9vs/JWhpa11oc3/+duIuhMPN0zOb0i3a/60YsNrjR6b
-	hd/2/dx1YtaOy4FHA3/c4L7k9LpI36rILdbD0+pOTLtaRFr000e79jtmCWrwJX2JVRb56BB2
-	a6Pmxu8/uBfdX7jcWmaLjJLGItZkwbpclQUMax5y5Bnb8HltmbfzhoUSS3FGoqEWc1FxIgDC
-	avJsgwIAAA==
+	Tue, 9 Sep 2014 07:53:08 -0400
+From: Markos Chandras <markos.chandras@imgtec.com>
+To: <linux-mips@linux-mips.org>
+CC: Markos Chandras <markos.chandras@imgtec.com>,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>
+Subject: [PATCH linux-next] MIPS: ioctls: Add missing TIOC{S,G}RS485 definitions
+Date: Tue, 9 Sep 2014 12:52:55 +0100
+Message-ID: <1410263575-26720-1-git-send-email-markos.chandras@imgtec.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit e676253b19b2d269cccf67fdb1592120a0cd0676
+(serial/8250: Add support for RS485 IOCTLs) added cases for the
+TIOC{S,G}RS485 commands but this broke the build for MIPS:
 
-Hi,
+drivers/tty/serial/8250/8250_core.c: In function 'serial8250_ioctl':
+drivers/tty/serial/8250/8250_core.c:2874:7: error: 'TIOCSRS485' undeclared
+(first use in this function)
+drivers/tty/serial/8250/8250_core.c:2886:7: error: 'TIOCGRS485' undeclared
+(first use in this function)
 
-On Tuesday, September 09, 2014 10:00:15 AM Peter Griffin wrote:
-> This is the generic phy driver for the picoPHY ports used by the
-> USB2 and USB3 Host controllers when controlling usb2/1.1 devices. It
-> is found on STiH407 SoC family from STMicroelectronics.
-> 
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  drivers/phy/Kconfig           |   8 ++
->  drivers/phy/Makefile          |   2 +
->  drivers/phy/phy-stih407-usb.c | 185 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 195 insertions(+)
->  create mode 100644 drivers/phy/phy-stih407-usb.c
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index 0dd7427..58018f7 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -230,4 +230,12 @@ config PHY_XGENE
->  	help
->  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
->  
-> +config PHY_STIH407_USB
-> +	tristate "STMicroelectronics USB2 picoPHY driver for STiH407 family"
-> +	depends on ARCH_STI
-> +	depends on GENERIC_PHY
+This patch adds these missing definitions
 
-I believe that this should use
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: <linux-next@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Cc: <linux-serial@vger.kernel.org>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+---
+ arch/mips/include/uapi/asm/ioctls.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-	select GENERIC_PHY
-
-instead (just like all other PHY drivers except PHY_MIPHY365X which
-also should be fixed to use select).
-
-> +	help
-> +	  Enable this support to enable the picoPHY device used by USB2
-> +	  and USB3 controllers on STMicroelectronics STiH407 SoC families.
-> +
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+diff --git a/arch/mips/include/uapi/asm/ioctls.h b/arch/mips/include/uapi/asm/ioctls.h
+index b1e637757fe3..34050cb6b631 100644
+--- a/arch/mips/include/uapi/asm/ioctls.h
++++ b/arch/mips/include/uapi/asm/ioctls.h
+@@ -76,6 +76,8 @@
+ 
+ #define TIOCSBRK	0x5427	/* BSD compatibility */
+ #define TIOCCBRK	0x5428	/* BSD compatibility */
++#define TIOCGRS485	0x542E
++#define TIOCSRS485	0x542F
+ #define TIOCGSID	0x7416	/* Return the session ID of FD */
+ #define TCGETS2		_IOR('T', 0x2A, struct termios2)
+ #define TCSETS2		_IOW('T', 0x2B, struct termios2)
+-- 
+2.1.0
 
