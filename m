@@ -1,135 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466AbaIIIEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:04:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8145 "EHLO mga11.intel.com"
+	id S1755315AbaIIIH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:07:28 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:46322 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803AbaIIIEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:04:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="383397143"
-Message-ID: <1410249847.732.395.camel@yhuang-dev>
-Subject: Re: [PATCH -v2] f2fs: Remove lock from check_valid_map
-From: Huang Ying <ying.huang@intel.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 09 Sep 2014 16:04:07 +0800
-In-Reply-To: <20140909074102.GA493@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1410059104-9060-1-git-send-email-ying.huang@intel.com>
-	 <1410061110-31081-1-git-send-email-ying.huang@intel.com>
-	 <20140908035024.GA13009@jaegeuk-mac02.hsd1.ca.comcast.net>
-	 <CAC=cRTOdvOp=zBT986SqGXC2+iRxGzSgKdFYzTQjbAamYsGVsg@mail.gmail.com>
-	 <20140909051303.GB24581@jaegeuk-mac02.hsd1.ca.comcast.net>
-	 <1410241426.732.378.camel@yhuang-dev>
-	 <20140909074102.GA493@jaegeuk-mac02.hsd1.ca.comcast.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751040AbaIIIHY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 04:07:24 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kever Yang <kever.yang@rock-chips.com>,
+        Paul Zimmerman <paulz@synopsys.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        wulf <wulf@rock-chips.com>, lyz <lyz@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/4] ARM: dts: add rk3288 dwc2 controller support
+Date: Tue, 09 Sep 2014 10:09:20 +0200
+Message-ID: <1765958.gOlsR47vAx@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1596739.u7ZntKLW7r@diego>
+References: <1407470159-14722-1-git-send-email-kever.yang@rock-chips.com> <CAD=FV=XNSp85H2zVrLPdxDfhokEWFspvwUHjVMWRu8k_wFFm0Q@mail.gmail.com> <1596739.u7ZntKLW7r@diego>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-09 at 00:41 -0700, Jaegeuk Kim wrote:
-> On Tue, Sep 09, 2014 at 01:43:46PM +0800, Huang Ying wrote:
-> > On Mon, 2014-09-08 at 22:13 -0700, Jaegeuk Kim wrote:
-> > > Hi Huang,
-> > > 
-> > > On Mon, Sep 08, 2014 at 03:36:35PM +0800, huang ying wrote:
-> > > > Hi, Jaegeuk,
-> > > > 
-> > > > On Mon, Sep 8, 2014 at 11:50 AM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> > > > 
-> > > > > Hi,
-> > > > >
-> > > > > On Sun, Sep 07, 2014 at 11:38:30AM +0800, Huang Ying wrote:
-> > > > > > Only one bit is read in check_valid_map, holding a lock to do that
-> > > > > > doesn't help anything except decreasing performance.
-> > > > > >
-> > > > > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
-> > > > > > ---
-> > > > > >
-> > > > > > v2: Fixed a build warning.
-> > > > > >
-> > > > > > ---
-> > > > > >  fs/f2fs/gc.c |    3 ---
-> > > > > >  1 file changed, 3 deletions(-)
-> > > > > >
-> > > > > > --- a/fs/f2fs/gc.c
-> > > > > > +++ b/fs/f2fs/gc.c
-> > > > > > @@ -378,14 +378,11 @@ static void put_gc_inode(struct list_hea
-> > > > > >  static int check_valid_map(struct f2fs_sb_info *sbi,
-> > > > > >                               unsigned int segno, int offset)
-> > > > > >  {
-> > > > > > -     struct sit_info *sit_i = SIT_I(sbi);
-> > > > > >       struct seg_entry *sentry;
-> > > > > >       int ret;
-> > > > > >
-> > > > > > -     mutex_lock(&sit_i->sentry_lock);
-> > > > > >       sentry = get_seg_entry(sbi, segno);
-> > > > > >       ret = f2fs_test_bit(offset, sentry->cur_valid_map);
-> > > > > > -     mutex_unlock(&sit_i->sentry_lock);
-> > > > > >       return ret;
-> > > > >
-> > > > > The f2fs_test_bit is not atomic, so I'm not sure this is a good approach.
-> > > > > How about introducing rw_semaphore?
-> > > > >
-> > > > 
-> > > > IMO, f2fs_test_bit just read a global variable (a byte in cur_valid_map),
-> > > > then check its value. The byte may be changed in another CPU concurrently.
-> > > > But even protected with a mutex, it can be changed in another CPU
-> > > > immediately after mutex_unlock.  So mutex does not help  here.  Here we
-> > > > just read a global variable, not read/modify/write, so, we don't need
-> > > > atomic too.
-> > > 
-> > > Hmm. This is a pretty hard corner case to allow the mutex removal under the
-> > > following assumption.
-> > > 
-> > > 1. All the sit entries are cached in a global array, which means that it never
-> > > happens that any sit entry pointers are changed.
-> > > 
-> > > 2. I agree that f2fs_gc tries to conduct the cleaning with best effort, and
-> > > it triggers again when it detects there is something to do more.
-> > > So, check_valid_bitmap doesn't need to make a precise decision.
-> > > 
-> > > But, what I concern is the consistent policy to use such the mutex.
-> > > If we break the rule, it becomes harder to debug potential bugs.
+Am Freitag, 8. August 2014, 17:53:45 schrieb Heiko Stübner:
+> Am Freitag, 8. August 2014, 08:45:16 schrieb Doug Anderson:
+> > Kever,
 > > 
-> > Yes.  We definitely need a rule.  But I suggest to make a small tweak to
-> > the rule.
+> > On Thu, Aug 7, 2014 at 8:55 PM, Kever Yang <kever.yang@rock-chips.com>
 > 
-> I don't think there is enough reason that we should take a small tweak while
-> breaking the locking policy. It's related to neither performance issue nor a
-> bug case.
-
-I don't want to break the locking rule.  I just propose a suggestion to
-tweak the rule itself a little.  To make something like "If we just read
-one variable with fixed address, we need not to use a lock to protect
-that." to be part of the rule.
-
-But if you think it is better to use a lock here.  That is not a problem
-for me.
-
-Best Regards,
-Huang, Ying
-
-> Even if f2fs suffers from lock contention here, I think we need to bet on
-> rw_semaphore to satisfy the rule and performance at the same time.
+> wrote:
+> > > rk3288 has two kind of usb controller, this add the dwc2 controller
+> > > for otg and host1.
+> > > 
+> > > Controller can works with usb PHY default setting and Vbus on.
+> > > 
+> > > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> > > Reviewed-by: Doug Anderson <dianders@chromium.org>
+> > > Tested-by: Doug Anderson <dianders@chromium.org>
+> > > ---
+> > > 
+> > > Changes in v5:
+> > > - change the sort order of dwc2 in rk3288.dtsi
+> > > 
+> > > Changes in v4: None
+> > > Changes in v3:
+> > > - EHCI and HSIC move new for version 3.
+> > > 
+> > > Changes in v2: None
+> > > 
+> > >  arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
+> > >  1 file changed, 20 insertions(+)
+> > 
+> > IMHO this series is ready to go in for 3.18.  I'm assuming Heiko will
+> > pick it up once the bindings have landed.  It already has my tags.  ;)
 > 
-> Thanks,
+> correct ... the dts changes look ok, so I'll take patches 3 and 4 once
+> patches 1 and 2 are included somewhere.
 > 
-> > If we just read one variable with fixed address, we need not
-> > to use a mutex to protect that.
-> > 
-> > > Anyway, have you been facing with such the lock contention?
-> > 
-> > No, I just review the code and thinks the mutex is not necessary.
-> > 
-> > Best Regards,
-> > Huang, Ying
 
-
+I've added patches 3 and 4 to my v3.18-next/dts branch
