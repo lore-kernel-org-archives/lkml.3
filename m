@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822AbaIIVwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 17:52:47 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:57760 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903AbaIIVwq (ORCPT
+	id S1752830AbaIIVxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 17:53:52 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:38898 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaIIVxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 17:52:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        bhelgaas@google.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] PCI: keystone: update to support multiple pci ports
-Date: Tue, 09 Sep 2014 23:52:34 +0200
-Message-ID: <3967092.l9bxcqMaSa@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <540F75DF.5050904@ti.com>
-References: <1410293835-13050-1-git-send-email-m-karicheri2@ti.com> <9042477.aRbAhpkfQ5@wuerfel> <540F75DF.5050904@ti.com>
+	Tue, 9 Sep 2014 17:53:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Bn9UuzQE1QUyWMVCC6t5A1+3F1zbU3928xvx/cxA+Sd
- sDSdhDz7sZY+L3XgCQNKTtU6d1WNPlUyrOgIOauGC+BB7oA6Bv
- k4Td/2CkS7FNp8vEAfNnCtnn67S4hZAfe3rc8pZZUYXpgqTOl3
- MF4pd/7H6yL4UzzpEVekxm3eItVZJTyLTZILEyEStU7OLBauzP
- ubaNhzcOei5rKsHg3YW/7v/u1juJD5qzc47JO9HXd4D6BVtdWg
- x+oquwAv5cD8tlu2dZXpTFbKyEAzCNb30CjaP+M5ajBn6p90wf
- fOObqqWnAaymprcE0d0RgFz4Xa2NhowrNOvQvbsg5KKrDliS3P
- FbNYWnJd3GaqGfwX8+ok=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20ADAB092842284E95860F279283C5642ED08D93@BGSMSX104.gar.corp.intel.com>
+References: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
+	<CAOh2x==TSbtOKBn6KOL9Z_M-nkzQOiO+EqSTmEtQeRLXROC1rw@mail.gmail.com>
+	<CAOh2x=kNtcse_2sExDPCpRnCmxvmqq1++mkSW6HKY+Vn-SJ9QA@mail.gmail.com>
+	<CA+B8BG5Hf8=ki0JDeRR13Mo7QRFDmsDuEpW8ozepvCp5KsY8ZA@mail.gmail.com>
+	<CAKohpon7Uxndqg+0JSaJEhfousitDcCvpVLx1jtNtBFHh0WatQ@mail.gmail.com>
+	<CAKohpomn5SUmmjs=p6DSCHv-Ec4sv_1VRjVa1NV0waUk0rpd9Q@mail.gmail.com>
+	<20ADAB092842284E95860F279283C5642ED08D93@BGSMSX104.gar.corp.intel.com>
+Date: Tue, 9 Sep 2014 14:53:49 -0700
+Message-ID: <CAAW3YpauxrgqY_4NRqmQzOuVW51ByMn0+_s348uzwsEr=_SJPw@mail.gmail.com>
+Subject: Re: [RFC PATCH] pm: prevent suspend until power supply events are processed
+From: Todd Poynor <toddpoynor@google.com>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Zoran Markovic <zrn.markovic@gmail.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Arve Hjonnevag <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Ruchi Kandoi <kandoiruchi@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 September 2014 17:49:19 Murali Karicheri wrote:
-> Actually this is an inteded. The vendor ID is in a register indicated by
-> reg offset and as per the device spec, it needs to be read and updated 
-> by the software. Now since multiple instances of PCI device needs to be 
-> read the same register, the reading happens in the probe() and same is 
-> unmapped after that.
-> 
-> +       ks_pcie->device_id = readl(reg_p) >> 16;
-> +       devm_iounmap(dev, reg_p);
-> +       devm_release_mem_region(dev, res->start, resource_size(res));
-> 
-> Afetr that in ks_pcie_host_init(), it update the device_id in the RC's 
-> config space.
+On Thu, Sep 4, 2014 at 9:37 AM, Tc, Jenny <jenny.tc@intel.com> wrote:
+> If the intention is to prevent suspend while processing the power supply uevents,
+> Isn't it a good option to use EPOLLWAKEUP? In Android, it's already used by
+> healthd to achieve the same.
 
-I'm not sure I understand the purpose of this. Do you mean you read
-the vendor/device ID of whichever device happens to get probed first
-and then program the same ID into all other devices as well?
+It's a good idea for the userspace handler of the power_supply uevents
+to use EPOLLWAKEUP.  This patch will help ensure the system remains
+awake until uevent dispatching grabs its wakelock, and then the
+userspace receiver can take over preventing suspend via EPOLLWAKEUP.
 
-What if the order changes between two boots? Why does the vendor/device
-ID of the host bridge even matter at all?
 
-	Arnd
+Todd
