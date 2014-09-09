@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327AbaIIJZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:25:27 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:24613 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932276AbaIIJZY (ORCPT
+	id S932236AbaIIJ12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:27:28 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:57352 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaIIJ11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:25:24 -0400
-X-AuditID: cbfec372-b7f2f6d0000052b3-9f-540ec7832d8a
-Date: Tue, 09 Sep 2014 06:25:16 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Aristeu Rozanski <aris@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-edac@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rui Wang <ruiv.wang@gmail.com>
-Subject: Re: [PATCH 2/2] sb_edac: Claim a different PCI device
-Message-id: <20140909062516.17abf622.m.chehab@samsung.com>
-In-reply-to: <20140908234131.GA14042@kroah.com>
-References: <cover.1408051536.git.luto@amacapital.net>
- <59f55d679cc596731589516a71075b6059fcaaa5.1408051536.git.luto@amacapital.net>
- <20140908141035.GK22290@redhat.com>
- <CALCETrX3KO=1T1m4Qwn+j7vqqhEuNb8Xdkf_c2Ne4P9AbpwOoA@mail.gmail.com>
- <20140908234131.GA14042@kroah.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t/hEN3m43whBifPc1ncfdvLYrGkKcPi
-	84Z/bBZXl51lsmhevJ7N4sKpBiaLy7vmsFmcnXeczWL12gZWi4mHnrA5cHl8b+1j8bj/5i+L
-	x85Zd9k9Fmwq9dg/dw27x/t9V9k8Pm+S85hyqJ0lgCOKyyYlNSezLLVI3y6BK6O74RV7QZNo
-	xcQvOxkbGA8KdDFyckgImEh82NLEAmGLSVy4t56ti5GLQ0hgCaPEhJ3r2SGcZiaJnYsnsoNU
-	sQioSvz6MYsRxGYTMJJ41djCCmKLCGhKvJwynwWkgVmgnVli5YReJpCEsICdRG/fSrAVvAJW
-	ErMO3AeLcwroS3yZ9JcZYsMMJoknK6YzQdzhLPFz5iRGiAZBiR+T74E1MwtoSWze1sQKYctL
-	bF7zlnkCo8AsJGWzkJTNQlK2gJF5FaNoaXFyQXFSeq6hXnFibnFpXrpecn7uJkZIjBTtYHy2
-	weoQowAHoxIPb0EUX4gQa2JZcWXuIUYJDmYlEd7dB4FCvCmJlVWpRfnxRaU5qcWHGJk4OKUa
-	GOf8TV3C7nlnH++Ur/o6851Ob/iRk+cZfILzrb3DjcevEvcs0Iu34iyRXpV5YQ7zwh23olz6
-	JcXtVM36Dhbo/2RsLOOZGcqzYO7XlRVl1mGN/VpNkocYbUz/8b44cu3YMsUp+suKU3QyBOvF
-	ugumJWcVxGVHRj40kk7Odtoez+rxdMUyo/POSizFGYmGWsxFxYkAb/Yvd28CAAA=
+	Tue, 9 Sep 2014 05:27:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
+        arm@kernel.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: drivers for 3.18 #2
+Date: Tue, 09 Sep 2014 11:27:12 +0200
+Message-ID: <3053665.vhA4jELi7x@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140909091520.GJ3804@lukather>
+References: <1409934969-11584-1-git-send-email-nicolas.ferre@atmel.com> <26517543.McM8Q5P0vn@wuerfel> <20140909091520.GJ3804@lukather>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:WC4Geu6A+KOUAMe6QXkemyRunFe/oE0lg5bTg/EOVUv
+ ukLXPnZfM7V7K54DLSdqmJNYqle7CUlCDVP/4RcY5aYuxvZJlU
+ MwvcJOmdcxugfB0qUylgDFUIWPmrua8wqYtp/fdMo6LJzIMZbZ
+ tGcBg5SdgqQhSFXCh4Gy8u6rEDU9YltoYx0XZd8lte0CSaW2YO
+ PMa9ov5ZyJEQaPtYymAZa1rNXQ3LifdKeHxG/JTcEfktqgp0Tq
+ MRZeWNtZdAwPaBLp4d1s0QzZRvZn2xU4XunEkpj/qvGdb2vRp3
+ Jg9rGcgRqWuoXvGHLCDqeXt6HbGjvdeo8XbPgNiMH7xPEUqZqF
+ Dt/MesrayFWr8ccFeHLY=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 08 Sep 2014 16:41:31 -0700
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> escreveu:
-
-> On Mon, Sep 08, 2014 at 02:49:59PM -0700, Andy Lutomirski wrote:
-> > On Mon, Sep 8, 2014 at 7:10 AM, Aristeu Rozanski <aris@redhat.com> wrote:
-> > > On Thu, Aug 14, 2014 at 02:45:41PM -0700, Andy Lutomirski wrote:
-> > >> sb_edac controls a large number of different PCI functions.  Rather
-> > >> than registering as a normal PCI driver for all of them, it
-> > >> registers for just one so that it gets probed and, at probe time, it
-> > >> looks for all the others.
-> > >>
-> > >> Coincidentally, the device it registers for also contains the SMBUS
-> > >> registers, so the PCI core will refuse to probe both sb_edac and a
-> > >> future iMC SMBUS driver.  The drivers don't actually conflict, so
-> > >> just change sb_edac's device table to probe a different device.
-> > >>
-> > >> An alternative fix would be to merge the two drivers, but sb_edac
-> > >> will also refuse to load on non-ECC systems, whereas i2c_imc would
-> > >> still be useful without ECC.
-> > >>
-> > >> The only user-visible change should be that sb_edac appears to bind
-> > >> a different device.
-> > >>
-> > >> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> > >> Cc: Rui Wang <ruiv.wang@gmail.com>
-> > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > >> ---
-> > >>  drivers/edac/sb_edac.c | 2 +-
-> > >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> > >>
-> > >> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-> > >> index a2597e9313c6..e3bc2cced580 100644
-> > >> --- a/drivers/edac/sb_edac.c
-> > >> +++ b/drivers/edac/sb_edac.c
-> > >> @@ -432,7 +432,7 @@ static const struct pci_id_table pci_dev_descr_ibridge_table[] = {
-> > >>   *   pci_device_id   table for which devices we are looking for
-> > >>   */
-> > >>  static const struct pci_device_id sbridge_pci_tbl[] = {
-> > >> -     {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA)},
-> > >> +     {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0)},
-> > >>       {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA)},
-> > >>       {0,}                    /* 0 terminated list. */
-> > >>  };
-> > >
-> > > Acked-by: Aristeu Rozanski <aris@redhat.com>
-> > >
-> > 
-> > Whose tree will this go through?
+On Tuesday 09 September 2014 11:15:20 Maxime Ripard wrote:
 > 
-> Mauro should have a tree for this as he's the subsystem maintainer.
+> > One of the problems with the current interface is that it requires
+> > statically declaring platform_device structures, which is something
+> > that has been on Greg's list of device model antipatterns for a long
+> > time.
+> 
+> I didn't find any difference with how you declare platform_devices
+> compared to the old-usual way in board files, or was it something on
+> the list too ? 
 
-Yes, I'll handle it.
+Yes. We never really bothered with cleaning up the existing static
+platform_device instances, because the plan is to move away from
+board files to DT anyway, but in short, if you ever need to add
+a platform device to a legacy board file, do it like
 
-> > FWIW, this git am can't apply this to 3.17-rc4, but git am --3way can,
-> > and it's a one-liner in any case.  Should I send a trivially rebased
-> > version?
+	pdev = platform_device_alloc(...);
+	platform_device_register(dev);
 
-No need. I'll fix any merge conflicts that might arise.
+or
 
-Regards.
-Mauro
+	platform_device_register_simple(...);
+
+or
+
+	static const struct platform_device_info info __initconst = { ... };
+	platform_device_register_full(&info);
+
+but not
+
+	static struct platform_device pdev = { ... };
+	platform_device_register(&pdev);
+
+Unfortunately, the early platform_device only allows the last type.
+
+	Arnd
