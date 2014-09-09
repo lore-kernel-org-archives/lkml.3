@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaIISJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:09:18 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:64709 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaIISJR (ORCPT
+	id S1751508AbaIISM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:12:28 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:46324 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaIISM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:09:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: robh+dt@kernel.org, riku.voipio@iki.fi, cooloney@gmail.com,
-        rpurdie@rpsys.net, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-Subject: Re: [PATCH] leds: Add DT support for leds-pca9532
-Date: Tue, 09 Sep 2014 20:08:53 +0200
-Message-ID: <17734612.3IvPuVrruO@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1410269280-8761-1-git-send-email-stigge@antcom.de>
-References: <1410269280-8761-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:BC+J36fk34vi1A/dbeztBj4Bc4oo5KeGfqyP1FP6+XS
- busGmz+kV+nGWC0e4uQWTey9js3yZoKS25SgISo4kvrYER6GGB
- TLjAJ9BnBZyN16IQtVrqHmHCveUc6p8EFRBU6rS5dB9NnPm8SK
- Kl/P/2xiTEz6aSEZ3RZkA9WHgiWtSJfjS3kr40AHAnRb+V91X0
- gJOznQ7smkeTUHOM80zO5E3v1UWk2N0O72UOhpZ7rnaRrMGGVP
- DbphCmGTuHGNCEWfmK2+PUNkniq8CUz27zra941STzMnh7CBSD
- mUghFCvFV4lc0ni0o7FNRixGbs+zD9gTBRN+OKuJk161NyZdNN
- O7ZYefjrM5r0Lk9mc+hI=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 9 Sep 2014 14:12:26 -0400
+From: Chris Rorvick <chris@rorvick.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Chris Rorvick <chris@rorvick.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [RFC 00/10] Create separate header for ehci-dbgp driver
+Date: Tue,  9 Sep 2014 13:11:26 -0500
+Message-Id: <1410286296-5109-1-git-send-email-chris@rorvick.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 September 2014 15:28:00 Roland Stigge wrote:
-> +#ifdef CONFIG_OF
-> +static struct pca9532_platform_data *pca9532_parse_dt(struct device *dev)
-> +{
-...
-> +
->  static int pca9532_probe(struct i2c_client *client,
->         const struct i2c_device_id *id)
->  {
-> @@ -449,6 +489,11 @@ static int pca9532_probe(struct i2c_clie
->         struct pca9532_platform_data *pca9532_pdata =
->                         dev_get_platdata(&client->dev);
->  
-> +#ifdef CONFIG_OF
-> +       if (!pca9532_pdata && client->dev.of_node)
-> +               pca9532_pdata = pca9532_parse_dt(&client->dev);
-> +#endif
-> +
+The FUSBH200 and FOTG210 are not EHCI-compatible and require standalone
+drivers.  See discussion at:
 
-It would be better to remove the two #ifdef statements and instead
-do this in C language as
+  http://comments.gmane.org/gmane.linux.usb.general/84169
 
-	if (IS_ENABLED(CONFIG_OF) && !pca9532_pdata && client->dev.of_node)
-		pca9532_pdata = pca9532_parse_dt(&client->dev);
+But these controllers do implement an EHCI-compatible debug port and
+therefore leverage the ehci-dbgp driver.  Rather than pulling in the
+necessary declarations from <linux/usb/ehci_def.h>, each driver copies
+this code into their own header.  The goal of this series is to pull the
+ehci-dbgp related code into its own header to remove the need for this
+redundancy.
 
-This gives you extra compile-time coverage when CONFIG_OF is not
-enabled.
+I have done only minimal testing on this, and I don't use either of
+these controller so my ability to test the changes is limited.  But I
+thought I'd push it out for comment to see if there was interest.
 
-I would probably also remove the !pca9532_pdata check there, since
-we rarely do auxdata for new devices these days, but that is a separate
-matter, and the check does not hurt.
+The only actual change should be when CONFIG_EARLY_PRINTK_DBGP is
+disabled and CONFIG_XEN_DOM0 is enabled.  Currently each of these does
+not notify Xen of reset events under this configuration.  Since these
+events are propagated when CONFIG_EARLY_PRINTK_DBGP and CONFIG_XEN_DOM0
+are both enabled, though, it seems that is not a problem (and maybe not
+sending them in the former case is a bug?)  Regardless, the motivation
+for this change is for consistancy as a step towrads consolidation.  As
+I said above, I am not able to actually test these changes on either
+controller.
 
-> +       if (!of_property_read_u32_array(np, "nxp,pwm", &pwm[0], 2)) {
-> +               for (i = 0; i < 2; i++)
-> +                       pca9532_pdata->pwm[i] = pwm[i];
-> +       }
+First time submission, so I look forward to any feedback.  If this is of
+any interest I will work on testing the various configations and boot
+parameters.
 
-Is this a full PWM controller? If it is, it would be better to also
-provide a #pwm-cells property and register the device with the PWM
-subsystem to allow arbitrary users.
+Regards,
 
-If the PWM is only really usable for LED, it's probably enough to
-leave this used by the LED subsystem.
+Chris Rorvick
 
-	Arnd
+Chris Rorvick (10):
+  usb: Create separate header for ehci-dbgp
+  fusbh200: Make Xen notificaiton consistent with EHCI
+  fusbh200: Remove superfluous macro definitions
+  fusbh200: Remove duplicate ehci-dbgp declarations
+  fusbh200: Use ehci_dbg_port struct
+  fotg210: Make Xen notificaiton consistent with EHCI
+  fotg210: Remove superfluous macro definitions
+  fotg210: Remove duplicate ehci-dbgp declarations
+  fotg210: Use ehci_dbg_port struct
+  usb: Remove __init from early_dbgp_init() prototype
+
+ drivers/usb/host/fotg210.h    | 62 ++------------------------------
+ drivers/usb/host/fusbh200.h   | 62 ++------------------------------
+ include/linux/usb/ehci-dbgp.h | 83 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/usb/ehci_def.h  | 65 ++-------------------------------
+ 4 files changed, 91 insertions(+), 181 deletions(-)
+ create mode 100644 include/linux/usb/ehci-dbgp.h
+
+-- 
+1.9.3
+
