@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaIISnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:43:22 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:44188 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751356AbaIISnU (ORCPT
+	id S1752595AbaIISne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:43:34 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44307 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaIISnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:43:20 -0400
-X-Sasl-enc: P+DPCi1Qq4w1v5QP4bcmTELUwrSoFGq27XugtcJCMncu 1410288199
-Date: Tue, 9 Sep 2014 11:43:18 -0700
-From: Greg KH <greg@kroah.com>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: "James E . J . Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 1/3] parisc/uapi: Add definition of TIOC[SG]RS485
-Message-ID: <20140909184318.GA6231@kroah.com>
-References: <1410285991-24833-1-git-send-email-ricardo.ribalda@gmail.com>
+	Tue, 9 Sep 2014 14:43:32 -0400
+Date: Tue, 9 Sep 2014 11:43:31 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 5/8] block: introduce blk_flush_queue to drive flush
+ machinery
+Message-ID: <20140909184331.GE16750@infradead.org>
+References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
+ <1410267949-21904-6-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410285991-24833-1-git-send-email-ricardo.ribalda@gmail.com>
+In-Reply-To: <1410267949-21904-6-git-send-email-ming.lei@canonical.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 08:06:31PM +0200, Ricardo Ribalda Delgado wrote:
-> Commit: e676253b19b2d269cccf67fdb1592120a0cd0676 (serial/8250: Add
-> support for RS485 IOCTLs), adds support for RS485 ioctls for 825_core on
-> all the archs. Unfortunaltely the definition of TIOCSRS485 and
-> TIOCGRS485 was missing on the ioctls.h file
-> 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> ---
->  arch/parisc/include/uapi/asm/ioctls.h | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/parisc/include/uapi/asm/ioctls.h b/arch/parisc/include/uapi/asm/ioctls.h
-> index 66719c3..3af2d02 100644
-> --- a/arch/parisc/include/uapi/asm/ioctls.h
-> +++ b/arch/parisc/include/uapi/asm/ioctls.h
-> @@ -50,6 +50,8 @@
->  #define TCSETS2		_IOW('T',0x2B, struct termios2)
->  #define TCSETSW2	_IOW('T',0x2C, struct termios2)
->  #define TCSETSF2	_IOW('T',0x2D, struct termios2)
-> +#define TIOCGRS485	0x542E
-> +#define TIOCSRS485	0x542F
+On Tue, Sep 09, 2014 at 09:05:46PM +0800, Ming Lei wrote:
+> This patch introduces 'struct blk_flush_queue' and puts all
+> flush machinery related stuff into this strcuture, so that
 
-As David pointed out with the sparc patch, please use the proper ioctl
-macros for these numbers.
+s/stuff/fields/
+s/strcuture/structure/
 
-Please redo all of these patches and resend.
+Looks good, but a few more nitpicks below.
 
-thanks,
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-greg k-h
+> +int blk_init_flush(struct request_queue *q)
+> +{
+> +	int ret;
+> +	struct blk_flush_queue *fq = kzalloc(sizeof(*fq), GFP_KERNEL);
+>  
+> +	if (!fq)
+>  		return -ENOMEM;
+>  
+> +	q->fq = fq;
+
+I think it would be cleaner to return the flush data structure and
+assign it in the caller.
+
+> +	INIT_LIST_HEAD(&fq->flush_queue[0]);
+> +	INIT_LIST_HEAD(&fq->flush_queue[1]);
+> +	INIT_LIST_HEAD(&fq->flush_data_in_flight);
+> +
+> +	if (q->mq_ops) {
+> +		ret = blk_mq_init_flush(q);
+
+I think we can just remove blk_mq_init_flush now that it's only
+called in blk-flush.c anyway.
+
+>  void blk_exit_flush(struct request_queue *q)
+>  {
+> +	if (q->mq_ops)
+> +		blk_mq_exit_flush(q);
+> +	else {
+> +		struct blk_flush_queue *fq = blk_get_flush_queue(q);
+> +		kfree(fq->flush_rq);
+> +		kfree(fq);
+> +	}
+
+Similarly I would pass the flush structure here.
+
+> +struct blk_flush_queue {
+> +	unsigned int		flush_queue_delayed:1;
+> +	unsigned int		flush_pending_idx:1;
+> +	unsigned int		flush_running_idx:1;
+> +	unsigned long		flush_pending_since;
+> +	struct list_head	flush_queue[2];
+> +	struct list_head	flush_data_in_flight;
+> +	struct request		*flush_rq;
+> +	spinlock_t		mq_flush_lock;
+> +};
+
+As this isn't really a queue I would call it blk_flush_data.
+
+> +static inline struct blk_flush_queue *blk_get_flush_queue(
+> +		struct request_queue *q)
+> +{
+> +	return q->fq;
+> +}
+
+I don't think there is a need for this helper.
+
