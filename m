@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898AbaIIHci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:32:38 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:43442 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755656AbaIIHch (ORCPT
+	id S932141AbaIIHdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:33:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50124 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322AbaIIHdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:32:37 -0400
-Date: Tue, 9 Sep 2014 13:02:27 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: target: target_core_transport.c: build warning
-Message-ID: <20140909073227.GB11332@sudip-PC>
-References: <1410247430-11293-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Tue, 9 Sep 2014 03:33:47 -0400
+Message-ID: <540EAD56.8090304@linutronix.de>
+Date: Tue, 09 Sep 2014 09:33:42 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410247430-11293-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v8 00/18] 8250-core based serial driver for OMAP + DMA
+References: <1409943773-7874-1-git-send-email-bigeasy@linutronix.de> <20140908174020.GI3238@atomide.com> <20140908175510.GK3238@atomide.com>
+In-Reply-To: <20140908175510.GK3238@atomide.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 12:53:50PM +0530, Sudip Mukherjee wrote:
-> build is giving : 
-> warning: passing argument 1 of 'strlen' makes pointer from integer 
-> without a cast [enabled by default]
+On 09/08/2014 07:55 PM, Tony Lindgren wrote:
+> * Tony Lindgren <tony@atomide.com> [140908 10:41]:
+>> * Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140905 12:03]:
+>>> This is my complete queue fo the omap serial driver based on the 8250 core
+>>> code. I played with it on beagle bone, am335x-evm and dra7xx including DMA.
+>>> The runtime-pm pieces look now bug-compatible with the omap-serial driver.
+>>> Besides the runtime-om improvement I also fixed a few corner cases for the
+>>> TX-DMA problem. The DMA fixes (in edma and omap-dma) were dropped and the
+>>> problem has been in 8250-dma via patch #13.
+>>>
+>>> The whole queue is available at
+>>>   git://git.breakpoint.cc/bigeasy/linux.git uart_v8
+>>
+>> Gave the above branch a quick try, but it again does not idle for
+>> my omap3 test cases. It seems that now the cm_idlest1_core sdma
+>> bit is blocking deeper idle states. Is that the correct branch
+>> to use?
 > 
-> the snprintf after the strlen is trying to put the "Unsupported" string
-> at the end of exising string. so len should give the string length here
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
->  drivers/target/target_core_transport.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> index 1dd1181..3ce85ed 100644
-> --- a/drivers/target/target_core_transport.c
-> +++ b/drivers/target/target_core_transport.c
-> @@ -953,7 +953,7 @@ int transport_dump_vpd_ident_type(
->  		strlcat(buf, "SCSI name string\n", sizeof(buf));
->  		break;
->  	default:
-> -		len = strlen(len);
-> +		len = strlen(buf);
->  		snprintf(&buf[len], sizeof(buf) - len, "Unsupported: 0x%02x\n",
->  				vpd->device_identifier_type);
->  		ret = -EINVAL;
-> -- 
-> 1.8.1.2
-> 
+> Never mind. User error. I forgot to apply my own patch for force
+> idling the UARTs for the omap hwmod. And the sdma bit clears if
+> I do sleep 5 before attempting to read the sysfs entry..
 
-please discard this patch. This is based on next-20140908 , and the
-issue has been corrected in next-20140909.
+Okay. There is also this "uart_v8_hacks" branch where I splitted out
+the hacks I had like the pstore one or the force idle for instance.
 
-thanks
-sudip
+> Regards,
+> 
+> Tony
+
+Sebastian
