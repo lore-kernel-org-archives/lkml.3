@@ -1,134 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447AbaIILXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:23:15 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38409 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387AbaIILXN (ORCPT
+	id S1756346AbaIILZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:25:41 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58788 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413AbaIILZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:23:13 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Alistair Popple <alistair@popple.id.au>,
-        Anton Blanchard <anton@samba.org>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>
-Subject: [PATCH] powerpc/iommu/ddw: Fix endianness
-Date: Tue,  9 Sep 2014 21:22:03 +1000
-Message-Id: <1410261723-21810-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 2.0.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090911-0017-0000-0000-0000003078BD
+	Tue, 9 Sep 2014 07:25:39 -0400
+Date: Tue, 9 Sep 2014 12:25:16 +0100
+From: Mark Brown <broonie@debian.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>
+Message-ID: <20140909112516.GR2601@sirena.org.uk>
+References: <1410215046-31751-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1410215046-31751-4-git-send-email-jacob.jun.pan@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l2C7pJE7HE4aLL3l"
+Content-Disposition: inline
+In-Reply-To: <1410215046-31751-4-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 109.152.174.147
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/4] regulator/axp20x: use axp2xx consolidated header
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtas_call() accepts and returns values in CPU endianness.
 
-of_read_number() accepts big-endian values but create.addr_hi/lo returned
-by rtas_call() are in CPU endiannes.
+--l2C7pJE7HE4aLL3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The dynamic_dma_window_prop struct defines all members as BE so let's
-make it true.
+On Mon, Sep 08, 2014 at 03:24:05PM -0700, Jacob Pan wrote:
+> AXP20x driver has been extended to support axp288 variant. Header file
+> and common data structures has also been renamed to suit the new
+> scope of devices supported.
+>=20
+> This patch makes use of the renamed header and structure.
 
-struct dynamic_dma_window_prop {
-        __be32  liobn;          /* tce table number */
-        __be64  dma_base;       /* address hi,lo */
-        __be32  tce_shift;      /* ilog2(tce_page_size) */
-        __be32  window_shift;   /* ilog2(tce_window_size) */
-};
+> -#include <linux/mfd/axp20x.h>
+> +#include <linux/mfd/axp2xx.h>
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexander Graf <agraf@suse.de>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- arch/powerpc/platforms/pseries/iommu.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+Acked-by: Mark Brown <broonie@kernel.org>
 
-diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-index 7c1d77c..700020a 100644
---- a/arch/powerpc/platforms/pseries/iommu.c
-+++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -750,7 +750,7 @@ static void remove_ddw(struct device_node *np, bool remove_prop)
- 		pr_debug("%s successfully cleared tces in window.\n",
- 			 np->full_name);
- 
--	ret = rtas_call(ddw_avail[2], 1, 1, NULL, liobn);
-+	ret = rtas_call(be32_to_cpu(ddw_avail[2]), 1, 1, NULL, liobn);
- 	if (ret)
- 		pr_warning("%s: failed to remove direct window: rtas returned "
- 			"%d to ibm,remove-pe-dma-window(%x) %llx\n",
-@@ -842,7 +842,7 @@ static int query_ddw(struct pci_dev *dev, const u32 *ddw_avail,
- 		cfg_addr = edev->pe_config_addr;
- 	buid = edev->phb->buid;
- 
--	ret = rtas_call(ddw_avail[0], 3, 5, (u32 *)query,
-+	ret = rtas_call(be32_to_cpu(ddw_avail[0]), 3, 5, (u32 *)query,
- 		  cfg_addr, BUID_HI(buid), BUID_LO(buid));
- 	dev_info(&dev->dev, "ibm,query-pe-dma-windows(%x) %x %x %x"
- 		" returned %d\n", ddw_avail[0], cfg_addr, BUID_HI(buid),
-@@ -874,8 +874,9 @@ static int create_ddw(struct pci_dev *dev, const u32 *ddw_avail,
- 
- 	do {
- 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
--		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
--				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
-+		ret = rtas_call(be32_to_cpu(ddw_avail[1]), 5, 4, (u32 *)create,
-+				cfg_addr, BUID_HI(buid), BUID_LO(buid),
-+				page_shift, window_shift);
- 	} while (rtas_busy_delay(ret));
- 	dev_info(&dev->dev,
- 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
-@@ -972,11 +973,11 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 		dev_dbg(&dev->dev, "no free dynamic windows");
- 		goto out_failed;
- 	}
--	if (be32_to_cpu(query.page_size) & 4) {
-+	if (query.page_size & 4) {
- 		page_shift = 24; /* 16MB */
--	} else if (be32_to_cpu(query.page_size) & 2) {
-+	} else if (query.page_size & 2) {
- 		page_shift = 16; /* 64kB */
--	} else if (be32_to_cpu(query.page_size) & 1) {
-+	} else if (query.page_size & 1) {
- 		page_shift = 12; /* 4kB */
- 	} else {
- 		dev_dbg(&dev->dev, "no supported direct page size in mask %x",
-@@ -987,7 +988,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	/* verify the window * number of ptes will map the partition */
- 	/* check largest block * page size > max memory hotplug addr */
- 	max_addr = memory_hotplug_max();
--	if (be32_to_cpu(query.largest_available_block) < (max_addr >> page_shift)) {
-+	if (query.largest_available_block < (max_addr >> page_shift)) {
- 		dev_dbg(&dev->dev, "can't map partiton max 0x%llx with %u "
- 			  "%llu-sized pages\n", max_addr,  query.largest_available_block,
- 			  1ULL << page_shift);
-@@ -1014,8 +1015,9 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	if (ret != 0)
- 		goto out_free_prop;
- 
--	ddwprop->liobn = create.liobn;
--	ddwprop->dma_base = cpu_to_be64(of_read_number(&create.addr_hi, 2));
-+	ddwprop->liobn = cpu_to_be32(create.liobn);
-+	ddwprop->dma_base = cpu_to_be64(((u64)create.addr_hi << 32) |
-+			create.addr_lo);
- 	ddwprop->tce_shift = cpu_to_be32(page_shift);
- 	ddwprop->window_shift = cpu_to_be32(len);
- 
-@@ -1048,7 +1050,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	list_add(&window->list, &direct_window_list);
- 	spin_unlock(&direct_window_list_lock);
- 
--	dma_addr = of_read_number(&create.addr_hi, 2);
-+	dma_addr = be64_to_cpu(ddwprop->dma_base);
- 	goto out_unlock;
- 
- out_free_window:
--- 
-2.0.0
+but is it really worth the effort of renaming everything?  That's going
+to cause problems for things like the stable workflow.
 
+--l2C7pJE7HE4aLL3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUDuObAAoJECTWi3JdVIfQ+p8H/iGfPM7c+ObHEgBC5s9ogh3t
+bkogCkWlDwMlDjGYF8k7272clZenUvvvMZdiYpkYO9PvqipyjPKMBzb9vWgfQ4+s
+lWao77aeZUzAleAAMJi0wiC6qmbqNkFozbpbugdzy7DPzPY7ip3L0lAStg/yvcQr
+itdCReJPCQMYv+iHqsFRkmW43QoWk6zsX8fdaZQYyLt2mHYNlx2hWDPZubtyU3r0
+pDZhc6zh3K1tcWX0ynLHXYWwUnpEBt71ecyGigTAy/lTyH8fZmMqyADMFCz8rLEB
+0Vw/vSd3UMPRrkOaGWEx1v7Lq+4PzY3qymr19QWGvGvA8SLBW+CG34le1Ohzmmo=
+=Q61h
+-----END PGP SIGNATURE-----
+
+--l2C7pJE7HE4aLL3l--
