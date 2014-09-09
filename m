@@ -1,97 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444AbaIIAJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:09:14 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50037 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963AbaIIAJM (ORCPT
+	id S1755560AbaIIAKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:10:41 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:38419 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621AbaIIAKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:09:12 -0400
-Date: Mon, 8 Sep 2014 17:09:08 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Azael Avalos <coproscefalo@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] toshiba_acpi: Fix illumination not available on
- certain models
-Message-ID: <20140909000908.GD5835@vmdeb7>
-References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
- <1409937247-2525-3-git-send-email-coproscefalo@gmail.com>
- <20140906023537.GA11389@vmdeb7>
- <CAGdLNWHRU9sD9Ot2RcmEXA0HdLuQ=r=mYPsiS1SMcwwuxfpEeQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGdLNWHRU9sD9Ot2RcmEXA0HdLuQ=r=mYPsiS1SMcwwuxfpEeQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 8 Sep 2014 20:10:40 -0400
+From: Anup Chenthamarakshan <anupc@chromium.org>
+To: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Cc: Sameer Nanda <snanda@chromium.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Anup Chenthamarakshan <anupc@chromium.org>
+Subject: [PATCH] intel_pstate: track and export frequency residency stats via sysfs.
+Date: Mon,  8 Sep 2014 17:10:24 -0700
+Message-Id: <1410221424-20590-1-git-send-email-anupc@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 10:49:09PM -0600, Azael Avalos wrote:
-> Hi there
-> 
-> 2014-09-05 20:35 GMT-06:00 Darren Hart <dvhart@infradead.org>:
-> > On Fri, Sep 05, 2014 at 11:14:04AM -0600, Azael Avalos wrote:
-> >> Some Toshiba models with illumination support set a different
-> >> value on the returned codes, thus not allowing the illumination
-> >> LED to be registered, where it should be.
-> >>
-> >> This patch removes a check from toshiba_illumination_available
-> >> function to allow such models to register the illumination LED.
-> >>
-> >> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
-> >> ---
-> >>  drivers/platform/x86/toshiba_acpi.c | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-> >> index a149bc6..4803e7b 100644
-> >> --- a/drivers/platform/x86/toshiba_acpi.c
-> >> +++ b/drivers/platform/x86/toshiba_acpi.c
-> >> @@ -436,7 +436,7 @@ static int toshiba_illumination_available(struct toshiba_acpi_dev *dev)
-> >>       if (ACPI_FAILURE(status) || out[0] == HCI_FAILURE) {
-> >>               pr_err("ACPI call to query Illumination support failed\n");
-> >>               return 0;
-> >> -     } else if (out[0] == HCI_NOT_SUPPORTED || out[1] != 1) {
-> >> +     } else if (out[0] == HCI_NOT_SUPPORTED) {
-> >
-> > OK, but by eliminating the check, supposedly certain models which do not support
-> > illumination but do not report it via out[0], but instead via out[1], will now
-> > attempt to use illumination - correct?
-> 
-> Oh no, the main check is out[0], which either hold success if the
-> feature is supported
-> or an HCI/SCI error otherwise.
-> 
-> >
-> > The end result being user calls to an ACPI function which at best doesn't exist
-> > and at worst.... does, but does something entirely different.
-> >
-> > I admit the potential for a problem is slight, but is it possible to check
-> > something explicit for support on the newer models rather than removing an
-> > existing check?
-> 
-> Our only resource right now is the DSDT and actual hardware to test,
-> as those calls
-> are not documented anywhere, and everytime the vendor decides to
-> change something,
-> we're on the loose end.
-> 
-> All the DSDTs that I previously had all set out[1] to one, so I was
-> using that as an
-> extra check to make sure we had illumination support, but now, recent models
-> set out[1] to zero, and those models, which do happen to have illumination
-> support (Qosmio X75 for example) were failing to register the LED.
+Exported stats appear in
+<sysfs>/devices/system/cpu/intel_pstate/time_in_state as follows:
 
-OK, I've been warned about taking non-obvious changes here. However, as you were
-the original author here and are effectively telling me you want to revert the
-out[1] check as it breaks hardware, I'm queueing this patch.
+## CPU 0
+400000 3647
+500000 24342
+600000 144150
+700000 202469
+## CPU 1
+400000 4813
+500000 22628
+600000 149564
+700000 211885
+800000 173890
 
-Thanks,
+Signed-off-by: Anup Chenthamarakshan <anupc@chromium.org>
+---
+ drivers/cpufreq/intel_pstate.c | 77 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 74 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 0668b38..7be89bd 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -84,6 +84,11 @@ struct _pid {
+ 	int32_t last_err;
+ };
+ 
++struct pstate_stat {
++	int pstate;
++	u64 time;
++};
++
+ struct cpudata {
+ 	int cpu;
+ 
+@@ -97,6 +102,9 @@ struct cpudata {
+ 	u64	prev_aperf;
+ 	u64	prev_mperf;
+ 	struct sample sample;
++
++	struct pstate_stat *stat;
++	u64	last_updated;
+ };
+ 
+ static struct cpudata **all_cpu_data;
+@@ -218,6 +226,18 @@ static inline void intel_pstate_reset_all_pid(void)
+ 	}
+ }
+ 
++static void intel_pstate_account_time_to_current_pstate(struct cpudata *cpu)
++{
++	/* Handle the initial call from intel_pstate_init_cpu */
++	if (likely(cpu->stat)) {
++		u64 now = jiffies;
++		int index = cpu->pstate.current_pstate - cpu->pstate.min_pstate;
++
++		cpu->stat[index].time += now - cpu->last_updated;
++		cpu->last_updated = now;
++	}
++}
++
+ /************************** debugfs begin ************************/
+ static int pid_param_set(void *data, u64 val)
+ {
+@@ -323,6 +343,40 @@ static ssize_t store_min_perf_pct(struct kobject *a, struct attribute *b,
+ 	return count;
+ }
+ 
++static ssize_t show_time_in_state(struct kobject *kobj, struct attribute *attr,
++				char *buf)
++{
++	unsigned int cpu;
++	struct cpudata *cpudata;
++	int i, len = 0, total_states;
++
++	for_each_online_cpu(cpu) {
++		if (!all_cpu_data[cpu])
++			continue;
++
++		cpudata = all_cpu_data[cpu];
++		len += snprintf(buf + len, PAGE_SIZE - len, "## CPU %d\n", cpu);
++		if (len >= PAGE_SIZE)
++			return len;
++
++		total_states = cpudata->pstate.turbo_pstate -
++			cpudata->pstate.min_pstate + 1;
++
++		intel_pstate_account_time_to_current_pstate(cpudata);
++
++		for (i = 0; i < total_states; i++) {
++			len += snprintf(buf + len, PAGE_SIZE - len, "%d %llu\n",
++					cpudata->stat[i].pstate * 100000,
++					cpudata->stat[i].time);
++
++			if (len >= PAGE_SIZE)
++				return len;
++		}
++	}
++
++	return len;
++}
++
+ show_one(no_turbo, no_turbo);
+ show_one(max_perf_pct, max_perf_pct);
+ show_one(min_perf_pct, min_perf_pct);
+@@ -331,10 +385,13 @@ define_one_global_rw(no_turbo);
+ define_one_global_rw(max_perf_pct);
+ define_one_global_rw(min_perf_pct);
+ 
++define_one_global_ro(time_in_state);
++
+ static struct attribute *intel_pstate_attributes[] = {
+ 	&no_turbo.attr,
+ 	&max_perf_pct.attr,
+ 	&min_perf_pct.attr,
++	&time_in_state.attr,
+ 	NULL
+ };
+ 
+@@ -525,9 +582,11 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+ 
+ 	trace_cpu_frequency(pstate * 100000, cpu->cpu);
+ 
+-	cpu->pstate.current_pstate = pstate;
+-
+ 	pstate_funcs.set(cpu, pstate);
++
++	intel_pstate_account_time_to_current_pstate(cpu);
++
++	cpu->pstate.current_pstate = pstate;
+ }
+ 
+ static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
+@@ -751,6 +810,7 @@ static void intel_pstate_stop_cpu(struct cpufreq_policy *policy)
+ 
+ 	del_timer_sync(&all_cpu_data[cpu_num]->timer);
+ 	intel_pstate_set_pstate(cpu, cpu->pstate.min_pstate);
++	kfree(all_cpu_data[cpu_num]->stat);
+ 	kfree(all_cpu_data[cpu_num]);
+ 	all_cpu_data[cpu_num] = NULL;
+ }
+@@ -758,7 +818,7 @@ static void intel_pstate_stop_cpu(struct cpufreq_policy *policy)
+ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	struct cpudata *cpu;
+-	int rc;
++	int rc, i, total_states;
+ 	u64 misc_en;
+ 
+ 	rc = intel_pstate_init_cpu(policy->cpu);
+@@ -787,6 +847,16 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+ 	cpumask_set_cpu(policy->cpu, policy->cpus);
+ 
++	total_states = cpu->pstate.turbo_pstate - cpu->pstate.min_pstate + 1;
++	cpu->stat = kcalloc(total_states, sizeof(struct pstate_stat),
++			GFP_KERNEL);
++
++	if (cpu->stat)
++		for (i = 0; i < total_states; i++)
++			cpu->stat[i].pstate = i + cpu->pstate.min_pstate;
++
++	cpu->last_updated = get_jiffies_64();
++
+ 	return 0;
+ }
+ 
+@@ -958,6 +1028,7 @@ out:
+ 	for_each_online_cpu(cpu) {
+ 		if (all_cpu_data[cpu]) {
+ 			del_timer_sync(&all_cpu_data[cpu]->timer);
++			kfree(all_cpu_data[cpu]->stat);
+ 			kfree(all_cpu_data[cpu]);
+ 		}
+ 	}
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.8.3.2
+
