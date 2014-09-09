@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397AbaIIKRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:17:20 -0400
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:43851 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756320AbaIIKRG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:17:06 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2 2/2] pinctrl: at91: Fix error handling while doing gpiochio_irqchip_add
-Date: Tue,  9 Sep 2014 15:50:37 +0530
-Message-Id: <1410258037-32024-2-git-send-email-pramod.gurav@smartplayin.com>
+	id S1756471AbaIIKRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:17:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51732 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756149AbaIIKQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:16:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="570461329"
+From: Weike Chen <alvin.chen@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>,
+        Alvin Chen <alvin.chen@intel.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3/4 v3] GPIO: gpio-dwapb: Support Debounce
+Date: Tue,  9 Sep 2014 11:08:00 -0700
+Message-Id: <1410286081-16653-4-git-send-email-alvin.chen@intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410258037-32024-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1410258037-32024-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
+References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a call to panic function when gpiochio_irqchip_add
-fails and just returns the error to the calling function.
-Same return value is used to handle the error case and adds a lable
-to release resources on error.
-The error message has been improved to indicate failure to add irqchip
-to gpiochip.
+This patch enables 'debounce' for the designware GPIO, and
+it is based on Josef Ahmad's previous work.
 
-This also changes first argument to function at91_gpio_of_irq_setup from
-struct device_node to struct platform_device. Because The device_node
-argument was anyway not being used. Passed pdev so that on failure dev_err
-can use &pdev->dev and log can be associated with proper device.
-
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-CC: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
+Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
+Signed-off-by: Weike Chen <alvin.chen@intel.com>
 ---
+ drivers/gpio/gpio-dwapb.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-Changes since v1:
- FIxed the error massage on gpiochio_irqchip_add failure to indicate 
- failure to add irqchip to gpiochip.
-
- drivers/pinctrl/pinctrl-at91.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index 4d4bea4..4fdd851 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -1605,7 +1605,7 @@ static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
- 	/* now it may re-trigger */
+diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+index c78a878..a90afb9 100644
+--- a/drivers/gpio/gpio-dwapb.c
++++ b/drivers/gpio/gpio-dwapb.c
+@@ -37,6 +37,7 @@
+ #define GPIO_INTTYPE_LEVEL	0x38
+ #define GPIO_INT_POLARITY	0x3c
+ #define GPIO_INTSTATUS		0x40
++#define GPIO_PORTA_DEBOUNCE	0x48
+ #define GPIO_PORTA_EOI		0x4c
+ #define GPIO_EXT_PORTA		0x50
+ #define GPIO_EXT_PORTB		0x54
+@@ -235,6 +236,29 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
+ 	return 0;
  }
  
--static int at91_gpio_of_irq_setup(struct device_node *node,
-+static int at91_gpio_of_irq_setup(struct platform_device *pdev,
- 				  struct at91_gpio_chip *at91_gpio)
++static int dwapb_gpio_set_debounce(struct gpio_chip *gc,
++				   unsigned offset, unsigned debounce)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++	struct dwapb_gpio_port *port =
++			container_of(bgc, struct dwapb_gpio_port, bgc);
++	struct dwapb_gpio *gpio = port->gpio;
++	unsigned long flags, val_deb;
++	unsigned long mask = bgc->pin2mask(bgc, offset);
++
++	spin_lock_irqsave(&bgc->lock, flags);
++
++	val_deb = dwapb_read(gpio, GPIO_PORTA_DEBOUNCE);
++	if (debounce)
++		dwapb_write(gpio, GPIO_PORTA_DEBOUNCE, mask | val_deb);
++	else
++		dwapb_write(gpio, GPIO_PORTA_DEBOUNCE, ~mask & val_deb);
++
++	spin_unlock_irqrestore(&bgc->lock, flags);
++
++	return 0;
++}
++
+ static irqreturn_t dwapb_irq_handler_mfd(int irq, void *dev_id)
  {
- 	struct at91_gpio_chip   *prev = NULL;
-@@ -1630,9 +1630,11 @@ static int at91_gpio_of_irq_setup(struct device_node *node,
- 				   0,
- 				   handle_edge_irq,
- 				   IRQ_TYPE_EDGE_BOTH);
--	if (ret)
--		panic("at91_gpio.%d: couldn't allocate irq domain (DT).\n",
-+	if (ret) {
-+		dev_err(&pdev->dev, "at91_gpio.%d: Couldn't add irqchip to gpiochip.\n",
- 			at91_gpio->pioc_idx);
-+		return ret;
-+	}
+ 	u32 worked;
+@@ -373,6 +397,10 @@ static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
+ 	port->bgc.gc.ngpio = pp->ngpio;
+ 	port->bgc.gc.base = pp->gpio_base;
  
- 	/* Setup chained handler */
- 	if (at91_gpio->pioc_idx)
-@@ -1800,12 +1802,16 @@ static int at91_gpio_probe(struct platform_device *pdev)
++	/* Only port A support debounce */
++	if (pp->idx == 0)
++		port->bgc.gc.set_debounce = dwapb_gpio_set_debounce;
++
+ 	if (pp->irq)
+ 		dwapb_configure_irqs(gpio, port, pp);
  
- 	at91_gpio_probe_fixup();
- 
--	at91_gpio_of_irq_setup(np, at91_chip);
-+	ret = at91_gpio_of_irq_setup(pdev, at91_chip);
-+	if (ret)
-+		goto irq_setup_err;
- 
- 	dev_info(&pdev->dev, "at address %p\n", at91_chip->regbase);
- 
- 	return 0;
- 
-+irq_setup_err:
-+	gpiochip_remove(chip);
- gpiochip_add_err:
- 	clk_disable(at91_chip->clock);
- clk_enable_err:
 -- 
 1.7.9.5
 
