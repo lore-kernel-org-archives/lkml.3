@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315AbaIIIH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:07:28 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:46322 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040AbaIIIHY convert rfc822-to-8bit (ORCPT
+	id S1755775AbaIIIHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:07:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37272 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035AbaIIIHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:07:24 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kever Yang <kever.yang@rock-chips.com>,
-        Paul Zimmerman <paulz@synopsys.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        wulf <wulf@rock-chips.com>, lyz <lyz@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	Tue, 9 Sep 2014 04:07:51 -0400
+Date: Tue, 9 Sep 2014 10:07:40 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Robert Richter <rric@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Robert Richter <rrichter@cavium.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/4] ARM: dts: add rk3288 dwc2 controller support
-Date: Tue, 09 Sep 2014 10:09:20 +0200
-Message-ID: <1765958.gOlsR47vAx@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1596739.u7ZntKLW7r@diego>
-References: <1407470159-14722-1-git-send-email-kever.yang@rock-chips.com> <CAD=FV=XNSp85H2zVrLPdxDfhokEWFspvwUHjVMWRu8k_wFFm0Q@mail.gmail.com> <1596739.u7ZntKLW7r@diego>
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
+Message-ID: <20140909080740.GP23009@pengutronix.de>
+References: <1410176689-20020-1-git-send-email-rric@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410176689-20020-1-git-send-email-rric@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 8. August 2014, 17:53:45 schrieb Heiko Stübner:
-> Am Freitag, 8. August 2014, 08:45:16 schrieb Doug Anderson:
-> > Kever,
-> > 
-> > On Thu, Aug 7, 2014 at 8:55 PM, Kever Yang <kever.yang@rock-chips.com>
+On Mon, Sep 08, 2014 at 01:44:48PM +0200, Robert Richter wrote:
+> From: Robert Richter <rrichter@cavium.com>
 > 
-> wrote:
-> > > rk3288 has two kind of usb controller, this add the dwc2 controller
-> > > for otg and host1.
-> > > 
-> > > Controller can works with usb PHY default setting and Vbus on.
-> > > 
-> > > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> > > Reviewed-by: Doug Anderson <dianders@chromium.org>
-> > > Tested-by: Doug Anderson <dianders@chromium.org>
-> > > ---
-> > > 
-> > > Changes in v5:
-> > > - change the sort order of dwc2 in rk3288.dtsi
-> > > 
-> > > Changes in v4: None
-> > > Changes in v3:
-> > > - EHCI and HSIC move new for version 3.
-> > > 
-> > > Changes in v2: None
-> > > 
-> > >  arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
-> > >  1 file changed, 20 insertions(+)
-> > 
-> > IMHO this series is ready to go in for 3.18.  I'm assuming Heiko will
-> > pick it up once the bindings have landed.  It already has my tags.  ;)
+> Raising the current maximum limit to 64. This is needed for Cavium's
+> Thunder systems that will have at least 48 cores per die.
 > 
-> correct ... the dts changes look ok, so I'll take patches 3 and 4 once
-> patches 1 and 2 are included somewhere.
+> The change keeps the current memory footprint in cpu mask structures.
+> It does not break existing code. Setting the maximum to 64 cpus still
+> boots systems with less cpus.
 > 
+> Mark's Juno happily booted with a NR_CPUS=64 kernel.
+> 
+> Tested on our Thunder system with 48 cores. We could see interrupts to
+> all cores.
+> 
+> Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Robert Richter <rrichter@cavium.com>
+> ---
+>  arch/arm64/Kconfig | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index fd4e81a4e1ce..67fca2ea81a7 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -252,11 +252,11 @@ config SCHED_SMT
+>  	  places. If unsure say N here.
+>  
+>  config NR_CPUS
+> -	int "Maximum number of CPUs (2-32)"
+> -	range 2 32
+> +	int "Maximum number of CPUs (2-64)"
+> +	range 2 64
+>  	depends on SMP
+>  	# These have to remain sorted largest to smallest
+Unrelated to the patch: What does this comment mean? There is only one
+line following, so it's sorted implicitly.
 
-I've added patches 3 and 4 to my v3.18-next/dts branch
+Best regards
+Uwe
+
+> -	default "8"
+> +	default "64"
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
