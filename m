@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885AbaIINJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:09:04 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45200 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324AbaIINGN (ORCPT
+	id S1756633AbaIINLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:11:53 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:64867 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaIINLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:06:13 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 3/8] block: move flush initialized stuff to blk_flush_init
-Date: Tue,  9 Sep 2014 21:05:44 +0800
-Message-Id: <1410267949-21904-4-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
-References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
+	Tue, 9 Sep 2014 09:11:51 -0400
+Message-ID: <540EFC99.3040100@linaro.org>
+Date: Tue, 09 Sep 2014 14:11:53 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] asm-generic/io.h: Implement read[bwlq]_relaxed()
+References: <1410264760-29756-1-git-send-email-daniel.thompson@linaro.org> <CAMuHMdWvyfPxHKWD3MkgDQRaf4xQUzVq561C1BHiNC_stQ-Rqw@mail.gmail.com>
+In-Reply-To: <CAMuHMdWvyfPxHKWD3MkgDQRaf4xQUzVq561C1BHiNC_stQ-Rqw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These stuff is always used with flush req together, so
-we can do that safely.
+On 09/09/14 13:31, Geert Uytterhoeven wrote:
+> Hi Daniel,
+> 
+> On Tue, Sep 9, 2014 at 2:12 PM, Daniel Thompson
+> <daniel.thompson@linaro.org> wrote:
+>> Currently the read[bwlq]_relaxed() family are implemented on every
+>> architecture except blackfin, m68k[1], metag, openrisc, s390[2] and
+>> score. Increasingly drivers are being optimized to exploit relaxed
+>> reads putting these architectures at risk of compilation failures for
+>> shared drivers.
+>>
+>> This patch addresses this by providing implementations of
+>> read[bwlq]_relaxed() that are identical to the equivalent read[bwlq]().
+>> All the above architectures include asm-generic/io.h .
+> 
+> m68k does not include asm-generic/io.h.
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- block/blk-core.c  |    3 ---
- block/blk-flush.c |    4 ++++
- 2 files changed, 4 insertions(+), 3 deletions(-)
+Looking back through my command history I can't figure out how I made
+this mistake.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 0a9d172..222fe84 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -600,9 +600,6 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- #ifdef CONFIG_BLK_CGROUP
- 	INIT_LIST_HEAD(&q->blkg_list);
- #endif
--	INIT_LIST_HEAD(&q->flush_queue[0]);
--	INIT_LIST_HEAD(&q->flush_queue[1]);
--	INIT_LIST_HEAD(&q->flush_data_in_flight);
- 	INIT_DELAYED_WORK(&q->delay_work, blk_delay_work);
- 
- 	kobject_init(&q->kobj, &blk_queue_ktype);
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 6932ee8..a5b2a00 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -490,6 +490,10 @@ static int blk_mq_init_flush(struct request_queue *q)
- 
- int blk_init_flush(struct request_queue *q)
- {
-+	INIT_LIST_HEAD(&q->flush_queue[0]);
-+	INIT_LIST_HEAD(&q->flush_queue[1]);
-+	INIT_LIST_HEAD(&q->flush_data_in_flight);
-+
- 	if (q->mq_ops)
- 		return blk_mq_init_flush(q);
- 
--- 
-1.7.9.5
+I will change the comment.
+
+For the record I have also just double checked blackfin, metag,
+openrisc, s390 and score and these really do use asm-generic/io.h .
+
+
+Daniel.
 
