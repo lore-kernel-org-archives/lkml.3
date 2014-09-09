@@ -1,171 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaIIKzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:55:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51673 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200AbaIIKzj (ORCPT
+	id S932495AbaIIKzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:55:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44233 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200AbaIIKzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:55:39 -0400
-Date: Tue, 9 Sep 2014 12:54:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Len Brown <lenb@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch v4 05/16] ACPI: Add interfaces to parse IOAPIC ID for
- IOAPIC hotplug
-In-Reply-To: <1409192561-19744-6-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1409091248090.11037@nanos>
-References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-6-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 9 Sep 2014 06:55:44 -0400
+Date: Tue, 9 Sep 2014 12:55:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
+Message-ID: <20140909105537.GJ6758@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140909084436.GY19379@twins.programming.kicks-ass.net>
+ <87y4ttt9m0.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RlE8T3bLnVJqgX61"
+Content-Disposition: inline
+In-Reply-To: <87y4ttt9m0.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014, Jiang Liu wrote:
->  
-> +static struct acpi_table_madt *madt;
-> +static int read_madt;
 
-Pretty lousy file visible variable names.
+--RlE8T3bLnVJqgX61
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So we end up with two copies of the butt ugly 
+On Tue, Sep 09, 2014 at 12:40:39PM +0300, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+>=20
+> > On Wed, Aug 20, 2014 at 03:36:06PM +0300, Alexander Shishkin wrote:
+> >
+> >> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+> >> index 925f369947..5006caba63 100644
+> >> --- a/kernel/events/ring_buffer.c
+> >> +++ b/kernel/events/ring_buffer.c
+> >
+> >> @@ -294,9 +295,22 @@ void perf_aux_output_end(struct perf_output_handl=
+e *handle, unsigned long size,
+> >>  			 bool truncated)
+> >>  {
+> >>  	struct ring_buffer *rb =3D handle->rb;
+> >> +	unsigned long aux_head;
+> >> =20
+> >> +	aux_head =3D local_read(&rb->aux_head);
+> >> +
+> >> +	if (rb->aux_overwrite) {
+> >> +		local_set(&rb->aux_head, size);
+> >> +
+> >> +		/*
+> >> +		 * Send a RECORD_AUX with size=3D=3D0 to communicate aux_head
+> >> +		 * of this snapshot to userspace
+> >> +		 */
+> >> +		perf_event_aux_event(handle->event, size, 0, truncated);
+> >
+> > Humm.. why not write a 'normal' AUX record?
+>=20
+> In this mode, the hardware is running in a circular buffer mode,
+> overwriting old data, so we don't actually know the size of the
+> snapshot, we have userspace figure it out later on (based on timestamps,
+> for example). I didn't want to configure PMI for this mode to avoid
+> overhead, but with PMI we can try to keep track of the overwrites and
+> try to infer the actual snapshot size in the kernel. For Intel PT. As
+> far as I can tell, ARM's scatter-gather trace-to-memory storing block
+> does not generate interrupts at all.
 
-   if (!read_madt) {
-      .....
-   }
-
-stuff instead of creating a helper function which hides that and do
-
-      madr = get_madt();
-      if (!madt)
-		return ...;
-
-at the call sites.
-
->  static int map_lapic_id(struct acpi_subtable_header *entry,
->  		 u32 acpi_id, int *apic_id)
->  {
-> @@ -64,8 +71,6 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
->  static int map_madt_entry(int type, u32 acpi_id)
->  {
->  	unsigned long madt_end, entry;
-> -	static struct acpi_table_madt *madt;
-> -	static int read_madt;
->  	int apic_id = -1;
->  
->  	if (!read_madt) {
-> @@ -200,3 +205,90 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
->  	return acpi_map_cpuid(apic_id, acpi_id);
->  }
->  EXPORT_SYMBOL_GPL(acpi_get_cpuid);
-> +
-> +#ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
-> +static int map_ioapic_id(struct acpi_subtable_header *entry, u32 gsi_base,
-> +			 u64 *phys_addr, int *ioapic_id)
-> +{
-> +	struct acpi_madt_io_apic *ioapic = (struct acpi_madt_io_apic *)entry;
-> +
-> +	if (ioapic->global_irq_base != gsi_base)
-> +		return 0;
-> +
-> +	*phys_addr = ioapic->address;
-> +	*ioapic_id = ioapic->id;
-> +	return 1;
-> +}
-> +
-> +static int map_madt_ioapic_entry(u32 gsi_base, u64 *phys_addr)
-> +{
-> +	struct acpi_subtable_header *hdr;
-> +	unsigned long madt_end, entry;
-> +	int apic_id = -1;
-> +
-> +	if (!read_madt) {
-> +		if (ACPI_FAILURE(acpi_get_table(ACPI_SIG_MADT, 0,
-> +					(struct acpi_table_header **)&madt)))
-> +			madt = NULL;
-> +		read_madt++;
-> +	}
-> +
-> +	if (!madt)
-> +		return apic_id;
-> +
-> +	entry = (unsigned long)madt;
-> +	madt_end = entry + madt->header.length;
-> +
-> +	/* Parse all entries looking for a match. */
-> +	entry += sizeof(struct acpi_table_madt);
-> +	while (entry + sizeof(struct acpi_subtable_header) < madt_end) {
-> +		hdr = (struct acpi_subtable_header *)entry;
-> +		if (hdr->type == ACPI_MADT_TYPE_IO_APIC &&
-> +		    map_ioapic_id(hdr, gsi_base, phys_addr, &apic_id))
-> +			break;
-> +		else
-> +			entry += hdr->length;
-> +	}
-> +
-> +	return apic_id;
-> +}
-> +
-> +static int map_mat_ioapic_entry(acpi_handle handle, u32 gsi_base,
-> +				u64 *phys_addr)
-> +{
-> +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object *obj;
-> +	struct acpi_subtable_header *header;
-> +	int apic_id = -1;
-> +
-> +	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_MAT", NULL, &buffer)))
-> +		goto exit;
-> +
-> +	if (!buffer.length || !buffer.pointer)
-> +		goto exit;
-> +
-> +	obj = buffer.pointer;
-> +	if (obj->type != ACPI_TYPE_BUFFER ||
-> +	    obj->buffer.length < sizeof(struct acpi_subtable_header))
-> +		goto exit;
-> +
-> +	header = (struct acpi_subtable_header *)obj->buffer.pointer;
-> +	if (header->type == ACPI_MADT_TYPE_IO_APIC)
-> +		map_ioapic_id(header, gsi_base, phys_addr, &apic_id);
-> +
-> +exit:
-> +	kfree(buffer.pointer);
-> +	return apic_id;
-> +}
+Well, wouldn't the 'size' be basically the entire buffer. All you have
+to then provide is the head pointer. Ideally you would also provide a
+tail pointer so you know when to stop, but I suppose you can infer that
+=66rom the data stream itself? If you can provide the tail you can indeed
+compute the size etc.. at which point you don't have to rely on parsing
+the stream etc.
 
 
-This stuff really wants proper documentation. The lack of comments is
-just annoying.
 
-> +int acpi_get_ioapic_id(acpi_handle handle, u32 gsi_base, u64 *phys_addr)
-> +{
-> +	int apic_id;
-> +
-> +	apic_id = map_mat_ioapic_entry(handle, gsi_base, phys_addr);
-> +	if (apic_id == -1)
-> +		apic_id = map_madt_ioapic_entry(gsi_base, phys_addr);
-> +
-> +	return apic_id;
-> +}
+--RlE8T3bLnVJqgX61
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-	tglx
+iQIcBAEBAgAGBQJUDtypAAoJEHZH4aRLwOS6++oP/iWS+sdlGqY2WL9wt7wXp0NW
+NJ6AgTpI9knf0QVhCFBrd+OZKFY1RRqViTxWT/RRO8PTb6o87iGxB83yxMSllzUQ
+TkOiAHLlp/pn7S4dNztMZJpvwBNQNw8dSehXl5C8CXSXktdBhuEiIKomfIEydDZf
+84Q1I2Q09eujEStlLg4zMPQp6ofCoaZaWiWOj/eefSMkKvSPi0O6T05ISNgo/roE
+HJGrq/xqkz6SI3baAvCaSzL5qkdLQixMdign7yWHcWBM2dMWOc+KSJ+I8pNHnYoy
+AraHCer52pHZZ7R9DNy8BL53xTwsT6W1haCUeXnJwp3zkjnCyOaBLlC/K2TDIv3e
+KJ9ZSJwVi3ZqRhKjMR8tZQPTQm9n+IMC6dw3YracwGnjb6brgzgLd0Fk+lefPg5F
+TjBST/mjBwRLItEgSZPWJyC5SpaZae1jxDgNa7gcORC4tTiA3Suc26DRFb5om9Mz
+7UARwIkXdDT2WtkSbb+A7RUjRkhq6Vt91WOCmXQLHKo9ysUsh7Xbi6+aZ1pGqg2X
+n+ZDpeZparxkjsHzZD2EYSS8OQZ32+ql27QaCN2Zp0E4lDp/VcCUStz/bWKfsSWX
+cr8QBrsLqjUbrXfOzcKjh3NM9Vr0MhNjb410j0LI/RDlwI1mireLlvxbFtkxh2e0
+cxER+iqtufs2vlxBKD31
+=23+i
+-----END PGP SIGNATURE-----
+
+--RlE8T3bLnVJqgX61--
