@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaIISM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:12:28 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:46324 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaIISM0 (ORCPT
+	id S1751955AbaIISMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:12:41 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:59349 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaIISMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:12:26 -0400
+	Tue, 9 Sep 2014 14:12:39 -0400
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>, Alan Stern <stern@rowland.harvard.edu>,
         Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org
-Subject: [RFC 00/10] Create separate header for ehci-dbgp driver
-Date: Tue,  9 Sep 2014 13:11:26 -0500
-Message-Id: <1410286296-5109-1-git-send-email-chris@rorvick.com>
+Subject: [RFC 10/10] usb: Remove __init from early_dbgp_init() prototype
+Date: Tue,  9 Sep 2014 13:11:36 -0500
+Message-Id: <1410286296-5109-11-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410286296-5109-1-git-send-email-chris@rorvick.com>
+References: <1410286296-5109-1-git-send-email-chris@rorvick.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FUSBH200 and FOTG210 are not EHCI-compatible and require standalone
-drivers.  See discussion at:
+Specifying these attributes in both the prototype and the function
+definition is unnecessary and could cause confusion or bugs if they are
+inconsistent.  As such, __init should only be specified at the function
+definition.
 
-  http://comments.gmane.org/gmane.linux.usb.general/84169
+Keith Owens suggested this as a janitorial task on LKML several years
+ago:
 
-But these controllers do implement an EHCI-compatible debug port and
-therefore leverage the ehci-dbgp driver.  Rather than pulling in the
-necessary declarations from <linux/usb/ehci_def.h>, each driver copies
-this code into their own header.  The goal of this series is to pull the
-ehci-dbgp related code into its own header to remove the need for this
-redundancy.
+  https://lkml.org/lkml/2006/1/14/305
 
-I have done only minimal testing on this, and I don't use either of
-these controller so my ability to test the changes is limited.  But I
-thought I'd push it out for comment to see if there was interest.
+Signed-off-by: Chris Rorvick <chris@rorvick.com>
+---
+ include/linux/usb/ehci-dbgp.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-The only actual change should be when CONFIG_EARLY_PRINTK_DBGP is
-disabled and CONFIG_XEN_DOM0 is enabled.  Currently each of these does
-not notify Xen of reset events under this configuration.  Since these
-events are propagated when CONFIG_EARLY_PRINTK_DBGP and CONFIG_XEN_DOM0
-are both enabled, though, it seems that is not a problem (and maybe not
-sending them in the former case is a bug?)  Regardless, the motivation
-for this change is for consistancy as a step towrads consolidation.  As
-I said above, I am not able to actually test these changes on either
-controller.
-
-First time submission, so I look forward to any feedback.  If this is of
-any interest I will work on testing the various configations and boot
-parameters.
-
-Regards,
-
-Chris Rorvick
-
-Chris Rorvick (10):
-  usb: Create separate header for ehci-dbgp
-  fusbh200: Make Xen notificaiton consistent with EHCI
-  fusbh200: Remove superfluous macro definitions
-  fusbh200: Remove duplicate ehci-dbgp declarations
-  fusbh200: Use ehci_dbg_port struct
-  fotg210: Make Xen notificaiton consistent with EHCI
-  fotg210: Remove superfluous macro definitions
-  fotg210: Remove duplicate ehci-dbgp declarations
-  fotg210: Use ehci_dbg_port struct
-  usb: Remove __init from early_dbgp_init() prototype
-
- drivers/usb/host/fotg210.h    | 62 ++------------------------------
- drivers/usb/host/fusbh200.h   | 62 ++------------------------------
- include/linux/usb/ehci-dbgp.h | 83 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/usb/ehci_def.h  | 65 ++-------------------------------
- 4 files changed, 91 insertions(+), 181 deletions(-)
- create mode 100644 include/linux/usb/ehci-dbgp.h
-
+diff --git a/include/linux/usb/ehci-dbgp.h b/include/linux/usb/ehci-dbgp.h
+index 796c1cd..7344d9e 100644
+--- a/include/linux/usb/ehci-dbgp.h
++++ b/include/linux/usb/ehci-dbgp.h
+@@ -43,8 +43,7 @@ struct ehci_dbg_port {
+ };
+ 
+ #ifdef CONFIG_EARLY_PRINTK_DBGP
+-#include <linux/init.h>
+-extern int __init early_dbgp_init(char *s);
++extern int early_dbgp_init(char *s);
+ extern struct console early_dbgp_console;
+ #endif /* CONFIG_EARLY_PRINTK_DBGP */
+ 
 -- 
 1.9.3
 
