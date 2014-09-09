@@ -1,179 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667AbaIINaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:30:30 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:58732 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622AbaIINa3 (ORCPT
+	id S1756719AbaIINbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:31:24 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:52435 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168AbaIINbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:30:29 -0400
-Date: Tue, 9 Sep 2014 17:33:49 +0300
-From: Matti Vaittinen <matti.vaittinen@nsn.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux@roeck-us.net" <linux@roeck-us.net>
-Cc: a.zummo@towertech.it, "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: [PATCH v5 2/2] rtc: ds1307: add trickle charger device tree binding.
-Message-ID: <20140909143342.GA2179@fi-ourus-dhcp00977.emea.nsn-net.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 4406
-X-purgate-ID: 151667::1410269372-00005326-49396D58/0/0
+	Tue, 9 Sep 2014 09:31:22 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        acme@redhat.com, cebbert.lkml@gmail.com
+Subject: [PATCH v5 0/6] perf: add ability to sample interrupted machine state
+Date: Tue,  9 Sep 2014 15:30:51 +0200
+Message-Id: <1410269457-14426-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some DS13XX devices have "trickle chargers". Introduce a device tree
-binding for specifying the trickle charger configuration for ds1339.
+This short patch series add the ability to sample the interrupted
+machine state for each hardware sample. This is useful to analyze
+the state after certain events, for instance for function value
+profiling after a call instruction.
 
-Only ds1339 dt binding is supported because this is the only chip I have.
-I _assume_ the code would have worked on other allready supported chips.
-However I cannot check the resistor values for the other chips or test them.
-For other chips the driver code works as earlier Eg. it does not check the
-dt bindings at all
+The patch extends the interface with a new PERF_SAMPLE_REGS_INTR 
+smaple_type flag. The register to sample can be named in the
+sample_regs_intr bitmask for each event. The name and bit
+position for each register is architecture dependent and
+provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
 
-Signed-off-by: Matti Vaittinen <matti.vaittinen@nsn.com>
----
+The support is similar to PERF_SAMPLE_REGS_USER.
 
-Delta to v5
-    -Actually sent correct patch
+On Intel x86, the series includes support for capturing the
+PEBS state as well. When precise sampling is used, the interrupted
+state is collect from the PEBS records, at least partially.
+The PEBS machine state is a subset of the machine state.
 
- drivers/rtc/rtc-ds1307.c | 67 +++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 63 insertions(+), 4 deletions(-)
+The series provides access to this new feature in perf record
+with the -I option. It is possible to display the sampled
+register values using perf report -D.
 
-diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-index f03d5ba..bb43cf7 100644
---- a/drivers/rtc/rtc-ds1307.c
-+++ b/drivers/rtc/rtc-ds1307.c
-@@ -126,9 +126,14 @@ struct chip_desc {
- 	u16			nvram_offset;
- 	u16			nvram_size;
- 	u16			trickle_charger_reg;
-+	u8			trickle_charger_setup;
-+	u8			(*do_trickle_setup)(struct i2c_client *, uint32_t, bool);
- };
- 
--static const struct chip_desc chips[last_ds_type] = {
-+static u8 do_trickle_setup_ds1339(struct i2c_client *,
-+				  uint32_t ohms, bool diode);
-+
-+static struct chip_desc chips[last_ds_type] = {
- 	[ds_1307] = {
- 		.nvram_offset	= 8,
- 		.nvram_size	= 56,
-@@ -143,6 +148,7 @@ static const struct chip_desc chips[last_ds_type] = {
- 	[ds_1339] = {
- 		.alarm		= 1,
- 		.trickle_charger_reg = 0x10,
-+		.do_trickle_setup = &do_trickle_setup_ds1339,
- 	},
- 	[ds_1340] = {
- 		.trickle_charger_reg = 0x08,
-@@ -833,15 +839,58 @@ ds1307_nvram_write(struct file *filp, struct kobject *kobj,
- 	return count;
- }
- 
-+
- /*----------------------------------------------------------------------*/
- 
-+static u8 do_trickle_setup_ds1339(struct i2c_client *client,
-+				  uint32_t ohms, bool diode)
-+{
-+	u8 setup = (diode) ? DS1307_TRICKLE_CHARGER_DIODE :
-+		DS1307_TRICKLE_CHARGER_NO_DIODE;
-+
-+	switch (ohms) {
-+	case 250:
-+		setup |= DS1307_TRICKLE_CHARGER_250_OHM;
-+		break;
-+	case 2000:
-+		setup |= DS1307_TRICKLE_CHARGER_2K_OHM;
-+		break;
-+	case 4000:
-+		setup |= DS1307_TRICKLE_CHARGER_4K_OHM;
-+		break;
-+	default:
-+		dev_warn(&client->dev,
-+			 "Unsupported ohm value %u in dt\n", ohms);
-+		return 0;
-+	}
-+	return setup;
-+}
-+
-+static void ds1307_trickle_of_init(struct i2c_client *client,
-+				   struct chip_desc *chip)
-+{
-+	uint32_t ohms = 0;
-+	bool diode = true;
-+
-+	if (!chip->do_trickle_setup)
-+		goto out;
-+	if (of_property_read_u32(client->dev.of_node, "trickle-resistor-ohms" , &ohms))
-+		goto out;
-+	if (of_property_read_bool(client->dev.of_node, "trickle-diode-disable"))
-+		diode = false;
-+	chip->trickle_charger_setup = chip->do_trickle_setup(client,
-+							     ohms, diode);
-+out:
-+	return;
-+}
-+
- static int ds1307_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
- {
- 	struct ds1307		*ds1307;
- 	int			err = -ENODEV;
- 	int			tmp;
--	const struct chip_desc	*chip = &chips[id->driver_data];
-+	struct chip_desc	*chip = &chips[id->driver_data];
- 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
- 	bool			want_irq = false;
- 	unsigned char		*buf;
-@@ -866,9 +915,19 @@ static int ds1307_probe(struct i2c_client *client,
- 	ds1307->client	= client;
- 	ds1307->type	= id->driver_data;
- 
--	if (pdata && pdata->trickle_charger_setup && chip->trickle_charger_reg)
-+	if (!pdata && client->dev.of_node)
-+		ds1307_trickle_of_init(client, chip);
-+	else if (pdata && pdata->trickle_charger_setup)
-+		chip->trickle_charger_setup = pdata->trickle_charger_setup;
-+
-+	if (chip->trickle_charger_setup && chip->trickle_charger_reg) {
-+		dev_dbg(&client->dev, "writing trickle charger info 0x%x to 0x%x\n",
-+		    DS13XX_TRICKLE_CHARGER_MAGIC | chip->trickle_charger_setup,
-+		    chip->trickle_charger_reg);
- 		i2c_smbus_write_byte_data(client, chip->trickle_charger_reg,
--			DS13XX_TRICKLE_CHARGER_MAGIC | pdata->trickle_charger_setup);
-+		    DS13XX_TRICKLE_CHARGER_MAGIC |
-+		    chip->trickle_charger_setup);
-+	}
- 
- 	buf = ds1307->regs;
- 	if (i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
--- 
-1.8.3.1
+This patch series is the fundation for a future series adding
+function value profiling.
 
+In V2, we address the issues raised during reviews:
+ - add sample parsing test
+ - shorten perf record option to --intr-regs
+ - added man page for perf record -I/--intr-regs option
+ - refactor register printf code between user and intr regs
+ - rebase to v3.16-rc3
+
+In V3, we rebase to 3.16.0+ and made the modifications suggested
+by PeterZ. We also integrated his patch to improve the layout
+of perf_sample_data.
+
+In V4, we rebase to 3.17-rc3 and we fix the ABI change issue 
+reported by Namhyung Kim.
+
+In V5, the patch is rebased to 3.17-rc4 and the bugs reported
+on LKML about the PEBS machine state copying code have been fixed
+(a few registers were missing).
+
+Peter Zijlstra (1):
+  perf: improve perf_sample_data struct layout
+
+Stephane Eranian (5):
+  perf: add ability to sample machine state on interrupt
+  perf/x86: add support for sampling PEBS machine state registers
+  perf tools: add core support for sampling intr machine state regs
+  perf/tests: add interrupted state sample parsing test
+  perf record: add new -I option to sample interrupted machine state
+
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   20 +++++++++++
+ include/linux/perf_event.h                |   37 ++++++++++---------
+ include/uapi/linux/perf_event.h           |   15 +++++++-
+ kernel/events/core.c                      |   49 +++++++++++++++++++++++--
+ tools/perf/Documentation/perf-record.txt  |    6 ++++
+ tools/perf/builtin-record.c               |    2 ++
+ tools/perf/perf.h                         |    1 +
+ tools/perf/tests/sample-parsing.c         |   55 +++++++++++++++++++++--------
+ tools/perf/util/event.h                   |    1 +
+ tools/perf/util/evsel.c                   |   46 +++++++++++++++++++++++-
+ tools/perf/util/header.c                  |    1 +
+ tools/perf/util/session.c                 |   44 ++++++++++++++++++++---
+ 12 files changed, 235 insertions(+), 42 deletions(-)
 
 -- 
-=============================================
-
-Matti Vaittinen
-Senile SW Specialist
-FINLAND 
-
-~~ When things go utterly wrong vim users can always type :help! ~~
+1.7.9.5
 
