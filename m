@@ -1,91 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaIITFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:05:08 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:58683 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328AbaIITFC (ORCPT
+	id S1752088AbaIITHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:07:15 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:59078 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbaIITHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:05:02 -0400
-Date: Tue, 9 Sep 2014 12:03:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v3 2/6] mm/hugetlb: take page table lock in
- follow_huge_(addr|pmd|pud)()
-In-Reply-To: <20140908213741.GA6866@nhori.bos.redhat.com>
-Message-ID: <alpine.LSU.2.11.1409091142330.8184@eggly.anvils>
-References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1409276340-7054-3-git-send-email-n-horiguchi@ah.jp.nec.com> <alpine.LSU.2.11.1409031243420.9023@eggly.anvils> <20140905052751.GA6883@nhori.redhat.com> <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
- <20140908213741.GA6866@nhori.bos.redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 9 Sep 2014 15:07:12 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: linux-kernel@vger.kernel.org
+Subject: Build regressions/improvements in v3.17-rc4
+Date: Tue,  9 Sep 2014 21:07:13 +0200
+Message-Id: <1410289633-2398-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014, Naoya Horiguchi wrote:
-> On Mon, Sep 08, 2014 at 12:13:16AM -0700, Hugh Dickins wrote:
-> > On Fri, 5 Sep 2014, Naoya Horiguchi wrote:
-> > > On Wed, Sep 03, 2014 at 02:17:41PM -0700, Hugh Dickins wrote:
-> > > 
-> > > > One subtlety to take care over: it's a long time since I've had to
-> > > > worry about pmd folding and pud folding (what happens when you only
-> > > > have 2 or 3 levels of page table instead of the full 4): macros get
-> > > > defined to each other, and levels get optimized out (perhaps
-> > > > differently on different architectures).
-> > > > 
-> > > > So although at first sight the lock to take in follow_huge_pud()
-> > > > would seem to be mm->page_table_lock, I am not at this point certain
-> > > > that that's necessarily so - sometimes pud_huge might be pmd_huge,
-> > > > and the size PMD_SIZE, and pmd_lockptr appropriate at what appears
-> > > > to be the pud level.  Maybe: needs checking through the architectures
-> > > > and their configs, not obvious to me.
-> > > 
-> > > I think that every architecture uses mm->page_table_lock for pud-level
-> > > locking at least for now, but that could be changed in the future,
-> > > for example when 1GB hugepages or pud-based hugepages become common and
-> > > someone are interested in splitting lock for pud level.
-> > 
-> > I'm not convinced by your answer, that you understand the (perhaps
-> > imaginary!) issue I'm referring to.  Try grep for __PAGETABLE_P.D_FOLDED.
-> > 
-> > Our infrastructure allows for 4 levels of pagetable, pgd pud pmd pte,
-> > but many architectures/configurations support only 2 or 3 levels.
-> > What pud functions and pmd functions work out to be in those
-> > configs is confusing, and varies from architecture to architecture.
-> > 
-> > In particular, pud and pmd may be different expressions of the same
-> > thing (with 1 pmd per pud, instead of say 512).  In that case PUD_SIZE
-> > will equal PMD_SIZE: and then at the pud level huge_pte_lockptr()
-> > will be using split locking instead of mm->page_table_lock.
-> 
-> Is it a possible problem? It seems to me that in such system no one
-> can create pud-based hugepages and care about pud level locking.
+Below is the list of build error/warning regressions/improvements in
+v3.17-rc4[1] compared to v3.16[2].
 
-Maybe it is not a possible problem, I already said I'm not certain.
-(Maybe I just need to try a couple of x86_32 builds with printks,
-to find that it is a real problem; but I haven't tried, and x86_32
-would not disprove it for the other architectures.)
+Summarized:
+  - build errors: +7/-30
+  - build warnings: +80/-78
 
-But again, your answer does not convince me that you begin to understand
-the issue: please read again what I wrote.  I am not talking about
-pud-based hugepages, I'm talking about pmd-based hugepages when the
-pud level is identical to the pmd level.
+JFYI, when comparing v3.17-rc4[1]  to v3.17-rc3[3], the summaries are:
+  - build errors: +4/-14
+  - build warnings: +12/-68
 
-Hopefully, you're seeing the issue from a different viewpoint than I am,
-and from your good viewpoint the answer is obvious, whereas from my
-muddled viewpoint it is not; but you're not making that clear to me.
+As I haven't mastered kup yet, there's no verbose summary at
+http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.17-rc4.summary.gz
 
-What is certain is that we do not need to worry about this in a
-patch fixing follow_huge_pmd() alone: it only becomes an issue in a
-patch extending properly locked FOLL_GET support to follow_huge_pud(),
-which I think you've decided to set aside for now.
+Happy fixing! ;-)
 
-Hugh
+Thanks to the linux-next team for providing the build service.
+
+[1] http://kisskb.ellerman.id.au/kisskb/head/7854/ (all 119 configs)
+[2] http://kisskb.ellerman.id.au/kisskb/head/7732/ (all 119 configs)
+[3] http://kisskb.ellerman.id.au/kisskb/head/7824/ (all 119 configs)
+
+
+*** ERRORS ***
+
+7 regressions:
+  + /scratch/kisskb/src/fs/hostfs/hostfs_user.c: error: 'AT_FDCWD' undeclared (first use in this function):  => 378
+  + /scratch/kisskb/src/fs/hostfs/hostfs_user.c: error: (Each undeclared identifier is reported only once:  => 378
+  + /scratch/kisskb/src/fs/hostfs/hostfs_user.c: error: for each function it appears in.):  => 378
+  + error: No rule to make target include/config/auto.conf:  => N/A
+  + error: fealnx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `._raw_spin_lock_irqsave' defined in .spinlock.text section in kernel/built-in.o:  => (.text+0x1ff8bd8)
+  + error: fealnx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `.ioread32' defined in .text section in lib/built-in.o:  => (.text+0x1ff857c), (.text+0x1ff8490), (.text+0x1ff85c0), (.text+0x1ff8a48), (.text+0x1ff8b70), (.text+0x1ff8b8c)
+  + error: fealnx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_25' defined in .text.save.restore section in arch/powerpc/lib/built-in.o:  => (.text+0x1ff8538), (.text+0x1ff90cc), (.text+0x1ff8d10)
+
+30 improvements:
+  - /scratch/kisskb/src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'ioport_map' [-Werror=implicit-function-declaration]: 878:2 => 
+  - /scratch/kisskb/src/drivers/net/wireless/libertas/if_cs.c: error: implicit declaration of function 'ioport_unmap' [-Werror=implicit-function-declaration]: 826:3 => 
+  - /scratch/kisskb/src/drivers/net/wireless/orinoco/orinoco_cs.c: error: implicit declaration of function 'ioport_map' [-Werror=implicit-function-declaration]: 153:2 => 
+  - /scratch/kisskb/src/drivers/net/wireless/orinoco/orinoco_cs.c: error: implicit declaration of function 'ioport_unmap' [-Werror=implicit-function-declaration]: 205:3 => 
+  - /scratch/kisskb/src/drivers/net/wireless/orinoco/spectrum_cs.c: error: implicit declaration of function 'ioport_map' [-Werror=implicit-function-declaration]: 216:2 => 
+  - /scratch/kisskb/src/drivers/net/wireless/orinoco/spectrum_cs.c: error: implicit declaration of function 'ioport_unmap' [-Werror=implicit-function-declaration]: 273:3 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_add' [-Werror=implicit-function-declaration]: 176:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_add_negative' [-Werror=implicit-function-declaration]: 211:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_add_return' [-Werror=implicit-function-declaration]: 218:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_dec' [-Werror=implicit-function-declaration]: 169:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_dec_and_test' [-Werror=implicit-function-declaration]: 197:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_dec_return' [-Werror=implicit-function-declaration]: 239:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_inc' [-Werror=implicit-function-declaration]: 162:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_inc_and_test' [-Werror=implicit-function-declaration]: 204:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_inc_return' [-Werror=implicit-function-declaration]: 232:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_set' [-Werror=implicit-function-declaration]: 155:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_sub' [-Werror=implicit-function-declaration]: 183:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_sub_and_test' [-Werror=implicit-function-declaration]: 190:2 => 
+  - /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_sub_return' [-Werror=implicit-function-declaration]: 225:2 => 
+  - /scratch/kisskb/src/include/linux/atomic.h: error: implicit declaration of function '__atomic_add_unless' [-Werror=implicit-function-declaration]: 53:2 => 
+  - /scratch/kisskb/src/include/linux/atomic.h: error: implicit declaration of function 'atomic_cmpxchg' [-Werror=implicit-function-declaration]: 89:3 => 
+  - /scratch/kisskb/src/include/linux/atomic.h: error: implicit declaration of function 'atomic_read' [-Werror=implicit-function-declaration]: 136:2 => 
+  - error: stmmac_hwtstamp.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_30' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ff9944), (.text+0x1ff9580) => 
+  - error: stmmac_hwtstamp.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_savegpr0_26' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ff9d4c), (.text+0x1ffa0bc), (.text+0x1ff994c) => 
+  - error: stmmac_ptp.c: relocation truncated to fit: R_PPC64_REL24 against symbol `._raw_spin_lock_irqsave' defined in .spinlock.text section in kernel/built-in.o: (.text+0x1ffa5d8), (.text+0x1ffa520) => 
+  - error: stmmac_ptp.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_27' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ffa59c) => 
+  - error: stmmac_ptp.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_savegpr0_27' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ffa5a4), (.text+0x1ffa4ec) => 
+  - error: tpm_ibmvtpm.c: undefined reference to `.__vio_register_driver': .init.text+0x6950) => 
+  - error: tpm_ibmvtpm.c: undefined reference to `.plpar_hcall_norets': .text+0xedb9c), .text+0xeda70), .text+0xedae4), .text+0xedc1c), .text+0xedde0) => 
+  - error: tpm_ibmvtpm.c: undefined reference to `.vio_unregister_driver': .exit.text+0x1920) => 
+
+
+*** WARNINGS ***
+
+80 regressions:
+  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr.c: warning: 'last_sc' may be used uninitialized in this function [-Wuninitialized]:  => 1098:31
+  + /scratch/kisskb/src/arch/sh/include/uapi/asm/swab.h: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]  CC      net/ipv6/exthdrs_offload.o:  => 14:2
+  + /scratch/kisskb/src/arch/sh/math-emu/math.c: warning: statement with no effect [-Wunused-value]  CC      arch/sh/kernel/cpu/irq/imask.o:  => 129:1
+  + /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/engine/device/ctrl.c: warning: overflow in implicit constant conversion [-Woverflow]:  => 62:3
+  + /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/subdev/clock/gk20a.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]:  => 146:2
+  + /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/subdev/clock/gk20a.c: warning: passing argument 1 of '__div64_32' from incompatible pointer type [enabled by default]:  => 146:2
+  + /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/subdev/clock/gk20a.c: warning: right shift count >= width of type [enabled by default]:  => 146:2
+  + /scratch/kisskb/src/drivers/mfd/intel_soc_pmic_core.c: warning: 'intel_soc_pmic_resume' defined but not used [-Wunused-function]:  => 127:12
+  + /scratch/kisskb/src/drivers/mfd/intel_soc_pmic_core.c: warning: 'intel_soc_pmic_suspend' defined but not used [-Wunused-function]:  => 118:12
+  + /scratch/kisskb/src/drivers/mfd/sec-core.c: warning: 'num_sec_devs' may be used uninitialized in this function [-Wuninitialized]:  => 393:6
+  + /scratch/kisskb/src/drivers/mfd/sec-core.c: warning: 'sec_devs' may be used uninitialized in this function [-Wuninitialized]:  => 393:6
+  + /scratch/kisskb/src/drivers/misc/ioc4.c: warning: 'start' may be used uninitialized in this function [-Wuninitialized]:  => 194:16
+  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0002.c: warning: the frame size of 1300 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 1662:1
+  + /scratch/kisskb/src/drivers/net/ethernet/broadcom/genet/bcmgenet.c: warning: 'bcmgenet_wol_resume' defined but not used [-Wunused-function]:  => 1962:12
+  + /scratch/kisskb/src/drivers/net/ethernet/i825xx/sun3_82586.c: warning: array subscript is above array bounds [-Warray-bounds]:  => 993:89
+  + /scratch/kisskb/src/drivers/net/ethernet/octeon/octeon_mgmt.c: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]:  => 295:4
+  + /scratch/kisskb/src/drivers/net/phy/amd-xgbe-phy.c: warning: 'status' may be used uninitialized in this function [-Wuninitialized]:  => 422:2
+  + /scratch/kisskb/src/drivers/net/wireless/ath/wil6210/debugfs.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]:  => 89:4
+  + /scratch/kisskb/src/drivers/net/wireless/ath/wil6210/debugfs.c: warning: passing argument 1 of '__div64_32' from incompatible pointer type [enabled by default]:  => 89:4
+  + /scratch/kisskb/src/drivers/net/wireless/ath/wil6210/debugfs.c: warning: right shift count >= width of type [enabled by default]:  => 89:4
+  + /scratch/kisskb/src/drivers/pwm/core.c: warning: 'period' may be used uninitialized in this function:  => 609
+  + /scratch/kisskb/src/drivers/pwm/core.c: warning: 'polarity' may be used uninitialized in this function [-Wuninitialized]:  => 676:18
+  + /scratch/kisskb/src/drivers/pwm/core.c: warning: 'polarity' may be used uninitialized in this function:  => 610
+  + /scratch/kisskb/src/drivers/scsi/cxgbi/libcxgbi.c: warning: 'cxgbi_device_find_by_mac' defined but not used [-Wunused-function]:  => 233:29
+  + /scratch/kisskb/src/drivers/staging/android/sync_debug.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]:  => 100:3
+  + /scratch/kisskb/src/drivers/staging/unisys/virthba/virthba.c: warning: format '%d' expects argument of type 'int', but argument 5 has type 'u64' [-Wformat]:  => 749:2, 1151:5
+  + /scratch/kisskb/src/drivers/staging/unisys/virthba/virthba.c: warning: format '%d' expects argument of type 'int', but argument 7 has type 'u64' [-Wformat]:  => 1142:4
+  + /scratch/kisskb/src/drivers/staging/unisys/virthba/virthba.c: warning: format '%u' expects argument of type 'unsigned int', but argument 4 has type 'u64' [-Wformat]:  => 520:2
+  + /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: warning: unused variable 'sprop' [-Wunused-variable]:  => 115:14
+  + /scratch/kisskb/src/drivers/tty/hvc/hvc_xen.c: warning: 'xen_console_remove' defined but not used [-Wunused-function]:  => 333:12
+  + /scratch/kisskb/src/drivers/usb/gadget/function/f_fs.c: warning: '__ffs_ep0_read_events' uses dynamic stack allocation [enabled by default]:  => 421:1
+  + /scratch/kisskb/src/drivers/usb/gadget/function/f_fs.c: warning: 'rem_type1' may be used uninitialized in this function [-Wuninitialized]:  => 2324:47
+  + /scratch/kisskb/src/drivers/usb/gadget/function/f_ncm.c: warning: 'tmp' may be used uninitialized in this function [-Wuninitialized]:  => 1249:7, 1155:5, 1160:12, 1249:20, 1249:31, 1249:15, 1197:13
+  + /scratch/kisskb/src/fs/btrfs/extent-tree.c: warning: array subscript is below array bounds [-Warray-bounds]:  => 7571:17, 7570:18
+  + /scratch/kisskb/src/fs/cifs/sess.c: warning: 'sess_auth_kerberos' defined but not used [-Wunused-function]:  => 1108:1
+  + /scratch/kisskb/src/fs/cifs/sess.c: warning: 'sess_auth_kerberos' defined but not used:  => 1109
+  + /scratch/kisskb/src/fs/cifs/sess.c: warning: 'sess_auth_lanman' defined but not used [-Wunused-function]:  => 750:1
+  + /scratch/kisskb/src/fs/cifs/sess.c: warning: 'sess_auth_lanman' defined but not used:  => 751
+  + /scratch/kisskb/src/fs/ncpfs/dir.c: warning: unused variable 'sb' [-Wunused-variable]:  => 134:23
+  + /scratch/kisskb/src/fs/nfsd/nfs4state.c: warning: 'old_deny_bmap' may be used uninitialized in this function [-Wuninitialized]:  => 3732:24
+  + /scratch/kisskb/src/include/linux/cgroup.h: warning: 'root' may be used uninitialized in this function [-Wuninitialized]:  => 158:11
+  + /scratch/kisskb/src/include/linux/dmaengine.h: warning: 'rxdesc' may be used uninitialized in this function [-Wuninitialized]:  => 796:2
+  + /scratch/kisskb/src/include/linux/dmaengine.h: warning: 'txdesc' may be used uninitialized in this function [-Wuninitialized]:  => 796:2
+  + /scratch/kisskb/src/include/linux/mtd/map.h: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]  LD      drivers/rtc/built-in.o:  => 278:6
+  + /scratch/kisskb/src/include/linux/pwm.h: warning: 'period' may be used uninitialized in this function [-Wuninitialized]:  => 98:15
+  + /scratch/kisskb/src/kernel/acct.c: warning: unused variable 'ns' [-Wunused-variable]:  => 475:24
+  + /scratch/kisskb/src/kernel/acct.c: warning: unused variable 'ns':  => 475
+  + /scratch/kisskb/src/mm/memcontrol.c: warning: 'usage' may be used uninitialized in this function [-Wuninitialized]:  => 4850:6, 4762:6
+  + /scratch/kisskb/src/mm/memcontrol.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 4164:1
+  + /scratch/kisskb/src/sound/soc/codecs/arizona.c: warning: 'aif_rx_state' may be used uninitialized in this function [-Wuninitialized]:  => 1372:21
+  + /scratch/kisskb/src/sound/soc/codecs/arizona.c: warning: 'aif_tx_state' may be used uninitialized in this function [-Wuninitialized]:  => 1369:27
+  + /scratch/kisskb/src/sound/soc/codecs/mc13783.c: warning: 'np' may be used uninitialized in this function [-Wuninitialized]:  => 787:13
+  + /scratch/kisskb/src/sound/soc/codecs/rt286.c: warning: 'rt286_index_sync' defined but not used [-Wunused-function]:  => 273:13
+  + /scratch/kisskb/src/sound/soc/codecs/tas2552.c: warning: 'tas2552_sw_shutdown' defined but not used [-Wunused-function]:  => 81:13
+  + /scratch/kisskb/src/sound/soc/s6000/s6000-i2s.c: warning: unused variable 'mmio' [-Wunused-variable]:  => 577:16
+  + <stdin>: warning: #warning syscall getrandom not implemented [-Wcpp]:  => 1241:2
+  + <stdin>: warning: #warning syscall getrandom not implemented:  => 1241:2
+  + <stdin>: warning: #warning syscall memfd_create not implemented [-Wcpp]:  => 1244:2
+  + <stdin>: warning: #warning syscall memfd_create not implemented:  => 1244:2
+  + <stdin>: warning: #warning syscall seccomp not implemented [-Wcpp]:  => 1238:2
+  + <stdin>: warning: #warning syscall seccomp not implemented:  => 1238:2
+  + arch/powerpc/configs/mpc85xx_defconfig: warning: override: reassigning to symbol RTC_DRV_DS1307:  => 216
+  + warning: (PPC_CELLEB) selects HAS_TXX9_SERIAL which has unmet direct dependencies (TTY && HAS_IOMEM):  => N/A
+  + warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects IBM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
+  + warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
+  + warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER && 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
+  + warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 440GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
+  + warning: (SPU_FS) selects MEMORY_HOTPLUG which has unmet direct dependencies ((SPARSEMEM || X86_64_ACPI_NUMA) && ARCH_ENABLE_MEMORY_HOTPLUG && (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)):  => N/A
+  + warning: drivers/built-in.o(.text+0x2dfc14): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/built-in.o(.text+0x56a28): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/net/built-in.o(.text+0x1d58): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/net/built-in.o(.text+0x42bf4): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: vmlinux.o(.data+0x40d50): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: vmlinux.o(.data+0x40df0): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: vmlinux.o(.data+0x40f54): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: vmlinux.o(.data+0x41064): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x410c4): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x41124): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x4118c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: vmlinux.o(.data+0x4135c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+
+78 improvements:
+  - /scratch/kisskb/src/arch/ia64/sn/kernel/bte.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 117:22, 125:22 => 
+  - /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence  CC      kernel/user.o: 380 => 
+  - /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence  CC      security/keys/permission.o: 383 => 
+  - /scratch/kisskb/src/arch/sparc/include/asm/atomic_32.h: warning: conflicting types for 'atomic_set' [enabled by default]: 27:6 => 
+  - /scratch/kisskb/src/arch/x86/kernel/cpu/mcheck/mce-inject.c: warning: 'mce_irq_ipi' defined but not used [-Wunused-function]: 97:13 => 
+  - /scratch/kisskb/src/drivers/char/random.c: warning: 'arch_random_refill' uses dynamic stack allocation [enabled by default]: 1341:1 => 
+  - /scratch/kisskb/src/drivers/gpio/gpio-sch311x.c: warning: ignoring return value of 'gpiochip_remove', declared with attribute warn_unused_result [-Wunused-result]: 286:18 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/bochs/bochs_drv.c: warning: 'bochs_pm_resume' defined but not used [-Wunused-function]: 117:12 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/bochs/bochs_drv.c: warning: 'bochs_pm_suspend' defined but not used [-Wunused-function]: 100:12 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/cirrus/cirrus_drv.c: warning: 'cirrus_pm_resume' defined but not used [-Wunused-function]: 96:12 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/cirrus/cirrus_drv.c: warning: 'cirrus_pm_suspend' defined but not used [-Wunused-function]: 79:12 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 77:6 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/subdev/clock/nv50.c: warning: 'M' may be used uninitialized in this function [-Wuninitialized]: 117:5 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/subdev/clock/nv50.c: warning: 'N' may be used uninitialized in this function [-Wuninitialized]: 118:15 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/nouveau/core/subdev/clock/nv50.c: warning: 'P' may be used uninitialized in this function [-Wuninitialized]: 118:3 => 
+  - /scratch/kisskb/src/drivers/iio/adc/exynos_adc.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 112:9 => 
+  - /scratch/kisskb/src/drivers/input/touchscreen/mcs5000_ts.c: warning: 'mcs5000_ts_resume' defined but not used [-Wunused-function]: 262:12 => 
+  - /scratch/kisskb/src/drivers/input/touchscreen/mcs5000_ts.c: warning: 'mcs5000_ts_suspend' defined but not used [-Wunused-function]: 252:12 => 
+  - /scratch/kisskb/src/drivers/mfd/arizona-core.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 505:10 => 
+  - /scratch/kisskb/src/drivers/mfd/sec-core.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 350:5 => 
+  - /scratch/kisskb/src/drivers/mfd/stmpe-i2c.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 88:13 => 
+  - /scratch/kisskb/src/drivers/mfd/tps65910.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 404:14 => 
+  - /scratch/kisskb/src/drivers/net/ethernet/xilinx/ll_temac_main.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 78:7 => 
+  - /scratch/kisskb/src/drivers/net/wireless/libertas/if_cs.c: warning: assignment makes pointer from integer without a cast [enabled by default]: 878:15 => 
+  - /scratch/kisskb/src/drivers/net/wireless/mac80211_hwsim.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 692:20 => 
+  - /scratch/kisskb/src/drivers/net/wireless/mwifiex/cmdevt.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 5 has type '__kernel_suseconds_t' [-Wformat]: 916:4, 463:3, 835:2, 202:2 => 
+  - /scratch/kisskb/src/drivers/net/wireless/orinoco/orinoco_cs.c: warning: assignment makes pointer from integer without a cast [enabled by default]: 153:6 => 
+  - /scratch/kisskb/src/drivers/net/wireless/orinoco/spectrum_cs.c: warning: assignment makes pointer from integer without a cast [enabled by default]: 216:6 => 
+  - /scratch/kisskb/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_init' defined but not used [-Wunused-function]: 693:12 => 
+  - /scratch/kisskb/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_unregister' defined but not used [-Wunused-function]: 724:13 => 
+  - /scratch/kisskb/src/drivers/scsi/bfa/bfa_fcpim.c: warning: left shift count >= width of type [enabled by default]: 2497:4, 2509:4 => 
+  - /scratch/kisskb/src/drivers/scsi/bfa/bfa_fcpim.c: warning: right shift count >= width of type [enabled by default]: 2497:4, 2509:4 => 
+  - /scratch/kisskb/src/drivers/scsi/hpsa.c: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]: 6373:17 => 
+  - /scratch/kisskb/src/drivers/scsi/scsi_tgt_if.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]: 289:10 => 
+  - /scratch/kisskb/src/drivers/spi/spi-atmel.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 1256:19, 1021:13 => 
+  - /scratch/kisskb/src/drivers/spi/spi-fsl-lib.c: warning: unused variable 'ret' [-Wunused-variable]: 195:6 => 
+  - /scratch/kisskb/src/drivers/spi/spi-rspi.c: warning: unused variable 'ret' [-Wunused-variable]: 633:6 => 
+  - /scratch/kisskb/src/drivers/staging/android/sync.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]: 874:3 => 
+  - /scratch/kisskb/src/drivers/staging/comedi/drivers/ni_mio_common.c: warning: 'sample' may be used uninitialized in this function [-Wuninitialized]: 5715:11 => 
+  - /scratch/kisskb/src/drivers/staging/usbip/stub_dev.c: warning: 'stub_table' defined but not used [-Wunused-variable]: 33:29 => 
+  - /scratch/kisskb/src/drivers/staging/wlags49_h2/hcf.c: warning: unused variable 'io_port' [-Wunused-variable]: 3636:22 => 
+  - /scratch/kisskb/src/drivers/staging/wlags49_h25/../wlags49_h2/hcf.c: warning: unused variable 'io_port' [-Wunused-variable]: 3636:22 => 
+  - /scratch/kisskb/src/drivers/usb/gadget/f_fs.c: warning: '__ffs_ep0_read_events' uses dynamic stack allocation [enabled by default]: 420:1 => 
+  - /scratch/kisskb/src/drivers/usb/gadget/f_fs.c: warning: 'rem_type1' may be used uninitialized in this function [-Wuninitialized]: 2119:47 => 
+  - /scratch/kisskb/src/drivers/usb/gadget/f_ncm.c: warning: 'tmp' may be used uninitialized in this function [-Wuninitialized]: 1060:14, 1039:4, 1060:30, 1080:19, 993:5, 1007:28, 1080:6 => 
+  - /scratch/kisskb/src/drivers/usb/host/oxu210hp-hcd.c: warning: unused variable 'base' [-Wunused-variable]: 3904:8 => 
+  - /scratch/kisskb/src/drivers/usb/misc/usb3503.c: warning: 'err' may be used uninitialized in this function [-Wuninitialized]: 195:11 => 
+  - /scratch/kisskb/src/drivers/video/backlight/adp8860_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]: 441:16, 596:32, 566:10, 622:11 => 
+  - /scratch/kisskb/src/drivers/video/fbdev/via/viafbdev.c: warning: unused variable 'iga1_entry' [-Wunused-variable]: 1634:4 => 
+  - /scratch/kisskb/src/drivers/video/fbdev/via/viafbdev.c: warning: unused variable 'iga2_entry' [-Wunused-variable]: 1635:4 => 
+  - /scratch/kisskb/src/drivers/video/fbdev/vt8623fb.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 734:23 => 
+  - /scratch/kisskb/src/include/asm-generic/io.h: warning: passing argument 2 of '__raw_writel' makes pointer from integer without a cast [enabled by default]  CC [M]  drivers/media/usb/dvb-usb/pctv452e.o: 154:2 => 
+  - /scratch/kisskb/src/include/linux/typecheck.h: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 11:18 => 
+  - /scratch/kisskb/src/mm/memcontrol.c: warning: 'val' may be used uninitialized in this function [-Wuninitialized]: 4891:2 => 
+  - /scratch/kisskb/src/mm/memory.c: warning: #warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_cpupid. [-Wcpp]: 75:2 => 
+  - /scratch/kisskb/src/sound/oss/ad1848.c: warning: 'id_table' defined but not used [-Wunused-variable]: 2863:32 => 
+  - /scratch/kisskb/src/sound/soc/codecs/adau1977.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]: 971:3 => 
+  - /scratch/kisskb/src/sound/soc/codecs/max98090.c: warning: 'max98090_resume' defined but not used [-Wunused-function]: 2432:12 => 
+  - /scratch/kisskb/src/sound/soc/codecs/max98090.c: warning: 'max98090_suspend' defined but not used [-Wunused-function]: 2449:12 => 
+  - /scratch/kisskb/src/sound/soc/fsl/fsl_ssi.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 593:3 => 
+  - /scratch/kisskb/src/sound/soc/fsl/fsl_ssi.c: warning: passing argument 1 of '__div64_32' from incompatible pointer type [enabled by default]: 593:3 => 
+  - /scratch/kisskb/src/sound/soc/fsl/fsl_ssi.c: warning: right shift count >= width of type [enabled by default]: 593:3 => 
+  - /scratch/kisskb/src/sound/soc/fsl/imx-audmux.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 70:13 => 
+  - /scratch/kisskb/src/sound/soc/fsl/imx-audmux.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 162:7 => 
+  - warning: (IMA) selects TCG_IBMVTPM which has unmet direct dependencies (TCG_TPM && PPC_PSERIES): N/A => 
+  - warning: (VIDEO_EM28XX_V4L2) selects VIDEO_MT9V011 which has unmet direct dependencies (MEDIA_SUPPORT && I2C && VIDEO_V4L2 && MEDIA_CAMERA_SUPPORT): N/A => 
+  - warning: drivers/built-in.o(.text+0x2cd8e0): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/built-in.o(.text+0x51910): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/net/built-in.o(.text+0x1d54): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/net/built-in.o(.text+0x42b14): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: vmlinux.o(.data+0x41970): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41a10): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41b74): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41c84): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x41ce4): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x41d44): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x41dac): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41f7c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
