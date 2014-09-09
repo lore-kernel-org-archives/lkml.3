@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426AbaIIOHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:07:36 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52210 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756577AbaIIOHc (ORCPT
+	id S1756897AbaIIOHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:07:30 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:35223 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932359AbaIIOH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:07:32 -0400
+	Tue, 9 Sep 2014 10:07:27 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Stephen Warren <swarren@wwwdotorg.org>,
@@ -15,9 +15,9 @@ Cc: Stephen Warren <swarren@wwwdotorg.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v10 9/9] clk: Add docs about calling clk_put after clk_get_parent
-Date: Tue,  9 Sep 2014 16:06:52 +0200
-Message-Id: <1410271612-27389-7-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v10 7/9] clk: Take the prepare lock when updating the list of per-user clks
+Date: Tue,  9 Sep 2014 16:06:50 +0200
+Message-Id: <1410271612-27389-5-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410271612-27389-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -26,42 +26,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As otherwise the per-user clk will be leaked.
-
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 ---
- drivers/clk/clk.c   | 3 ++-
- include/linux/clk.h | 3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/clk/clk.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 1ad8cb7..8ac8543 100644
+index 3018f37..f283dcc 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -1784,7 +1784,8 @@ EXPORT_SYMBOL_GPL(clk_provider_get_parent);
-  * clk_get_parent - return the parent of a clk
-  * @clk_user: the clk whose parent gets returned
-  *
-- * Simply returns clk->parent.  Returns NULL if clk is NULL.
-+ * Simply returns clk->parent.  Returns NULL if clk is NULL. Caller must call
-+ * clk_put() to release the returned struct clk.
-  */
- struct clk *clk_get_parent(struct clk *clk_user)
- {
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 066b100..4f54952 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -306,7 +306,8 @@ int clk_set_parent(struct clk *clk, struct clk *parent);
-  * @clk: clock source
-  *
-  * Returns struct clk corresponding to parent clock source, or
-- * valid IS_ERR() condition containing errno.
-+ * valid IS_ERR() condition containing errno. Caller must call
-+ * clk_put() to release the returned struct clk.
-  */
- struct clk *clk_get_parent(struct clk *clk);
+@@ -560,7 +560,9 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
+ 	clk->dev_id = dev;
+ 	clk->con_id = con;
  
++	clk_prepare_lock();
+ 	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
++	clk_prepare_unlock();
+ 
+ 	return clk;
+ }
 -- 
 1.9.3
 
