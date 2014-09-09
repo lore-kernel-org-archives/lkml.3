@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209AbaIIPht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:37:49 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:47232 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757157AbaIIPhq (ORCPT
+	id S1757235AbaIIPiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:38:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51404 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769AbaIIPgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:37:46 -0400
-Message-ID: <540F1EC6.4000504@plexistor.com>
-Date: Tue, 09 Sep 2014 18:37:42 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@fb.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-nvdimm@ml01.01.org, Toshi Kani <toshi.kani@hp.com>,
-        Dave Hansen <dave.hansen@intel.com>, linux-mm@kvack.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/9] pmem: Fixes and farther development (mm: add_persistent_memory)
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
-In-Reply-To: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Sep 2014 11:36:52 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hans de Goede <hdegoede@redhat.com>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 3/3] ata: qcom: Add device tree bindings information
+Date: Tue,  9 Sep 2014 10:36:48 -0500
+Message-Id: <1410277008-20242-3-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
+References: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2014 12:11 AM, Ross Zwisler wrote:
-> PMEM is a modified version of the Block RAM Driver, BRD. The major difference
-> is that BRD allocates its backing store pages from the page cache, whereas
-> PMEM uses reserved memory that has been ioremapped.
-> 
-> One benefit of this approach is that there is a direct mapping between
-> filesystem block numbers and virtual addresses.  In PMEM, filesystem blocks N,
-> N+1, N+2, etc. will all be adjacent in the virtual memory space. This property
-> allows us to set up PMD mappings (2 MiB) for DAX.
-> 
-> This patch set is builds upon the work that Matthew Wilcox has been doing for
-> DAX:
-> 
+Add device tree binding for Qualcomm AHCI SATA controller and specifically
+the sata controller on the IPQ806x family of SoCs.
 
-Let us not submit a driver with the wrong user visible API. Lets submit the
-better API (and structure) I have sent.
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+(reposted with Hans on list)
 
-> https://lkml.org/lkml/2014/8/27/31
-> 
-> Specifically, my implementation of pmem_direct_access() in patch 4/4 uses API
-> enhancements introduced in Matthew's DAX patch v10 02/21:
-> 
-> https://lkml.org/lkml/2014/8/27/48
-> 
-> Ross Zwisler (4):
->   pmem: Initial version of persistent memory driver
->   pmem: Add support for getgeo()
->   pmem: Add support for rw_page()
->   pmem: Add support for direct_access()
-> 
+ .../devicetree/bindings/ata/qcom-sata.txt          | 40 ++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/qcom-sata.txt
 
-On top of the 4 above patches here is a list of changes:
-
-[PATCH 1/9] SQUASHME: pmem: Remove unused #include headers
-[PATCH 2/9] SQUASHME: pmem: Request from fdisk 4k alignment
-[PATCH 3/9] SQUASHME: pmem: Let each device manage private memory region
-[PATCH 4/9] SQUASHME: pmem: Support of multiple memory regions
-
-	These 4 need to be squashed into Ross's 
-		[patch 1/4] pmem: Initial version of persistent memory driver
-	See below for a suggested new patch
-
-[PATCH 5/9 v2] mm: Let sparse_{add,remove}_one_section receive a node_id
-[PATCH 6/9 v2] mm: New add_persistent_memory/remove_persistent_memory
-[PATCH 7/9 v2] pmem: Add support for page structs
-
-	Please need review by Toshi and mm people.
-
-[PATCH 8/9] SQUASHME: pmem: Fixs to getgeo
-[PATCH 9/9] pmem: KISS, remove register_blkdev
-
-	And some more development atop the initial version
-
-
-All these patches can be viewed in this tree/branch:
-	git://git.open-osd.org/pmem.git branch pmem-jens-3.17-rc1
-	[http://git.open-osd.org/gitweb.cgi?p=pmem.git;a=shortlog;h=refs/heads/pmem-jens-3.17-rc1]
-
-I have also prepared a new branch *pmem* which is already SQUASHED
-And has my suggested changed commit logs for the combined patches
-here is the commit-log:
-
-aa85c80 Boaz Harrosh  |  pmem: KISS, remove register_blkdev 
-738203c Boaz Harrosh  |  pmem: Add support for page structs 
-9f50a54 Boaz Harrosh  |  mm: New add_persistent_memory/remove_persistent_memory 
-fdfab12 Yigal Korman  |  mm: Let sparse_{add,remove}_one_section receive a node_id 
-a477a87 Ross Zwisler  |  pmem: Add support for direct_access() 
-316a93a Ross Zwisler  |  pmem: Add support for rw_page() 
-6850353 Boaz Harrosh  |  SQUASHME: pmem: Fixs to getgeo 
-d78a84a Ross Zwisler  |  pmem: Add support for getgeo() 
-bb0eb45 Ross Zwisler  |  pmem: Initial version of persistent memory driver                                                                             
-
-All these patches can be viewed in this tree/branch:
-	git://git.open-osd.org/pmem.git branch pmem
-	[http://git.open-osd.org/gitweb.cgi?p=pmem.git;a=shortlog;h=refs/heads/pmem]
-Specifically the first [bb0eb45] is needed so first version can be released with the
-proper user visible API.
-Ross please consider taking these patches (pmem branch) in your tree for submission?
-
-Thanks
-Boaz
+diff --git a/Documentation/devicetree/bindings/ata/qcom-sata.txt b/Documentation/devicetree/bindings/ata/qcom-sata.txt
+new file mode 100644
+index 0000000..5e74e41
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/qcom-sata.txt
+@@ -0,0 +1,40 @@
++* Qualcomm AHCI SATA Controller
++
++SATA nodes are defined to describe on-chip Serial ATA controllers.
++Each SATA controller should have its own node.
++
++Required properties:
++- compatible		: compatible list, contains "qcom,msm-ahci"
++- interrupts		: <interrupt mapping for SATA IRQ>
++- reg			: <registers mapping>
++- phys			: Must contain exactly one entry as specified
++			  in phy-bindings.txt
++- phy-names		: Must be "sata-phy"
++
++Required properties for "qcom,ipq806x-ahci" compatible:
++- clocks		: Must contain an entry for each entry in clock-names.
++- clock-names		: Shall be:
++				"slave_iface" - Fabric port AHB clock for SATA
++				"iface" - AHB clock
++				"core" - core clock
++				"rxoob" - RX out-of-band clock
++				"pmalive" - Power Module Alive clock
++
++Example:
++	sata@29000000 {
++		compatible = "qcom,ipq806x-ahci", "qcom,msm-ahci";
++		reg = <0x29000000 0x180>;
++
++		interrupts = <0 209 0x0>;
++
++		clocks = <&gcc SFAB_SATA_S_H_CLK>,
++			 <&gcc SATA_H_CLK>,
++			 <&gcc SATA_A_CLK>,
++			 <&gcc SATA_RXOOB_CLK>,
++			 <&gcc SATA_PMALIVE_CLK>;
++		clock-names = "slave_iface", "iface", "core",
++				"rxoob", "pmalive";
++
++		phys = <&sata_phy>;
++		phy-names = "sata-phy";
++	};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
