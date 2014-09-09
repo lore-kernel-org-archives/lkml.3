@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408AbaIILiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:38:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13275 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753498AbaIILh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:37:59 -0400
-From: Baoquan He <bhe@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, vgoyal@redhat.com, ebiederm@xmission.com,
-        tglx@linutronix.de, mingo@redhat.com, Baoquan He <bhe@redhat.com>
-Subject: [Patch v2 2/3] check if crashk_res_low exists when exclude it from crash mem ranges
-Date: Tue,  9 Sep 2014 19:36:19 +0800
-Message-Id: <1410262580-1561-2-git-send-email-bhe@redhat.com>
-In-Reply-To: <1410262580-1561-1-git-send-email-bhe@redhat.com>
-References: <1410262580-1561-1-git-send-email-bhe@redhat.com>
+	id S1756562AbaIILjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:39:05 -0400
+Received: from mail-bn1on0111.outbound.protection.outlook.com ([157.56.110.111]:48928
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751300AbaIILjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 07:39:03 -0400
+X-Greylist: delayed 876 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 07:39:02 EDT
+From: "Mercadel Anderson, Gailene M" <GAnderson@dallasisd.org>
+Subject: 
+Thread-Index: AQHPzCCYVEc/iGTnS0W1HXvpu7IxGA==
+Date: Tue, 9 Sep 2014 11:24:20 +0000
+Message-ID: <c0e5aabe0c944a289096cbc962afbc60@BLUPR04MB232.namprd04.prod.outlook.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [204.14.77.45]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0329B15C8A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019018)(6009001)(189002)(36304003)(199003)(50986999)(25636003)(92566001)(31966008)(79102001)(99286002)(105586002)(85306004)(101416001)(64706001)(108616004)(97736003)(77982001)(20776003)(66066001)(74502001)(33646002)(107886001)(107046002)(77096002)(54356999)(110136001)(81342001)(106356001)(83072002)(74662001)(87936001)(80022001)(21056001)(99396002)(76576001)(76482001)(2656002)(85852003)(90102001)(46102001)(19580405001)(5406001)(19580395003)(81542001)(881003)(109986003)(106116001)(83322001)(95666004)(1671002)(86362001)(4396001)(74316001)(567094001)(24736002)(80792004)(5416002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR04MB232;H:BLUPR04MB232.namprd04.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: dallasisd.org
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s89BdAD4006162
 
-Add a check if crashk_res_low exists just like GART region does. If
-crashk_res_low doesn't exist, calling exclude_mem_range is unnecessary.
-
-Meanwhile, since crashk_res_low has been initialized at definition, it's
-safe just use "if (crashk_low_res.end)" to check if it's exist. And this
-can make it consistent with other places of check.
-
-Signed-off-by: Baoquan He <bhe@redhat.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
----
- arch/x86/kernel/crash.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index a618fcd..f5ab56d 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -237,7 +237,7 @@ static void fill_up_crash_elf_data(struct crash_elf_data *ced,
- 	ced->max_nr_ranges++;
- 
- 	/* If crashk_low_res is not 0, another range split possible */
--	if (crashk_low_res.end != 0)
-+	if (crashk_low_res.end)
- 		ced->max_nr_ranges++;
- }
- 
-@@ -335,9 +335,11 @@ static int elf_header_exclude_ranges(struct crash_elf_data *ced,
- 	if (ret)
- 		return ret;
- 
--	ret = exclude_mem_range(cmem, crashk_low_res.start, crashk_low_res.end);
--	if (ret)
--		return ret;
-+	if (crashk_low_res.end) {
-+		ret = exclude_mem_range(cmem, crashk_low_res.start, crashk_low_res.end);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	/* Exclude GART region */
- 	if (ced->gart_end) {
--- 
-1.8.5.3
-
+Winning Batch No: QF-134-8876,V-588)
+Your email was listed for Qatar Foundation Compensation funds for Community development,contact(morganadmas@att.net)
+________________________________
+ CONFIDENTIALITY NOTICE: This email message, including all attachments, is for the sole use of the intended recipient(s) and may contain confidential student and/or employee information. Unauthorized use and/or disclosure is prohibited under the federal Family Education Rights & Privacy Act (20 U.S.C. Â§1232g, 34 CFR Part 99, 19 TAC 247.2, Texas Government Code 552.023, Texas Education Code 21.355, 29 CFR 1630.14(b)(c)). If you are not the intended recipient, you may not use, disclose, copy or disseminate this information. Please call the sender immediately or reply by email and destroy all copies of the original message, including attachments.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
