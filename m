@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264AbaIIPA5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:00:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41081 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757172AbaIIOyB (ORCPT
+	id S1757304AbaIIPBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:01:16 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:45758 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756678AbaIIPA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:54:01 -0400
-Date: Tue, 9 Sep 2014 07:52:38 -0700
-From: tip-bot for Jason Low <tipbot@zytor.com>
-Message-ID: <tip-8236d907ab3411ad452280faa8b26c1347327380@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, pjt@google.com,
-        peterz@infradead.org, tim.c.chen@linux.intel.com, yuyang.du@intel.com,
-        jason.low2@hp.com, Waiman.Long@hp.com, chegu_vinod@hp.com,
-        tglx@linutronix.de, scott.norton@hp.com, aswin@hp.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, pjt@google.com, yuyang.du@intel.com,
-        tim.c.chen@linux.intel.com, jason.low2@hp.com, Waiman.Long@hp.com,
-        chegu_vinod@hp.com, tglx@linutronix.de, scott.norton@hp.com,
-        aswin@hp.com
-In-Reply-To: <1409643684.19197.15.camel@j-VirtualBox>
-References: <1409643684.19197.15.camel@j-VirtualBox>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Reduce contention in update_cfs_rq_blocked_load()
-Git-Commit-ID: 8236d907ab3411ad452280faa8b26c1347327380
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 9 Sep 2014 11:00:56 -0400
+From: Junxiao Bi <junxiao.bi@oracle.com>
+To: akpm@linux-foundation.org
+Cc: david@fromorbit.com, xuejiufei@huawei.com, ming.lei@canonical.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, trond.myklebust@primarydata.com
+Subject: [PATCH v2] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
+Date: Tue,  9 Sep 2014 22:59:43 +0800
+Message-Id: <1410274783-25735-1-git-send-email-junxiao.bi@oracle.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8236d907ab3411ad452280faa8b26c1347327380
-Gitweb:     http://git.kernel.org/tip/8236d907ab3411ad452280faa8b26c1347327380
-Author:     Jason Low <jason.low2@hp.com>
-AuthorDate: Tue, 2 Sep 2014 00:41:24 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 9 Sep 2014 06:47:29 +0200
+commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O during memory allocation")
+introduces PF_MEMALLOC_NOIO flag to avoid doing I/O inside memory allocation, __GFP_IO is cleared
+when this flag is set, but __GFP_FS implies __GFP_IO, it should also be cleared. Or it may still
+run into I/O, like in superblock shrinker. And this will make the kernel run into the deadlock case
+described in that commit.
 
-sched: Reduce contention in update_cfs_rq_blocked_load()
+See Dave Chinner's comment about io in superblock shrinker:
 
-When running workloads on 2+ socket systems, based on perf profiles, the
-update_cfs_rq_blocked_load() function often shows up as taking up a
-noticeable % of run time.
+Filesystem shrinkers do indeed perform IO from the superblock
+shrinker and have for years. Even clean inodes can require IO before
+they can be freed - e.g. on an orphan list, need truncation of
+post-eof blocks, need to wait for ordered operations to complete
+before it can be freed, etc.
 
-Much of the contention is in __update_cfs_rq_tg_load_contrib() when we
-update the tg load contribution stats.  However, it turns out that in many
-cases, they don't need to be updated and "tg_contrib" is 0.
+IOWs, Ext4, btrfs and XFS all can issue and/or block on
+arbitrary amounts of IO in the superblock shrinker context. XFS, in
+particular, has been doing transactions and IO from the VFS inode
+cache shrinker since it was first introduced....
 
-This patch adds a check in __update_cfs_rq_tg_load_contrib() to skip updating
-tg load contribution stats when nothing needs to be updated. This reduces the
-cacheline contention that would be unnecessary.
+Fix this by clearing __GFP_FS in memalloc_noio_flags(), this function
+has masked all the gfp_mask that will be passed into fs for the processes
+setting PF_MEMALLOC_NOIO in the direct reclaim path.
 
-Reviewed-by: Ben Segall <bsegall@google.com>
-Reviewed-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
-Cc: jason.low2@hp.com
-Cc: Yuyang Du <yuyang.du@intel.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Cc: Scott J Norton <scott.norton@hp.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409643684.19197.15.camel@j-VirtualBox
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+v1 thread at:
+https://lkml.org/lkml/2014/9/3/32
+
+v2 changes:
+patch log update to make the issue more clear.
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: joyce.xue <xuejiufei@huawei.com>
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: <stable@vger.kernel.org>
 ---
- kernel/sched/fair.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/sched.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 50d2025..be9e97b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2382,6 +2382,9 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
- 	tg_contrib -= cfs_rq->tg_load_contrib;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..2fb2c47 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1936,11 +1936,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
  
-+	if (!tg_contrib)
-+		return;
-+
- 	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
- 		atomic_long_add(tg_contrib, &tg->load_avg);
- 		cfs_rq->tg_load_contrib += tg_contrib;
+-/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
++/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
++ * __GFP_FS is also cleared as it implies __GFP_IO.
++ */
+ static inline gfp_t memalloc_noio_flags(gfp_t flags)
+ {
+ 	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
+-		flags &= ~__GFP_IO;
++		flags &= ~(__GFP_IO | __GFP_FS);
+ 	return flags;
+ }
+ 
+-- 
+1.7.9.5
+
