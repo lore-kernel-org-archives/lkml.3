@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348AbaIILaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:30:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43071 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054AbaIIL36 (ORCPT
+	id S1756344AbaIILcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:32:10 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:47020 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352AbaIILcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:29:58 -0400
-Message-ID: <540EE4B0.70207@ti.com>
-Date: Tue, 9 Sep 2014 16:59:52 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 9 Sep 2014 07:32:07 -0400
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: <bcousson@baylibre.com>, <tony@atomide.com>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [resend PATCH 0/3] Add DRA7xx CPSW Ethernet support in Device
- Tree
-References: <1410203998-8700-1-git-send-email-mugunthanvnm@ti.com> <20140908193440.GC12150@kahuna>
-In-Reply-To: <20140908193440.GC12150@kahuna>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPDyKFqk1pwGFuitE0Fk1pqyP_FZiQK1=5OtGUM9Zw6Mp_rWXw@mail.gmail.com>
+References: <1409307891-16523-1-git-send-email-alim.akhtar@samsung.com> <CAPDyKFqk1pwGFuitE0Fk1pqyP_FZiQK1=5OtGUM9Zw6Mp_rWXw@mail.gmail.com>
+From: Alim Akhtar <alim.akhtar@gmail.com>
+Date: Tue, 9 Sep 2014 17:01:26 +0530
+Message-ID: <CAGOxZ506d5FNs1mZTX=ck9WPZsqzR+3ON-aKS2P8v5_iRyFV7w@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: add support for ARM64
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alim Akhtar <alim.akhtar@samsung.com>, Chris Ball <chris@printf.net>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 September 2014 01:04 AM, Nishanth Menon wrote:
-> On 00:49-20140909, Mugunthan V N wrote:
->> > Adding device tree entry for CPSW to make it work in Dual EMAC mode.
->> > 
->> > These patches were tested with DRA7 hwmod patches on top of linux-next.
->> > The patches were already reviewed [1] and has been waiting for cross bar
->> > and hwmod to be pulled in. Now since all dependent patches has already
->> > pulled in, so reposting the patches again.
->> > 
->> > Patches are tested on linux-next, the boot logs on DRA7xx EVM [2]
->> > 
->> > [1] https://lkml.org/lkml/2014/5/13/89
->> > [2] http://slexy.org/view/s2YqO0Wj9b 
-> Sorry this is now blocked inside TI. could you explain the testing done
-> for sleep state? did you attempt sleep mode before testing this?
-> 
+Hi Ulf,
 
-I have not tested sleep mode, just tested boot and ping test.
+On Tue, Sep 9, 2014 at 12:21 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 29 August 2014 12:24, Alim Akhtar <alim.akhtar@samsung.com> wrote:
+>> There are upcoming ARM64 SoCs with dw_mmc host controller.
+>>
+>> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
+>> ---
+>>  drivers/mmc/host/Kconfig |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+>> index a43295c..72dd6c2 100644
+>> --- a/drivers/mmc/host/Kconfig
+>> +++ b/drivers/mmc/host/Kconfig
+>> @@ -580,7 +580,7 @@ config SDH_BFIN_MISSING_CMD_PULLUP_WORKAROUND
+>>  config MMC_DW
+>>         tristate "Synopsys DesignWare Memory Card Interface"
+>>         depends on HAS_DMA
+>> -       depends on ARC || ARM || MIPS || COMPILE_TEST
+>> +       depends on ARC || ARM || ARM64 || MIPS || COMPILE_TEST
+>
+> Before enabling this, wouldn't it be better to add the needed support
+> in dw_mmc first? Or there are no changes needed?
+>
+> There are also ongoing development and discussions for exynos7, which
+> I guess relates to this?
+> http://www.spinics.net/lists/linux-mmc/msg28294.html
+Thanks for looking into this.
 
-Regards
-Mugunthan V N
+Yes, this patch is being tested on exynos7 platform which is ongoing
+development.
+The above link is one of them.
+I feel this patch is too generic in nature and we now known at least
+exynos7 is going to use this.
+I don't know if there are any other ARM64 platform with dw_mmc controller.
+
+So, I am going to leave this upto you to decide when to take this
+patch, incase you decided to take it after exynos7 support lands, I
+will send a reminder for this.
+>
+> Kind regards
+> Uffe
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Regards,
+Alim
