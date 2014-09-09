@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472AbaIIABw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:01:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36612 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221AbaIIABf (ORCPT
+	id S1755527AbaIIADn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:03:43 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64633 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253AbaIIADk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:01:35 -0400
-Date: Mon, 8 Sep 2014 17:01:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/26] tty/serial flow control fixes
-Message-ID: <20140909000134.GA14714@kroah.com>
-References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
- <20140908232445.GA28204@kroah.com>
- <540E3CDF.8020607@hurleysoftware.com>
- <20140908234324.GA14132@kroah.com>
- <540E3FC6.2010503@hurleysoftware.com>
+	Mon, 8 Sep 2014 20:03:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19vHq1ViClR36re2XVV/TFn
+Date: Mon, 8 Sep 2014 17:03:34 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP2+: board-generic: add support for AM57xx family
+Message-ID: <20140909000334.GV3238@atomide.com>
+References: <1408388875-7360-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <540E3FC6.2010503@hurleysoftware.com>
+In-Reply-To: <1408388875-7360-1-git-send-email-nm@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 07:46:14PM -0400, Peter Hurley wrote:
-> On 09/08/2014 07:43 PM, Greg Kroah-Hartman wrote:
-> > On Mon, Sep 08, 2014 at 07:33:51PM -0400, Peter Hurley wrote:
-> >> On 09/08/2014 07:24 PM, Greg Kroah-Hartman wrote:
-> >>> On Tue, Sep 02, 2014 at 05:39:09PM -0400, Peter Hurley wrote:
-> >>>> Hi Greg,
-> >>>>
-> >>>> This patch series reworks the internals of tty and serial flow control to
-> >>>> fix multiple races in both START/STOP flow control and RTS/CTS flow control.
-> >>>>
-> >>>> The main changes in this series are:
-> >>>> Patch 1
-> >>>>    Backs out the UPF_HARD_FLOW kludge for 8250. This revert should be
-> >>>>    for mainline and -next
-> >>>>
-> >>>> Patches 3-7
-> >>>>    Fixes to x_char handling (ie., sending START/STOP) both in the serial
-> >>>>    core and to several UART drivers
-> >>>>
-> >>>> Patches 10-15
-> >>>>    Rename and move ASYNC_CTS_FLOW and ASYNC_CHECK_CD statuses into
-> >>>>    a private field for the serial core, and add helper functions to test
-> >>>>    those statuses for UART drivers.
-> >>>>
-> >>>>    This is a necessary step toward making tty port->flags SMP-safe, without
-> >>>>    introducing a new lock.
-> >>>
-> >>> I stopped applying at patch 13, due to the objections to that patch.
-> >>> Please redo the rest of the series and resend.
-> >>
-> >> I'm going to wait for the fallout from patch 21 to shake out first.
-> > 
-> > Why, the earlier patches in this series should be ok to go, right?  They
-> > don't depend on 21 to be "correct".
+* Nishanth Menon <nm@ti.com> [140818 12:10]:
+> AM57xx processor family are variants of DRA7 family of processors and
+> targetted at industrial and non-automotive applications.
 > 
-> Oh, you want me to redo just 14 through 20, and resend that?
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-Sure, might as well get those out of the way :)
+Applying into omap-for-v3.18/dt thanks.
+
+Tony
+
+> ---
+> 
+> NOTE: there is no discrenable features yet defined in register set at
+> this point in time.
+> 
+> Tested on AM5728 compatible platform and based on v3.17-rc1
+> 
+>  .../devicetree/bindings/arm/omap/omap.txt          |   12 ++++++++++++
+>  arch/arm/mach-omap2/board-generic.c                |    4 ++++
+>  2 files changed, 16 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
+> index 0edc903..ddd9bcd 100644
+> --- a/Documentation/devicetree/bindings/arm/omap/omap.txt
+> +++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
+> @@ -85,6 +85,18 @@ SoCs:
+>  - DRA722
+>    compatible = "ti,dra722", "ti,dra72", "ti,dra7"
+>  
+> +- AM5728
+> +  compatible = "ti,am5728", "ti,dra742", "ti,dra74", "ti,dra7"
+> +
+> +- AM5726
+> +  compatible = "ti,am5726", "ti,dra742", "ti,dra74", "ti,dra7"
+> +
+> +- AM5718
+> +  compatible = "ti,am5718", "ti,dra722", "ti,dra72", "ti,dra7"
+> +
+> +- AM5716
+> +  compatible = "ti,am5716", "ti,dra722", "ti,dra72", "ti,dra7"
+> +
+>  - AM4372
+>    compatible = "ti,am4372", "ti,am43"
+>  
+> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+> index 9480997..bdb5194 100644
+> --- a/arch/arm/mach-omap2/board-generic.c
+> +++ b/arch/arm/mach-omap2/board-generic.c
+> @@ -241,6 +241,8 @@ MACHINE_END
+>  
+>  #ifdef CONFIG_SOC_DRA7XX
+>  static const char *dra74x_boards_compat[] __initconst = {
+> +	"ti,am5728",
+> +	"ti,am5726",
+>  	"ti,dra742",
+>  	"ti,dra7",
+>  	NULL,
+> @@ -260,6 +262,8 @@ DT_MACHINE_START(DRA74X_DT, "Generic DRA74X (Flattened Device Tree)")
+>  MACHINE_END
+>  
+>  static const char *dra72x_boards_compat[] __initconst = {
+> +	"ti,am5718",
+> +	"ti,am5716",
+>  	"ti,dra722",
+>  	NULL,
+>  };
+> -- 
+> 1.7.9.5
+> 
