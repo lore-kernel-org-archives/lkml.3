@@ -1,117 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaIIPez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:34:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988AbaIIPey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:34:54 -0400
-Message-ID: <540F1DFD.10301@redhat.com>
-Date: Tue, 09 Sep 2014 17:34:21 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        calvin.walton@kepstin.ca, yinghai@kernel.org, grawity@gmail.com,
-        anders@chargestorm.se, matt.fleming@intel.com, harald@redhat.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/efi: Only load initrd above 4g on second
- try
-References: <tip-47226ad4f4cfd1e91ded7f2ec42f83ff1c624663@git.kernel.org>
-In-Reply-To: <tip-47226ad4f4cfd1e91ded7f2ec42f83ff1c624663@git.kernel.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1756990AbaIIPgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:36:55 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51396 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756704AbaIIPgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 11:36:51 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH v4 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller driver
+Date: Tue,  9 Sep 2014 10:36:47 -0500
+Message-Id: <1410277008-20242-2-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
+References: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 17:18, tip-bot for Yinghai Lu wrote:
-> Commit-ID:  47226ad4f4cfd1e91ded7f2ec42f83ff1c624663
-> Gitweb:     http://git.kernel.org/tip/47226ad4f4cfd1e91ded7f2ec42f83ff1c624663
-> Author:     Yinghai Lu <yinghai@kernel.org>
-> AuthorDate: Wed, 3 Sep 2014 21:50:07 -0700
-> Committer:  Matt Fleming <matt.fleming@intel.com>
-> CommitDate: Mon, 8 Sep 2014 20:52:02 +0100
-> 
-> x86/efi: Only load initrd above 4g on second try
-> 
-> Mantas found that after commit 4bf7111f5016 ("x86/efi: Support initrd
-> loaded above 4G"), the kernel freezes at the earliest possible moment
-> when trying to boot via UEFI on Asus laptop.
-> 
-> Revert to old way to load initrd under 4G on first try, second try will
-> use above 4G buffer when initrd is too big and does not fit under 4G.
-> 
-> [ The cause of the freeze appears to be a firmware bug when reading
->   file data into buffers above 4GB, though the exact reason is unknown.
->   Mantas reports that the hang can be avoid if the file size is a
->   multiple of 512 bytes, but I've seen some ASUS firmware simply
->   corrupting the file data rather than freezing.
-> 
->   Laszlo fixed an issue in the upstream EDK2 DiskIO code in Aug 2013
->   which may possibly be related, commit 4e39b75e ("MdeModulePkg/DiskIoDxe:
->   fix source/destination pointer of overrun transfer").
-> 
->   Whatever the cause, it's unlikely that a fix will be forthcoming
->   from the vendor, hence the workaround - Matt ]
-> 
-> Cc: Laszlo Ersek <lersek@redhat.com>
-> Reported-by: Mantas Mikulėnas <grawity@gmail.com>
-> Reported-by: Harald Hoyer <harald@redhat.com>
-> Tested-by: Anders Darander <anders@chargestorm.se>
-> Tested-by: Calvin Walton <calvin.walton@kepstin.ca>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/x86/boot/compressed/eboot.c | 18 +++++++++++-------
->  1 file changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-> index f277184..dca9842 100644
-> --- a/arch/x86/boot/compressed/eboot.c
-> +++ b/arch/x86/boot/compressed/eboot.c
-> @@ -1032,7 +1032,6 @@ struct boot_params *make_boot_params(struct efi_config *c)
->  	int i;
->  	unsigned long ramdisk_addr;
->  	unsigned long ramdisk_size;
-> -	unsigned long initrd_addr_max;
->  
->  	efi_early = c;
->  	sys_table = (efi_system_table_t *)(unsigned long)efi_early->table;
-> @@ -1095,15 +1094,20 @@ struct boot_params *make_boot_params(struct efi_config *c)
->  
->  	memset(sdt, 0, sizeof(*sdt));
->  
-> -	if (hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G)
-> -		initrd_addr_max = -1UL;
-> -	else
-> -		initrd_addr_max = hdr->initrd_addr_max;
-> -
->  	status = handle_cmdline_files(sys_table, image,
->  				      (char *)(unsigned long)hdr->cmd_line_ptr,
-> -				      "initrd=", initrd_addr_max,
-> +				      "initrd=", hdr->initrd_addr_max,
->  				      &ramdisk_addr, &ramdisk_size);
-> +
-> +	if (status != EFI_SUCCESS &&
-> +	    hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G) {
-> +		efi_printk(sys_table, "Trying to load files to higher address\n");
-> +		status = handle_cmdline_files(sys_table, image,
-> +				      (char *)(unsigned long)hdr->cmd_line_ptr,
-> +				      "initrd=", -1UL,
-> +				      &ramdisk_addr, &ramdisk_size);
-> +	}
-> +
->  	if (status != EFI_SUCCESS)
->  		goto fail2;
->  	hdr->ramdisk_image = ramdisk_addr & 0xffffffff;
-> 
+Add support for the Qualcomm AHCI SATA controller that exists on several
+SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
+requires the associated IPQ806x SATA PHY Driver to be enabled as well.
 
-Assuming that handle_cmdline_files() cleans up things internally on a
-failed attempt (no memory leaked etc), this seems sane to me. (All I
-know about this code is visible in the above context.)
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+(reposted with Hans on list)
 
-Acked-by: Laszlo Ersek <lersek@redhat.com>
+v4:
+* Added simple PM ops implementation
+* Added setting of pmalive clk
 
-Thanks
-Laszlo
+v3:
+* Added comment about suspend/resume not supported
+* Fixup ahci_platform_init_host for upstream change to interface
+* cleanup error handling of rxoob clk, moved to devm_clk_get/put
+
+v2:
+* Fixed MODULE_LICENSE to be GPL v2
+
+ drivers/ata/Kconfig     | 10 +++++
+ drivers/ata/Makefile    |  1 +
+ drivers/ata/ahci_qcom.c | 99 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 110 insertions(+)
+ create mode 100644 drivers/ata/ahci_qcom.c
+
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index e1b9278..165d2fa 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -133,6 +133,16 @@ config AHCI_MVEBU
+ 
+ 	  If unsure, say N.
+ 
++config AHCI_QCOM
++	tristate "Qualcomm AHCI SATA support"
++	depends on ARCH_QCOM
++	help
++	  This option enables support for AHCI SATA controller
++	  integrated into Qualcomm ARM SoC chipsets. For more
++	  information please refer to http://www.qualcomm.com/chipsets.
++
++	  If unsure, say N.
++
+ config AHCI_SUNXI
+ 	tristate "Allwinner sunxi AHCI SATA support"
+ 	depends on ARCH_SUNXI
+diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
+index ae41107..812435c 100644
+--- a/drivers/ata/Makefile
++++ b/drivers/ata/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
+ obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_MVEBU)	+= ahci_mvebu.o libahci.o libahci_platform.o
++obj-$(CONFIG_AHCI_QCOM)		+= ahci_qcom.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_TEGRA)	+= ahci_tegra.o libahci.o libahci_platform.o
+diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
+new file mode 100644
+index 0000000..3da0c94
+--- /dev/null
++++ b/drivers/ata/ahci_qcom.c
+@@ -0,0 +1,99 @@
++/*
++ * Qualcomm ARM SoC AHCI SATA platform driver
++ *
++ * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
++ *
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/ahci_platform.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/libata.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pm.h>
++#include "ahci.h"
++
++static const struct ata_port_info qcom_ahci_port_info = {
++	.flags		= AHCI_FLAG_COMMON,
++	.pio_mask	= ATA_PIO4,
++	.udma_mask	= ATA_UDMA6,
++	.port_ops	= &ahci_platform_ops,
++};
++
++static int qcom_ahci_probe(struct platform_device *pdev)
++{
++	struct ahci_host_priv *hpriv;
++	struct clk *rxoob_clk, *pmalive_clk;
++	int rc;
++
++	hpriv = ahci_platform_get_resources(pdev);
++	if (IS_ERR(hpriv))
++		return PTR_ERR(hpriv);
++
++	/* Try and set the rxoob clk to 100Mhz */
++	rxoob_clk = of_clk_get_by_name(pdev->dev.of_node, "rxoob");
++	if (IS_ERR(rxoob_clk))
++		return PTR_ERR(rxoob_clk);
++
++	rc = clk_set_rate(rxoob_clk, 100000000);
++	if (rc)
++		return rc;
++
++	/* Try and set the pmalive clk to 100Mhz */
++	pmalive_clk = of_clk_get_by_name(pdev->dev.of_node, "pmalive");
++	if (IS_ERR(pmalive_clk))
++		return PTR_ERR(pmalive_clk);
++
++	rc = clk_set_rate(pmalive_clk, 100000000);
++	if (rc)
++		return rc;
++
++	rc = ahci_platform_enable_resources(hpriv);
++	if (rc)
++		return rc;
++
++	rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info);
++	if (rc)
++		goto disable_resources;
++
++	return 0;
++disable_resources:
++	ahci_platform_disable_resources(hpriv);
++	return rc;
++}
++
++static const struct of_device_id qcom_ahci_of_match[] = {
++	{ .compatible = "qcom,msm-ahci", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
++
++static SIMPLE_DEV_PM_OPS(qcom_ahci_pm_ops, ahci_platform_suspend,
++			 ahci_platform_resume);
++
++static struct platform_driver qcom_ahci_driver = {
++	.probe = qcom_ahci_probe,
++	.remove = ata_platform_remove_one,
++	.driver = {
++		.name = "qcom_ahci_qcom",
++		.owner = THIS_MODULE,
++		.of_match_table = qcom_ahci_of_match,
++		.pm = &qcom_ahci_pm_ops,
++	},
++};
++module_platform_driver(qcom_ahci_driver);
++
++MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("ahci:qcom");
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
