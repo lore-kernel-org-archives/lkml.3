@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079AbaIIJ2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:28:11 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:50359 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755200AbaIIJ2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:28:09 -0400
-Message-ID: <1410254887.22255.14.camel@x220>
-Subject: Re: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Robert Richter <rric@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Robert Richter <rrichter@cavium.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Tue, 09 Sep 2014 11:28:07 +0200
-In-Reply-To: <20140909080740.GP23009@pengutronix.de>
-References: <1410176689-20020-1-git-send-email-rric@kernel.org>
-	 <20140909080740.GP23009@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 09 Sep 2014 09:28:07.0277 (UTC) FILETIME=[5D3BB1D0:01CFCC10]
-X-RcptDomain: vger.kernel.org
+	id S932264AbaIIJ2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:28:48 -0400
+Received: from mail-by2on0139.outbound.protection.outlook.com ([207.46.100.139]:15360
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753366AbaIIJ2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:28:47 -0400
+X-Greylist: delayed 892 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 05:28:46 EDT
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <linux@arm.linux.org.uk>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>
+CC: <shengjiu.wang@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V1 0/3] refine the ssi clock for imx6sl, and update dts file.
+Date: Tue, 9 Sep 2014 17:13:24 +0800
+Message-ID: <cover.1410253534.git.shengjiu.wang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019018)(6009001)(189002)(199003)(107046002)(92566001)(76482001)(50986999)(86362001)(81542001)(2201001)(93916002)(92726001)(87286001)(77982001)(79102001)(48376002)(50466002)(74662001)(95666004)(106466001)(31966008)(74502001)(105606002)(99396002)(6806004)(44976005)(83322001)(68736004)(19580395003)(89996001)(47776003)(81342001)(84676001)(46102001)(64706001)(229853001)(85852003)(83072002)(20776003)(97736003)(88136002)(80022001)(36756003)(87936001)(21056001)(85306004)(90102001)(102836001)(62966002)(26826002)(33646002)(104016003)(4396001)(50226001)(104166001)(77156001)(32563001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB341;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 0329B15C8A
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-09 at 10:07 +0200, Uwe Kleine-König wrote:
-> On Mon, Sep 08, 2014 at 01:44:48PM +0200, Robert Richter wrote:
-> > @@ -252,11 +252,11 @@ config SCHED_SMT
-> >  	  places. If unsure say N here.
-> >  
-> >  config NR_CPUS
-> > -	int "Maximum number of CPUs (2-32)"
-> > -	range 2 32
-> > +	int "Maximum number of CPUs (2-64)"
-> > +	range 2 64
-> >  	depends on SMP
-> >  	# These have to remain sorted largest to smallest
-> Unrelated to the patch: What does this comment mean? There is only one
-> line following, so it's sorted implicitly.
+This serial patch is for refining the ssi clock tree for imx6sl,
+and update imx6qdl and imx6sl dts file.
 
-This comment doesn't mean much, anymore.
+Shengjiu Wang (3):
+  ARM: clk-imx6sl: refine clock tree for SSI
+  ARM: dts: imx6qdl: add baud clock and clock-names for ssi
+  ARM: dts: imx6sl: add baud clock and clock-names for ssi
 
-It was added in commit 159428538323 ("arm64: Add Kconfig option for APM
-X-Gene SOC family"). Why someone cared so much about the sorting of the
-two defaults is unclear to me. Maybe only to make sure future commits
-wouldn't mess up the sorting order. Anyhow, it seems it was just
-forgotten to remove that line in commit 62aceb8ff4b3 ("arm64: make
-default NR_CPUS 8") which again made it a single item list.
+ arch/arm/boot/dts/imx6qdl.dtsi           |   12 +++++++++---
+ arch/arm/boot/dts/imx6sl.dtsi            |   12 +++++++++---
+ arch/arm/mach-imx/clk-imx6sl.c           |   13 ++++++++++---
+ include/dt-bindings/clock/imx6sl-clock.h |    5 ++++-
+ 4 files changed, 32 insertions(+), 10 deletions(-)
 
-> > -	default "8"
-> > +	default "64"
-
-
-Paul Bolle
+-- 
+1.7.9.5
 
