@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568AbaIIMbX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:31:23 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:42482 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585AbaIIMbW (ORCPT
+	id S1756376AbaIIMgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:36:33 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:38146 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753585AbaIIMgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:31:22 -0400
+	Tue, 9 Sep 2014 08:36:31 -0400
+Message-ID: <540EF44B.4070907@itdev.co.uk>
+Date: Tue, 09 Sep 2014 13:36:27 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1410264760-29756-1-git-send-email-daniel.thompson@linaro.org>
-References: <1410264760-29756-1-git-send-email-daniel.thompson@linaro.org>
-Date: Tue, 9 Sep 2014 14:31:20 +0200
-X-Google-Sender-Auth: vzZM9ZxOIkMieO5Dh9hNLiGMzKI
-Message-ID: <CAMuHMdWvyfPxHKWD3MkgDQRaf4xQUzVq561C1BHiNC_stQ-Rqw@mail.gmail.com>
-Subject: Re: [PATCH] asm-generic/io.h: Implement read[bwlq]_relaxed()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
+References: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
+In-Reply-To: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On 09/09/14 08:52, Sjoerd Simons wrote:
+> For i2c devices in OF the modalias exposed to userspace is i2c:<node
+> type>, for the Maxtouch driver this is i2c:maxtouch.
+> 
+> Add maxtouch to the i2c id table such that userspace can correctly
+> load the module for the device and drop the OF table as it's not
+> needed for i2c devices.
+> 
+> Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 
-On Tue, Sep 9, 2014 at 2:12 PM, Daniel Thompson
-<daniel.thompson@linaro.org> wrote:
-> Currently the read[bwlq]_relaxed() family are implemented on every
-> architecture except blackfin, m68k[1], metag, openrisc, s390[2] and
-> score. Increasingly drivers are being optimized to exploit relaxed
-> reads putting these architectures at risk of compilation failures for
-> shared drivers.
->
-> This patch addresses this by providing implementations of
-> read[bwlq]_relaxed() that are identical to the equivalent read[bwlq]().
-> All the above architectures include asm-generic/io.h .
+I've tested this and it does work. In fact, it seems that you can use
+	compatible = "i2c:atmel,maxtouch";
 
-m68k does not include asm-generic/io.h.
+because the "atmel," is ignored in the matching.
 
-Gr{oetje,eeting}s,
+Before I could ack this patch, we will need to update this dts file:
+	arch/arm/boot/dts/s5pv210-goni.dts
+and this documentation file:
+	Documentation/devicetree/bindings/input/atmel,maxtouch.txt
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+thanks!
