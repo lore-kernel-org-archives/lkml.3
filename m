@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaIIXPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 19:15:22 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:65159 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaIIXPV (ORCPT
+	id S1752679AbaIIXRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 19:17:18 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:55641
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaIIXRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 19:15:21 -0400
-Date: Tue, 9 Sep 2014 16:15:18 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Andrew Duggan <aduggan@synaptics.com>, linux-input@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
-Message-ID: <20140909231518.GA4908@core.coreip.homeip.net>
-References: <20140908165520.GA35051@core.coreip.homeip.net>
- <540EAFD1.2040307@redhat.com>
- <20140909170636.GA28774@core.coreip.homeip.net>
- <540F7A19.3070704@synaptics.com>
- <20140909225725.GA18901@core.coreip.homeip.net>
- <540F8816.5080908@redhat.com>
+	Tue, 9 Sep 2014 19:17:17 -0400
+Date: Wed, 10 Sep 2014 01:17:15 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 1/3] procfs: check uniq proc_dir_entry subdir name
+Message-ID: <20140909231715.GA25668@mail.hallyn.com>
+References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <1409740200-26461-2-git-send-email-chenhanxiao@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <540F8816.5080908@redhat.com>
+In-Reply-To: <1409740200-26461-2-git-send-email-chenhanxiao@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 01:07:02AM +0200, Hans de Goede wrote:
-> Hi,
+Quoting Chen Hanxiao (chenhanxiao@cn.fujitsu.com):
+> Check whether a proc dir has a subdir
+> with a specific name.
+> Will be used in a later patch.
 > 
-> On 09/10/2014 12:57 AM, Dmitry Torokhov wrote:
-> > On Tue, Sep 09, 2014 at 03:07:21PM -0700, Andrew Duggan wrote:
-> >> On 09/09/2014 10:06 AM, Dmitry Torokhov wrote:
-> >>> On Tue, Sep 09, 2014 at 09:44:17AM +0200, Hans de Goede wrote:
-> >>>> Hi,
-> >>>>
-> >>>> On 09/08/2014 06:55 PM, Dmitry Torokhov wrote:
-> >>>>> ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-> >>>>> physical buttons, instead they generate primary button click when user
-> >>>>> presses somewhat hard on the surface of the touchpad. Unfortunately they
-> >>>>> also report primary button click whenever there are 2 or more contacts
-> >>>>> on the pad, messing up all multi-finger gestures (2-finger scrolling,
-> >>>>> multi-finger tapping, etc). To cope with this behavior we introduce a
-> >>>>> delay (currently 50 msecs) in reporting primary press in case more
-> >>>>> contacts appear.
-> >>>>>
-> >>>>> For now we are using DMI matching to detect ForcePads, hopefully we'll
-> >>>>> be able to figure a better way down the road.
-> >>>> What about using the pnp-id, in my experience with the recent lenovo
-> >>>> laptops that tends to be more reliable.
-> >>> Not sure. So far I only know of HP 1040 having it. FWIW:
-> >>>
-> >>> dtor@dtor-glaptop:~$ cat /sys/bus/pnp/drivers/i8042\ aux/00\:07/id
-> >>> SYN300d
-> >>> SYN0100
-> >>> SYN0002
-> >>> PNP0f13
-> >>>
-> >>> I think if we see generalities we can switch over later. I hope
-> >>> Chris/Andrew will come with a capability bit though :)
-> >>
-> >> The ForcePad capabilities bit is 1 << 15.
-> > 
-> > Awesome, thanks!
-> > 
-> > Then I guess the patch below is what we'll be needing for these devices.
+> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> ---
+>  fs/proc/generic.c       | 15 +++++++++++++++
+>  include/linux/proc_fs.h |  3 +++
+>  2 files changed, 18 insertions(+)
 > 
-> Yep, the patch looks good to me.
+> diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+> index b7f268e..4d576c2 100644
+> --- a/fs/proc/generic.c
+> +++ b/fs/proc/generic.c
+> @@ -173,6 +173,21 @@ static const struct inode_operations proc_link_inode_operations = {
+>  	.follow_link	= proc_follow_link,
+>  };
+>  
+> +/* check whether dir has @name member */
+> +struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *de, char *name)
+> +{
+> +	spin_lock(&proc_subdir_lock);
+> +	for (de = de->subdir; de ; de = de->next) {
+> +		if (!strcmp(de->name, name)) {
 
-Thanks, I'll put you down as reviewed-by then.
+Should you pde_get(de) here?
 
--- 
-Dmitry
+> +			spin_unlock(&proc_subdir_lock);
+> +			return de;
+> +		}
+> +	}
+> +	spin_unlock(&proc_subdir_lock);
+> +	return NULL;
+> +}
+> +EXPORT_SYMBOL(proc_uniq_dir);
+> +
+>  /*
+>   * Don't create negative dentries here, return -ENOENT by hand
+>   * instead.
+> diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+> index 9d117f6..38e87aa 100644
+> --- a/include/linux/proc_fs.h
+> +++ b/include/linux/proc_fs.h
+> @@ -41,6 +41,7 @@ extern void *proc_get_parent_data(const struct inode *);
+>  extern void proc_remove(struct proc_dir_entry *);
+>  extern void remove_proc_entry(const char *, struct proc_dir_entry *);
+>  extern int remove_proc_subtree(const char *, struct proc_dir_entry *);
+> +extern struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *, char *);
+>  
+>  #else /* CONFIG_PROC_FS */
+>  
+> @@ -71,6 +72,8 @@ static inline void *proc_get_parent_data(const struct inode *inode) { BUG(); ret
+>  static inline void proc_remove(struct proc_dir_entry *de) {}
+>  #define remove_proc_entry(name, parent) do {} while (0)
+>  static inline int remove_proc_subtree(const char *name, struct proc_dir_entry *parent) { return 0; }
+> +static inline struct proc_dir_entry *proc_uniq_dir(struct proc_dir_entry *,
+> +	char *) {return 0; }
+>  
+>  #endif /* CONFIG_PROC_FS */
+>  
+> -- 
+> 1.9.0
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
