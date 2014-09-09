@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757AbaIIG0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 02:26:21 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:40226 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862AbaIIG0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 02:26:19 -0400
+	id S1755825AbaIIG2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 02:28:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23512 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658AbaIIG2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 02:28:40 -0400
+Message-ID: <540E9DCC.4080903@redhat.com>
+Date: Tue, 09 Sep 2014 02:27:24 -0400
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAN1Daczk+YT3ETviCL5d7xLGKzRL+AAo1z6rLs=r+j5+r45-xw@mail.gmail.com>
-References: <1410221424-20590-1-git-send-email-anupc@chromium.org>
-	<CAKohponb199_zt11M2J39yHn45MjFMSrT+hPBp7rbqiHu4vKpQ@mail.gmail.com>
-	<CAN1Daczk+YT3ETviCL5d7xLGKzRL+AAo1z6rLs=r+j5+r45-xw@mail.gmail.com>
-Date: Tue, 9 Sep 2014 11:56:18 +0530
-X-Google-Sender-Auth: aQLcDMoJ5LcNWyE3UiNCC1Ibm6Y
-Message-ID: <CAOh2x==oX4HN2NJ=bMUzyuL0K9KdrmV7HjRctX9dio7yw-4sbQ@mail.gmail.com>
-Subject: Re: [PATCH] intel_pstate: track and export frequency residency stats
- via sysfs.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Anup Chenthamarakshan <anupc@chromium.org>
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Sameer Nanda <snanda@chromium.org>,
+To: Arnd Bergmann <arnd@arndb.de>, Tomasz Nowicki <tomasz.nowicki@linaro.org>
+CC: Marc Zyngier <marc.zyngier@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <5405BFE7.5060005@arm.com> <5406DEB6.1060705@linaro.org> <4895927.Zp4WL2AZAF@wuerfel>
+In-Reply-To: <4895927.Zp4WL2AZAF@wuerfel>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 11:02 AM, Anup Chenthamarakshan
-<anupc@chromium.org> wrote:
-> I had initially tried reusing cpufreq_stats.c to export stats.
-> Calling cpufreq_stats_update() via the cpufreq notifier added
-> some amount of overhead while switching frequencies. Specifically,
-> looking up the index of the new frequency in freq_table_get_index()
-> is a linear search through all available frequencies (vs a single
-> subtraction with custom stats export). Also, the notifier mechanism
+On 09/03/2014 10:57 AM, Arnd Bergmann wrote:
+> On Wednesday 03 September 2014 11:26:14 Tomasz Nowicki wrote:
 
-I don't think just this linear search will make things so bad..
+> In particular, the ACPI tables describing the irqchip have no way to
+> identify the GIC at all, if I read the spec correctly, you have to
+> parse the tables, ioremap the registers and then read the ID to know
+> if you have GICv1/v2/v2m/v3/v4. There doesn't seem to be any "device"
+> for the GIC that a hypothetical probe function would be based on.
 
-> itself added a level of indirection before calling stats_update.
+(aside) I have already noticed this and am separately raising a request
+to have this dealt with in the specification at a later time. I believe
+it's fairly contrived, since I don't think it'll be at all common to
+have a GICv3/v4 IP implementation that has a CPU interface defined.
 
-Probably some other notifier is registered which is taking considerable
-amount of time.. Try checking what all registered with cpufreq-core.
+The problem (not now, but in later implementations that actually have
+GICv3/v4 hardware is making assumptions since even a GICv3 or GICv4
+system could implement a legacy compatibility mode in which the memory
+register interface is defined and mappable so you would be valid in
+having defined memory addresses in the MADT linked structures then.
 
-> There is a 5X increase in time taken to complete intel_pstate_set_pstate
-> while using cpufreq_stats compared to having custom stats exported.
+Jon.
 
-Try calling cpufreq_stat_notifier_trans() directly instead of a notifier
-and lets see if this makes it any better.
