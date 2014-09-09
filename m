@@ -1,348 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaIIWHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:07:35 -0400
-Received: from mout.gmx.net ([212.227.15.15]:51937 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752550AbaIIWHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:07:33 -0400
-Message-ID: <540F7A13.4030802@gmx.de>
-Date: Wed, 10 Sep 2014 00:07:15 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
-MIME-Version: 1.0
-To: Daniel Baluta <daniel.baluta@intel.com>, jic23@kernel.org
-CC: linux-iio@vger.kernel.org, pmeerw@pmeerw.net, linux-kernel@vger.kernel.org,
-        Tsechih_Lin@asus.com
-Subject: Re: [PATCH v6] iio: Add Dyna-Image AL3320A ambient light sensor driver
-References: <1410163999-26703-1-git-send-email-daniel.baluta@intel.com>
-In-Reply-To: <1410163999-26703-1-git-send-email-daniel.baluta@intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:EtnNMMbvxH9CMsJriaTsLlsB7Jbb4LeqKteKTzbf9SRk95oUKru
- KDmnium7mCcsoF39/SGWoyV7fr7VyjvdnJGatSIGoV4jxS84GtjNQEOg8bGH0SpkeLMs2WN
- Pd1frvdL3okelyJltI0xz4tn48JBq+1Vt0EClCBoxWgGqrS5HW/fh59aCuyxCah8AT9L8mv
- dRtlQdcLWuGBTCwMUtHgQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752505AbaIIWMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:12:30 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:47742 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaIIWM2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 18:12:28 -0400
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: dirk.j.brandewie@intel.com
+Cc: rjw@rjwysocki.net, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>
+Subject: [RFC v1 0/6] CPPC as a PID backend
+Date: Tue,  9 Sep 2014 18:12:02 -0400
+Message-Id: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Baluta schrieb, Am 08.09.2014 10:13:
-> Minimal implementation. This driver provides raw illuminance readings.
-> 
-> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
-> by Tsechih Lin <Tsechih_Lin@asus.com>
-> 
-> * https://android.googlesource.com/kernel/msm.git
-> 
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-> ---
-> 
-> Changes since v5: (reported by Hartmut)
-> 	* fix comments for al3320a_range 
-> 	* make sure we always use a valid index in al3320a_scales
-> 
-> Changes since v4: (reported by Peter)
-> 	* no need to fix endianess when reading raw value
-> 
-> Changes since v3: (reported by Hartmut and Jonathan)
->         * dropped the local store for the range, instead read it when necessary
->         * removed wrapper functions
->         * added in_illuminance_scale_available attribute
->         * fix bug when reading raw value, use i2c_smbus_read_word instead of
->           i2c_smbus_read_word_swapped and fix the endianess after read.
->         * small coding style fixes
-> 
-> Changes since v2: (reported by Peter Meerwald)
->         * removed definition of DATA_HIGH and SW_RESET as they are not used
->         * added a comment to al3320a_get_adc_value() function
->         * added thresholds on TODO list
->         * small style fixes
-> 
-> Changes since v1: (reported by Peter Meerwald)
->         * used u8 instead of int for passing gain and mean_time
->         * used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
->         * used devm_iio_device_register instead of iio_device_register
->         * small style fixes
-> 
->  drivers/iio/light/Kconfig   |  10 ++
->  drivers/iio/light/Makefile  |   1 +
->  drivers/iio/light/al3320a.c | 232 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 243 insertions(+)
->  create mode 100644 drivers/iio/light/al3320a.c
-> 
-> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
-> index bf05ca5..5bea821 100644
-> --- a/drivers/iio/light/Kconfig
-> +++ b/drivers/iio/light/Kconfig
-> @@ -17,6 +17,16 @@ config ADJD_S311
->  	 This driver can also be built as a module.  If so, the module
->  	 will be called adjd_s311.
->  
-> +config AL3320A
-> +	tristate "AL3320A ambient light sensor"
-> +	depends on I2C
-> +	help
-> +	 Say Y here if you want to build a driver for the Dyna Image AL3320A
-> +	 ambient light sensor.
-> +
-> +	 To compile this driver as a module, choose M here: the
-> +	 module will be called al3320a.
-> +
->  config APDS9300
->  	tristate "APDS9300 ambient light sensor"
->  	depends on I2C
-> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
-> index 8b8c09f..47877a3 100644
-> --- a/drivers/iio/light/Makefile
-> +++ b/drivers/iio/light/Makefile
-> @@ -4,6 +4,7 @@
->  
->  # When adding new entries keep the list in alphabetical order
->  obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
-> +obj-$(CONFIG_AL3320A)		+= al3320a.o
->  obj-$(CONFIG_APDS9300)		+= apds9300.o
->  obj-$(CONFIG_CM32181)		+= cm32181.o
->  obj-$(CONFIG_CM36651)		+= cm36651.o
-> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
-> new file mode 100644
-> index 0000000..bc6d670
-> --- /dev/null
-> +++ b/drivers/iio/light/al3320a.c
-> @@ -0,0 +1,232 @@
-> +/*
-> + * AL3320A - Dyna Image Ambient Light Sensor
-> + *
-> + * Copyright (c) 2014, Intel Corporation.
-> + *
-> + * This file is subject to the terms and conditions of version 2 of
-> + * the GNU General Public License.  See the file COPYING in the main
-> + * directory of this archive for more details.
-> + *
-> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
-> + *
-> + * TODO: interrupt support, thresholds
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/i2c.h>
-> +
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/sysfs.h>
-> +
-> +#define AL3320A_DRV_NAME "al3320a"
-> +
-> +#define AL3320A_REG_CONFIG		0x00
-> +#define AL3320A_REG_STATUS		0x01
-> +#define AL3320A_REG_INT			0x02
-> +#define AL3320A_REG_WAIT		0x06
-> +#define AL3320A_REG_CONFIG_RANGE	0x07
-> +#define AL3320A_REG_PERSIST		0x08
-> +#define AL3320A_REG_MEAN_TIME		0x09
-> +#define AL3320A_REG_ADUMMY		0x0A
-> +#define AL3320A_REG_DATA_LOW		0x22
-> +
-> +#define AL3320A_REG_LOW_THRESH_LOW	0x30
-> +#define AL3320A_REG_LOW_THRESH_HIGH	0x31
-> +#define AL3320A_REG_HIGH_THRESH_LOW	0x32
-> +#define AL3320A_REG_HIGH_THRESH_HIGH	0x33
-> +
-> +#define AL3320A_CONFIG_DISABLE		0x00
-> +#define AL3320A_CONFIG_ENABLE		0x01
-> +
-> +#define AL3320A_GAIN_SHIFT		1
-> +#define AL3320A_GAIN_MASK		(BIT(2) | BIT(1))
-> +
-> +/* chip params default values */
-> +#define AL3320A_DEFAULT_MEAN_TIME	4
-> +#define AL3320A_DEFAULT_WAIT_TIME	0 /* no waiting */
-> +
-> +#define AL3320A_SCALE_AVAILABLE "0.512 0.128 0.032 0.01"
-> +
-> +enum al3320a_range {
-> +	AL3320A_RANGE_1, /* 33.28 Klx */
-> +	AL3320A_RANGE_2, /* 8.32 Klx  */
-> +	AL3320A_RANGE_3, /* 2.08 Klx  */
-> +	AL3320A_RANGE_4  /* 0.65 Klx  */
-> +};
-> +
-> +static const int al3320a_scales[][2] = {
-> +	{0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
-> +};
-> +
-> +struct al3320a_data {
-> +	struct i2c_client *client;
-> +};
-> +
-> +static const struct iio_chan_spec al3320a_channels[] = {
-> +	{
-> +		.type	= IIO_LIGHT,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
-> +				      BIT(IIO_CHAN_INFO_SCALE),
-> +	}
-> +};
-> +
-> +static IIO_CONST_ATTR(in_illuminance_scale_available, AL3320A_SCALE_AVAILABLE);
-> +
-> +static struct attribute *al3320a_attributes[] = {
-> +	&iio_const_attr_in_illuminance_scale_available.dev_attr.attr,
-> +	NULL,
-> +};
-> +
-> +static const struct attribute_group al3320a_attribute_group = {
-> +	.attrs = al3320a_attributes,
-> +};
-> +
-> +static int al3320a_init(struct al3320a_data *data)
-> +{
-> +	int ret;
-> +
-> +	/* power on */
-> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
-> +					AL3320A_CONFIG_ENABLE);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
-> +					AL3320A_RANGE_3 << AL3320A_GAIN_SHIFT);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
-> +					AL3320A_DEFAULT_MEAN_TIME);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
-> +					AL3320A_DEFAULT_WAIT_TIME);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int al3320a_read_raw(struct iio_dev *indio_dev,
-> +			    struct iio_chan_spec const *chan, int *val,
-> +			    int *val2, long mask)
-> +{
-> +	struct al3320a_data *data = iio_priv(indio_dev);
-> +	int ret, i;
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		/*
-> +		 * ALS ADC value is stored in two adjacent registers:
-> +		 * - low byte of output is stored at AL3320A_REG_DATA_LOW
-> +		 * - high byte of output is stored at AL3320A_REG_DATA_LOW + 1
-> +		 */
-> +		ret = i2c_smbus_read_word_data(data->client,
-> +					       AL3320A_REG_DATA_LOW);
-> +		if (ret < 0)
-> +			return ret;
-> +		*val = ret;
-> +		return IIO_VAL_INT;
-> +	case IIO_CHAN_INFO_SCALE:
-> +		ret = i2c_smbus_read_byte_data(data->client,
-> +					       AL3320A_REG_CONFIG_RANGE);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		i = (ret & AL3320A_GAIN_MASK) >> AL3320A_GAIN_SHIFT;
-> +		*val = al3320a_scales[i][0];
-> +		*val2 = al3320a_scales[i][1];
-I think there is no real need to introduce i, as it can be replaced by ret.
-> +
-> +		return IIO_VAL_INT_PLUS_MICRO;
-> +	}
-> +	return -EINVAL;
-> +}
-> +
-> +static int al3320a_write_raw(struct iio_dev *indio_dev,
-> +			     struct iio_chan_spec const *chan, int val,
-> +			     int val2, long mask)
-> +{
-> +	struct al3320a_data *data = iio_priv(indio_dev);
-> +	int i;
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_SCALE:
-> +		for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
-> +			if (val == al3320a_scales[i][0] &&
-> +			    val2 == al3320a_scales[i][1])
-> +				return i2c_smbus_write_byte_data(data->client,
-> +					AL3320A_REG_CONFIG_RANGE,
-> +					i << AL3320A_GAIN_SHIFT);
-> +		}
-> +		break;
-> +	}
-> +	return -EINVAL;
-> +}
-> +
-> +static const struct iio_info al3320a_info = {
-> +	.driver_module	= THIS_MODULE,
-> +	.read_raw	= al3320a_read_raw,
-> +	.write_raw	= al3320a_write_raw,
-> +	.attrs		= &al3320a_attribute_group,
-> +};
-> +
-> +static int al3320a_probe(struct i2c_client *client,
-> +			 const struct i2c_device_id *id)
-> +{
-> +	struct al3320a_data *data;
-> +	struct iio_dev *indio_dev;
-> +	int ret;
-> +
-> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
-> +	if (!indio_dev)
-> +		return -ENOMEM;
-> +
-> +	data = iio_priv(indio_dev);
-> +	i2c_set_clientdata(client, indio_dev);
-> +	data->client = client;
-> +
-> +	indio_dev->dev.parent = &client->dev;
-> +	indio_dev->info = &al3320a_info;
-> +	indio_dev->name = AL3320A_DRV_NAME;
-> +	indio_dev->channels = al3320a_channels;
-> +	indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +
-> +	ret = al3320a_init(data);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "al3320a chip init failed\n");
-> +		return ret;
-> +	}
-> +	return devm_iio_device_register(&client->dev, indio_dev);
-> +}
-> +
-> +static int al3320a_remove(struct i2c_client *client)
-> +{
-> +	return i2c_smbus_write_byte_data(client, AL3320A_REG_CONFIG,
-> +					 AL3320A_CONFIG_DISABLE);
-> +}
-> +
-> +static const struct i2c_device_id al3320a_id[] = {
-> +	{"al3320a", 0},
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(i2c, al3320a_id);
-> +
-> +static struct i2c_driver al3320a_driver = {
-> +	.driver = {
-> +		.name = AL3320A_DRV_NAME,
-> +	},
-> +	.probe		= al3320a_probe,
-> +	.remove		= al3320a_remove,
-> +	.id_table	= al3320a_id,
-> +};
-> +
-> +module_i2c_driver(al3320a_driver);
-> +
-> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
-> +MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
-> +MODULE_LICENSE("GPL v2");
-> 
+This patchset introduces CPPC(Collaborative Processor Performance Control) as a backend
+to the PID governor. The PID governor from intel_pstate.c maps cleanly onto some CPPC
+interfaces.
+e.g. The CPU performance requests are made on a continuous scale as against discrete pstate
+levels. The CPU performance feedback over an interval is gauged using platform specific
+counters which are also described by CPPC.
+
+Although CPPC describes several other registers to provide more hints to the platform,
+Linux as of today does not have the infrastructure to make use of those registers.
+Some of the CPPC specific information could be made available from the scheduler as
+part of the CPUfreq and Scheduler intergration work. Until then PID can be used as the
+front end for CPPC.
+
+Beyond code restructuring and renaming, this patchset does not change the logic from the
+intel_pstate.c driver. Kernel compilation times were compared with the original intel_pstate.c,
+intel backend(intel_pid_ctrl.c) and the CPPC backend and no significant overheads were noticed.
+
+Testing was performed on a Thinkpad X240 laptop.
+
+PID_CTRL + INTEL_PSTATE:
+=======================
+real	5m37.742s
+user	18m42.575s
+sys	1m0.521s
+
+
+PID_CTRL + CPPC_PID_CTRL:
+========================
+real	5m48.321s
+user	18m24.487s
+sys	0m59.327s
+
+
+ORIGINAL INTEL_PSTATE:
+======================
+real	5m40.642s
+user	18m37.411s
+sys	1m0.185s
+
+
+The complete patchset including the PCC hacks used for testing is available in [4].
+
+
+Changes since V0: [1]
+-	Split intel_pstate.c into a generic PID governor and platform specific backend.
+-	Add CPPC accessors as PID backend.
+
+
+CPPC:
+====
+
+CPPC (Collaborative Processor Performance Control) is a new way to control CPU
+performance using an abstract continous scale as against a discretized P-state scale
+which is tied to CPU frequency only. It is defined in the ACPI 5.0+ spec. In brief,
+the basic operation involves:
+- OS makes a CPU performance request. (Can provide min and max tolerable bounds)
+
+- Platform (such as BMC) is free to optimize request within requested bounds depending
+on power/thermal budgets etc.
+
+- Platform conveys its decision back to OS
+
+The communication between OS and platform occurs through another medium called (PCC)
+Platform communication Channel. This is a generic mailbox like mechanism which includes
+doorbell semantics to indicate register updates. The PCC driver is being discussed in a
+separate patchset [3] and is not included here, since CPPC is only one client of PCC.
+
+Finer details about the PCC and CPPC spec are available in the latest ACPI 5.1
+specification.[2]
+
+[1] - http://lwn.net/Articles/608715/
+[2] - http://www.uefi.org/sites/default/files/resources/ACPI_5_1release.pdf
+[3] - http://comments.gmane.org/gmane.linux.acpi.devel/70299
+[4] - http://git.linaro.org/people/ashwin.chaugule/leg-kernel.git/shortlog/refs/heads/cppc-pid-no_freq_domain
+
+
+
+Ashwin Chaugule (6):
+  PID Controller governor
+  PID: Move Turbo detection into backend driver
+  PID: Move Baytrail specific accessors into backend driver
+  PID: Add new function pointers to read multiple registers
+  PID: Rename counters to make them more generic
+  PID: Add CPPC (Collaborative Processor Performance) backend driver
+
+ Documentation/cpu-freq/intel-pstate.txt |   43 --
+ Documentation/cpu-freq/pid_ctrl.txt     |   41 ++
+ drivers/cpufreq/Kconfig                 |   19 +
+ drivers/cpufreq/Kconfig.x86             |    2 +-
+ drivers/cpufreq/Makefile                |    4 +-
+ drivers/cpufreq/cppc_pid_ctrl.c         |  406 +++++++++++++
+ drivers/cpufreq/intel_pid_ctrl.c        |  408 +++++++++++++
+ drivers/cpufreq/intel_pstate.c          | 1012 -------------------------------
+ drivers/cpufreq/pid_ctrl.c              |  615 +++++++++++++++++++
+ drivers/cpufreq/pid_ctrl.h              |  113 ++++
+ 10 files changed, 1606 insertions(+), 1057 deletions(-)
+ delete mode 100644 Documentation/cpu-freq/intel-pstate.txt
+ create mode 100644 Documentation/cpu-freq/pid_ctrl.txt
+ create mode 100644 drivers/cpufreq/cppc_pid_ctrl.c
+ create mode 100644 drivers/cpufreq/intel_pid_ctrl.c
+ delete mode 100644 drivers/cpufreq/intel_pstate.c
+ create mode 100644 drivers/cpufreq/pid_ctrl.c
+ create mode 100644 drivers/cpufreq/pid_ctrl.h
+
+-- 
+1.9.1
 
