@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576AbaIIM5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:57:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56608 "HELO
+	id S1756626AbaIIM56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:57:58 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57692 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756325AbaIIM5E (ORCPT
+	with SMTP id S1751192AbaIIM54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:57:04 -0400
+	Tue, 9 Sep 2014 08:57:56 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mike Turquette <mturquette@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: tomeu.vizoso@collabora.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org
-Subject: Re: [PATCH 1/2] acpi: lpss: convert from struct clk to struct clk_core
-Date: Tue, 09 Sep 2014 15:16:29 +0200
-Message-ID: <7263163.khRHYpcBRO@vostro.rjw.lan>
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
+Date: Tue, 09 Sep 2014 15:17:23 +0200
+Message-ID: <74255682.ogZlaWiZ0J@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1410242868-14750-2-git-send-email-mturquette@linaro.org>
-References: <1410242868-14750-1-git-send-email-mturquette@linaro.org> <1410242868-14750-2-git-send-email-mturquette@linaro.org>
+In-Reply-To: <540E91F0.2060306@linux.intel.com>
+References: <540E91F0.2060306@linux.intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,70 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 08, 2014 11:07:47 PM Mike Turquette wrote:
-> Looks like this driver was missed during the original mass driver
-> rework[0]. This patch converts the LPSS driver to the new clock provider
-> data type (struct clk_core).
+On Tuesday, September 09, 2014 01:36:48 PM Fu, Zhonghui wrote:
+> From 6deb00230f5df68da3ca7490402a0c537bf386bb Mon Sep 17 00:00:00 2001
+> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+> Date: Tue, 9 Sep 2014 13:02:25 +0800
+> Subject: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
 > 
-> If there are no objections I propose to roll this patch into a rebase of
-> that patch[0] in my tree.
+> LPSS devices must suspend/resume in fixed order. Or some LPSS devices
+> will hang during the transition to ACPI_STATE_D0 state.
 > 
-> [0] http://lkml.kernel.org/r/<1409758317-20564-1-git-send-email-tomeu.vizoso@collabora.com>
-> 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-
-Mika, any comments here?
-
+> Signed-off-by: Li Aubrey <aubrey.li@linux.intel.com>
+> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
 > ---
->  drivers/acpi/acpi_lpss.c               | 6 +++---
->  include/linux/platform_data/clk-lpss.h | 2 +-
->  2 files changed, 4 insertions(+), 4 deletions(-)
+>  drivers/acpi/acpi_lpss.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
 > diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index 9dfec48..454179f 100644
+> index fddc1e8..54e5c97 100644
 > --- a/drivers/acpi/acpi_lpss.c
 > +++ b/drivers/acpi/acpi_lpss.c
-> @@ -57,7 +57,7 @@ ACPI_MODULE_NAME("acpi_lpss");
->  struct lpss_shared_clock {
->  	const char *name;
->  	unsigned long rate;
-> -	struct clk *clk;
-> +	struct clk_core *clk;
->  };
+> @@ -419,7 +419,7 @@ static int acpi_lpss_create_device(struct acpi_device *adev,
+>  	adev->driver_data = pdata;
+>  	pdev = acpi_create_platform_device(adev);
+>  	if (!IS_ERR_OR_NULL(pdev)) {
+> -		device_enable_async_suspend(&pdev->dev);
+> +		device_disable_async_suspend(&pdev->dev);
+
+Removing the "enable" line should be sufficient for that.  Isn't it?
+
+>  		return 1;
+>  	}
 >  
->  struct lpss_private_data;
-> @@ -83,7 +83,7 @@ static struct lpss_device_desc lpss_dma_desc = {
->  struct lpss_private_data {
->  	void __iomem *mmio_base;
->  	resource_size_t mmio_size;
-> -	struct clk *clk;
-> +	struct clk_core *clk;
->  	const struct lpss_device_desc *dev_desc;
->  	u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
->  };
-> @@ -278,7 +278,7 @@ static int register_device_clock(struct acpi_device *adev,
->  	const struct lpss_device_desc *dev_desc = pdata->dev_desc;
->  	struct lpss_shared_clock *shared_clock = dev_desc->shared_clock;
->  	const char *devname = dev_name(&adev->dev);
-> -	struct clk *clk = ERR_PTR(-ENODEV);
-> +	struct clk_core *clk = ERR_PTR(-ENODEV);
->  	struct lpss_clk_data *clk_data;
->  	const char *parent, *clk_name;
->  	void __iomem *prv_base;
-> diff --git a/include/linux/platform_data/clk-lpss.h b/include/linux/platform_data/clk-lpss.h
-> index 2390199..3c3237c 100644
-> --- a/include/linux/platform_data/clk-lpss.h
-> +++ b/include/linux/platform_data/clk-lpss.h
-> @@ -15,7 +15,7 @@
->  
->  struct lpss_clk_data {
->  	const char *name;
-> -	struct clk *clk;
-> +	struct clk_core *clk;
->  };
->  
->  extern int lpt_clk_init(void);
+> -- 1.7.1
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
 I speak only for myself.
