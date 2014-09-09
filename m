@@ -1,160 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522AbaIIKct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:32:49 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.140]:36435 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932340AbaIIKcp (ORCPT
+	id S932551AbaIIKdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:33:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:58205 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572AbaIIKc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:32:45 -0400
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-16.tower-179.messagelabs.com!1410258761!37099971!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Varka Bhadram <varkabhadram@gmail.com>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>
-Subject: RE: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
- fuel-gauge device
-Thread-Topic: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
- fuel-gauge device
-Thread-Index: AQHPwq2qx8nTzPhylUOPMOTaGYVHb5vl1XgAgBLXD/A=
-Date: Tue, 9 Sep 2014 10:32:40 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337AB5144B5@SW-EX-MBX01.diasemi.com>
-References: <cover.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <d6c7de200c9447dbafa74ee76739da943a0b73b2.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <53FF16BC.9050701@gmail.com>
-In-Reply-To: <53FF16BC.9050701@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 9 Sep 2014 06:32:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Fugang Duan <B38611@freescale.com>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: Re: [PATCH 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+Date: Tue, 09 Sep 2014 12:32:26 +0200
+Message-ID: <7045486.CbS74HiY8I@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540DCB78.8060206@mm-sol.com>
+References: <1409919274-13419-1-git-send-email-svarbanov@mm-sol.com> <3899885.YaIxR1zelv@wuerfel> <540DCB78.8060206@mm-sol.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:xMiA9pBXdfm4tuR/TqLqIZH3gdAF0mylUFSAqsPAjot
+ UFtH1KKw+ELgnKZ3mQZYyOUPpcnm9OblaLf0J5SvK0qN+IlRpN
+ pK9pHL7Y0IvqVPmKlkrrVzAaHyv1AaeWEBmFl6WAvz/fqWHxsE
+ SsYUM44Kd2OAN0O6sNmaB/vZspvA25l2cXhyYFhgj5QztfgxXx
+ udSRg1makrygVoBGMuldxJBAFBNJbA84vGzrdwTrSmMkx1b/jP
+ Stc5mYtvS1H/ncY9cvbJ2pI+V2ZKNeQQqV1pvKQ6qrp/wtTCry
+ DSdHPCZ/Wv6sGjU1Axi350r0rC4hLcD0cCPQvo0aJwtoivH9LB
+ pWlPy/T8KdGx95g6vSRc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s89AWrah005610
 
-On August 28, 2014 12:47, Varka Bhadram wrote:
-
-> On 08/28/2014 04:18 PM, Adam Thomson wrote:
+On Monday 08 September 2014 18:30:00 Stanimir Varbanov wrote:
+> >>> These numbers all look hardware specific, so why put macros into the
+> >>> device tree rather than using them directly?
+> >>
+> >> The idea was to use #defines in DT nodes when we need to overwrite the
+> >> adc channel parameters, see example in 2/2 how it will be used.
+> > 
+> > I don't understand. The node in the example has
+> > 
+> > +               /* Channel node */
+> > +               usb_id_nopull@39 {
+> > +                       qcom,channel = <VADC_LR_MUX10_USB_ID>;
+> > ...
+> > +               };
+> > 
+> > 
+> > And VADC_LR_MUX10_USB_ID is defined to 0x39.  How is this helping anything?
+> > You just introduce an artificial dependency on the header file, which makes
+> > it a mess to merge the patches or do updates, and anybody who needs to
+> > make updates to this now has to go through the same pain, to update the
+> > dts files, the driver and the binding document in lockstep.
+> > 
+> > Why not remove the qcom,channel property completely and use a 'reg'
+> > property with #address-cells=<1>, #size-cells=<0> and put the number
+> > directly in there, with no need for obfuscation macros?
 > 
-> (...)
+> OK thanks for the remarks. I will fix this mess.
 > 
-> > +static int da9150_probe(struct i2c_client *client,
-> > +			const struct i2c_device_id *id)
-> > +{
-> > +	struct da9150 *da9150;
-> > +	int ret;
-> > +
-> > +	da9150 = devm_kzalloc(&client->dev, sizeof(struct da9150), GFP_KERNEL);
-> > +	if (da9150 == NULL)
-> > +		return -ENOMEM;
+> I hope you are expecting to see this:
 > 
-> da9150 = devm_kzalloc(&client->dev, sizeof(*da9150), GFP_KERNEL);
-> if (!da9150)
-> 	return -ENOMEM;
-
-Ok, no real difference, but can change it.
-
+> pmic_vadc: vadc@3100 {
+>         #address-cells = <1>;
+>         #size-cells = <0>;
+>         #io-channel-cells = <1>;
+>         io-channel-ranges;
 > 
-> > +	da9150->dev = &client->dev;
-> > +	da9150->irq = client->irq;
-> > +	i2c_set_clientdata(client, da9150);
-> > +	dev_set_drvdata(da9150->dev, da9150);
-> > +
-> > +	da9150->regmap = devm_regmap_init_i2c(client, &da9150_regmap_config);
-> > +	if (IS_ERR(da9150->regmap)) {
-> > +		ret = PTR_ERR(da9150->regmap);
-> > +		dev_err(da9150->dev, "Failed to allocate register map: %d\n",
-> > +			ret);
-> > +		return ret;
-> > +	}
-> > +
-> > +	return da9150_device_init(da9150);
-> > +}
-> > +
-> > +static int da9150_remove(struct i2c_client *client)
-> > +{
-> > +	struct da9150 *da9150 = i2c_get_clientdata(client);
-> > +
-> > +	da9150_device_exit(da9150);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void da9150_shutdown(struct i2c_client *client)
-> > +{
-> > +	struct da9150 *da9150 = i2c_get_clientdata(client);
-> > +
-> > +	da9150_device_shutdown(da9150);
-> > +}
-> > +
-> > +static const struct i2c_device_id da9150_i2c_id[] = {
-> > +	{ "da9150", 0 },
-> > +	{ }
-> > +};
-> > +MODULE_DEVICE_TABLE(i2c, da9150_i2c_id);
-> > +
-> > +static const struct of_device_id da9150_of_match[] = {
-> > +	{ .compatible = "dlg,da9150", },
-> > +	{ }
-> > +};
-> > +
+>         usb_id_nopull@39 {
+>                 reg = <0x39>;
+>         };
+> };
 > 
-> missed MODULE_DEVICE_TABLE(of, ...)   ?
-
-Ok, will add that in.
-
+> and use the vadc channel from usb device node
 > 
-> > +static struct i2c_driver da9150_driver = {
-> > +	.driver	= {
-> > +		.name	= "da9150",
-> > +		.owner	= THIS_MODULE,
-> 
-> No need to update this field...
+> usb {
+>         ...
+>         io-channels = <&pmic_vadc 0x39>;
+>         io-channel-names = "usbidnopull";
+> };
 
-Ok, will remove .owner setting.
+The ID stuff looks good now, but I had not noticed the
+"io-channel-names" property before. I think you misunderstood
+the purpose of that, because it is very similar to the name of the
+adc provider (usb_id_nopull@39).
 
-> 
-> > +		.of_match_table = of_match_ptr(da9150_of_match),
-> > +	},
-> > +	.probe		= da9150_probe,
-> > +	.remove		= da9150_remove,
-> > +	.shutdown	= da9150_shutdown,
-> > +	.id_table	= da9150_i2c_id,
-> > +};
-> > +
-> > +module_i2c_driver(da9150_driver);
-> > +
-> > +MODULE_DESCRIPTION("I2C Driver for DA9150");
-> > +MODULE_AUTHOR("Adam Thomson
-> <Adam.Thomson.Opensource@diasemi.com");
-> > +MODULE_LICENSE("GPL");
-> >
-> --
-> Regards,
-> Varka Bhadram.
+Like anything else that we refer to by name (interrupt, reg,
+clock, regulator, ...), the name used in the client is supposed
+to be a string that identifies what the connection means to the
+client, not what it means to the provider. This string is
+supposed to be defined in the binding of the client device and
+independent of what other hardware block provides it.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+E.g. if you have two usb devices that need a separate adc channel,
+it could look like
+
+pmic_vadc: vadc@3100 {
+
+	usb_1_id_nopull@39 {
+		reg = 0x39;
+	};
+	usb_2_id_nopull@40 {
+		reg = 0x40;
+	};
+
+};
+
+usb@100000 {
+	io-channels = <&pmic_vadc 0x39>;
+	io-channel-names = "vadc";
+};
+
+usb@200000 {
+	io-channels = <&pmic_vadc 0x40>;
+	io-channel-names = "vadc";
+};
+
+Now the usb driver just asks for an io channel named "vadc"
+and the ADC core code will perform that lookup.
+
+	Arnd
