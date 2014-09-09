@@ -1,189 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539AbaIINfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:35:55 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33166 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877AbaIINfx convert rfc822-to-8bit (ORCPT
+	id S1756561AbaIINhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:37:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14190 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaIINhn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:35:53 -0400
-Date: Tue, 9 Sep 2014 14:35:46 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v10 08/10] OF: PCI: Add support for parsing PCI host
- bridge resources from DT
-Message-ID: <20140909133546.GB2636@e102568-lin.cambridge.arm.com>
-References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
- <1410184472-17630-9-git-send-email-Liviu.Dudau@arm.com>
-MIME-Version: 1.0
-In-Reply-To: <1410184472-17630-9-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 09 Sep 2014 13:35:48.0324 (UTC) FILETIME=[F71B8240:01CFCC32]
-X-MC-Unique: 114090914355002401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 9 Sep 2014 09:37:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="596831471"
+From: "Drokin, Oleg" <oleg.drokin@intel.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Peng Tao <bergwolf@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hammond, John" <john.hammond@intel.com>
+Subject: Re: [PATCH 6/7] staging: lustre: obdclass: expand the GOTO macro +
+ break
+Thread-Topic: [PATCH 6/7] staging: lustre: obdclass: expand the GOTO macro +
+ break
+Thread-Index: AQHPyrif93lgr7MQPk2T7454u0oyE5v5OjMAgAAMCoA=
+Date: Tue, 9 Sep 2014 13:37:15 +0000
+Message-ID: <07AB64A9-8D32-4E67-860A-4E8B3F3EF689@intel.com>
+References: <1410106715-9573-6-git-send-email-Julia.Lawall@lip6.fr>
+ <20140909125410.GJ6549@mwanda>
+In-Reply-To: <20140909125410.GJ6549@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.119.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <FA86BD7E7A1CE84C8EB26A774FAD7EA8@intel.com>
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 02:54:30PM +0100, Liviu Dudau wrote:
-> Provide a function to parse the PCI DT ranges that can be used to
-> create a pci_host_bridge structure together with its associated
-> bus.
+Hello!
+
+On Sep 9, 2014, at 8:54 AM, Dan Carpenter wrote:
+>   460  #define OBD_CHECK_DT_OP(obd, op, err)                      \
+>   461  do {                                                        \
+>   462          if (!OBT(obd) || !OBP((obd), op)) {                  \
+>   463                  if (err)                                        \
+>   464                          CERROR("obd_" #op ": dev %d no operation\n",    \
+>   465                                 obd->obd_minor);          \
+>   466                  return err;                                 \
+>   467          }                                                      \
+>   468  } while (0)
 > 
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> ---
->  drivers/of/of_pci.c    | 102 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_pci.h |  11 ++++++
->  2 files changed, 113 insertions(+)
+> Wow!  What a terrible macro!  None of the '\' are in a line.  There is
+
+This is most likely an artifact of the way spaces were converted to tabs automatically by somebody.
+
+> a hidden return statement in it which is a terrible thing and flow
+> control statements are not allowed inside macros.
 > 
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index a107edb..36701da 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
-> @@ -1,7 +1,9 @@
->  #include <linux/kernel.h>
->  #include <linux/export.h>
->  #include <linux/of.h>
-> +#include <linux/of_address.h>
->  #include <linux/of_pci.h>
-> +#include <linux/slab.h>
->  
->  static inline int __of_pci_pci_compare(struct device_node *node,
->  				       unsigned int data)
-> @@ -123,6 +125,106 @@ int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
->  }
->  EXPORT_SYMBOL_GPL(of_pci_get_domain_nr);
->  
-> +/**
-> + * of_pci_get_host_bridge_resources - Parse PCI host bridge resources from DT
-> + * @dev: device node of the host bridge having the range property
-> + * @busno: bus number associated with the bridge root bus
-> + * @bus_max: maximum number of busses for this bridge
-> + * @resources: list where the range of resources will be added after DT parsing
-> + * @io_base: pointer to a variable that will contain on return the physical
-> + * address for the start of the I/O range.
-> + *
-> + * It is the callers job to free the @resources list.
-> + *
-> + * This function will parse the "ranges" property of a PCI host bridge device
-> + * node and setup the resource mapping based on its content. It is expected
-> + * that the property conforms with the Power ePAPR document.
+> I can't tell what OBT() and OBP() because the names are very ambiguous.
+> 
+>   328  #define OBT(dev)        (dev)->obd_type
+>   329  #define OBP(dev, op)    (dev)->obd_type->typ_dt_ops->o_ ## op
+>   330  #define MDP(dev, op)    (dev)->obd_type->typ_md_ops->m_ ## op
+> 
+> Ok.  "OB" stands for "obd".  T stands for "type".  The "P" probably
+> stands for pointer or operation.  MD is clear enough.
+> 
+> The OBP() macro adds an "o_" to the function pointer and the MDP() macro
+> adds an "m_".  That totally sucks because it makes the function pointer
+> hard to grep for.  There isn't another explanation, whoever wrote this
+> code is just being ornery.
 
-You should also define what it returns and when.
+I guess I just became numb to this sort of thing over time dealing
+with those functions (that frequently irritated me too at first, I guess.)
 
-> + *
-> + */
-> +int of_pci_get_host_bridge_resources(struct device_node *dev,
-> +			unsigned char busno, unsigned char bus_max,
-> +			struct list_head *resources, resource_size_t *io_base)
-> +{
-> +	struct resource *res;
-> +	struct resource *bus_range;
-> +	struct of_pci_range range;
-> +	struct of_pci_range_parser parser;
-> +	char range_type[4];
-> +	int err;
-> +
-> +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
-> +	if (!bus_range)
-> +		return -ENOMEM;
-> +
-> +	pr_info("PCI host bridge %s ranges:\n", dev->full_name);
-> +
-> +	err = of_pci_parse_bus_range(dev, bus_range);
-> +	if (err) {
-> +		bus_range->start = busno;
-> +		bus_range->end = bus_max;
-> +		bus_range->flags = IORESOURCE_BUS;
-> +		pr_info("  No bus range found for %s, using %pR\n",
-> +			dev->full_name, &bus_range);
-> +	} else {
-> +		if (bus_range->end > bus_range->start + bus_max)
-> +			bus_range->end = bus_range->start + bus_max;
-> +	}
-> +	pci_add_resource(resources, bus_range);
+> So the obd_pool_new() function verifies that ->o_pool_new is non-NULL,
+> it increments a counter and calls ->o_pool_new().  Let's take a look at
+> which functions implement ->o_pool_new().
+> 
+> grep -w o_pool_new drivers/staging/lustre/ -R | egrep '\.[ch]:'
+> 
+> The only implementation of this function is lov_pool_new().  Why do
+> we have a function pointer if there is only one implementation?  We
+> should remove this.
 
-This means that eg in the PCI generic host controller I cannot "filter"
-the bus resource, unless I remove it, "filter" it, and add it again.
+Well, of course in reality you are only looking at half the code (the client),
+and client and server share quite a bit of common glue (used to share
+if we are talking about upstream client). There are other implementors of
+this method on the server side (not that we care about it here).
+There all these different obd layers that do similar operations and
+could be (or used to be able to be) stacked on top of each able.
 
-I certainly can't filter a resource that has been already added without
-removing it first.
+Old (long abandoned idea) was such that you should be able to stack these layers
+in almost any order on each other. That never worked out because there
+were ever so slight changes to stuff you pass down to the next layer.
+But all the supporting infrastructure remained in place. Some of it
+still being used and some being there since old times even though
+layer order became fixed. After working with lustre sufficiently long
+it's just engraved into your head that e.g. "oh, llite always calls into
+lov_xxx and lov always calls into osc_xxx via these obd macroses.
+Still on the other hand obd is really like an object, it not only has
+the methods called in this convoluted manner, but also data fields.
+It needs to be seen if things will become even worse if we start calling
+these methods directly, and pass around strangely derived structure pointers
+with data.
 
-Thoughts ?
+> The lov_pool_new() function definitely can fail unexpectedly with
+> -ENOMEM.
+> 
+> Let's go back to the original code and see how the error should be
+> handled...  Oh...  Apparently this is an optional thing so we would
+> just ignore the error and continue.  The code is fine.
+> 
+> In any other subsystem it would have taken 30 seconds to read the code
+> because cscope would work and there wouldn't be the layers of
+> indirection.
+> 
+> I'm not convinced that having a function counter for calls to
+> lov_pool_new() is useful.  We could get the same information from ftrace
+> or other tools.  In my view, we could get rid of all the horrible macros
 
-> +
-> +	/* Check for ranges property */
-> +	err = of_pci_range_parser_init(&parser, dev);
-> +	if (err)
-> +		goto parse_failed;
-> +
-> +	pr_debug("Parsing ranges property...\n");
-> +	for_each_of_pci_range(&parser, &range) {
-> +		/* Read next ranges element */
-> +		if ((range.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_IO)
-> +			snprintf(range_type, 4, " IO");
-> +		else if ((range.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_MEM)
-> +			snprintf(range_type, 4, "MEM");
-> +		else
-> +			snprintf(range_type, 4, "err");
-> +		pr_info("  %s %#010llx..%#010llx -> %#010llx\n", range_type,
-> +			range.cpu_addr, range.cpu_addr + range.size - 1,
-> +			range.pci_addr);
-> +
-> +		/*
-> +		 * If we failed translation or got a zero-sized region
-> +		 * then skip this range
-> +		 */
-> +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
-> +			continue;
-> +
-> +		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> +		if (!res) {
-> +			err = -ENOMEM;
-> +			goto parse_failed;
-> +		}
-> +
-> +		err = of_pci_range_to_resource(&range, dev, res);
-> +		if (err) {
-> +			kfree(res);
+The counter thing was already noticed by Greg separately and it's in the TODO
+list for the perf tracking integration of some sort to replace the obd calls
+accounting (see - the "object" benefit, you implement an obd method and
+magically there's all this call tracking and other goodies for you that
+you can use without even thinking).
 
-You might want to add a label to free res to make things more uniform.
+> and the function pointers and the splitting names into half and the
+> layers of indirection and the debugging code and just call
+> lov_pool_new() directly.
 
-> +			goto parse_failed;
-> +		}
-> +
-> +		if (resource_type(res) == IORESOURCE_IO) {
-> +			if (*io_base)
+I guess the reason for this somewhat apologetic response is to ask to be
+a bit more careful and not to throw the baby with the water or something.
 
-You do not zero io_base in the first place so you should ask the API
-user to do that. Is 0 a valid value BTW ? If it is you've got to resort
-to something else to detect multiple IO resources.
+Losing ENTRY/EXIT/GOTO was hard enough as I still have not figured out
+how do I trace back what happened on a 1000+ node cluster from a
+vague "something bad happened" condition with standard tools
+without knowing in advance what node was the reason for the badness
+(so I cannot just activate a couple of tracepoints).
 
-Lorenzo
+Bye,
+    Oleg
 
