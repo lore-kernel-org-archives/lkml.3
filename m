@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286AbaIIHlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:41:08 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59390 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932089AbaIIHlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:41:05 -0400
-Date: Tue, 9 Sep 2014 00:41:02 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2] f2fs: Remove lock from check_valid_map
-Message-ID: <20140909074102.GA493@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1410059104-9060-1-git-send-email-ying.huang@intel.com>
- <1410061110-31081-1-git-send-email-ying.huang@intel.com>
- <20140908035024.GA13009@jaegeuk-mac02.hsd1.ca.comcast.net>
- <CAC=cRTOdvOp=zBT986SqGXC2+iRxGzSgKdFYzTQjbAamYsGVsg@mail.gmail.com>
- <20140909051303.GB24581@jaegeuk-mac02.hsd1.ca.comcast.net>
- <1410241426.732.378.camel@yhuang-dev>
+	id S932216AbaIIHkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:40:43 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:56882 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079AbaIIHkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 03:40:41 -0400
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: linux-leds@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Bryan Wu <cooloney@gmail.com>,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [PATCH 1/2] leds: trigger: gpio: fix warning in gpio trigger for gpios whose accessor function may sleep
+Date: Tue,  9 Sep 2014 09:40:32 +0200
+Message-Id: <1410248433-24005-2-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1410248433-24005-1-git-send-email-LW@KARO-electronics.de>
+References: <1410248433-24005-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410241426.732.378.camel@yhuang-dev>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 01:43:46PM +0800, Huang Ying wrote:
-> On Mon, 2014-09-08 at 22:13 -0700, Jaegeuk Kim wrote:
-> > Hi Huang,
-> > 
-> > On Mon, Sep 08, 2014 at 03:36:35PM +0800, huang ying wrote:
-> > > Hi, Jaegeuk,
-> > > 
-> > > On Mon, Sep 8, 2014 at 11:50 AM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> > > 
-> > > > Hi,
-> > > >
-> > > > On Sun, Sep 07, 2014 at 11:38:30AM +0800, Huang Ying wrote:
-> > > > > Only one bit is read in check_valid_map, holding a lock to do that
-> > > > > doesn't help anything except decreasing performance.
-> > > > >
-> > > > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
-> > > > > ---
-> > > > >
-> > > > > v2: Fixed a build warning.
-> > > > >
-> > > > > ---
-> > > > >  fs/f2fs/gc.c |    3 ---
-> > > > >  1 file changed, 3 deletions(-)
-> > > > >
-> > > > > --- a/fs/f2fs/gc.c
-> > > > > +++ b/fs/f2fs/gc.c
-> > > > > @@ -378,14 +378,11 @@ static void put_gc_inode(struct list_hea
-> > > > >  static int check_valid_map(struct f2fs_sb_info *sbi,
-> > > > >                               unsigned int segno, int offset)
-> > > > >  {
-> > > > > -     struct sit_info *sit_i = SIT_I(sbi);
-> > > > >       struct seg_entry *sentry;
-> > > > >       int ret;
-> > > > >
-> > > > > -     mutex_lock(&sit_i->sentry_lock);
-> > > > >       sentry = get_seg_entry(sbi, segno);
-> > > > >       ret = f2fs_test_bit(offset, sentry->cur_valid_map);
-> > > > > -     mutex_unlock(&sit_i->sentry_lock);
-> > > > >       return ret;
-> > > >
-> > > > The f2fs_test_bit is not atomic, so I'm not sure this is a good approach.
-> > > > How about introducing rw_semaphore?
-> > > >
-> > > 
-> > > IMO, f2fs_test_bit just read a global variable (a byte in cur_valid_map),
-> > > then check its value. The byte may be changed in another CPU concurrently.
-> > > But even protected with a mutex, it can be changed in another CPU
-> > > immediately after mutex_unlock.  So mutex does not help  here.  Here we
-> > > just read a global variable, not read/modify/write, so, we don't need
-> > > atomic too.
-> > 
-> > Hmm. This is a pretty hard corner case to allow the mutex removal under the
-> > following assumption.
-> > 
-> > 1. All the sit entries are cached in a global array, which means that it never
-> > happens that any sit entry pointers are changed.
-> > 
-> > 2. I agree that f2fs_gc tries to conduct the cleaning with best effort, and
-> > it triggers again when it detects there is something to do more.
-> > So, check_valid_bitmap doesn't need to make a precise decision.
-> > 
-> > But, what I concern is the consistent policy to use such the mutex.
-> > If we break the rule, it becomes harder to debug potential bugs.
-> 
-> Yes.  We definitely need a rule.  But I suggest to make a small tweak to
-> the rule.
+When using a GPIO driver whose accessor functions may sleep (e.g. an
+I2C GPIO extender like PCA9554) the following warning is issued:
+WARNING: CPU: 0 PID: 665 at drivers/gpio/gpiolib.c:2274 gpiod_get_raw_value+0x3c/0x48()
+Modules linked in:
+CPU: 0 PID: 665 Comm: kworker/0:2 Not tainted 3.16.0-karo+ #115
+Workqueue: events gpio_trig_work
+[<c00142cc>] (unwind_backtrace) from [<c00118f8>] (show_stack+0x10/0x14)
+[<c00118f8>] (show_stack) from [<c001bf10>] (warn_slowpath_common+0x64/0x84)
+[<c001bf10>] (warn_slowpath_common) from [<c001bf4c>] (warn_slowpath_null+0x1c/0x24)
+[<c001bf4c>] (warn_slowpath_null) from [<c020a1b8>] (gpiod_get_raw_value+0x3c/0x48)
+[<c020a1b8>] (gpiod_get_raw_value) from [<c02f68a0>] (gpio_trig_work+0x1c/0xb0)
+[<c02f68a0>] (gpio_trig_work) from [<c0030c1c>] (process_one_work+0x144/0x38c)
+[<c0030c1c>] (process_one_work) from [<c0030ef8>] (worker_thread+0x60/0x5cc)
+[<c0030ef8>] (worker_thread) from [<c0036dd4>] (kthread+0xb4/0xd0)
+[<c0036dd4>] (kthread) from [<c000f0f0>] (ret_from_fork+0x14/0x24)
+---[ end trace cd51a1dad8b86c9c ]---
 
-I don't think there is enough reason that we should take a small tweak while
-breaking the locking policy. It's related to neither performance issue nor a
-bug case.
+Fix this by using the _cansleep() variant of gpio_get_value().
 
-Even if f2fs suffers from lock contention here, I think we need to bet on
-rw_semaphore to satisfy the rule and performance at the same time.
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/leds/trigger/ledtrig-gpio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
+diff --git a/drivers/leds/trigger/ledtrig-gpio.c b/drivers/leds/trigger/ledtrig-gpio.c
+index 35812e3..c86c418 100644
+--- a/drivers/leds/trigger/ledtrig-gpio.c
++++ b/drivers/leds/trigger/ledtrig-gpio.c
+@@ -48,7 +48,7 @@ static void gpio_trig_work(struct work_struct *work)
+ 	if (!gpio_data->gpio)
+ 		return;
+ 
+-	tmp = gpio_get_value(gpio_data->gpio);
++	tmp = gpio_get_value_cansleep(gpio_data->gpio);
+ 	if (gpio_data->inverted)
+ 		tmp = !tmp;
+ 
+-- 
+1.7.10.4
 
-> If we just read one variable with fixed address, we need not
-> to use a mutex to protect that.
-> 
-> > Anyway, have you been facing with such the lock contention?
-> 
-> No, I just review the code and thinks the mutex is not necessary.
-> 
-> Best Regards,
-> Huang, Ying
