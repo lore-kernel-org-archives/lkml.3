@@ -1,228 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806AbaIIPPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:15:18 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:62851 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623AbaIIPPQ (ORCPT
+	id S1756899AbaIIPQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:16:57 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:23596 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062AbaIIPQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:15:16 -0400
-Message-ID: <540F1981.1090805@gmail.com>
-Date: Tue, 09 Sep 2014 08:15:13 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Anup Chenthamarakshan <anupc@chromium.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-CC: dirk.brandewie@gmail.com, Sameer Nanda <snanda@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_pstate: track and export frequency residency stats
- via sysfs.
-References: <1410221424-20590-1-git-send-email-anupc@chromium.org>
-In-Reply-To: <1410221424-20590-1-git-send-email-anupc@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Sep 2014 11:16:55 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-05-540f19e4207d
+From: Maciej Matraszek <m.matraszek@samsung.com>
+To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: stable@vger.kernel.org, Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Maciej Matraszek <m.matraszek@samsung.com>
+Subject: [PATCH] [media] v4l2-common: fix overflow in v4l_bound_align_image()
+Date: Tue, 09 Sep 2014 17:16:41 +0200
+Message-id: <1410275801-17627-1-git-send-email-m.matraszek@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsVy+t/xq7pPJPlDDKbf4LfYOGM9q8WSn7uY
+	LF6/MLRYMnk+q8XlXXPYLHo2bGW1uLhO3uLki8uMFofftLNaLNj4iNGBy2PK742sHkveHGL1
+	6NuyitHj8ya5AJYoLpuU1JzMstQifbsEroyNv+awF8zhr9i7fD9jA+Nyni5GTg4JAROJBctP
+	skHYYhIX7q0Hsrk4hASWMkp0r7gK5fQySVy/spEZpIpNwEBi879+FpCEiMBrRomJHbcZQRxm
+	gfWMEtu7W9lBqoQFfCU+LL4JZrMIqEqsafsMtoNXwF1i7u3nUPvkJE4em8w6gZF7ASPDKkbR
+	1NLkguKk9FwjveLE3OLSvHS95PzcTYyQ0Pm6g3HpMatDjAIcjEo8vBPL+EKEWBPLiitzDzFK
+	cDArifBavwAK8aYkVlalFuXHF5XmpBYfYmTi4JRqYGzKSO1f6H6lQa0t3i6w63DyXcuEN4tK
+	Vrb1H42xkz3vdfbB9zWC5fuyHls8y3Lwfj7zqvbdqmVLu/eGTp9w+LhF45rdj+oav0qHs2yY
+	qeKSEhZYumXut6UeXS9lH36OEZWMO6SzJ2lF+POiXAapxk1HYmfZHIk9kh+5+5pR1jEGvpfL
+	Xde9E1BiKc5INNRiLipOBAAioTfL+wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 05:10 PM, Anup Chenthamarakshan wrote:
-> Exported stats appear in
-> <sysfs>/devices/system/cpu/intel_pstate/time_in_state as follows:
-> 
-> ## CPU 0
-> 400000 3647
-> 500000 24342
-> 600000 144150
-> 700000 202469
-> ## CPU 1
-> 400000 4813
-> 500000 22628
-> 600000 149564
-> 700000 211885
-> 800000 173890
-> 
-> Signed-off-by: Anup Chenthamarakshan <anupc@chromium.org>
+Fix clamp_align() used in v4l_bound_align_image() to prevent overflow when
+passed large value like UINT32_MAX. In the current implementation:
+    clamp_align(UINT32_MAX, 8, 8192, 3)
+returns 8, because in line:
+    x = (x + (1 << (align - 1))) & mask;
+x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
 
-What is this information being used for?
+v4l_bound_align_image() is heavily used in VIDIOC_S_FMT
+and VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
+explicitly states that:
 
-Tracking the current P state request for each core is only part of the 
-story.  The processor aggregates the requests from all cores and then decides
-what frequency the package will run at, this evaluation happens at ~1ms time
-frame.  If a core is idle then it loses its vote for that package frequency will
-be and its frequency will be zero even though it may have been requesting
-a high P state when it went idle.  Tracking the residency of the requested
-P state doesn't provide much useful information other than ensuring the the 
-requests are changing over time IMHO.
+"The modified format should be as close as possible to the original request."
+  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
 
-This interface will not be supportable with upcoming processors using
-hardware P states as documented in volume 3 of the current SDM Section 14.4
-http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-manual-325462.pdf
-The OS will have no way of knowing what the P state requests are for a
-given core are.
+Thus one would expect, that passing UINT32_MAX as format width and height
+will result in setting maximum possible resolution for the device.
+Particularly, when the driver doesn't support VIDIOC_ENUM_FRAMESIZES ioctl,
+which is common in the codebase.
 
---Dirk 
-> ---
->   drivers/cpufreq/intel_pstate.c | 77 ++++++++++++++++++++++++++++++++++++++++--
->   1 file changed, 74 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 0668b38..7be89bd 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -84,6 +84,11 @@ struct _pid {
->   	int32_t last_err;
->   };
->   
-> +struct pstate_stat {
-> +	int pstate;
-> +	u64 time;
-> +};
-> +
->   struct cpudata {
->   	int cpu;
->   
-> @@ -97,6 +102,9 @@ struct cpudata {
->   	u64	prev_aperf;
->   	u64	prev_mperf;
->   	struct sample sample;
-> +
-> +	struct pstate_stat *stat;
-> +	u64	last_updated;
->   };
->   
->   static struct cpudata **all_cpu_data;
-> @@ -218,6 +226,18 @@ static inline void intel_pstate_reset_all_pid(void)
->   	}
->   }
->   
-> +static void intel_pstate_account_time_to_current_pstate(struct cpudata *cpu)
-> +{
-> +	/* Handle the initial call from intel_pstate_init_cpu */
-> +	if (likely(cpu->stat)) {
-> +		u64 now = jiffies;
-> +		int index = cpu->pstate.current_pstate - cpu->pstate.min_pstate;
-> +
-> +		cpu->stat[index].time += now - cpu->last_updated;
-> +		cpu->last_updated = now;
-> +	}
-> +}
-> +
->   /************************** debugfs begin ************************/
->   static int pid_param_set(void *data, u64 val)
->   {
-> @@ -323,6 +343,40 @@ static ssize_t store_min_perf_pct(struct kobject *a, struct attribute *b,
->   	return count;
->   }
->   
-> +static ssize_t show_time_in_state(struct kobject *kobj, struct attribute *attr,
-> +				char *buf)
-> +{
-> +	unsigned int cpu;
-> +	struct cpudata *cpudata;
-> +	int i, len = 0, total_states;
-> +
-> +	for_each_online_cpu(cpu) {
-> +		if (!all_cpu_data[cpu])
-> +			continue;
-> +
-> +		cpudata = all_cpu_data[cpu];
-> +		len += snprintf(buf + len, PAGE_SIZE - len, "## CPU %d\n", cpu);
-> +		if (len >= PAGE_SIZE)
-> +			return len;
-> +
-> +		total_states = cpudata->pstate.turbo_pstate -
-> +			cpudata->pstate.min_pstate + 1;
-> +
-> +		intel_pstate_account_time_to_current_pstate(cpudata);
-> +
-> +		for (i = 0; i < total_states; i++) {
-> +			len += snprintf(buf + len, PAGE_SIZE - len, "%d %llu\n",
-> +					cpudata->stat[i].pstate * 100000,
-> +					cpudata->stat[i].time);
-> +
-> +			if (len >= PAGE_SIZE)
-> +				return len;
-> +		}
-> +	}
-> +
-> +	return len;
-> +}
-> +
->   show_one(no_turbo, no_turbo);
->   show_one(max_perf_pct, max_perf_pct);
->   show_one(min_perf_pct, min_perf_pct);
-> @@ -331,10 +385,13 @@ define_one_global_rw(no_turbo);
->   define_one_global_rw(max_perf_pct);
->   define_one_global_rw(min_perf_pct);
->   
-> +define_one_global_ro(time_in_state);
-> +
->   static struct attribute *intel_pstate_attributes[] = {
->   	&no_turbo.attr,
->   	&max_perf_pct.attr,
->   	&min_perf_pct.attr,
-> +	&time_in_state.attr,
->   	NULL
->   };
->   
-> @@ -525,9 +582,11 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
->   
->   	trace_cpu_frequency(pstate * 100000, cpu->cpu);
->   
-> -	cpu->pstate.current_pstate = pstate;
-> -
->   	pstate_funcs.set(cpu, pstate);
-> +
-> +	intel_pstate_account_time_to_current_pstate(cpu);
-> +
-> +	cpu->pstate.current_pstate = pstate;
->   }
->   
->   static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
-> @@ -751,6 +810,7 @@ static void intel_pstate_stop_cpu(struct cpufreq_policy *policy)
->   
->   	del_timer_sync(&all_cpu_data[cpu_num]->timer);
->   	intel_pstate_set_pstate(cpu, cpu->pstate.min_pstate);
-> +	kfree(all_cpu_data[cpu_num]->stat);
->   	kfree(all_cpu_data[cpu_num]);
->   	all_cpu_data[cpu_num] = NULL;
->   }
-> @@ -758,7 +818,7 @@ static void intel_pstate_stop_cpu(struct cpufreq_policy *policy)
->   static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
->   {
->   	struct cpudata *cpu;
-> -	int rc;
-> +	int rc, i, total_states;
->   	u64 misc_en;
->   
->   	rc = intel_pstate_init_cpu(policy->cpu);
-> @@ -787,6 +847,16 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
->   	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
->   	cpumask_set_cpu(policy->cpu, policy->cpus);
->   
-> +	total_states = cpu->pstate.turbo_pstate - cpu->pstate.min_pstate + 1;
-> +	cpu->stat = kcalloc(total_states, sizeof(struct pstate_stat),
-> +			GFP_KERNEL);
-> +
-> +	if (cpu->stat)
-> +		for (i = 0; i < total_states; i++)
-> +			cpu->stat[i].pstate = i + cpu->pstate.min_pstate;
-> +
-> +	cpu->last_updated = get_jiffies_64();
-> +
->   	return 0;
->   }
->   
-> @@ -958,6 +1028,7 @@ out:
->   	for_each_online_cpu(cpu) {
->   		if (all_cpu_data[cpu]) {
->   			del_timer_sync(&all_cpu_data[cpu]->timer);
-> +			kfree(all_cpu_data[cpu]->stat);
->   			kfree(all_cpu_data[cpu]);
->   		}
->   	}
-> 
+Fixes: b0d3159be9a3 ("V4L/DVB (11901): v4l2: Create helper function for bounding and aligning images")
+Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
+---
+ drivers/media/v4l2-core/v4l2-common.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/v4l2-common.c b/drivers/media/v4l2-core/v4l2-common.c
+index ccaa38f65cf1..506cf8b7763b 100644
+--- a/drivers/media/v4l2-core/v4l2-common.c
++++ b/drivers/media/v4l2-core/v4l2-common.c
+@@ -435,16 +435,13 @@ static unsigned int clamp_align(unsigned int x, unsigned int min,
+ 	/* Bits that must be zero to be aligned */
+ 	unsigned int mask = ~((1 << align) - 1);
+ 
++	/* Clamp to aligned min and max */
++	x = clamp_t(unsigned int, x, (min + ~mask) & mask, max & mask);
++
+ 	/* Round to nearest aligned value */
+ 	if (align)
+ 		x = (x + (1 << (align - 1))) & mask;
+ 
+-	/* Clamp to aligned value of min and max */
+-	if (x < min)
+-		x = (min + ~mask) & mask;
+-	else if (x > max)
+-		x = max & mask;
+-
+ 	return x;
+ }
+ 
+-- 
+1.9.1
 
