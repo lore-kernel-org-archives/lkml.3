@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931AbaIIHJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:09:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58074 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755334AbaIIHJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:09:41 -0400
-Date: Tue, 9 Sep 2014 00:09:35 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        huang.ying.caritas@gmail.com
-Subject: Re: [PATCH] f2fs: Fix recover when nid of non-inode dnode < nid of
- inode
-Message-ID: <20140909070811.GA26657@jaegeuk-mac02.mot-mobility.com>
-References: <1410176306-1689-1-git-send-email-ying.huang@intel.com>
- <20140909052356.GA25590@jaegeuk-mac02.hsd1.ca.comcast.net>
- <1410241170.732.373.camel@yhuang-dev>
+	id S1755901AbaIIHMD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:12:03 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:29015 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755322AbaIIHMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 03:12:01 -0400
+X-IronPort-AV: E=Sophos;i="5.04,491,1406563200"; 
+   d="scan'208";a="35681097"
+Message-ID: <540EA883.9060206@cn.fujitsu.com>
+Date: Tue, 9 Sep 2014 15:13:07 +0800
+From: tangchen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410241170.732.373.camel@yhuang-dev>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@kernel.org>
+CC: <mtosatti@redhat.com>, <nadav.amit@gmail.com>, <jan.kiszka@web.de>,
+        <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH v4 4/6] kvm, mem-hotplug: Reload L1' apic access page
+ on migration in vcpu_enter_guest().
+References: <1409134661-27916-1-git-send-email-tangchen@cn.fujitsu.com> <1409134661-27916-5-git-send-email-tangchen@cn.fujitsu.com> <20140902160005.GA26540@minantech.com> <54067206.7050303@cn.fujitsu.com> <20140903150448.GJ18167@minantech.com>
+In-Reply-To: <20140903150448.GJ18167@minantech.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Gleb,
 
-On Tue, Sep 09, 2014 at 01:39:30PM +0800, Huang Ying wrote:
-> On Mon, 2014-09-08 at 22:23 -0700, Jaegeuk Kim wrote:
-> > Hi Huang,
-> > 
-> > On Mon, Sep 08, 2014 at 07:38:26PM +0800, Huang Ying wrote:
-> > > For fsync, if the nid of a non-inode dnode < nid of inode and the
-> > > inode is not checkpointed.  The non-inode dnode may be written before
-> > > inode.  So in find_fsync_dnodes, f2fs_iget will fail, cause the
-> > > recovery fail.
-> > > 
-> > > Usually, inode will be allocated before non-inode dnode, so the nid of
-> > > inode < nid of non-inode dnode.  But it is possible for the reverse.
-> > > For example, because of alloc_nid_failed.
-> > > 
-> > > This is fixed via ignoring non-inode dnode before inode dnode in
-> > > find_fsync_dnodes.
-> > > 
-> > > The patch was tested via allocating nid reversely via a debugging
-> > > patch, that is, from big number to small number.
-> > > 
-> > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
-> > > ---
-> > >  fs/f2fs/recovery.c |    7 ++++---
-> > >  1 file changed, 4 insertions(+), 3 deletions(-)
-> > > 
-> > > --- a/fs/f2fs/recovery.c
-> > > +++ b/fs/f2fs/recovery.c
-> > > @@ -172,8 +172,8 @@ static int find_fsync_dnodes(struct f2fs
-> > >  			if (IS_INODE(page) && is_dent_dnode(page))
-> > >  				set_inode_flag(F2FS_I(entry->inode),
-> > >  							FI_INC_LINK);
-> > > -		} else {
-> > > -			if (IS_INODE(page) && is_dent_dnode(page)) {
-> > 
-> > If this is not inode block, we should add this inode to recover its data blocks.
-> 
-> Is it possible that there is only non-inode dnode but no inode when
-> find_fsync_dnodes checking dnodes?  Per my understanding, any changes to
-> file will cause inode page dirty (for example, mtime changed), so that
-> we will write inode block.  Is it right?  If so, the solution in this
-> patch should work too.
+On 09/03/2014 11:04 PM, Gleb Natapov wrote:
+> On Wed, Sep 03, 2014 at 09:42:30AM +0800, tangchen wrote:
+>> Hi Gleb,
+>>
+>> On 09/03/2014 12:00 AM, Gleb Natapov wrote:
+>>> ......
+>>> +static void vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+>>> +{
+>>> +	/*
+>>> +	 * apic access page could be migrated. When the page is being migrated,
+>>> +	 * GUP will wait till the migrate entry is replaced with the new pte
+>>> +	 * entry pointing to the new page.
+>>> +	 */
+>>> +	vcpu->kvm->arch.apic_access_page = gfn_to_page(vcpu->kvm,
+>>> +				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
+>>> +	kvm_x86_ops->set_apic_access_page_addr(vcpu->kvm,
+>>> +				page_to_phys(vcpu->kvm->arch.apic_access_page));
+>>> I am a little bit worried that here all vcpus write to vcpu->kvm->arch.apic_access_page
+>>> without any locking. It is probably benign since pointer write is atomic on x86. Paolo?
+>>>
+>>> Do we even need apic_access_page? Why not call
+>>>   gfn_to_page(APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT)
+>>>   put_page()
+>>> on rare occasions we need to know its address?
+>> Isn't it a necessary item defined in hardware spec ?
+>>
+> vcpu->kvm->arch.apic_access_page? No. This is internal kvm data structure.
+>
+>> I didn't read intel spec deeply, but according to the code, the page's
+>> address is
+>> written into vmcs. And it made me think that we cannnot remove it.
+>>
+> We cannot remove writing of apic page address into vmcs, but this is not done by
+> assigning to vcpu->kvm->arch.apic_access_page, but by vmwrite in set_apic_access_page_addr().
 
-Your description says that f2fs_iget will fail, which causes the recovery fail.
-So, I thought it would be better to handle the f2fs_iget failure directly.
+OK, I'll try to remove kvm->arch.apic_access_page and send a patch for 
+it soon.
 
-In addition, we cannot guarantee the write order of dnode and inode.
-For exmaple,
-1. the inode is written by flusher or kswapd, then,
-2. f2fs_sync_file writes its dnode.
+BTW, if you don't have objection to the first two patches, would you 
+please help to
+commit them first ?
 
-In that case, we can get only non-inode dnode in the node chain, since the inode
-has not fsync_mark.
+Thanks.
 
-Thanks,
+>
+> --
+> 			Gleb.
+> .
+>
 
-> 
-> Best Regards,
-> Huang, Ying
-> 
-> > Rather than this tweak, if iget is failed, we'd better go to next instead of
-> > break.
-> > Can you test that?
-> > 
-> > > +		} else if (IS_INODE(page)) {
-> > > +			if (is_dent_dnode(page)) {
-> > >  				err = recover_inode_page(sbi, page);
-> > >  				if (err)
-> > >  					break;
-> > > @@ -193,7 +193,8 @@ static int find_fsync_dnodes(struct f2fs
-> > >  				break;
-> > >  			}
-> > >  			list_add_tail(&entry->list, head);
-> > > -		}
-> > > +		} else
-> > > +			goto next;
-> > >  		entry->blkaddr = blkaddr;
-> > >  
-> > >  		err = recover_inode(entry->inode, page);
