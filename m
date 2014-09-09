@@ -1,184 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaIIIWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:22:21 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:46407 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300AbaIIIWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:22:19 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: hl@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: Add SPI nodes to rk3288
-Date: Tue, 09 Sep 2014 10:24:13 +0200
-Message-ID: <1893562.fBlNbjpirW@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1409935991-15067-1-git-send-email-dianders@chromium.org>
-References: <1409935991-15067-1-git-send-email-dianders@chromium.org>
+	id S1756058AbaIIIYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:24:17 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:39628 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaIIIYO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 04:24:14 -0400
+Message-ID: <540EB930.6010404@linaro.org>
+Date: Tue, 09 Sep 2014 09:24:16 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH v3 5/5] irqchip: gic: Add support for IPI FIQ
+References: <1409931198-22600-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-6-git-send-email-daniel.thompson@linaro.org> <20140908162316.GC12361@n2100.arm.linux.org.uk>
+In-Reply-To: <20140908162316.GC12361@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 5. September 2014, 09:53:11 schrieb Doug Anderson:
-> From: huang lin <hl@rock-chips.com>
+On 08/09/14 17:23, Russell King - ARM Linux wrote:
+> On Mon, Sep 08, 2014 at 04:28:35PM +0100, Daniel Thompson wrote:
+>> @@ -604,8 +731,19 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>>  {
+>>  	int cpu;
+>>  	unsigned long flags, map = 0;
+>> +	unsigned long softint;
+>>  
+>> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+>> +	/*
+>> +	 * The locking in this function ensures we don't use stale cpu mappings
+>> +	 * and thus we never route an IPI to the wrong physical core during a
+>> +	 * big.LITTLE switch. The switch code takes both of these locks meaning
+>> +	 * we can choose whichever lock is safe to use from our current calling
+>> +	 * context.
+>> +	 */
+>> +	if (in_nmi())
+>> +		raw_spin_lock(&fiq_safe_migration_lock);
+>> +	else
+>> +		raw_spin_lock_irqsave(&irq_controller_lock, flags);
 > 
-> This adds basic SPI nodes to the base rk3288 device tree file.
-> 
-> A few notes:
-> * It's assumed that most users of the SPI ports are using chip select
->   0.  Thus the default pinctrl for the ports enables chip select 0
->   (but not chip select 1 on ports that have it).  If a board wants to
->   use chip select 1 or wants a GPIO chip select the board should
->   override the pinctrl (just like boards can override UART pinctrl if
->   they have hardware flow control).
-> * Since SPI DMA support appears broken and the SPI works fine without
->   DMA we don't include the DMA references.  That can come in a later
->   change.
+> Firstly, why would gic_raise_softirq() be called in FIQ context?
 
-Added to my dts branch with the one small change described below
+Oops.
 
-
-> 
-> Signed-off-by: huang lin <hl@rock-chips.com>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> 
->  arch/arm/boot/dts/rk3288.dtsi | 92
-> +++++++++++++++++++++++++++++++++++++++++++ 1 file changed, 92
-> insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> index 5f866e0..75d1f4c 100644
-> --- a/arch/arm/boot/dts/rk3288.dtsi
-> +++ b/arch/arm/boot/dts/rk3288.dtsi
-> @@ -34,6 +34,9 @@
->  		serial2 = &uart2;
->  		serial3 = &uart3;
->  		serial4 = &uart4;
-> +		spi0 = &spi0;
-> +		spi1 = &spi1;
-> +		spi2 = &spi2;
->  	};
-> 
->  	cpus {
-> @@ -128,6 +131,45 @@
->  		status = "disabled";
->  	};
-> 
-> +	spi0: spi@ff110000 {
-> +		compatible = "rockchip,rk3066-spi";
-
-I've changed the compatibles to the one defined in the binding, aka
-	"rockchip,rk3288-spi", "rockchip,rk3066-spi"
+This code should have been removed. It *is* required for kgdb (which
+needs to send FIQ to other processors via IPI and may itself be running
+from FIQ) but it not needed for the currently targeted use case.
 
 
-> +		clocks = <&cru SCLK_SPI0>, <&cru PCLK_SPI0>;
-> +		clock-names = "spiclk", "apb_pclk";
-> +		interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&spi0_clk &spi0_tx &spi0_rx &spi0_cs0>;
-> +		reg = <0xff110000 0x1000>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		status = "disabled";
-> +	};
-> +
-> +	spi1: spi@ff120000 {
-> +		compatible = "rockchip,rk3066-spi";
-> +		clocks = <&cru SCLK_SPI1>, <&cru PCLK_SPI1>;
-> +		clock-names = "spiclk", "apb_pclk";
-> +		interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&spi1_clk &spi1_tx &spi1_rx &spi1_cs0>;
-> +		reg = <0xff120000 0x1000>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		status = "disabled";
-> +	};
-> +
-> +	spi2: spi@ff130000 {
-> +		compatible = "rockchip,rk3066-spi";
-> +		clocks = <&cru SCLK_SPI2>, <&cru PCLK_SPI2>;
-> +		clock-names = "spiclk", "apb_pclk";
-> +		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&spi2_clk &spi2_tx &spi2_rx &spi2_cs0>;
-> +		reg = <0xff130000 0x1000>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		status = "disabled";
-> +	};
-> +
->  	i2c1: i2c@ff140000 {
->  		compatible = "rockchip,rk3288-i2c";
->  		reg = <0xff140000 0x1000>;
-> @@ -700,6 +742,56 @@
->  			};
->  		};
-> 
-> +		spi0 {
-> +			spi0_clk: spi0-clk {
-> +				rockchip,pins = <5 12 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi0_cs0: spi0-cs0 {
-> +				rockchip,pins = <5 13 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi0_tx: spi0-tx {
-> +				rockchip,pins = <5 14 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi0_rx: spi0-rx {
-> +				rockchip,pins = <5 15 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi0_cs1: spi0-cs1 {
-> +				rockchip,pins = <5 16 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +		};
-> +		spi1 {
-> +			spi1_clk: spi1-clk {
-> +				rockchip,pins = <7 12 RK_FUNC_2 &pcfg_pull_up>;
-> +			};
-> +			spi1_cs0: spi1-cs0 {
-> +				rockchip,pins = <7 13 RK_FUNC_2 &pcfg_pull_up>;
-> +			};
-> +			spi1_rx: spi1-rx {
-> +				rockchip,pins = <7 14 RK_FUNC_2 &pcfg_pull_up>;
-> +			};
-> +			spi1_tx: spi1-tx {
-> +				rockchip,pins = <7 15 RK_FUNC_2 &pcfg_pull_up>;
-> +			};
-> +		};
-> +
-> +		spi2 {
-> +			spi2_cs1: spi2-cs1 {
-> +				rockchip,pins = <8 3 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi2_clk: spi2-clk {
-> +				rockchip,pins = <8 6 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi2_cs0: spi2-cs0 {
-> +				rockchip,pins = <8 7 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi2_rx: spi2-rx {
-> +				rockchip,pins = <8 8 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +			spi2_tx: spi2-tx {
-> +				rockchip,pins = <8 9 RK_FUNC_1 &pcfg_pull_up>;
-> +			};
-> +		};
-> +
->  		uart0 {
->  			uart0_xfer: uart0-xfer {
->  				rockchip,pins = <4 16 RK_FUNC_1 &pcfg_pull_up>,
+> Secondly,
+> this doesn't save you.  If you were in the middle of gic_migrate_target()
+> when the FIQ happened that (for some reason prompted you to call this),
+> you would immediately deadlock trying to that this IRQ.
+
+This cannot happen because gic_migrate_target() runs with FIQ disabled.
+
+
+> I suggest not even trying to solve this "race" which I don't think is
+> one which needs to even be considered (due to the first point.)
+
+As mentioned above I believe it eventually needs to be addressed by some
+means but it certainly doesn't belong in the current patchset.
+
+I will remove it.
 
