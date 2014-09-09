@@ -1,100 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaIITaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:30:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51800 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564AbaIITaL (ORCPT
+	id S1751552AbaIITbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:31:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26005 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaIITbB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:30:11 -0400
-Date: Tue, 9 Sep 2014 15:16:12 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-09-09
-Message-ID: <20140909191612.GM29412@tuxdriver.com>
-References: <20140909155449.GA7412@t440s>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909155449.GA7412@t440s>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 9 Sep 2014 15:31:01 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: 3.17-rc1 oops during network interface configuration
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <53F47917.8080003@mellanox.com>
+Date: Tue, 9 Sep 2014 15:30:51 -0400
+Cc: linux-rdma <linux-rdma@vger.kernel.org>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Saeed Mahameed <saeedm@mellanox.com>, Tal Alon <talal@mellanox.com>,
+        Yevgeny Petrilin <yevgenyp@mellanox.com>, _govind@gmx.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F580F466-28A5-4BDD-A338-D5C065A760C1@oracle.com>
+References: <53F1EF18.7010909@acm.org> <53F47917.8080003@mellanox.com>
+To: netdev@vger.kernel.org, LKML Kernel <linux-kernel@vger.kernel.org>
+X-Mailer: Apple Mail (2.1878.6)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 08:54:49AM -0700, Johan Hedberg wrote:
-> Hi John,
-> 
-> This set of patches is intended for 3.18. Most of the patches are LE SMP
-> (Security Manager Protocol) fixes/improvements, but there are also some
-> 6lowpan fixes as well as a fix for the btusb HCI driver.
-> 
-> Please let me know if there are any issues pulling. Thanks.
-> 
-> Johan
-> 
-> ---
-> The following changes since commit 61a3d4f9d52c00b2016bc27fc66b10a194043f76:
-> 
->   Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless (2014-09-08 11:14:56 -0400)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-> 
-> for you to fetch changes up to 39e90c77637b3892a39f2908aea57539e961c50e:
-> 
->   Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device (2014-09-09 15:51:47 +0200)
-> 
-> ----------------------------------------------------------------
-> Behan Webster (1):
->       Bluetooth: LLVMLinux: Remove VLAIS from bluetooth/amp.c
-> 
-> Champion Chen (1):
->       Bluetooth: Fix issue with USB suspend in btusb driver
-> 
-> Johan Hedberg (31):
->       Bluetooth: Fix incorrect LE CoC PDU length restriction based on HCI MTU
->       Bluetooth: Remove unnecessary l2cap_chan_unlock before l2cap_chan_add
->       Bluetooth: Fix hci_conn reference counting for fixed channels
->       Bluetooth: Set addr_type only when it's needed
->       Bluetooth: Optimize connection parameter lookup for LE connections
->       Bluetooth: Improve *_get() functions to return the object type
->       Bluetooth: Fix using hci_conn_get() for hci_conn pointers
->       Bluetooth: Refactor connection parameter freeing into its own function
->       Bluetooth: Use zero timeout for immediate scheduling
->       Bluetooth: Fix hci_conn reference counting with hci_chan
->       Bluetooth: Set disc_timeout to 0 when calling hci_chan_del
->       Bluetooth: Ignore incoming data after initiating disconnection
->       Bluetooth: Remove hci_conn_hold/drop from hci_chan
->       Bluetooth: Set discon_timeout to 0 in l2cap_conn_del
->       Bluetooth: Use hci_disconnect for immediate disconnection from SMP
->       Bluetooth: Remove unused l2cap_conn_shutdown API
->       Bluetooth: Fix SMP error and response to be mutually exclusive
->       Bluetooth: Update hci_disconnect() to return an error value
->       Bluetooth: Use hci_disconnect() for mgmt_disconnect_device()
->       Bluetooth: Move clock offset reading into hci_disconnect()
->       Bluetooth: Add clarifying comment for LE CoC result value
->       Bluetooth: Remove unnecessary checks after canceling SMP security timer
->       Bluetooth: Don't take any action in smp_resume_cb if not encrypted
->       Bluetooth: Move identity address update behind a workqueue
->       Bluetooth: Remove unnecessary deferred work for SMP key distribution
->       Bluetooth: Fix locking of the SMP context
->       Bluetooth: Add define for key distribution mask
->       Bluetooth: Fix calling smp_distribute_keys() when still waiting for keys
->       Bluetooth: Add strict checks for allowed SMP PDUs
->       Bluetooth: Fix dereferencing conn variable before NULL check
->       Bluetooth: Fix mgmt pairing failure when authentication fails
-> 
-> Jukka Rissanen (3):
->       Bluetooth: 6lowpan: Increase the connection timeout value
->       Bluetooth: 6lowpan: Set the peer IPv6 address correctly
->       Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device
 
-Pulling now...
+On Aug 20, 2014, at 6:31 AM, Or Gerlitz <ogerlitz@mellanox.com> wrote:
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> On 18/08/2014 15:18, Bart Van Assche wrote:
+>> Has anyone else already tried to boot kernel 3.17-rc1 on an IB system ? The
+>> following call trace is triggered during boot on a system on which kernel
+>> 3.16 runs fine:
+> 
+> Yep, I see it on my systems too.
+> 
+> I narrowed this down a bit to happen only when the port link type (these nodes have ConnectX) is IB and IPoIB gets to load.
+> 
+> I reverted (below) all the IPoIB changes since 3.16 (except for the trivial commit c835a67) and the crash still exists.
+> 
+> I guess this needs to go through systematic bisection.
+
+This crash happens when booting v3.17-rcN on any of my IB-enabled
+systems. I have both ConnectX-2 and mthca systems, all are affected.
+
+I bisected this to:
+
+commit e0f31d8498676fda36289603a054d0d490aa2679
+Author:     Govindarajulu Varadarajan <_govind@gmx.com>
+AuthorDate: Mon Jun 23 16:07:58 2014 +0530
+Commit:     David S. Miller <davem@davemloft.net>
+CommitDate: Mon Jun 23 14:32:19 2014 -0700
+
+    flow_keys: Record IP layer protocol in skb_flow_dissect()
+
+    skb_flow_dissect() dissects only transport header type in ip_proto. It dose not
+    give any information about IPv4 or IPv6.
+    This patch adds new member, n_proto, to struct flow_keys. Which records the
+    IP layer type. i.e IPv4 or IPv6.
+    This can be used in netdev->ndo_rx_flow_steer driver function to dissect flow.
+    Adding new member to flow_keys increases the struct size by around 4 bytes.
+    This causes BUILD_BUG_ON(sizeof(qcb->data) < sz); to fail in
+    qdisc_cb_private_validate()
+    So increase data size by 4
+
+    Signed-off-by: Govindarajulu Varadarajan <_govind@gmx.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+
+This commit includes a hunk that increases the size of struct qdisc_skb_cb
+by at least 4 bytes:
+
+> diff --git a/include/net/sch_generic.h b/include/net/sch_generic.h
+> index 624f985..a3cfb8e 100644
+> --- a/include/net/sch_generic.h
+> +++ b/include/net/sch_generic.h
+> @@ -231,7 +231,7 @@ struct qdisc_skb_cb {
+>         unsigned int            pkt_len;
+>         u16                     slave_dev_queue_mapping;
+>         u16                     _pad;
+> -       unsigned char           data[20];
+> +       unsigned char           data[24];
+>  };
+>  
+>  static inline void qdisc_cb_private_validate(const struct sk_buff *skb, int sz)
+
+
+
+IPoIB defines the following structure in drivers/infiniband/ulp/ipoib/ipoib.h:
+
+> struct ipoib_cb {
+>         struct qdisc_skb_cb     qdisc_cb;
+>         u8                      hwaddr[INFINIBAND_ALEN];
+> };
+
+IPoIB keeps this in the sk_buff:cb field, which is exactly 48 bytes.
+After commit e0f31d84, the size of struct ipoib_cb on x86_64 becomes
+52 bytes.
+
+Thus IPoIB overruns sk_buff:cb, and trashes the sk_buff::_skb_refdst
+field, which contains a pointer. By the time we get into
+__dev_queue_xmit() and try to use the result of skb_dst(), that pointer
+is garbage, and we oops.
+
+Obviously, cb[] could be increased to 56 bytes to accommodate struct
+ipoib_cb. I tried this, and it is effective in preventing the oops on
+one of my systems.
+
+But I suspect there is an historical reason I’m not aware of that it
+has remained 48 bytes for years.
+
+
+> Or.
+> 
+>> net.git]# git log --oneline --no-merges v3.16.. drivers/infiniband/ulp/ipoib/
+>> 8a118a4 Revert "IB/ipoib: Use P_Key change event instead of P_Key polling mechanism"
+>> 90e6f39 Revert "IB/ipoib: Avoid flushing the workqueue from worker context"
+>> 030ade7 Revert "IB/ipoib: Avoid multicast join attempts with invalid P_key"
+>> 97ba2ff Revert "IPoIB: Remove unnecessary test for NULL before debugfs_remove()"
+>> e42fa20 IPoIB: Remove unnecessary test for NULL before debugfs_remove()
+>> dd57c93 IB/ipoib: Avoid multicast join attempts with invalid P_key
+>> 4eae374 IB/ipoib: Avoid flushing the workqueue from worker context
+>> db84f88 IB/ipoib: Use P_Key change event instead of P_Key polling mechanism
+>> c835a67 net: set name_assign_type in alloc_netdev()
+> 
+> 
+>> BUG: unable to handle kernel paging request at ffff88090000007e
+>> IP: __dev_queue_xmit+0x519
+>> Call Trace:
+>> ? __dev_queue_xmit+0x49
+>> dev_queue_xmit+0x10
+>> neigh_connected_output
+>> ? ip_finish_output
+>> ip_finish_output
+>> ? ip_finish_output
+>> ? netif_rx_ni
+>> ip_mc_output
+>> ip_local_out_sk
+>> ip_send_skb
+>> udp_send_skb
+>> udp_sendmsg
+>> ? ip_reply_glue_bits
+>> ? __lock_is_held
+>> inet_sendmsg
+>> ? inet_sendmsg
+>> sock_sendmsg
+>> ? might_fault
+>> ? might_fault
+>> ? move_addr_to_kernel.part.38
+>> SYSC_sendto
+>> ? sysret_check
+>> ? trace_hardirqs_on_caller
+>> ? trace_hardirqs_on_thunk
+>> SyS_sendto
+>> system_call_fastpath
+>> 
+>> Kernel panic - not syncing: Fatal exception in interrupt
+>> Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+>> drm_kms_helper: panic occurred, switching back to text console
+>> 
+>> A screenshot of this kernel oops can be found here:
+>> https://drive.google.com/file/d/0B1YQOreL3_FxVDB5UTNwekF6LVU/
+>> 
+>> gdb translates the crash address into the following (not sure this makes sense
+>> since offset 0x519 is past the end of __dev_queue_xmit()):
+>> 
+>> (gdb) list *(__dev_queue_xmit+0x519)
+>> 0xffffffff8136bc89 is in netdev_adjacent_rename_links (net/core/dev.c:5167).
+>> 5162    void netdev_adjacent_rename_links(struct net_device *dev, char *oldname)
+>> 5163    {
+>> 5164            struct netdev_adjacent *iter;
+>> 5165
+>> 5166            list_for_each_entry(iter, &dev->adj_list.upper, list) {
+>> 5167                    netdev_adjacent_sysfs_del(iter->dev, oldname,
+>> 5168                                              &iter->dev->adj_list.lower);
+>> 5169                    netdev_adjacent_sysfs_add(iter->dev, dev,
+>> 5170                                              &iter->dev->adj_list.lower);
+>> 5171            }
+>> 
+>> And the address __dev_queue_xmit+0x49 is translated by gdb into:
+>> 
+>> (gdb) list *(__dev_queue_xmit+0x49)
+>> 0xffffffff8136b7b9 is in __dev_queue_xmit (./arch/x86/include/asm/preempt.h:75).
+>> 70       * The various preempt_count add/sub methods
+>> 71       */
+>> 72
+>> 73      static __always_inline void __preempt_count_add(int val)
+>> 74      {
+>> 75              raw_cpu_add_4(__preempt_count, val);
+>> 76      }
+>> 77
+>> 78      static __always_inline void __preempt_count_sub(int val)
+>> 79      {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
