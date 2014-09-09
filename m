@@ -1,109 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022AbaIICj4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:39:56 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:49590 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755634AbaIICjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:39:53 -0400
-Date: Tue, 9 Sep 2014 11:39:43 +0900
-From: Tejun Heo <tj@kernel.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-Message-ID: <20140909023943.GH11706@mtj.dyndns.org>
-References: <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
- <20140905224047.GC15723@mtj.dyndns.org>
- <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
- <20140909011059.GB11706@mtj.dyndns.org>
- <20140909012227.GE11706@mtj.dyndns.org>
- <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
- <20140909012933.GF11706@mtj.dyndns.org>
- <CAB=NE6V+of_RLQtjFpkLN49nKgfONx0T4cbu8kkNU69tUyNozw@mail.gmail.com>
- <20140909014754.GG11706@mtj.dyndns.org>
- <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
+	id S1755230AbaIICnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:43:17 -0400
+Received: from ozlabs.org ([103.22.144.67]:39618 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754512AbaIICnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:43:16 -0400
+Date: Tue, 9 Sep 2014 12:43:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the v4l-dvb tree
+Message-ID: <20140909124306.2d5a0d76@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/sPsHYl2js_flSE/tgXQJb3X"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Sig_/sPsHYl2js_flSE/tgXQJb3X
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Sep 08, 2014 at 07:28:58PM -0700, Luis R. Rodriguez wrote:
-> > Given that the behvaior change is from driver core and that device
-> > probing can happen post-loading anyway,
-> 
-> Ah but lets not forget Dmitry's requirement which is for in-kernel
-> drivers. We'd need to deal with both built-in and modules. Dmitry's
-> case is completely orthogonal to the systemd issue and is just needed
-> to help not stall boot but I see no reason to blend these two issues
-> into one requirement together.
+Hi Mauro,
 
-Maybe we can piggy back the two on the same mechanism but as you said
-the two issues are orthogonal.  Let's keep it that way for now.  We
-need them separate anyway for backports.
+After merging the v4l-dvb tree, today's linux-next build (x86_64 allmodconf=
+ig)
+failed like this:
 
-> In terms of approach we would still need to decide on a path for how
-> to do asynch probing for both in-kernel drivers and modules, do we
-> want async_schedule(), or queue_work()? If async_schedule() do we want
-> to use a new domain or a new one shared for all drivers? Priority on
+ERROR: "omap_stop_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] =
+undefined!
+ERROR: "omap_start_dma" [drivers/media/platform/soc_camera/omap1_camera.ko]=
+ undefined!
+ERROR: "omap_dma_link_lch" [drivers/media/platform/soc_camera/omap1_camera.=
+ko] undefined!
+ERROR: "omap_set_dma_dest_burst_mode" [drivers/media/platform/soc_camera/om=
+ap1_camera.ko] undefined!
+ERROR: "omap_set_dma_src_params" [drivers/media/platform/soc_camera/omap1_c=
+amera.ko] undefined!
+ERROR: "omap_request_dma" [drivers/media/platform/soc_camera/omap1_camera.k=
+o] undefined!
+ERROR: "omap_set_dma_transfer_params" [drivers/media/platform/soc_camera/om=
+ap1_camera.ko] undefined!
+ERROR: "omap_set_dma_dest_params" [drivers/media/platform/soc_camera/omap1_=
+camera.ko] undefined!
+ERROR: "omap_free_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] =
+undefined!
+ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undefin=
+ed!
+ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_display.ko] undefin=
+ed!
+ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_capture.ko] undefin=
+ed!
 
-I don't think async_schedule() is the right mechanism for this use
-case as the mechanism is inherently opportunistic.  It also gets
-tangled up with async synchronization at the end of module loading.
+I have used the v4l-dvb tree from next-20140908 for today.
 
-> the schedular was one of my other concerns which we'd need to make
-> right to match existing load on drivers through finit_module() and
-> synchronous probe.
+There were also lots of new warnings like:
 
-Why do we care about the priority of probing tasks?  Does that
-actually make any meaningful difference?  If so, how?
+drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c: In function 's5p_mfc_get_c=
+rop_info_h_v6':
+drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c:2039:3: warning: cast from =
+pointer to integer of different size [-Wpointer-to-int-cast]
+   (unsigned int) ctx->dev->mfc_regs->d_display_crop_info1);
+   ^
 
-> > Userland could backport a fix to set the sysctl.  Given that we need
-> > both synchrnous and asynchronous behaviors, it's unlikely that we can
-> > come up with a solution which doesn't need cooperation from userland.
-> 
-> True and then the timeout would also have to be skipped for device
-> drivers that have the sync_probe flag set, so I guess we'd need to
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I'm not sure about skipping for sync_probe flag.  That seems like an
-implementation detail to me.  Sure, we do that now because we don't
-have a better way of figuring out whether request_module() is waiting
-for it or not but hopefully we'd be able to in the future.  I think we
-just should make exceptions sensible so that it works fine in practice
-for now (and I don't think that'd be too hard).  So, the only
-cooperation necessary from userland would be just saying "I don't
-wanna wait for device probing on module load."
+--Sig_/sPsHYl2js_flSE/tgXQJb3X
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-tejun
+iQIcBAEBCAAGBQJUDmlBAAoJEMDTa8Ir7ZwVUScQAJD5Gg3WHokB/NjVnyDiZM+M
+AM02zwBuYFBXqURlep/vagqqD8bZfK64a9ITI8sNQZdhM9BM+GNUTJfHPrgTLBnY
+yPCsnoaUm8TdY/Vy2mZx0LxaV7EfnxEC3KISLWDAJfVNLIQMk5PU0KzwUkKZmulf
+svK5w6oDwe9LkQmJ0cYIMXbTtddxcBjNYIBX6l6xPUgJUxJnoKjj00gb4S+6RTdm
++1t0vxltQrBRi0rz+ELrK3WWzNdgoSOPaLm40X7DharDTluhX1HuBa+g0TvomP8+
+g71vcuyyfkhv1hq5lchgMd8yoIx1+GgUQL18/Ca+28R7swpNIWnXwsh5LRZVQNmm
+TBXlyxUcpNGic9eUpzX3NWeYnCPyxzUE628D6OAOhmKBEWDRPBgodFH1dTOMcE/i
+ECu9fAxKiRIJpQX4aIxTVvqtZxiJmmdJ+/uudcRy8JwVH7+37Si9xUV5AqCwqku7
+6YXw9jhVEXml5GV3h/53Iy1+VSo4xXdgai0MRrONTFDG3X9jNCuc3JyEQ9OKPxEP
+ksjHZhUCHNw5hSVrgv3QAl4lE2C34tSvuVK9xno2ZG9MWyxrUlqH+fqXX+RfAYxK
+aNPplb5n14mYigk/7whvvOU7z5Jb0mq9HFCiw9Hjx4RhzHNF/sMocuSs6rJ7cQM9
+KqZ57GDviiHch/e7YL3l
+=dZBi
+-----END PGP SIGNATURE-----
+
+--Sig_/sPsHYl2js_flSE/tgXQJb3X--
