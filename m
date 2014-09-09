@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775AbaIIIHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:07:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37272 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbaIIIHv (ORCPT
+	id S1755957AbaIIIIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:08:18 -0400
+Received: from [119.145.14.66] ([119.145.14.66]:40938 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755873AbaIIIIP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:07:51 -0400
-Date: Tue, 9 Sep 2014 10:07:40 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Robert Richter <rric@kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Robert Richter <rrichter@cavium.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
-Message-ID: <20140909080740.GP23009@pengutronix.de>
-References: <1410176689-20020-1-git-send-email-rric@kernel.org>
+	Tue, 9 Sep 2014 04:08:15 -0400
+From: "Lulina (A)" <lina.lulina@huawei.com>
+To: "kmo@daterainc.com" <kmo@daterainc.com>
+CC: Guohongzhen <guohongzhen@huawei.com>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Question about bcache buckets utilization
+Thread-Topic: Question about bcache buckets utilization
+Thread-Index: Ac/MBRoRLtAv7W5BTQC9MKW3IKbBAw==
+Date: Tue, 9 Sep 2014 08:07:35 +0000
+Message-ID: <E5D59058E6941147BD3ACF9CB4AA49E336BD4F29@szxema508-mbx.china.huawei.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.177.20.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410176689-20020-1-git-send-email-rric@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020205.540EB554.0068,ss=1,re=0.000,fgs=0,
+	ip=169.254.7.81,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: e96fd91e1d79e6bbd789d056ac8c854a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 01:44:48PM +0200, Robert Richter wrote:
-> From: Robert Richter <rrichter@cavium.com>
-> 
-> Raising the current maximum limit to 64. This is needed for Cavium's
-> Thunder systems that will have at least 48 cores per die.
-> 
-> The change keeps the current memory footprint in cpu mask structures.
-> It does not break existing code. Setting the maximum to 64 cpus still
-> boots systems with less cpus.
-> 
-> Mark's Juno happily booted with a NR_CPUS=64 kernel.
-> 
-> Tested on our Thunder system with 48 cores. We could see interrupts to
-> all cores.
-> 
-> Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Robert Richter <rrichter@cavium.com>
-> ---
->  arch/arm64/Kconfig | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index fd4e81a4e1ce..67fca2ea81a7 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -252,11 +252,11 @@ config SCHED_SMT
->  	  places. If unsure say N here.
->  
->  config NR_CPUS
-> -	int "Maximum number of CPUs (2-32)"
-> -	range 2 32
-> +	int "Maximum number of CPUs (2-64)"
-> +	range 2 64
->  	depends on SMP
->  	# These have to remain sorted largest to smallest
-Unrelated to the patch: What does this comment mean? There is only one
-line following, so it's sorted implicitly.
+Hi! Kent Overstreet, I tested bcache branch for jens:
+http://evilpiepirate.org/git/linux-bcache.git/log/?h=for-jens
 
-Best regards
-Uwe
+I have a question about buckets utilization, can you help me to resolve it?
 
-> -	default "8"
-> +	default "64"
+This is the test fio cmd:
+fio -name iops -rw=randwrite -iodepth=32 -numjobs=1 -filename=/dev/bcache0 -ioengine libaio -direct=1 -bs=4k -size=500M -runtime=600 -time_based -random_distribution=zipf:1.2
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+My cache device is 1G size, and Hdd device is 5G size. The bucket size is default 512k.
+When the test is run, cache is over CUTOFF_WRITEBACK_SYNC after 3 or 4 seconds. The test result is as follows: 
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+bcache0           0.00     0.00    0.00 62081.00     0.00   242.50     8.00     0.00    0.01   0.00   0.00
+bcache0           0.00     0.00    0.00 72407.00     0.00   282.84     8.00     0.00    0.01   0.00   0.00
+bcache0           0.00     0.00    0.00 62990.00     0.00   246.05     8.00     0.00    0.08   0.00   0.00
+bcache0           0.00     0.00    0.00  511.00     0.00     2.00     8.00     0.00   62.53   0.00   0.00
+bcache0           0.00     0.00    0.00  601.00     0.00     2.35     8.00     0.00   52.73   0.00   0.00
+
+After cache is over CUTOFF_WRITEBACK_SYNC, all writes come down to the hdd, then I got a pool performance.
+
+As the random rang is set to 500M, It will all overlapped in the cache device. 
+Why the overlapped buckets can't be reused? Is there any other conditions need to meet?
+
+Thanks,
+Lina Lu
