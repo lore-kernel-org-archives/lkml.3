@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaIIUeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:34:07 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49244 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751965AbaIIUeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:34:05 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Tue, 09 Sep 2014 22:53:32 +0200
-Message-ID: <2008100.1EF7gjK5Z6@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140909164658.GB11748@mtj.dyndns.org>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <20140909160625.GC4851@dhcp22.suse.cz> <20140909164658.GB11748@mtj.dyndns.org>
+	id S1752438AbaIIUhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:37:09 -0400
+Received: from mout.gmx.net ([212.227.17.21]:60886 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752083AbaIIUhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 16:37:07 -0400
+Date: Tue, 9 Sep 2014 22:36:19 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCHv3 1/3] [media] disable OMAP1 COMPILE_TEST
+In-Reply-To: <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
+Message-ID: <Pine.LNX.4.64.1409092235160.9452@axis700.grange>
+References: <6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
+ <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V03:K0:eadUGOLytiJYIiM5lP+uxsXnM+w8lDJ5V0do8dsqSXENd/9WS4Y
+ 3Y4shXHPJJjc5KvUJ+XJP1J/u64+RTnJyWB6NY/PsOTs4PvJ//YTouJvsU+BtpvLY39lfez
+ XKcb4LJ/ZfI6YQb7rJIzjoirvgTE6EulkF3rAHIGn3eVYp1cLyBGKKvMI4xXEPMhpAZGPHd
+ gxtLJSC5PXpoXyfjPQc3A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 10, 2014 01:46:58 AM Tejun Heo wrote:
-> Hello,
+Thanks, Mauro,
+
+On Tue, 9 Sep 2014, Mauro Carvalho Chehab wrote:
+
+> This driver depends on a legacy OMAP DMA API. So, it won't
+> compile-test on other archs.
 > 
-> On Tue, Sep 09, 2014 at 06:06:25PM +0200, Michal Hocko wrote:
-> > > Even for userland tasks, try_to_freeze() can currently be anywhere in
-> > > the kernel.  The frequently used ones are few but there are some odd
-> > 
-> > I always thought that user space tasks can be in the fridge only on the
-> > way out from the kernel (get_signal_to_deliver). I have quickly greped
+> While we might add stubs to the functions, this is not a
+> good idea, as the hole API should be replaced.
 > 
-> It *can* be anywhere.  We used to have some deep in nfs.  They got
-> removed later due to deadlocks but in theory they still can be
-> anywhere.
+> So, for now, let's just remove COMPILE_TEST and wait for
+> some time for people to fix. If not fixed, then we'll end
+> by removing this driver as a hole.
+> 
+> Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-Well, it would be good to determine the difference between theory and practice
-in this particular respect, because if in practice it can't be anywhere,
-we can just set an "every new instance of try_to_freeze() has to be documented"
-rule (which may not be a bad idea anyway) and disallow people to break things.
+Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-Rafael
+Regards
+Guennadi
 
+> 
+> diff --git a/drivers/media/platform/soc_camera/Kconfig b/drivers/media/platform/soc_camera/Kconfig
+> index 6af6c6dccda8..f2776cd415ca 100644
+> --- a/drivers/media/platform/soc_camera/Kconfig
+> +++ b/drivers/media/platform/soc_camera/Kconfig
+> @@ -63,7 +63,7 @@ config VIDEO_SH_MOBILE_CEU
+>  config VIDEO_OMAP1
+>  	tristate "OMAP1 Camera Interface driver"
+>  	depends on VIDEO_DEV && SOC_CAMERA
+> -	depends on ARCH_OMAP1 || COMPILE_TEST
+> +	depends on ARCH_OMAP1
+>  	depends on HAS_DMA
+>  	select VIDEOBUF_DMA_CONTIG
+>  	select VIDEOBUF_DMA_SG
+> -- 
+> 1.9.3
+> 
