@@ -1,138 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaIIWVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:21:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34587 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345AbaIIWVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:21:36 -0400
-Message-ID: <540F7D42.1020402@oracle.com>
-Date: Tue, 09 Sep 2014 18:20:50 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752844AbaIIWXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:23:18 -0400
+Received: from mout.gmx.net ([212.227.15.19]:63962 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750980AbaIIWXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 18:23:16 -0400
+Message-ID: <540F7DB7.9090007@gmx.de>
+Date: Wed, 10 Sep 2014 00:22:47 +0200
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: mm: BUG in unmap_page_range
-References: <20140805144439.GW10819@suse.de> <alpine.LSU.2.11.1408051649330.6591@eggly.anvils> <53E17F06.30401@oracle.com> <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com> <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de>
-In-Reply-To: <20140909213309.GQ17501@suse.de>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Stanimir Varbanov <svarbanov@mm-sol.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Fugang Duan <B38611@freescale.com>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: Re: [PATCH 2/2] DT: iio: vadc: document dt binding
+References: <1409919274-13419-1-git-send-email-svarbanov@mm-sol.com> <1409919274-13419-3-git-send-email-svarbanov@mm-sol.com>
+In-Reply-To: <1409919274-13419-3-git-send-email-svarbanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:5vEqFT3Y0W6lR4JY2xyKswi1PIY7cD80SSRl44QwbsFUfAu4bRb
+ 8R3ex50yQxF1vxhwpASHw144xbCMJRVq3C27b3MkxaQpxM17f1wGftMSfnr3/OC8bFzL3yC
+ 2hbWV1uo+Xh2YBxZqHrKVuY4SYbZ/jzbauA6NsvyZMSP7BpBM8iBv2o0GTNF45SCg0mxXa+
+ rlH46URR176oIvFY1QCMw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 05:33 PM, Mel Gorman wrote:
-> On Mon, Sep 08, 2014 at 01:56:55PM -0400, Sasha Levin wrote:
->> On 09/08/2014 01:18 PM, Mel Gorman wrote:
->>> A worse possibility is that somehow the lock is getting corrupted but
->>> that's also a tough sell considering that the locks should be allocated
->>> from a dedicated cache. I guess I could try breaking that to allocate
->>> one page per lock so DEBUG_PAGEALLOC triggers but I'm not very
->>> optimistic.
->>
->> I did see ptl corruption couple days ago:
->>
->> 	https://lkml.org/lkml/2014/9/4/599
->>
->> Could this be related?
->>
+Stanimir Varbanov schrieb, Am 05.09.2014 14:14:
+> Document DT binding for Qualcomm SPMI PMIC voltage ADC
+> driver.
 > 
-> Possibly although the likely explanation then would be that there is
-> just general corruption coming from somewhere. Even using your config
-> and applying a patch to make linux-next boot (already in Tejun's tree)
-> I was unable to reproduce the problem after running for several hours. I
-> had to run trinity on tmpfs as ext4 and xfs blew up almost immediately
-> so I have a few questions.
-
-I agree it could be a case of random corruption somewhere else, it's just
-that the amount of times this exact issue reproduced
-
-> 1. What filesystem are you using?
-
-virtio-9p. I'm willing to try something more "common" if you feel this could
-be related, but I haven't seen any issues coming out of 9p in a while now.
-
-> 2. What compiler in case it's an experimental compiler? I ask because I
->    think I saw a patch from you adding support so that the kernel would
->    build with gcc 5
-
-Right, I've been testing with gcc 5 as well as Debian's gcc 4.7.2, it
-reproduces with both compilers.
-
-> 3. Does your hardware support TSX or anything similarly funky that would
->    potentially affect locking?
-
-Not that I know of, here are the cpu flags for reference:
-
-fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 x2apic popcnt lahf_lm ida epb dtherm tpr_shadow vnmi flexpriority ept vpid
-
-> 4. How many sockets are on your test machine in case reproducing it
->    depends in a machine large enough to open a timing race?
-
-128 sockets.
-
-> As I'm drawing a blank on what would trigger the bug I'm hoping I can
-> reproduce this locally and experiement a bit.
-
-I was thinking about sneaking in something like the following (untested) patch
-to see if it's really memory corruption that is wiping out stuff:
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 0f9724c..0205655 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -25,6 +25,7 @@
- #define _PAGE_BIT_SPLITTING    _PAGE_BIT_SOFTW2 /* only valid on a PSE pmd */
- #define _PAGE_BIT_IOMAP                _PAGE_BIT_SOFTW2 /* flag used to indicate IO mapping */
- #define _PAGE_BIT_HIDDEN       _PAGE_BIT_SOFTW3 /* hidden by kmemcheck */
-+#define _PAGE_BIT_SANITY       _PAGE_BIT_SOFTW3 /* Memory corruption canary */
- #define _PAGE_BIT_SOFT_DIRTY   _PAGE_BIT_SOFTW3 /* software dirty tracking */
- #define _PAGE_BIT_NX           63       /* No execute: only valid after cpuid check */
-
-@@ -66,6 +67,8 @@
- #define _PAGE_HIDDEN   (_AT(pteval_t, 0))
- #endif
-
-+#define _PAGE_SANITY   (_AT(pteval_t, 1) << _PAGE_BIT_SANITY)
-+
- /*
-  * The same hidden bit is used by kmemcheck, but since kmemcheck
-  * works on kernel pages while soft-dirty engine on user space,
-@@ -312,7 +315,7 @@ static inline pmdval_t pmd_flags(pmd_t pmd)
-
- static inline pte_t native_make_pte(pteval_t val)
- {
--       return (pte_t) { .pte = val };
-+       return (pte_t) { .pte = val | _PAGE_SANITY };
- }
-
- static inline pteval_t native_pte_val(pte_t pte)
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index ffea570..bc897a1 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -720,6 +720,8 @@ static inline pmd_t pmd_mknonnuma(pmd_t pmd)
- static inline pte_t pte_mknuma(pte_t pte)
- {
-        pteval_t val = pte_val(pte);
-+
-+       VM_BUG_ON(!(val & _PAGE_SANITY));
-
-        VM_BUG_ON(!(val & _PAGE_PRESENT));
-
-Does it make sense at all?
-
-
-Thanks,
-Sasha
-
-
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt |  110 ++++++++++++++++++++
+>  1 files changed, 110 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+> new file mode 100644
+> index 0000000..f9c780f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
+> @@ -0,0 +1,110 @@
+> +Qualcomm's SPMI PMIC voltage ADC
+> +
+> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
+> +voltage. A 15 bit ADC is used for voltage measurements. There are multiple
+> +peripherals to the VADC and the scope of the driver is to provide interface
+> +for the USR peripheral of the VADC.
+> +
+> +VADC node:
+> +
+> +- compatible:
+> +    Usage: required
+> +    Value type: <string>
+> +    Definition: Should contain "qcom,spmi-vadc".
+> +
+> +- reg:
+> +    Usage: required
+> +    Value type: <u32>
+> +    Definition: Base address in the SPMI PMIC register map.
+> +
+> +- interrupts:
+> +    Usage: required
+> +    Value type: <prop-encoded-array>
+> +    Definition: End of convertion interrupt number.
+Typo: conversion
+> +
+> +- qcom,poll-eoc:
+> +    Usage: optional
+> +    Value type: <empty>
+> +    Definition: Use polling instead of interrupt for end of conversion
+> +            completion.
+> +
+> +Channel node properities:
+Typo: properties
+> +
+> +- qcom,channel:
+> +    Usage: required
+> +    Value type: <u32>
+> +    Definition: AMUX channel number.
+> +
+> +- qcom,decimation:
+> +    Usage: optional
+> +    Value type: <u32>
+> +    Definition: Sampling rate to use for the individual channel measurement.
+> +            Quicker measurements can be made by reducing decimation ratio.
+> +            Valid values are 512, 1024, 2048, 4096.
+> +            If property is not found, default value of 512 will be used.
+> +
+> +- qcom,pre-scaling:
+> +    Usage: optional
+> +    Value type: <u32 array>
+> +    Definition: Used for scaling the channel input signal before the signal is
+> +            fed to VADC. The configuration for this node is to know the
+> +            pre-determined ratio and use it for post scaling. Select one from
+> +            the following options.
+> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
+> +            If property is not found default value depending of chip will be used.
+> +
+> +- qcom,ratiometric:
+> +    Usage: optional
+> +    Value type: <empty>
+> +    Definition: Channel calibration type. If this property is specified
+> +            VADC will use the VDD reference(1.8V) and GND for channel
+> +            calibration. If properity is not found, channel will be
+Typo: property
+> +            calibrated with 625mv and 1.25V reference channels.
+> +
+> +- qcom,hw-settle-time:
+> +    Usage: optional
+> +    Value type: <u32>
+> +    Definition: Time between AMUX getting configured and the ADC starting
+> +            conversion. Delay = 100us * (value) for value < 11, and
+> +            2ms * (value - 10) otherwise.
+> +            Valid values are: 0, 100, 200, 300, 400, 500, 600, 700, 800,
+> +            900 us and 1, 2, 4, 6, 8, 10 ms
+> +            If property is not found, channel will use 0us.
+> +
+> +- qcom,avg-samples:
+> +    Usage: optional
+> +    Value type: <u32>
+> +    Definition: Number of samples to be used for measurement.
+> +            Fast averaging provides the option to obtain a single measurement
+> +            from the ADC that is an average of multiple samples. The value
+> +            selected is 2^(value).
+> +            Valid values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
+> +            If property is not found, 1 sample will be used.
+> +
+> +- label:
+> +    Usage: optional
+> +    Value type: <string>
+> +    Definition: Channel name used for sysfs entry. If not provided
+> +            configuration device node name will be used.
+> +
+> +NOTE: At least one channel node is required.
+> +
+> +Example:
+> +	/* VADC node */
+> +	vadc@3100 {
+> +		compatible = "qcom,spmi-vadc";
+> +		reg = <0x3100>;
+> +		interrupts = <0x0 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
+> +		#io-channel-cells = <1>;
+> +		io-channel-ranges;
+> +
+> +		/* Channel node */
+> +		usb_id_nopull@39 {
+> +			qcom,channel = <VADC_LR_MUX10_USB_ID>;
+> +			qcom,decimation = <512>;
+> +			qcom,ratiometric;
+> +			qcom,hw-settle-time = <200>;
+> +			qcom,avg-samples = <1>;
+> +			qcom,pre-scaling = <1 3>
+> +		};
+> +	};
+> 
 
