@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaIICdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:33:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26198 "EHLO mga02.intel.com"
+	id S1756053AbaIICdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:33:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34464 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753681AbaIICdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:33:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,490,1406617200"; 
-   d="scan'208";a="570306884"
-Message-ID: <540E66E0.30508@linux.intel.com>
-Date: Tue, 09 Sep 2014 10:33:04 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754730AbaIICc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:32:59 -0400
+Message-ID: <540E6582.9020403@zytor.com>
+Date: Mon, 08 Sep 2014 19:27:14 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Hanjun Guo <hanjun.guo@linaro.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Len Brown <lenb@kernel.org>, Robert Moore <robert.moore@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch v4 04/16] ACPI: Rename processor_core.c as apic_id.c
-References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1957879.bE3ICM6HKO@vostro.rjw.lan> <540DA653.2000901@linaro.org> <1537817.rgZoClELVE@vostro.rjw.lan>
-In-Reply-To: <1537817.rgZoClELVE@vostro.rjw.lan>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+CC: Peter Hurley <peter@hurleysoftware.com>, paulmck@linux.vnet.ibm.com,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>			 <20140904090952.GW17454@tucnak.redhat.com>			 <540859EC.5000407@hurleysoftware.com>			 <20140904175044.4697aee4@alan.etchedpixels.co.uk>			 <5408C0AB.6050801@hurleysoftware.com>			 <20140905001751.GL5001@linux.vnet.ibm.com>			 <1409883098.5078.14.camel@jarvis.lan>		 <5409243C.4080704@hurleysoftware.com>			 <20140905040645.GO5001@linux.vnet.ibm.com>			 <1410066442.12512.13.camel@jarvis.lan>			 <20140907162146.GK5001@linux.vnet.ibm.com>		 <1410116687.2027.19.camel@jarvis.lan>	 <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>	 <540E1587.3060108@tilera.com> <1410216228.2027.88.camel@jarvis.lan>
+In-Reply-To: <1410216228.2027.88.camel@jarvis.lan>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael and Hanjun,
-	Thanks for your review. I will keep the original file name
-in next version.
-Regards!
-Gerry
+On 09/08/2014 03:43 PM, James Bottomley wrote:
+> 
+> This was years ago (possibly decades).  We had to implement in-kernel
+> unaligned traps for the networking layer because it could access short
+> and int fields that weren't of the correct alignment when processing
+> packets.  It that's all corrected now, we wouldn't really notice (except
+> a bit of a speed up since an unaligned trap effectively places the
+> broken out instructions into the bit stream).
+> 
+> James
+> 
 
-On 2014/9/9 5:00, Rafael J. Wysocki wrote:
-> On Monday, September 08, 2014 08:51:31 PM Hanjun Guo wrote:
->> Hi Gerry, Rafael,
->>
->> On 2014年09月08日 06:37, Rafael J. Wysocki wrote:
->>> On Thursday, August 28, 2014 10:22:29 AM Jiang Liu wrote:
->>>> Now all code in processor_core.c is APIC ID related, so rename it as
->>>> apic_id.c. Later IOAPIC ID related code will be added into apic_id.c.
->>> Actually, I'm not sure about this one.
->>>
->>> Renames like this make it difficult to backport things in general
->>> and kind of break "git blame", so do we have to do that?
->>>
->>> What's wrong with leaving the name as is and adding a comment
->>> about the contents being related to IOAPIC ID?
->>
->> It will be thankful for not renaming the file into apic_id.c, because apic id is x86 specific,
->> and platform like ARM will also add some code to get cpu hardware id via GICC structure
->> in MADT table in that file, apic id is not a generic name for both x86 and ARM, I prefer to
->> keep it as it is :)
-> 
-> Well, that's a good argument too.
-> 
-> Rafael
-> 
+Well, ARM doesn't trap, it just silently gives garbage on unaligned
+memory references.
+
+	-hpa
+
+
