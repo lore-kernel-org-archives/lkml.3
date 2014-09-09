@@ -1,141 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbaIIA7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:59:13 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43808 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755686AbaIIA7L (ORCPT
+	id S1755671AbaIIBEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 21:04:47 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:47642 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754477AbaIIBEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:59:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Ym3wvFhjOeTync44/a88o
-Date: Mon, 8 Sep 2014 17:59:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcousson@baylibre.com, linux@arm.linux.org.uk,
-        khilman@deeprootsystems.com, tglx@linutronix.de, jason@lakedaemon.net,
-        devicetree@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/35] arm: omap: move intc to drivers/irqchip/
-Message-ID: <20140909005903.GH10785@atomide.com>
-References: <1406582183-696-1-git-send-email-balbi@ti.com>
+	Mon, 8 Sep 2014 21:04:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406582183-696-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140905224047.GC15723@mtj.dyndns.org>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org> <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Mon, 8 Sep 2014 18:04:23 -0700
+X-Google-Sender-Auth: 3kCCWdoS7XQpDd-HdoG4chRTzwk
+Message-ID: <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Tejun Heo <tj@kernel.org>, Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [140728 14:19]:
-> Hi folks,
-> 
-> here's another rebase of the original series moving INTC
-> to drivers.
-> 
-> There aren't many changes, only some fixes here and there
-> because of recent changes to irq_domain and irqchip.
-> 
-> I have also added a patch to enable INTC address space
-> protection so that only privileged modes can access
-> INTC's address space.
-> 
-> Patches tested on top of v3.17-rc7 with a beagle bone black,
-> the only plataform I have which still uses INTC.
-> 
-> Tony, if you can run your PM test cases on your side, I'd
-> be really glad.
+On Fri, Sep 5, 2014 at 3:40 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Luis.
+>
+> On Fri, Sep 05, 2014 at 11:12:17AM -0700, Luis R. Rodriguez wrote:
+>> Meanwhile we are allowing a major design consideration such as a 30
+>> second timeout for both init + probe all of a sudden become a hard
+>> requirement for device drivers. I see your point but can't also be
+>> introducing major design changes willy nilly either. We *need* a
+>> solution for the affected drivers.
+>
+> Yes, make the behavior specifically specified from userland.  When did
+> I ever say that there should be no solution for the problem?  I've
+> been saying that the behavior should be selected from userland from
+> the get-go, haven't I?
+>
+> I have no idea how the selection should be.  It could be per-insmod or
+> maybe just a system-wide flag with explicit exceptions marked on
+> drivers is good enough.  I don't know.
 
-With Nishants changes for the omap3 PRCM interrupt and the
-related .dts changes the PM works for me now with this series.
+Its perfectly understandable if we don't know what path to take yet
+and its also understandable for it to take time to figure out --
+meanwhile though systemd already has merged a policy of a 30 second
+timeout for *all drivers* though so we therefore need:
 
-So I'm applying these into omap-for-v3.18/intc on top of
-Nishant's changes in omap-for-v3.18/soc thanks.
+0) a solutions for affected combination of systemd / drivers
+1) an agreed path forward
 
-Regards,
+If we want a tight integration between both kernel / init system we
+need to be able to communicate effectively folks and I'm afraid this
+isn't happening. I last noted on systemd-devel how the 30 second
+timeout issue was merged under incorrect assumptions -- that it was
+not just init that at times caused delays, and that since we currently
+batch both init and probe on the driver core we need a non fatal
+userspace solution [0], while we work on design on the kernel side of
+things for async'ing for drivers that make sense. A proper kernel
+solution may take longer than expected, we can't just assume a
+probe_async flag will suffice on drivers, in fact as Tejun notes, its
+wrong since historically we have had some random userland depend on
+the synhronous behaviour of module loading of some drivers, and that
+*could* have taken a while.
 
-Tony
- 
-> cheers
-> 
-> Felipe Balbi (35):
->   arm: omap: irq: make omap_irq_base global
->   arm: omap: irq: define INTC_ILR0 register
->   arm: omap: irq: start to remove irq_banks array
->   arm: omap: irq: add a global omap_nr_irqs variable
->   arm: omap: irq: remove rest of irq_banks usage
->   arm: omap: irq: remove unused macro
->   arm: omap: irq: switch over to intc_readl on omap_intc_handle_irq
->   arm: omap: irq: remove unnecessary base_addr argument
->   arm: omap: irq: rename omap3_intc_regs
->   arm: omap: irq: always define omap3 support
->   arm: omap: irq: reorganize code a little bit
->   arm: omap: irq: make intc_of_init static
->   arm: omap: irq: call set_handle_irq() from intc_of_init
->   arm: omap: irq: use IRQCHIP_DECLARE macro
->   arm: omap: irq: drop .handle_irq and .init_irq fields
->   arm: omap: irq: add specific compatibles for omap3 and am33xx devices
->   arm: omap: irq: use compatible flag to figure out number of IRQ lines
->   arm: boot: dts: am33xx/omap3: fix intc compatible flag
->   arm: omap: irq: drop ti,intc-size support
->   arm: boot: dts: omap2/3/am33xx: drop ti,intc-size
->   arm: omap: irq: move some more code around
->   arm: omap: irq: call set_handle_irq() from .init_irq
->   arm: omap: irq: drop omap3_intc_handle_irq()
->   arm: omap: irq: drop omap2_intc_handle_irq()
->   arm: omap: irq: remove unnecessary header
->   arm: omap: irq: remove nr_irqs argument
->   arm: omap: irq: introduce omap_nr_pending
->   arm: omap: irq: get rid of ifdef hack
->   arm: omap: intc: switch over to linear irq domain
->   irqchip: add irq-omap-intc.h header
->   arm: omap: irq: move irq.c to drivers/irqchip/
->   irq: intc: minor improvement to omap_irq_pending()
->   irq: intc: comment style cleanup
->   irq: intc: remove unnecesary of_address_to_resource() call
->   irq: intc: enable IP protection
-> 
->  arch/arm/boot/dts/am33xx.dtsi              |   3 +-
->  arch/arm/boot/dts/omap2.dtsi               |   1 -
->  arch/arm/boot/dts/omap3.dtsi               |   3 +-
->  arch/arm/mach-omap2/Kconfig                |   1 +
->  arch/arm/mach-omap2/Makefile               |   3 +-
->  arch/arm/mach-omap2/board-3430sdp.c        |   2 +-
->  arch/arm/mach-omap2/board-am3517crane.c    |   2 +-
->  arch/arm/mach-omap2/board-am3517evm.c      |   2 +-
->  arch/arm/mach-omap2/board-cm-t35.c         |   3 +-
->  arch/arm/mach-omap2/board-cm-t3517.c       |   2 +-
->  arch/arm/mach-omap2/board-devkit8000.c     |   2 +-
->  arch/arm/mach-omap2/board-generic.c        |  14 -
->  arch/arm/mach-omap2/board-ldp.c            |   2 +-
->  arch/arm/mach-omap2/board-omap3beagle.c    |   2 +-
->  arch/arm/mach-omap2/board-omap3logic.c     |   3 +-
->  arch/arm/mach-omap2/board-omap3pandora.c   |   2 +-
->  arch/arm/mach-omap2/board-omap3stalker.c   |   2 +-
->  arch/arm/mach-omap2/board-omap3touchbook.c |   2 +-
->  arch/arm/mach-omap2/board-overo.c          |   2 +-
->  arch/arm/mach-omap2/board-rx51.c           |   2 +-
->  arch/arm/mach-omap2/board-ti8168evm.c      |   1 +
->  arch/arm/mach-omap2/common.h               |  22 --
->  arch/arm/mach-omap2/cpuidle34xx.c          |   1 +
->  arch/arm/mach-omap2/irq.c                  | 380 ---------------------------
->  arch/arm/mach-omap2/pm24xx.c               |   1 +
->  arch/arm/mach-omap2/pm34xx.c               |   1 +
->  drivers/irqchip/Kconfig                    |   5 +
->  drivers/irqchip/Makefile                   |   1 +
->  drivers/irqchip/irq-omap-intc.c            | 408 +++++++++++++++++++++++++++++
->  include/linux/irqchip/irq-omap-intc.h      |  32 +++
->  30 files changed, 468 insertions(+), 439 deletions(-)
->  delete mode 100644 arch/arm/mach-omap2/irq.c
->  create mode 100644 drivers/irqchip/irq-omap-intc.c
->  create mode 100644 include/linux/irqchip/irq-omap-intc.h
-> 
-> -- 
-> 2.0.1.563.g66f467c
-> 
+Kay, Lennart, any recommendations ?
+
+[0] http://lists.freedesktop.org/archives/systemd-devel/2014-August/022696.html
+
+>> Also what stops drivers from going ahead and just implementing their
+>> own async probe? Would that now be frowned upon as it strives away
+>
+> The drivers can't.  How many times should I explain the same thing
+> over and over again.  libata can't simply make probing asynchronous
+> w.r.t. module loading no matter how it does it.  Yeah, sure, there can
+> be other drivers which can do that without most people noticing it but
+> a storage driver isn't one of them and the storage drivers are the
+> problematic ones already, right?
+
+Its one of the subsystems that has suffered from this, but not the only one.
+
+>> from the original design? The bool would let those drivers do this
+>> easily, and we would still need to identify these drivers, although
+>> this particular change can be NAK'd Oleg's suggestion on
+>> WARN_ON(fatal_signal_pending() at the end of load_module() seems to me
+>> at least needed. And if its not async probe... what do those with
+>> failed drivers do?
+>
+> I'm getting tired of explaining the same thing over and over again.
+> The said change was nacked because the whole approach of "let's see
+> which drivers get reported on the issue which exists basically for all
+> drivers and just change the behavior of them" is braindead.  It makes
+> no sense whatsoever.  It doesn't address the root cause of the problem
+> while making the same class of drivers behave significantly
+> differently for no good reason.  Please stop chasing your own tail and
+> try to understand the larger picture.
+
+Understood.
+
+  Luis
