@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591AbaIICo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:44:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34636 "EHLO
+	id S1755686AbaIICok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:44:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34643 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485AbaIICoX (ORCPT
+	with ESMTP id S1754512AbaIICoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:44:23 -0400
-Date: Mon, 8 Sep 2014 19:44:10 -0700
+	Mon, 8 Sep 2014 22:44:38 -0400
+Date: Mon, 8 Sep 2014 19:44:27 -0700
 From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-e0ffbaabc46db508b8717f023c0ce03b980eefac@git.kernel.org>
+Message-ID: <tip-54eea9957f5763dd1a2555d7e4cb53b4dd389cc6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
         mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
         linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <2df320a600020fda055fccf2b668145729dd0c04.1409954077.git.luto@amacapital.net>
-References: <2df320a600020fda055fccf2b668145729dd0c04.1409954077.git.luto@amacapital.net>
+In-Reply-To: <01218b493f12ae2f98034b78c9ae085e38e94350.1409954077.git.luto@amacapital.net>
+References: <01218b493f12ae2f98034b78c9ae085e38e94350.1409954077.git.luto@amacapital.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/seccomp] x86: Split syscall_trace_enter into two phases
-Git-Commit-ID: e0ffbaabc46db508b8717f023c0ce03b980eefac
+Subject: [tip:x86/seccomp] x86_64, entry: Treat regs->
+ ax the same in fastpath and slowpath syscalls
+Git-Commit-ID: 54eea9957f5763dd1a2555d7e4cb53b4dd389cc6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,250 +32,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e0ffbaabc46db508b8717f023c0ce03b980eefac
-Gitweb:     http://git.kernel.org/tip/e0ffbaabc46db508b8717f023c0ce03b980eefac
+Commit-ID:  54eea9957f5763dd1a2555d7e4cb53b4dd389cc6
+Gitweb:     http://git.kernel.org/tip/54eea9957f5763dd1a2555d7e4cb53b4dd389cc6
 Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Fri, 5 Sep 2014 15:13:54 -0700
+AuthorDate: Fri, 5 Sep 2014 15:13:55 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 8 Sep 2014 14:14:03 -0700
+CommitDate: Mon, 8 Sep 2014 14:14:08 -0700
 
-x86: Split syscall_trace_enter into two phases
+x86_64, entry: Treat regs->ax the same in fastpath and slowpath syscalls
 
-This splits syscall_trace_enter into syscall_trace_enter_phase1 and
-syscall_trace_enter_phase2.  Only phase 2 has full pt_regs, and only
-phase 2 is permitted to modify any of pt_regs except for orig_ax.
+For slowpath syscalls, we initialize regs->ax to -ENOSYS and stick
+the syscall number into regs->orig_ax prior to any possible tracing
+and syscall execution.  This is user-visible ABI used by ptrace
+syscall emulation and seccomp.
 
-The intent is that phase 1 can be called from the syscall fast path.
+For fastpath syscalls, there's no good reason not to do the same
+thing.  It's even slightly simpler than what we're currently doing.
+It probably has no measureable performance impact.  It should have
+no user-visible effect.
 
-In this implementation, phase1 can handle any combination of
-TIF_NOHZ (RCU context tracking), TIF_SECCOMP, and TIF_SYSCALL_AUDIT,
-unless seccomp requests a ptrace event, in which case phase2 is
-forced.
-
-In principle, this could yield a big speedup for TIF_NOHZ as well as
-for TIF_SECCOMP if syscall exit work were similarly split up.
+The purpose of this patch is to prepare for two-phase syscall
+tracing, in which the first phase might modify the saved RAX without
+leaving the fast path.  This change is just subtle enough that I'm
+keeping it separate.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/2df320a600020fda055fccf2b668145729dd0c04.1409954077.git.luto@amacapital.net
+Link: http://lkml.kernel.org/r/01218b493f12ae2f98034b78c9ae085e38e94350.1409954077.git.luto@amacapital.net
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/ptrace.h |   5 ++
- arch/x86/kernel/ptrace.c      | 157 +++++++++++++++++++++++++++++++++++-------
- 2 files changed, 138 insertions(+), 24 deletions(-)
+ arch/x86/include/asm/calling.h |  6 +++++-
+ arch/x86/kernel/entry_64.S     | 13 ++++---------
+ 2 files changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 6205f0c..86fc2bb 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -75,6 +75,11 @@ convert_ip_to_linear(struct task_struct *child, struct pt_regs *regs);
- extern void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
- 			 int error_code, int si_code);
+diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
+index cb4c73b..76659b6 100644
+--- a/arch/x86/include/asm/calling.h
++++ b/arch/x86/include/asm/calling.h
+@@ -85,7 +85,7 @@ For 32-bit we have the following conventions - kernel is built with
+ #define ARGOFFSET	R11
+ #define SWFRAME		ORIG_RAX
  
-+
-+extern unsigned long syscall_trace_enter_phase1(struct pt_regs *, u32 arch);
-+extern long syscall_trace_enter_phase2(struct pt_regs *, u32 arch,
-+				       unsigned long phase1_result);
-+
- extern long syscall_trace_enter(struct pt_regs *);
- extern void syscall_trace_leave(struct pt_regs *);
+-	.macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1
++	.macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1, rax_enosys=0
+ 	subq  $9*8+\addskip, %rsp
+ 	CFI_ADJUST_CFA_OFFSET	9*8+\addskip
+ 	movq_cfi rdi, 8*8
+@@ -96,7 +96,11 @@ For 32-bit we have the following conventions - kernel is built with
+ 	movq_cfi rcx, 5*8
+ 	.endif
  
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index bbf338a..29576c2 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1441,20 +1441,126 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
- 	force_sig_info(SIGTRAP, &info, tsk);
- }
++	.if \rax_enosys
++	movq $-ENOSYS, 4*8(%rsp)
++	.else
+ 	movq_cfi rax, 4*8
++	.endif
  
-+static void do_audit_syscall_entry(struct pt_regs *regs, u32 arch)
-+{
-+#ifdef CONFIG_X86_64
-+	if (arch == AUDIT_ARCH_X86_64) {
-+		audit_syscall_entry(arch, regs->orig_ax, regs->di,
-+				    regs->si, regs->dx, regs->r10);
-+	} else
-+#endif
-+	{
-+		audit_syscall_entry(arch, regs->orig_ax, regs->bx,
-+				    regs->cx, regs->dx, regs->si);
-+	}
-+}
-+
- /*
-- * We must return the syscall number to actually look up in the table.
-- * This can be -1L to skip running any syscall at all.
-+ * We can return 0 to resume the syscall or anything else to go to phase
-+ * 2.  If we resume the syscall, we need to put something appropriate in
-+ * regs->orig_ax.
-+ *
-+ * NB: We don't have full pt_regs here, but regs->orig_ax and regs->ax
-+ * are fully functional.
-+ *
-+ * For phase 2's benefit, our return value is:
-+ * 0:			resume the syscall
-+ * 1:			go to phase 2; no seccomp phase 2 needed
-+ * anything else:	go to phase 2; pass return value to seccomp
-  */
--long syscall_trace_enter(struct pt_regs *regs)
-+unsigned long syscall_trace_enter_phase1(struct pt_regs *regs, u32 arch)
- {
--	long ret = 0;
-+	unsigned long ret = 0;
-+	u32 work;
-+
-+	BUG_ON(regs != task_pt_regs(current));
-+
-+	work = ACCESS_ONCE(current_thread_info()->flags) &
-+		_TIF_WORK_SYSCALL_ENTRY;
- 
- 	/*
- 	 * If TIF_NOHZ is set, we are required to call user_exit() before
- 	 * doing anything that could touch RCU.
+ 	.if \save_r891011
+ 	movq_cfi r8,  3*8
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 2fac134..0bd6d3c 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -404,8 +404,8 @@ GLOBAL(system_call_after_swapgs)
+ 	 * and short:
  	 */
--	if (test_thread_flag(TIF_NOHZ))
-+	if (work & _TIF_NOHZ) {
- 		user_exit();
-+		work &= ~TIF_NOHZ;
-+	}
-+
-+#ifdef CONFIG_SECCOMP
-+	/*
-+	 * Do seccomp first -- it should minimize exposure of other
-+	 * code, and keeping seccomp fast is probably more valuable
-+	 * than the rest of this.
-+	 */
-+	if (work & _TIF_SECCOMP) {
-+		struct seccomp_data sd;
-+
-+		sd.arch = arch;
-+		sd.nr = regs->orig_ax;
-+		sd.instruction_pointer = regs->ip;
-+#ifdef CONFIG_X86_64
-+		if (arch == AUDIT_ARCH_X86_64) {
-+			sd.args[0] = regs->di;
-+			sd.args[1] = regs->si;
-+			sd.args[2] = regs->dx;
-+			sd.args[3] = regs->r10;
-+			sd.args[4] = regs->r8;
-+			sd.args[5] = regs->r9;
-+		} else
-+#endif
-+		{
-+			sd.args[0] = regs->bx;
-+			sd.args[1] = regs->cx;
-+			sd.args[2] = regs->dx;
-+			sd.args[3] = regs->si;
-+			sd.args[4] = regs->di;
-+			sd.args[5] = regs->bp;
-+		}
-+
-+		BUILD_BUG_ON(SECCOMP_PHASE1_OK != 0);
-+		BUILD_BUG_ON(SECCOMP_PHASE1_SKIP != 1);
-+
-+		ret = seccomp_phase1(&sd);
-+		if (ret == SECCOMP_PHASE1_SKIP) {
-+			regs->orig_ax = -1;
-+			ret = 0;
-+		} else if (ret != SECCOMP_PHASE1_OK) {
-+			return ret;  /* Go directly to phase 2 */
-+		}
-+
-+		work &= ~_TIF_SECCOMP;
-+	}
-+#endif
-+
-+	/* Do our best to finish without phase 2. */
-+	if (work == 0)
-+		return ret;  /* seccomp and/or nohz only (ret == 0 here) */
-+
-+#ifdef CONFIG_AUDITSYSCALL
-+	if (work == _TIF_SYSCALL_AUDIT) {
-+		/*
-+		 * If there is no more work to be done except auditing,
-+		 * then audit in phase 1.  Phase 2 always audits, so, if
-+		 * we audit here, then we can't go on to phase 2.
-+		 */
-+		do_audit_syscall_entry(regs, arch);
-+		return 0;
-+	}
-+#endif
-+
-+	return 1;  /* Something is enabled that we can't handle in phase 1 */
-+}
-+
-+/* Returns the syscall nr to run (which should match regs->orig_ax). */
-+long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
-+				unsigned long phase1_result)
-+{
-+	long ret = 0;
-+	u32 work = ACCESS_ONCE(current_thread_info()->flags) &
-+		_TIF_WORK_SYSCALL_ENTRY;
-+
-+	BUG_ON(regs != task_pt_regs(current));
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_ARGS 8,0
+-	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
++	SAVE_ARGS 8, 0, rax_enosys=1
++	movq_cfi rax,(ORIG_RAX-ARGOFFSET)
+ 	movq  %rcx,RIP-ARGOFFSET(%rsp)
+ 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+ 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+@@ -417,7 +417,7 @@ system_call_fastpath:
+ 	andl $__SYSCALL_MASK,%eax
+ 	cmpl $__NR_syscall_max,%eax
+ #endif
+-	ja badsys
++	ja ret_from_sys_call  /* and return regs->ax */
+ 	movq %r10,%rcx
+ 	call *sys_call_table(,%rax,8)  # XXX:	 rip relative
+ 	movq %rax,RAX-ARGOFFSET(%rsp)
+@@ -476,10 +476,6 @@ sysret_signal:
+ 	FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
+ 	jmp int_check_syscall_exit_work
  
+-badsys:
+-	movq $-ENOSYS,RAX-ARGOFFSET(%rsp)
+-	jmp ret_from_sys_call
+-
+ #ifdef CONFIG_AUDITSYSCALL
  	/*
- 	 * If we stepped into a sysenter/syscall insn, it trapped in
-@@ -1463,17 +1569,21 @@ long syscall_trace_enter(struct pt_regs *regs)
- 	 * do_debug() and we need to set it again to restore the user
- 	 * state.  If we entered on the slow path, TF was already set.
- 	 */
--	if (test_thread_flag(TIF_SINGLESTEP))
-+	if (work & _TIF_SINGLESTEP)
- 		regs->flags |= X86_EFLAGS_TF;
- 
--	/* do the secure computing check first */
--	if (secure_computing()) {
-+#ifdef CONFIG_SECCOMP
-+	/*
-+	 * Call seccomp_phase2 before running the other hooks so that
-+	 * they can see any changes made by a seccomp tracer.
-+	 */
-+	if (phase1_result > 1 && seccomp_phase2(phase1_result)) {
- 		/* seccomp failures shouldn't expose any additional code. */
--		ret = -1L;
--		goto out;
-+		return -1;
- 	}
-+#endif
- 
--	if (unlikely(test_thread_flag(TIF_SYSCALL_EMU)))
-+	if (unlikely(work & _TIF_SYSCALL_EMU))
- 		ret = -1L;
- 
- 	if ((ret || test_thread_flag(TIF_SYSCALL_TRACE)) &&
-@@ -1483,23 +1593,22 @@ long syscall_trace_enter(struct pt_regs *regs)
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->orig_ax);
- 
--	if (is_ia32_task())
--		audit_syscall_entry(AUDIT_ARCH_I386,
--				    regs->orig_ax,
--				    regs->bx, regs->cx,
--				    regs->dx, regs->si);
--#ifdef CONFIG_X86_64
--	else
--		audit_syscall_entry(AUDIT_ARCH_X86_64,
--				    regs->orig_ax,
--				    regs->di, regs->si,
--				    regs->dx, regs->r10);
--#endif
-+	do_audit_syscall_entry(regs, arch);
- 
--out:
- 	return ret ?: regs->orig_ax;
- }
- 
-+long syscall_trace_enter(struct pt_regs *regs)
-+{
-+	u32 arch = is_ia32_task() ? AUDIT_ARCH_I386 : AUDIT_ARCH_X86_64;
-+	unsigned long phase1_result = syscall_trace_enter_phase1(regs, arch);
-+
-+	if (phase1_result == 0)
-+		return regs->orig_ax;
-+	else
-+		return syscall_trace_enter_phase2(regs, arch, phase1_result);
-+}
-+
- void syscall_trace_leave(struct pt_regs *regs)
- {
- 	bool step;
+ 	 * Fast path for syscall audit without full syscall trace.
+@@ -519,7 +515,6 @@ tracesys:
+ 	jz auditsys
+ #endif
+ 	SAVE_REST
+-	movq $-ENOSYS,RAX(%rsp) /* ptrace can change this for a bad syscall */
+ 	FIXUP_TOP_OF_STACK %rdi
+ 	movq %rsp,%rdi
+ 	call syscall_trace_enter
+@@ -536,7 +531,7 @@ tracesys:
+ 	andl $__SYSCALL_MASK,%eax
+ 	cmpl $__NR_syscall_max,%eax
+ #endif
+-	ja   int_ret_from_sys_call	/* RAX(%rsp) set to -ENOSYS above */
++	ja   int_ret_from_sys_call	/* RAX(%rsp) is already set */
+ 	movq %r10,%rcx	/* fixup for C */
+ 	call *sys_call_table(,%rax,8)
+ 	movq %rax,RAX-ARGOFFSET(%rsp)
