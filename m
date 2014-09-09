@@ -1,137 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138AbaIIDks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 23:40:48 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:47072 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079AbaIIDkq (ORCPT
+	id S1755383AbaIIDrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 23:47:40 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:10237 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753171AbaIIDrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 23:40:46 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s893ee8M015816, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next] r8152: use usleep_range
-Date: Tue, 9 Sep 2014 11:40:28 +0800
-Message-ID: <1394712342-15778-35-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	Mon, 8 Sep 2014 23:47:37 -0400
+X-AuditID: cbfee690-f79ce6d00000115a-43-540e7857368f
+From: kgene@kernel.org
+To: "'Javier Martinez Canillas'" <javier@dowhile0.org>
+Cc: linux-samsung-soc@vger.kernel.org,
+        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
+        "'Doug Anderson'" <dianders@chromium.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Naveen Krishna Chatradhi'" <ch.naveen@samsung.com>,
+        "=?UTF-8?Q?'Andreas_F=C3=A4rber'?=" <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>
+References: <1408533593-32346-1-git-send-email-javier.martinez@collabora.co.uk>
+ <CABxcv==ycrPw1MTv7X0baX2WfqgDS+4EEfGAWc+ZhpiR6=Uy+Q@mail.gmail.com>
+In-reply-to: <CABxcv==ycrPw1MTv7X0baX2WfqgDS+4EEfGAWc+ZhpiR6=Uy+Q@mail.gmail.com>
+Subject: RE: [PATCH v2 0/5] Add max77802 support for Peach boards
+Date: Tue, 09 Sep 2014 12:47:35 +0900
+Message-id: <04ab01cfcbe0$caeac4d0$60c04e70$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIxbNXd8qsEFbzMPRn3O1DlBdlXHAGANeQVmyjlPfA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t8zQ93wCr4Qg4MztSyaNxVbTH34hM3i
+	7vPDjBZnlx1kszj6u8Di2u8ZbBabHl9jtbi8aw6bxYzz+5gsTl3/zGYxZdFhVgduj9kNF1k8
+	/j6/DiRmtzJ7bFrVyeaxeUm9x5UTTawefVtWMXpsPl3t8XmTXABnFJdNSmpOZllqkb5dAlfG
+	0Uld7AVP2Cr23O9hbmCcz9rFyMkhIWAicbB1GhOELSZx4d56ti5GLg4hgWWMEr/u74crOnlx
+	PyOILSQwnVHi7zUNiKK/jBIndvUCdXNwsAF1T30iDVIjLKAlsXBLEwuILQLUe2PCQbChzAKn
+	mCWmz+2H2jCNUaJp0io2kCpOgWCJ4+euskF0O0r8uzkDzGYRUJWYO3svM4jNK2Ah8WLuLkYI
+	W1Dix+R7YBuYBdQlJs1bxAxhy0tsXvOWGeJqBYkdZ18zQlxhJbF6yi52iBoRiX0v3jFC1Czl
+	kJjWqQexS0Di2+RDLCDPSAjISmw6ADVGUuLgihssExglZyHZPAvJ5llINs9CsmEBI8sqRtHU
+	guSC4qT0IhO94sTc4tK8dL3k/NxNjJD0MGEH470D1ocYBTgYlXh4M4L5QoRYE8uKK3MPMZoC
+	XTSRWUo0OR+YhPJK4g2NzYwsTE1MjY3MLc2UxHlfS/0MFhJITyxJzU5NLUgtii8qzUktPsTI
+	xMEp1cAo/nlp3qfA+oknTIW1ZX0XmEc6rvr/VtvSe8rtr+kqG0tPfgn9Ya3R97lcR3RK4MML
+	hq+uCBiduvdGTbFl9hNZ02beTVGVT/q0I0oLY+6XHpniOGeJndhGwVu/k86YTHFe4Wt0V1mO
+	NcdtB2vKZdu3r7v1Dtw2vrP/Sgxj0qfZH3NnRSzMOfVfiaU4I9FQi7moOBEAR/sHFgoDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEKsWRmVeSWpSXmKPExsVy+t9jQd3wCr4Qg58/VC2aNxVbTH34hM3i
+	7vPDjBZnlx1kszj6u8Di2u8ZbBabHl9jtbi8aw6bxYzz+5gsTl3/zGYxZdFhVgduj9kNF1k8
+	/j6/DiRmtzJ7bFrVyeaxeUm9x5UTTawefVtWMXpsPl3t8XmTXABnVAOjTUZqYkpqkUJqXnJ+
+	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QrUoKZYk5pUChgMTiYiV9O0wT
+	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjKOTutgLnrBV7Lnfw9zAOJ+1i5GTQ0LAROLkxf2MELaY
+	xIV769lAbCGB6YwSf69pdDFyAdl/GSVO7Opl6mLk4GADKpr6RBqkRlhAS2LhliYWEFsEaM6N
+	CQfZQOqZBU4xS0yf288G0TyNUaJp0iqwqZwCwRLHz11lg+h2lPh3cwaYzSKgKjF39l5mEJtX
+	wELixdxdjBC2oMSPyffANjALqEtMmreIGcKWl9i85i0zxNUKEjvOvmaEuMJKYvWUXewQNSIS
+	+168Y5zAKDwLyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGC088z
+	qR2MKxssDjEKcDAq8fBmBPOFCLEmlhVX5h5ilOBgVhLhZYgFCvGmJFZWpRblxxeV5qQWH2I0
+	Bfp0IrOUaHI+MDXmlcQbGpuYGVkamVkYmZibK4nzHmi1DhQSSE8sSc1OTS1ILYLpY+LglGpg
+	ZLuhK5YWzKjtEyR8KnWTLhuvbSnDAikB+YlTe39lnjJj32LLZ3StZyl7zI1tX9g+Gd96+E43
+	aJlMTGhqmOUtHuPJTJZrav4cKS3QuXi15nnFIk6zU6Z/boq9FON4tfkSR/4zqwfLLCXu/tx0
+	XNpRa96uaf7q1pN2apy/s/Ro7b/Je/auLN65VYmlOCPRUIu5qDgRABlao2BVAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace mdelay with usleep_range to avoid busy loop.
+Javier Martinez Canillas wrote:
+> 
+> Hello Kukjin,
+> 
+Hi,
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+> On Wed, Aug 20, 2014 at 1:19 PM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+> >
+> > This is a second version of the series that adds max77802 support for
+> > the Peach Pit and Pi boards. The series also have all the pending
+> > patches that were posted but depended on this support. I've picked
+> > all the patches I found and rebased them to be sure that they apply
+> > cleanly on top of linux-next. Also I've taken some DT snippets from
+> > the downstream Chrome OS 3.8 kernel DTS for devices that use one of
+> > these regulators as their input supply.
+> >
+> 
+> Any comments on this series?
+> 
+Looks good to me but I just wanted to get ack from chrome guy, Doug? But since
+Naveen tested, it should be fine I think. I'll take the series.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index f95e678..2130c75 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -2051,13 +2051,13 @@ static void rtl8152_disable(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if ((ocp_data & FIFO_EMPTY) == FIFO_EMPTY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	for (i = 0; i < 1000; i++) {
- 		if (ocp_read_word(tp, MCU_TYPE_PLA, PLA_TCR0) & TCR0_TX_EMPTY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	for (i = 0; i < RTL8152_MAX_RX; i++)
-@@ -2202,7 +2202,7 @@ static void rtl_clear_bp(struct r8152 *tp)
- 	ocp_write_dword(tp, MCU_TYPE_USB, USB_BP_2, 0);
- 	ocp_write_dword(tp, MCU_TYPE_USB, USB_BP_4, 0);
- 	ocp_write_dword(tp, MCU_TYPE_USB, USB_BP_6, 0);
--	mdelay(3);
-+	usleep_range(3000, 6000);
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_BP_BA, 0);
- 	ocp_write_word(tp, MCU_TYPE_USB, USB_BP_BA, 0);
- }
-@@ -2288,7 +2288,7 @@ static void r8152b_exit_oob(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_SFF_STS_7);
-@@ -2299,7 +2299,7 @@ static void r8152b_exit_oob(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	rtl8152_nic_reset(tp);
-@@ -2360,7 +2360,7 @@ static void r8152b_enter_oob(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_SFF_STS_7);
-@@ -2371,7 +2371,7 @@ static void r8152b_enter_oob(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
-@@ -2518,7 +2518,7 @@ static void r8153_first_init(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_SFF_STS_7);
-@@ -2529,7 +2529,7 @@ static void r8153_first_init(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_CPCR);
-@@ -2573,7 +2573,7 @@ static void r8153_enter_oob(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_SFF_STS_7);
-@@ -2584,7 +2584,7 @@ static void r8153_enter_oob(struct r8152 *tp)
- 		ocp_data = ocp_read_byte(tp, MCU_TYPE_PLA, PLA_OOB_CTRL);
- 		if (ocp_data & LINK_LIST_READY)
- 			break;
--		mdelay(1);
-+		usleep_range(1000, 2000);
- 	}
- 
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
--- 
-1.9.3
+Thanks,
+Kukjin
 
