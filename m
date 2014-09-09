@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314AbaIIQfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:35:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37374 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086AbaIIQfn convert rfc822-to-8bit (ORCPT
+	id S932378AbaIIQg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:36:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59513 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753735AbaIIQgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:35:43 -0400
-Date: Tue, 9 Sep 2014 17:35:29 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v3 03/17] ARM64 / ACPI: Introduce lowlevel suspend
- function
-Message-ID: <20140909163529.GA6370@arm.com>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
- <1409583475-6978-4-git-send-email-hanjun.guo@linaro.org>
+	Tue, 9 Sep 2014 12:36:25 -0400
+Date: Tue, 9 Sep 2014 18:36:22 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/8] net: pxa168_eth: get and set the mac address on
+ the Ethernet controller
+Message-ID: <20140909163622.GA28752@kwain>
+References: <1410273848-24663-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1410273848-24663-6-git-send-email-antoine.tenart@free-electrons.com>
+ <20140909162958.GS30828@titan.lakedaemon.net>
 MIME-Version: 1.0
-In-Reply-To: <1409583475-6978-4-git-send-email-hanjun.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 09 Sep 2014 16:35:38.0239 (UTC) FILETIME=[1665E0F0:01CFCC4C]
-X-MC-Unique: 114090917354100301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140909162958.GS30828@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 03:57:41PM +0100, Hanjun Guo wrote:
-> From: Graeme Gregory <graeme.gregory@linaro.org>
-> 
-> acpi_wakeup_address is used on x86 as the address bios jumps into
-> when machine wakes up from suspend. As arm64 does not have such a
-> bios this mechanism will be provided by other means. But the define
-> is still required inside the acpi core.
-> 
-> Introduce a null stub for acpi_suspend_lowlevel as this is also
-> required by core. This will be filled in when standards are
-> defined for arm64 ACPI global power states.
+Jason,
 
-Do we actually plan to use these on arm64? I'm worried most of these
-don't make sense on arm64 (the aim is to use PSCI). Is it possible to
-refactor the core code so that we don't have to define dummy macros or
-variables just to be able to build the kernel?
+On Tue, Sep 09, 2014 at 12:29:58PM -0400, Jason Cooper wrote:
+> On Tue, Sep 09, 2014 at 04:44:05PM +0200, Antoine Tenart wrote:
+> > When changing the MAC address, in addition to updating the dev_addr in
+> > the net_device structure, this patch also update the MAC address
+> > registers (high and low) of the Ethernet controller with the new MAC.
+> > The address stored in these registers is used for IEEE 802.3x Ethernet
+> > flow control, which is already enabled.
+> > 
+> > This patch also tries reading the MAC address stored in these registers
+> > when probing the driver, to use the MAC address set by the bootloader
+> > and avoid using a random one.
+> 
+> Hmm, the wording here seems odd.  I think the preference should be:
+> 
+>  1) bootloader-supplied addr via DT
+>  2) addr read from device
+>  3) randomly generated one.
+
+I agree. I'll update that.
+
+Antoine
 
 -- 
-Catalin
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
