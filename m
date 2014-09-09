@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055AbaIIKZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:25:06 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:50698 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaIIKZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:25:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kumar Gala <galak@codeaurora.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] PCI: keystone: update to support multiple pci ports
-Date: Tue, 09 Sep 2014 12:24:48 +0200
-Message-ID: <5974944.bS5MvrslRo@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <540DD0CF.4000501@ti.com>
-References: <1409938782-31460-1-git-send-email-m-karicheri2@ti.com> <5769746.NkKjYOOUiv@wuerfel> <540DD0CF.4000501@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:O+RBHPQo09WfapUxos2T9vvx90Qq0NNE+2eqBcoywl9
- /OY80srntpxZBZMeFRo7ktgBTTrzqsZfeQPCDpZmvj9lqY8ET6
- gzMsEumHbCtbipAMpuRsBvy/JRzRT2dw1nBo9ziHF+MnHUf/5y
- af2Q5cBIMyOMuMuBt6h2ab1n6ypae3ZTh4wqN35ypZPqjaLs0r
- PHMOTsLEhST1AqT83pK+7/J04xvqjq14LfZ/VaU9EaH3GytpkO
- vTWe0iXxtf4MgBE+pZpFRxzNBwukKIC8ofkX9oZF+IdJJ2sGJA
- fzaSoPciDfffAd1wK9lyeGussfZ7UAxHWtlEg1HCm4QVPAskU2
- cdiUspYZD6HLE52u7y1Y=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1755616AbaIIK0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:26:53 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:55816 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752521AbaIIK0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:26:52 -0400
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-kbuild@vger.kernel.org
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] kbuild: remove obj-n and lib-n handling
+Date: Tue,  9 Sep 2014 19:26:21 +0900
+Message-Id: <1410258381-7088-4-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410258381-7088-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1410258381-7088-1-git-send-email-yamada.m@jp.panasonic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 September 2014 11:52:47 Murali Karicheri wrote:
-> On 09/05/2014 05:11 PM, Arnd Bergmann wrote:
-> > But the driver can only do root complex mode, and we would probably
-> > want a completely different driver if we were to start supporting
-> > endpoint mode.
-> 
-> Good point! I will drop index#2 handling in the driver code and will 
-> handle the same in boot loader. But I have a question though. The 
-> original driver which is queued up for merge to v3.18 has index #2 for 
-> this reg offset and is documented in the DT documentation as
-> 
-> 	index 2 is the base address and length of PCI mode configuration
-> 	register.
-> 	index 3 is the base address and length of PCI device ID register.
-> 
-> 
-> Will this create any issue in terms of backward compatibility if I 
-> remove it and move index3 to index2 and update the code for the same? I 
-> assume since this patch also will likely be on the next branch soon, and 
-> gets merged together with original driver to v3.18, this should be fine. 
-> But for some reason, if this patch doesn't make to v3.18, then won't 
-> this break the backward compatibility?
-> 
-> I think the other option is document index2 as obsolete and update the 
-> document and remove the code for handling it. Any suggestion?
+Kconfig never defines CONFIG_* as 'n'.
+Now obj-n is only used in firmware/Makefile and it can be
+replaced with obj-.  No makefile uses lib-n.
 
-Since the driver is not merged into Linus' tree yet and (more importantly)
-has not been in a release yet, we can still fix it. Please just send a
-patch on top to remove it now, it's not too late yet.
+Let's rip off obj-n and lib-n.
 
-	Arnd
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+---
+
+ firmware/Makefile       | 2 +-
+ scripts/Makefile.build  | 4 ++--
+ scripts/Makefile.clean  | 4 +---
+ scripts/Makefile.fwinst | 2 +-
+ 4 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/firmware/Makefile b/firmware/Makefile
+index 0862d34..e297e1b 100644
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -232,6 +232,6 @@ targets := $(fw-shipped-) $(patsubst $(obj)/%,%, \
+ 
+ # Without this, built-in.o won't be created when it's empty, and the
+ # final vmlinux link will fail.
+-obj-n := dummy
++obj- := dummy
+ 
+ hostprogs-y := ihex2fw
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index 5b09d36..649ce68 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -79,11 +79,11 @@ endif
+ 
+ # ===========================================================================
+ 
+-ifneq ($(strip $(lib-y) $(lib-m) $(lib-n) $(lib-)),)
++ifneq ($(strip $(lib-y) $(lib-m) $(lib-)),)
+ lib-target := $(obj)/lib.a
+ endif
+ 
+-ifneq ($(strip $(obj-y) $(obj-m) $(obj-n) $(obj-) $(subdir-m) $(lib-target)),)
++ifneq ($(strip $(obj-y) $(obj-m) $(obj-) $(subdir-m) $(lib-target)),)
+ builtin-target := $(obj)/built-in.o
+ endif
+ 
+diff --git a/scripts/Makefile.clean b/scripts/Makefile.clean
+index a651cee..c630ab5 100644
+--- a/scripts/Makefile.clean
++++ b/scripts/Makefile.clean
+@@ -23,15 +23,13 @@ __subdir-y	:= $(patsubst %/,%,$(filter %/, $(obj-y)))
+ subdir-y	+= $(__subdir-y)
+ __subdir-m	:= $(patsubst %/,%,$(filter %/, $(obj-m)))
+ subdir-m	+= $(__subdir-m)
+-__subdir-n	:= $(patsubst %/,%,$(filter %/, $(obj-n)))
+-subdir-n	+= $(__subdir-n)
+ __subdir-	:= $(patsubst %/,%,$(filter %/, $(obj-)))
+ subdir-		+= $(__subdir-)
+ 
+ # Subdirectories we need to descend into
+ 
+ subdir-ym	:= $(sort $(subdir-y) $(subdir-m))
+-subdir-ymn      := $(sort $(subdir-ym) $(subdir-n) $(subdir-))
++subdir-ymn      := $(sort $(subdir-ym) $(subdir-))
+ 
+ # Add subdir path
+ 
+diff --git a/scripts/Makefile.fwinst b/scripts/Makefile.fwinst
+index d8e335e..5b698ad 100644
+--- a/scripts/Makefile.fwinst
++++ b/scripts/Makefile.fwinst
+@@ -2,7 +2,7 @@
+ # Installing firmware
+ #
+ # We don't include the .config, so all firmware files are in $(fw-shipped-)
+-# rather than in $(fw-shipped-y) or $(fw-shipped-n).
++# rather than in $(fw-shipped-y) or $(fw-shipped-m).
+ # ==========================================================================
+ 
+ INSTALL := install
+-- 
+1.9.1
+
