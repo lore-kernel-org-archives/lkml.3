@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326AbaIIKEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:04:14 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:48254 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366AbaIIKEM (ORCPT
+	id S932166AbaIIKLB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:11:01 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:47636 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357AbaIIKK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:04:12 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>, Jiri Slaby <jslaby@suse.cz>,
-        kernel@stlinux.com, linux-serial@vger.kernel.org
-Subject: [PATCH 3.17-rc3 v2] serial: asc: Adopt readl_/writel_relaxed()
-Date: Tue,  9 Sep 2014 11:03:57 +0100
-Message-Id: <1410257037-20030-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1409745651-3247-1-git-send-email-daniel.thompson@linaro.org>
-References: <1409745651-3247-1-git-send-email-daniel.thompson@linaro.org>
+	Tue, 9 Sep 2014 06:10:57 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 9 Sep 2014 12:08:56 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Wang YanQing <udknight@gmail.com>
+Cc: Benjamin Henrion <zoobab@gmail.com>, gregkh@linuxfoundation.org,
+        linus.walleij@linaro.org, jhovold@gmail.com, andi@lisas.de,
+        dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140909100856.GC2974@localhost>
+References: <20140831153201.GA25632@udknight>
+ <CANjd3neT+NrsptLw3s7Bm76xv6LQMqm-BieN-0xLFuTx4apXxw@mail.gmail.com>
+ <CANjd3ndGiTujCORwZOXfWfHL2_YocK5ZUpxQJPLq+qTmkV0xnA@mail.gmail.com>
+ <20140905013011.GA2133@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905013011.GA2133@udknight>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The architectures supported by this driver, arm and sh, have expensive
-implementations of writel(), reliant on spin locks and explicit L2 cache
-management. These architectures provide a cheaper writel_relaxed() which
-is much better suited to peripherals that do not perform DMA. The
-situation with readl()/readl_relaxed()is similar although less acute.
+On Fri, Sep 05, 2014 at 09:30:11AM +0800, Wang YanQing wrote:
+> On Thu, Sep 04, 2014 at 06:44:31PM +0200, Benjamin Henrion wrote:
+> > On Thu, Sep 4, 2014 at 6:14 PM, Benjamin Henrion <zoobab@gmail.com> wrote:
+> > > I have subscribed to the lkml.
+> > >
+> > > Can you make me a favour, send me your email as you posted on the LKML
+> > > in mbox format attached to an email?
+> > >
+> > > I am trying to reply to it, but I cannot find an mbox archive, outside
+> > > of gmane which rewrites all the email addresses.
+> > >
+> > > Otherwise, I made a page here:
+> > >
+> > > http://www.zoobab.com/pl2303hxd-gpio
+> > >
+> > > I will also try with other adapters to see if the 2 GPIOs show up.
+> > >
+> > > Any idea how to test the GPIO sysfs speed?
+> > 
+> > Also tested with an HXA laying around, I could export the 2 GPIOS in
+> > /sys/class/gpio, but I could not change the status of the pins via
+> > echo.
+> > 
+> > Any idea why?
+> 
+> It is strange, I have tested again with my two HXA adapters, they work well.
+> How do you test? check cat value or check voltage change? I check cat value,
+> and they work good.
 
-This driver does not use DMA and will be more power efficient and more
-robust (due to absence of spin locks during console I/O) if it uses the
-relaxed variants.
+So you haven't verified that the voltage actually changes?
 
-The driver supports COMPILE_TEST and therefore falls back to writel()
-when writel_relaxed() does not exist.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-Cc: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Patrice Chotard <patrice.chotard@st.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: kernel@stlinux.com
-Cc: linux-serial@vger.kernel.org
----
-
-Notes:
-    Changes since v1:
-    
-    * Added fallback to writel() to permit COMPILE_TESTing (review
-      of Greg Kroah-Hartmam).
-
- drivers/tty/serial/st-asc.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/st-asc.c b/drivers/tty/serial/st-asc.c
-index 8b2d735..a3fc167 100644
---- a/drivers/tty/serial/st-asc.c
-+++ b/drivers/tty/serial/st-asc.c
-@@ -151,12 +151,16 @@ static inline struct asc_port *to_asc_port(struct uart_port *port)
-
- static inline u32 asc_in(struct uart_port *port, u32 offset)
- {
--	return readl(port->membase + offset);
-+	return readl_relaxed(port->membase + offset);
- }
-
- static inline void asc_out(struct uart_port *port, u32 offset, u32 value)
- {
-+#ifdef writel_relaxed
-+	writel_relaxed(value, port->membase + offset);
-+#else
- 	writel(value, port->membase + offset);
-+#endif
- }
-
- /*
---
-1.9.3
-
+Johan
