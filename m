@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649AbaIILyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:54:19 -0400
-Received: from mga14.intel.com ([192.55.52.115]:41522 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755237AbaIILyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:54:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
-   d="scan'208";a="588513023"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
-In-Reply-To: <20140909105537.GJ6758@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com> <20140909084436.GY19379@twins.programming.kicks-ass.net> <87y4ttt9m0.fsf@ashishki-desk.ger.corp.intel.com> <20140909105537.GJ6758@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 09 Sep 2014 14:53:42 +0300
-Message-ID: <87sik1t3g9.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755905AbaIIL7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:59:41 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:26900 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908AbaIIL7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 07:59:39 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-34-540eeba956d4
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, s.nawrocki@samsung.com,
+        mturquette@linaro.org, naushad@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH] clk: samsung: exynos3250: fix width and shift of div_spi0_isp
+ clock
+Date: Tue, 09 Sep 2014 17:24:57 +0530
+Message-id: <1410263697-768-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsWyRsSkSnfla74Qg4czZS16F1xls9j0+Bqr
+	xeVdc9gsZpzfx2TxdMJFNotPR/+zWiza+oXd4vCbdlaLVbv+MDpweuycdZfd4861PWwem5fU
+	e/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGxY2fGQuusVd8bJ/D1MB4jq2LkYNDQsBEYmYP
+	XxcjJ5ApJnHh3nqgMBeHkMBSRonueccYIRImEtd6pzKB2EICixgl5h6MhiiawCSx9c8UsCI2
+	AV2JJ+/nMoPYIgLZEv23V7OAFDELLGSU2HX3GitIQlggTOLr5XlgRSwCqhL/d05lB7mCV8BN
+	YlJrOcRBChJzJtmAtEoI9LNLTHy3CqpcQOLb5EMsEDWyEpsOMEPcJilxcMUNlgmMggsYGVYx
+	iqYWJBcUJ6UXGekVJ+YWl+al6yXn525iBAbx6X/P+nYw3jxgfYhRgINRiYc3I5gvRIg1say4
+	MvcQoynQhonMUqLJ+cBYySuJNzQ2M7IwNTE1NjK3NFMS502Q+hksJJCeWJKanZpakFoUX1Sa
+	k1p8iJGJg1OqgVH6yvTvfD+0FB9efls9IdAlTvDt8qb+cOmiaVJeSzsWz+ObbbNmtVH5Rsmy
+	+3zTf5X39QnJXI7e0VmRevP46/M/K1uaPjGE//Z8dY3bbKqD6UqbkgnlH7V++uns+CqSqbTk
+	+iKfHce/hW1p+hSQuzV4uuSHWZv9b0T+dH7Mv6pC3XJmZ80PK2UlluKMREMt5qLiRABvf3PM
+	XQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jAd2Vr/lCDNrPiVj0LrjKZrHp8TVW
+	i8u75rBZzDi/j8ni6YSLbBafjv5ntVi09Qu7xeE37awWq3b9YXTg9Ng56y67x51re9g8Ni+p
+	9+jbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
+	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGRc3fmYs
+	uMZe8bF9DlMD4zm2LkZODgkBE4lrvVOZIGwxiQv31oPFhQQWMUrMPRjdxcgFZE9gktj6Zwoj
+	SIJNQFfiyfu5zCC2iEC2RP/t1SwgRcwCCxkldt29xgqSEBYIk/h6eR5YEYuAqsT/nVPZuxg5
+	OHgF3CQmtZaDmBICChJzJtlMYORewMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4Sp5J
+	7WBc2WBxiFGAg1GJhzcjmC9EiDWxrLgy9xCjBAezkgiv9QugEG9KYmVValF+fFFpTmrxIUZT
+	oN0TmaVEk/OBEZxXEm9obGJuamxqaWJhYmapJM57oNU6UEggPbEkNTs1tSC1CKaPiYNTqoFR
+	M9JHT3XLLU39q3Ncpsfqt6+5lWUhMrHtctgqRr/1jr6Xt29du0a3j1ejZZ6m48vvDFutMs6e
+	Zbherf5yU7nk7EXznee/VPHKrVrqHFCufcF84fMJpY++3tE4cGIV07z26plCB+tOfOeSPXYw
+	+vN7JecZ5wUaXzczzO+eOE3i+QbfprUHJLxfKLEUZyQaajEXFScCACVdm3GoAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Update shift and width field of div_spi0_isp clock as per Exynos3250
+user manual.
 
-> On Tue, Sep 09, 2014 at 12:40:39PM +0300, Alexander Shishkin wrote:
->> Peter Zijlstra <peterz@infradead.org> writes:
->> 
->> > On Wed, Aug 20, 2014 at 03:36:06PM +0300, Alexander Shishkin wrote:
->> >
->> >> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
->> >> index 925f369947..5006caba63 100644
->> >> --- a/kernel/events/ring_buffer.c
->> >> +++ b/kernel/events/ring_buffer.c
->> >
->> >> @@ -294,9 +295,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
->> >>  			 bool truncated)
->> >>  {
->> >>  	struct ring_buffer *rb = handle->rb;
->> >> +	unsigned long aux_head;
->> >>  
->> >> +	aux_head = local_read(&rb->aux_head);
->> >> +
->> >> +	if (rb->aux_overwrite) {
->> >> +		local_set(&rb->aux_head, size);
->> >> +
->> >> +		/*
->> >> +		 * Send a RECORD_AUX with size==0 to communicate aux_head
->> >> +		 * of this snapshot to userspace
->> >> +		 */
->> >> +		perf_event_aux_event(handle->event, size, 0, truncated);
->> >
->> > Humm.. why not write a 'normal' AUX record?
->> 
->> In this mode, the hardware is running in a circular buffer mode,
->> overwriting old data, so we don't actually know the size of the
->> snapshot, we have userspace figure it out later on (based on timestamps,
->> for example). I didn't want to configure PMI for this mode to avoid
->> overhead, but with PMI we can try to keep track of the overwrites and
->> try to infer the actual snapshot size in the kernel. For Intel PT. As
->> far as I can tell, ARM's scatter-gather trace-to-memory storing block
->> does not generate interrupts at all.
->
-> Well, wouldn't the 'size' be basically the entire buffer. All you have
-> to then provide is the head pointer.
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
+ drivers/clk/samsung/clk-exynos3250.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yes, that's what the code above is doing. We can replace size==0 with
-size==$buffer_size to mean the same thing.
+diff --git a/drivers/clk/samsung/clk-exynos3250.c b/drivers/clk/samsung/clk-exynos3250.c
+index ba8f073f..a3dee34 100644
+--- a/drivers/clk/samsung/clk-exynos3250.c
++++ b/drivers/clk/samsung/clk-exynos3250.c
+@@ -406,7 +406,7 @@ static struct samsung_div_clock div_clks[] __initdata = {
+ 	DIV(CLK_DIV_SPI1_ISP, "div_spi1_isp", "mout_spi1_isp", DIV_ISP, 16, 4),
+ 	DIV_F(CLK_DIV_SPI0_ISP_PRE, "div_spi0_isp_pre", "div_spi0_isp",
+ 		DIV_ISP, 8, 8, CLK_SET_RATE_PARENT, 0),
+-	DIV(CLK_DIV_SPI0_ISP, "div_spi0_isp", "mout_spi0_isp", DIV_ISP, 0, 4),
++	DIV(CLK_DIV_SPI0_ISP, "div_spi0_isp", "mout_spi0_isp", DIV_ISP, 4, 4),
+ 
+ 	/* DIV_FSYS0 */
+ 	DIV_F(CLK_DIV_TSADC_PRE, "div_tsadc_pre", "div_tsadc", DIV_FSYS0, 8, 8,
+-- 
+1.7.9.5
 
-> Ideally you would also provide a
-> tail pointer so you know when to stop, but I suppose you can infer that
-> from the data stream itself?
-
-The tail pointer is the problem I mentioned above, because it's either
-
-  - where we stopped the previous time
-  - head+1, if old data is overwritten
-
-and in order to tell the difference, we need an interrupt.
-We can infer where the new data starts from the timestamps in the trace
-stream, so the decoder can take care of it (and that's how it's done at
-the moment).
-
-> If you can provide the tail you can indeed
-> compute the size etc.. at which point you don't have to rely on parsing
-> the stream etc.
-
-Ideally, there wouldn't be too many adjacent snapshots so it won't even
-be a problem. But yes, if we want to reliably know the tail/size, we
-need an interrupt.
-
-Regards,
---
-Alex
