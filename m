@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaIIBzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 21:55:37 -0400
-Received: from mail-bn1bon0113.outbound.protection.outlook.com ([157.56.111.113]:52736
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755372AbaIIBzg convert rfc822-to-8bit (ORCPT
+	id S1755808AbaIIB7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 21:59:43 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60760 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389AbaIIB7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 21:55:36 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2 1/4] Clocksource: Flextimer: Use internal clocksource
- read API.
-Thread-Topic: [PATCHv2 1/4] Clocksource: Flextimer: Use internal clocksource
- read API.
-Thread-Index: AQHPyM3Ey4Hred0UCkWbQ/cLLeLlTpvyrdMAgAVil/A=
-Date: Tue, 9 Sep 2014 01:55:33 +0000
-Message-ID: <92e51da8df704197959434bc9a4e28c7@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1409893340-30027-1-git-send-email-Li.Xiubo@freescale.com>
- <1409893340-30027-2-git-send-email-Li.Xiubo@freescale.com>
- <alpine.DEB.2.10.1409051730270.5472@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409051730270.5472@nanos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0329B15C8A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019018)(6009001)(189002)(199003)(164054003)(51704005)(377454003)(24454002)(13464003)(79102001)(46102001)(85852003)(90102001)(80022001)(66066001)(83072002)(74316001)(108616004)(77096002)(83322001)(50986999)(64706001)(21056001)(76176999)(33646002)(99396002)(19580405001)(54356999)(97736003)(2656002)(86362001)(106116001)(77982001)(110136001)(20776003)(4396001)(87936001)(76576001)(76482001)(101416001)(99286002)(107046002)(74662001)(74502001)(19580395003)(85306004)(92566001)(81542001)(31966008)(95666004)(106356001)(81342001)(105586002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0616;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Sep 2014 21:59:39 -0400
+Date: Mon, 8 Sep 2014 18:59:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+Message-ID: <20140909015933.GA4704@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
+ <1409824374.4246.62.camel@pasglop>
+ <5408E458.3@zytor.com>
+ <54090AF4.7060406@hurleysoftware.com>
+ <54091B30.7080100@zytor.com>
+ <5409D76D.2070203@hurleysoftware.com>
+ <5409D9C0.7030403@zytor.com>
+ <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+ <540DEE6C.2060904@zytor.com>
+ <540E3207.7090007@hurleysoftware.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540E3207.7090007@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14090901-1542-0000-0000-000004A248E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-Okay.
-
-I will try to fix this.
-
-Thanks,
-
-BRs
-Xiubo
-
-
-
-
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Friday, September 05, 2014 11:40 PM
-> To: Xiubo Li-B47053
-> Cc: daniel.lezcano@linaro.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCHv2 1/4] Clocksource: Flextimer: Use internal clocksource
-> read API.
+On Mon, Sep 08, 2014 at 06:47:35PM -0400, Peter Hurley wrote:
+> On 09/08/2014 01:59 PM, H. Peter Anvin wrote:
+> > On 09/08/2014 10:52 AM, One Thousand Gnomes wrote:
+> >> On Fri, 05 Sep 2014 08:41:52 -0700
+> >> "H. Peter Anvin" <hpa@zytor.com> wrote:
+> >>
+> >>> On 09/05/2014 08:31 AM, Peter Hurley wrote:
+> >>>>
+> >>>> Which is a bit ironic because I remember when Digital had a team
+> >>>> working on emulating native x86 apps on Alpha/NT.
+> >>>>
+> >>>
+> >>> Right, because the x86 architecture was obsolete and would never scale...
+> >>
+> >> Talking about "not scaling" can anyone explain how a "you need to use
+> >> set_bit() and friends" bug report scaled into a hundred message plus
+> >> discussion about ambiguous properties of processors (and nobody has
+> >> audited all the embedded platforms we support yet, or the weirder ARMs)
+> >> and a propsal to remove Alpha support.
+> >>
+> >> Wouldn't it be *much* simpler to do what I suggested in the first place
+> >> and use the existing intended for purpose, deliberately put there,
+> >> functions for atomic bitops, because they are fast on sane processors and
+> >> they work on everything else.
+> >>
+> >> I think the whole "removing Alpha EV5" support is basically bonkers. Just
+> >> use set_bit in the tty layer. Alpha will continue to work as well as it
+> >> always has done and you won't design out support for any future processor
+> >> that turns out not to do byte aligned stores.
+> >>
+> >> Alan
+> >>
+> > 
+> > Is *that* what we are talking about?  I was added to this conversation
+> > in the middle where it had already generalized, so I had no idea.
 > 
-> On Fri, 5 Sep 2014, Xiubo Li wrote:
+> No, this is just what brought this craziness to my attention.
 > 
-> > Since the Flextimer device will be implemented in BE mode on
-> > LS1 SoC, and in LE mode on Vybrid, LS2 SoCs, so here we need
-> > the endianness judgment before doing the mmio.
+> For example, byte- and short-sized circular buffers could not possibly
+> be safe either, when the head nears the tail.
 > 
-> WTF? I explained you in great length HOW you should solve that, but
-> you just ignore it. Instead of trying to understand what I say you
-> just resend the same nonsense again.
-> 
-> Keep that attitude up, if you want to make sure, that your patches are
-> ignored in the future.
-> 
-> Thanks,
-> 
-> 	tglx
+> Who has audited global storage and ensured that _every_ byte-sized write
+> doesn't happen to be adjacent to some other storage that may not happen
+> to be protected by the same (or any) lock?
+
+This was my concern as well.
+
+							Thanx, Paul
+
