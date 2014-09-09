@@ -1,132 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233AbaIIOwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:52:04 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:34532 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886AbaIIOvF (ORCPT
+	id S1757297AbaIIOwX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:52:23 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45771 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668AbaIIOwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:51:05 -0400
-Message-ID: <540F13DB.2070205@linaro.org>
-Date: Tue, 09 Sep 2014 15:51:07 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 9 Sep 2014 10:52:19 -0400
+Message-ID: <540F141B.9060603@codeaurora.org>
+Date: Tue, 09 Sep 2014 20:22:11 +0530
+From: Chintan Pandya <cpandya@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] asm-generic/io.h: Implement read[bwlq]_relaxed()
-References: <1410264760-29756-1-git-send-email-daniel.thompson@linaro.org> <20140909122818.GI1754@arm.com> <540EFA94.1010905@linaro.org> <540EFD4E.50804@linaro.org> <20140909141513.GW4790@arm.com>
-In-Reply-To: <20140909141513.GW4790@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Hugh Dickins <hughd@google.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com> <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140908093949.GZ6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 15:15, Will Deacon wrote:
-> On Tue, Sep 09, 2014 at 02:14:54PM +0100, Daniel Thompson wrote:
->> On 09/09/14 14:03, Daniel Thompson wrote:
->>> On 09/09/14 13:28, Will Deacon wrote:
->>>> I have a larger series adding these (and the write equivalents) to all
->>>> architectures that I periodically post and then fail to get on top of.
->>>
->>> That's why you're on Cc:...
-> 
-> Ok, so why not just pick the asm-generic patch out of my series?
+Hello All,
 
-Only really that your patch introducing the writeX_relaxed() family at
-the same time.
+Before its too late to discuss this basic question, allow me to share my 
+view on the deferrable timer approach.
 
-However it would be fine to subset your patch rather than use mine. You
-did post it first...
+I believe KSM at this point is tunable with predictable outcomes. When 
+it will get triggered, how many pages it will scan etc. This aggression 
+control is with user who can implement any complex logic based on its 
+own flashy parameters. Along the same line, I was seeing this deferrable 
+timer knob.
 
-
->>>> The key part you're missing is defining some generic semantics for these
->>>> accessors. Without those, I don't think it makes sense to put them into
->>>> asm-generic, because drivers can't safely infer any meaning from the relaxed
->>>> definition.
->>>
->>> Currently the semantics are described as:
->>> --- cut here ---
->>> PCI ordering rules also guarantee that PIO read responses arrive after
->>> any outstanding DMA writes from that bus, since for some devices the
->>> result of a readb call may signal to the driver that a DMA transaction
->>> is complete. In many cases, however, the driver may want to indicate
->>> that the next readb call has no relation to any previous DMA writes
->>> performed by the device. The driver can use readb_relaxed for these
->>> cases, although only some platforms will honor the relaxed semantics.
->>> Using the relaxed read functions will provide significant performance
->>> benefits on platforms that support it. The qla2xxx driver provides
->>> examples of how to use readX_relaxed . In many cases, a majority of the
->>> driver’s readX calls can safely be converted to readX_relaxed calls,
->>> since only a few will indicate or depend on DMA completion.
->>> --- cut here ---
->>>
->>> The implementation provided in the patch trivially meets this definition
->>> (by not honouring the relaxedness).
-> 
-> I still think we need to mention ordering of relaxed reads against each
-> other and also against spinlocks.
-
-I don't disagree.
-
-I just think the documentation being sub-optimal is not a good reason to
-avoid implementing the read functions.
+Here I was hoping the same level of predictability with this knob. 
+Kernel still won't do smart work and user is free to play smart/complex 
+with the knob. I believe that there are many use-cases where a single 
+strategy of "to make KSM perform better while saving power at the same 
+time" may not work. So,
 
 
->>>> Ben and I agreed on something back in May:
->>>>
->>>>   https://lkml.org/lkml/2014/5/22/468
->>>
->>> ... and didn't you also conclude with hpa that the very relaxed x86
->>> implementation of readl_relaxed() already meets this definition (as do
->>> these changes to asm-generic/io.h).
+> On Mon, Sep 08, 2014 at 01:25:36AM -0700, Hugh Dickins wrote:
+>> Well, yes, but... how do we know when there is no more work to do?
+>
+> Yeah, I figured that out _after_ I send that email..
+>
+>> Thomas has given reason why KSM might simply fail to do its job if we
+>> rely on the deferrable timer.
+
+With deferrable timer, KSM thread will be scheduled on the 'active' CPU 
+at that very same time. Yes, I understood from Thomas's clarification 
+that if that very CPU goes IDLE, KSM task will get deferred even if at 
+the timeout, we have some CPUs running. I think, this situation can be 
+avoided potentially very small timeout value (?). But in totality, this 
+is where KSM will be idle for sure, may be that is unwanted.
+
 >>
->> Sorry. "very relaxed" is always a very stupid thing to say about x86
->> (especially to an arm guy).
+>> Chintan, even if the scheduler guys turn out to hate it, please would
+>> you give the patch below a try, to see how well it works in your
+>> environment, whether it seems to go better or worse than your own patch.
 >>
->> More exactly I was referring to the absence of memory clobber in x86
->> readl_relaxed().
-> 
-> Yeah, my series just adds the relaxed write accessors for x86.
-> 
->>> Thus allowing its use to perculate more widely really shouldn't do an harm.
->>>
->>>
->>>> but I need to send a new version including:
->>>>
->>>>   - ioreadX_relaxed and iowriteX_relaxed
->>>>   - Strengthening non-relaxed I/O accessors on architectures with non-empty
->>>>     mmiowb()
->>>>
->>>> I'll bump it up the list. In the meantime, you can have a look at my io
->>>> branch on kernel.org
->>>
->>> I'd really like to see your work included (which I spotted after I wrote
->>> the patch and when it occured to me to visit
->>> https://www.google.com/search?q=asm-generic+readl_relaxed to see if
->>> there was a well known reason not to make this change).
->>>
->>> However... I really can't see why we should delay introducing an already
->>> documented function to the remaining architectures.
-> 
-> I'd just rather fix the interface once instead of churning it about
+>> If it works well enough for you, maybe we can come up with ideas to
+>> make it more palatable.  I do think your issue is an important one
+>> to fix, one way or another.
 
-Churn? 12 lines of code where two people independently produce the same
-thing (apart from ordering within the file)?
+It is taking a little more time for me to grasp your change :) So, after 
+Peter's comment, do you want me to try this out or you are looking 
+forward for even better idea ? BTW, if deferrable timer patch gets any 
+green signal, I will publish new patch with your comments on v4.
+
+>>
+>> Thanks,
+>> Hugh
+>>
+>> [PATCH] ksm: avoid periodic wakeup while mergeable mms are quiet
+>>
+>> Description yet to be written!
+>>
+>> Reported-by: Chintan Pandya<cpandya@codeaurora.org>
+>> Not-Signed-off-by: Hugh Dickins<hughd@google.com>
 
 
-> How about I dust off the series again?
+ >>> So looking at Hughs test results I'm quite sure that the deferrable
+ >>> timer is just another tunable bandaid with dubious value and the
+ >>> potential of predictable bug/regresssion reports.
 
-Dusting off the series again would be great.
+Here I am naive in understanding the obvious disadvantages of 'one more 
+knob'. And hence was inclined towards deferrable timer knob. Thomas, 
+could you explain what kind of bug/regression you foresee with such 
+approach ?
 
-Would you consider putting readX_relaxed() and its documentation at the
-front of the patchset? That way if the writel_relaxed() side log jams
-again we can still get some of it delivered.
+-- 
+Chintan Pandya
 
-
-Daniel.
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
