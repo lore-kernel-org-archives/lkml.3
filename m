@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaIIOEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:04:09 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:35241 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943AbaIIOEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:04:07 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Tue, 9 Sep 2014 16:02:04 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Wang YanQing <udknight@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, Benjamin Henrion <zoobab@gmail.com>,
-        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        jhovold@gmail.com, andi@lisas.de, dforsi@gmail.com,
-        gnomes@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org,
+	id S932185AbaIIOG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:06:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751219AbaIIOGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 10:06:24 -0400
+Date: Tue, 9 Sep 2014 10:06:16 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140909140204.GB7939@localhost>
-References: <20140831153201.GA25632@udknight>
- <CANjd3neT+NrsptLw3s7Bm76xv6LQMqm-BieN-0xLFuTx4apXxw@mail.gmail.com>
- <CANjd3ndGiTujCORwZOXfWfHL2_YocK5ZUpxQJPLq+qTmkV0xnA@mail.gmail.com>
- <20140905013011.GA2133@udknight>
- <20140909100856.GC2974@localhost>
- <20140909102131.GA1354@udknight>
- <20140909104356.GA7939@localhost>
+Subject: Re: [PATCH] HID: rmi: check sanity of the incoming report
+Message-ID: <20140909140616.GB28906@mail.corp.redhat.com>
+References: <1409925435-6556-1-git-send-email-benjamin.tissoires@redhat.com>
+ <540E4C3A.3000408@synaptics.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140909104356.GA7939@localhost>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <540E4C3A.3000408@synaptics.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 12:43:56PM +0200, Johan Hovold wrote:
-> On Tue, Sep 09, 2014 at 06:21:31PM +0800, Wang YanQing wrote:
-> > On Tue, Sep 09, 2014 at 12:08:56PM +0200, Johan Hovold wrote:
-> > > On Fri, Sep 05, 2014 at 09:30:11AM +0800, Wang YanQing wrote:
-> > > > On Thu, Sep 04, 2014 at 06:44:31PM +0200, Benjamin Henrion wrote:
-> > > > > On Thu, Sep 4, 2014 at 6:14 PM, Benjamin Henrion <zoobab@gmail.com> wrote:
-> > > > > > I have subscribed to the lkml.
-> > > > > >
-> > > > > > Can you make me a favour, send me your email as you posted on the LKML
-> > > > > > in mbox format attached to an email?
-> > > > > >
-> > > > > > I am trying to reply to it, but I cannot find an mbox archive, outside
-> > > > > > of gmane which rewrites all the email addresses.
-> > > > > >
-> > > > > > Otherwise, I made a page here:
-> > > > > >
-> > > > > > http://www.zoobab.com/pl2303hxd-gpio
-> > > > > >
-> > > > > > I will also try with other adapters to see if the 2 GPIOs show up.
-> > > > > >
-> > > > > > Any idea how to test the GPIO sysfs speed?
-> > > > > 
-> > > > > Also tested with an HXA laying around, I could export the 2 GPIOS in
-> > > > > /sys/class/gpio, but I could not change the status of the pins via
-> > > > > echo.
-> > > > > 
-> > > > > Any idea why?
-> > > > 
-> > > > It is strange, I have tested again with my two HXA adapters, they work well.
-> > > > How do you test? check cat value or check voltage change? I check cat value,
-> > > > and they work good.
-> > > 
-> > > So you haven't verified that the voltage actually changes?
-> > > 
-> > > Johan
-> > 
-> > I have verified the voltage actually changes in previous patch version,
-> > but I haven't verified that with v8.
+On Sep 08 2014 or thereabouts, Andrew Duggan wrote:
+> On 09/05/2014 06:57 AM, Benjamin Tissoires wrote:
+> >In the Dell XPS 13 9333, it appears that sometimes the bus get confused
+> >and corrupts the incoming data. It fills the input report with the
+> >sentinel value "ff". Synaptics told us that such behavior does not comes
+> >from the touchpad itself, so we filter out such reports here.
+> >
+> >Unfortunately, we can not simply discard the incoming data because they
+> >may contain useful information. Most of the time, the misbehavior is
+> >quite near the end of the report, so we can still use the valid part of
+> >it.
+> >
+> >Fixes:
+> >https://bugzilla.redhat.com/show_bug.cgi?id=1123584
+> >
+> >Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> >---
+> >  drivers/hid/hid-rmi.c | 31 ++++++++++++++++++++++++++-----
+> >  1 file changed, 26 insertions(+), 5 deletions(-)
+> >
+> >diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+> >index 8389e81..db92c3b 100644
+> >--- a/drivers/hid/hid-rmi.c
+> >+++ b/drivers/hid/hid-rmi.c
+> >@@ -320,9 +320,6 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
+> >  	int offset;
+> >  	int i;
+> >-	if (size < hdata->f11.report_size)
+> >-		return 0;
+> >-
+> >  	if (!(irq & hdata->f11.irq_mask))
+> >  		return 0;
+> >@@ -332,9 +329,13 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
+> >  		int fs_bit_position = (i & 0x3) << 1;
+> >  		int finger_state = (data[fs_byte_position] >> fs_bit_position) &
+> >  					0x03;
+> >+		int position = offset + 5 * i;
+> >+
+> >+		if (position + 5 > size)
+> >+			/* partial report, go on with what we received */
+> >+			break;
+> >-		rmi_f11_process_touch(hdata, i, finger_state,
+> >-				&data[offset + 5 * i]);
+> >+		rmi_f11_process_touch(hdata, i, finger_state, &data[position]);
+> >  	}
+> >  	input_mt_sync_frame(hdata->input);
+> >  	input_sync(hdata->input);
+> >@@ -412,9 +413,29 @@ static int rmi_read_data_event(struct hid_device *hdev, u8 *data, int size)
+> >  	return 1;
+> >  }
+> >+static int rmi_check_sanity(struct hid_device *hdev, u8 *data, int size)
+> >+{
+> >+	int valid_size = size;
+> >+	/*
+> >+	 * On the Dell XPS 13 9333, the bus sometimes get confused and fills
+> >+	 * the report with a sentinel value "ff". Synaptics told us that such
+> >+	 * behavior does not comes from the touchpad itself, so we filter out
+> >+	 * such reports here.
+> >+	 */
+> >+
+> >+	while ((data[valid_size - 1] == 0xff) && valid_size > 0)
+> >+		valid_size--;
+> >+
+> >+	return valid_size;
+> >+}
+> >+
+> >  static int rmi_raw_event(struct hid_device *hdev,
+> >  		struct hid_report *report, u8 *data, int size)
+> >  {
+> >+	size = rmi_check_sanity(hdev, data, size);
+> >+	if (size < 2)
+> >+		return 0;
+> >+
+> >  	switch (data[0]) {
+> >  	case RMI_READ_DATA_REPORT_ID:
+> >  		return rmi_read_data_event(hdev, data, size);
+> I think there should also be a check in rmi_f30_input_event to make sure
+> that the F30 data is also valid. The F30 data is at the end of the HID
+> report so if the F30 interrupt bit is set, but the value in the report is FF
+> then there might be some unintended button events. I think checking that
+> size > 0 would be sufficient to make sure the F30 data is valid.
+
+Yeah :(
+Actually, I am missing too checks in f11 and f30. If the size is <= 0,
+then bail out before doing anything.
+
 > 
-> Ok, good. I'll get back to you with some comments on v8 shortly.
-
-Wait a minute. You restructured the driver, added support for two new
-gpios as well as another device type, so you need to verify the voltage
-on the pins (on both device types) as well.
-
-Thanks,
-Johan
+> Other then that, the sanity check and validation in rmi_f11_input_event look
+> good to me.
+> 
+> Andrew
