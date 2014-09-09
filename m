@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819AbaIIXsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 19:48:15 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:51835 "EHLO mail.anarazel.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345AbaIIXsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 19:48:13 -0400
-Date: Wed, 10 Sep 2014 01:48:06 +0200
-From: Andres Freund <andres@anarazel.de>
-To: Cong Wang <cwang@twopensource.com>
-Cc: "Alexander Y. Fomichev" <git.user@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Macvlan WARNiNGS about duplicate sysfs filenames (Was [GIT]
- Networking)
-Message-ID: <20140909234806.GG24649@awork2.anarazel.de>
-References: <20140907.164109.1944849896872238507.davem@davemloft.net>
- <20140908212514.GA2348@awork2.anarazel.de>
- <CAHA+R7NCwhMaWX0Mhr7AqHH4x5RZ6TEEiJB7906yVzQouXD3Lg@mail.gmail.com>
+	id S1752960AbaIIXt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 19:49:28 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:64789 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519AbaIIXt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 19:49:26 -0400
+Date: Tue, 9 Sep 2014 16:49:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: nick.dyer@itdev.co.uk
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Yufeng Shen <miletus@google.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 2/2] Input: atmel_mxt_ts - fix double free of input device
+Message-ID: <20140909234922.GB5971@core.coreip.homeip.net>
+References: <1410274249-3469-1-git-send-email-nick.dyer@itdev.co.uk>
+ <1410274249-3469-3-git-send-email-nick.dyer@itdev.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHA+R7NCwhMaWX0Mhr7AqHH4x5RZ6TEEiJB7906yVzQouXD3Lg@mail.gmail.com>
+In-Reply-To: <1410274249-3469-3-git-send-email-nick.dyer@itdev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-09 15:43:55 -0700, Cong Wang wrote:
-> On Mon, Sep 8, 2014 at 2:25 PM, Andres Freund <andres@anarazel.de> wrote:
-> > Hi,
-> >
-> > (don't have netdev archived, thus answering here, sorry)
-> >
-> > On 2014-09-07 16:41:09 -0700, David Miller wrote:
-> >> Alexander Y. Fomichev (1):
-> >>       net: prevent of emerging cross-namespace symlinks
-> >
+On Tue, Sep 09, 2014 at 03:50:49PM +0100, nick.dyer@itdev.co.uk wrote:
+> From: Stephen Warren <swarren@wwwdotorg.org>
 > 
-> Since you are quoting this change, are you saying it causes
-> the following kernel warning?
+> [reworked after comments by Dmitry Torokhov. Move free of input device into
+> separate function. Only call in paths that require it. Move mxt_initialize
+> after sysfs init, because otherwise an error in the sysfs init may interfere
+> with the async return from the firmware loader. Add guards for sysfs
+> functions. ]
 
-I thought it might be a likely candidate; but I'm not sure at all. I'll
-verify it as soon as I can reboot the machine a couple of times (end of
-week-ish).
+Ugh... there is still problem with asycn firmware loading: you need to
+make sure it is done before you try to unbind the dveice. I also do not
+see what stops several firmware update requests to happen
+simultaneously. Once you add proper handling for that you can use the
+same lock in sysfs read methods.
 
-> > I'm seeing WARNINGs like:
-> > [ 1005.269134] ------------[ cut here ]------------
-> > [ 1005.269148] WARNING: CPU: 6 PID: 4213 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
-> > [ 1005.269150] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0/upper_mv-eth0'
-> 
-> 
-> Is there a network device named upper_mv-eth0 existed in your system
-> before you created macvlan?
+Another option is wait a bit and see what's the outcome of async probing
+discussion on LKML is and maybe we can stop using
+request_firmware_nowait() in probe path but rather have device core fire
+off probe asynchronously.
 
-No, there wasn't any. Afaics, the sequence is:
-1) macvlan mv-eth0 is created in global namespace
-2) mv-eth0 is moved (by systemd-nsspawn) into a new network
-   namespace. Leaving a dangling symlink in the host namespace
-/devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0/upper_mv-eth0 pointing toward
-../mv-eth0
-which doesn't exist in the external namespace. The new namespace seems
-to have broken 'lower_bond0' symlink as well
+I'd rather have fix for input device freeing be separate from
+sysfs/firmware/config loading changes.
 
-This seems to be the case (and probably the actual root cause) in
-slightly earlier kernels as well.
-What changed seems to be that:
-3) macvlan mv-eth0 is destroyed in the namespace (potentially while
-   tearing it down)
-4) Now there's a broken symlink that doesn't make sense in any namespace
-5) mv-eth0 can't be created anew
 
-It seems that 3-5 didn't happen that way on older kernels. The most
-recent where it's not persistently broken is 3.16.0-rc7-00007 -
-31dab719f. The oldest where I know it's reproducible is
-3.17.0-rc4-andres-00135-g35af256.
-
-Greetings,
-
-Andres Freund
+Thanks.
 
 -- 
- Andres Freund	                   http://www.2ndQuadrant.com/
- PostgreSQL Development, 24x7 Support, Training & Services
+Dmitry
