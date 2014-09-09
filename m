@@ -1,155 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaIIU5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:57:50 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44474 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155AbaIIU5t (ORCPT
+	id S1752681AbaIIU56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:57:58 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:45647 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaIIU5z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:57:49 -0400
-Message-ID: <540F69C4.6060007@infradead.org>
-Date: Tue, 09 Sep 2014 13:57:40 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 9 Sep 2014 16:57:55 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>,
-        Vince Weaver <vincent.weaver@maine.edu>, jolsa@redhat.com
-Subject: Re: [PATCH] Add some documentation on the perf sysfs ABI interface
-References: <1410283953-16822-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1410283953-16822-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Javier Martinez Canillas <javier@dowhile0.org>,
+        "Javier Martinez Canillas" <javier.martinez@collabora.co.uk>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <CABxcv=mww1wcf+vo5uLxBrNZBVJhj9zvbwGu_oAKXm4XDUNvCQ@mail.gmail.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "Yadwinder Singh Brar" <yadi.brar01@gmail.com>,
+        "Doug Anderson" <dianders@chromium.org>,
+        "Linux Kernel" <linux-kernel@vger.kernel.org>,
+        "Olof Johansson" <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1408350784-15577-1-git-send-email-javier.martinez@collabora.co.uk>
+ <CABxcv=mww1wcf+vo5uLxBrNZBVJhj9zvbwGu_oAKXm4XDUNvCQ@mail.gmail.com>
+Message-ID: <20140909205739.19023.50828@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v9 0/6] Add Maxim 77802 clocks support
+Date: Tue, 09 Sep 2014 13:57:39 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 10:32, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+Quoting Javier Martinez Canillas (2014-09-07 23:49:28)
+> Hello Mike,
 > 
-> Initial attempt of documenting the perf sysfs interface as
-> an ABI. I also added some additional pointers hopefully useful
-> to the users. Comments welcome.
+> On Mon, Aug 18, 2014 at 10:32 AM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+> > This series add support for the clocks present in the Maxim
+> > 77802 Power Managment IC. Previously, the series was part
+> > of a bigger one [0] that aimed to add support for all the
+> > devices in the max77802 PMIC. But now the Maxim 77802 PMIC
+> > dependencies were already merged for 3.17 so the series can
+> > be split and each driver can go through the relevant tree.
+> >
 > 
-> Cc: Vince Weaver <vincent.weaver@maine.edu>
-> Cc: jolsa@redhat.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  Documentation/ABI/stable/sysfs-devices-perf | 87 +++++++++++++++++++++++++++++
->  1 file changed, 87 insertions(+)
->  create mode 100644 Documentation/ABI/stable/sysfs-devices-perf
+> This series was first posted for 3.17 and you acked the whole set but
+> it missed 3.17 because had as a dependency some changes in the
+> max77802 mfd driver. Those dependencies made for 3.17 and that's why I
+> re-posted it for 3.18 about a month ago.
 > 
-> diff --git a/Documentation/ABI/stable/sysfs-devices-perf b/Documentation/ABI/stable/sysfs-devices-perf
-> new file mode 100644
-> index 0000000..0b00c7c
-> --- /dev/null
-> +++ b/Documentation/ABI/stable/sysfs-devices-perf
-> @@ -0,0 +1,87 @@
-> +Perf events enumeration in sysfs
-> +
-> +The perf events subsystem exports the format of hardware performance
-> +counter events supported by perf events. The events can be accessed
-> +using the perf_event_open() syscall. Each directory represents
-> +a PMU (Performance Monitoring Unit)
+> Since we are in 3.17-rc4 already, I'm afraid that this series may miss
+> 3.18 again, is there anything else you need from me to pick this
+> series? It will obviously conflict with Tomeu's "Per-user clock
+> constraints" series [0] so if you want I can rebase it on top of your
+> clk-next-tomeu-kirkwood-v2 branch [1].
 
-add ending '.' above:            Unit).
+Thanks for pinging me about it. I've pulled this series into clk-next
+for 3.18. Everything is going to conflict with Tomeu's series so we'll
+just handle that when it comes to merge his series (which I've since
+removed from clk-next due to pending issues).
 
-> +
-> +What: /sys/devices/*/format/*
-> +Description:
-> +
-> +Each file in format describes how to fill in an event attribute on the
-> +current CPU for the perf_event_open syscall.  Multiple event
-> +attributes may be overlapping and only be valid for some combination
-> +of attributes (for example only for some event/umask combinations).
-> +Most attributes are optional.
-> +
-> +Each field may have the following contents:
-> +
-> +CONFIG:START-END      Field contains of bits START-END in the perf_event_attr CONFIG field
+Regards,
+Mike
 
-Confusing.  Maybe:       Field contains bits START-END ...
-
-> +CONFIG:BIT	      Field consists of a single bit with index BIT in CONFIG field
-> +
-> +Valid CONFIG fields are config, config1, config2. These map to the respective 64bit words
-> +in the struct perf_event_attr.
-> +
-> +Typical attributes on a x86 platform
-> +
-> +event		Set the 8 bit event code (required)
-> +umask		Set the 8 bit umask. Event code and umask together select an hardware event.
-
-			                                                   select a hardware event.
-
-> +cmask		Set the 8 bit counter Mask. Only increment counters when more than cmask
-> +		events happen at the same time.
-> +inv		(1bit flag) Invert the event condition
-> +edge		(1bit flag) Only increment the event when the condition changes (starts happening)
-> +any		(1bit flag) Count on both threads of a core
-> +pc		(1bit flag) Toggle the PMi pins when the condition happens
-> +
-> +Attributes available on some x86 platforms:
-> +
-> +in_tx		(1bit flag) Only count in a hardware transaction.
-> +in_tx_cp	(1bit flag) Undo counts inside transaction when transaction aborts.
-> +ldlat		Set the load-use latency threshold for sampling loads.
-> +		Note this is a load-use latency so includes pipeline delays.
-> +offcore_rsp     Set an extra mask qualifying the type of offcore access.
-> +		Only with OFFCORE_RESPONSE events
-> +
-> +For more details on the x86 attributes on Intel platforms please see
-> +http://www.intel.com/sdm Volume 3, Chapter 18 and 19.  For more
-> +details on the perf_event_attr struct please see the perf_event_open
-> +manpage.
-> +
-> +What: /sys/devices/*/events/*
-> +Description:
-> +
-> +Describe predefined events available in the CPU. Each file describes an event.
-> +The format is attr=0xHEXNUM{,attr=0xHEXNUM}. Each attr is described in a config
-> +file. Together all the attributes can be used to set up a valid event for the
-> +perf_event_open syscall.
-> +
-> +Note typically only a small subset of the CPU events are described
-
-add ending '.' above.  Also:                            is described.
-
-> +Some more events are available through predefined classes in perf_event_attr.
-> +
-> +What: /sys/devices/*/type
-> +Description:
-> +
-> +Contains a decimal number. The PMU type to fill into perf_event_attr in the
-
-   Contains a decimal number: the
-
-> +type field to select the correct PMU.
-> +
-> +What: /sys/devices/*/perf_event_mux_interval_ms
-> +Description:
-> +
-> +Decimal number. Set the counter multiplexing interval in ms. When more
-> +events are active than the hardware directly supports perf events
-> +multiplexes the event. By default this is done on timer interrupts
-> +(depending on the CONFIG_HZ setting) and not done while idle. This
-> +allows to set a different frequency. Note that setting this may impact
-> +idle time, as the event switches will wake up the CPUs now.
-> +
-> +What: /sys/devices/*/rdpmc
-> +Description:
-> +
-> +[x86] When 1, allow the RDPMC instruction in user space to read performance
-> +events that have been set up with perf.
-> +
-> +Users: perf (tools/perf/*)
-> +The following libraries provide more user friendly interfaces:
-> +       PAPI (http://icl.cs.utk.edu/papi/)
-> +       libpfm4 (http://perfmon2.sourceforge.net/)
-> +       jevents (http://github.com/andikleen/pmu-tools)
 > 
-
-
--- 
-~Randy
+> Thanks a lot and best regards,
+> Javier
+> 
+> [0]: https://lkml.org/lkml/2014/9/1/466
+> [1]: https://git.linaro.org/people/mike.turquette/linux.git/shortlog/refs/heads/clk-next-tomeu-kirkwood-v2
