@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053AbaIICdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:33:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34464 "EHLO mail.zytor.com"
+	id S1755947AbaIICcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:32:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9501 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730AbaIICc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:32:59 -0400
-Message-ID: <540E6582.9020403@zytor.com>
-Date: Mon, 08 Sep 2014 19:27:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-CC: Peter Hurley <peter@hurleysoftware.com>, paulmck@linux.vnet.ibm.com,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <21512.10628.412205.873477@gargle.gargle.HOWL>			 <20140904090952.GW17454@tucnak.redhat.com>			 <540859EC.5000407@hurleysoftware.com>			 <20140904175044.4697aee4@alan.etchedpixels.co.uk>			 <5408C0AB.6050801@hurleysoftware.com>			 <20140905001751.GL5001@linux.vnet.ibm.com>			 <1409883098.5078.14.camel@jarvis.lan>		 <5409243C.4080704@hurleysoftware.com>			 <20140905040645.GO5001@linux.vnet.ibm.com>			 <1410066442.12512.13.camel@jarvis.lan>			 <20140907162146.GK5001@linux.vnet.ibm.com>		 <1410116687.2027.19.camel@jarvis.lan>	 <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>	 <540E1587.3060108@tilera.com> <1410216228.2027.88.camel@jarvis.lan>
-In-Reply-To: <1410216228.2027.88.camel@jarvis.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753681AbaIICcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:32:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,490,1406617200"; 
+   d="scan'208";a="599999545"
+From: Aaron Lu <aaron.lu@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-gpio@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Lejun Zhu <lejun.zhu@intel.com>,
+        Radivoje Jovanovic <radivoje.jovanovic@intel.com>,
+        =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>,
+        linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: [PATCH 0/2] Support CrystalCove PMIC ACPI operation region
+Date: Tue,  9 Sep 2014 10:32:46 +0800
+Message-Id: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 03:43 PM, James Bottomley wrote:
-> 
-> This was years ago (possibly decades).  We had to implement in-kernel
-> unaligned traps for the networking layer because it could access short
-> and int fields that weren't of the correct alignment when processing
-> packets.  It that's all corrected now, we wouldn't really notice (except
-> a bit of a speed up since an unaligned trap effectively places the
-> broken out instructions into the bit stream).
-> 
-> James
-> 
+The two patches add support for CrystalCove PMIC ACPI operation region.
+The PMIC chip has two customized operation regions: one for power rail
+manipulation and one for thermal purpose: sensor temperature reading
+and trip point value reading/setting.
 
-Well, ARM doesn't trap, it just silently gives garbage on unaligned
-memory references.
+For an example ASL code on ASUS T100 with CrystalCove PMIC, see here:
+https://gist.github.com/aaronlu/f5f65771a6c3251fae5d
 
-	-hpa
+Aaron Lu (2):
+  gpio / CrystalCove: support virtual GPIO
+  PMIC / opregion: support PMIC customized operation region for
+    CrystalCove
 
+ drivers/gpio/gpio-crystalcove.c           |  19 +-
+ drivers/mfd/Kconfig                       |  11 +
+ drivers/mfd/Makefile                      |   1 +
+ drivers/mfd/intel_soc_pmic_crc.c          |   3 +
+ drivers/mfd/intel_soc_pmic_crc_opregion.c | 229 +++++++++++++++++++
+ drivers/mfd/intel_soc_pmic_opregion.c     | 350 ++++++++++++++++++++++++++++++
+ drivers/mfd/intel_soc_pmic_opregion.h     |  35 +++
+ include/asm-generic/gpio.h                |   2 +-
+ 8 files changed, 646 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/mfd/intel_soc_pmic_crc_opregion.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_opregion.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_opregion.h
+
+-- 
+1.9.3
 
