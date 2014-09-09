@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150AbaIIJAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:00:43 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49975 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaIIJAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:00:39 -0400
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com, srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com
-Cc: peter.griffin@linaro.org, lee.jones@linaro.org, peppe.cavallaro@st.com,
-        devicetree@vger.kernel.org
-Subject: [PATCH v2 2/4] phy: phy-stih407-usb: Add dt documentation for USB picophy found on stih407 SoC family
-Date: Tue,  9 Sep 2014 10:00:16 +0100
-Message-Id: <1410253218-18318-3-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org>
-References: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org>
+	id S1756262AbaIIJD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:03:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13196 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753413AbaIIJDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:03:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="588439588"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "atull@opensource.altera.com" <atull@opensource.altera.com>
+Subject: Re: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Thread-Topic: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver
+ binding to MFD driver
+Thread-Index: AQHPyNc/kBMLSfD+Nk6gyOY6CiHQz5vyMzuAgAAX0oCAACslvIAFiEkAgAB4bgA=
+Date: Tue, 9 Sep 2014 09:01:44 +0000
+Message-ID: <1410253304.25129.6.camel@intel.com>
+References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+	 <4656BEB6164FC34F8171C6538F1A595B2E9829DA@SHSMSX101.ccr.corp.intel.com>
+	 <1409918522.30155.89.camel@intel.com> <31986364.cn091cmIXU@wuerfel>
+	 <4656BEB6164FC34F8171C6538F1A595B2E983296@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E983296@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.168]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <8472BDCBB653DA4390AE67AADB58207B@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8993VMC004683
 
-This patch adds the dt documentation for the usb picophy found on stih407 SoC family
-available from STMicroelectronics.
+On Tue, 2014-09-09 at 01:50 +0000, Chen, Alvin wrote:
+> > On Friday 05 September 2014 12:02:01 Shevchenko, Andriy wrote:
+> > > > irq = irq_of_parse_and_map(node, 0); If (!irq) {
+> > > > pp->irq = -1;
+> > > > return;
+> > > > } else {
+> > > > pp->irq = irq;
+> > > > }
+> > > > Then the code looks strange.
+> > > >
+> > > > How do you think?
+> > >
+> > > If I understood correctly you messed up with hwirq vs. virq.
+> > > Otherwise you have mention that you are using virq everywhere (I guess
+> > > you may rename the field in the structure), but in this case the field
+> > > in the platform_data looks a bit strange.
+> > 
+> > The field in platform_data should be the mapped virtual irq number, it makes no
+> > sense to use the hwirq unless you also add a pointer to the domain in which
+> > that hwirq exists.
+> > 
+> > Also the output of irq_of_parse_and_map() is a mapped irq, as the name
+> > suggests.
+> > 
+> I agree with Arnd. Here, the 'irq' is 'virq'.
+> Andriy, you may be confused by the code like 'irq_create_mapping'. For Quark case, it has 8 GPIO pins, and each pin can trigger
+> interrupt, but all these interrupts are triggered by PCI irq which is shared. The 'irq' in pdata is PCI irq. As all GPIO interrupts connect to the PCI
+> irq, once the GPIO interrupt is triggered, and the PCI irq handler will be called 'dwapb_irq_handler_mfd'. And in 'dwapb_do_irq', it will read the
+> interrupt register to see the interrupt is triggered by which GPIO pin, and 'irq_create_mapping' is for this case.
 
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- .../devicetree/bindings/phy/phy-stih407-usb.txt    | 30 ++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
+Thanks for clarification. I take back my initial comment then.
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
-new file mode 100644
-index 0000000..1ef8228
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
-@@ -0,0 +1,30 @@
-+ST STiH407 USB PHY controller
-+
-+This file documents the dt bindings for the usb picoPHY driver which is the PHY for both USB2 and USB3
-+host controllers (when controlling usb2/1.1 devices) available on STiH407 SoC family from STMicroelectronics.
-+
-+Required properties:
-+- compatible		: should be "st,stih407-usb2-phy"
-+- reg			: contain the offset and length of the system configuration registers
-+			  used as glue logic to control & parameter phy
-+- reg-names		: the names of the system configuration registers in "reg", should be "param" and "reg"
-+- st,syscfg		: sysconfig register to manage phy parameter at driver level
-+- resets		: list of phandle and reset specifier pairs. There should be two entries, one
-+			  for the whole phy and one for the port
-+- reset-names		: list of reset signal names. Should be "global" and "port"
-+See: Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
-+See: Documentation/devicetree/bindings/reset/reset.txt
-+
-+Example:
-+
-+usb2_picophy0: usbpicophy@f8 {
-+	compatible	= "st,stih407-usb2-phy";
-+	reg		= <0xf8 0x04>,	/* syscfg 5062 */
-+			  <0xf4 0x04>;	/* syscfg 5061 */
-+	reg-names	= "param", "ctrl";
-+	#phy-cells	= <0>;
-+	st,syscfg	= <&syscfg_core>;
-+	resets		= <&softreset STIH407_PICOPHY_SOFTRESET>,
-+			  <&picophyreset STIH407_PICOPHY0_RESET>;
-+	reset-names	= "global", "port";
-+};
 -- 
-1.9.1
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
 
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
