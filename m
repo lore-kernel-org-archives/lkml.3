@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829AbaIIKix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:38:53 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:36163 "EHLO mail.mev.co.uk"
+	id S932424AbaIIKiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:38:51 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:36171 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756422AbaIIK1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756424AbaIIK1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Sep 2014 06:27:18 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
@@ -12,9 +12,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 18/48] staging: comedi: das16: replace comedi_board() calls
-Date: Tue,  9 Sep 2014 11:26:27 +0100
-Message-Id: <1410258417-28230-19-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 19/48] staging: comedi: das1800: replace comedi_board() calls
+Date: Tue,  9 Sep 2014 11:26:28 +0100
+Message-Id: <1410258417-28230-20-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
 References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
@@ -27,67 +27,67 @@ The `comedi_board(dev)` inline function calls just return
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/das16.c | 12 ++++++------
+ drivers/staging/comedi/drivers/das1800.c | 12 ++++++------
  1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das16.c b/drivers/staging/comedi/drivers/das16.c
-index aa52a5b..baec9f2 100644
---- a/drivers/staging/comedi/drivers/das16.c
-+++ b/drivers/staging/comedi/drivers/das16.c
-@@ -631,7 +631,7 @@ static int das16_ai_check_chanlist(struct comedi_device *dev,
- static int das16_cmd_test(struct comedi_device *dev, struct comedi_subdevice *s,
- 			  struct comedi_cmd *cmd)
+diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
+index 9d0150d..a53d87c 100644
+--- a/drivers/staging/comedi/drivers/das1800.c
++++ b/drivers/staging/comedi/drivers/das1800.c
+@@ -453,7 +453,7 @@ static const struct comedi_lrange range_ao_2 = {
+ static inline uint16_t munge_bipolar_sample(const struct comedi_device *dev,
+ 					    uint16_t sample)
  {
--	const struct das16_board *board = comedi_board(dev);
-+	const struct das16_board *board = dev->board_ptr;
- 	struct das16_private_struct *devpriv = dev->private;
+-	const struct das1800_board *thisboard = comedi_board(dev);
++	const struct das1800_board *thisboard = dev->board_ptr;
+ 
+ 	sample += 1 << (thisboard->resolution - 1);
+ 	return sample;
+@@ -773,7 +773,7 @@ static int das1800_ai_do_cmdtest(struct comedi_device *dev,
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_cmd *cmd)
+ {
+-	const struct das1800_board *thisboard = comedi_board(dev);
++	const struct das1800_board *thisboard = dev->board_ptr;
+ 	struct das1800_private *devpriv = dev->private;
  	int err = 0;
- 	unsigned int trig_mask;
-@@ -748,7 +748,7 @@ static unsigned int das16_set_pacer(struct comedi_device *dev, unsigned int ns,
- 
- static int das16_cmd_exec(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	unsigned int arg;
+@@ -1136,7 +1136,7 @@ static int das1800_ai_rinsn(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s,
+ 			    struct comedi_insn *insn, unsigned int *data)
  {
--	const struct das16_board *board = comedi_board(dev);
-+	const struct das16_board *board = dev->board_ptr;
- 	struct das16_private_struct *devpriv = dev->private;
- 	struct comedi_async *async = s->async;
- 	struct comedi_cmd *cmd = &async->cmd;
-@@ -883,7 +883,7 @@ static int das16_ai_insn_read(struct comedi_device *dev,
- 			      struct comedi_insn *insn,
- 			      unsigned int *data)
+-	const struct das1800_board *thisboard = comedi_board(dev);
++	const struct das1800_board *thisboard = dev->board_ptr;
+ 	int i, n;
+ 	int chan, range, aref, chan_range;
+ 	int timeout = 1000;
+@@ -1200,7 +1200,7 @@ static int das1800_ao_winsn(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s,
+ 			    struct comedi_insn *insn, unsigned int *data)
  {
--	const struct das16_board *board = comedi_board(dev);
-+	const struct das16_board *board = dev->board_ptr;
- 	unsigned int chan = CR_CHAN(insn->chanspec);
- 	unsigned int range = CR_RANGE(insn->chanspec);
- 	unsigned int val;
-@@ -968,7 +968,7 @@ static int das16_do_insn_bits(struct comedi_device *dev,
+-	const struct das1800_board *thisboard = comedi_board(dev);
++	const struct das1800_board *thisboard = dev->board_ptr;
+ 	struct das1800_private *devpriv = dev->private;
+ 	int chan = CR_CHAN(insn->chanspec);
+ /* int range = CR_RANGE(insn->chanspec); */
+@@ -1329,7 +1329,7 @@ static int das1800_init_dma(struct comedi_device *dev, unsigned int dma0,
  
- static int das16_probe(struct comedi_device *dev, struct comedi_devconfig *it)
+ static int das1800_probe(struct comedi_device *dev)
  {
--	const struct das16_board *board = comedi_board(dev);
-+	const struct das16_board *board = dev->board_ptr;
- 	int diobits;
+-	const struct das1800_board *board = comedi_board(dev);
++	const struct das1800_board *board = dev->board_ptr;
+ 	int index;
+ 	int id;
  
- 	/* diobits indicates boards */
-@@ -993,7 +993,7 @@ static void das16_reset(struct comedi_device *dev)
+@@ -1412,7 +1412,7 @@ static int das1800_attach(struct comedi_device *dev,
+ 	}
  
- static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
--	const struct das16_board *board = comedi_board(dev);
-+	const struct das16_board *board = dev->board_ptr;
- 	struct das16_private_struct *devpriv;
- 	struct comedi_subdevice *s;
- 	struct comedi_lrange *lrange;
-@@ -1219,7 +1219,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	dev->board_ptr = das1800_boards + board;
+-	thisboard = comedi_board(dev);
++	thisboard = dev->board_ptr;
+ 	dev->board_name = thisboard->name;
  
- static void das16_detach(struct comedi_device *dev)
- {
--	const struct das16_board *board = comedi_board(dev);
-+	const struct das16_board *board = dev->board_ptr;
- 	struct das16_private_struct *devpriv = dev->private;
- 	int i;
- 
+ 	/*  if it is an 'ao' board with fancy analog out then we need extra io ports */
 -- 
 2.1.0
 
