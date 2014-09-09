@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145AbaIIFii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:38:38 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42956 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755826AbaIIFig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:38:36 -0400
-Message-ID: <1410241109.2028.22.camel@jarvis.lan>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Mon, 08 Sep 2014 22:38:29 -0700
-In-Reply-To: <20140909011059.GB11706@mtj.dyndns.org>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
-	 <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
-	 <20140905141241.GC10455@mtj.dyndns.org>
-	 <20140905164405.GA28964@core.coreip.homeip.net>
-	 <20140905174925.GA12991@mtj.dyndns.org>
-	 <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
-	 <20140905224047.GC15723@mtj.dyndns.org>
-	 <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
-	 <20140909011059.GB11706@mtj.dyndns.org>
+	id S932167AbaIIFjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:39:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29797 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932086AbaIIFjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 01:39:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="383348994"
+Message-ID: <1410241170.732.373.camel@yhuang-dev>
+Subject: Re: [PATCH] f2fs: Fix recover when nid of non-inode dnode < nid of
+ inode
+From: Huang Ying <ying.huang@intel.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: Changman Lee <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        huang.ying.caritas@gmail.com
+Date: Tue, 09 Sep 2014 13:39:30 +0800
+In-Reply-To: <20140909052356.GA25590@jaegeuk-mac02.hsd1.ca.comcast.net>
+References: <1410176306-1689-1-git-send-email-ying.huang@intel.com>
+	 <20140909052356.GA25590@jaegeuk-mac02.hsd1.ca.comcast.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
+X-Mailer: Evolution 3.12.2-1+b1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-09 at 10:10 +0900, Tejun Heo wrote:
-> Hello, Luis.
+On Mon, 2014-09-08 at 22:23 -0700, Jaegeuk Kim wrote:
+> Hi Huang,
 > 
-> On Mon, Sep 08, 2014 at 06:04:23PM -0700, Luis R. Rodriguez wrote:
-> > > I have no idea how the selection should be.  It could be per-insmod or
-> > > maybe just a system-wide flag with explicit exceptions marked on
-> > > drivers is good enough.  I don't know.
+> On Mon, Sep 08, 2014 at 07:38:26PM +0800, Huang Ying wrote:
+> > For fsync, if the nid of a non-inode dnode < nid of inode and the
+> > inode is not checkpointed.  The non-inode dnode may be written before
+> > inode.  So in find_fsync_dnodes, f2fs_iget will fail, cause the
+> > recovery fail.
 > > 
-> > Its perfectly understandable if we don't know what path to take yet
-> > and its also understandable for it to take time to figure out --
-> > meanwhile though systemd already has merged a policy of a 30 second
-> > timeout for *all drivers* though so we therefore need:
+> > Usually, inode will be allocated before non-inode dnode, so the nid of
+> > inode < nid of non-inode dnode.  But it is possible for the reverse.
+> > For example, because of alloc_nid_failed.
+> > 
+> > This is fixed via ignoring non-inode dnode before inode dnode in
+> > find_fsync_dnodes.
+> > 
+> > The patch was tested via allocating nid reversely via a debugging
+> > patch, that is, from big number to small number.
+> > 
+> > Signed-off-by: Huang, Ying <ying.huang@intel.com>
+> > ---
+> >  fs/f2fs/recovery.c |    7 ++++---
+> >  1 file changed, 4 insertions(+), 3 deletions(-)
+> > 
+> > --- a/fs/f2fs/recovery.c
+> > +++ b/fs/f2fs/recovery.c
+> > @@ -172,8 +172,8 @@ static int find_fsync_dnodes(struct f2fs
+> >  			if (IS_INODE(page) && is_dent_dnode(page))
+> >  				set_inode_flag(F2FS_I(entry->inode),
+> >  							FI_INC_LINK);
+> > -		} else {
+> > -			if (IS_INODE(page) && is_dent_dnode(page)) {
 > 
-> I'm not too convinced this is such a difficult problem to figure out.
-> We already have most of logic in place and the only thing missing is
-> how to switch it.  Wouldn't something like the following work?
+> If this is not inode block, we should add this inode to recover its data blocks.
+
+Is it possible that there is only non-inode dnode but no inode when
+find_fsync_dnodes checking dnodes?  Per my understanding, any changes to
+file will cause inode page dirty (for example, mtime changed), so that
+we will write inode block.  Is it right?  If so, the solution in this
+patch should work too.
+
+Best Regards,
+Huang, Ying
+
+> Rather than this tweak, if iget is failed, we'd better go to next instead of
+> break.
+> Can you test that?
 > 
-> * Add a sysctl knob to enable asynchronous device probing on module
->   load and enable asynchronous probing globally if the knob is set.
-> 
-> * Identify cases which can't be asynchronous and make them
->   synchronous.  e.g. keep who's doing request_module() and avoid
->   asynchronous probing if current is probing one of those.
-
-What's wrong with just fixing systemd?  Arbitrary timeouts in init
-scripts for system bring up are plain wrong ... I thought we had this
-sorted out ten years ago when we were first having the arguments about
-how long to wait for root; I'm surprised it's coming back again.
-
-If we want to sort out some sync/async mechanism for probing devices, as
-an agreement between the init systems and the kernel, that's fine, but
-its a to-be negotiated enhancement.  For the current bug fix, just fix
-the component that broke ... which would be systemd.
-
-James
+> > +		} else if (IS_INODE(page)) {
+> > +			if (is_dent_dnode(page)) {
+> >  				err = recover_inode_page(sbi, page);
+> >  				if (err)
+> >  					break;
+> > @@ -193,7 +193,8 @@ static int find_fsync_dnodes(struct f2fs
+> >  				break;
+> >  			}
+> >  			list_add_tail(&entry->list, head);
+> > -		}
+> > +		} else
+> > +			goto next;
+> >  		entry->blkaddr = blkaddr;
+> >  
+> >  		err = recover_inode(entry->inode, page);
 
 
