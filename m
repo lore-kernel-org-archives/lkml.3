@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492AbaIIMTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:19:07 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37288 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585AbaIIMTE (ORCPT
+	id S1756603AbaIIMUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:20:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52322 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649AbaIIMUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:19:04 -0400
-Date: Tue, 9 Sep 2014 14:19:02 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: tgih.jun@samsung.com, jh80.chung@samsung.com, chris@printf.net,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: marex@denx.de
-Subject: [PATCH] fix mmc hang during boot on socfpga
-Message-ID: <20140909121902.GA22965@amd>
+	Tue, 9 Sep 2014 08:20:53 -0400
+Date: Tue, 9 Sep 2014 14:20:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [Patch v4 12/16] x86, irq, ACPI: Implement interface to support
+ ACPI based IOAPIC hot-addition
+In-Reply-To: <1409192561-19744-13-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <alpine.DEB.2.10.1409091417120.11037@nanos>
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-13-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 28 Aug 2014, Jiang Liu wrote:
+>  EXPORT_SYMBOL(acpi_register_ioapic);
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 6e67af0c5f99..b286461cabf9 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3851,7 +3851,13 @@ static int bad_ioapic_register(int idx)
+>  
+>  static int find_free_ioapic_entry(void)
+>  {
+> -	return nr_ioapics;
+> +	int idx;
+> +
+> +	for (idx = 0; idx < MAX_IO_APICS; idx++)
+> +		if (ioapics[idx].nr_registers == 0)
+> +			return idx;
+> +
+> +	return MAX_IO_APICS;
+>  }
+>  
+>  int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+> @@ -3867,8 +3873,15 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+>  	}
+>  	for_each_ioapic(ioapic)
+>  		if (ioapics[ioapic].mp_config.apicaddr == address) {
+> -			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
+> -				address, ioapic);
+> +			/*
+> +			 * IOAPIC unit may also be visible in PCI scope.
+> +			 * When ioapic PCI driver's probe() is called,
+> +			 * the IOAPIC unit may have already been initialized
+> +			 * at boot time.
+> +			 */
+> +			if (!ioapic_initialized)
+> +				pr_warn("address 0x%x conflicts with IOAPIC%d\n",
+> +					address, ioapic);
 
-Without this patch, boot hangs when trying to mount root filesystem on
-socfpga platform in about 50% cases.
+Hmm. This smells fishy. Why do we allow multiple initializations of
+the same IOAPIC in the first place. Either it's done via ACPI or via
+PCI, but not both.
 
-Signed-off-by: Pavel Machek <pavel@denx.de>
+>  			return -EEXIST;
+>  		}
+>  
+> @@ -3918,6 +3931,14 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+>  	ioapics[idx].irqdomain = NULL;
+>  	ioapics[idx].irqdomain_cfg = *cfg;
+>  
+> +	if (ioapic_initialized) {
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 8f216ed..739ba78 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -42,8 +42,8 @@
- 
- /* Common flag combinations */
- #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DRTO | SDMMC_INT_DCRC | \
--				 SDMMC_INT_HTO | SDMMC_INT_SBE  | \
--				 SDMMC_INT_EBE)
-+				 SDMMC_INT_HTO | SDMMC_INT_FRUN | \
-+				 SDMMC_INT_SBE  | SDMMC_INT_EBE)
- #define DW_MCI_CMD_ERROR_FLAGS	(SDMMC_INT_RTO | SDMMC_INT_RCRC | \
- 				 SDMMC_INT_RESP_ERR)
- #define DW_MCI_ERROR_FLAGS	(DW_MCI_DATA_ERROR_FLAGS | \
-@@ -1302,7 +1302,8 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 			if (test_and_clear_bit(EVENT_DATA_ERROR,
- 					       &host->pending_events)) {
- 				dw_mci_stop_dma(host);
--				send_stop_abort(host, data);
-+				if (data->stop)
-+					send_stop_abort(host, data);
- 				state = STATE_DATA_ERROR;
- 				break;
- 			}
-@@ -1324,6 +1325,11 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 			set_bit(EVENT_DATA_COMPLETE, &host->completed_events);
- 			err = dw_mci_data_complete(host, data);
- 
-+			if (!data->stop) {
-+				dw_mci_request_end(host, host->mrq);
-+				goto unlock;
-+			}
-+
- 			if (!err) {
- 				if (!data->stop || mrq->sbc) {
- 					if (mrq->sbc && data->stop)
-@@ -1872,6 +1878,9 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 			queue_work(host->card_workqueue, &host->card_work);
- 		}
- 
-+		if (pending & SDMMC_INT_HLE)
-+			mci_writel(host, RINTSTS, SDMMC_INT_HLE);
-+
- 		/* Handle SDIO Interrupts */
- 		for (i = 0; i < host->num_slots; i++) {
- 			struct dw_mci_slot *slot = host->slot[i];
-@@ -2361,8 +2370,7 @@ int dw_mci_probe(struct dw_mci *host)
- 	}
- 
- 	if (host->pdata->num_slots > 1) {
--		dev_err(host->dev,
--			"Platform data must supply num_slots.\n");
-+		dev_err(host->dev, "Platform data must supply num_slots.\n");
- 		return -ENODEV;
- 	}
- 
-@@ -2399,8 +2407,7 @@ int dw_mci_probe(struct dw_mci *host)
- 	}
- 
- 	if (!host->bus_hz) {
--		dev_err(host->dev,
--			"Platform data must supply bus speed\n");
-+		dev_err(host->dev, "Platform data must supply bus speed\n");
- 		ret = -ENODEV;
- 		goto err_clk_ciu;
- 	}
+I have a hard time to understand this conditional. Why can't we do
+that unconditionally?
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +		if (mp_irqdomain_create(idx)) {
+> +			clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
+> +			return -ENOMEM;
+> +		}
+> +		alloc_ioapic_saved_registers(idx);
+> +	}
+> +
+>  	if (gsi_cfg->gsi_end >= gsi_top)
+>  		gsi_top = gsi_cfg->gsi_end + 1;
+>  	if (nr_ioapics <= idx)
+
+Thanks,
+
+	tglx
