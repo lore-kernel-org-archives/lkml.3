@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715AbaIISVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:21:23 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:54038 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaIISVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:21:22 -0400
-Message-ID: <540F4520.9090308@mvista.com>
-Date: Tue, 09 Sep 2014 13:21:20 -0500
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ipmi: work around gcc-4.9 build warning
-References: <58708252.p9ogO3naVQ@wuerfel>
-In-Reply-To: <58708252.p9ogO3naVQ@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751701AbaIISWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:22:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852AbaIISWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 14:22:53 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        dmaengine@vger.kernel.org, jstancek@redhat.com, jburke@redhat.com,
+        jsnitsel@redhat.com, jbenc@redhat.com, davem@redhat.com
+Subject: [PATCH] dma: iovlock: avoid dma_pin_iovec_pages() causing page allocator warns on order >= MAX_ORDER
+Date: Tue,  9 Sep 2014 14:22:38 -0400
+Message-Id: <d5a910e218633b0ea66ae9caa696bf6cf2d08d78.1410286742.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd prefer to fix gcc, but I understand.  This change is probably better
-in general, anyway.
+dma_pin_iovec_pages() eventually causes the page allocator to stumble across
+it warning case when a request for contigous mem block gets order >= MAX_ORDER.
 
-Queued for 3.18.  Thanks.
+   trinity(11230): Randomness reseeded to 0xaf76756f
+   trinity: trinity(11230) Randomness reseeded to 0xaf76756f
+   [ 7442.617160] ------------[ cut here ]------------
+   [ 7442.621890] WARNING: at mm/page_alloc.c:2410 __alloc_pages_nodemask+0x346/0xa00()
+   ...
+   [ 7442.797088] Call Trace:
+   [ 7442.799614]  [<ffffffff81600bf7>] dump_stack+0x19/0x1b
+   [ 7442.804860]  [<ffffffff8105f621>] warn_slowpath_common+0x61/0x80
+   [ 7442.810944]  [<ffffffff8105f6fa>] warn_slowpath_null+0x1a/0x20
+   [ 7442.816858]  [<ffffffff8113d016>] __alloc_pages_nodemask+0x346/0xa00
+   [ 7442.823294]  [<ffffffff81175f59>] alloc_pages_current+0xa9/0x170
+   [ 7442.829364]  [<ffffffff811384be>] __get_free_pages+0xe/0x50
+   [ 7442.835009]  [<ffffffff8118064e>] kmalloc_order_trace+0x2e/0xa0
+   [ 7442.841005]  [<ffffffff81182899>] __kmalloc+0x219/0x230
+   [ 7442.846284]  [<ffffffff81387c8b>] dma_pin_iovec_pages+0x9b/0x240
+   [ 7442.852323]  [<ffffffff8153ffb8>] tcp_recvmsg+0x888/0xd10
+   ...
 
--corey
+dma_pin_iovec_pages() is actually being used for an unique callsite within
+tcp_recvmsg() which falls back to skb_copy_datagram_iovec() if the first
+routine fails to pin a DMA buffer for the iovec. The splatted calltrace is
+more scary than other thing, so lets just prevent it from getting out to
+the wild world. This patch also does a minor code style surgery on the
+surrounding hunk.
 
-On 08/23/2014 02:04 PM, Arnd Bergmann wrote:
-> Building ipmi on arm with gcc-4.9 results in this warning
-> for an allmodconfig build:
->
-> drivers/char/ipmi/ipmi_si_intf.c: In function 'ipmi_thread':
-> include/linux/time.h:28:5: warning: 'busy_until.tv_sec' may be used uninitialized in this function [-Wmaybe-uninitialized]
->   if (lhs->tv_sec > rhs->tv_sec)
->      ^
-> drivers/char/ipmi/ipmi_si_intf.c:1007:18: note: 'busy_until.tv_sec' was declared here
->   struct timespec busy_until;
->                   ^
->
-> The warning is bogus and this case can not occur. Apparently
-> this is a false positive resulting from gcc getting a little
-> smarter about tracking assignments but not smart enough. Marking
-> the ipmi_thread_busy_wait function as inline gives the gcc
-> optimization logic enough information to figure out for itself
-> that the case cannot happen, which gets rid of the warning
-> without adding any fake initialization.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index 5d665680ae33..539ff0db52fc 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -965,9 +965,9 @@ static inline int ipmi_si_is_busy(struct timespec *ts)
->  	return ts->tv_nsec != -1;
->  }
->  
-> -static int ipmi_thread_busy_wait(enum si_sm_result smi_result,
-> -				 const struct smi_info *smi_info,
-> -				 struct timespec *busy_until)
-> +static inline int ipmi_thread_busy_wait(enum si_sm_result smi_result,
-> +					const struct smi_info *smi_info,
-> +					struct timespec *busy_until)
->  {
->  	unsigned int max_busy_us = 0;
->  
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+ drivers/dma/iovlock.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
+index bb48a57..4cb8379 100644
+--- a/drivers/dma/iovlock.c
++++ b/drivers/dma/iovlock.c
+@@ -69,9 +69,10 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
+ 	} while (iovec_len_used < len);
+ 
+ 	/* single kmalloc for pinned list, page_list[], and the page arrays */
+-	local_list = kmalloc(sizeof(*local_list)
+-		+ (nr_iovecs * sizeof (struct dma_page_list))
+-		+ (iovec_pages_used * sizeof (struct page*)), GFP_KERNEL);
++	local_list = kmalloc(sizeof(*local_list) +
++			     (nr_iovecs * sizeof(struct dma_page_list)) +
++			     (iovec_pages_used * sizeof(struct page *)),
++			     GFP_KERNEL | __GFP_NOWARN);
+ 	if (!local_list)
+ 		goto out;
+ 
+-- 
+1.9.3
 
