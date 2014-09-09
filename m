@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818AbaIII0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:26:39 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:46445 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752567AbaIII0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:26:37 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>, stefan@agner.ch,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, Addy Ke <addy.ke@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: dts: Add mshc aliases for rk3288
-Date: Tue, 09 Sep 2014 10:28:36 +0200
-Message-ID: <18318098.Hm4yenW6Sf@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1409785523-12209-1-git-send-email-dianders@chromium.org>
-References: <1409785523-12209-1-git-send-email-dianders@chromium.org>
+	id S1756066AbaIII0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:26:45 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:63972 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567AbaIII0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 04:26:41 -0400
+Message-ID: <540EB9C2.3070401@linaro.org>
+Date: Tue, 09 Sep 2014 09:26:42 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [PATCH v3 0/5] arm: Implement arch_trigger_all_cpu_backtrace
+References: <1409931198-22600-1-git-send-email-daniel.thompson@linaro.org> <1410190115-32604-1-git-send-email-daniel.thompson@linaro.org> <20140908162449.GD12361@n2100.arm.linux.org.uk>
+In-Reply-To: <20140908162449.GD12361@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 3. September 2014, 16:05:23 schrieb Doug Anderson:
-> It's convenient (and less confusing to people reading logs) if the
-> eMMC port on rk3288 is consistenly marked with mmc0 and the sdmmc port
-> on rk3288 is consistently marked with mmc1.  Add the appropriate
-> aliases.
+On 08/09/14 17:24, Russell King - ARM Linux wrote:
+> On Mon, Sep 08, 2014 at 04:28:30PM +0100, Daniel Thompson wrote:
+>> * Restructured to sit nicely on a similar FYI patchset from Russell
+>>   King. It now effectively replaces the work in progress final patch
+>>   with something much more complete.
+> 
+> I'd suggest that patch 2 should be in a different place - get the FIQ
+> infrastructure in place first before adding any users of it would be
+> a much more sensible patch ordering.
 
-Added to my v3.18-next/dts branch
-
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Reviewed-by: Sonny Rao <sonnyrao@chromium.org>
-> ---
-> 
-> Changes in v2:
-> - Use mshc aliases now
-> - Adds sdio0/1 aliases since those are in the dts.
-> 
->  arch/arm/boot/dts/rk3288.dtsi | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> index 5f866e0..2c5d01f 100644
-> --- a/arch/arm/boot/dts/rk3288.dtsi
-> +++ b/arch/arm/boot/dts/rk3288.dtsi
-> @@ -29,6 +29,10 @@
->  		i2c3 = &i2c3;
->  		i2c4 = &i2c4;
->  		i2c5 = &i2c5;
-> +		mshc0 = &emmc;
-> +		mshc1 = &sdmmc;
-> +		mshc2 = &sdio0;
-> +		mshc3 = &sdio1;
->  		serial0 = &uart0;
->  		serial1 = &uart1;
->  		serial2 = &uart2;
-
+Ok. I will push this to the back.
