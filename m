@@ -1,119 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664AbaIIAsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:48:13 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:28871 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755318AbaIIAsM (ORCPT
+	id S1755494AbaIIA6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:58:19 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:17584 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097AbaIIA6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:48:12 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Mon, 08 Sep 2014 18:02:22 -0700
-Message-ID: <540E4C3A.3000408@synaptics.com>
-Date: Mon, 8 Sep 2014 17:39:22 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 8 Sep 2014 20:58:17 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+8ayucRyg4VXJIYDir7Vu6
+Date: Mon, 8 Sep 2014 17:58:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/6] ARM: dts: OMAP3+: Add PRM interrupt
+Message-ID: <20140909005808.GG10785@atomide.com>
+References: <1408716235-26164-1-git-send-email-nm@ti.com>
+ <1408716235-26164-2-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] HID: rmi: check sanity of the incoming report
-References: <1409925435-6556-1-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1409925435-6556-1-git-send-email-benjamin.tissoires@redhat.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.2.20.38]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408716235-26164-2-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 06:57 AM, Benjamin Tissoires wrote:
-> In the Dell XPS 13 9333, it appears that sometimes the bus get confused
-> and corrupts the incoming data. It fills the input report with the
-> sentinel value "ff". Synaptics told us that such behavior does not comes
-> from the touchpad itself, so we filter out such reports here.
->
-> Unfortunately, we can not simply discard the incoming data because they
-> may contain useful information. Most of the time, the misbehavior is
-> quite near the end of the report, so we can still use the valid part of
-> it.
->
-> Fixes:
-> https://bugzilla.redhat.com/show_bug.cgi?id=1123584
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+* Nishanth Menon <nm@ti.com> [140822 07:08]:
+> Provide OMAP3, 4 and OMAP5 with interrupt number for PRM
+> 
+> And for DRA7, provide crossbar number for prm interrupt.
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+
+I've picked this patch only into omap-for-v3.18/soc as
+this is needed for Felipe's intc related changes to work
+properly with the wake-up interrupts for DT based booting
+for off-idle.
+
+So please don't include this patch into your pull request
+for the other dts changes you have.
+
+Regards,
+
+Tony
+
 > ---
->   drivers/hid/hid-rmi.c | 31 ++++++++++++++++++++++++++-----
->   1 file changed, 26 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-> index 8389e81..db92c3b 100644
-> --- a/drivers/hid/hid-rmi.c
-> +++ b/drivers/hid/hid-rmi.c
-> @@ -320,9 +320,6 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
->   	int offset;
->   	int i;
->   
-> -	if (size < hdata->f11.report_size)
-> -		return 0;
-> -
->   	if (!(irq & hdata->f11.irq_mask))
->   		return 0;
->   
-> @@ -332,9 +329,13 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
->   		int fs_bit_position = (i & 0x3) << 1;
->   		int finger_state = (data[fs_byte_position] >> fs_bit_position) &
->   					0x03;
-> +		int position = offset + 5 * i;
-> +
-> +		if (position + 5 > size)
-> +			/* partial report, go on with what we received */
-> +			break;
->   
-> -		rmi_f11_process_touch(hdata, i, finger_state,
-> -				&data[offset + 5 * i]);
-> +		rmi_f11_process_touch(hdata, i, finger_state, &data[position]);
->   	}
->   	input_mt_sync_frame(hdata->input);
->   	input_sync(hdata->input);
-> @@ -412,9 +413,29 @@ static int rmi_read_data_event(struct hid_device *hdev, u8 *data, int size)
->   	return 1;
->   }
->   
-> +static int rmi_check_sanity(struct hid_device *hdev, u8 *data, int size)
-> +{
-> +	int valid_size = size;
-> +	/*
-> +	 * On the Dell XPS 13 9333, the bus sometimes get confused and fills
-> +	 * the report with a sentinel value "ff". Synaptics told us that such
-> +	 * behavior does not comes from the touchpad itself, so we filter out
-> +	 * such reports here.
-> +	 */
-> +
-> +	while ((data[valid_size - 1] == 0xff) && valid_size > 0)
-> +		valid_size--;
-> +
-> +	return valid_size;
-> +}
-> +
->   static int rmi_raw_event(struct hid_device *hdev,
->   		struct hid_report *report, u8 *data, int size)
->   {
-> +	size = rmi_check_sanity(hdev, data, size);
-> +	if (size < 2)
-> +		return 0;
-> +
->   	switch (data[0]) {
->   	case RMI_READ_DATA_REPORT_ID:
->   		return rmi_read_data_event(hdev, data, size);
-I think there should also be a check in rmi_f30_input_event to make sure 
-that the F30 data is also valid. The F30 data is at the end of the HID 
-report so if the F30 interrupt bit is set, but the value in the report 
-is FF then there might be some unintended button events. I think 
-checking that size > 0 would be sufficient to make sure the F30 data is 
-valid.
-
-Other then that, the sanity check and validation in rmi_f11_input_event 
-look good to me.
-
-Andrew
+>  arch/arm/boot/dts/dra7.dtsi  |    1 +
+>  arch/arm/boot/dts/omap3.dtsi |    1 +
+>  arch/arm/boot/dts/omap4.dtsi |    1 +
+>  arch/arm/boot/dts/omap5.dtsi |    1 +
+>  4 files changed, 4 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index 97f603c..7a3e011 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -89,6 +89,7 @@
+>  		prm: prm@4ae06000 {
+>  			compatible = "ti,dra7-prm";
+>  			reg = <0x4ae06000 0x3000>;
+> +			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
+>  
+>  			prm_clocks: clocks {
+>  				#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+> index 575a49b..3136ed1 100644
+> --- a/arch/arm/boot/dts/omap3.dtsi
+> +++ b/arch/arm/boot/dts/omap3.dtsi
+> @@ -97,6 +97,7 @@
+>  		prm: prm@48306000 {
+>  			compatible = "ti,omap3-prm";
+>  			reg = <0x48306000 0x4000>;
+> +			interrupts = <11>;
+>  
+>  			prm_clocks: clocks {
+>  				#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+> index 69408b5..7375d44 100644
+> --- a/arch/arm/boot/dts/omap4.dtsi
+> +++ b/arch/arm/boot/dts/omap4.dtsi
+> @@ -129,6 +129,7 @@
+>  		prm: prm@4a306000 {
+>  			compatible = "ti,omap4-prm";
+>  			reg = <0x4a306000 0x3000>;
+> +			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+>  
+>  			prm_clocks: clocks {
+>  				#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+> index fc8df17..df0a09b 100644
+> --- a/arch/arm/boot/dts/omap5.dtsi
+> +++ b/arch/arm/boot/dts/omap5.dtsi
+> @@ -131,6 +131,7 @@
+>  		prm: prm@4ae06000 {
+>  			compatible = "ti,omap5-prm";
+>  			reg = <0x4ae06000 0x3000>;
+> +			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+>  
+>  			prm_clocks: clocks {
+>  				#address-cells = <1>;
+> -- 
+> 1.7.9.5
+> 
