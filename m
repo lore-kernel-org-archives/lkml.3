@@ -1,137 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245AbaIIPxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:53:32 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:64897 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234AbaIIPxa (ORCPT
+	id S1757156AbaIIPzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:55:00 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:40942 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349AbaIIPy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:53:30 -0400
+	Tue, 9 Sep 2014 11:54:57 -0400
+Date: Tue, 9 Sep 2014 08:54:49 -0700
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-09-09
+Message-ID: <20140909155449.GA7412@t440s>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
-	<1409926097-2101-2-git-send-email-bhe@redhat.com>
-	<CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
-	<20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
-Date: Tue, 9 Sep 2014 08:53:29 -0700
-X-Google-Sender-Auth: 0ta-x101icKH33Rmx60ojTXGXt0
-Message-ID: <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle relocations
-From: Kees Cook <keescook@chromium.org>
-To: Baoquan He <bhe@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Deutschmann <whissi@whissi.de>,
-        Dave Young <dyoung@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 11:24 PM, Baoquan He <bhe@redhat.com> wrote:
-> On 09/05/14 at 10:11am, Kees Cook wrote:
->> I don't think this is correct. If you look at a02150610776 ("x86,
->> relocs: Move ELF relocation handling to C"), we always did relocations
->> on 32-bit when CONFIG_RELOCATABLE was set, so I think this will fail
->> badly on 32-bit. 64-bit only needs relocation when
->> CONFIG_RANDOMIZE_BASE is set, so this is probably what needs to be
->> tested here instead. I think a better option would be, in
->> decompress_kernel(), to compare output before and after
->> choose_kernel_location(). If it's the same on 64-bit,
->> handle_relocations() can be skipped. (Perhaps pass the before/after to
->> handle_relocations() and it can perform the logic.)
->>
->> -Kees
->
-> Hi Kees,
->
-> Checking handle_relocations() again, I just didn't notice it's mandatory
-> to do the relocations handling in i386. So in this function delta is
-> checked to see if it's a kaslr relocation handling. This might be a
-> little confusing. But I am fine with it.
->
-> Per your comment, you prefer to compare the output before and after
-> choose_kernel_location(). That's also good, Lu Yinghai posted a draft
-> patch in this way before, however the checking and the delta calculation
-> are not correct. I changed that and test all cases, it works well. So
-> do you like this it? If yes  I will repost it.
->
-> From 13471bd838c52a0e143c2aee81e3863cfff585bd Mon Sep 17 00:00:00 2001
-> From: Baoquan He <bhe@redhat.com>
-> Date: Mon, 25 Aug 2014 14:57:43 +0800
-> Subject: [PATCH] kaslr: check if kernel location is changed
->
-> Signed-off-by: Baoquan He <bhe@redhat.com>
-> ---
->  arch/x86/boot/compressed/misc.c | 15 +++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-> index 57ab74d..887f404 100644
-> --- a/arch/x86/boot/compressed/misc.c
-> +++ b/arch/x86/boot/compressed/misc.c
-> @@ -230,8 +230,9 @@ static void error(char *x)
->                 asm("hlt");
->  }
->
-> -#if CONFIG_X86_NEED_RELOCS
-> -static void handle_relocations(void *output, unsigned long output_len)
-> +#ifdef CONFIG_X86_NEED_RELOCS
-> +static void handle_relocations(void *output_orig, void *output,
-> +                              unsigned long output_len)
->  {
->         int *reloc;
->         unsigned long delta, map, ptr;
-> @@ -242,6 +243,9 @@ static void handle_relocations(void *output, unsigned long output_len)
->          * Calculate the delta between where vmlinux was linked to load
->          * and where it was actually loaded.
->          */
-> +       if (output_orig == output)
-> +               return;
-> +
 
-I still think this needs a test for the 32-bit case, since IUIC, it
-requires relocations unconditionally.
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--Kees
+Hi John,
 
->         delta = min_addr - LOAD_PHYSICAL_ADDR;
->         if (!delta) {
->                 debug_putstr("No relocation needed... ");
-> @@ -299,7 +303,8 @@ static void handle_relocations(void *output, unsigned long output_len)
->  #endif
->  }
->  #else
-> -static inline void handle_relocations(void *output, unsigned long output_len)
-> +static inline void handle_relocations(void *output_orig, void *output,
-> +                                     unsigned long output_len)
->  { }
->  #endif
->
-> @@ -360,6 +365,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
->                                   unsigned char *output,
->                                   unsigned long output_len)
->  {
-> +       unsigned char *output_orig = output;
-> +
->         real_mode = rmode;
->
->         sanitize_boot_params(real_mode);
-> @@ -402,7 +409,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
->         debug_putstr("\nDecompressing Linux... ");
->         decompress(input_data, input_len, NULL, NULL, output, NULL, error);
->         parse_elf(output);
-> -       handle_relocations(output, output_len);
-> +       handle_relocations(output_orig, output, output_len);
->         debug_putstr("done.\nBooting the kernel.\n");
->         return output;
->  }
-> --
-> 1.8.5.3
->
+This set of patches is intended for 3.18. Most of the patches are LE SMP
+(Security Manager Protocol) fixes/improvements, but there are also some
+6lowpan fixes as well as a fix for the btusb HCI driver.
+
+Please let me know if there are any issues pulling. Thanks.
+
+Johan
+
+---
+The following changes since commit 61a3d4f9d52c00b2016bc27fc66b10a194043f76:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless (2014-09-08 11:14:56 -0400)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
 
--- 
-Kees Cook
-Chrome OS Security
+for you to fetch changes up to 39e90c77637b3892a39f2908aea57539e961c50e:
+
+  Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device (2014-09-09 15:51:47 +0200)
+
+----------------------------------------------------------------
+Behan Webster (1):
+      Bluetooth: LLVMLinux: Remove VLAIS from bluetooth/amp.c
+
+Champion Chen (1):
+      Bluetooth: Fix issue with USB suspend in btusb driver
+
+Johan Hedberg (31):
+      Bluetooth: Fix incorrect LE CoC PDU length restriction based on HCI MTU
+      Bluetooth: Remove unnecessary l2cap_chan_unlock before l2cap_chan_add
+      Bluetooth: Fix hci_conn reference counting for fixed channels
+      Bluetooth: Set addr_type only when it's needed
+      Bluetooth: Optimize connection parameter lookup for LE connections
+      Bluetooth: Improve *_get() functions to return the object type
+      Bluetooth: Fix using hci_conn_get() for hci_conn pointers
+      Bluetooth: Refactor connection parameter freeing into its own function
+      Bluetooth: Use zero timeout for immediate scheduling
+      Bluetooth: Fix hci_conn reference counting with hci_chan
+      Bluetooth: Set disc_timeout to 0 when calling hci_chan_del
+      Bluetooth: Ignore incoming data after initiating disconnection
+      Bluetooth: Remove hci_conn_hold/drop from hci_chan
+      Bluetooth: Set discon_timeout to 0 in l2cap_conn_del
+      Bluetooth: Use hci_disconnect for immediate disconnection from SMP
+      Bluetooth: Remove unused l2cap_conn_shutdown API
+      Bluetooth: Fix SMP error and response to be mutually exclusive
+      Bluetooth: Update hci_disconnect() to return an error value
+      Bluetooth: Use hci_disconnect() for mgmt_disconnect_device()
+      Bluetooth: Move clock offset reading into hci_disconnect()
+      Bluetooth: Add clarifying comment for LE CoC result value
+      Bluetooth: Remove unnecessary checks after canceling SMP security timer
+      Bluetooth: Don't take any action in smp_resume_cb if not encrypted
+      Bluetooth: Move identity address update behind a workqueue
+      Bluetooth: Remove unnecessary deferred work for SMP key distribution
+      Bluetooth: Fix locking of the SMP context
+      Bluetooth: Add define for key distribution mask
+      Bluetooth: Fix calling smp_distribute_keys() when still waiting for keys
+      Bluetooth: Add strict checks for allowed SMP PDUs
+      Bluetooth: Fix dereferencing conn variable before NULL check
+      Bluetooth: Fix mgmt pairing failure when authentication fails
+
+Jukka Rissanen (3):
+      Bluetooth: 6lowpan: Increase the connection timeout value
+      Bluetooth: 6lowpan: Set the peer IPv6 address correctly
+      Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device
+
+ drivers/bluetooth/btusb.c        |   9 ++
+ include/net/bluetooth/hci_core.h |  14 +--
+ include/net/bluetooth/l2cap.h    |  10 +-
+ net/bluetooth/6lowpan.c          |  80 +++++++++++-
+ net/bluetooth/amp.c              |  13 +-
+ net/bluetooth/hci_conn.c         |  49 ++++----
+ net/bluetooth/hci_core.c         |  29 +++--
+ net/bluetooth/hci_event.c        |  22 ++--
+ net/bluetooth/hidp/core.c        |  10 +-
+ net/bluetooth/l2cap_core.c       |  67 +++++-----
+ net/bluetooth/l2cap_sock.c       |   8 ++
+ net/bluetooth/mgmt.c             |  37 +++---
+ net/bluetooth/smp.c              | 247 ++++++++++++++++++++++---------------
+ net/bluetooth/smp.h              |   2 +
+ 14 files changed, 366 insertions(+), 231 deletions(-)
+
+
+--FCuugMFkClbJLl1L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUDyLJAAoJECQj9vv5qNQSAn4P/2Puj1cQ7Refzwe4DZL3PSsL
+pUM8FiOuuqkagplfflxHVc1lrMfNPlxDqBJ7bNabmBimda4E45wIMV8eMPK1dtWw
+ExRtxG3nq0LSSYUVAPNMn3G/M8zXhv6Xo5bw8jHf2WWcdn2YQllwMAyJRjQb4dBy
+0YF2GbJ+4TKgELmzPN1upXhEiFoyJXxwwbTn6DIdeP0no6nFlhe5QDFa8DeiGrz2
+6NjhgpOK85rlkwgokR9CqQNJ9v1x2qjLpRYBsSa4gQYCQBhjzR5iGOSku4w3gV/L
++LkcyffCbMM9ekx+2isfGhkcpBkXIeUipwJIPIjI5yfp4E/sFdxQOTw6c0X2WZrd
+NZQ8C0EnaRdZ6mWIXpaepgyN9cokgC8duAAuBpYymsnDxpbdGTAII7OYoNu95OV7
+5MN5xHUHD1lWBGXLKogUQ2XMDtp0DEALyY7ROXvuvlxdwK1rNnaEPIcDsPwpMC0V
+HvFv8UleMp/Hz0GSvTWudfLUo7FDeFfXstZFlmfalzijSn38QRoBG1nJyAzODJt8
+E2+xm+81RRPXhkAFXJtDSSxUxt2T2SYn+Hv4vAnlF7k4zWEudn5sX0F0xmflGUFQ
+oT2VN9/Q99IUOVLqYKW2mOAogrDcBEuFm0W4/zSk1wzeVHQp48ikN52zVj+3UIm7
+tl4aomQE5UXwoJkTWJiv
+=oUBr
+-----END PGP SIGNATURE-----
+
+--FCuugMFkClbJLl1L--
