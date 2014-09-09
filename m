@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865AbaIIB1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 21:27:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45218 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380AbaIIB1P (ORCPT
+	id S932094AbaIIB3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 21:29:44 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:35736 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911AbaIIB3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 21:27:15 -0400
-Date: Tue, 9 Sep 2014 02:27:12 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s
-Message-ID: <20140909012712.GV7996@ZenIV.linux.org.uk>
-References: <1410177716-3965-1-git-send-email-avagin@openvz.org>
+	Mon, 8 Sep 2014 21:29:42 -0400
+Date: Tue, 9 Sep 2014 10:29:33 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140909012933.GF11706@mtj.dyndns.org>
+References: <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org>
+ <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org>
+ <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org>
+ <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org>
+ <20140909012227.GE11706@mtj.dyndns.org>
+ <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410177716-3965-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 04:01:56PM +0400, Andrey Vagin wrote:
-> Currently watchers are removed in dentry_iput(), if n_link is zero.
-> But other detries can be linked with this inode. For example if we
-> create two hard links, open the first one and set a watcher on the
-> second one. Then if we remove both links, the watcher will be removed.
-> But we will have the alive file descriptor, which allows us to generate
-> more events.
+On Mon, Sep 08, 2014 at 06:26:04PM -0700, Luis R. Rodriguez wrote:
+> > Alternatively, add a module-generic param "async_probe" or whatever
+> > and use that to switch the behavior should work too.  I don't know
+> > which way is better but either should work fine.
 > 
-> With this patch, watchers will be removed, only if nlink is zero and
-> i_dentry list is empty.
+> I take it by this you meant a generic system-wide sysctl or kernel cmd
+> line option to enable this for al drivers?
 
-It changes user-visible ABI.  Worse yet, this "ABI" has no specification,
-so any (misguided) software using that FPOS has nothing to go by other than
-"whatever existing kernels do".  As the result, inotify behaviour is cast
-in concrete.
+Well, either global or per-insmod switch should work.  There probably
+are details that I haven't mentioned - e.g. probably global switch is
+easier to backport and deploy to existing systems - but as long as it
+works I don't have fundmental objections either way.
 
-IOW, NAK.
+Thanks.
+
+-- 
+tejun
