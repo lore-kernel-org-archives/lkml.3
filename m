@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405AbaIIQpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:45:44 -0400
-Received: from mx6-phx2.redhat.com ([209.132.183.39]:48218 "EHLO
-	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909AbaIIQpn (ORCPT
+	id S1757365AbaIIQrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:47:06 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:65281 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742AbaIIQrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:45:43 -0400
-Date: Tue, 9 Sep 2014 12:44:45 -0400 (EDT)
-Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time
- tables
-From: Jon Masters <jcm@redhat.com>
-To: hanjun.guo@linaro.org, Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-acpi@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, grant.likely@linaro.org,
-        Will Deacon <Will.Deacon@arm.com>, graeme.gregory@linaro.org,
-        Olof Johansson <olof@lixom.net>, Robert Richter <rric@kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Rob Herring <robh@kernel.org>,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Jason Cooper <jason@lakedaemon.net>
+	Tue, 9 Sep 2014 12:47:04 -0400
+Date: Wed, 10 Sep 2014 01:46:58 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140909164658.GB11748@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <3827451.ToKxd7Xb2J@vostro.rjw.lan>
+ <20140908222253.GB3806@mtj.dyndns.org>
+ <2588099.AI1YmNFQ25@vostro.rjw.lan>
+ <20140908225012.GE3806@mtj.dyndns.org>
+ <20140909151655.GB4851@dhcp22.suse.cz>
+ <20140909152336.GB8890@mtj.dyndns.org>
+ <20140909160625.GC4851@dhcp22.suse.cz>
 MIME-Version: 1.0
-Message-ID: <1672724278.9306589.1410281085602.JavaMail.zimbra@zmail15.collab.prod.int.phx2.redhat.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 8.0.6_GA_5922 (MobileSync - Android/4.4.4-EAS-2.0)
-In-Reply-To: <540F2DCF.1010104@redhat.com>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org> <20140909162648.GE2910@arm.com> <540F2DCF.1010104@redhat.com>
-Thread-Topic: ARM64 / ACPI: Get RSDP and ACPI boot-time tables
-Thread-Index: e5zJTxu1pSu5gr/fESfv8qGMVVTOnA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909160625.GC4851@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the ARM guys pointed out the cache issue before I had meant to send this note then. Sorry.
+Hello,
+
+On Tue, Sep 09, 2014 at 06:06:25PM +0200, Michal Hocko wrote:
+> > Even for userland tasks, try_to_freeze() can currently be anywhere in
+> > the kernel.  The frequently used ones are few but there are some odd
+> 
+> I always thought that user space tasks can be in the fridge only on the
+> way out from the kernel (get_signal_to_deliver). I have quickly greped
+
+It *can* be anywhere.  We used to have some deep in nfs.  They got
+removed later due to deadlocks but in theory they still can be
+anywhere.
+
+> the code and the only place I can see seems to be run_guest but that
+> one bails out quickly when there are signals pending so it should be
+> safe in this context.
+> cifs is doing something suspicious (cifs_reconnect) but I didn't check
+> more closely all the contexts it is called from.
+
+Prolly something similar with what nfs was doing?
+
+> > ones out, and, again, there's nothing enforcing any structure on
+> > try_to_freeze() usage. 
+> 
+> Would it make sense to have try_to_freeze_user_task or similar and check
+> for kernel thread in try_to_freeze and complain loudly if called from
+> user task context? I mean does it even make sense to call try_to_freeze
+> in the middle of kernel operation for a user task?
+
+I personally think the whole try_to_freeze() was a mistake at least
+for userland tasks.  We should have collected them in a (mostly)
+single place like a jobctl stop.  I'm not sure whether distinguishing
+the two interfaces would buy us much tho.
+
+> > The other thing is that we may do quite a bit during exiting including
+> > allocating memory. 
+> 
+> yes, we can allocate memory and even page fault on the exit path. But
+> TIF_MEMDIE will make sure that the allocation will be successful if
+> there is some memory left.
+
+TIF_MEMDIE ensures forward progress so that the task can exit;
+however, I'm not sure whether all the things that a task does during
+exit are safe for PM freezes.
+
+Thanks.
 
 -- 
-Computer Architect | Sent from my #ARM Powered Mobile device
-
-On Sep 9, 2014 12:41 PM, Jon Masters <jcm@redhat.com> wrote:
->
-> On 09/09/2014 12:26 PM, Catalin Marinas wrote: 
-> > On Mon, Sep 01, 2014 at 03:On 09/09/2014 12:26 PM, Catalin Marinas wrote:
-> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
->> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
->> new file mode 100644
->> index 0000000..3899ee6
->> --- /dev/null
->> +++ b/arch/arm64/include/asm/acenv.h
->> @@ -0,0 +1,18 @@
->> +/*
->> + * ARM64 specific ACPICA environments and implementation
->> + *
->> + * Copyright (C) 2014, Linaro Ltd.
->> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
->> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#ifndef _ASM_ACENV_H
->> +#define _ASM_ACENV_H
->> +
->> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
-> 
-> Does this mean that it will be supported at some point? Looking at the
-> places where this function is called, I don't really see how this would
-> ever work on ARM. Which means that we add such macro just to be able to
-> compile code that would never be used on arm64. I would rather see the
-> relevant ACPI files only compiled on x86/IA-64 rather than arm64.
-
-That specific cache behavior is a part of e.g. ACPI C3 state support
-(e.g. ACPI5.1 8.1.4 Processor Power State C3). As you note, it's not
-going to work on 64-bit ARM as it does on x86, but it's optional to
-implement C3 and early 64-bit ARM systems should not report Wbindv flags
-in the FADT anyway. They can also set FADT.P_LVL3_LAT > 1000, which has
-the effect of disabling C3 support, while also allowing for use of _CST
-objects to define more flexible C-States later on.
-
-Jon.
-
+tejun
