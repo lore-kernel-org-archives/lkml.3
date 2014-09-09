@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521AbaIIFgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:36:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:39316 "EHLO ozlabs.org"
+	id S1755667AbaIIFgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:36:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27941 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755350AbaIIFgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:36:45 -0400
-Date: Tue, 9 Sep 2014 15:36:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: linux-next: manual merge of the userns tree with the nfs tree
-Message-ID: <20140909153638.6c10fc0b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1755350AbaIIFgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 01:36:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208,223";a="383348211"
+Message-ID: <540E91F0.2060306@linux.intel.com>
+Date: Tue, 09 Sep 2014 13:36:48 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/I32VTzT+WIgZiPwIB6SOX6s"; protocol="application/pgp-signature"
+To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of LPSS
+ devices
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/I32VTzT+WIgZiPwIB6SOX6s
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+>From 6deb00230f5df68da3ca7490402a0c537bf386bb Mon Sep 17 00:00:00 2001
+From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+Date: Tue, 9 Sep 2014 13:02:25 +0800
+Subject: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
 
-Hi Eric,
+LPSS devices must suspend/resume in fixed order. Or some LPSS devices
+will hang during the transition to ACPI_STATE_D0 state.
 
-Today's linux-next merge of the userns tree got a conflict in
-fs/nfs/client.c between commit 21e81002f978 ("nfs: fix kernel warning
-when removing proc entry") from the nfs tree and commit a1998908ba46
-("nfs: fix kernel warning when removing proc entry") from the userns
-tree.  Slightly different version of the same fix.
+Signed-off-by: Li Aubrey <aubrey.li@linux.intel.com>
+Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+---
+ drivers/acpi/acpi_lpss.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I fixed it up (I used the version from the nfs tree) and can carry the
-fix as necessary (no action is required).
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index fddc1e8..54e5c97 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -419,7 +419,7 @@ static int acpi_lpss_create_device(struct acpi_device *adev,
+ 	adev->driver_data = pdata;
+ 	pdev = acpi_create_platform_device(adev);
+ 	if (!IS_ERR_OR_NULL(pdev)) {
+-		device_enable_async_suspend(&pdev->dev);
++		device_disable_async_suspend(&pdev->dev);
+ 		return 1;
+ 	}
+ 
+-- 1.7.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/I32VTzT+WIgZiPwIB6SOX6s
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUDpHrAAoJEMDTa8Ir7ZwVz5UP/jv8S9HZxzksjirVXQ3yldLr
-esCbkAbosMcHvBc9i+IyJ7BXyv59QdppHNnnD31aabBBiS0daQtk24W18PLIIYXs
-Tv1GYIKrx+LmiVF9eCc8+SWYY2STWqN8LbEf0UOrzD0mZvAD3JEk5h3z406+BVM+
-wf6WkT3dd7MFlCSfIMV+zacCidIEWUK9FV6xRr62MIwCXlli7PJ240pes4v+Eo4E
-p1JxR40aclQaos+O7E6WUxlx+sr1e3Yqm4YSHjNPOSKkIKmFWmSZI676XX9kdh2d
-w6GMpaYGrhr5lYmDtIHlw0avAr4YYY2KuQmxpRGWLGx0yPApJnzANeXLLQ6LH0Em
-493c6dcibr4URX948anjJ8BR3l4Fco0RG2F34oO2qEFnOWIMAJfE8cLPBWxAfPo6
-ghIB8YYYJV/JXK0n6DiQJl5PiKDDiiq/nDw81rn37xpkE9+3dG9zsNVXYS/g0eSn
-swGA55jnItiGnTbkqlcucNwtapBgmXTcVbwI3/sjohqQDpPsmMPkc77D3hPg++ey
-VmnpXdyr9wcw1G0hnU+hjkbIfD4tiN8iomWud2ZN7cOPMMUPDWb5vxEweuACbpf4
-tx4dlbEF1A+lxVwCY8FwYzRZ+AJAEeMYaPAiB3HxNTPouwPp2hY/E8HNIC/qIQm+
-oHkhrv3Eb6TQj+24gENJ
-=jZhF
------END PGP SIGNATURE-----
-
---Sig_/I32VTzT+WIgZiPwIB6SOX6s--
