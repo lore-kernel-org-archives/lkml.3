@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527AbaIIADn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:03:43 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64633 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253AbaIIADk (ORCPT
+	id S932072AbaIIAEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:04:41 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48300 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963AbaIIAEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:03:40 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19vHq1ViClR36re2XVV/TFn
-Date: Mon, 8 Sep 2014 17:03:34 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP2+: board-generic: add support for AM57xx family
-Message-ID: <20140909000334.GV3238@atomide.com>
-References: <1408388875-7360-1-git-send-email-nm@ti.com>
+	Mon, 8 Sep 2014 20:04:39 -0400
+Date: Mon, 8 Sep 2014 17:04:30 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Azael Avalos <coproscefalo@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 3/5] toshiba_acpi: Add accelerometer input polled device
+Message-ID: <20140909000429.GB5835@vmdeb7>
+References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
+ <1409937247-2525-4-git-send-email-coproscefalo@gmail.com>
+ <20140906024253.GB11389@vmdeb7>
+ <CAGdLNWGhdQU3Fpud9Zgvx3AQ5Lb=WdEkJb_wWTb1hJoHxXPXpQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408388875-7360-1-git-send-email-nm@ti.com>
+In-Reply-To: <CAGdLNWGhdQU3Fpud9Zgvx3AQ5Lb=WdEkJb_wWTb1hJoHxXPXpQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140818 12:10]:
-> AM57xx processor family are variants of DRA7 family of processors and
-> targetted at industrial and non-automotive applications.
+On Fri, Sep 05, 2014 at 11:04:18PM -0600, Azael Avalos wrote:
+> Hi there,
 > 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+> 2014-09-05 20:42 GMT-06:00 Darren Hart <dvhart@infradead.org>:
+> > On Fri, Sep 05, 2014 at 11:14:05AM -0600, Azael Avalos wrote:
+> >> The accelerometer sensor is very sensitive, and having userspace
+> >> poll the sysfs position entry is not very battery friendly.
+> >>
+> >> This patch removes the sysfs entry and instead, it creates an
+> >> input polled device (joystick) for the built-in accelerometer.
+> >
+> > Hrm, while sysfs details can change across kernel versions, usually due to
+> > driver core changes, we try to keep them as consistent as possible so as not to
+> > break userspace.
+> >
+> > That said, if we are going to try and come up with a better model for
+> > representing an accelerometer, wouldn't treating it as an IIO device be the more
+> > logical approach?
+> 
+> Yes of course, but the actual accelerometer device (sensor?) is not
+> really exposed,
+> only certain "functions" it provides, and they are divided across two
+> different ACPI devices,
+> TOS620A exposes the protection, and the TOS1900 (and et. al.) only
+> exposes the axes.
 
-Applying into omap-for-v3.18/dt thanks.
+As I understand it, IIO defines an interface to a device, a standard sysfs set
+of properties. I should think we could provide the appropriate callbacks even
+for a partially implemented (or a pair of) accelerometer.
 
-Tony
+Jonathan, what are your thoughts here. Is such a "device" (ACPI accessors to
+axis and threshold) a candidate for IIO, or is this input polled device more
+appropriate?
 
-> ---
 > 
-> NOTE: there is no discrenable features yet defined in register set at
-> this point in time.
+> I see your point in breaking userspace, but given the fact that it was
+> recently introduced,
+> I didn't thought it was already "adopted", that's why I decided to
+> remove the sysfs entry.
+
+Looks like since 3.15 if I read the log correctly. That is fairly recent and
+this is not one of the "defined interfaces" in the sysfs documentation.
+
+Greg, can you weigh in here - does this change count as "breaking userspace", or
+is this more inline with the scheduler knobs in /proc/sched_debug which can
+change from version to version.
+
 > 
-> Tested on AM5728 compatible platform and based on v3.17-rc1
-> 
->  .../devicetree/bindings/arm/omap/omap.txt          |   12 ++++++++++++
->  arch/arm/mach-omap2/board-generic.c                |    4 ++++
->  2 files changed, 16 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
-> index 0edc903..ddd9bcd 100644
-> --- a/Documentation/devicetree/bindings/arm/omap/omap.txt
-> +++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
-> @@ -85,6 +85,18 @@ SoCs:
->  - DRA722
->    compatible = "ti,dra722", "ti,dra72", "ti,dra7"
->  
-> +- AM5728
-> +  compatible = "ti,am5728", "ti,dra742", "ti,dra74", "ti,dra7"
-> +
-> +- AM5726
-> +  compatible = "ti,am5726", "ti,dra742", "ti,dra74", "ti,dra7"
-> +
-> +- AM5718
-> +  compatible = "ti,am5718", "ti,dra722", "ti,dra72", "ti,dra7"
-> +
-> +- AM5716
-> +  compatible = "ti,am5716", "ti,dra722", "ti,dra72", "ti,dra7"
-> +
->  - AM4372
->    compatible = "ti,am4372", "ti,am43"
->  
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 9480997..bdb5194 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -241,6 +241,8 @@ MACHINE_END
->  
->  #ifdef CONFIG_SOC_DRA7XX
->  static const char *dra74x_boards_compat[] __initconst = {
-> +	"ti,am5728",
-> +	"ti,am5726",
->  	"ti,dra742",
->  	"ti,dra7",
->  	NULL,
-> @@ -260,6 +262,8 @@ DT_MACHINE_START(DRA74X_DT, "Generic DRA74X (Flattened Device Tree)")
->  MACHINE_END
->  
->  static const char *dra72x_boards_compat[] __initconst = {
-> +	"ti,am5718",
-> +	"ti,am5716",
->  	"ti,dra722",
->  	NULL,
->  };
-> -- 
-> 1.7.9.5
-> 
+> Then we might as well keep the sysfs entry and have the input polled
+> device as well.
+
+Let's see what Greg has to say. If he isn't bothered by the change, I won't push
+the issue.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
