@@ -1,229 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaIISk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:40:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15637 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752259AbaIISks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:40:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,492,1406617200"; 
-   d="scan'208";a="570725351"
-From: "John L. Hammond" <john.hammond@intel.com>
-To: <greg@kroah.com>, <andreas.dilger@intel.com>, <oleg.drokin@intel.com>
-CC: <linux-kernel@vger.kernel.org>, "John L. Hammond" <john.hammond@intel.com>
-Subject: [PATCH 7/7] staging/lustre: remove lvfs.h
-Date: Tue, 9 Sep 2014 13:39:08 -0500
-Message-ID: <1410287948-13168-8-git-send-email-john.hammond@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410287948-13168-1-git-send-email-john.hammond@intel.com>
-References: <1410287948-13168-1-git-send-email-john.hammond@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.1.200.106]
+	id S1752381AbaIISlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:41:23 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:29733 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaIISkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 14:40:47 -0400
+X-AuditID: cbfec373-b7f9d6d00000479f-51-540f49adfeb2
+Date: Tue, 09 Sep 2014 15:40:32 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-next@vger.kernel.org,
+        Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 2/3] [media] s5p-jpeg: Fix compilation with COMPILE_TEST
+Message-id: <20140909154032.01625bb0.m.chehab@samsung.com>
+In-reply-to: <60097822.tu6OncvLxQ@wuerfel>
+References: <20140909124306.2d5a0d76@canb.auug.org.au>
+ <540F15B2.3000902@samsung.com> <20140909120936.527bd852.m.chehab@samsung.com>
+ <60097822.tu6OncvLxQ@wuerfel>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t/hIN21nvwhBp+OqFv8nXSM3aL36nNG
+	ix+vL7BZ9C64ymZxtukNu8Wmx9dYLS7vmsNm0bNhK6vFwYVtjBYzzu9jsthxahGzxeE37awW
+	W/deZXfg9fj9axKjR+ONG2wem1doeWxeUu/Rt2UVo8fnTXIBbFFcNimpOZllqUX6dglcGX8v
+	3GAvmMhX0fs0rIFxEXcXIyeHhICJxP7ZH9ggbDGJC/fWA9lcHEICSxgl5m/4B5YQEmhmkvi3
+	PaOLkYODRUBVYtZuO5Awm4CRxKvGFlYQW0RAUWLqi2fMIL3MAh+ZJVqn7wdLCAv4SHQeuscK
+	0ssrYCVx/2s9SJhTQEvix9brTBDjlzFKtL6UhrjBWeLnzEmMIDavgKDEj8n3WEBsZqD6zdua
+	WCFseYnNa94yT2AUmIWkbBaSsllIyhYwMq9iFC0tTi4oTkrPNdIrTswtLs1L10vOz93ECImR
+	4h2MLzZYHWIU4GBU4uE9EcMXIsSaWFZcmXuIUYKDWUmE1/oFUIg3JbGyKrUoP76oNCe1+BAj
+	EwenVAOjf1e1vPjPdsmNyuWOx44qOFhPnxU0zXmFyCXl7Gxfjwe8LatKd7pmX/HSbZ0yq9Fv
+	ZorkhvSUz6vPPOII3XqGf3tGY6bYIsv7591kLBZcy76YHKtyxKriv3wzr4aw113/yz4PwtMN
+	V18K9Je1edmjdEH8rF7djwKfo5zxHo853fc9zhabf16JpTgj0VCLuag4EQATlMJ7bwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John L. Hammond" <john.hammond@intel.com>
+Em Tue, 09 Sep 2014 19:54:19 +0200
+Arnd Bergmann <arnd@arndb.de> escreveu:
 
-Move the definition of struct lvfs_run_ctxt to the one file that
-needed it (lustre/include/obd.h). Remove the then unneeded headers
-lustre/include/lvfs.h and lustre/include/linux/lvfs.h.
+> On Tuesday 09 September 2014 12:09:36 Mauro Carvalho Chehab wrote:
+> > -exynos4.c
+> > > > index e51c078360f5..01eeacf28843 100644
+> > > > --- a/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
+> > > > +++ b/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
+> > > > @@ -23,7 +23,9 @@ void exynos4_jpeg_sw_reset(void __iomem *base)
+> > > >     reg = readl(base + EXYNOS4_JPEG_CNTL_REG);
+> > > >     writel(reg & ~EXYNOS4_SOFT_RESET_HI, base + EXYNOS4_JPEG_CNTL_REG);
+> > > >  
+> > > > +#ifndef CONFIG_COMPILE_TEST
+> > > >     ndelay(100000);
+> > > > +#endif
+> > > 
+> > > Wouldn't be a better fix to replace ndelay(100000); with udelay(100),
+> > > rather than sticking in a not so pretty #ifndef ?
+> > 
+> > Works for me. I'll submit a new version.
+> 
+> New version looks good to me. On a more general level, I would argue
+> that we should not disable code based on COMPILE_TEST. The typical
+> use of this symbol is to make it possible to compile more code, not
+> to change the behavior of code on machines that were able to build
+> it already.
 
-Signed-off-by: John L. Hammond <john.hammond@intel.com>
----
- drivers/staging/lustre/lustre/include/cl_object.h  |    2 +-
- drivers/staging/lustre/lustre/include/linux/lvfs.h |   57 --------------------
- drivers/staging/lustre/lustre/include/lvfs.h       |   45 ----------------
- drivers/staging/lustre/lustre/include/obd.h        |    4 ++
- .../staging/lustre/lustre/include/obd_support.h    |    2 +-
- drivers/staging/lustre/lustre/obdclass/obd_mount.c |    2 +-
- drivers/staging/lustre/lustre/ptlrpc/llog_net.c    |    1 -
- 7 files changed, 7 insertions(+), 106 deletions(-)
- delete mode 100644 drivers/staging/lustre/lustre/include/linux/lvfs.h
- delete mode 100644 drivers/staging/lustre/lustre/include/lvfs.h
+Yeah, agreed as a general concept. In this case, however, it were
+causing a compilation breakage on X86 (as it generates a non-existing
+_bad_ndelay() symbol, if the time is bigger than 20000). See
+include/asm-generic/delay.h.
 
-diff --git a/drivers/staging/lustre/lustre/include/cl_object.h b/drivers/staging/lustre/lustre/include/cl_object.h
-index 41858e4..d56c8be 100644
---- a/drivers/staging/lustre/lustre/include/cl_object.h
-+++ b/drivers/staging/lustre/lustre/include/cl_object.h
-@@ -98,7 +98,7 @@
-  * super-class definitions.
-  */
- #include "lu_object.h"
--#include "lvfs.h"
-+#include "linux/lustre_compat25.h"
- #include <linux/mutex.h>
- #include <linux/radix-tree.h>
- 
-diff --git a/drivers/staging/lustre/lustre/include/linux/lvfs.h b/drivers/staging/lustre/lustre/include/linux/lvfs.h
-deleted file mode 100644
-index 786e779..0000000
---- a/drivers/staging/lustre/lustre/include/linux/lvfs.h
-+++ /dev/null
-@@ -1,57 +0,0 @@
--/*
-- * GPL HEADER START
-- *
-- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 only,
-- * as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License version 2 for more details (a copy is included
-- * in the LICENSE file that accompanied this code).
-- *
-- * You should have received a copy of the GNU General Public License
-- * version 2 along with this program; If not, see
-- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
-- *
-- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-- * CA 95054 USA or visit www.sun.com if you need additional information or
-- * have any questions.
-- *
-- * GPL HEADER END
-- */
--/*
-- * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
-- * Use is subject to license terms.
-- *
-- * Copyright (c) 2012, Intel Corporation.
-- */
--/*
-- * This file is part of Lustre, http://www.lustre.org/
-- * Lustre is a trademark of Sun Microsystems, Inc.
-- *
-- * lustre/include/linux/lvfs.h
-- *
-- * lustre VFS/process permission interface
-- */
--
--#ifndef __LINUX_LVFS_H__
--#define __LINUX_LVFS_H__
--
--#ifndef __LVFS_H__
--#error Do not #include this file directly. #include <lvfs.h> instead
--#endif
--
--#include <linux/kernel.h>
--#include <linux/fs.h>
--#include <linux/sched.h>
--#include "lustre_compat25.h"
--
--struct lvfs_run_ctxt {
--	struct dt_device	*dt;
--};
--
--#endif
-diff --git a/drivers/staging/lustre/lustre/include/lvfs.h b/drivers/staging/lustre/lustre/include/lvfs.h
-deleted file mode 100644
-index a98307ba..0000000
---- a/drivers/staging/lustre/lustre/include/lvfs.h
-+++ /dev/null
-@@ -1,45 +0,0 @@
--/*
-- * GPL HEADER START
-- *
-- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 only,
-- * as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License version 2 for more details (a copy is included
-- * in the LICENSE file that accompanied this code).
-- *
-- * You should have received a copy of the GNU General Public License
-- * version 2 along with this program; If not, see
-- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
-- *
-- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-- * CA 95054 USA or visit www.sun.com if you need additional information or
-- * have any questions.
-- *
-- * GPL HEADER END
-- */
--/*
-- * Copyright (c) 2007, 2010, Oracle and/or its affiliates. All rights reserved.
-- * Use is subject to license terms.
-- */
--/*
-- * This file is part of Lustre, http://www.lustre.org/
-- * Lustre is a trademark of Sun Microsystems, Inc.
-- *
-- * lustre/include/lvfs.h
-- *
-- * lustre VFS/process permission interface
-- */
--
--#ifndef __LVFS_H__
--#define __LVFS_H__
--
--#include "../../include/linux/libcfs/libcfs.h"
--#include "linux/lvfs.h"
--
--#endif
-diff --git a/drivers/staging/lustre/lustre/include/obd.h b/drivers/staging/lustre/lustre/include/obd.h
-index b29f7fc..ef24871 100644
---- a/drivers/staging/lustre/lustre/include/obd.h
-+++ b/drivers/staging/lustre/lustre/include/obd.h
-@@ -830,6 +830,10 @@ struct obd_llog_group {
- #define OBD_DEVICE_MAGIC	0XAB5CD6EF
- #define OBD_DEV_BY_DEVNAME      0xffffd0de
- 
-+struct lvfs_run_ctxt {
-+	struct dt_device *dt;
-+};
-+
- struct obd_device {
- 	struct obd_type	*obd_type;
- 	__u32		   obd_magic;
-diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
-index e9497c1..2991d2e 100644
---- a/drivers/staging/lustre/lustre/include/obd_support.h
-+++ b/drivers/staging/lustre/lustre/include/obd_support.h
-@@ -39,7 +39,7 @@
- 
- #include <linux/slab.h>
- #include "../../include/linux/libcfs/libcfs.h"
--#include "lvfs.h"
-+#include "linux/lustre_compat25.h"
- #include "lprocfs_status.h"
- 
- /* global variables */
-diff --git a/drivers/staging/lustre/lustre/obdclass/obd_mount.c b/drivers/staging/lustre/lustre/obdclass/obd_mount.c
-index 4e0635d..1260c87 100644
---- a/drivers/staging/lustre/lustre/obdclass/obd_mount.c
-+++ b/drivers/staging/lustre/lustre/obdclass/obd_mount.c
-@@ -46,7 +46,7 @@
- #define PRINT_CMD CDEBUG
- 
- #include "../include/obd.h"
--#include "../include/lvfs.h"
-+#include "../include/linux/lustre_compat25.h"
- #include "../include/obd_class.h"
- #include "../include/lustre/lustre_user.h"
- #include "../include/lustre_log.h"
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/llog_net.c b/drivers/staging/lustre/lustre/ptlrpc/llog_net.c
-index 1d996ca..dac66f5 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/llog_net.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/llog_net.c
-@@ -51,7 +51,6 @@
- #include "../include/obd_class.h"
- #include "../include/lustre_log.h"
- #include <linux/list.h>
--#include "../include/lvfs.h"
- 
- int llog_initiator_connect(struct llog_ctxt *ctxt)
- {
--- 
-1.7.9.5
+Btw, I suspect that the only reason why ndelay(100000) causes a
+compilation breakage is to avoid a big number, as the maximum limit
+check ndelay() code (20000) at asm-generic is identical to the one
+for udelay(). So, for ndelay, it means 20us, while, for udelay,
+it means 20ms. Even so, both calls the very same implementation code.
 
+Perhaps we should fix it, for both to accept a maximum time of 20ms.
+
+Regards,
+Mauro
