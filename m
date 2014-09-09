@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048AbaIIIdf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:33:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43433 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaIIIdI (ORCPT
+	id S1756087AbaIIIfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:35:05 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:37854 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755197AbaIIIe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:33:08 -0400
-Date: Tue, 9 Sep 2014 10:33:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
-Message-ID: <20140909083303.GX19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/VG9mYbp8jL2/WoI"
-Content-Disposition: inline
-In-Reply-To: <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 9 Sep 2014 04:34:59 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH] mmc: mmci_qcom_dml: fix is never less than zero warning.
+Date: Tue,  9 Sep 2014 09:34:49 +0100
+Message-Id: <1410251689-12740-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes a typo which resulted in 'is never less
+than zero warning' reported by static checker.
 
---/VG9mYbp8jL2/WoI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	drivers/mmc/host/mmci_qcom_dml.c:131 dml_hw_init()
+	warn: unsigned 'producer_id' is never less than zero.
 
-On Wed, Aug 20, 2014 at 03:36:06PM +0300, Alexander Shishkin wrote:
-> This adds support for overwrite mode in the AUX area, which means "keep
-> collecting data till you're stopped". It does not depend on data buffer's
-> overwrite mode, so that it doesn't lose sideband data that is instrumental
-> for processing AUX data.
+drivers/mmc/host/mmci_qcom_dml.c
+   121  /* Initialize the dml hardware connected to SD Card controller */
+   122  int dml_hw_init(struct mmci_host *host, struct device_node *np)
+   123  {
+   124          u32 config;
+   125          void __iomem *base;
+   126          u32 consumer_id, producer_id;
+   127
+   128          consumer_id = of_get_dml_pipe_index(np, "tx");
+   129          producer_id = of_get_dml_pipe_index(np, "rx");
+   130
+   131          if (producer_id < 0 || consumer_id < 0)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   132
 
-This patch is out of order as well, it would've made sense right after
-the other aux buffer patch. Also, its not specified (and I can't find it
-in the patch) how it _is_ set. The Changelog above only says how it is
-not.
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+---
+Hi Ulf, 
 
+This patch is on top of https://git.linaro.org/people/ulf.hansson/mmc.git next branch
+to fix up a warning reported by static checker tool.
 
---/VG9mYbp8jL2/WoI
-Content-Type: application/pgp-signature
+Are you ok to take this patch as it is or do you think I should resend the 
+original DML patch with this fix?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+thanks,
+srini
 
-iQIcBAEBAgAGBQJUDrs/AAoJEHZH4aRLwOS6nHwQAKGIRxxFhkxpxtuaTc5K3pkB
-dJOJ8cE+YMDAux6yOUjsToypZRE1qDNPGo7hz+FM5KEgvNDR+aBZL+KTmOtFXoCJ
-deVctL1z2SRUQgsCpbdUFe2wFNIeNsphuMmD8ut/dVgdxzLzZEm/MFC0kpuPqBJJ
-0V0G+TiIXCBg58EroyhxWRl7mDMSV7n4mvaCnltZ9yWVYM3PvS77in2pSJhbd5yR
-LNsKfAqsgPshMgFDa50a/WrMLd3oZ9Lf9EJANW36LhzccEgX8NBIby8Ys5qSaUgI
-9hsxw8VcrwxhKZeSU/oBlaL9mVasaFiGN19lQKtOnGnV+Sn/Md2qYcwI7ELfIKXt
-REoqrnHv0cE50xAV5P5NKMtzgsaTWoi7oOoVt0exG/GSzS0GOQlwf4298Uzd1RFW
-zw140YUr6aHbRpD/5gjGyh8do+nSXevPcsn1MGL4fUkQWqZRR1WbD3Ke1k4YtdQk
-2xZpBdZpPM+8hX3WpZq2/xFGxhbqH1ojpTP9ki8/Rjl/ZoQSL5X84DdGXurX0qBQ
-Msszm3FHGV+YEV30IoZ+IIOe/laeUuPxhRC+sXs7DiPhBgZPXB7/CKHpRPsgKsFC
-kGIMbrYDHMkbvaXzTzjoviAI0JHp0ws82JzHxr6XJwpiI9QLuWrLLZ+g2PRwsF77
-gPj25dR7GaumOokgT2r7
-=FZVr
------END PGP SIGNATURE-----
+ drivers/mmc/host/mmci_qcom_dml.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---/VG9mYbp8jL2/WoI--
+diff --git a/drivers/mmc/host/mmci_qcom_dml.c b/drivers/mmc/host/mmci_qcom_dml.c
+index 300ef50..2b7fc37 100644
+--- a/drivers/mmc/host/mmci_qcom_dml.c
++++ b/drivers/mmc/host/mmci_qcom_dml.c
+@@ -123,7 +123,7 @@ int dml_hw_init(struct mmci_host *host, struct device_node *np)
+ {
+ 	u32 config;
+ 	void __iomem *base;
+-	u32 consumer_id, producer_id;
++	int consumer_id, producer_id;
+ 
+ 	consumer_id = of_get_dml_pipe_index(np, "tx");
+ 	producer_id = of_get_dml_pipe_index(np, "rx");
+-- 
+1.9.1
+
