@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaIIJ12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:27:28 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:57352 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaIIJ11 (ORCPT
+	id S1756079AbaIIJ2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:28:11 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:50359 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755200AbaIIJ2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:27:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
-        arm@kernel.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: drivers for 3.18 #2
-Date: Tue, 09 Sep 2014 11:27:12 +0200
-Message-ID: <3053665.vhA4jELi7x@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140909091520.GJ3804@lukather>
-References: <1409934969-11584-1-git-send-email-nicolas.ferre@atmel.com> <26517543.McM8Q5P0vn@wuerfel> <20140909091520.GJ3804@lukather>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:WC4Geu6A+KOUAMe6QXkemyRunFe/oE0lg5bTg/EOVUv
- ukLXPnZfM7V7K54DLSdqmJNYqle7CUlCDVP/4RcY5aYuxvZJlU
- MwvcJOmdcxugfB0qUylgDFUIWPmrua8wqYtp/fdMo6LJzIMZbZ
- tGcBg5SdgqQhSFXCh4Gy8u6rEDU9YltoYx0XZd8lte0CSaW2YO
- PMa9ov5ZyJEQaPtYymAZa1rNXQ3LifdKeHxG/JTcEfktqgp0Tq
- MRZeWNtZdAwPaBLp4d1s0QzZRvZn2xU4XunEkpj/qvGdb2vRp3
- Jg9rGcgRqWuoXvGHLCDqeXt6HbGjvdeo8XbPgNiMH7xPEUqZqF
- Dt/MesrayFWr8ccFeHLY=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 9 Sep 2014 05:28:09 -0400
+Message-ID: <1410254887.22255.14.camel@x220>
+Subject: Re: [PATCH] arm64, defconfig: Increase NR_CPUS default to 64
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Robert Richter <rric@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Robert Richter <rrichter@cavium.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Tue, 09 Sep 2014 11:28:07 +0200
+In-Reply-To: <20140909080740.GP23009@pengutronix.de>
+References: <1410176689-20020-1-git-send-email-rric@kernel.org>
+	 <20140909080740.GP23009@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 09 Sep 2014 09:28:07.0277 (UTC) FILETIME=[5D3BB1D0:01CFCC10]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 September 2014 11:15:20 Maxime Ripard wrote:
-> 
-> > One of the problems with the current interface is that it requires
-> > statically declaring platform_device structures, which is something
-> > that has been on Greg's list of device model antipatterns for a long
-> > time.
-> 
-> I didn't find any difference with how you declare platform_devices
-> compared to the old-usual way in board files, or was it something on
-> the list too ? 
+On Tue, 2014-09-09 at 10:07 +0200, Uwe Kleine-König wrote:
+> On Mon, Sep 08, 2014 at 01:44:48PM +0200, Robert Richter wrote:
+> > @@ -252,11 +252,11 @@ config SCHED_SMT
+> >  	  places. If unsure say N here.
+> >  
+> >  config NR_CPUS
+> > -	int "Maximum number of CPUs (2-32)"
+> > -	range 2 32
+> > +	int "Maximum number of CPUs (2-64)"
+> > +	range 2 64
+> >  	depends on SMP
+> >  	# These have to remain sorted largest to smallest
+> Unrelated to the patch: What does this comment mean? There is only one
+> line following, so it's sorted implicitly.
 
-Yes. We never really bothered with cleaning up the existing static
-platform_device instances, because the plan is to move away from
-board files to DT anyway, but in short, if you ever need to add
-a platform device to a legacy board file, do it like
+This comment doesn't mean much, anymore.
 
-	pdev = platform_device_alloc(...);
-	platform_device_register(dev);
+It was added in commit 159428538323 ("arm64: Add Kconfig option for APM
+X-Gene SOC family"). Why someone cared so much about the sorting of the
+two defaults is unclear to me. Maybe only to make sure future commits
+wouldn't mess up the sorting order. Anyhow, it seems it was just
+forgotten to remove that line in commit 62aceb8ff4b3 ("arm64: make
+default NR_CPUS 8") which again made it a single item list.
 
-or
+> > -	default "8"
+> > +	default "64"
 
-	platform_device_register_simple(...);
 
-or
+Paul Bolle
 
-	static const struct platform_device_info info __initconst = { ... };
-	platform_device_register_full(&info);
-
-but not
-
-	static struct platform_device pdev = { ... };
-	platform_device_register(&pdev);
-
-Unfortunately, the early platform_device only allows the last type.
-
-	Arnd
