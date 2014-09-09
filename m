@@ -1,122 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaIIWNz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:13:55 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:58755 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550AbaIIWMd (ORCPT
+	id S1752954AbaIIWO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:14:27 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:38902 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918AbaIIWOY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:12:33 -0400
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: dirk.j.brandewie@intel.com
-Cc: rjw@rjwysocki.net, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>
-Subject: [PATCH 2/6] PID: Move Turbo detection into backend driver
-Date: Tue,  9 Sep 2014 18:12:04 -0400
-Message-Id: <1410300728-26637-3-git-send-email-ashwin.chaugule@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>
-References: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>
+	Tue, 9 Sep 2014 18:14:24 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Jyri Sarha <jsarha@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        bcousson@baylibre.com
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1409919694-26941-1-git-send-email-jsarha@ti.com>
+Cc: t-kristo@ti.com, mark.rutland@arm.com, detheridge@ti.com,
+        "Jyri Sarha" <jsarha@ti.com>
+References: <1409919694-26941-1-git-send-email-jsarha@ti.com>
+Message-ID: <20140909221408.19023.12081@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: add gpio gated clock
+Date: Tue, 09 Sep 2014 15:14:08 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move X86 specific turbo detection logic into platform
-specific PID backend driver.
+Quoting Jyri Sarha (2014-09-05 05:21:34)
+> The added gpio-gate-clock is a basic clock that can be enabled and
+> disabled trough a gpio output. The DT binding document for the clock
+> is also added. For EPROBE_DEFER handling the registering of the clock
+> has to be delayed until of_clk_get() call time.
+> 
+> Signed-off-by: Jyri Sarha <jsarha@ti.com>
+> ---
+> 
+> This is my final attempt to get this generic gpio controlled basic
+> clock into mainline. Of course I gladly fix any issues that the patch
+> may have. However, if there is no response, I give up and move it to TI
+> specific clocks.
+> 
 
-Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
----
- drivers/cpufreq/intel_pid_ctrl.c | 15 ++++++++++++++-
- drivers/cpufreq/pid_ctrl.c       | 13 +++++++------
- 2 files changed, 21 insertions(+), 7 deletions(-)
+I searched through my archives and found a post from January. You Cc'd
+me as "<mturquette@linaro.org>". Note that the address is wrapped in
+chevrons but there is no name string (e.g. "Mike Turquette").
 
-diff --git a/drivers/cpufreq/intel_pid_ctrl.c b/drivers/cpufreq/intel_pid_ctrl.c
-index ebab074..9ad7d5e 100644
---- a/drivers/cpufreq/intel_pid_ctrl.c
-+++ b/drivers/cpufreq/intel_pid_ctrl.c
-@@ -58,6 +58,11 @@ static int byt_get_max_pstate(void)
- static int byt_get_turbo_pstate(void)
- {
- 	u64 value;
-+	u64 misc_en;
-+
-+	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
-+	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE)
-+		return byt_get_max_pstate();
- 
- 	rdmsrl(BYT_TURBO_RATIOS, value);
- 	return value & 0x7F;
-@@ -124,12 +129,20 @@ static int core_get_turbo_pstate(void)
- {
- 	u64 value;
- 	int nont, ret;
-+	u64 misc_en;
- 
--	rdmsrl(MSR_NHM_TURBO_RATIO_LIMIT, value);
- 	nont = core_get_max_pstate();
-+	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
-+
-+	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE)
-+		return nont;
-+
-+	rdmsrl(MSR_NHM_TURBO_RATIO_LIMIT, value);
- 	ret = ((value) & 255);
-+
- 	if (ret <= nont)
- 		ret = nont;
-+
- 	return ret;
- }
- 
-diff --git a/drivers/cpufreq/pid_ctrl.c b/drivers/cpufreq/pid_ctrl.c
-index b273ce1..516b95f 100644
---- a/drivers/cpufreq/pid_ctrl.c
-+++ b/drivers/cpufreq/pid_ctrl.c
-@@ -313,10 +313,15 @@ static void pid_ctrl_get_cpu_pstates(struct cpudata *cpu)
- {
- 	cpu->pstate.min_pstate = pstate_funcs.get_min();
- 	cpu->pstate.max_pstate = pstate_funcs.get_max();
--	cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
-+
-+	if (pstate_funcs.get_turbo)
-+		cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
-+	else
-+		cpu->pstate.turbo_pstate = cpu->pstate.max_pstate;
- 
- 	if (pstate_funcs.get_vid)
- 		pstate_funcs.get_vid(cpu);
-+
- 	pid_ctrl_set_pstate(cpu, cpu->pstate.min_pstate);
- }
- 
-@@ -532,7 +537,6 @@ static int pid_ctrl_cpu_init(struct cpufreq_policy *policy)
- {
- 	struct cpudata *cpu;
- 	int rc;
--	u64 misc_en;
- 
- 	rc = pid_ctrl_init_cpu(policy->cpu);
- 	if (rc)
-@@ -540,9 +544,7 @@ static int pid_ctrl_cpu_init(struct cpufreq_policy *policy)
- 
- 	cpu = all_cpu_data[policy->cpu];
- 
--	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
--	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
--		cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
-+	if (cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
- 		limits.turbo_disabled = 1;
- 		limits.no_turbo = 1;
- 	}
-@@ -598,7 +600,6 @@ static int __init pid_ctrl_init(void)
- {
- 	int cpu, rc = 0;
- 
--
- 	if (!pstate_funcs.get_max ||
- 			!pstate_funcs.get_min ||
- 			!pstate_funcs.set ||
--- 
-1.9.1
+My mailer doesn't parse this well it was not flagged as to:me in my
+filters. Maybe other mailers handle this better? If you leave out the
+name string in the future then it would probably be best to drop the
+chevrons.
 
+> I've been sending this patch as a part of Beaglebone-Black HDMI audio
+> patch series since last autumn. Since the previous version I have done
+> some minor cleanups and changed the clock's compatible property from
+> "gpio-clock" to "gpio-gate-clock". All the file names, comments,
+> etc. have also been changed accordingly.
+
+Is your platform the only one to take advantage of this clock type so
+far? I feel that it is esoteric enough that it shouldn't be made
+generic.
+
+The main reason is that all of the generic clock types needs to be
+overhauled at some point. E.g. the clk-gate should have its
+machine-specific logic separated from its machine-independent logic. If
+the gate clock were to populate .enable and .disable callbacks and then
+leave the actual register banging, or regmap'ing, or gpio'ing up to your
+backend driver then that would be a big improvement and would avoid the
+need to create this new clock type outright.
+
+So that's on my todo list, but it's not done yet. For your patch I think
+that putting this code into drivers/clk/ti would probably be best,
+unless other folks could use it as-is. Even if others could use it today
+I would want to remove it eventually for the reasons stated in the
+paragraph above.
+
+Regards,
+Mike
+
+> 
+> Best regards,
+> Jyri
+> 
+>  .../devicetree/bindings/clock/gpio-gate-clock.txt  |   21 ++
+>  drivers/clk/Makefile                               |    1 +
+>  drivers/clk/clk-gpio-gate.c                        |  204 ++++++++++++++++++++
+>  include/linux/clk-provider.h                       |   22 +++
+>  4 files changed, 248 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/gpio-gate-clock.txt
+>  create mode 100644 drivers/clk/clk-gpio-gate.c
+> 
+> diff --git a/Documentation/devicetree/bindings/clock/gpio-gate-clock.txt b/Documentation/devicetree/bindings/clock/gpio-gate-clock.txt
+> new file mode 100644
+> index 0000000..d3379ff
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/gpio-gate-clock.txt
+> @@ -0,0 +1,21 @@
+> +Binding for simple gpio gated clock.
+> +
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Required properties:
+> +- compatible : shall be "gpio-gate-clock".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- enable-gpios : GPIO reference for enabling and disabling the clock.
+> +
+> +Optional properties:
+> +- clocks: Maximum of one parent clock is supported.
+> +
+> +Example:
+> +       clock {
+> +               compatible = "gpio-gate-clock";
+> +               clocks = <&parentclk>;
+> +               #clock-cells = <0>;
+> +               enable-gpios = <&gpio 1 GPIO_ACTIVE_HIGH>;
+> +       };
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index f537a0b..5d78710 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -9,6 +9,7 @@ obj-$(CONFIG_COMMON_CLK)        += clk-gate.o
+>  obj-$(CONFIG_COMMON_CLK)       += clk-mux.o
+>  obj-$(CONFIG_COMMON_CLK)       += clk-composite.o
+>  obj-$(CONFIG_COMMON_CLK)       += clk-fractional-divider.o
+> +obj-$(CONFIG_COMMON_CLK)       += clk-gpio-gate.o
+>  ifeq ($(CONFIG_OF), y)
+>  obj-$(CONFIG_COMMON_CLK)       += clk-conf.o
+>  endif
+> diff --git a/drivers/clk/clk-gpio-gate.c b/drivers/clk/clk-gpio-gate.c
+> new file mode 100644
+> index 0000000..9dde885
+> --- /dev/null
+> +++ b/drivers/clk/clk-gpio-gate.c
+> @@ -0,0 +1,204 @@
+> +/*
+> + * Copyright (C) 2013 - 2014 Texas Instruments Incorporated - http://www.ti.com
+> + * Author: Jyri Sarha <jsarha@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Gpio gated clock implementation
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/gpio.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/err.h>
+> +#include <linux/device.h>
+> +
+> +/**
+> + * DOC: basic gpio gated clock which can be enabled and disabled
+> + *      with gpio output
+> + * Traits of this clock:
+> + * prepare - clk_(un)prepare only ensures parent is (un)prepared
+> + * enable - clk_enable and clk_disable are functional & control gpio
+> + * rate - inherits rate from parent.  No clk_set_rate support
+> + * parent - fixed parent.  No clk_set_parent support
+> + */
+> +
+> +#define to_clk_gpio(_hw) container_of(_hw, struct clk_gpio, hw)
+> +
+> +static int clk_gpio_gate_enable(struct clk_hw *hw)
+> +{
+> +       struct clk_gpio *clk = to_clk_gpio(hw);
+> +
+> +       gpiod_set_value(clk->gpiod, 1);
+> +
+> +       return 0;
+> +}
+> +
+> +static void clk_gpio_gate_disable(struct clk_hw *hw)
+> +{
+> +       struct clk_gpio *clk = to_clk_gpio(hw);
+> +
+> +       gpiod_set_value(clk->gpiod, 0);
+> +}
+> +
+> +static int clk_gpio_gate_is_enabled(struct clk_hw *hw)
+> +{
+> +       struct clk_gpio *clk = to_clk_gpio(hw);
+> +
+> +       return gpiod_get_value(clk->gpiod);
+> +}
+> +
+> +const struct clk_ops clk_gpio_gate_ops = {
+> +       .enable = clk_gpio_gate_enable,
+> +       .disable = clk_gpio_gate_disable,
+> +       .is_enabled = clk_gpio_gate_is_enabled,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_gpio_gate_ops);
+> +
+> +/**
+> + * clk_register_gpio - register a gpip clock with the clock framework
+> + * @dev: device that is registering this clock
+> + * @name: name of this clock
+> + * @parent_name: name of this clock's parent
+> + * @gpiod: gpio descriptor to gate this clock
+> + */
+> +struct clk *clk_register_gpio_gate(struct device *dev, const char *name,
+> +               const char *parent_name, struct gpio_desc *gpiod,
+> +               unsigned long flags)
+> +{
+> +       struct clk_gpio *clk_gpio = NULL;
+> +       struct clk *clk = ERR_PTR(-EINVAL);
+> +       struct clk_init_data init = { NULL };
+> +       unsigned long gpio_flags;
+> +       int err;
+> +
+> +       if (gpiod_is_active_low(gpiod))
+> +               gpio_flags = GPIOF_OUT_INIT_HIGH;
+> +       else
+> +               gpio_flags = GPIOF_OUT_INIT_LOW;
+> +
+> +       if (dev)
+> +               err = devm_gpio_request_one(dev, desc_to_gpio(gpiod),
+> +                                           gpio_flags, name);
+> +       else
+> +               err = gpio_request_one(desc_to_gpio(gpiod), gpio_flags, name);
+> +
+> +       if (err) {
+> +               pr_err("%s: %s: Error requesting clock control gpio %u\n",
+> +                      __func__, name, desc_to_gpio(gpiod));
+> +               return ERR_PTR(err);
+> +       }
+> +
+> +       if (dev)
+> +               clk_gpio = devm_kzalloc(dev, sizeof(struct clk_gpio),
+> +                                       GFP_KERNEL);
+> +       else
+> +               clk_gpio = kzalloc(sizeof(struct clk_gpio), GFP_KERNEL);
+> +
+> +       if (!clk_gpio) {
+> +               clk = ERR_PTR(-ENOMEM);
+> +               goto clk_register_gpio_gate_err;
+> +       }
+> +
+> +       init.name = name;
+> +       init.ops = &clk_gpio_gate_ops;
+> +       init.flags = flags | CLK_IS_BASIC;
+> +       init.parent_names = (parent_name ? &parent_name : NULL);
+> +       init.num_parents = (parent_name ? 1 : 0);
+> +
+> +       clk_gpio->gpiod = gpiod;
+> +       clk_gpio->hw.init = &init;
+> +
+> +       clk = clk_register(dev, &clk_gpio->hw);
+> +
+> +       if (!IS_ERR(clk))
+> +               return clk;
+> +
+> +       if (!dev)
+> +               kfree(clk_gpio);
+> +
+> +clk_register_gpio_gate_err:
+> +       gpiod_put(gpiod);
+> +
+> +       return clk;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_register_gpio_gate);
+> +
+> +#ifdef CONFIG_OF
+> +/**
+> + * The clk_register_gpio_gate has to be delayed, because the EPROBE_DEFER
+> + * can not be handled properly at of_clk_init() call time.
+> + */
+> +
+> +struct clk_gpio_gate_delayed_register_data {
+> +       struct device_node *node;
+> +       struct mutex lock;
+> +       struct clk *clk;
+> +};
+> +
+> +static struct clk *of_clk_gpio_gate_delayed_register_get(
+> +               struct of_phandle_args *clkspec,
+> +               void *_data)
+> +{
+> +       struct clk_gpio_gate_delayed_register_data *data = _data;
+> +       struct clk *clk;
+> +       const char *clk_name = data->node->name;
+> +       const char *parent_name;
+> +       struct gpio_desc *gpiod;
+> +       int gpio;
+> +
+> +       mutex_lock(&data->lock);
+> +
+> +       if (data->clk) {
+> +               mutex_unlock(&data->lock);
+> +               return data->clk;
+> +       }
+> +
+> +       gpio = of_get_named_gpio_flags(data->node, "enable-gpios", 0, NULL);
+> +       if (gpio < 0) {
+> +               mutex_unlock(&data->lock);
+> +               if (gpio != -EPROBE_DEFER)
+> +                       pr_err("%s: %s: Can't get 'enable-gpios' DT property\n",
+> +                              __func__, clk_name);
+> +               return ERR_PTR(gpio);
+> +       }
+> +       gpiod = gpio_to_desc(gpio);
+> +
+> +       parent_name = of_clk_get_parent_name(data->node, 0);
+> +
+> +       clk = clk_register_gpio_gate(NULL, clk_name, parent_name, gpiod, 0);
+> +       if (IS_ERR(clk)) {
+> +               mutex_unlock(&data->lock);
+> +               return clk;
+> +       }
+> +
+> +       data->clk = clk;
+> +       mutex_unlock(&data->lock);
+> +
+> +       return clk;
+> +}
+> +
+> +/**
+> + * of_gpio_gate_clk_setup() - Setup function for gpio controlled clock
+> + */
+> +void __init of_gpio_gate_clk_setup(struct device_node *node)
+> +{
+> +       struct clk_gpio_gate_delayed_register_data *data;
+> +
+> +       data = kzalloc(sizeof(struct clk_gpio_gate_delayed_register_data),
+> +                      GFP_KERNEL);
+> +       if (!data)
+> +               return;
+> +
+> +       data->node = node;
+> +       mutex_init(&data->lock);
+> +
+> +       of_clk_add_provider(node, of_clk_gpio_gate_delayed_register_get, data);
+> +}
+> +EXPORT_SYMBOL_GPL(of_gpio_gate_clk_setup);
+> +CLK_OF_DECLARE(gpio_gate_clk, "gpio-gate-clock", of_gpio_gate_clk_setup);
+> +#endif
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 411dd7e..ec1581b 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -488,6 +488,28 @@ struct clk *clk_register_composite(struct device *dev, const char *name,
+>                 struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
+>                 unsigned long flags);
+>  
+> +/***
+> + * struct clk_gpio_gate - gpio gated clock
+> + *
+> + * @hw:                handle between common and hardware-specific interfaces
+> + * @gpiod:     gpio descriptor
+> + *
+> + * Clock with a gpio control for enabling and disabling the parent clock.
+> + * Implements .enable, .disable and .is_enabled
+> + */
+> +
+> +struct clk_gpio {
+> +       struct clk_hw   hw;
+> +       struct gpio_desc *gpiod;
+> +};
+> +
+> +extern const struct clk_ops clk_gpio_gate_ops;
+> +struct clk *clk_register_gpio_gate(struct device *dev, const char *name,
+> +               const char *parent_name, struct gpio_desc *gpio,
+> +               unsigned long flags);
+> +
+> +void of_gpio_clk_gate_setup(struct device_node *node);
+> +
+>  /**
+>   * clk_register - allocate a new clock, register it and return an opaque cookie
+>   * @dev: device that is registering this clock
+> -- 
+> 1.7.9.5
+> 
