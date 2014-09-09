@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaIIV0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 17:26:16 -0400
-Received: from omr2.cc.vt.edu ([198.82.141.100]:49840 "EHLO omr2.cc.vt.edu"
+	id S1751857AbaIIVdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 17:33:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56867 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176AbaIIV0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 17:26:13 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH v3 25/29] nios2: Module support
-In-Reply-To: Your message of "Mon, 08 Sep 2014 17:22:36 +0800."
-             <1410168160-3624-26-git-send-email-lftan@altera.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
-            <1410168160-3624-26-git-send-email-lftan@altera.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1410297958_3387P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 09 Sep 2014 17:25:58 -0400
-Message-ID: <75377.1410297958@turing-police.cc.vt.edu>
+	id S1750910AbaIIVdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 17:33:14 -0400
+Date: Tue, 9 Sep 2014 22:33:09 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+Message-ID: <20140909213309.GQ17501@suse.de>
+References: <20140805144439.GW10819@suse.de>
+ <alpine.LSU.2.11.1408051649330.6591@eggly.anvils>
+ <53E17F06.30401@oracle.com>
+ <53E989FB.5000904@oracle.com>
+ <53FD4D9F.6050500@oracle.com>
+ <20140827152622.GC12424@suse.de>
+ <540127AC.4040804@oracle.com>
+ <54082B25.9090600@oracle.com>
+ <20140908171853.GN17501@suse.de>
+ <540DEDE7.4020300@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <540DEDE7.4020300@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1410297958_3387P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Sep 08, 2014 at 01:56:55PM -0400, Sasha Levin wrote:
+> On 09/08/2014 01:18 PM, Mel Gorman wrote:
+> > A worse possibility is that somehow the lock is getting corrupted but
+> > that's also a tough sell considering that the locks should be allocated
+> > from a dedicated cache. I guess I could try breaking that to allocate
+> > one page per lock so DEBUG_PAGEALLOC triggers but I'm not very
+> > optimistic.
+> 
+> I did see ptl corruption couple days ago:
+> 
+> 	https://lkml.org/lkml/2014/9/4/599
+> 
+> Could this be related?
+> 
 
-On Mon, 08 Sep 2014 17:22:36 +0800, Ley Foon Tan said:
-> This patch adds support for loadable modules.
->
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+Possibly although the likely explanation then would be that there is
+just general corruption coming from somewhere. Even using your config
+and applying a patch to make linux-next boot (already in Tejun's tree)
+I was unable to reproduce the problem after running for several hours. I
+had to run trinity on tmpfs as ext4 and xfs blew up almost immediately
+so I have a few questions.
 
-> +/*
-> + * Modules should NOT be allocated with kmalloc for (obvious) reasons.
-> + * But we do it for now to avoid relocation issues. CALL26/PCREL26 cannot reach
-> + * from 0x80000000 (vmalloc area) to 0xc00000000 (kernel) (kmalloc returns
-> + * addresses in 0xc0000000)
-> + */
+1. What filesystem are you using?
 
-That's a nice scary comment to see. :)
+2. What compiler in case it's an experimental compiler? I ask because I
+   think I saw a patch from you adding support so that the kernel would
+   build with gcc 5
 
-What's the long-term plan here?
+3. Does your hardware support TSX or anything similarly funky that would
+   potentially affect locking?
 
---==_Exmh_1410297958_3387P
-Content-Type: application/pgp-signature
+4. How many sockets are on your test machine in case reproducing it
+   depends in a machine large enough to open a timing race?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+As I'm drawing a blank on what would trigger the bug I'm hoping I can
+reproduce this locally and experiement a bit.
 
-iQIVAwUBVA9wZgdmEQWDXROgAQLPnhAAnAPmjPRb6kVb+COoyqcTT8eU2H2FC1N+
-a4YnhzT1D+VI9MBar4uWi/kXi9KNonJZpG06UF6/z9hTfkD8NzL++MMRY1PP7qMJ
-uJM3NCMRnXtZFUv2v0vlBB3aEDcHcCK6pG/GeSe6tzeFXXMfBnKggavq/xmg3mq0
-qutlKnVa4gRAJ6MgmB0sbtt1exbQ2yr5Jb1pCP4/RlApOXn+EmzriO6A+jP3EZjr
-j1+B6LgixOetZ44RhNLLB3Zi0xe0h5bt0bDjjMJhWB9obMbN9iPAcO1zZogxGkKF
-SdGiNue1swoqUkvpk/B4LfJnaFkSTfvZqXAm4WfnKMMZeZKq/Fs0Uj1jnssXtzMT
-xu9RFVJhdcf1vcK60prLMttk6P+CKreU9c74GGX/j3LeaRwscRsW9x1qeD0r6Ztx
-uQcGb8znX4jWm+EAAgrdCR8jkQ3KmmrwknG47V3zrdiAh5Yzs+ubpIGGgieYoIrv
-LkZEYksd+BB79361ihzfryzm6gleb3iZOp+KLnE97D+PoSPU8AjKbwjL4bcf0QzG
-iTZXlLhSPwViA5+5RDit+E53td80wAmi7FSU2+U5wXFFj/Mh60yScwgtyJOiGpF/
-x0B11XsyDlcoNyp+60tVT9whMh5t4z/DutWERGa3FJI5DO3pqtAeKgNJOXHM4ChS
-NWKSbTNkKiA=
-=5sxg
------END PGP SIGNATURE-----
+Thanks.
 
---==_Exmh_1410297958_3387P--
+-- 
+Mel Gorman
+SUSE Labs
