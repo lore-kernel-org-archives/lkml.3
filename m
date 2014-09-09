@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaIIUED (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:04:03 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:33027 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbaIIUEA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:04:00 -0400
-X-Auth-Info: 2NOsY7g+X76+DJLTfPfUmX6yO713qAjWxbFfMu3smf8=
-From: Marek Vasut <marex@denx.de>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] fix mmc hang during boot on socfpga
-Date: Tue, 9 Sep 2014 20:57:51 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20140909121902.GA22965@amd> <CAOesGMgvqvQw2WzdQWQ7NSE_CKgH0MR-46UABkck0cQbpV4P=g@mail.gmail.com>
-In-Reply-To: <CAOesGMgvqvQw2WzdQWQ7NSE_CKgH0MR-46UABkck0cQbpV4P=g@mail.gmail.com>
+	id S1752455AbaIIUEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:04:22 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:56152 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175AbaIIUEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 16:04:01 -0400
+Date: Tue, 9 Sep 2014 14:03:44 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Scot Doyle <lkml14@scotdoyle.com>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tpm: fix interrupt timeouts
+Message-ID: <20140909200344.GB14765@obsidianresearch.com>
+References: <alpine.LNX.2.11.1408250710470.1443@localhost.localdomain>
+ <201409092144.35387.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409092057.51839.marex@denx.de>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201409092144.35387.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 09, 2014 at 07:32:14 PM, Olof Johansson wrote:
-> On Tue, Sep 9, 2014 at 5:19 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> > Without this patch, boot hangs when trying to mount root filesystem on
-> > socfpga platform in about 50% cases.
+On Tue, Sep 09, 2014 at 09:44:35PM +0200, Peter Hüwe wrote:
+> Hi Scot,
+> Am Montag, 25. August 2014, 09:14:03 schrieb Scot Doyle:
+> > commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e
+> >     wait: fix false timeouts when using wait_event_timeout()
+> > 
+> > changed the semantics of wait_event_interruptible_timeout so that a
+> > condition check is performed after timeout and 1 is returned if true.
 > 
-> I think this should have a better description than this -- this is too
-> vague. Did it use to always work, is this a new failure? You enable
-> some more error checking and improved stop handling, why was the
-> previous one inadequate on this platform?
+> is this one still valid or superseeded by one of the other patches?
 
-+1
+It is not correct, so NAK on this patch.
 
-nit: It would also be nice if this patch contained proper mmc: tag in the 
-Subject line (which applies to all other socfpga patches across all MLs).
-
-Best regards,
-Marek Vasut
+Jason
