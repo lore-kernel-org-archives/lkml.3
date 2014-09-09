@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaIIVtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 17:49:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41161 "EHLO
+	id S1752753AbaIIVtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 17:49:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41165 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326AbaIIVtk (ORCPT
+	with ESMTP id S1751268AbaIIVtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 17:49:40 -0400
+	Tue, 9 Sep 2014 17:49:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] trace/trace_stat: fix a race condition in register_stat_tracer
-Date: Tue,  9 Sep 2014 22:49:35 +0100
-Message-Id: <1410299375-20068-1-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH] trace/trace_stat: Fix return values in error handling paths
+Date: Tue,  9 Sep 2014 22:49:41 +0100
+Message-Id: <1410299381-20108-1-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A race condition exits (at least theoretically) if a tracer_stat
-registration is interrupted after verifying it hasn't been registered yet
-but before being added to the all_stat_sessions list.
-
-This patch fixes this race by making both operations atomic (protected by
-the all_stat_sessions_mutex mutex).
+tracing_stat_init() was always returning '0', even on the error paths.  It
+now returns -ENODEV if tracing_init_dentry() fails or -ENOMEM if it fails
+to created the 'trace_stat' debugfs directory.
 
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace_stat.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ kernel/trace/trace_stat.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/trace/trace_stat.c b/kernel/trace/trace_stat.c
-index 7af67360b330..cb70ac12cfe4 100644
+index cb70ac12cfe4..b7a6fcebfbb7 100644
 --- a/kernel/trace/trace_stat.c
 +++ b/kernel/trace/trace_stat.c
-@@ -310,16 +310,6 @@ int register_stat_tracer(struct tracer_stat *trace)
- 	if (!trace->stat_start || !trace->stat_next || !trace->stat_show)
- 		return -EINVAL;
+@@ -277,19 +277,23 @@ static int tracing_stat_init(void)
  
--	/* Already registered? */
--	mutex_lock(&all_stat_sessions_mutex);
--	list_for_each_entry(node, &all_stat_sessions, session_list) {
--		if (node->ts == trace) {
--			mutex_unlock(&all_stat_sessions_mutex);
--			return -EINVAL;
--		}
--	}
--	mutex_unlock(&all_stat_sessions_mutex);
--
- 	/* Init the session */
- 	session = kzalloc(sizeof(*session), GFP_KERNEL);
- 	if (!session)
-@@ -337,10 +327,21 @@ int register_stat_tracer(struct tracer_stat *trace)
+ 	d_tracing = tracing_init_dentry();
+ 	if (!d_tracing)
+-		return 0;
++		return -ENODEV;
  
- 	/* Register */
- 	mutex_lock(&all_stat_sessions_mutex);
-+	/* Already registered? */
-+	list_for_each_entry(node, &all_stat_sessions, session_list) {
-+		if (node->ts == trace) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
+ 	stat_dir = debugfs_create_dir("trace_stat", d_tracing);
+-	if (!stat_dir)
++	if (!stat_dir) {
+ 		pr_warning("Could not create debugfs "
+ 			   "'trace_stat' entry\n");
++		return -ENOMEM;
 +	}
- 	list_add_tail(&session->session_list, &all_stat_sessions);
-+
-+out:
- 	mutex_unlock(&all_stat_sessions_mutex);
-+	if (ret)
-+		destroy_session(session);
- 
--	return 0;
-+	return ret;
+ 	return 0;
  }
  
- void unregister_stat_tracer(struct tracer_stat *trace)
+ static int init_stat_file(struct stat_session *session)
+ {
+-	if (!stat_dir && tracing_stat_init())
+-		return -ENODEV;
++	int ret;
++
++	if (!stat_dir && (ret = tracing_stat_init()))
++		return ret;
+ 
+ 	session->file = debugfs_create_file(session->ts->name, 0644,
+ 					    stat_dir,
 -- 
 1.9.1
 
