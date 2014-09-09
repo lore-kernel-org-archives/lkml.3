@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420AbaIIKUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:20:34 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58680 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756033AbaIIKUc (ORCPT
+	id S932218AbaIIKVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:21:16 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:34549 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521AbaIIKVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:20:32 -0400
-Date: Tue, 9 Sep 2014 11:19:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: jiwang <jiada_wang@mentor.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140909101954.GO2601@sirena.org.uk>
-References: <540EBC14.6090002@mentor.com>
+	Tue, 9 Sep 2014 06:21:14 -0400
+Message-ID: <540ED495.20609@collabora.co.uk>
+Date: Tue, 09 Sep 2014 12:21:09 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tzZdJ4yHDV5r1Akt"
-Content-Disposition: inline
-In-Reply-To: <540EBC14.6090002@mentor.com>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.152.174.147
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: question about two ASoC commits
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
+References: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
+In-Reply-To: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[adding Lee Jones to cc list since I'm referring on a series he posted]
 
---tzZdJ4yHDV5r1Akt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hello Sjoerd,
 
-On Tue, Sep 09, 2014 at 05:36:36PM +0900, jiwang wrote:
+On 09/09/2014 09:52 AM, Sjoerd Simons wrote:
+> For i2c devices in OF the modalias exposed to userspace is i2c:<node
+> type>, for the Maxtouch driver this is i2c:maxtouch.
+> 
+> Add maxtouch to the i2c id table such that userspace can correctly
+> load the module for the device and drop the OF table as it's not
+> needed for i2c devices.
+> 
+> Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+> ---
+>  drivers/input/touchscreen/atmel_mxt_ts.c | 8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index db178ed..57ff26d 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -2267,16 +2267,11 @@ static int mxt_resume(struct device *dev)
+>  
+>  static SIMPLE_DEV_PM_OPS(mxt_pm_ops, mxt_suspend, mxt_resume);
+>  
+> -static const struct of_device_id mxt_of_match[] = {
+> -	{ .compatible = "atmel,maxtouch", },
+> -	{},
+> -};
+> -MODULE_DEVICE_TABLE(of, mxt_of_match);
+> -
+>  static const struct i2c_device_id mxt_id[] = {
+>  	{ "qt602240_ts", 0 },
+>  	{ "atmel_mxt_ts", 0 },
+>  	{ "atmel_mxt_tp", 0 },
+> +	{ "maxtouch", 0 },
+>  	{ "mXT224", 0 },
+>  	{ }
+>  };
+> @@ -2286,7 +2281,6 @@ static struct i2c_driver mxt_driver = {
+>  	.driver = {
+>  		.name	= "atmel_mxt_ts",
+>  		.owner	= THIS_MODULE,
+> -		.of_match_table = of_match_ptr(mxt_of_match),
+>  		.pm	= &mxt_pm_ops,
+>  	},
+>  	.probe		= mxt_probe,
+> 
 
-> Can anyone tell me what is the reasoning of the following two commits
-> commit: 5d16333 ASoC: SND_SOC_DAIFMT_NB_NF become 0 as default settings
-> commit: eef28e1 ASoC: SND_SOC_DAIFMT_GATED become 0 as default settings
+I see that Lee is working to allow the I2C subsystem to not need an I2C ID
+table to match [0]. I'll let Lee to comment what the future plans are and if
+his series are going to solve your issue since I'm not that familiar with the
+I2C core.
 
-> with these two commits, now we have
-> #define SND_SOC_DAIFMT_GATED            (0 << 4)
-> #define SND_SOC_DAIFMT_NB_NF            (0 << 8)
-> in soc-dai.h
-> what's the good to shift 0 with different numbers?
-> no matter the number, they both equal to 0.
+Best regards,
+Javier
 
-> IMO all bit flags which share same variable (in this case SND_SOC_DAIFMT)
-> should have different value, isn't it?
-
-As the commit message says this is so that we have a default value which
-does something sensible.
-
---tzZdJ4yHDV5r1Akt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUDtRGAAoJECTWi3JdVIfQA2IH/A8dAfkH0NtNNmcsbp0hPtTN
-x5jX9TqWHRxm51/MYdFFmcS6PY6bRLv+cNcTBvqNaxpuBzfa/wiwdhIQ/m52cAmw
-09Ws/1kX2eQmyhGiykj4bJVUWsXMAEfxcjt7s+TgBMAgQCHWfXuBqqOibY2ZBbuV
-S2Gx12iggdvj5smdtMww99P6j5owTvbP7qDAaDBXV8YtnmXN4xWWHqGoIVPZJnBI
-ZGIHwPbR2tiwHbVcQ1R0auSZuTWuebeG2AytHJ9y8tyickUL1TDxdLG1A7WxAfpt
-b1kFFaUaJAUv9QO8QA5mtyOAYQTlTuRN26TIm0c0JPyDCDocH3h7tkAmueKSXMc=
-=1OYb
------END PGP SIGNATURE-----
-
---tzZdJ4yHDV5r1Akt--
+[0]: https://lkml.org/lkml/2014/6/20/199
