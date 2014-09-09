@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382AbaIIL3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:29:25 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22482 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaIIL3Y (ORCPT
+	id S932348AbaIILaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:30:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43071 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054AbaIIL36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:29:24 -0400
-Date: Tue, 9 Sep 2014 13:28:47 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, mingo@redhat.com, hpa@zytor.com,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] xen/efi: Directly include needed headers
-Message-ID: <20140909112847.GM3459@olila.local.net-space.pl>
-References: <1410182538-18783-1-git-send-email-daniel.kiper@oracle.com>
- <540DE8F0.8040303@citrix.com>
+	Tue, 9 Sep 2014 07:29:58 -0400
+Message-ID: <540EE4B0.70207@ti.com>
+Date: Tue, 9 Sep 2014 16:59:52 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540DE8F0.8040303@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Nishanth Menon <nm@ti.com>
+CC: <bcousson@baylibre.com>, <tony@atomide.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [resend PATCH 0/3] Add DRA7xx CPSW Ethernet support in Device
+ Tree
+References: <1410203998-8700-1-git-send-email-mugunthanvnm@ti.com> <20140908193440.GC12150@kahuna>
+In-Reply-To: <20140908193440.GC12150@kahuna>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 06:35:44PM +0100, David Vrabel wrote:
-> On 08/09/14 14:22, Daniel Kiper wrote:
-> > I discovered that some needed stuff is defined/declared in headers
-> > which are not included directly. Currently it works but if somebody
-> > remove required headers from currently included headers then build
-> > will break. So, just in case directly include all needed headers.
->
-> Seems rather pointless, but harmless.
->
-> Applied to devel/for-linus-3.18
+On Tuesday 09 September 2014 01:04 AM, Nishanth Menon wrote:
+> On 00:49-20140909, Mugunthan V N wrote:
+>> > Adding device tree entry for CPSW to make it work in Dual EMAC mode.
+>> > 
+>> > These patches were tested with DRA7 hwmod patches on top of linux-next.
+>> > The patches were already reviewed [1] and has been waiting for cross bar
+>> > and hwmod to be pulled in. Now since all dependent patches has already
+>> > pulled in, so reposting the patches again.
+>> > 
+>> > Patches are tested on linux-next, the boot logs on DRA7xx EVM [2]
+>> > 
+>> > [1] https://lkml.org/lkml/2014/5/13/89
+>> > [2] http://slexy.org/view/s2YqO0Wj9b 
+> Sorry this is now blocked inside TI. could you explain the testing done
+> for sleep state? did you attempt sleep mode before testing this?
+> 
 
-Thanks.
+I have not tested sleep mode, just tested boot and ping test.
 
-Daniel
+Regards
+Mugunthan V N
