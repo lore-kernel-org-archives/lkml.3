@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592AbaIILn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:43:28 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:47993 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640AbaIILn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:43:27 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: dianders@chromium.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, sameo@linux.intel.com, lee.jones@linaro.org,
-        lgirdwood@gmail.com, a.zummo@towertech.it, mturquette@linaro.org,
-        akpm@linux-foundation.org, broonie@kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, olof@lixom.net, sonnyrao@chromium.org,
-        dtor@chromium.org, javier.martinez@collabora.co.uk,
-        kever.yang@rock-chips.com
-Subject: Re: [PATCH v9 0/3] Add rockchip RK808 pmic driver
-Date: Tue, 09 Sep 2014 13:45:24 +0200
-Message-ID: <6686857.xs1HS8QUx8@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
-References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
+	id S1756606AbaIILoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:44:16 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:53435 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbaIILoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 07:44:14 -0400
+Message-ID: <540EE809.9020901@mojatatu.com>
+Date: Tue, 09 Sep 2014 07:44:09 -0400
+From: Jamal Hadi Salim <jhs@mojatatu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
+        grant.likely@linaro.org, devicetree@vger.kernel.org, sandeep_n@ti.com,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        shrijeet Mukherjee <shm@cumulusnetworks.com>
+Subject: Re: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
+References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com> <20140821.163612.282672926741753926.davem@davemloft.net> <53F79DC5.8030003@ti.com> <540DC00F.1080103@ti.com>
+In-Reply-To: <540DC00F.1080103@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On 09/08/14 10:41, Santosh Shilimkar wrote:
 
-Am Donnerstag, 4. September 2014, 09:12:36 schrieb Chris Zhong:
-> This is the initial version of the RK808 PMIC. This is a power management IC
-> for multimedia products.
-> 
-> It provides regulators that are able to supply power to processor cores
-> and other components. The chip provides other modules including RTC,
-> Clockout
+>> The NetCP plugin module infrastructure use all the standard kernel
+>> infrastructure and its very tiny.
 
+So i found this manual here:
+http://www.silica.com/fileadmin/02_Products/Productdetails/Texas_Instruments/SILICA_TI_66AK2E05-ds.pdf
 
-> Chris Zhong (3):
->   RTC: RK808: add RTC driver for RK808
->   clk: RK808: Add clkout driver for RK808
->   regulator: RK808: Remove pdata from the regulator
+Glad there is an open document!
+There are a couple of ethernet switch chips I can spot there.
 
-It looks like the rk808 driver that is currently in the regulator tree [0] is 
-producing compile errors. After applying your regulator patch from this series 
-it again compiles - and works.
+Can i control those with "bridge" or say "brctl" utilities?
 
-So could you try to fast track this please? If you're short on time you could 
-also just fix the small comment you received for patch3 and send it alone 
-without the first two.
+I can see the bridge ports are exposed and i should be able to
+control them via ifconfig or ip link. Thats what "standard
+kernel infrastructure" means. Magic hidden in a driver is
+not.
 
+Take a look at recent netconf discussion (as well as earlier
+referenced discussions):
+http://vger.kernel.org/netconf-nf-offload.pdf
 
-Heiko
+Maybe we can help providing you some direction?
+The problem is it doesnt seem that the offload specs for
+those other pieces are open? e.g how do i add an entry
+to the L2 switch?
 
-
-[0] 
-https://git.kernel.org/cgit/linux/kernel/git/broonie/regulator.git/log/?h=topic/rk808
+cheers,
+jamal
