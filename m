@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaIIJYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:24:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55228 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932089AbaIIJYQ (ORCPT
+	id S932273AbaIIJYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:24:53 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:35435 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173AbaIIJYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:24:16 -0400
-Date: Tue, 9 Sep 2014 11:24:11 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] irqchip: atmel-aic: add RTT irq fixup
-Message-ID: <20140909092411.GH14623@piout.net>
-References: <1409735271-15353-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 9 Sep 2014 05:24:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409735271-15353-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <540DBE43.50403@ti.com>
+References: <1409758637-28654-1-git-send-email-gabriel.fernandez@linaro.org>
+	<1409758637-28654-2-git-send-email-gabriel.fernandez@linaro.org>
+	<540DBE43.50403@ti.com>
+Date: Tue, 9 Sep 2014 11:24:50 +0200
+Message-ID: <CAG374jDLuwxYfxqY9UGt7+5gqo7eZxFn-=ehEpRJQfyCeWG3fQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/8] phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        alexandre torgue <alexandre.torgue@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2014 at 11:07:46 +0200, Boris Brezillon wrote :
-> Hello,
-> 
-> This patch series add a new fixup function for the RTT (Real Time Timer)
-> block and make use of it on SoCs integrating at least one RTT to prevent
-> spurious interrupts on the first interrupt line.
-> 
-> This fixup function was previously implemented in
-> arch/arm/mach-at91/sysirq_mask.c, but is now moved to the AIC driver so
-> that we can remove SoC specific hooks in arch/arm/mach-at91/ when booting
-> a DT kernel.
-> 
-> This series also reworks the naming convention of the SoC specific fixup
-> functions and add an entry for the at91rm9200.
-> 
-> The series depends on the acceptation of the RTT DT bindings proposed here
-> [1].
-> 
+Hi Kishon,
 
-Whole series is:
+ok will be fix to v3
 
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+BR
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Gabriel
+
+On 8 September 2014 16:33, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi,
+>
+> On Wednesday 03 September 2014 09:07 PM, Gabriel FERNANDEZ wrote:
+>> The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
+>> or USB3 devices.
+>>
+>> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+>> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+>> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+>> ---
+>>  .../devicetree/bindings/phy/phy-miphy28lp.txt      | 126 +++++++++++++++++++++
+>>  1 file changed, 126 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+>> new file mode 100644
+>> index 0000000..5e307af
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+>> @@ -0,0 +1,126 @@
+>> +STMicroelectronics STi MIPHY28LP PHY binding
+>> +============================================
+>> +
+>> +This binding describes a miphy device that is used to control PHY hardware
+>> +for SATA, PCIe or USB3.
+>> +
+>> +Required properties (controller (parent) node):
+>> +- compatible : Should be "st,miphy28lp-phy"
+>> +- st,syscfg  : Should be a phandle of the system configuration register group
+>> +               which contain the SATA, PCIe or USB3 mode setting bits
+>> +
+>> +Required nodes       :  A sub-node is required for each channel the controller
+>> +                provides. Address range information including the usual
+>> +                'reg' and 'reg-names' properties are used inside these
+>> +                nodes to describe the controller's topology. These nodes
+>> +                are translated by the driver's .xlate() function.
+>> +
+>> +Required properties (port (child) node):
+>> +- #phy-cells : Should be 1 (See second example)
+>> +               Cell after port phandle is device type from:
+>> +                     - MIPHY_TYPE_SATA
+>> +                     - MIPHY_TYPE_PCI
+>> +                     - MIPHY_TYPE_USB3
+>> +- reg                : Address and length of the register set for the device
+>> +- reg-names  : The names of the register addresses corresponding to the registers
+>> +               filled in "reg". Is can also contain the offset of the system configuration
+>
+> %s/Is/It
+>
+> Thanks
+> Kishon
