@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaIISlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:41:35 -0400
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:35853 "EHLO
-	homiemail-a14.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752395AbaIISld (ORCPT
+	id S1752485AbaIISlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:41:45 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:63631 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446AbaIISln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:41:33 -0400
-Message-ID: <1410288016.29588.2.camel@linux-t7sj.site>
-Subject: Re: man-pages-3.72 is released
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Date: Tue, 09 Sep 2014 11:40:16 -0700
-In-Reply-To: <540C64E0.2030201@gmail.com>
-References: <540C64E0.2030201@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Sep 2014 14:41:43 -0400
+Date: Tue, 9 Sep 2014 11:41:31 -0700
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Shengjiu Wang <shengjiu.wang@freescale.com>, timur@tabi.org,
+        Li.Xiubo@freescale.com, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
+Message-ID: <20140909184130.GB6944@Asurada>
+References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+ <20140909112750.GS2601@sirena.org.uk>
+ <20140909180309.GA6784@Asurada>
+ <20140909181516.GI2601@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909181516.GI2601@sirena.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michael,
-
-On Sun, 2014-09-07 at 07:00 -0700, Michael Kerrisk (man-pages) wrote:
-> Gidday,
+On Tue, Sep 09, 2014 at 07:15:16PM +0100, Mark Brown wrote:
+> On Tue, Sep 09, 2014 at 11:03:10AM -0700, Nicolin Chen wrote:
+> > On Tue, Sep 09, 2014 at 12:27:50PM +0100, Mark Brown wrote:
+> > > On Tue, Sep 09, 2014 at 05:18:07PM +0800, Shengjiu Wang wrote:
+> > > > -	ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
+> > > > +	ssi_private->clk = devm_clk_get(&pdev->dev, "ipg");
 > 
-> The Linux man-pages maintainer proudly announces:
+> > > Why is this change being made?  It wasn't mentioned in the commit log
+> > > and doesn't seem relevant to moving where the enable and disable are
+> > > done which is what the patch is supposed to be doing...
 > 
->     man-pages-3.72 - man pages for Linux
+> > I think Shengjiu is trying to keep the clock disabled while SSI's idle.
+> > The current driver enables ipg clock anyway even if there's no stream
+> > running.
 > 
-> Tarball download:
->     http://www.kernel.org/doc/man-pages/download.html
-> Git repository:
->     https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
-> Online changelog:
->     http://man7.org/linux/man-pages/changelog.html#release_3.72
+> > Apparently, these should be put into the comment log.
 > 
-> A short summary of the release is blogged at:
-> http://linux-man-pages.blogspot.com/2014/09/man-pages-372-is-released.html
+> I got that bit.  However as well as changing where the enable and
+> disable take place this is also changing from requesting a clock with a
+> NULL to requesting one called "ipg".
 
-I realized that this this:
-
-https://lkml.org/lkml/2014/6/3/675
-
-(or an equivalent) isn't in shmctl.2. Let me know if you want me to
-resend/correct anything. Hopefully such information can be added in the
-near future.
-
-Thanks,
-Davidlohr
-
+Understood. Making one patch do one single change is the rule we should
+always follow.
