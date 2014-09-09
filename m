@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428AbaIIRTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:19:11 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:65485 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151AbaIIRTJ (ORCPT
+	id S1757279AbaIIRVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:21:09 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43988 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913AbaIIRVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:19:09 -0400
+	Tue, 9 Sep 2014 13:21:08 -0400
+Date: Tue, 9 Sep 2014 13:16:58 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, cxie@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140909171658.GB14429@logfs.org>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
+ <20140424194024.GA25446@logfs.org>
+ <20140428234039.GC6358@logfs.org>
+ <20140428172219.4be61cf7.akpm@linux-foundation.org>
+ <20140604231506.GA31276@logfs.org>
 MIME-Version: 1.0
-In-Reply-To: <20140909131036.7265121f.m.chehab@samsung.com>
-References: <20140909124306.2d5a0d76@canb.auug.org.au>
-	<6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
-	<b7343e6296b5d1d68b7229b8307442fd4141bcb3.1410273306.git.m.chehab@samsung.com>
-	<540F15B2.3000902@samsung.com>
-	<20140909120936.527bd852.m.chehab@samsung.com>
-	<540F1D11.9030400@samsung.com>
-	<20140909131036.7265121f.m.chehab@samsung.com>
-Date: Tue, 9 Sep 2014 14:19:07 -0300
-Message-ID: <CAOMZO5ASN_Kcp4q-stmsoXBFcmtJLyyeEEpwy=U40qqghT7vXA@mail.gmail.com>
-Subject: Re: [PATCHv2 2/3] [media] s5p-jpeg: Fix compilation with COMPILE_TEST
-From: Fabio Estevam <festevam@gmail.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140604231506.GA31276@logfs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 1:10 PM, Mauro Carvalho Chehab
-<m.chehab@samsung.com> wrote:
-> ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undefined!
->
-> That happens because asm-generic doesn't like any ndelay time
-> bigger than 20us.
->
-> Currently, usleep_range() couldn't simply be used, since
-> exynos4_jpeg_sw_reset() is called with a spinlock held.
->
-> So, let's use ndelay() instead.
+On Wed, 4 June 2014 19:15:06 -0400, Jörn Engel wrote:
+> On Mon, 28 April 2014 17:22:19 -0700, Andrew Morton wrote:
+> > On Mon, 28 Apr 2014 19:40:39 -0400 J__rn Engel <joern@logfs.org> wrote:
+> > > On Thu, 24 April 2014 15:40:24 -0400, J__rn Engel wrote:
+> > > > On Wed, 23 April 2014 20:52:47 -0400, J__rn Engel wrote:
+> > > > > 
+> > > > > I use the patch below for some time now.  While it doesn't avoid the
+> > > > > log pollution in the first place, it lessens the impact somewhat.
+> > > > 
+> > > > Added a config option and ported it to current -linus.  Andrew, would
+> > > > you take this patch?
+> > > 
+> > > Andrew?  Did you dislike this patch for some reason or just miss it in
+> > > the thread?
+> > 
+> > Neither ;) I try to respond in some way to all patches unless I think it's clear
+> > to the originator why I took no action.  And I think I'm pretty good at
+> > not losing stuff.
+> > 
+> > otoh, it has only been four days, three of which I spent offline...
+> 
+> Ping.
 
-You meant 'udelay() instead'.
+Ping.
+
+Jörn
+
+--
+Fancy algorithms are slow when n is small, and n is usually small.
+Fancy algorithms have big constants. Until you know that n is
+frequently going to be big, don't get fancy.
+-- Rob Pike
