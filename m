@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaIIWq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:46:28 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48467 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752131AbaIIWq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:46:26 -0400
-Message-ID: <1410302783.13298.50.camel@jarvis.lan>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Tue, 09 Sep 2014 15:46:23 -0700
-In-Reply-To: <20140909224143.GB3154@mtj.dyndns.org>
-References: <20140905174925.GA12991@mtj.dyndns.org>
-	 <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
-	 <20140905224047.GC15723@mtj.dyndns.org>
-	 <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
-	 <20140909011059.GB11706@mtj.dyndns.org>
-	 <1410241109.2028.22.camel@jarvis.lan>
-	 <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
-	 <1410291346.13298.16.camel@jarvis.lan>
-	 <20140909214240.GA3154@mtj.dyndns.org>
-	 <1410301562.13298.35.camel@jarvis.lan>
-	 <20140909224143.GB3154@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	id S1752838AbaIIWub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:50:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38050 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150AbaIIWu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 18:50:29 -0400
+Message-ID: <540F8425.70304@ti.com>
+Date: Tue, 9 Sep 2014 18:50:13 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <bhelgaas@google.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] PCI: keystone: update to support multiple pci
+ ports
+References: <1410293835-13050-1-git-send-email-m-karicheri2@ti.com> <9042477.aRbAhpkfQ5@wuerfel> <540F75DF.5050904@ti.com> <3967092.l9bxcqMaSa@wuerfel>
+In-Reply-To: <3967092.l9bxcqMaSa@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 07:41 +0900, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Sep 09, 2014 at 03:26:02PM -0700, James Bottomley wrote:
-> > > We no longer report back error on probe failure on module load.
-> > 
-> > Yes, we do; for every probe failure of a device on a driver we'll print
-> > a warning (see drivers/base/dd.c).  Now if someone is proposing we
-> > should report this in a better fashion, that's probably a good idea, but
-> > I must have missed that patch.
-> 
-> We can do printks all the same from anywhere.  There's nothing special
-> about printing from the module loading thread.  The only way to
-> actually take advantage of the synchronisity would be propagating
-> error return to the waiting issuer, which we used to do but no longer
-> can.
+On 09/09/2014 05:52 PM, Arnd Bergmann wrote:
+> On Tuesday 09 September 2014 17:49:19 Murali Karicheri wrote:
+>> Actually this is an inteded. The vendor ID is in a register indicated by
+>> reg offset and as per the device spec, it needs to be read and updated
+>> by the software. Now since multiple instances of PCI device needs to be
+>> read the same register, the reading happens in the probe() and same is
+>> unmapped after that.
+>>
+>> +       ks_pcie->device_id = readl(reg_p)>>  16;
+>> +       devm_iounmap(dev, reg_p);
+>> +       devm_release_mem_region(dev, res->start, resource_size(res));
+>>
+>> Afetr that in ks_pcie_host_init(), it update the device_id in the RC's
+>> config space.
+>
+> I'm not sure I understand the purpose of this. Do you mean you read
+> the vendor/device ID of whichever device happens to get probed first
+> and then program the same ID into all other devices as well?
 
-If you want the return of an individual device probe a log scraper gives
-it to you ... and nothing else does currently.  The advantage of the
-prink in dd.c is that it's standard for everything and can be scanned
-for ... if you take that out, you'll get complaints about the lack of
-standard messages (you'd be surprised at the number of enterprise
-monitoring systems that actually do log scraping).
+My mistake. It is the device ID, not vendor ID. The PCI driver supports 
+PCI h/w on K2HK, K2E and K2L SoCs for which PCI device IDs are assigned as
 
-> > >   It
-> > > used to make sense to indicate error for module load on probe failure
-> > > when the hardware was a lot simpler and drivers did their own device
-> > > enumeration.  With the current bus / device setup, it doesn't make any
-> > > sense and driver core silently suppresses all probe failures.  There's
-> > > nothing the probing thread can monitor anymore.
-> > 
-> > Except the length of time taken to probe.  That seems to be what systemd
-> > is interested in, hence this whole thread, right?
-> 
-> No, systemd in this case isn't interested in the time taken to probe
-> at all.  It is expecting module load to just do that - load the
-> module.  Modern userlands, systemd or not, no longer depend on or make
-> use of the wait.
++#define PCIE_RC_K2HK		0xb008
++#define PCIE_RC_K2E		0xb009
++#define PCIE_RC_K2L		0xb00a
++
 
-So what's the problem?  it can just fire and forget; that's what fork()
-is for.
+and the same driver code runs on all these h/w. The device ID is not 
+filled in by default by the h/w, in the config space of the RC at offset 
+1000h "VENDOR_DEVICE_ID Vendor and Device Identification Register". 
+Same is available in a seperate SoC register whose offset is specified 
+by index 2. This is read by driver and updated in the config space. The 
+Vendor ID is however set by default.
 
-> > But that's nothing to do with sync or async.  Nowadays we register a
-> > driver, the driver may bind to multiple devices.  If one of those
-> > devices encounters an error during probe, we just report the fact in
-> > dmesg and move on.  The module_init thread currently returns when all
-> > the probe routines for all enumerated devices have been called, so
-> > module_init has no indication of any failures (because they might be
-> > mixed with successes); successes are indicated as the device appears but
-> > we have nothing other than the kernel log to indicate the failures.  How
-> > does moving to async probing alter this?  It doesn't as far as I can
-> > see, except that module_init returns earlier but now we no longer have
-> > an indication of when the probe completes, so we have to add yet another
-> > mechanism to tell us if we're interested in that.  I really don't see
-> > what this buys us.
-> 
-> The thing is that we have to have dynamic mechanism to listen for
-> device attachments no matter what and such mechanism has been in place
-> for a long time at this point.  The synchronous wait simply doesn't
-> serve any purpose anymore and kinda gets in the way in that it makes
-> it a possibly extremely slow process to tell whether loading of a
-> module succeeded or not because the wait for the initial round of
-> probe is piggybacked.
+There is a mrrs PCI quirk required for Keystone PCI which depends on 
+this vendor ID to be filled correctly as it match vendor id/ device id 
+of the bridge device to apply the quirk.
 
-OK, so we just fire and forget in userland ... why bother inventing an
-elaborate new infrastructure in the kernel to do exactly what
+Hope this clarify your question.
 
-modprobe <mod> &
+Murali
 
-would do?
-
-James
-
+>
+> What if the order changes between two boots? Why does the vendor/device
+> ID of the host bridge even matter at all?
+>
+> 	Arnd
 
