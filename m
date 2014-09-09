@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558AbaIIMGN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:06:13 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:63339 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756185AbaIIMGL (ORCPT
+	id S1756031AbaIIMKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:10:25 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:50268 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274AbaIIMKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:06:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        devicetree@vger.kernel.org, srinivas.kandagatla@gmail.com,
-        linux-kernel@vger.kernel.org, patrice.chotard@st.com,
-        Peter Griffin <peter.griffin@linaro.org>, peppe.cavallaro@st.com,
-        kishon@ti.com, lee.jones@linaro.org, maxime.coquelin@st.com
-Subject: Re: [PATCH v2 1/4] phy: phy-stih407-usb: Add usb picoPHY driver found on stih407 SoC family
-Date: Tue, 09 Sep 2014 14:05:51 +0200
-Message-ID: <2931258.khlMVogpQg@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1706244.K6iQdujHby@amdc1032>
-References: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org> <1410253218-18318-2-git-send-email-peter.griffin@linaro.org> <1706244.K6iQdujHby@amdc1032>
+	Tue, 9 Sep 2014 08:10:23 -0400
+Message-ID: <540EEE2C.1090801@plexistor.com>
+Date: Tue, 09 Sep 2014 15:10:20 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:6EcUHxjwCBWXJLiXtQIuR+1LhR0nBNz/+N6Z4kUNcY6
- K+BlgSCeF7Ws9Ql6yNq+gUxv4mjxtM0K3h3CPCVX4/s9lHI88k
- hl4Oyveq+GHp8yuZFkFhEEATBenv0WYwKqWoSx5ia+m3HmsSgB
- UhGA7S+FhZDMq/m8QW3FUy/RWWrBW+oVqzElRL/Iw8SZFKriqN
- 2tfjC+Jl8/vJ8MuAylwbzqDVWkvhZ7REAurEbTcVlA96Cd35vU
- AxB0RzcjhruqjldQ5SeiFfguCCU4BYm2eP9FPWzICrA8xjauTE
- QqAo7oJvNyr1t1Vn+RN9ScvpQFyJWEp3dJGmwyTG0tkXe7Pq8G
- BRkBzg/GwT+qr8uUa6Yg=
-X-UI-Out-Filterresults: notjunk:1;
+To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCHSET 0/5 v2] brd: partition fixes
+References: <53FDF7AD.5000709@plexistor.com> <54044759.9080103@gmail.com>
+In-Reply-To: <54044759.9080103@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 September 2014 13:52:54 Bartlomiej Zolnierkiewicz wrote:
-> I believe that this should use
+On 09/01/2014 01:15 PM, Boaz Harrosh wrote:
+> On 08/27/2014 06:22 PM, Boaz Harrosh wrote:
+>> Jens Hi
+>>
+>> What do you intend to do with these fixes? These are real bugs on devices
+>> shipped for a while now. I think they need to go into current 3.17-rcX Kernel.
+>>
 > 
->         select GENERIC_PHY
+> Jens hi
 > 
-> instead (just like all other PHY drivers except PHY_MIPHY365X which
-> also should be fixed to use select).
+> I have seen that the brd patch went into rc3.
+> 
+> I should insist then, that these patches go into this rc cycle ASAP.
+> For one they fix real *hard* unexpected bugs with brd that make it trash data.
+> 
+> But specially because the patch to brd that just went into Kernel introduces
+> a wrong module parameter "show_part" which must be removed. If we release a Kernel
+> with it, it will be pain, we will need to deprecate it which is long and annoying
+> procedure. It is wrong because it must be always on. Pleas see below
+> 
+> This patchset is based on what just went into Kernel.
+> Also on git here: git://git.open-osd.org/pmem.git brd-partitions branch
+> 
+> [http://git.open-osd.org/gitweb.cgi?p=pmem.git;a=shortlog;h=refs/heads/brd-partitions]
+> 
+> Thanks
+> Boaz
+> 
+<>
+>> list of patches:
+>> [PATCH 1/5] axonram: Fix bug in direct_access
+>> [PATCH 2/5] Change direct_access calling convention
+<>
+>> [PATCH 3/5] brd: Add getgeo to block ops
+<>
+>> [PATCH 4/5] brd: Fix all partitions BUGs
+>> [PATCH 5/5] brd: Request from fdisk 4k alignment
 
-Right. It would also be good to change 'depends on ARCH_STI'
-into 'depends on ARCH_STI || COMPILE_TEST', but only if it
-actually compiles on x86.
+Ping Jens?
 
-Note that currently both providers and users of the PHY API
-use 'select GENERIC_PHY', which probably not what we want:
-only providers (like this one) should 'select' it, while
-drivers using this interface could either 'depends on
-GENERIC_PHY' or leave out the Kconfig dependency entirely.
+Please tell me what you want to do with these patches. They must go into this Kernel
+cycle before brd is released with wrong user-mode visible nub
 
-Adding 'depends on' for drivers using the interface might
-be cleaner, but can result in dependency loops.
+If you want you can drop the [PATCH 3/5] which is not important and can go in next
+cycle, but the others are real BUG fixes.
 
-	Arnd
+Thanks
+Boaz
+
