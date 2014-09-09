@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134AbaIIN5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:57:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46891 "EHLO mx2.suse.de"
+	id S1756653AbaIIOAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:00:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54057 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751172AbaIIN5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:57:15 -0400
-Date: Tue, 9 Sep 2014 15:57:10 +0200
-From: Joerg Roedel <jroedel@suse.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 04/12] iommu/arm-smmu: Convert to iommu_capable() API
- function
-Message-ID: <20140909135710.GE2519@suse.de>
-References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
- <1409914384-21191-5-git-send-email-joro@8bytes.org>
- <20140908165136.GW26030@arm.com>
+	id S1753943AbaIIOAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 10:00:15 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [GIT PULL] ARM: dts: OMAP5 / DRA7: pinctrl updates 
+Date: Tue, 9 Sep 2014 08:59:38 -0500
+Message-ID: <1410271178-28336-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140908165136.GW26030@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
 
-On Mon, Sep 08, 2014 at 05:51:36PM +0100, Will Deacon wrote:
-> On Fri, Sep 05, 2014 at 11:52:56AM +0100, Joerg Roedel wrote:
-> >  	switch (cap) {
-> >  	case IOMMU_CAP_CACHE_COHERENCY:
-> > -		return features & ARM_SMMU_FEAT_COHERENT_WALK;
-> > +		/*
-> > +		 * Use ARM_SMMU_FEAT_COHERENT_WALK as an indicator on whether
-> > +		 * the SMMU can force coherency on the DMA transaction. If it
-> > +		 * supports COHERENT_WALK it must be behind a coherent
-> > +		 * interconnect.
-> > +		 * A domain can be attached to any SMMU, so to reliably support
-> > +		 * IOMMU_CAP_CACHE_COHERENCY all SMMUs in the system need to be
-> > +		 * behind a coherent interconnect.
-> > +		 */
-> 
-> I don't think we should rely on the SMMU's advertisement of the coherent
-> table walk to mean anything other than `the SMMU can emit cacheable page
-> table walks'. The actual walker is a separate observer, and could have a
-> different route to memory than transactions flowing through the SMMU.
+Hi Tony,
 
-Okay, so this should be advertised via DT then.
+Please pull this series was posted[1] and based on the previous pulls
+[2] [3], updating the dts to enable the relevant feature.
 
-> In reality, all we can report here is what the SMMU (as opposed to the rest
-> of the system) is capable of. The SMMU can always emit cacheable
-> transactions for a master if a stage-1 translation is in use so, without
-> extending the device-tree binding, we should report true here
-> unconditionally.
+NOTE: I have dropped patch #1 of the series based on [4].
 
-Sounds more like we should return false here unconditionally until we
-have a reliable way to tell whether this feature is available, no? When
-we return true the user of the IOMMU-API might rely on coherency that is
-not available.
+These could go to your branch omap-for-v3.18/dt
 
-> An alternative is to extend the device-tree bindings to have something like
-> "dma-coherent" for the SMMU node, which would imply that the interconnect is
-> configured to honour snoops from the SMMU into the CPU caches. We might want
-> an additional property on top of that to indicate that the table walker is
-> also coherent (and we could check this against our ARM_SMMU_FEAT_COHERENT_WALK
-> flag)
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-Sounds like a good idea, as long as there is no other way to detect
-this.
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
+are available in the git repository at:
 
-	Joerg
+  https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/for-dt-pinctrl-updates
 
+for you to fetch changes up to 66b0436977e2c62388d48836ff784f1fedb49c4f:
+
+  ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable (2014-09-09 08:33:29 -0500)
+
+----------------------------------------------------------------
+Nishanth Menon (5):
+      ARM: dts: OMAP5: switch to compatible pinctrl
+      ARM: dts: DRA7: switch to compatible pinctrl
+      ARM: dts: AM437x: switch to compatible pinctrl
+      ARM: dts: OMAP5 / DRA7: switch over to interrupts-extended property for UART
+      ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable
+
+ arch/arm/boot/dts/am4372.dtsi  |    4 +++-
+ arch/arm/boot/dts/dra7-evm.dts |    2 ++
+ arch/arm/boot/dts/dra7.dtsi    |   24 +++++++++++++-----------
+ arch/arm/boot/dts/omap5.dtsi   |   20 ++++++++++++--------
+ 4 files changed, 30 insertions(+), 20 deletions(-)
+
+[1] http://marc.info/?l=linux-kernel&m=140871681606779&w=2
+[2] http://marc.info/?l=linux-kernel&m=141019565513129&w=2
+[3] http://marc.info/?l=linux-kernel&m=141019566913133&w=2
+[4] http://marc.info/?l=linux-omap&m=141022429924564&w=2
+
+Regards,
+Nishanth Menon
