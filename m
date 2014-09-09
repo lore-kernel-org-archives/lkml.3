@@ -1,141 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652AbaIIGBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 02:01:53 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35231 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaIIGBv (ORCPT
+	id S1755766AbaIIGCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 02:02:22 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:12405 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755675AbaIIGCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 02:01:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL85gmBRUuc3mtOGSkNuspEgkRQe42LV0e=fQfNmwcCicjT=vA@mail.gmail.com>
-References: <1393537013-6264-1-git-send-email-fkan@apm.com>
-	<CAFdej02vSm8TbUWGsMr936WN1GNmJ0SBuEKQkKyzKoEjtVmc+g@mail.gmail.com>
-	<CAL85gmBRUuc3mtOGSkNuspEgkRQe42LV0e=fQfNmwcCicjT=vA@mail.gmail.com>
-Date: Tue, 9 Sep 2014 11:31:49 +0530
-Message-ID: <CAFdej03AmUn92sSH=7Hfk0+yWEFWaywJt63DjeTc+nHSZeb61A@mail.gmail.com>
-Subject: Re: [PATCH V3] irqchip:gic: change access of gicc_ctrl register to
- read modify write.
-From: Arun Chandran <achandran@mvista.com>
-To: Feng Kan <fkan@apm.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>, patches <patches@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Vinayak Kale <vkale@apm.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Sep 2014 02:02:20 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f5-b7f776d000003e54-28-540e97e9d96b
+Content-transfer-encoding: 8BIT
+Message-id: <540E97E8.80701@samsung.com>
+Date: Tue, 09 Sep 2014 08:02:16 +0200
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v7 2/2] usb: gadget: f_fs: virtual endpoint address
+ mapping
+References: <1410163020-13910-1-git-send-email-r.baldyga@samsung.com>
+ <1410163020-13910-3-git-send-email-r.baldyga@samsung.com>
+ <20140908134733.GL22409@saruman.home>
+In-reply-to: <20140908134733.GL22409@saruman.home>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xq7ovp/OFGMybYWhx8H69RfPi9WwW
+	l3fNYbNYtKyV2YHFY//cNewex29sZ/L4vEkugDmKyyYlNSezLLVI3y6BK+Pr6gMsBQvFKy49
+	0Gxg/CnUxcjJISFgIjFlYxc7hC0mceHeerYuRi4OIYGljBKt3x6wgiR4BQQlfky+x9LFyMHB
+	LCAvceRSNoSpLjFlSi5E+UdGiestO1lB4rwCGhKrH5qAdLIIqEosXzCJDcRmE9CR2PJ9AiOI
+	LSoQJvHs10EmEFtEQEBi/YtL7BAjIyW2NIiCmMICERJ7rllCTF/JKLH05Wawck4BI4mti9ex
+	TWAUmIXktlkIt81CuG0BI/MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJAg/bqDcekxq0OM
+	AhyMSjy8E8v4QoRYE8uKK3MPMUpwMCuJ8DLEAoV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwhv96
+	covJavKFzZUlta3Ohg6JAWo9Weu3+4i+9NgRVnZ1TriXfJf6s8oZ+o8vRd4sN1YRWu4Z0XZD
+	0WhX+BqfldWhzXMzXz7nkjihKjtr38kj1zfvMM+Za7J6il1s/cTZfpGaFdulXY5ZtUx6/npF
+	snLm4czPe8QsDPJiDpZpfJjpZCkeEsuvxFKckWioxVxUnAgAl1wRhDACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 10:27 PM, Feng Kan <fkan@apm.com> wrote:
-> On Mon, Sep 8, 2014 at 1:52 AM, Arun Chandran <achandran@mvista.com> wrote:
->> Hi Feng,
+On 09/08/2014 03:47 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Sep 08, 2014 at 09:57:00AM +0200, Robert Baldyga wrote:
+>> This patch introduces virtual endpoint address mapping. It separates
+>> function logic form physical endpoint addresses making it more hardware
+>> independent.
 >>
->> Is this patch still needed to fix perf calltrace?
-> Yes, if the someone decide to run the secure mode of the GIC, which is
-> what is present in
-> the kernel tree now.
->
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265814.html
+>> Following modifications changes user space API, so to enable them user
+>> have to switch on the FUNCTIONFS_VIRTUAL_ADDR flag in descriptors.
 >>
->> On Fri, Feb 28, 2014 at 3:06 AM, Feng Kan <fkan@apm.com> wrote:
->>> This change is made to preserve the GIC v2 releated bits in the
->>> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
->>> The original code only set the enable/disable group bit in this register.
->>> This code will preserve the bypass bits configured by the bootload except
->>> the enable/disable bit. The main reason for this change is to allow the
->>> bypass bits specified in the v2 spec to remain untouched by the current
->>> GIC code. In the X-Gene platform, the bypass functionality is not used
->>> and bypass must be disabled at all time.
->>>
->>> Signed-off-by: Vinayak Kale <vkale@apm.com>
->>> Acked-by: Anup Patel <apatel@apm.com>
->>> Signed-off-by: Feng Kan <fkan@apm.com>
->>> ---
->>> V3 Changes:
->>>         - Sorry, forgot to change the mask for cpu_init path
->>>           assumed bootloader setup bits correctly.
->>> V2 Changes:
->>>         - only mask off v2 bypass bits
->>>  drivers/irqchip/irq-gic.c |   32 +++++++++++++++++++++++++++++---
->>>  1 files changed, 29 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>> index 341c601..3ca7995 100644
->>> --- a/drivers/irqchip/irq-gic.c
->>> +++ b/drivers/irqchip/irq-gic.c
->>> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>         void __iomem *dist_base = gic_data_dist_base(gic);
->>>         void __iomem *base = gic_data_cpu_base(gic);
->>>         unsigned int cpu_mask, cpu = smp_processor_id();
->>> +       unsigned int ctrl_mask;
->>>         int i;
->>>
->>>         /*
->>> @@ -449,13 +450,29 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->>>
->>>         writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
->>> -       writel_relaxed(1, base + GIC_CPU_CTRL);
->>> +
->>> +       ctrl_mask = readl(base + GIC_CPU_CTRL);
+>> Endpoints are now refered using virtual endpoint addresses chosen by
+>> user in endpoint descpriptors. This applies to each context when endpoint
+>> address can be used:
+>> - when accessing endpoint files in FunctionFS filesystemi (in file name),
+>> - in setup requests directed to specific endpoint (in wIndex field),
+>> - in descriptors returned by FUNCTIONFS_ENDPOINT_DESC ioctl.
 >>
->> readl_relaxed() here?
+>> In endpoint file names the endpoint address number is formatted as
+>> double-digit hexadecimal value ("ep%02x") which has few advantages -
+>> it is easy to parse, allows to easly recognize endpoint direction basing
+>> on its name (IN endpoint number starts with digit 8, and OUT with 0)
+>> which can be useful for debugging purpose, and it makes easier to introduce
+>> further features allowing to use each endpoint number in both directions
+>> to have more endpoints available for function if hardware supports this
+>> (for example we could have ep01 which is endpoint 1 with OUT direction,
+>> and ep81 which is endpoint 1 with IN direction).
 >>
->>> +
->>> +       /* Mask out the gic v2 bypass bits */
->>> +       ctrl_mask &= 0x1e0;
->>> +
->>> +       /* Enable group 0 */
->>> +       ctrl_mask |= 0x1;
->>> +       writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
->>>  }
->>>
->>>  void gic_cpu_if_down(void)
->>>  {
->>> +       unsigned int ctrl_mask;
->>>         void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
->>> -       writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
->>> +
->>> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
->> readl_relaxed() here?
+>> Physical endpoint address can be still obtained using ioctl named
+>> FUNCTIONFS_ENDPOINT_REVMAP, but now it's not neccesary to handle
+>> USB transactions properly.
 >>
->>> +       /*
->>> +        * Disable grp enable bit, leave the bypass bits alone as changing
->>> +        * them could leave the system unstable
->>> +        */
->>> +       ctrl_mask &= 0x1e0;
->>> +       writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
->>>  }
->>>
->>>  #ifdef CONFIG_CPU_PM
->>> @@ -566,6 +583,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>>  {
->>>         int i;
->>>         u32 *ptr;
->>> +       unsigned int ctrl_mask;
->>>         void __iomem *dist_base;
->>>         void __iomem *cpu_base;
->>>
->>> @@ -590,7 +608,15 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>>                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->>>
->>>         writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
->>> -       writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
->>> +
->>> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
->>
->> readl_relaxed() here?
-> Trying to make sure read is completed before write back out to gic.
->>
+>> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+>> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> 
+> after this patch I get build errors:
+> 
+> drivers/usb/gadget/function/f_fs.c: In function ‘ffs_epfiles_create’:
+> drivers/usb/gadget/function/f_fs.c:1555:40: error: ‘struct ffs_data’ has no member named ‘eps_addrmap’
+>     sprintf(epfiles->name, "ep%02x", ffs->eps_addrmap[i]);
+>                                         ^
+> drivers/usb/gadget/function/f_fs.c: In function ‘ffs_func_setup’:
+> drivers/usb/gadget/function/f_fs.c:2900:19: error: ‘struct ffs_data’ has no member named ‘eps_addrmap’
+>     ret = func->ffs->eps_addrmap[ret];
+>                    ^
+> make[3]: *** [drivers/usb/gadget/function/f_fs.o] Error 1
+> make[3]: *** Waiting for unfinished jobs....
+> make[2]: *** [drivers/usb/gadget/function] Error 2
+> make[1]: *** [drivers/usb/gadget] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> make: *** [drivers/usb/] Error 2
+> 
 
-Will the cpu reorder  readl_relaxed() and a writel_relaxed() calls?
-
-val = readl_relaxed(reg1);
-val += 1;
-wrietl_relaxed(val, reg1);
-
-In the above code reg1 getting 'val+1' is not guaranteed?
-
---Arun
+Array "eps_addrmap" was introduced in patch "usb: gadget: f_fs: fix the
+redundant ep files problem". I have received mails from you and Greg
+that it's already applied to usb tree, so I have assumed that there is
+no need to include it to this patchset. I can resend this patch if it's
+needed.
