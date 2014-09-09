@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872AbaIINIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:08:42 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:52058 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619AbaIINIi (ORCPT
+	id S1756885AbaIINJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:09:04 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:45200 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932324AbaIINGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:08:38 -0400
-Date: Tue, 9 Sep 2014 17:11:55 +0300
-From: Matti Vaittinen <matti.vaittinen@nsn.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux@roeck-us.net" <linux@roeck-us.net>
-Cc: a.zummo@towertech.it, "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [PATCH v4 2/2] rtc: ds1307: add trickle charger device tree
- binding.
-Message-ID: <20140909141155.GG21342@fi-ourus-dhcp00977.emea.nsn-net.net>
-References: <20140909103832.GA338@fi-ourus-dhcp00977.emea.nsn-net.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909103832.GA338@fi-ourus-dhcp00977.emea.nsn-net.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 286
-X-purgate-ID: 151667::1410268061-00002A30-7226E794/0/0
+	Tue, 9 Sep 2014 09:06:13 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 3/8] block: move flush initialized stuff to blk_flush_init
+Date: Tue,  9 Sep 2014 21:05:44 +0800
+Message-Id: <1410267949-21904-4-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
+References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 01:38:39PM +0300, Matti Vaittinen wrote:
-> +	diode = of_property_read_bool(client->dev.of_node, "diode-connected");
+These stuff is always used with flush req together, so
+we can do that safely.
 
-Please ignore this patch. I've accidentally sent the wrong version!
-Sorry, I will send the correct one as soon as possible.
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ block/blk-core.c  |    3 ---
+ block/blk-flush.c |    4 ++++
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-Br.
-Matti
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 0a9d172..222fe84 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -600,9 +600,6 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ #ifdef CONFIG_BLK_CGROUP
+ 	INIT_LIST_HEAD(&q->blkg_list);
+ #endif
+-	INIT_LIST_HEAD(&q->flush_queue[0]);
+-	INIT_LIST_HEAD(&q->flush_queue[1]);
+-	INIT_LIST_HEAD(&q->flush_data_in_flight);
+ 	INIT_DELAYED_WORK(&q->delay_work, blk_delay_work);
+ 
+ 	kobject_init(&q->kobj, &blk_queue_ktype);
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 6932ee8..a5b2a00 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -490,6 +490,10 @@ static int blk_mq_init_flush(struct request_queue *q)
+ 
+ int blk_init_flush(struct request_queue *q)
+ {
++	INIT_LIST_HEAD(&q->flush_queue[0]);
++	INIT_LIST_HEAD(&q->flush_queue[1]);
++	INIT_LIST_HEAD(&q->flush_data_in_flight);
++
+ 	if (q->mq_ops)
+ 		return blk_mq_init_flush(q);
+ 
+-- 
+1.7.9.5
 
