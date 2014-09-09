@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108AbaIIFwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:52:45 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.106]:24460 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755350AbaIIFwn (ORCPT
+	id S1755612AbaIIF5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:57:22 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:34756 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322AbaIIF5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:52:43 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-16.tower-193.messagelabs.com!1410241959!23742867!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 09 Sep 2014 07:52:40 +0200
-Date: Tue, 9 Sep 2014 07:56:15 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tty: serial: men_z135_uart: Fix driver for changes in
- hardware
-Message-ID: <20140909055615.GA10306@jtlinux>
-References: <1409229140-14407-1-git-send-email-johannes.thumshirn@men.de>
- <20140908231733.GB23907@kroah.com>
+	Tue, 9 Sep 2014 01:57:20 -0400
+Message-ID: <540E960D.7080408@huawei.com>
+Date: Tue, 9 Sep 2014 13:54:21 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140908231733.GB23907@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
+To: Liviu Dudau <Liviu.Dudau@arm.com>, Rob Herring <robherring2@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Rob Herring" <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Will Deacon" <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "Suravee Suthikulanit" <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Device Tree ML" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI
+ domain_nr
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com> <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com> <20140908145459.GO27864@e106497-lin.cambridge.arm.com> <CAL_JsqJdGKDVwJOpPp19OkVPGzR7Zqv3nh+ONHHaYnPLYTYoYg@mail.gmail.com> <20140908155931.GP27864@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20140908155931.GP27864@e106497-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 04:17:33PM -0700, Greg Kroah-Hartman wrote:
-> >
-> > @@ -118,6 +117,10 @@ static int align;
-> >  module_param(align, int, S_IRUGO);
-> >  MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
-> >
-> > +static int rx_timeout;
-> > +module_param(rx_timeout, uint, S_IRUGO);
-> > +MODULE_PARM_DESC(rx_timeout, "RX timeout");
->
-> Why add a module parameter?  Who will know to set this?  And to what
-> value?
->
+>>> on new requests. This function gets called quite a lot and I'm trying not to
+>>> make it too heavy weight.
+>>
+>> Generally, nothing should be accessing the same DT value frequently.
+>> It should get cached somewhere.
+>>
+> 
+> The problem appears for DTs that don't have the pci-domain info. Then the cached
+> value is left at the default non-valid value and attempts to rescan the DT will
+> be made every time the function is called.
+> 
+>> I don't really understand how domains are used so it's hard to provide
+>> a recommendation here. Do domains even belong in the DT?
+> 
+> ACPI calls them segments and the way Bjorn explained it to me at some moment was
+> that it was an attempt to split up a bus in different groups (or alternatively,
+> merge a few busses together). To be honest I haven't seen systems where the domain
+> is anything other than zero, but JasonG (or maybe Benjamin) were floating an
+> idea of using the domain number to identify physical slots.
 
-There will be a user manual describing the parameter. It's like the rxlvl and
-txlvl parameters, you'll have to read the manual if you need other values than
-the default ones.
+PCI domain(or named segment) is provided by firmware, in ACPI system, we evaluated it
+by method "_SEG". in IA64 with ACPI, PCI hostbridge driver retrieves the domain from ACPI,
+if it's absent, the default domain is zero. So I wonder why in DTS, if it's absent, we get
+a auto increment domain value.
+
+PCI get domain by ACPI "_SEG" in IA64(drivers/acpi/pci_root.c)
+......
+	status = acpi_evaluate_integer(handle, METHOD_NAME__SEG, NULL,
+				       &segment);
+	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
+		dev_err(&device->dev,  "can't evaluate _SEG\n");
+		result = -ENODEV;
+		goto end;
+	}
+.......
+
+Thanks!
+Yijing.
+
+> 
+>> This function
+>> is just a weird mixture of data retrieval and allocation. I think you
+>> need to separate it into 2 functions.
+> 
+> It is meant to do allocation with the retrieval being a short-cut (or fine
+> control if you want).
+> 
+> I need to think a bit more for a better solution.
+> 
+> Best regards,
+> Liviu
+> 
+>>
+>> Rob
+>>
+> 
 
 
-> And what about this driver working on old hardware, didn't you just
-> break this?
->
+-- 
+Thanks!
+Yijing
 
-No. Currently the hardware is in a testing stage at only one customer and it is
-an IP-Core inside a FPGA, so it can be (and already is) updated. So we can be
-save to assume this is O.K.
-
-> thanks,
->
-> greg k-h
-
-Hope that helped.
-Johannes
