@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637AbaIIMhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:37:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52529 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756586AbaIIMhw (ORCPT
+	id S1756659AbaIIMij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:38:39 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42289 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752908AbaIIMih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:37:52 -0400
-Date: Tue, 9 Sep 2014 14:37:18 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Prarit Bhargava <prarit@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [Patch v4 14/16] x86, irq: Introduce helper to check whether an
- IOAPIC has been registered
-In-Reply-To: <1409192561-19744-15-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1409091433150.11037@nanos>
-References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-15-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 9 Sep 2014 08:38:37 -0400
+Date: Tue, 9 Sep 2014 13:38:29 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Rabin Vincent <rabin@rab.in>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+Message-ID: <20140909123829.GK1754@arm.com>
+References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+ <1409781429-27593-4-git-send-email-keescook@chromium.org>
+ <20140904170349.GL7156@arm.com>
+ <CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
+ <20140904172748.GO7156@arm.com>
+ <20140908191634.GV5598@outflux.net>
+ <20140908215506.GA4759@dator>
+ <CAGXu5jJFB+pcDVkcMoRZ9DnJu7MQuN=kceDhpkGrO=6ZLFy6Kw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJFB+pcDVkcMoRZ9DnJu7MQuN=kceDhpkGrO=6ZLFy6Kw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Aug 2014, Jiang Liu wrote:
-
-> Introduce acpi_ioapic_registered() to check whether an IOAPIC has already
-> been registered, it will be used when enabling IOAPIC hotplug.
+On Mon, Sep 08, 2014 at 11:40:43PM +0100, Kees Cook wrote:
+> On Mon, Sep 8, 2014 at 2:55 PM, Rabin Vincent <rabin@rab.in> wrote:
+> > On Mon, Sep 08, 2014 at 12:16:34PM -0700, Kees Cook wrote:
+> >> On Thu, Sep 04, 2014 at 06:27:48PM +0100, Will Deacon wrote:
+> >> > On Thu, Sep 04, 2014 at 06:23:42PM +0100, Kees Cook wrote:
+> >> > > Ah! If this is the case, perhaps we can get away with
+> >> > > local_flush_tlb_kernel_range() then?
+> >> >
+> >> > That's a bit tricky, since you need to ensure that preemption is disabled
+> >> > until the mapping is put back like it was.
+> >>
+> >> Okay, under both real hardware with the errata, and under QEMU, things seem
+> >> to work with this change to the series. What do you think?
+> >
+> > Preemption is already disabled until the mapping is put back in this
+> > patch.c code because interrupts are disabled from before the time
+> > set_fixmap() is called until after clear_fixmap() is called.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  arch/x86/include/asm/io_apic.h |    1 +
->  arch/x86/kernel/acpi/boot.c    |   11 +++++++++++
->  arch/x86/kernel/apic/io_apic.c |   11 +++++++++++
->  include/linux/acpi.h           |    1 +
->  4 files changed, 24 insertions(+)
+> Should I drop the preempt_disable/enable(), and just add a comment to
+> set_fixmap()?
 > 
-> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-> index ce63cf34c93c..0db2b7037e4b 100644
-> --- a/arch/x86/include/asm/io_apic.h
-> +++ b/arch/x86/include/asm/io_apic.h
-> @@ -191,6 +191,7 @@ extern void mp_unmap_irq(int irq);
->  extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
->  			      struct ioapic_domain_cfg *cfg);
->  extern int mp_unregister_ioapic(u32 gsi_base);
-> +extern int mp_ioapic_registered(u32 gsi_base);
->  extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
->  			    irq_hw_number_t hwirq);
->  extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index 560a6d1cb0f4..6aa796f77b71 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -810,6 +810,17 @@ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
->  }
->  EXPORT_SYMBOL(acpi_unregister_ioapic);
->  
-> +int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base)
-> +{
-> +	int ret;
-> +
-> +	down_write(&acpi_ioapic_rwsem);
+> > I'd guess that Will meant other (future) callers of set_fixmap() would
+> > have to ensure similar behaviour with set_fixmap() / clear_fixmap().
+> >
+> > Unless I'm missing something set/clear_fixmap() seem to be quite arch
+> > specific and only really used on x86, so we could ensure that future
+> > users on ARM perform the correct tlb flush:  the first user on ARM with
+> > a non-atomic context (or you) could implement a set_fixmap() which does
+> > the global flush and have this patch.c (and any other atomic context
+> > callers) call __set_fixmap() directly.
+> >
+> > The change to local_flush_tlb_kernel_range() in __set_fixmap() would of
+> > course be needed in that case, and IIRC that was what my original patch
+> > had (via set_top_pte()).
+> 
+> Ah, so it was, yes! Will, which version of this logic would you prefer?
 
-Why down_write? You are merily checking whether the thing is
-registered already.
+I still don't think we're solving the general problem here -- we're actually
+just making the ftrace case work. It is perfectly possible for another CPU
+to undergo a TLB miss and refill whilst the page table is being modified by
+the CPU with preemption disabled. In this case, a local tlb flush won't
+invalidate that entry on the other core, and we have no way of knowing when
+the original permissions are actually observed across the system.
 
-> +	ret  = mp_ioapic_registered(gsi_base);
-> +	up_write(&acpi_ioapic_rwsem);
-> +
-> +	return ret;
-> +}
+So I think we need to figure out a way to invalidate the TLB properly. What
+do architectures that use IPIs for TLB broadcasting do (x86, some powerpc,
+mips, ...)? They must have exactly the same problem.
 
-So I assume that this is for a particular caller in the apci ioapic
-hotplug code and that call site has its own serialization. Otherwise
-the return value is not protected at all.
-
-Please add a Docbook comment to that function, and document the
-locking rules as thats pretty non obvious.
-
-The such is missing in some other patches as well.
-
-Thanks,
-
-	tglx
+Will
