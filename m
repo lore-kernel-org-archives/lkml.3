@@ -1,203 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560AbaIIAKl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:10:41 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:38419 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621AbaIIAKk (ORCPT
+	id S1755313AbaIIAMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:12:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:50969 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253AbaIIAML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:10:40 -0400
-From: Anup Chenthamarakshan <anupc@chromium.org>
-To: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Cc: Sameer Nanda <snanda@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Anup Chenthamarakshan <anupc@chromium.org>
-Subject: [PATCH] intel_pstate: track and export frequency residency stats via sysfs.
-Date: Mon,  8 Sep 2014 17:10:24 -0700
-Message-Id: <1410221424-20590-1-git-send-email-anupc@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Mon, 8 Sep 2014 20:12:11 -0400
+Date: Mon, 8 Sep 2014 17:12:08 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] toshiba_acpi: Additional hotkey scancodes
+Message-ID: <20140909001207.GE5835@vmdeb7>
+References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
+ <1409937247-2525-2-git-send-email-coproscefalo@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409937247-2525-2-git-send-email-coproscefalo@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exported stats appear in
-<sysfs>/devices/system/cpu/intel_pstate/time_in_state as follows:
+On Fri, Sep 05, 2014 at 11:14:03AM -0600, Azael Avalos wrote:
+> Appart from reporting hotkeys, the INFO method is used
+> as a system wide event notifier for hardware or
+> software changes.
+> 
+> This patch adds additional "events" to the keymap list,
+> ignored by now, until we find them a good use.
+> 
+> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
 
-## CPU 0
-400000 3647
-500000 24342
-600000 144150
-700000 202469
-## CPU 1
-400000 4813
-500000 22628
-600000 149564
-700000 211885
-800000 173890
+Queued, thanks.
 
-Signed-off-by: Anup Chenthamarakshan <anupc@chromium.org>
----
- drivers/cpufreq/intel_pstate.c | 77 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 74 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 0668b38..7be89bd 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -84,6 +84,11 @@ struct _pid {
- 	int32_t last_err;
- };
- 
-+struct pstate_stat {
-+	int pstate;
-+	u64 time;
-+};
-+
- struct cpudata {
- 	int cpu;
- 
-@@ -97,6 +102,9 @@ struct cpudata {
- 	u64	prev_aperf;
- 	u64	prev_mperf;
- 	struct sample sample;
-+
-+	struct pstate_stat *stat;
-+	u64	last_updated;
- };
- 
- static struct cpudata **all_cpu_data;
-@@ -218,6 +226,18 @@ static inline void intel_pstate_reset_all_pid(void)
- 	}
- }
- 
-+static void intel_pstate_account_time_to_current_pstate(struct cpudata *cpu)
-+{
-+	/* Handle the initial call from intel_pstate_init_cpu */
-+	if (likely(cpu->stat)) {
-+		u64 now = jiffies;
-+		int index = cpu->pstate.current_pstate - cpu->pstate.min_pstate;
-+
-+		cpu->stat[index].time += now - cpu->last_updated;
-+		cpu->last_updated = now;
-+	}
-+}
-+
- /************************** debugfs begin ************************/
- static int pid_param_set(void *data, u64 val)
- {
-@@ -323,6 +343,40 @@ static ssize_t store_min_perf_pct(struct kobject *a, struct attribute *b,
- 	return count;
- }
- 
-+static ssize_t show_time_in_state(struct kobject *kobj, struct attribute *attr,
-+				char *buf)
-+{
-+	unsigned int cpu;
-+	struct cpudata *cpudata;
-+	int i, len = 0, total_states;
-+
-+	for_each_online_cpu(cpu) {
-+		if (!all_cpu_data[cpu])
-+			continue;
-+
-+		cpudata = all_cpu_data[cpu];
-+		len += snprintf(buf + len, PAGE_SIZE - len, "## CPU %d\n", cpu);
-+		if (len >= PAGE_SIZE)
-+			return len;
-+
-+		total_states = cpudata->pstate.turbo_pstate -
-+			cpudata->pstate.min_pstate + 1;
-+
-+		intel_pstate_account_time_to_current_pstate(cpudata);
-+
-+		for (i = 0; i < total_states; i++) {
-+			len += snprintf(buf + len, PAGE_SIZE - len, "%d %llu\n",
-+					cpudata->stat[i].pstate * 100000,
-+					cpudata->stat[i].time);
-+
-+			if (len >= PAGE_SIZE)
-+				return len;
-+		}
-+	}
-+
-+	return len;
-+}
-+
- show_one(no_turbo, no_turbo);
- show_one(max_perf_pct, max_perf_pct);
- show_one(min_perf_pct, min_perf_pct);
-@@ -331,10 +385,13 @@ define_one_global_rw(no_turbo);
- define_one_global_rw(max_perf_pct);
- define_one_global_rw(min_perf_pct);
- 
-+define_one_global_ro(time_in_state);
-+
- static struct attribute *intel_pstate_attributes[] = {
- 	&no_turbo.attr,
- 	&max_perf_pct.attr,
- 	&min_perf_pct.attr,
-+	&time_in_state.attr,
- 	NULL
- };
- 
-@@ -525,9 +582,11 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
- 
- 	trace_cpu_frequency(pstate * 100000, cpu->cpu);
- 
--	cpu->pstate.current_pstate = pstate;
--
- 	pstate_funcs.set(cpu, pstate);
-+
-+	intel_pstate_account_time_to_current_pstate(cpu);
-+
-+	cpu->pstate.current_pstate = pstate;
- }
- 
- static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
-@@ -751,6 +810,7 @@ static void intel_pstate_stop_cpu(struct cpufreq_policy *policy)
- 
- 	del_timer_sync(&all_cpu_data[cpu_num]->timer);
- 	intel_pstate_set_pstate(cpu, cpu->pstate.min_pstate);
-+	kfree(all_cpu_data[cpu_num]->stat);
- 	kfree(all_cpu_data[cpu_num]);
- 	all_cpu_data[cpu_num] = NULL;
- }
-@@ -758,7 +818,7 @@ static void intel_pstate_stop_cpu(struct cpufreq_policy *policy)
- static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- {
- 	struct cpudata *cpu;
--	int rc;
-+	int rc, i, total_states;
- 	u64 misc_en;
- 
- 	rc = intel_pstate_init_cpu(policy->cpu);
-@@ -787,6 +847,16 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
- 	cpumask_set_cpu(policy->cpu, policy->cpus);
- 
-+	total_states = cpu->pstate.turbo_pstate - cpu->pstate.min_pstate + 1;
-+	cpu->stat = kcalloc(total_states, sizeof(struct pstate_stat),
-+			GFP_KERNEL);
-+
-+	if (cpu->stat)
-+		for (i = 0; i < total_states; i++)
-+			cpu->stat[i].pstate = i + cpu->pstate.min_pstate;
-+
-+	cpu->last_updated = get_jiffies_64();
-+
- 	return 0;
- }
- 
-@@ -958,6 +1028,7 @@ out:
- 	for_each_online_cpu(cpu) {
- 		if (all_cpu_data[cpu]) {
- 			del_timer_sync(&all_cpu_data[cpu]->timer);
-+			kfree(all_cpu_data[cpu]->stat);
- 			kfree(all_cpu_data[cpu]);
- 		}
- 	}
 -- 
-1.8.3.2
-
+Darren Hart
+Intel Open Source Technology Center
