@@ -1,166 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaIIJ5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:57:13 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42911 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080AbaIIJ5H (ORCPT
+	id S1756257AbaIIJ5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:57:34 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:43134 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392AbaIIJ5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:57:07 -0400
-From: Juri Lelli <juri.lelli@arm.com>
-To: peterz@infradead.org
-Cc: luca.abeni@unitn.it, rdunlap@infradead.org, mingo@redhat.com,
-        henrik@austad.us, raistlin@linux.it, juri.lelli@gmail.com,
-        juri.lelli@arm.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/5] Documentation/scheduler/sched-deadline.txt: fix terminology and improve clarity
-Date: Tue,  9 Sep 2014 10:57:12 +0100
-Message-Id: <1410256636-26171-2-git-send-email-juri.lelli@arm.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410256636-26171-1-git-send-email-juri.lelli@arm.com>
-References: <1410256636-26171-1-git-send-email-juri.lelli@arm.com>
-X-OriginalArrivalTime: 09 Sep 2014 09:57:02.0595 (UTC) FILETIME=[67903530:01CFCC14]
-X-MC-Unique: 114090910570501401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 9 Sep 2014 05:57:31 -0400
+From: Ankit Jindal <ankit.jindal@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, patches@apm.com,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Ankit Jindal <ankit.jindal@linaro.org>
+Subject: [PATCH 0/5] UIO driver for APM X-Gene QMTM
+Date: Tue,  9 Sep 2014 15:26:54 +0530
+Message-Id: <1410256619-3213-1-git-send-email-ankit.jindal@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s899vNm9005183
 
-From: Luca Abeni <luca.abeni@unitn.it>
+This patchset enables user space access to APM X-Gene QMTM
+using UIO framework.
 
-Several small changes regarding SCHED_DEADLINE documentation that fix
-terminology and improve clarity and readability:
+The patchset also introduces new type UIO_MEM_PHYS_CACHE
+for mem regions because APM X-Gene QMTM device supports
+cache coherency with CPU caches.
 
- - "current runtime" becomes "remaining runtime"
+Ankit Jindal (5):
+  uio: Add new UIO_MEM_PHYS_CACHE type for mem regions
+  Documentation: Update documentation for UIO_MEM_PHYS_CACHE
+  drivers: uio: Add Xgene QMTM UIO driver
+  dt-bindings: Add binding info for Xgene QMTM UIO driver
+  MAINTAINERS: Add entry for APM Xgene QMTM UIO driver
 
- - readablity of an equation is improved by introducing more spacing
+ Documentation/DocBook/uio-howto.tmpl               |    3 +-
+ .../devicetree/bindings/uio/uio_xgene_qmtm.txt     |   45 +++
+ MAINTAINERS                                        |    7 +
+ drivers/uio/Kconfig                                |    8 +
+ drivers/uio/Makefile                               |    1 +
+ drivers/uio/uio.c                                  |   22 +-
+ drivers/uio/uio_xgene_qmtm.c                       |  289 ++++++++++++++++++++
+ include/linux/uio_driver.h                         |    7 +-
+ 8 files changed, 369 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
+ create mode 100644 drivers/uio/uio_xgene_qmtm.c
 
- - clarify when admission control will certainly fail
-
- - new URL for CBS technical report
-
- - substitue "smallest" with "earliest"
-
-Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
-Signed-off-by: Juri Lelli <juri.lelli@arm.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Henrik Austad <henrik@austad.us>
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- Documentation/scheduler/sched-deadline.txt | 38 ++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
-
-diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-index 18adc92..a029891 100644
---- a/Documentation/scheduler/sched-deadline.txt
-+++ b/Documentation/scheduler/sched-deadline.txt
-@@ -45,17 +45,17 @@ CONTENTS
-  every time the task wakes up, the scheduler computes a "scheduling deadline"
-  consistent with the guarantee (using the CBS[2,3] algorithm). Tasks are then
-  scheduled using EDF[1] on these scheduling deadlines (the task with the
-- smallest scheduling deadline is selected for execution). Notice that this
-+ earliest scheduling deadline is selected for execution). Notice that this
-  guaranteed is respected if a proper "admission control" strategy (see Section
-  "4. Bandwidth management") is used.
- 
-  Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to tasks so
-  that each task runs for at most its runtime every period, avoiding any
-  interference between different tasks (bandwidth isolation), while the EDF[1]
-- algorithm selects the task with the smallest scheduling deadline as the one
-- to be executed first.  Thanks to this feature, also tasks that do not
-- strictly comply with the "traditional" real-time task model (see Section 3)
-- can effectively use the new policy.
-+ algorithm selects the task with the earliest scheduling deadline as the one
-+ to be executed next. Thanks to this feature, tasks that do not strictly comply
-+ with the "traditional" real-time task model (see Section 3) can effectively
-+ use the new policy.
- 
-  In more details, the CBS algorithm assigns scheduling deadlines to
-  tasks in the following way:
-@@ -64,45 +64,45 @@ CONTENTS
-     "deadline", and "period" parameters;
- 
-   - The state of the task is described by a "scheduling deadline", and
--    a "current runtime". These two parameters are initially set to 0;
-+    a "remaining runtime". These two parameters are initially set to 0;
- 
-   - When a SCHED_DEADLINE task wakes up (becomes ready for execution),
-     the scheduler checks if
- 
--                    current runtime                runtime
--         ---------------------------------- > ----------------
--         scheduling deadline - current time         period
-+                 remaining runtime                  runtime
-+        ----------------------------------    >    ---------
-+        scheduling deadline - current time           period
- 
-     then, if the scheduling deadline is smaller than the current time, or
-     this condition is verified, the scheduling deadline and the
--    current budget are re-initialised as
-+    remaining runtime are re-initialised as
- 
-          scheduling deadline = current time + deadline
--         current runtime = runtime
-+         remaining runtime = runtime
- 
--    otherwise, the scheduling deadline and the current runtime are
-+    otherwise, the scheduling deadline and the remaining runtime are
-     left unchanged;
- 
-   - When a SCHED_DEADLINE task executes for an amount of time t, its
--    current runtime is decreased as
-+    remaining runtime is decreased as
- 
--         current runtime = current runtime - t
-+         remaining runtime = remaining runtime - t
- 
-     (technically, the runtime is decreased at every tick, or when the
-     task is descheduled / preempted);
- 
--  - When the current runtime becomes less or equal than 0, the task is
-+  - When the remaining runtime becomes less or equal than 0, the task is
-     said to be "throttled" (also known as "depleted" in real-time literature)
-     and cannot be scheduled until its scheduling deadline. The "replenishment
-     time" for this task (see next item) is set to be equal to the current
-     value of the scheduling deadline;
- 
-   - When the current time is equal to the replenishment time of a
--    throttled task, the scheduling deadline and the current runtime are
-+    throttled task, the scheduling deadline and the remaining runtime are
-     updated as
- 
-          scheduling deadline = scheduling deadline + period
--         current runtime = current runtime + runtime
-+         remaining runtime = remaining runtime + runtime
- 
- 
- 3. Scheduling Real-Time Tasks
-@@ -147,6 +147,8 @@ CONTENTS
-  and the absolute deadlines (d_j) coincide, so a proper admission control
-  allows to respect the jobs' absolute deadlines for this task (this is what is
-  called "hard schedulability property" and is an extension of Lemma 1 of [2]).
-+ Notice that if runtime > deadline the admission control will surely reject
-+ this task, as it is not possible to respect its temporal constraints.
- 
-  References:
-   1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
-@@ -156,7 +158,7 @@ CONTENTS
-       Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
-       Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
-   3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
--      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
-+      Technical Report. http://disi.unitn.it/~abeni/tr-98-01.pdf
- 
- 4. Bandwidth management
- =======================
 -- 
-2.0.4
-
+1.7.9.5
 
