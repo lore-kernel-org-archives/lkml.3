@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504AbaIIK1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:27:23 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:36142 "EHLO mail.mev.co.uk"
+	id S1756669AbaIIKe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:34:58 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:36161 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756327AbaIIK1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:27:10 -0400
+	id S1756493AbaIIK1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:27:23 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/48] staging: comedi: addi_apci_3120: replace comedi_board() calls
-Date: Tue,  9 Sep 2014 11:26:13 +0100
-Message-Id: <1410258417-28230-5-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 29/48] staging: comedi: ni_at_a2150: replace comedi_board() calls
+Date: Tue,  9 Sep 2014 11:26:38 +0100
+Message-Id: <1410258417-28230-30-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
 References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
@@ -27,72 +27,40 @@ The `comedi_board(dev)` inline function calls just return
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c | 10 +++++-----
- drivers/staging/comedi/drivers/addi_apci_3120.c           |  2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/ni_at_a2150.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c
-index 87dff80..a83e2ae 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c
-@@ -253,7 +253,7 @@ static int apci3120_ai_insn_config(struct comedi_device *dev,
- 				   struct comedi_insn *insn,
- 				   unsigned int *data)
+diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
+index d490490..72ec857 100644
+--- a/drivers/staging/comedi/drivers/ni_at_a2150.c
++++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
+@@ -287,7 +287,7 @@ static int a2150_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
+ static int a2150_get_timing(struct comedi_device *dev, unsigned int *period,
+ 			    unsigned int flags)
  {
--	const struct addi_board *this_board = comedi_board(dev);
-+	const struct addi_board *this_board = dev->board_ptr;
- 	struct addi_private *devpriv = dev->private;
- 	unsigned int i;
+-	const struct a2150_board *thisboard = comedi_board(dev);
++	const struct a2150_board *thisboard = dev->board_ptr;
+ 	struct a2150_private *devpriv = dev->private;
+ 	int lub, glb, temp;
+ 	int lub_divisor_shift, lub_index, glb_divisor_shift, glb_index;
+@@ -436,7 +436,7 @@ static int a2150_ai_check_chanlist(struct comedi_device *dev,
+ static int a2150_ai_cmdtest(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s, struct comedi_cmd *cmd)
+ {
+-	const struct a2150_board *thisboard = comedi_board(dev);
++	const struct a2150_board *thisboard = dev->board_ptr;
+ 	int err = 0;
+ 	unsigned int arg;
  
-@@ -359,7 +359,7 @@ static int apci3120_ai_insn_read(struct comedi_device *dev,
- 				 struct comedi_insn *insn,
- 				 unsigned int *data)
- {
--	const struct addi_board *this_board = comedi_board(dev);
-+	const struct addi_board *this_board = dev->board_ptr;
- 	struct addi_private *devpriv = dev->private;
- 	unsigned short us_ConvertTiming, us_TmpValue, i;
- 	unsigned char b_Tmp;
-@@ -802,7 +802,7 @@ static int apci3120_cyclic_ai(int mode,
- 			      struct comedi_device *dev,
- 			      struct comedi_subdevice *s)
- {
--	const struct addi_board *this_board = comedi_board(dev);
-+	const struct addi_board *this_board = dev->board_ptr;
- 	struct addi_private *devpriv = dev->private;
- 	struct comedi_cmd *cmd = &s->async->cmd;
- 	unsigned char b_Tmp;
-@@ -1728,7 +1728,7 @@ static int apci3120_config_insn_timer(struct comedi_device *dev,
- 				      struct comedi_insn *insn,
- 				      unsigned int *data)
- {
--	const struct addi_board *this_board = comedi_board(dev);
-+	const struct addi_board *this_board = dev->board_ptr;
- 	struct addi_private *devpriv = dev->private;
- 	unsigned int ui_Timervalue2;
- 	unsigned short us_TmpValue;
-@@ -1873,7 +1873,7 @@ static int apci3120_write_insn_timer(struct comedi_device *dev,
- 				     struct comedi_insn *insn,
- 				     unsigned int *data)
- {
--	const struct addi_board *this_board = comedi_board(dev);
-+	const struct addi_board *this_board = dev->board_ptr;
- 	struct addi_private *devpriv = dev->private;
- 	unsigned int ui_Timervalue2 = 0;
- 	unsigned short us_TmpValue;
-diff --git a/drivers/staging/comedi/drivers/addi_apci_3120.c b/drivers/staging/comedi/drivers/addi_apci_3120.c
-index 050c724..84501a3 100644
---- a/drivers/staging/comedi/drivers/addi_apci_3120.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_3120.c
-@@ -44,7 +44,7 @@ static const struct addi_board apci3120_boardtypes[] = {
- static irqreturn_t v_ADDI_Interrupt(int irq, void *d)
- {
- 	struct comedi_device *dev = d;
--	const struct addi_board *this_board = comedi_board(dev);
-+	const struct addi_board *this_board = dev->board_ptr;
+@@ -710,7 +710,7 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		return -ENODEV;
  
- 	this_board->interrupt(irq, d);
- 	return IRQ_RETVAL(1);
+ 	dev->board_ptr = a2150_boards + i;
+-	thisboard = comedi_board(dev);
++	thisboard = dev->board_ptr;
+ 	dev->board_name = thisboard->name;
+ 
+ 	if ((irq >= 3 && irq <= 7) || (irq >= 9 && irq <= 12) ||
 -- 
 2.1.0
 
