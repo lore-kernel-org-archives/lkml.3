@@ -1,122 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334AbaIISAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:00:23 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47878 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751225AbaIISAT (ORCPT
+	id S1751465AbaIISD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:03:26 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:37786 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaIISDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:00:19 -0400
-Date: Tue, 9 Sep 2014 18:59:40 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stefan Wahren <info@lategoodbye.de>
-Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "stefan.wahren@i2se.com" <stefan.wahren@i2se.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "festevam@gmail.com" <festevam@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC 1/3] DT: add binding for MXS regulator
-Message-ID: <20140909175940.GF3896@leverpostej>
-References: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
- <1410089869-6611-2-git-send-email-info@lategoodbye.de>
+	Tue, 9 Sep 2014 14:03:25 -0400
+Date: Tue, 9 Sep 2014 11:03:10 -0700
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Shengjiu Wang <shengjiu.wang@freescale.com>, timur@tabi.org,
+        Li.Xiubo@freescale.com, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
+Message-ID: <20140909180309.GA6784@Asurada>
+References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+ <20140909112750.GS2601@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410089869-6611-2-git-send-email-info@lategoodbye.de>
-Thread-Topic: [PATCH RFC 1/3] DT: add binding for MXS regulator
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140909112750.GS2601@sirena.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 07, 2014 at 12:37:47PM +0100, Stefan Wahren wrote:
-> This patch adds the Device tree bindings for the Freescale MXS on-chip
-> regulators.
+On Tue, Sep 09, 2014 at 12:27:50PM +0100, Mark Brown wrote:
+> On Tue, Sep 09, 2014 at 05:18:07PM +0800, Shengjiu Wang wrote:
+> > -	ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
+> > +	ssi_private->clk = devm_clk_get(&pdev->dev, "ipg");
+> >  	if (IS_ERR(ssi_private->clk)) {
+> >  		ret = PTR_ERR(ssi_private->clk);
+> > -		dev_err(&pdev->dev, "could not get clock: %d\n", ret);
+> > -		return ret;
 > 
-> Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
-> ---
->  .../bindings/regulator/mxs-regulator.txt           | 38 ++++++++++++++++++++++
->  1 file changed, 38 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/regulator/mxs-regulator.txt b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-> new file mode 100644
-> index 0000000..c3226cc
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-> @@ -0,0 +1,38 @@
-> +MXS regulators
-> +
-> +Required node properties:
-> +- compatible: Should be "fsl,<soc>-power", where soc is "imx23" or "imx28"
-> +- reg: Offset and length of the register set for the device
+> Why is this change being made?  It wasn't mentioned in the commit log
+> and doesn't seem relevant to moving where the enable and disable are
+> done which is what the patch is supposed to be doing...
 
-We require #address-cells and #size-cells if the child nodes have reg
-entries.
+I think Shengjiu is trying to keep the clock disabled while SSI's idle.
+The current driver enables ipg clock anyway even if there's no stream
+running.
 
-> +
-> +Required regulator properties:
-> +- compatible: Must be "fsl,mxs-regulator"
-> +- reg: Offset of the register set for the regulator
+Apparently, these should be put into the comment log.
 
-Is this the offset or the absolute physical address?
-
-The example seems to be absolute.
-
-> +- mxs-max-reg-val: Maximum value of this register
-
-What does this even mean? What's the format?
-
-Is this not implied by standard properties like regulator-max-microvolt?
-
-> +Optional regulator properties:
-> +- mxs-default-microvolt: initial voltage of the regulator
-
-Why is this necessary?
-
-Mark.
-
-> +
-> +Any regulator property defined as part of the core regulator
-> +binding, defined in regulator.txt, can also be used.
-> +
-> +Example:
-> +
-> +	power: power@80044000 {
-> +		compatible = "fsl,imx28-power";
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		reg = <0x80044000 0x2000>;
-> +
-> +		reg_vddio: regulator-vddio@80044060 {
-> +			reg = <0x80044060>;
-> +			compatible = "fsl,mxs-regulator";
-> +			regulator-name = "vddio";
-> +			regulator-min-microvolt = <2800000>;
-> +			regulator-max-microvolt = <3600000>;
-> +			regulator-microvolt-offset = <80000>;
-> +			regulator-always-on;
-> +			mxs-max-reg-val = <0x10>;
-> +			mxs-default-microvolt = <3300000>;
-> +		};
-> +	};
-> +
-> -- 
-> 1.8.1.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+Thank you
+Nicolin
