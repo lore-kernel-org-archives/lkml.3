@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaIIS7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:59:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59659 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186AbaIIS7a (ORCPT
+	id S1752303AbaIIS74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:59:56 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:44260 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132AbaIIS7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:59:30 -0400
-Date: Tue, 09 Sep 2014 11:59:28 -0700 (PDT)
-Message-Id: <20140909.115928.2263127447345685807.davem@davemloft.net>
-To: varkabhadram@gmail.com
-Cc: netdev@vger.kernel.org, balbi@ti.com, mugunthanvnm@ti.com,
-        linux@rainbow-software.org, linux-kernel@vger.kernel.org,
-        varkab@cdac.in
-Subject: Re: [PATCH net-next] ethernet: ti: remove unwanted THIS_MODULE
- macro
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1410148699-3724-1-git-send-email-varkab@cdac.in>
-References: <1410148699-3724-1-git-send-email-varkab@cdac.in>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Sep 2014 11:59:29 -0700 (PDT)
+	Tue, 9 Sep 2014 14:59:54 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Greg KH <greg@kroah.com>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 2/3 v2] sh/uapi: Add definition of TIOC[SG]RS485
+Date: Tue,  9 Sep 2014 20:59:50 +0200
+Message-Id: <1410289190-3913-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Varka Bhadram <varkabhadram@gmail.com>
-Date: Mon,  8 Sep 2014 09:28:19 +0530
+Commit: e676253b19b2d269cccf67fdb1592120a0cd0676 (serial/8250: Add
+support for RS485 IOCTLs), adds support for RS485 ioctls for 825_core on
+all the archs. Unfortunaltely the definition of TIOCSRS485 and
+TIOCGRS485 was missing on the ioctls.h file
 
-> It removes the owner field updation of driver structure.
-> It will be automatically updated by module_platform_driver()
-> 
-> Signed-off-by: Varka Bhadram <varkab@cdac.in>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+Changelog:
 
-Applied, thanks.
+v2: By GregKH
+
+Follow the ioctl numbering scheme used by the particular
+ architecture UAPI file you are editing.
+
+ arch/sh/include/uapi/asm/ioctls.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/sh/include/uapi/asm/ioctls.h b/arch/sh/include/uapi/asm/ioctls.h
+index 3422410..c9903e5 100644
+--- a/arch/sh/include/uapi/asm/ioctls.h
++++ b/arch/sh/include/uapi/asm/ioctls.h
+@@ -83,6 +83,8 @@
+ #define TCSETS2		_IOW('T', 43, struct termios2)
+ #define TCSETSW2	_IOW('T', 44, struct termios2)
+ #define TCSETSF2	_IOW('T', 45, struct termios2)
++#define TIOCGRS485	_IOR('T', 46, struct serial_rs485)
++#define TIOCSRS485	_IOWR('T', 47, struct serial_rs485)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
+ #define TIOCGDEV	_IOR('T',0x32, unsigned int) /* Get primary device node of /dev/console */
+-- 
+2.1.0
+
