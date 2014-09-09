@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491AbaIIRKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:10:55 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:31391 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164AbaIIRKw (ORCPT
+	id S1757368AbaIIRMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:12:19 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:64330 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164AbaIIRMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:10:52 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-cd-540f3498a204
-Message-id: <540F3481.5030900@samsung.com>
-Date: Tue, 09 Sep 2014 19:10:25 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.0
-MIME-version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCHv2 2/3] [media] s5p-jpeg: Fix compilation with COMPILE_TEST
-References: <20140909124306.2d5a0d76@canb.auug.org.au>
- <6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
- <b7343e6296b5d1d68b7229b8307442fd4141bcb3.1410273306.git.m.chehab@samsung.com>
- <540F15B2.3000902@samsung.com> <20140909120936.527bd852.m.chehab@samsung.com>
- <540F1D11.9030400@samsung.com> <20140909131036.7265121f.m.chehab@samsung.com>
-In-reply-to: <20140909131036.7265121f.m.chehab@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xy7ozTPhDDG5PE7Povfqc0eLH6wts
-	Fr0LrrJZnG16w26x6fE1VovLu+awWfRs2MpqcXBhG6PFjPP7mCwurpO32HFqEbPF1r1X2R14
-	PBpv3GDz2LxCy2PzknqPvi2rGD0+b5ILYI3isklJzcksSy3St0vgyvj2t5Gl4CxLxfNFfYwN
-	jO+Yuxg5OSQETCSe7zjEBmGLSVy4tx7MFhJYyihxcAprFyMXkP2JUWLl/5XsIAleAS2J6/3X
-	mEBsFgFVid4zS8EGsQkYSvQe7WMEsUUFwiSe/TrIBFEvKPFj8j0WEFtEwEDi8aKT7CBDmQWO
-	MEtcubINbJuwgJ/Ehu6V7BDbfjBJtG5cBdbNKWAt8f7EFKCpHEAdehL3L2qBhJkF5CU2r3nL
-	PIFRYBaSHbMQqmYhqVrAyLyKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyQivuxgXHzM6hCj
-	AAejEg9vQwZfiBBrYllxZe4hRgkOZiURXusXQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MQUdY
-	T+RvSV3Ye8T2yFpfs2sMznEJyzRXbXf9ff/99VN6H5a3JzjMMr601taVd5XJ1s+uv755qK0Q
-	bIt78k669fypiuVGon4PL4kWL10r6KxmsE3gfm7I/SMch6fPabewNlzjJ3dPX/9qo8psfrOq
-	d6+mX1gbuXqtoKP0ajaFHz/msBbYXuupVGIpzkg01GIuKk4EAJ3YwnVmAgAA
+	Tue, 9 Sep 2014 13:12:17 -0400
+Date: Tue, 9 Sep 2014 19:12:13 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140909171213.GA19174@dhcp22.suse.cz>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <3827451.ToKxd7Xb2J@vostro.rjw.lan>
+ <20140908222253.GB3806@mtj.dyndns.org>
+ <2588099.AI1YmNFQ25@vostro.rjw.lan>
+ <20140908225012.GE3806@mtj.dyndns.org>
+ <20140909151655.GB4851@dhcp22.suse.cz>
+ <20140909152336.GB8890@mtj.dyndns.org>
+ <20140909160625.GC4851@dhcp22.suse.cz>
+ <20140909164658.GB11748@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909164658.GB11748@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 18:10, Mauro Carvalho Chehab wrote:
-> ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undefined!
+On Wed 10-09-14 01:46:58, Tejun Heo wrote:
+> Hello,
 > 
-> That happens because asm-generic doesn't like any ndelay time
-> bigger than 20us.
+> On Tue, Sep 09, 2014 at 06:06:25PM +0200, Michal Hocko wrote:
+> > > Even for userland tasks, try_to_freeze() can currently be anywhere in
+> > > the kernel.  The frequently used ones are few but there are some odd
+> > 
+> > I always thought that user space tasks can be in the fridge only on the
+> > way out from the kernel (get_signal_to_deliver). I have quickly greped
 > 
-> Currently, usleep_range() couldn't simply be used, since
-> exynos4_jpeg_sw_reset() is called with a spinlock held.
+> It *can* be anywhere.  We used to have some deep in nfs.  They got
+> removed later due to deadlocks but in theory they still can be
+> anywhere.
 > 
-> So, let's use ndelay() instead.
+> > the code and the only place I can see seems to be run_guest but that
+> > one bails out quickly when there are signals pending so it should be
+> > safe in this context.
+> > cifs is doing something suspicious (cifs_reconnect) but I didn't check
+> > more closely all the contexts it is called from.
 > 
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> Prolly something similar with what nfs was doing?
+> 
+> > > ones out, and, again, there's nothing enforcing any structure on
+> > > try_to_freeze() usage. 
+> > 
+> > Would it make sense to have try_to_freeze_user_task or similar and check
+> > for kernel thread in try_to_freeze and complain loudly if called from
+> > user task context? I mean does it even make sense to call try_to_freeze
+> > in the middle of kernel operation for a user task?
+> 
+> I personally think the whole try_to_freeze() was a mistake at least
+> for userland tasks.  We should have collected them in a (mostly)
+> single place like a jobctl stop.  I'm not sure whether distinguishing
+> the two interfaces would buy us much tho.
 
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+We can at least catch those who are doing something dubious. Then we
+would have only a single place for user tasks and signal handling code
+makes sense to me.
 
---
-Thanks,
-Sylwester
+> > > The other thing is that we may do quite a bit during exiting including
+> > > allocating memory. 
+> > 
+> > yes, we can allocate memory and even page fault on the exit path. But
+> > TIF_MEMDIE will make sure that the allocation will be successful if
+> > there is some memory left.
+> 
+> TIF_MEMDIE ensures forward progress so that the task can exit;
+> however, I'm not sure whether all the things that a task does during
+> exit are safe for PM freezes.
+
+Last time we were discussing this it was safe (I cannot
+find the particular discussion but here is the Rafael's
+Ack for the previous patch which handled the same case
+http://lkml.iu.edu//hypermail/linux/kernel/1109.3/00448.html)
+-- 
+Michal Hocko
+SUSE Labs
