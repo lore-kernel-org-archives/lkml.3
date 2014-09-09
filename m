@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaIIFDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:03:30 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:45425 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaIIFD3 (ORCPT
+	id S1752983AbaIIFHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:07:55 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:65249 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaIIFHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:03:29 -0400
+	Tue, 9 Sep 2014 01:07:54 -0400
+Date: Tue, 9 Sep 2014 07:07:49 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI urgent fixes
+Message-ID: <20140909050749.GB6770@gmail.com>
+References: <20140908215535.GD18582@console-pimps.org>
 MIME-Version: 1.0
-In-Reply-To: <1410221424-20590-1-git-send-email-anupc@chromium.org>
-References: <1410221424-20590-1-git-send-email-anupc@chromium.org>
-Date: Tue, 9 Sep 2014 10:33:23 +0530
-Message-ID: <CAKohponb199_zt11M2J39yHn45MjFMSrT+hPBp7rbqiHu4vKpQ@mail.gmail.com>
-Subject: Re: [PATCH] intel_pstate: track and export frequency residency stats
- via sysfs.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Anup Chenthamarakshan <anupc@chromium.org>
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908215535.GD18582@console-pimps.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 September 2014 05:40, Anup Chenthamarakshan <anupc@chromium.org> wrote:
-> Exported stats appear in
-> <sysfs>/devices/system/cpu/intel_pstate/time_in_state as follows:
->
-> ## CPU 0
-> 400000 3647
-> 500000 24342
-> 600000 144150
-> 700000 202469
-> ## CPU 1
-> 400000 4813
-> 500000 22628
-> 600000 149564
-> 700000 211885
-> 800000 173890
->
-> Signed-off-by: Anup Chenthamarakshan <anupc@chromium.org>
-> ---
->  drivers/cpufreq/intel_pstate.c | 77 ++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 74 insertions(+), 3 deletions(-)
 
-Why don't we reuse cpufreq_stats.c for all this?
+* Matt Fleming <matt@console-pimps.org> wrote:
+
+> Folks,
+> 
+> Please queue up the following fixes, mainly for regressions introduced
+> in the merge window or -rc2.
+
+So the rule for post-rc1 merges is to fix regressions 'only', not 
+'mainly'!
+
+> ----------------------------------------------------------------
+> Mark Rustad (1):
+>       efi: Resolve some shadow warnings
+
+That's not a critical regression.
+
+> 
+> Mark Salter (1):
+>       efi/arm64: Fix fdt-related memory reservation
+
+That's a regression fix.
+
+> Mathias Krause (4):
+>       x86/efi: Remove unused efi_call* macros
+>       x86/efi: Unexport add_efi_memmap variable
+>       x86/efi: Update comment regarding required phys mapped EFI services
+>       x86/efi: Mark initialization code as such
+
+Neither of these 4 changes is a critical regression!
+
+> Matt Fleming (1):
+>       x86/efi: Fixup GOT in all boot code paths
+
+That's a regression fix.
+
+> Yinghai Lu (1):
+>       x86/efi: Only load initrd above 4g on second try
+
+This revert is a regression fix too.
+
+So please only put the 3 regression fixes into efi-urgent, the 
+rest can go into the v3.18 pile.
+
+Thanks,
+
+	Ingo
