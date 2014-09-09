@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaIIW4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:56:08 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41301 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaIIW4H (ORCPT
+	id S1753000AbaIIW4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:56:16 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:36903 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924AbaIIW4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:56:07 -0400
-Message-ID: <540F8582.50703@infradead.org>
-Date: Tue, 09 Sep 2014 15:56:02 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 9 Sep 2014 18:56:13 -0400
 MIME-Version: 1.0
-To: Anish Bhatt <anish@chelsio.com>, Michael Chan <mchan@broadcom.com>,
-        "eddie.wai@broadcom.com" <eddie.wai@broadcom.com>
-CC: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: randconfig build error with next-20140909, in drivers/net/ethernet/broadcom/cnic.c
-References: <CA+r1ZhhZynUKSeZnya67z9sph4+tpjO4E7jLZKc0EG4azxFdYA@mail.gmail.com>	 <525DB349B3FB5444AE057A887CB2A8D88E0BFB@nice.asicdesigners.com>,<1410295676.7520.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <525DB349B3FB5444AE057A887CB2A8D88E3CEC@nice.asicdesigners.com>
-In-Reply-To: <525DB349B3FB5444AE057A887CB2A8D88E3CEC@nice.asicdesigners.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1410003731-32276-1-git-send-email-broonie@kernel.org>
+References: <1410003731-32276-1-git-send-email-broonie@kernel.org>
+Date: Wed, 10 Sep 2014 00:56:12 +0200
+Message-ID: <CA+gwMceBMs2hpiPhjJoj6N+BFgDN_26YeB6CXqFeY6OMQ4jmoQ@mail.gmail.com>
+Subject: Re: [PATCH] regulator: isl9305: Add Intersil ISL9305/H driver
+From: Philipp Zabel <philipp.zabel@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linaro-kernel@lists.linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 14:08, Anish Bhatt wrote:
-> 
->> Adding depends on IPV6 || IPV6=n doesn't work for SCSI_BNX2X_FCOE, but
->> works for SCSI_BNX2_ISCSI?
-> 
-> It fixes the config issue for both, but with FCOE; make scripts will complain about recursive dependencies with the following :
-> 
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> net/Kconfig:5:error: recursive dependency detected!
-> net/Kconfig:5:  symbol NET is selected by SCSI_NETLINK
-> drivers/scsi/Kconfig:43:        symbol SCSI_NETLINK is selected by SCSI_FC_ATTRS
-> drivers/scsi/Kconfig:258:       symbol SCSI_FC_ATTRS is selected by LIBFC
-> drivers/scsi/Kconfig:586:       symbol LIBFC is selected by SCSI_BNX2X_FCOE
-> drivers/scsi/bnx2fc/Kconfig:1:  symbol SCSI_BNX2X_FCOE depends on IPV6
-> net/ipv6/Kconfig:6:     symbol IPV6 depends on NET
+Hi Mark,
 
-It would be really good if SCSI_NETLINK depended on NET instead of selected NET.
-We shouldn't have kconfig symbols that use 'select' on entire subsystems.
+On Sat, Sep 6, 2014 at 1:42 PM, Mark Brown <broonie@kernel.org> wrote:
+[...]
+> diff --git a/Documentation/devicetree/bindings/regulator/isl9305.txt b/Documentation/devicetree/bindings/regulator/isl9305.txt
+> new file mode 100644
+> index 000000000000..a626fc1bbf0d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/regulator/isl9305.txt
+> @@ -0,0 +1,36 @@
+> +Intersil ISL9305/ISL9305H voltage regulator
+> +
+> +Required properties:
+> +
+> +- compatible: "isl,isl9305" or "isl,isl9305h"
 
--- 
-~Randy
+I have suggested to change the Intersil vendor prefix to 'isil':
+http://www.mail-archive.com/devicetree@vger.kernel.org/msg40842.html
+
+regards
+Philipp
