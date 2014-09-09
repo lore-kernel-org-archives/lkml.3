@@ -1,66 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330AbaIIEHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 00:07:46 -0400
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:57645
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750770AbaIIEHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 00:07:44 -0400
-X-Greylist: delayed 3618 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 00:07:44 EDT
-Date: Tue, 9 Sep 2014 10:41:02 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, <lgirdwood@gmail.com>,
-        <devicetree@vger.kernel.org>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>
-Subject: Re: PFUZE100 regulator not going off when PWRON is 0
-Message-ID: <20140909024100.GA19119@Robin-OptiPlex-780>
-References: <CAL8zT=hNnRU3gbprVXOMt6FC9veRvQKRmS9gSeCm5-DNfGv-xg@mail.gmail.com>
- <20140903125248.GK29327@sirena.org.uk>
+	id S1751467AbaIIEPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 00:15:20 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:47169 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaIIEPS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 00:15:18 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <gregkh@linuxfoundation.org>
+CC: <oort10@gmail.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v2] staging:r8190_rtl8256: coding style: Fixed commenting style
+Date: Tue, 9 Sep 2014 09:58:48 +0530
+Message-ID: <1410236928-9025-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <20140830205752.GA28515@kroah.com>
+References: <20140830205752.GA28515@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140903125248.GK29327@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019018)(6009001)(199003)(189002)(51704005)(24454002)(80022001)(20776003)(83072002)(92726001)(87936001)(74662001)(92566001)(85852003)(74502001)(23726002)(46406003)(97756001)(79102001)(46102001)(4396001)(47776003)(77982001)(64706001)(76482001)(50986999)(6806004)(83322001)(44976005)(33656002)(102836001)(95666004)(104016003)(106466001)(54356999)(99396002)(105606002)(33716001)(81342001)(81542001)(85306004)(31966008)(84676001)(76176999)(83506001)(26826002)(21056001)(50466002)(110136001)(107046002)(90102001)(97736003)(68736004)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB568;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0329B15C8A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for Mark's forward.
+This is a patch to the r8190_rtl8256.c file that fixes
+commenting style Error
 
-Hi Jean-Michel,
-  Yes, SWxOMODE can be set as 1 to active sleep mode if PWRON turn-off event
-occurs. And the voltage of sleep mode can be set in other register SWxOFF. But
-by default, SWxOMODE is 0 which means all SW will be turned off while PWRON go
-form 1 to 0. For your issue, I hope you check the hardware design, and measure
-PWRON pin to see whether it has been pulled low once your push reset key.
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+  - removed stuff which is not being used ad per greg comment
 
-On Wed, Sep 03, 2014 at 01:52:48PM +0100, Mark Brown wrote:
-> On Wed, Sep 03, 2014 at 11:44:22AM +0200, Jean-Michel Hautbois wrote:
-> 
-> > I have a custom i.MX6 based board, but PMIC part is exactly the same
-> > as the Freescale SabreSD board.
-> > I have a reset button, which makes the PWRON signal on PFUZE100 go from 1 to 0.
-> > I thought this would reset the chip, and thus all voltages would go to
-> > 0, but this is not the case. It seems that SWxOMODE registers are
-> > involved in this process, accorgind to the datasheet, but I don't
-> > think this is implemented right now.
-> > 
-> > I also removed regulator-always-on for my SW2 pin in order to get it
-> > off, but this has no effect.
-> 
-> You should really contact someone who worked on the driver or Freescale
-> about this - I don't think anyone on the CC list knows anything about
-> the part.  In general if you're asking about a specific driver this is a
-> good approach.  I've CCed Robin Gong who was the original author.
+ drivers/staging/rtl8192u/r8190_rtl8256.c | 52 +++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 31 deletions(-)
 
+diff --git a/drivers/staging/rtl8192u/r8190_rtl8256.c b/drivers/staging/rtl8192u/r8190_rtl8256.c
+index 43ed768..45514aa 100644
+--- a/drivers/staging/rtl8192u/r8190_rtl8256.c
++++ b/drivers/staging/rtl8192u/r8190_rtl8256.c
+@@ -49,9 +49,6 @@ void PHY_SetRF8256Bandwidth(struct net_device *dev , HT_CHANNEL_WIDTH Bandwidth)
+ 					rtl8192_phy_SetRFReg(dev,
+ 						(RF90_RADIO_PATH_E)eRFPath,
+ 						0x0e, bMask12Bits, 0x021);
+-
+-					/* cosa add for sd3's request 01/23/2008
+-					 */
+ 					rtl8192_phy_SetRFReg(dev,
+ 						(RF90_RADIO_PATH_E)eRFPath,
+ 						0x14, bMask12Bits, 0x5ab);
+@@ -61,13 +58,12 @@ void PHY_SetRF8256Bandwidth(struct net_device *dev , HT_CHANNEL_WIDTH Bandwidth)
+ 				break;
+ 		case HT_CHANNEL_WIDTH_20_40:
+ 				if (priv->card_8192_version == VERSION_819xU_A || priv->card_8192_version == VERSION_819xU_B) { /* 8256 D-cut, E-cut, xiong: consider it later! */
+-					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0b, bMask12Bits, 0x300); //phy para:3ba
++					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0b, bMask12Bits, 0x300); /* phy para:3ba */
+ 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x2c, bMask12Bits, 0x3df);
+ 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0e, bMask12Bits, 0x0a1);
+ 
+-					//cosa add for sd3's request 01/23/2008
+ 					if (priv->chan == 3 || priv->chan == 9)
+-						//I need to set priv->chan whenever current channel changes
++						/* I need to set priv->chan whenever current channel changes */
+ 						rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x59b);
+ 					else
+ 						rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x5ab);
+@@ -91,11 +87,12 @@ void PHY_SetRF8256Bandwidth(struct net_device *dev , HT_CHANNEL_WIDTH Bandwidth)
+ void PHY_RF8256_Config(struct net_device *dev)
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-	// Initialize general global value
+-	//
+-	// TODO: Extend RF_PATH_C and RF_PATH_D in the future
++	/* Initialize general global value
++	 *
++	 * TODO: Extend RF_PATH_C and RF_PATH_D in the future
++	 */
+ 	priv->NumTotalRFPath = RTL819X_TOTAL_RF_PATH;
+-	// Config BB and RF
++	/* Config BB and RF */
+ 	phy_RF8256_Config_ParaFile(dev);
+ }
+ /*--------------------------------------------------------------------------
+@@ -107,10 +104,6 @@ void PHY_RF8256_Config(struct net_device *dev)
+ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ {
+ 	u32	u4RegValue = 0;
+-	//static s1Byte				szRadioAFile[] = RTL819X_PHY_RADIO_A;
+-	//static s1Byte				szRadioBFile[] = RTL819X_PHY_RADIO_B;
+-	//static s1Byte				szRadioCFile[] = RTL819X_PHY_RADIO_C;
+-	//static s1Byte				szRadioDFile[] = RTL819X_PHY_RADIO_D;
+ 	u8	eRFPath;
+ 	BB_REGISTER_DEFINITION_T	*pPhyReg;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+@@ -119,19 +112,17 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ 	u32	RF3_Final_Value = 0;
+ 	u8	ConstRetryTimes = 5, RetryTimes = 5;
+ 	u8 ret = 0;
+-	//3//-----------------------------------------------------------------
+-	//3// <2> Initialize RF
+-	//3//-----------------------------------------------------------------
++	/* Initialize RF */
+ 	for (eRFPath = (RF90_RADIO_PATH_E)RF90_PATH_A; eRFPath < priv->NumTotalRFPath; eRFPath++) {
+ 		if (!rtl8192_phy_CheckIsLegalRFPath(dev, eRFPath))
+ 			continue;
+ 
+ 		pPhyReg = &priv->PHYRegDef[eRFPath];
+ 
+-		// Joseph test for shorten RF config
+-	//	pHalData->RfReg0Value[eRFPath] =  rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, rGlobalCtrl, bMaskDWord);
+-
+-		/*----Store original RFENV control type----*/
++		/* Joseph test for shorten RF config
++		 * pHalData->RfReg0Value[eRFPath] =  rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, rGlobalCtrl, bMaskDWord);
++		 * ----Store original RFENV control type
++		 */
+ 		switch (eRFPath) {
+ 		case RF90_PATH_A:
+ 		case RF90_PATH_C:
+@@ -150,13 +141,14 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ 		rtl8192_setBBreg(dev, pPhyReg->rfintfo, bRFSI_RFENV, 0x1);
+ 
+ 		/* Set bit number of Address and Data for RF register */
+-		rtl8192_setBBreg(dev, pPhyReg->rfHSSIPara2, b3WireAddressLength, 0x0);	// Set 0 to 4 bits for Z-serial and set 1 to 6 bits for 8258
+-		rtl8192_setBBreg(dev, pPhyReg->rfHSSIPara2, b3WireDataLength, 0x0);	// Set 0 to 12 bits for Z-serial and 8258, and set 1 to 14 bits for ???
++		rtl8192_setBBreg(dev, pPhyReg->rfHSSIPara2, b3WireAddressLength, 0x0);	/* Set 0 to 4 bits for Z-serial and set 1 to 6 bits for 8258 */
++		rtl8192_setBBreg(dev, pPhyReg->rfHSSIPara2, b3WireDataLength, 0x0);	/* Set 0 to 12 bits for Z-serial and 8258, and set 1 to 14 bits for ??? */
+ 
+ 		rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E) eRFPath, 0x0, bMask12Bits, 0xbf);
+ 
+-		/*----Check RF block (for FPGA platform only)----*/
+-		// TODO: this function should be removed on ASIC , Emily 2007.2.2
++		/* Check RF block (for FPGA platform only)----
++		 * TODO: this function should be removed on ASIC , Emily 2007.2.2
++		 */
+ 		if (rtl8192_phy_checkBBAndRF(dev, HW90_BLOCK_RF, (RF90_RADIO_PATH_E)eRFPath)) {
+ 			RT_TRACE(COMP_ERR, "PHY_RF8256_Config():Check Radio[%d] Fail!!\n", eRFPath);
+ 			goto phy_RF8256_Config_ParaFile_Fail;
+@@ -231,11 +223,9 @@ void PHY_SetRF8256CCKTxPower(struct net_device *dev, u8 powerlevel)
+ {
+ 	u32	TxAGC = 0;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-	//modified by vivi, 20080109
+ 	TxAGC = powerlevel;
+ 
+ 	if (priv->bDynamicTxLowPower == TRUE) {
+-		//cosa 05/22/2008 for scan
+ 		if (priv->CustomerID == RT_CID_819x_Netcore)
+ 			TxAGC = 0x22;
+ 		else
+@@ -251,15 +241,15 @@ void PHY_SetRF8256CCKTxPower(struct net_device *dev, u8 powerlevel)
+ void PHY_SetRF8256OFDMTxPower(struct net_device *dev, u8 powerlevel)
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-	//Joseph TxPower for 8192 testing
++	/* Joseph TxPower for 8192 testing */
+ 	u32 writeVal, powerBase0, powerBase1, writeVal_tmp;
+ 	u8 index = 0;
+ 	u16 RegOffset[6] = {0xe00, 0xe04, 0xe10, 0xe14, 0xe18, 0xe1c};
+ 	u8 byte0, byte1, byte2, byte3;
+ 
+-	powerBase0 = powerlevel + priv->TxPowerDiff;	//OFDM rates
++	powerBase0 = powerlevel + priv->TxPowerDiff;	/* OFDM rates */
+ 	powerBase0 = (powerBase0<<24) | (powerBase0<<16) | (powerBase0<<8) | powerBase0;
+-	powerBase1 = powerlevel;							//MCS rates
++	powerBase1 = powerlevel;							/* MCS rates */
+ 	powerBase1 = (powerBase1<<24) | (powerBase1<<16) | (powerBase1<<8) | powerBase1;
+ 
+ 	for (index = 0; index < 6; index++) {
+@@ -279,7 +269,7 @@ void PHY_SetRF8256OFDMTxPower(struct net_device *dev, u8 powerlevel)
+ 		if (byte3 > 0x24)
+ 			byte3 = 0x24;
+ 
+-		//for tx power track
++		/* for tx power track */
+ 		if (index == 3) {
+ 			writeVal_tmp = (byte3<<24) | (byte2<<16) | (byte1<<8) | byte0;
+ 			priv->Pwr_Track = writeVal_tmp;
+-- 
+1.7.11.7
 
