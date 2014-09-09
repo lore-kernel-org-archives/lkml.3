@@ -1,223 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857AbaIIOD0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:03:26 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:52602 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756352AbaIIODX (ORCPT
+	id S1756895AbaIIOEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:04:09 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:35241 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943AbaIIOEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:03:23 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, tomasz.figa@gmail.com,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v10 1/9] clk: Add temporary mapping to the existing API
-Date: Tue,  9 Sep 2014 16:02:09 +0200
-Message-Id: <1410271329-26637-2-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com>
+	Tue, 9 Sep 2014 10:04:07 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 9 Sep 2014 16:02:04 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Wang YanQing <udknight@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, Benjamin Henrion <zoobab@gmail.com>,
+        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        jhovold@gmail.com, andi@lisas.de, dforsi@gmail.com,
+        gnomes@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140909140204.GB7939@localhost>
+References: <20140831153201.GA25632@udknight>
+ <CANjd3neT+NrsptLw3s7Bm76xv6LQMqm-BieN-0xLFuTx4apXxw@mail.gmail.com>
+ <CANjd3ndGiTujCORwZOXfWfHL2_YocK5ZUpxQJPLq+qTmkV0xnA@mail.gmail.com>
+ <20140905013011.GA2133@udknight>
+ <20140909100856.GC2974@localhost>
+ <20140909102131.GA1354@udknight>
+ <20140909104356.GA7939@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909104356.GA7939@localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To preserve git-bisectability, add aliases from the future provider API to the
-existing public API.
+On Tue, Sep 09, 2014 at 12:43:56PM +0200, Johan Hovold wrote:
+> On Tue, Sep 09, 2014 at 06:21:31PM +0800, Wang YanQing wrote:
+> > On Tue, Sep 09, 2014 at 12:08:56PM +0200, Johan Hovold wrote:
+> > > On Fri, Sep 05, 2014 at 09:30:11AM +0800, Wang YanQing wrote:
+> > > > On Thu, Sep 04, 2014 at 06:44:31PM +0200, Benjamin Henrion wrote:
+> > > > > On Thu, Sep 4, 2014 at 6:14 PM, Benjamin Henrion <zoobab@gmail.com> wrote:
+> > > > > > I have subscribed to the lkml.
+> > > > > >
+> > > > > > Can you make me a favour, send me your email as you posted on the LKML
+> > > > > > in mbox format attached to an email?
+> > > > > >
+> > > > > > I am trying to reply to it, but I cannot find an mbox archive, outside
+> > > > > > of gmane which rewrites all the email addresses.
+> > > > > >
+> > > > > > Otherwise, I made a page here:
+> > > > > >
+> > > > > > http://www.zoobab.com/pl2303hxd-gpio
+> > > > > >
+> > > > > > I will also try with other adapters to see if the 2 GPIOs show up.
+> > > > > >
+> > > > > > Any idea how to test the GPIO sysfs speed?
+> > > > > 
+> > > > > Also tested with an HXA laying around, I could export the 2 GPIOS in
+> > > > > /sys/class/gpio, but I could not change the status of the pins via
+> > > > > echo.
+> > > > > 
+> > > > > Any idea why?
+> > > > 
+> > > > It is strange, I have tested again with my two HXA adapters, they work well.
+> > > > How do you test? check cat value or check voltage change? I check cat value,
+> > > > and they work good.
+> > > 
+> > > So you haven't verified that the voltage actually changes?
+> > > 
+> > > Johan
+> > 
+> > I have verified the voltage actually changes in previous patch version,
+> > but I haven't verified that with v8.
+> 
+> Ok, good. I'll get back to you with some comments on v8 shortly.
 
-Also includes clk-provider.h and clk-dev.h in a few places so the right
-functions are defined.
+Wait a minute. You restructured the driver, added support for two new
+gpios as well as another device type, so you need to verify the voltage
+on the pins (on both device types) as well.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Heiko Stuebner <heiko@sntech.de>
-
----
-v9: * Add mapping for clk_get_name
-
-v7: * Add mappings for clk_notifier_[un]register
-    * Add more clk-provider.h includes to clk implementations
-
-v4: * Add more clk-provider.h includes to clk implementations
-    * Add mapping for clk_provider_round_rate
----
- arch/arm/mach-omap2/display.c                 |  1 +
- arch/arm/mach-omap2/omap_device.c             |  1 +
- arch/arm/mach-shmobile/clock.c                |  1 +
- arch/arm/plat-orion/common.c                  |  1 +
- drivers/clk/berlin/bg2.c                      |  1 +
- drivers/clk/berlin/bg2q.c                     |  1 +
- drivers/clk/clk-conf.c                        |  1 +
- drivers/clk/clkdev.c                          |  1 +
- drivers/media/platform/exynos4-is/media-dev.c |  1 +
- include/linux/clk-provider.h                  | 27 +++++++++++++++++++++++++++
- include/linux/clk/zynq.h                      |  1 +
- 11 files changed, 37 insertions(+)
-
-diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
-index bf852d7..0f9e479 100644
---- a/arch/arm/mach-omap2/display.c
-+++ b/arch/arm/mach-omap2/display.c
-@@ -21,6 +21,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/err.h>
- #include <linux/delay.h>
- #include <linux/of.h>
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index d22c30d..f138a62 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -32,6 +32,7 @@
- #include <linux/io.h>
- #include <linux/clk.h>
- #include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/notifier.h>
-diff --git a/arch/arm/mach-shmobile/clock.c b/arch/arm/mach-shmobile/clock.c
-index 806f940..ed415dc 100644
---- a/arch/arm/mach-shmobile/clock.c
-+++ b/arch/arm/mach-shmobile/clock.c
-@@ -24,6 +24,7 @@
- 
- #ifdef CONFIG_COMMON_CLK
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include "clock.h"
- 
-diff --git a/arch/arm/plat-orion/common.c b/arch/arm/plat-orion/common.c
-index 3ec6e8e..961b593 100644
---- a/arch/arm/plat-orion/common.c
-+++ b/arch/arm/plat-orion/common.c
-@@ -15,6 +15,7 @@
- #include <linux/serial_8250.h>
- #include <linux/ata_platform.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include <linux/mv643xx_eth.h>
- #include <linux/mv643xx_i2c.h>
-diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
-index 515fb13..4c81e09 100644
---- a/drivers/clk/berlin/bg2.c
-+++ b/drivers/clk/berlin/bg2.c
-@@ -19,6 +19,7 @@
- 
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/kernel.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
-index 21784e4..748da9b 100644
---- a/drivers/clk/berlin/bg2q.c
-+++ b/drivers/clk/berlin/bg2q.c
-@@ -19,6 +19,7 @@
- 
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/kernel.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
-index aad4796..d36a7b3 100644
---- a/drivers/clk/clk-conf.c
-+++ b/drivers/clk/clk-conf.c
-@@ -8,6 +8,7 @@
-  */
- 
- #include <linux/clk.h>
-+#include <linux/clkdev.h>
- #include <linux/clk-provider.h>
- #include <linux/clk/clk-conf.h>
- #include <linux/device.h>
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index da4bda8..c751d0c 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -18,6 +18,7 @@
- #include <linux/string.h>
- #include <linux/mutex.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include <linux/of.h>
- 
-diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-index 344718d..2620c48 100644
---- a/drivers/media/platform/exynos4-is/media-dev.c
-+++ b/drivers/media/platform/exynos4-is/media-dev.c
-@@ -13,6 +13,7 @@
- #include <linux/bug.h>
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/device.h>
- #include <linux/errno.h>
- #include <linux/i2c.h>
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 411dd7e..99b906f 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -16,6 +16,33 @@
- 
- #ifdef CONFIG_COMMON_CLK
- 
-+/* Temporarily map the to-be-added API to the old API, just so stuff compiles */
-+#define clk_core			clk
-+
-+#define __clk_create_clk
-+
-+#define clk_provider_get			clk_get
-+#define clk_provider_get_sys			clk_get_sys
-+#define devm_clk_provider_get			devm_clk_get
-+#define of_clk_provider_get			of_clk_get
-+#define of_clk_provider_get_by_name		of_clk_get_by_name
-+
-+#define clk_provider_set_rate			clk_set_rate
-+#define clk_provider_get_rate			clk_get_rate
-+#define clk_provider_round_rate			clk_round_rate
-+#define clk_provider_set_parent			clk_set_parent
-+#define clk_provider_get_parent			clk_get_parent
-+#define clk_provider_prepare			clk_prepare
-+#define clk_provider_unprepare			clk_unprepare
-+#define clk_provider_enable			clk_enable
-+#define clk_provider_disable			clk_disable
-+#define clk_provider_prepare_enable		clk_prepare_enable
-+#define clk_provider_disable_unprepare		clk_unprepare
-+#define clk_provider_notifier_register		clk_notifier_register
-+#define clk_provider_notifier_unregister	clk_notifier_unregister
-+
-+#define clk_get_name				__clk_get_name
-+
- /*
-  * flags used across common struct clk.  these flags should only affect the
-  * top-level framework.  custom flags for dealing with hardware specifics
-diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
-index 7a5633b..a990a59 100644
---- a/include/linux/clk/zynq.h
-+++ b/include/linux/clk/zynq.h
-@@ -21,6 +21,7 @@
- #define __LINUX_CLK_ZYNQ_H_
- 
- #include <linux/spinlock.h>
-+#include <linux/clk-provider.h>
- 
- void zynq_clock_init(void);
- 
--- 
-1.9.3
-
+Thanks,
+Johan
