@@ -1,197 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982AbaIIH41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:56:27 -0400
-Received: from mga11.intel.com ([192.55.52.93]:50509 "EHLO mga11.intel.com"
+	id S1756020AbaIIH7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:59:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36306 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533AbaIIH40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:56:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
-   d="scan'208";a="588414021"
-Message-ID: <540EB257.4090200@intel.com>
-Date: Tue, 09 Sep 2014 10:55:03 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755826AbaIIH7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 03:59:09 -0400
+Message-ID: <540EB32A.90701@redhat.com>
+Date: Tue, 09 Sep 2014 09:58:34 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Ingo Molnar <mingo@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/13] perf/core improvements and fixes
-References: <1410211089-28668-1-git-send-email-acme@kernel.org>	<20140909045914.GA6770@gmail.com>	<540EA8DD.1090609@intel.com> <CABPqkBREiO24EbX7m6zqC7iP1cwpKNqa9m6cFd=VMcV8qjay7A@mail.gmail.com>
-In-Reply-To: <CABPqkBREiO24EbX7m6zqC7iP1cwpKNqa9m6cFd=VMcV8qjay7A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Kumar Gala <galak@codeaurora.org>, Tejun Heo <tj@kernel.org>
+CC: linux-ide@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        b.zolnierkie@samsung.com
+Subject: Re: [PATCH v4 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller
+ driver
+References: <1410194390-29007-1-git-send-email-galak@codeaurora.org> <1410194390-29007-2-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1410194390-29007-2-git-send-email-galak@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 10:45 AM, Stephane Eranian wrote:
-> On Tue, Sep 9, 2014 at 9:14 AM, Adrian Hunter <adrian.hunter@intel.com> wrote:
->> On 09/09/2014 07:59 AM, Ingo Molnar wrote:
->>>
->>> * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
->>>
->>>> Hi Ingo,
->>>>
->>>>      Please consider pulling,
->>>>
->>>> - Arnaldo
->>>>
->>>> The following changes since commit 39b5a56ec0be5effe9b7d0f18cb27724bf2e5d47:
->>>>
->>>>   Merge branch 'rfc/perf' into perf/core, because it's ready for inclusion (2014-08-24 22:35:42 +0200)
->>>>
->>>> are available in the git repository at:
->>>>
->>>>
->>>>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
->>>>
->>>> for you to fetch changes up to fa3480cb0a96c8af9ded1a8c836c91bd5704bda1:
->>>>
->>>>   perf tools: Add perf_pmu__scan_file() (2014-09-08 17:16:06 -0300)
->>>>
->>>> ----------------------------------------------------------------
->>>> perf/core improvements and fixes:
->>>>
->>>> User visible:
->>>>
->>>> o Add +field argument support for --sort option (Jiri Olsa)
->>>>
->>>> Infrastructure:
->>>>
->>>> o More intel PT prep work, from Adrian Hunter, including:
->>>>
->>>>   - Let a user specify a PMU event without any config terms
->>>>   - Add perf-with-kcore script
->>>>   - Build programs to copy 32-bit compatibility VDSOs
->>>>   - Add support for 32-bit compatibility VDSOs
->>>>   - Let default config be defined for a PMU
->>>>   - Add perf_pmu__scan_file()
->>>>
->>>> o Add feature checks to .gitignore (Alexander Shishkin)
->>>>
->>>> o "perf kvm stat report" improvements by Alexander Yarygin:
->>>>   o  Save pid string in opts.target.pid
->>>>   o  Enable the target.system_wide flag
->>>>   o  Unify the title bar output
->>>>
->>>> o Fix build issue on powerpc when DWARF support is disabled (Anton Blanchard)
->>>>
->>>> o Allow to specify lib compile variable for spec usage (Jiri Olsa)
->>>>
->>>> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
->>>>
->>>> ----------------------------------------------------------------
->>>> Adrian Hunter (6):
->>>>       perf tools: Let a user specify a PMU event without any config terms
->>>>       perf tools: Add perf-with-kcore script
->>>>       perf tools: Build programs to copy 32-bit compatibility VDSOs
->>>>       perf tools: Add support for 32-bit compatibility VDSOs
->>>>       perf tools: Let default config be defined for a PMU
->>>>       perf tools: Add perf_pmu__scan_file()
->>>>
->>>> Alexander Shishkin (1):
->>>>       perf tools: Add feature checks to .gitignore
->>>>
->>>> Alexander Yarygin (3):
->>>>       perf kvm stat report: Save pid string in opts.target.pid
->>>>       perf kvm stat report: Enable the target.system_wide flag
->>>>       perf kvm stat report: Unify the title bar output
->>>>
->>>> Anton Blanchard (1):
->>>>       perf tools powerpc: Fix build issue when DWARF support is disabled
->>>>
->>>> Jiri Olsa (2):
->>>>       perf tools: Add +field argument support for --sort option
->>>>       perf tools: Allow to specify lib compile variable for spec usage
->>>>
->>>>  tools/perf/.gitignore            |   2 +
->>>>  tools/perf/Makefile.perf         |  42 ++++++-
->>>>  tools/perf/arch/powerpc/Makefile |   2 +-
->>>>  tools/perf/builtin-kvm.c         |  23 ++--
->>>>  tools/perf/config/Makefile       |  33 ++++-
->>>>  tools/perf/config/Makefile.arch  |   8 ++
->>>>  tools/perf/perf-read-vdso.c      |  59 +++++++++
->>>>  tools/perf/perf-with-kcore.sh    | 259 +++++++++++++++++++++++++++++++++++++++
->>>>  tools/perf/tests/pmu.c           |   2 +-
->>>>  tools/perf/util/kvm-stat.h       |   1 -
->>>>  tools/perf/util/parse-events.c   |  13 +-
->>>>  tools/perf/util/parse-events.y   |  10 ++
->>>>  tools/perf/util/pmu.c            |  79 +++++++++---
->>>>  tools/perf/util/pmu.h            |  12 +-
->>>>  tools/perf/util/sort.c           |  37 +++++-
->>>>  tools/perf/util/vdso.c           | 170 ++++++++++++++++++++++++-
->>>>  tools/perf/util/vdso.h           |   4 +-
->>>>  17 files changed, 712 insertions(+), 44 deletions(-)
->>>>  create mode 100644 tools/perf/perf-read-vdso.c
->>>>  create mode 100644 tools/perf/perf-with-kcore.sh
->>>
->>> Hm, so I'm getting this error, when trying to profile a 32-bit
->>> ELF binary on a 64-bit kernel, on a testbox:
->>>
->>>  $ perf record ~/hackbench  10
->>>  Time: 0.115
->>>  [ perf record: Woken up 1 times to write data ]
->>>  [ perf record: Captured and wrote 0.373 MB perf.data (~16279 samples) ]
->>>  sh: perf-read-vdso32: command not found
->>
->> Presumably perf-read-vdso32 is not in the PATH.  Did you 'make install'?
->>
-> Why are we relying on an external command now in perf record?
+Hi,
 
-We are not relying on it in the sense the 'record' works without it.
-There is more explanation in "perf tools: Build programs to copy 32-bit
-compatibility VDSOs" and "perf tools: Add support for 32-bit compatibility
-VDSOs" (although those are the wrong versions of those patches - I will send
-another email about that in a moment).
+On 09/08/2014 06:39 PM, Kumar Gala wrote:
+> Add support for the Qualcomm AHCI SATA controller that exists on several
+> SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
+> requires the associated IPQ806x SATA PHY Driver to be enabled as well.
+
+If I'm reading this driver correctly, all it does which ahci_platform.c does
+not do is set the speed for 2 clocks, or am I missing something ?
+
+If I'm correct, then why not simply use the following in the devicetree node ? :
+
+	sata@29000000 {
+		compatible = "qcom,ipq806x-ahci", "qcom,msm-ahci", "generic-ahci";
+		reg = <0x29000000 0x180>;
+
+		interrupts = <0 209 0x0>;
+
+		clocks = <&gcc SFAB_SATA_S_H_CLK>,
+			 <&gcc SATA_H_CLK>,
+			 <&gcc SATA_A_CLK>,
+			 <&gcc SATA_RXOOB_CLK>,
+			 <&gcc SATA_PMALIVE_CLK>;
+		clock-names = "slave_iface", "iface", "core",
+				"rxoob", "pmalive";
+
+		assigned-clocks = <&gcc SATA_RXOOB_CLK>, <&gcc SATA_PMALIVE_CLK>;
+		assigned-clock-rates = <100000000>, <100000000>;
+
+		phys = <&sata_phy>;
+		phy-names = "sata-phy";
+	};
+
+Notice the "generic-ahci" and assigned-clock* properties, see:
+
+Documentation/devicetree/bindings/clock/clock-bindings.txt
+
+With this you don't need to write your own driver at all, just a patch to
+increase the max clocks + a dts node.
+
+In case you do need your own driver for some reason see my review comments
+on the driver further down.
+
 
 > 
->>>
->>> comet:~/tip> file ~/hackbench
->>> /home/mingo/hackbench: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.2.5, not stripped
->>>
->>> 64-bit executables work fine:
->>>
->>>  $ perf record perf bench sched pipe
->>>  # Running 'sched/pipe' benchmark:
->>>  # Executed 1000000 pipe operations between two processes
->>>
->>>       Total time: 13.374 [sec]
->>>
->>>        13.374352 usecs/op
->>>            74769 ops/sec
->>>  [ perf record: Woken up 14 times to write data ]
->>>  [ perf record: Captured and wrote 3.602 MB perf.data (~157354 samples) ]
->>>
->>> The kernel is an older one:
->>>
->>>  $ uname -a
->>>  Linux comet 3.14.17-100.fc19.x86_64 #1 SMP Thu Aug 14 17:17:26
->>>  UTC 2014 x86_64 x86_64 x86_64 GNU/Linux
->>>
->>> Thanks,
->>>
->>>       Ingo
->>>
->>>
->>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+> v4:
+> * Added simple PM ops implementation
+> * Added setting of pmalive clk
 > 
+> v3:
+> * Added comment about suspend/resume not supported
+> * Fixup ahci_platform_init_host for upstream change to interface
+> * cleanup error handling of rxoob clk, moved to devm_clk_get/put
 > 
+> v2:
+> * Fixed MODULE_LICENSE to be GPL v2
+> 
+>  drivers/ata/Kconfig     | 10 +++++
+>  drivers/ata/Makefile    |  1 +
+>  drivers/ata/ahci_qcom.c | 99 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 110 insertions(+)
+>  create mode 100644 drivers/ata/ahci_qcom.c
+> 
+> diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+> index e1b9278..165d2fa 100644
+> --- a/drivers/ata/Kconfig
+> +++ b/drivers/ata/Kconfig
+> @@ -133,6 +133,16 @@ config AHCI_MVEBU
+>  
+>  	  If unsure, say N.
+>  
+> +config AHCI_QCOM
+> +	tristate "Qualcomm AHCI SATA support"
+> +	depends on ARCH_QCOM
+> +	help
+> +	  This option enables support for AHCI SATA controller
+> +	  integrated into Qualcomm ARM SoC chipsets. For more
+> +	  information please refer to http://www.qualcomm.com/chipsets.
+> +
+> +	  If unsure, say N.
+> +
+>  config AHCI_SUNXI
+>  	tristate "Allwinner sunxi AHCI SATA support"
+>  	depends on ARCH_SUNXI
+> diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
+> index ae41107..812435c 100644
+> --- a/drivers/ata/Makefile
+> +++ b/drivers/ata/Makefile
+> @@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
+>  obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_MVEBU)	+= ahci_mvebu.o libahci.o libahci_platform.o
+> +obj-$(CONFIG_AHCI_QCOM)		+= ahci_qcom.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
+>  obj-$(CONFIG_AHCI_TEGRA)	+= ahci_tegra.o libahci.o libahci_platform.o
+> diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
+> new file mode 100644
+> index 0000000..3da0c94
+> --- /dev/null
+> +++ b/drivers/ata/ahci_qcom.c
+> @@ -0,0 +1,99 @@
+> +/*
+> + * Qualcomm ARM SoC AHCI SATA platform driver
+> + *
+> + * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
+> + *
+> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/ahci_platform.h>
+> +#include <linux/device.h>
+> +#include <linux/kernel.h>
+> +#include <linux/libata.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pm.h>
+> +#include "ahci.h"
+> +
+> +static const struct ata_port_info qcom_ahci_port_info = {
+> +	.flags		= AHCI_FLAG_COMMON,
+> +	.pio_mask	= ATA_PIO4,
+> +	.udma_mask	= ATA_UDMA6,
+> +	.port_ops	= &ahci_platform_ops,
+> +};
+> +
+> +static int qcom_ahci_probe(struct platform_device *pdev)
+> +{
+> +	struct ahci_host_priv *hpriv;
+> +	struct clk *rxoob_clk, *pmalive_clk;
+> +	int rc;
+> +
+> +	hpriv = ahci_platform_get_resources(pdev);
+> +	if (IS_ERR(hpriv))
+> +		return PTR_ERR(hpriv);
+> +
+> +	/* Try and set the rxoob clk to 100Mhz */
+> +	rxoob_clk = of_clk_get_by_name(pdev->dev.of_node, "rxoob");
+> +	if (IS_ERR(rxoob_clk))
+> +		return PTR_ERR(rxoob_clk);
 
+You're leaking the reference to the clk you're getting here. Please do
+one of the following to fix this:
+
+1) Use devm_clk_get; or
+2) Since ahci_platform_get_resources also got a reference,
+   you can put the clk after having set the rate; or
+3) Since you specify a fixed clock order in your dts bindings, at defines
+   for the clock indexes, and just use hpriv->clks[DEFINE] to set the rates.
+
+Otherwise this looks good, although I would prefer to not have a separate
+driver for this at all, see above.
+
+Regards,
+
+Hans
+
+
+> +
+> +	rc = clk_set_rate(rxoob_clk, 100000000);
+> +	if (rc)
+> +		return rc;
+> +
+> +	/* Try and set the pmalive clk to 100Mhz */
+> +	pmalive_clk = of_clk_get_by_name(pdev->dev.of_node, "pmalive");
+> +	if (IS_ERR(pmalive_clk))
+> +		return PTR_ERR(pmalive_clk);
+> +
+> +	rc = clk_set_rate(pmalive_clk, 100000000);
+> +	if (rc)
+> +		return rc;
+> +
+> +	rc = ahci_platform_enable_resources(hpriv);
+> +	if (rc)
+> +		return rc;
+> +
+> +	rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info);
+> +	if (rc)
+> +		goto disable_resources;
+> +
+> +	return 0;
+> +disable_resources:
+> +	ahci_platform_disable_resources(hpriv);
+> +	return rc;
+> +}
+> +
+> +static const struct of_device_id qcom_ahci_of_match[] = {
+> +	{ .compatible = "qcom,msm-ahci", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
+> +
+> +static SIMPLE_DEV_PM_OPS(qcom_ahci_pm_ops, ahci_platform_suspend,
+> +			 ahci_platform_resume);
+> +
+> +static struct platform_driver qcom_ahci_driver = {
+> +	.probe = qcom_ahci_probe,
+> +	.remove = ata_platform_remove_one,
+> +	.driver = {
+> +		.name = "qcom_ahci_qcom",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = qcom_ahci_of_match,
+> +		.pm = &qcom_ahci_pm_ops,
+> +	},
+> +};
+> +module_platform_driver(qcom_ahci_driver);
+> +
+> +MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("ahci:qcom");
+> 
