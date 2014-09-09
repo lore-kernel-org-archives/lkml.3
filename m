@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618AbaIIMZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:25:51 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:50895 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557AbaIIMZt (ORCPT
+	id S932289AbaIIM1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:27:10 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:59210 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908AbaIIM1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:25:49 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH] UBI: add missing kmem_cache_free() in process_pool_aeb error path
-Date: Tue,  9 Sep 2014 14:25:01 +0200
-Message-Id: <1410265519-25111-1-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Tue, 9 Sep 2014 08:27:08 -0400
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Cc: tgih.jun@samsung.com, ulf.hansson@linaro.org, chris@printf.net,
+        Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Subject: [PATCH] mmc: Add delay between CMD6 and CMD13 for Sandisk eMMC cards
+Date: Tue,  9 Sep 2014 14:26:54 +0200
+Message-Id: <1410265614-3275-1-git-send-email-jean-michel.hautbois@vodalys.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I ran into this error after a ubiupdatevol, because I forgot to backport
-e9110361a9a4 UBI: fix the volumes tree sorting criteria.
+Tested on a i.MX6 board, with Sandisk SDIN5D1-2G.
+Without this patch, I/O errors occur.
+This eMMC seems to have a different Manufacturer ID as it reads 0x45
+and not 0x2 as specified in datasheet.
 
-UBI error: process_pool_aeb: orphaned volume in fastmap pool
-UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
-kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
-[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
-[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
-[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
-[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
-[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
-[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
-[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
-[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
-[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
-UBI: scanning is finished
-
-Freeing the cache in the error path fixes the Slab error.
-
-Tested on at91sam9g35 (3.14.18+fastmap backports)
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Cc: stable <stable@vger.kernel.org> # >= 3.10
+Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
 ---
- drivers/mtd/ubi/fastmap.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/mmc/core/mmc_ops.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 0431b46d9fd9..c701369090fb 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_device *ubi, struct ubi_attach_info *ai,
- 		av = tmp_av;
- 	else {
- 		ubi_err("orphaned volume in fastmap pool!");
-+		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
- 		return UBI_BAD_FASTMAP;
- 	}
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index f51b5ba..91babaa 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -458,6 +458,15 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+ 	if (!use_busy_signal)
+ 		return 0;
  
++	/* WORKAROUND: for Sandisk eMMC cards, it might need certain delay
++	 * before sending CMD13 after CMD6
++	 * On SDIN5D1-2G MANFID is 0x45 and not 0x2 as specified in datasheet
++	 */
++	if (card->cid.manfid == CID_MANFID_SANDISK ||
++		card->cid.manfid == 0x45) {
++		msleep(1);
++	}
++
+ 	/*
+ 	 * CRC errors shall only be ignored in cases were CMD13 is used to poll
+ 	 * to detect busy completion.
 -- 
-2.0.0
+2.0.4
 
