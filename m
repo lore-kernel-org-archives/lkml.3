@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173AbaIIJIj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:08:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43624 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055AbaIIJIh (ORCPT
+	id S1756213AbaIIJIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:08:54 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:52929 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756079AbaIIJIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:08:37 -0400
-Date: Tue, 9 Sep 2014 11:08:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 11/22] perf: add ITRACE_START record to indicate that
- tracing has started
-Message-ID: <20140909090830.GZ19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1408538179-792-12-git-send-email-alexander.shishkin@linux.intel.com>
+	Tue, 9 Sep 2014 05:08:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Peter Griffin <peter.griffin@linaro.org>, linux-kernel@vger.kernel.org,
+        kishon@ti.com, srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, peppe.cavallaro@st.com, lee.jones@linaro.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] phy: phy-stih407-usb: Add usb picoPHY driver found on stih407 SoC family
+Date: Tue, 09 Sep 2014 11:08:11 +0200
+Message-ID: <2894228.eRmxgHsWbh@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1410253218-18318-2-git-send-email-peter.griffin@linaro.org>
+References: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org> <1410253218-18318-2-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="co37zgScbM0c70lw"
-Content-Disposition: inline
-In-Reply-To: <1408538179-792-12-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:A3zynyeGSAeSqL0ms/n7XS8RQicjE+hUWgHVl/xl24G
+ cWtQHdOG0v+WCPniAzwNrGT7Bompsajbv4scBk/TPd8zBWVcC2
+ P7MH12FNLJsIQLitaITKvXNuJePuDaR+Et86UzdtPE0LDek7OX
+ MzFqnU4/tGAGAKxiMq1UZ8u7kGZJEcG+RChOHkqltMdxGfnwr1
+ qajmriEK0kfFkfA1c5nrMfv5/ME8U7n2I2j03Zf3z3eaMljgRM
+ NoQxO0WZNVYk6iTxCSIs6TYH0HBRtv4Ib2mM61X892HS3Y2b13
+ FoG4gpk0WNjqvtAWSXQO/hJa52C+qnj3Km2H3gvQxSrDnMTUj5
+ H3cO/Wulv/i6KqGbhF/U=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 09 September 2014 10:00:15 Peter Griffin wrote:
+> This is the generic phy driver for the picoPHY ports used by the
+> USB2 and USB3 Host controllers when controlling usb2/1.1 devices. It
+> is found on STiH407 SoC family from STMicroelectronics.
+> 
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 
---co37zgScbM0c70lw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks good overall, just one question:
 
-On Wed, Aug 20, 2014 at 03:36:08PM +0300, Alexander Shishkin wrote:
-> For counters such as instruction tracing, it is useful for the decoder
-> to know which tasks are running when the event is first scheduled in,
-> before the first sched_switch.
->=20
-> To single out such instruction tracing pmus, this patch alse introduces
-> ITRACE PMU capability.
+> +
+> +	match = of_match_device(stih407_usb2_picophy_of_match, dev);
+> +	if (!match)
+> +		return -ENODEV;
+....
+> +
+> +	phy = devm_phy_create(dev, NULL, match->data, NULL);
+> +	if (IS_ERR(phy)) {
+> +		dev_err(dev, "failed to create Display Port PHY\n");
+> +		return PTR_ERR(phy);
+> +	}
+> +
 
-You forgot to tell why. Also explain why.
+There is only one entry in the match table, so it always points to
+stih407_usb2_picophy_data. Do you have plans to add another set of
+operations soon?
+If not, just remove the .data pointer and hardcode the operations
+in the devm_phy_create call.
 
-The next context switch event will also tell you the previous task. So
-this seems like superfluous information. Also if you really want this
-you could simply emit an empty AUX record I suppose, no need to create
-yet another record type.
-
---co37zgScbM0c70lw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUDsOOAAoJEHZH4aRLwOS65lwP/1b46N2ymvLD79ay5zS9fPF3
-ZF/ORYzanKNfg/RgkN9F8salX0rjEzhZC6CsUaFIFsgLK+j+lxG9nfMLLTQ2LQBi
-vaXth3pj5/s7zVDRlOtjdaYQElTzwCItrbopOE1kTXIFzllaDLxKmYANQOvNCjU9
-XQhgiO3Cln3lHmwBO5gJCN7suDkxPMAdRaoQs6XhggT71pw4tB9qsduScrRLGcgk
-/cX6Fd8M37MVHsWc6cNUhzdCV23G8kMhs/AAnaDRzvRipXeDK1MQ/rkwgFsRqp8s
-S1OniBha5jSD0hBW46AnzvRUWkls3rB5k5djk5gMUUz7wChdlPv+cxWKLIrWD2Nw
-wHwqen9sRL+WvFHvve03nchi1nicKG8Q6wfBSMPAHbdSWJZFoncGl/dPj+NKCjfo
-w5St6Be8qxM4Q0AMCLaGLTdAAGWFZXQNobUvR1ht+CE/ODMqgYAFRl56Y8L9e5jz
-we71AXGybiLRHTKual0YMs+SyJBnSIUTByZd4GcEoYCfZvvrF+G+/7aRdbutOKX6
-qRj9i+9WUOk2vu+7CvAoEpEKuDSeBONkOSShkVYshPjJIlWTXg4+NM6K3v0GE2tf
-PUly0sCwgY54IHwmO3rLc0f7l13Z22wMDGv7NhuotO/g5zOeu4XjVahFaLFcl32s
-8Q9CLHVCQ1HCtjaZZOjW
-=inxV
------END PGP SIGNATURE-----
-
---co37zgScbM0c70lw--
+	Arnd
