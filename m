@@ -1,116 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896AbaIIKlB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:41:01 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33613 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756699AbaIIKk6 (ORCPT
+	id S1756911AbaIIKlZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:41:25 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50368 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756649AbaIIKlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:40:58 -0400
-Message-ID: <540ED929.5040305@hurleysoftware.com>
-Date: Tue, 09 Sep 2014 06:40:41 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jakub Jelinek <jakub@redhat.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
-        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: Re: bit fields && data tearing
-References: <21512.10628.412205.873477@gargle.gargle.HOWL>			 <20140904090952.GW17454@tucnak.redhat.com>			 <540859EC.5000407@hurleysoftware.com>			 <20140904175044.4697aee4@alan.etchedpixels.co.uk>			 <5408C0AB.6050801@hurleysoftware.com>			 <20140905001751.GL5001@linux.vnet.ibm.com>			 <1409883098.5078.14.camel@jarvis.lan>		 <5409243C.4080704@hurleysoftware.com>			 <20140905040645.GO5001@linux.vnet.ibm.com>			 <1410066442.12512.13.camel@jarvis.lan>			 <20140907162146.GK5001@linux.vnet.ibm.com>		 <1410116687.2027.19.camel@jarvis.lan>	 <540CC305.8010407@hurleysoftware.com> <1410155407.2027.29.camel@jarvis.lan>	 <540E3BFF.7080307@hurleysoftware.com> <1410231392.2028.15.camel@jarvis.lan>
-In-Reply-To: <1410231392.2028.15.camel@jarvis.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Tue, 9 Sep 2014 06:41:22 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, sparmaintainer@unisys.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of context imbalance
+Date: Tue,  9 Sep 2014 16:11:09 +0530
+Message-Id: <1410259269-27397-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2014 10:56 PM, James Bottomley wrote:
-> On Mon, 2014-09-08 at 19:30 -0400, Peter Hurley wrote:
->> On 09/08/2014 01:50 AM, James Bottomley wrote:
->>>> But additionally, even if gcc combines adjacent writes _that are part
->>>> of the program flow_ then I believe the situation is no worse than
->>>> would otherwise exist.
->>>>
->>>> For instance, given the following:
->>>>
->>>> struct x {
->>>> 	spinlock_t lock;
->>>> 	long a;
->>>> 	byte b;
->>>> 	byte c;
->>>> };
->>>>
->>>> void locked_store_b(struct x *p)
->>>> {
->>>> 	spin_lock(&p->lock);
->>>> 	p->b = 1;
->>>> 	spin_unlock(&p->lock);
->>>> 	p->c = 2;
->>>> }
->>>>
->>>> Granted, the author probably expects ordered writes of
->>>> 	STORE B
->>>> 	STORE C
->>>> but that's not guaranteed because there is no memory barrier
->>>> ordering B before C.
->>>
->>> Yes, there is: loads and stores may not migrate into or out of critical
->>> sections.
->>
->> That's a common misconception.
->>
->> The processor is free to re-order this to:
->>
->> 	STORE C
->> 	STORE B
->> 	UNLOCK
->>
->> That's because the unlock() only guarantees that:
->>
->> Stores before the unlock in program order are guaranteed to complete
->> before the unlock completes. Stores after the unlock _may_ complete
->> before the unlock completes.
->>
->> My point was that even if compiler barriers had the same semantics
->> as memory barriers, the situation would be no worse. That is, code
->> that is sensitive to memory barriers (like the example I gave above)
->> would merely have the same fragility with one-way compiler barriers
->> (with respect to the compiler combining writes).
->>
->> That's what I meant by "no worse than would otherwise exist".
-> 
-> Actually, that's not correct.  This is actually deja vu with me on the
-> other side of the argument.  When we first did spinlocks on PA, I argued
-> as you did: lock only a barrier for code after and unlock for code
-> before.  The failing case is that you can have a critical section which
-> performs an atomically required operation and a following unit which
-> depends on it being performed.  If you begin the following unit before
-> the atomic requirement, you may end up losing.  It turns out this kind
-> of pattern is inherent in a lot of mail box device drivers: you need to
-> set up the mailbox atomically then poke it.  Setup is usually atomic,
-> deciding which mailbox to prime and actually poking it is in the
-> following unit.  Priming often involves an I/O bus transaction and if
-> you poke before priming, you get a misfire.
+fixed sparse warning : context imbalance in 'resume_device'
+                        unexpected unlock
+this patch will generate warning from checkpatch for
+lines over 80 character , but since those are user-visible strings
+so it was not modified.
 
-Take it up with the man because this was discussed extensively last
-year and it was decided that unlocks would not be full barriers.
-Thus the changes to memory-barriers.txt that explicitly note this
-and the addition of smp_mb__after_unlock_lock() (for two different
-locks; an unlock followed by a lock on the same lock is a full barrier).
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ drivers/staging/unisys/uislib/uislib.c | 81 ++++++++++++++++------------------
+ 1 file changed, 39 insertions(+), 42 deletions(-)
 
-Code that expects ordered writes after an unlock needs to explicitly
-add the memory barrier.
-
-Regards,
-Peter Hurley
+diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
+index c4d6cae..ae923c3 100644
+--- a/drivers/staging/unisys/uislib/uislib.c
++++ b/drivers/staging/unisys/uislib/uislib.c
+@@ -616,6 +616,7 @@ resume_device(CONTROLVM_MESSAGE *msg)
+ 	struct bus_info *bus;
+ 	struct device_info *dev;
+ 	struct guest_msgs cmd;
++	int retval = CONTROLVM_RESP_SUCCESS;
+ 
+ 	busNo = msg->cmd.deviceChangeState.busNo;
+ 	devNo = msg->cmd.deviceChangeState.devNo;
+@@ -627,45 +628,16 @@ resume_device(CONTROLVM_MESSAGE *msg)
+ 			if (devNo >= bus->deviceCount) {
+ 				LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: device(%d) >= deviceCount(%d).",
+ 				     devNo, bus->deviceCount);
+-				read_unlock(&BusListLock);
+-				return CONTROLVM_RESP_ERROR_DEVICE_INVALID;
+-			}
+-			/* make sure this device exists */
+-			dev = bus->device[devNo];
+-			if (!dev) {
+-				LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: device %d does not exist.",
+-				     devNo);
+-				read_unlock(&BusListLock);
+-				return CONTROLVM_RESP_ERROR_ALREADY_DONE;
+-			}
+-			read_unlock(&BusListLock);
+-			/* the msg is bound for virtpci; send
+-			 * guest_msgs struct to callback
+-			 */
+-			if (!uuid_le_cmp(dev->channelTypeGuid,
+-					UltraVhbaChannelProtocolGuid)) {
+-				cmd.msgtype = GUEST_RESUME_VHBA;
+-				cmd.resume_vhba.chanptr = dev->chanptr;
+-			} else
+-			    if (!uuid_le_cmp(dev->channelTypeGuid,
+-					    UltraVnicChannelProtocolGuid)) {
+-				cmd.msgtype = GUEST_RESUME_VNIC;
+-				cmd.resume_vnic.chanptr = dev->chanptr;
++				retval = CONTROLVM_RESP_ERROR_DEVICE_INVALID;
+ 			} else {
+-				LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: unknown channelTypeGuid.\n");
+-				return
+-				    CONTROLVM_RESP_ERROR_CHANNEL_TYPE_UNKNOWN;
+-			}
+-
+-			if (!VirtControlChanFunc) {
+-				LOGERR("CONTROLVM_DEVICE_CHANGESTATE Failed: virtpci callback not registered.");
+-				return
+-				    CONTROLVM_RESP_ERROR_VIRTPCI_DRIVER_FAILURE;
+-			}
+-
+-			if (!VirtControlChanFunc(&cmd)) {
+-				LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: virtpci GUEST_RESUME_[VHBA||VNIC] returned error.");
+-				return CONTROLVM_RESP_ERROR_VIRTPCI_DRIVER_CALLBACK_ERROR;
++				/* make sure this device exists */
++				dev = bus->device[devNo];
++				if (!dev) {
++					LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: device %d does not exist.",
++					     devNo);
++					retval =
++					  CONTROLVM_RESP_ERROR_ALREADY_DONE;
++				}
+ 			}
+ 			break;
+ 		}
+@@ -674,11 +646,36 @@ resume_device(CONTROLVM_MESSAGE *msg)
+ 	if (!bus) {
+ 		LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: bus %d does not exist",
+ 		     busNo);
+-		read_unlock(&BusListLock);
+-		return CONTROLVM_RESP_ERROR_BUS_INVALID;
++		retval = CONTROLVM_RESP_ERROR_BUS_INVALID;
+ 	}
+-
+-	return CONTROLVM_RESP_SUCCESS;
++	read_unlock(&BusListLock);
++	/* the msg is bound for virtpci; send
++	 * guest_msgs struct to callback
++	 */
++	if (retval == CONTROLVM_RESP_SUCCESS) {
++		if (!uuid_le_cmp(dev->channelTypeGuid,
++				 UltraVhbaChannelProtocolGuid)) {
++			cmd.msgtype = GUEST_RESUME_VHBA;
++			cmd.resume_vhba.chanptr = dev->chanptr;
++		} else if (!uuid_le_cmp(dev->channelTypeGuid,
++					UltraVnicChannelProtocolGuid)) {
++			cmd.msgtype = GUEST_RESUME_VNIC;
++			cmd.resume_vnic.chanptr = dev->chanptr;
++		} else {
++			LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: unknown channelTypeGuid.\n");
++			return CONTROLVM_RESP_ERROR_CHANNEL_TYPE_UNKNOWN;
++		}
++		if (!VirtControlChanFunc) {
++			LOGERR("CONTROLVM_DEVICE_CHANGESTATE Failed: virtpci callback not registered.");
++			return CONTROLVM_RESP_ERROR_VIRTPCI_DRIVER_FAILURE;
++		}
++		if (!VirtControlChanFunc(&cmd)) {
++			LOGERR("CONTROLVM_DEVICE_CHANGESTATE:resume Failed: virtpci GUEST_RESUME_[VHBA||VNIC] returned error.");
++			return
++			  CONTROLVM_RESP_ERROR_VIRTPCI_DRIVER_CALLBACK_ERROR;
++		}
++	}
++	return retval;
+ }
+ 
+ static int
+-- 
+1.8.1.2
 
