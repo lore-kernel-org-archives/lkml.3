@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210AbaIIQPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:15:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41470 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753443AbaIIQPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:15:50 -0400
-Message-ID: <540F279A.1080700@ti.com>
-Date: Tue, 9 Sep 2014 11:15:22 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1757285AbaIIQQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:16:24 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:43815 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaIIQQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 12:16:22 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-man\@vger.kernel.org" <linux-man@vger.kernel.org>,
+        containers@lists.linux-foundation.org,
+        Andy Lutomirski <luto@amacapital.net>, richard.weinberger@gmail.com,
+        "Serge E. Hallyn" <serge@hallyn.com>
+References: <53F5310A.5080503@gmail.com>
+	<87d2bhfxvc.fsf@x220.int.ebiederm.org> <5404AD7F.4070004@gmail.com>
+	<87sikade6s.fsf@x220.int.ebiederm.org> <540F07FD.7010106@gmail.com>
+Date: Tue, 09 Sep 2014 11:16:08 -0500
+In-Reply-To: <540F07FD.7010106@gmail.com> (Michael Kerrisk's message of "Tue,
+	09 Sep 2014 07:00:29 -0700")
+Message-ID: <87bnqon513.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Jassi Brar <jaswinder.singh@linaro.org>, Dave Gerlach <d-gerlach@ti.com>,
-        Markus Mayer <markus.mayer@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv3 0/5] OMAP Mailbox framework adoption & DT support
-References: <1406680479-18446-1-git-send-email-s-anna@ti.com> <20140908232053.GS3238@atomide.com> <20140909025225.GI10785@atomide.com>
-In-Reply-To: <20140909025225.GI10785@atomide.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18EI87caCEkhz16RhojCMwd7rbP45VkRgs=
+X-SA-Exim-Connect-IP: 68.113.178.29
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 TVD_RCVD_IP Message was received from an IP address
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3757]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;"Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: For review: user_namespace(7) man page
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
 
-On 09/08/2014 09:52 PM, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [140908 16:21]:
->> * Suman Anna <s-anna@ti.com> [140729 17:37]:
->>> Hi,
->>>
->>> This is an updated version of the OMAP Mailbox framework adoption &
->>> DT support series, refreshed to work with the v9 version of the mailbox
->>> framework [1] from Jassi Brar while also addressing some minor review
->>> comments. Detailed changes are summarized below. Patches are based on
->>> 3.16-rc2.
->>
->> Sorry for the delay, just noticed that I'm supposed to queue
->> these too. I'll queue these into omap-for-v3.18/mailbox against
->> v3.17-rc1 and will probably also merge it into omap-for-v3.18/dt
->> as well.
-> 
-> Actually this is not compiling and seems to probably miss
-> the dependencies from Jassi, so dropping the branch.
+> Hi Eric,
+>
+>> On a related note.  One thing that has come up recently (in 3 separate
+>> implementations is that mount(MS_REMOUNT|...,...) must include all of
+>> the mount flags that need to be preserved.   People creating read-only
+>> bind mounts tend to miss that and the locked flags in mount namespaces.
+>> That issue was flushed out now that the kernel is now not allowing most
+>> mount flags to be cleared in mount namespaces.
+>
+> So, are you meaning that something needs to be added to the page
+> regarding this point?
 
-The last 2 patches which is the framework adoption portion needs the
-framework patches from Jassi (as stated in the cover letter). I will
-ping on the framework thread to see if it is making it into 3.18. In any
-case, we should be able to take the first three patches (2 in drivers
-and 1 for DT) - they are independent of the framework and also are
-dependencies for the framework adoption patches.
+Yes.  The interface is non-intuitive and we should at least document
+the weirdness.
 
-> Anyways, since it seems you need to repost this again, please
-> repost the DT changes separately from the driver changes.
+I recommend updating the mount(2) man page to say something like:
 
-Yeah, the other two dependent series are merged for 3.17, so these are
-the only patches remaining. I just need to repost them on a 3.17-rc, but
-there are no changes required (even with v10 of the framework). So given
-above, do you want me to split the first 3 (there is one DT patch) and
-post them so that they can be merged for 3.18?
+      MS_REMOUNT
 
-regards
-Suman
+              Remount an existing mount.  This allows you to change the
+              mountflags and data of an existing mount without having
+              to unmount and remount the file system.  target should be
+              the same value specified in the initial mount() call;
+              source and filesystemtype are ignored.
+
+^^^^^^^^^^^^^
+              Mountflags and data should match the original mount system
+              call except those parameters that are being deliberately
+              changed.
+
+              The following mountflags can be changed: MS_RDONLY,
+              MS_SYNCHRONOUS, MS_MANDLOCK; before kernel 2.6.16, the
+              following could also be changed: MS_NOATIME and
+              MS_NODIRATIME; and, additionally, before kernel 2.4.10,
+              the following could also be changed: MS_NOSUID, MS_NODEV,
+              MS_NOEXEC.
 
 
+Eric
