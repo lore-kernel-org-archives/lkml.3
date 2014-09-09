@@ -1,112 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343AbaIIOyZ (ORCPT <rfc822;w@1wt.eu>);
+	id S932605AbaIIOyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:54:32 -0400
+Received: from sauhun.de ([89.238.76.85]:34779 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757331AbaIIOyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Sep 2014 10:54:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41108 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757003AbaIIOyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:54:21 -0400
-Date: Tue, 9 Sep 2014 07:53:23 -0700
-From: tip-bot for Mathias Krause <tipbot@zytor.com>
-Message-ID: <tip-066ce64c7e867e95e5fee7c5f6b852710486392a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, minipli@googlemail.com, acme@kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        minipli@googlemail.com, peterz@infradead.org, tglx@linutronix.de,
-        acme@kernel.org
-In-Reply-To: <1409071785-26015-1-git-send-email-minipli@googlemail.com>
-References: <1409071785-26015-1-git-send-email-minipli@googlemail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel: Mark initialization code as such
-Git-Commit-ID: 066ce64c7e867e95e5fee7c5f6b852710486392a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Jean Delvare <jdelvare@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: [RFC 0/4] i2c: slave support framework for Linux devices
+Date: Tue,  9 Sep 2014 16:54:26 +0200
+Message-Id: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  066ce64c7e867e95e5fee7c5f6b852710486392a
-Gitweb:     http://git.kernel.org/tip/066ce64c7e867e95e5fee7c5f6b852710486392a
-Author:     Mathias Krause <minipli@googlemail.com>
-AuthorDate: Tue, 26 Aug 2014 18:49:45 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 9 Sep 2014 06:53:06 +0200
+Finally, here is my take on the often desired feature that Linux can not only
+be an I2C master, but also an I2C slave. Compared to my draft sent out last
+week, this RFC has been tested on hardware (Renesas Lager board) and works \o/
 
-perf/x86/intel: Mark initialization code as such
+One big part still missing is documentation, so brave ones need to "use the
+source". However, this approach turned out to be even less intrusive than
+expected, so that is hopefully a good sign.
 
-A few of the initialization functions are missing the __init annotation.
-Fix this and thereby allow ~680 additional bytes of code to be released
-after initialization.
+Basically, an I2C slave is a standard I2C client providing a callback function.
+When registering as a slave, the connection to the I2C adapter is made which
+uses the callback when a slave event happens. That splits the HW support
+(enabling slave mode on the adapter) and SW support (here a generic eeprom
+simulator) nicely IMO.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/1409071785-26015-1-git-send-email-minipli@googlemail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c  | 2 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+Besides documentation, there are still some error checks missing and more
+features could also be added (of course). Yet, I think this version is good
+enough to discuss the steps taken here.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 9dc4199..b1553d0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -1014,7 +1014,7 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-  * BTS, PEBS probe and setup
-  */
- 
--void intel_ds_init(void)
-+void __init intel_ds_init(void)
- {
- 	/*
- 	 * No support for 32bit formats
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 9dd2459..4af1061 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -697,7 +697,7 @@ static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
- };
- 
- /* core */
--void intel_pmu_lbr_init_core(void)
-+void __init intel_pmu_lbr_init_core(void)
- {
- 	x86_pmu.lbr_nr     = 4;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-@@ -712,7 +712,7 @@ void intel_pmu_lbr_init_core(void)
- }
- 
- /* nehalem/westmere */
--void intel_pmu_lbr_init_nhm(void)
-+void __init intel_pmu_lbr_init_nhm(void)
- {
- 	x86_pmu.lbr_nr     = 16;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-@@ -733,7 +733,7 @@ void intel_pmu_lbr_init_nhm(void)
- }
- 
- /* sandy bridge */
--void intel_pmu_lbr_init_snb(void)
-+void __init intel_pmu_lbr_init_snb(void)
- {
- 	x86_pmu.lbr_nr	 = 16;
- 	x86_pmu.lbr_tos	 = MSR_LBR_TOS;
-@@ -753,7 +753,7 @@ void intel_pmu_lbr_init_snb(void)
- }
- 
- /* atom */
--void intel_pmu_lbr_init_atom(void)
-+void __init intel_pmu_lbr_init_atom(void)
- {
- 	/*
- 	 * only models starting at stepping 10 seems
+The patches are based on top of 3.17-rc4, but will easily apply to renesas/devel.
+A git tree can be found here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/slave-support
+
+Comments welcome! Thanks,
+
+   Wolfram
+
+
+Wolfram Sang (4):
+  i2c: core changes for slave support
+  i2c: slave: add eeprom simulator driver
+  i2c: rcar: add slave support
+  ARM: shmobile: r8a7790: adapt DTS for I2C slave support
+
+ arch/arm/boot/dts/r8a7790-lager.dts |  15 ++--
+ drivers/i2c/Kconfig                 |  10 +++
+ drivers/i2c/Makefile                |   1 +
+ drivers/i2c/busses/i2c-rcar.c       | 122 ++++++++++++++++++++++++++---
+ drivers/i2c/i2c-core.c              |  44 +++++++++++
+ drivers/i2c/i2c-slave-eeprom.c      | 152 ++++++++++++++++++++++++++++++++++++
+ include/linux/i2c.h                 |  22 ++++++
+ 7 files changed, 352 insertions(+), 14 deletions(-)
+ create mode 100644 drivers/i2c/i2c-slave-eeprom.c
+
+-- 
+2.0.0
+
