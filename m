@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410AbaIIPwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:52:01 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:54761 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380AbaIIPv7 convert rfc822-to-8bit (ORCPT
+	id S932245AbaIIPxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:53:32 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:64897 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234AbaIIPxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:51:59 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-man\@vger.kernel.org" <linux-man@vger.kernel.org>,
-        containers@lists.linux-foundation.org,
-        Andy Lutomirski <luto@amacapital.net>, richard.weinberger@gmail.com,
-        "Serge E. Hallyn" <serge@hallyn.com>
-References: <53F5310A.5080503@gmail.com>
-	<87d2bhfxvc.fsf@x220.int.ebiederm.org> <540F07CD.3080708@gmail.com>
-Date: Tue, 09 Sep 2014 11:51:49 -0400
-In-Reply-To: <540F07CD.3080708@gmail.com> (Michael Kerrisk's message of "Tue,
-	09 Sep 2014 06:59:41 -0700")
-Message-ID: <87oauookq2.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 9 Sep 2014 11:53:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX181vFmrNh/XntFft0fpZm3MsgiSpWew+4g=
-X-SA-Exim-Connect-IP: 68.113.178.29
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4975]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;"Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: For review: user_namespace(7) man page
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+	<1409926097-2101-2-git-send-email-bhe@redhat.com>
+	<CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
+	<20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
+Date: Tue, 9 Sep 2014 08:53:29 -0700
+X-Google-Sender-Auth: 0ta-x101icKH33Rmx60ojTXGXt0
+Message-ID: <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle relocations
+From: Kees Cook <keescook@chromium.org>
+To: Baoquan He <bhe@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Deutschmann <whissi@whissi.de>,
+        Dave Young <dyoung@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+On Mon, Sep 8, 2014 at 11:24 PM, Baoquan He <bhe@redhat.com> wrote:
+> On 09/05/14 at 10:11am, Kees Cook wrote:
+>> I don't think this is correct. If you look at a02150610776 ("x86,
+>> relocs: Move ELF relocation handling to C"), we always did relocations
+>> on 32-bit when CONFIG_RELOCATABLE was set, so I think this will fail
+>> badly on 32-bit. 64-bit only needs relocation when
+>> CONFIG_RANDOMIZE_BASE is set, so this is probably what needs to be
+>> tested here instead. I think a better option would be, in
+>> decompress_kernel(), to compare output before and after
+>> choose_kernel_location(). If it's the same on 64-bit,
+>> handle_relocations() can be skipped. (Perhaps pass the before/after to
+>> handle_relocations() and it can perform the logic.)
+>>
+>> -Kees
+>
+> Hi Kees,
+>
+> Checking handle_relocations() again, I just didn't notice it's mandatory
+> to do the relocations handling in i386. So in this function delta is
+> checked to see if it's a kaslr relocation handling. This might be a
+> little confusing. But I am fine with it.
+>
+> Per your comment, you prefer to compare the output before and after
+> choose_kernel_location(). That's also good, Lu Yinghai posted a draft
+> patch in this way before, however the checking and the delta calculation
+> are not correct. I changed that and test all cases, it works well. So
+> do you like this it? If yes  I will repost it.
+>
+> From 13471bd838c52a0e143c2aee81e3863cfff585bd Mon Sep 17 00:00:00 2001
+> From: Baoquan He <bhe@redhat.com>
+> Date: Mon, 25 Aug 2014 14:57:43 +0800
+> Subject: [PATCH] kaslr: check if kernel location is changed
+>
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+> ---
+>  arch/x86/boot/compressed/misc.c | 15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 57ab74d..887f404 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -230,8 +230,9 @@ static void error(char *x)
+>                 asm("hlt");
+>  }
+>
+> -#if CONFIG_X86_NEED_RELOCS
+> -static void handle_relocations(void *output, unsigned long output_len)
+> +#ifdef CONFIG_X86_NEED_RELOCS
+> +static void handle_relocations(void *output_orig, void *output,
+> +                              unsigned long output_len)
+>  {
+>         int *reloc;
+>         unsigned long delta, map, ptr;
+> @@ -242,6 +243,9 @@ static void handle_relocations(void *output, unsigned long output_len)
+>          * Calculate the delta between where vmlinux was linked to load
+>          * and where it was actually loaded.
+>          */
+> +       if (output_orig == output)
+> +               return;
+> +
 
-> On 08/30/2014 02:53 PM, Eric W. Biederman wrote:
->> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
-> [...]
->
->
->>>        The initial user namespace has no parent namespace, but, for con‐
->>>        sistency, the kernel provides dummy user  and  group  ID  mapping
->>>        files  for  this namespace.  Looking at the uid_map file (gid_map
->>>        is the same) from a shell in the initial namespace shows:
->>>
->>>            $ cat /proc/$$/uid_map
->>>                     0          0 4294967295
->>>
->>>        This mapping tells us that the range starting at  user  ID  0  in
->>>        this namespace maps to a range starting at 0 in the (nonexistent)
->>>        parent namespace, and the length of  the  range  is  the  largest
->>>        32-bit unsigned integer.
->> 
->> Which deliberately leaves 4294967295 32bit (-1) unmapped.  (uid_t)-1 is
->> used in several interfaces (like setreuid) as a way to specify no uid
->> leaving it unmapped and unusuable guarantees that there will be no
->> confusion when using those kernel methods.
->
-> So, I worked that piece into the text to give:
->
->        This  mapping  tells us that the range starting at user ID 0 in
->        this namespace maps to a range starting at 0 in  the  (nonexis‐
->        tent)  parent  namespace,  and  the  length of the range is the
->        largest 32-bit unsigned  integer.   (This  deliberately  leaves
->        4294967295  (the  32-bit  signed  -1  value) unmapped.  This is
->        deliberate: (uid_t) -1 is used  in  several  interfaces  (e.g.,
->        setreuid(2))  as  a  way  to  specify  "no  user  ID".  Leaving
->        setreuid(2)) unmapped and unusuable guarantees that there  will
-         ^^^^ (uid_t) -1 (not setreuid(2)
->        be no confusion when using these interfaces.
->
-> Okay?
+I still think this needs a test for the 32-bit case, since IUIC, it
+requires relocations unconditionally.
 
-Other than the typo fix above this looks good.
+-Kees
 
-Eric
+>         delta = min_addr - LOAD_PHYSICAL_ADDR;
+>         if (!delta) {
+>                 debug_putstr("No relocation needed... ");
+> @@ -299,7 +303,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+>  #endif
+>  }
+>  #else
+> -static inline void handle_relocations(void *output, unsigned long output_len)
+> +static inline void handle_relocations(void *output_orig, void *output,
+> +                                     unsigned long output_len)
+>  { }
+>  #endif
+>
+> @@ -360,6 +365,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>                                   unsigned char *output,
+>                                   unsigned long output_len)
+>  {
+> +       unsigned char *output_orig = output;
+> +
+>         real_mode = rmode;
+>
+>         sanitize_boot_params(real_mode);
+> @@ -402,7 +409,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>         debug_putstr("\nDecompressing Linux... ");
+>         decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+>         parse_elf(output);
+> -       handle_relocations(output, output_len);
+> +       handle_relocations(output_orig, output, output_len);
+>         debug_putstr("done.\nBooting the kernel.\n");
+>         return output;
+>  }
+> --
+> 1.8.5.3
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
