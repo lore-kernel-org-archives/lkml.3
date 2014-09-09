@@ -1,254 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852AbaIIOA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:00:59 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62418 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaIIOAz (ORCPT
+	id S1754622AbaIIODU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:03:20 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:43331 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaIIODT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:00:55 -0400
-Message-ID: <540F0810.7030408@gmail.com>
-Date: Tue, 09 Sep 2014 07:00:48 -0700
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: mtk.manpages@gmail.com, "Eric W. Biederman" <ebiederm@xmission.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: For review: user_namespace(7) man page
-References: <53F5310A.5080503@gmail.com> <CALCETrX2qwvzmeoVcLFLxEK=1Fv+f0Ri0TouzzvbN_rgDjka4A@mail.gmail.com>
-In-Reply-To: <CALCETrX2qwvzmeoVcLFLxEK=1Fv+f0Ri0TouzzvbN_rgDjka4A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 9 Sep 2014 10:03:19 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, tomasz.figa@gmail.com,
+        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [PATCH v10 0/9] Per-user clock constraints
+Date: Tue,  9 Sep 2014 16:02:08 +0200
+Message-Id: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy, and Eric,
+Hello,
 
-On 09/01/2014 01:57 PM, Andy Lutomirski wrote:
-> On Wed, Aug 20, 2014 at 4:36 PM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> Hello Eric et al.,
->>
->> For various reasons, my work on the namespaces man pages
->> fell off the table a while back. Nevertheless, the pages have
->> been close to completion for a while now, and I recently restarted,
->> in an effort to finish them. As you also noted to me f2f, there have
->> been recently been some small namespace changes that you may affect
->> the content of the pages. Therefore, I'll take the opportunity to
->> send the namespace-related pages out for further (final?) review.
->>
->> So, here, I start with the user_namespaces(7) page, which is shown
->> in rendered form below, with source attached to this mail. I'll
->> send various other pages in follow-on mails.
->>
->> Review comments/suggestions for improvements / bug fixes welcome.
->>
->> Cheers,
->>
->> Michael
->>
->> ==
->>
->> NAME
->>        user_namespaces - overview of Linux user_namespaces
->>
->> DESCRIPTION
->>        For an overview of namespaces, see namespaces(7).
->>
->>        User   namespaces   isolate   security-related   identifiers  and
->>        attributes, in particular, user IDs and group  IDs  (see  creden‐
->>        tials(7), the root directory, keys (see keyctl(2)), and capabili‐
-> 
-> Putting "root directory" here is odd -- that's really part of a
-> different namespace.  But user namespaces sort of isolate the other
-> namespaces from each other.
+I'm sending this v10 to update the conversion to the latest changes now in
+linux-next and also to address comments from Stephen Boyd. The later are in
+separate commits to make it easier for merging in the upcoming clk-next, but
+can be squashed if that's more convenient.
 
-I'm trying to remember the details here. I think this piece originally 
-came after a discussion with Eric, but I am not sure. Eric?
+Follows the original cover letter blurb:
 
-> Also, ugh, keys.  How did keyctl(2) ever make it through any kind of review?
-> 
->>        ties (see capabilities(7)).  A process's user and group  IDs  can
->>        be different inside and outside a user namespace.  In particular,
->>        a process can have a normal unprivileged user ID outside  a  user
->>        namespace while at the same time having a user ID of 0 inside the
->>        namespace; in other words, the process has  full  privileges  for
->>        operations  inside  the  user  namespace, but is unprivileged for
->>        operations outside the namespace.
->>
->>    Nested namespaces, namespace membership
->>        User namespaces can be nested;  that  is,  each  user  namespace—
->>        except  the  initial  ("root") namespace—has a parent user names‐
->>        pace, and can have zero or more child user namespaces.  The  par‐
->>        ent user namespace is the user namespace of the process that cre‐
->>        ates the user namespace via a call to unshare(2) or clone(2) with
->>        the CLONE_NEWUSER flag.
->>
->>        The kernel imposes (since version 3.11) a limit of 32 nested lev‐
->>        els of user namespaces.  Calls to  unshare(2)  or  clone(2)  that
->>        would cause this limit to be exceeded fail with the error EUSERS.
->>
->>        Each  process  is  a  member  of  exactly  one user namespace.  A
->>        process created via fork(2) or clone(2) without the CLONE_NEWUSER
->>        flag  is  a  member  of the same user namespace as its parent.  A
->>        process can join another user namespace with setns(2) if  it  has
->>        the  CAP_SYS_ADMIN  in  that namespace; upon doing so, it gains a
->>        full set of capabilities in that namespace.
->>
->>        A call to clone(2) or  unshare(2)  with  the  CLONE_NEWUSER  flag
->>        makes  the  new  child  process (for clone(2)) or the caller (for
->>        unshare(2)) a member of the new user  namespace  created  by  the
->>        call.
->>
->>    Capabilities
->>        The child process created by clone(2) with the CLONE_NEWUSER flag
->>        starts out with a complete set of capabilities in  the  new  user
->>        namespace.  Likewise, a process that creates a new user namespace
->>        using unshare(2)  or  joins  an  existing  user  namespace  using
->>        setns(2)  gains a full set of capabilities in that namespace.  On
->>        the other hand, that process has no capabilities  in  the  parent
->>        (in  the case of clone(2)) or previous (in the case of unshare(2)
->>        and setns(2)) user namespace, even if the new namespace  is  cre‐
->>        ated  or  joined by the root user (i.e., a process with user ID 0
->>        in the root namespace).
->>
->>        Note that a call to execve(2) will cause a process  to  lose  any
->>        capabilities that it has, unless it has a user ID of 0 within the
->>        namespace.
-> 
-> Or unless file capabilities have a non-empty inheritable mask.
-> 
-> It may be worth mentioning that execve in a user namespace works
-> exactly like execve outside a userns.
+I'm retaking Rabin's patches [0] for splitting the clk API in two: one API for
+clk consumers and another for providers. The consumer API uses a clk structure
+that just keeps track of the consumer and has a reference to the actual
+clk_core struct, which is used internally.
 
+I have kept a patch from Rabin that aims to aid in debugging nested
+enable/disable calls, though my personal aim is to allow more than one consumer
+to influence the final, effective frequency rate. For now this is limited to
+setting floor and ceiling constraints, with the short-term aim of allowing
+devfreq and thermal drivers to set floor and ceiling frequencies on the memory
+clock, respectively.
 
-I';ve reworded that para to say:
+For those functions in the consumer clk API that were called from providers, I
+have added variants to clk-provider.h that are the same only that accept a
+clk_core instead. These functions are prefixed with clk_provider_.
 
-       Note that a call to execve(2) will cause a process's  capabili‐
-       ties to be recalculated in the usual way (see capabilities(7)),
-       so that usually, unless it has a user ID of 0 within the names‐
-       pace or the executable file has a nonempty inheritable capabil‐
-       ities mask, it will lose all capabilities.  See the  discussion
-       of user and group ID mappings, below.
+Patch 1/9 just adds a bunch of defines with the goal of having all the renames
+in their own commit while preserving git-bisectability, with patch 2/9
+containing the rename itself as generated by the Coccinelle script in [1].  The
+actual implementation of the API split comes in patch 3/9. I will be happy to
+organize the refactoring differently if anybody has a better idea.
 
-Okay?
+Patch 4/9 warns when there's an unbalanced usage of the enable and disable
+APIs, and patch 5/9 adds the API for setting floor and ceiling frequencies, per
+consumer. Patch 6/9 will warn when prepare/unprepare are used unbalanced,
+printing the code location of the last call to unprepare.
 
-> 
->>            $ cat /proc/$$/uid_map
->>                     0          0 4294967295
->>
->>        This mapping tells us that the range starting at  user  ID  0  in
->>        this namespace maps to a range starting at 0 in the (nonexistent)
->>        parent namespace, and the length of  the  range  is  the  largest
->>        32-bit unsigned integer.
->>
->>    Defining user and group ID mappings: writing to uid_map and gid_map
->>        After  the  creation of a new user namespace, the uid_map file of
->>        one of the processes in the namespace may be written to  once  to
->>        define  the  mapping  of  user IDs in the new user namespace.  An
->>        attempt to write more than once to  a  uid_map  file  in  a  user
->>        namespace  fails  with  the error EPERM.  Similar rules apply for
->>        gid_map files.
->>
->>        The lines written to uid_map (gid_map) must conform to  the  fol‐
->>        lowing rules:
->>
->>        *  The  three  fields  must  be valid numbers, and the last field
->>           must be greater than 0.
->>
->>        *  Lines are terminated by newline characters.
->>
->>        *  There is an (arbitrary) limit on the number of  lines  in  the
->>           file.  As at Linux 3.8, the limit is five lines.  In addition,
->>           the number of bytes written to the file must be less than  the
->>           system page size, and the write must be performed at the start
->>           of the file (i.e., lseek(2) and pwrite(2)  can't  be  used  to
->>           write to nonzero offsets in the file).
->>
->>        *  The  range of user IDs (group IDs) specified in each line can‐
->>           not overlap with the ranges in any other lines.  In  the  ini‐
->>           tial  implementation  (Linux 3.8), this requirement was satis‐
->>           fied by a simplistic implementation that imposed  the  further
->>           requirement  that  the  values  in both field 1 and field 2 of
->>           successive lines must be in ascending numerical  order,  which
->>           prevented some otherwise valid maps from being created.  Linux
->>           3.9 and later fix this limitation, allowing any valid  set  of
->>           nonoverlapping maps.
->>
->>        *  At least one line must be written to the file.
->>
->>        Writes that violate the above rules fail with the error EINVAL.
->>
->>        In  order  for  a  process  to  write  to the /proc/[pid]/uid_map
->>        (/proc/[pid]/gid_map) file, all  of  the  following  requirements
->>        must be met:
->>
->>        1. The  writing  process  must  have  the CAP_SETUID (CAP_SETGID)
->>           capability in the user namespace of the process pid.
-> 
-> This checked for the opening process (and I don't actually remember
-> whether it's checked for the writing process).
+Patches 7/9 and 8/9 add some locking when manipulating shared structures and
+9/9 adds a bit to the API docs.
 
-Eric, can you comment?
+[0] http://thread.gmane.org/gmane.linux.kernel/1402006
+[1] http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=clk-refactoring-10
 
->>
->>        2. The writing process must be in either the  user  namespace  of
->>           the  process  pid  or  inside the parent user namespace of the
->>           process pid.
->>
->>        3. The mapped user IDs (group IDs) must in turn have a mapping in
->>           the parent user namespace.
->>
->>        4. One of the following is true:
->>
->>           *  The  data written to uid_map (gid_map) consists of a single
->>              line that maps the writing  process's  filesystem  user  ID
->>              (group ID) in the parent user namespace to a user ID (group
->>              ID) in the user namespace.  The usual  case  here  is  that
->>              this  single  line  provides  a  mapping for user ID of the
->>              process that created the namespace.
->>
->>           *  The process has the CAP_SETUID (CAP_SETGID)  capability  in
->>              the  parent user namespace.  Thus, a privileged process can
->>              make mappings to arbitrary user IDs (group IDs) in the par‐
->>              ent user namespace.
-> 
-> The opening process.
+Thanks,
 
-Fixed.
+Tomeu
 
-> One other thing that could be worth mentioning it: any non-user
-> namespace that's created is owned by the user namespace of the process
-> that created it at the time of creation.  Actions on those namespaces
-> require capabilities in the corresponding user namespace.
+Tomeu Vizoso (9):
+  clk: Add temporary mapping to the existing API
+  clk: Move all drivers to use internal API
+  clk: use struct clk only for external API
+  clk: per-user clock accounting for debug
+  clk: Add floor and ceiling constraints to clock rates
+  clk: Warn of unbalanced clk_prepare() calls
+  clk: Take the prepare lock when updating the list of per-user clks
+  clk: Take the prepare lock when updating the per-user constraints
+  clk: Add docs about calling clk_put after clk_get_parent
 
-I added:
-
-[[
-When a non-user-namespace is created,
-it is owned by the user namespace in which the creating process
-was a member at the time of the creation of the namespace.
-Actions on the non-user-namespace
-require capabilities in the corresponding user namespace.
-]]
-
-> Thanks for doing this!
-
-You're welcome. Thanks for the review!
-
-Cheers,
-
-Michael
-
-
+ arch/arm/mach-dove/common.c                   |  10 +-
+ arch/arm/mach-imx/clk-busy.c                  |   9 +-
+ arch/arm/mach-imx/clk-fixup-div.c             |   4 +-
+ arch/arm/mach-imx/clk-fixup-mux.c             |   4 +-
+ arch/arm/mach-imx/clk-gate-exclusive.c        |   4 +-
+ arch/arm/mach-imx/clk-gate2.c                 |   4 +-
+ arch/arm/mach-imx/clk-imx1.c                  |   3 +-
+ arch/arm/mach-imx/clk-imx21.c                 |   3 +-
+ arch/arm/mach-imx/clk-imx25.c                 |   9 +-
+ arch/arm/mach-imx/clk-imx27.c                 |   5 +-
+ arch/arm/mach-imx/clk-imx31.c                 |  11 +-
+ arch/arm/mach-imx/clk-imx35.c                 |  23 +-
+ arch/arm/mach-imx/clk-imx51-imx53.c           |  78 +--
+ arch/arm/mach-imx/clk-imx6q.c                 |  75 ++-
+ arch/arm/mach-imx/clk-imx6sl.c                |  43 +-
+ arch/arm/mach-imx/clk-imx6sx.c                | 119 +++--
+ arch/arm/mach-imx/clk-pfd.c                   |   5 +-
+ arch/arm/mach-imx/clk-pllv1.c                 |   5 +-
+ arch/arm/mach-imx/clk-pllv2.c                 |   5 +-
+ arch/arm/mach-imx/clk-pllv3.c                 |   5 +-
+ arch/arm/mach-imx/clk-vf610.c                 |  45 +-
+ arch/arm/mach-imx/clk.c                       |  11 +-
+ arch/arm/mach-imx/clk.h                       |  44 +-
+ arch/arm/mach-msm/clock-pcom.c                |   2 +-
+ arch/arm/mach-msm/clock.c                     |   2 +-
+ arch/arm/mach-mv78xx0/common.c                |   2 +-
+ arch/arm/mach-omap2/board-cm-t35.c            |   2 +-
+ arch/arm/mach-omap2/cclock3xxx_data.c         | 371 +++++++------
+ arch/arm/mach-omap2/clkt2xxx_dpll.c           |   5 +-
+ arch/arm/mach-omap2/clkt2xxx_dpllcore.c       |   5 +-
+ arch/arm/mach-omap2/clkt2xxx_virt_prcm_set.c  |  11 +-
+ arch/arm/mach-omap2/clkt34xx_dpll3m2.c        |   3 +-
+ arch/arm/mach-omap2/clkt_clksel.c             |  46 +-
+ arch/arm/mach-omap2/clkt_dpll.c               |   8 +-
+ arch/arm/mach-omap2/clock.c                   |  52 +-
+ arch/arm/mach-omap2/clock.h                   |  18 +-
+ arch/arm/mach-omap2/clock3xxx.c               |  23 +-
+ arch/arm/mach-omap2/clock3xxx.h               |   4 +-
+ arch/arm/mach-omap2/clock_common_data.c       |   2 +-
+ arch/arm/mach-omap2/clockdomain.c             |   9 +-
+ arch/arm/mach-omap2/clockdomain.h             |   4 +-
+ arch/arm/mach-omap2/display.c                 |   6 +-
+ arch/arm/mach-omap2/dpll3xxx.c                |  29 +-
+ arch/arm/mach-omap2/dpll44xx.c                |   5 +-
+ arch/arm/mach-omap2/mcbsp.c                   |   5 +-
+ arch/arm/mach-omap2/omap_device.c             |  10 +-
+ arch/arm/mach-omap2/omap_hwmod.c              |  42 +-
+ arch/arm/mach-omap2/omap_hwmod.h              |  12 +-
+ arch/arm/mach-omap2/pm24xx.c                  |  12 +-
+ arch/arm/mach-orion5x/common.c                |   2 +-
+ arch/arm/mach-shmobile/clock.c                |  10 +-
+ arch/arm/mach-vexpress/spc.c                  |   4 +-
+ arch/arm/plat-orion/common.c                  |  22 +-
+ arch/arm/plat-orion/include/plat/common.h     |  12 +-
+ arch/mips/alchemy/common/clock.c              |  42 +-
+ arch/powerpc/platforms/512x/clock-commonclk.c |  48 +-
+ drivers/acpi/acpi_lpss.c                      |   5 +-
+ drivers/clk/at91/clk-main.c                   |  24 +-
+ drivers/clk/at91/clk-master.c                 |   6 +-
+ drivers/clk/at91/clk-peripheral.c             |  12 +-
+ drivers/clk/at91/clk-pll.c                    |   6 +-
+ drivers/clk/at91/clk-plldiv.c                 |   6 +-
+ drivers/clk/at91/clk-programmable.c           |  10 +-
+ drivers/clk/at91/clk-slow.c                   |  24 +-
+ drivers/clk/at91/clk-smd.c                    |   6 +-
+ drivers/clk/at91/clk-system.c                 |   6 +-
+ drivers/clk/at91/clk-usb.c                    |  20 +-
+ drivers/clk/at91/clk-utmi.c                   |   6 +-
+ drivers/clk/bcm/clk-kona-setup.c              |   6 +-
+ drivers/clk/bcm/clk-kona.c                    |  12 +-
+ drivers/clk/bcm/clk-kona.h                    |   2 +-
+ drivers/clk/berlin/berlin2-avpll.c            |   4 +-
+ drivers/clk/berlin/berlin2-avpll.h            |   4 +-
+ drivers/clk/berlin/berlin2-div.c              |   2 +-
+ drivers/clk/berlin/berlin2-div.h              |   2 +-
+ drivers/clk/berlin/berlin2-pll.c              |   2 +-
+ drivers/clk/berlin/berlin2-pll.h              |   2 +-
+ drivers/clk/berlin/bg2.c                      |  14 +-
+ drivers/clk/berlin/bg2q.c                     |  10 +-
+ drivers/clk/clk-axi-clkgen.c                  |   3 +-
+ drivers/clk/clk-axm5516.c                     |   4 +-
+ drivers/clk/clk-bcm2835.c                     |   2 +-
+ drivers/clk/clk-clps711x.c                    |   3 +-
+ drivers/clk/clk-composite.c                   |  11 +-
+ drivers/clk/clk-conf.c                        |  18 +-
+ drivers/clk/clk-devres.c                      |  31 ++
+ drivers/clk/clk-divider.c                     |   8 +-
+ drivers/clk/clk-efm32gg.c                     |   3 +-
+ drivers/clk/clk-fixed-factor.c                |   6 +-
+ drivers/clk/clk-fixed-rate.c                  |   8 +-
+ drivers/clk/clk-fractional-divider.c          |   4 +-
+ drivers/clk/clk-gate.c                        |   4 +-
+ drivers/clk/clk-highbank.c                    |   8 +-
+ drivers/clk/clk-ls1x.c                        |  16 +-
+ drivers/clk/clk-max77686.c                    |  10 +-
+ drivers/clk/clk-moxart.c                      |   8 +-
+ drivers/clk/clk-mux.c                         |   7 +-
+ drivers/clk/clk-nomadik.c                     |  15 +-
+ drivers/clk/clk-nspire.c                      |   4 +-
+ drivers/clk/clk-palmas.c                      |   7 +-
+ drivers/clk/clk-ppc-corenet.c                 |   8 +-
+ drivers/clk/clk-s2mps11.c                     |   6 +-
+ drivers/clk/clk-si5351.c                      |  17 +-
+ drivers/clk/clk-si570.c                       |   4 +-
+ drivers/clk/clk-twl6040.c                     |   3 +-
+ drivers/clk/clk-u300.c                        |  13 +-
+ drivers/clk/clk-vt8500.c                      |   4 +-
+ drivers/clk/clk-wm831x.c                      |   7 +-
+ drivers/clk/clk-xgene.c                       |  12 +-
+ drivers/clk/clk.c                             | 741 +++++++++++++++++---------
+ drivers/clk/clk.h                             |  12 +-
+ drivers/clk/clkdev.c                          | 130 ++++-
+ drivers/clk/hisilicon/clk-hi3620.c            |   9 +-
+ drivers/clk/hisilicon/clk-hip04.c             |   1 -
+ drivers/clk/hisilicon/clk.c                   |  17 +-
+ drivers/clk/hisilicon/clk.h                   |   2 +-
+ drivers/clk/hisilicon/clkgate-separated.c     |   5 +-
+ drivers/clk/keystone/gate.c                   |   7 +-
+ drivers/clk/keystone/pll.c                    |  11 +-
+ drivers/clk/mmp/clk-apbc.c                    |   5 +-
+ drivers/clk/mmp/clk-apmu.c                    |   5 +-
+ drivers/clk/mmp/clk-frac.c                    |   4 +-
+ drivers/clk/mmp/clk-mmp2.c                    |  14 +-
+ drivers/clk/mmp/clk-pxa168.c                  |  12 +-
+ drivers/clk/mmp/clk-pxa910.c                  |  12 +-
+ drivers/clk/mmp/clk.h                         |   8 +-
+ drivers/clk/mvebu/clk-corediv.c               |   4 +-
+ drivers/clk/mvebu/clk-cpu.c                   |   8 +-
+ drivers/clk/mvebu/common.c                    |  15 +-
+ drivers/clk/mvebu/kirkwood.c                  |   6 +-
+ drivers/clk/mxs/clk-div.c                     |   5 +-
+ drivers/clk/mxs/clk-frac.c                    |   5 +-
+ drivers/clk/mxs/clk-imx23.c                   |   5 +-
+ drivers/clk/mxs/clk-imx28.c                   |   5 +-
+ drivers/clk/mxs/clk-pll.c                     |   5 +-
+ drivers/clk/mxs/clk-ref.c                     |   5 +-
+ drivers/clk/mxs/clk-ssp.c                     |   3 +-
+ drivers/clk/mxs/clk.h                         |  17 +-
+ drivers/clk/qcom/clk-rcg.c                    |   8 +-
+ drivers/clk/qcom/clk-rcg2.c                   |  14 +-
+ drivers/clk/qcom/clk-regmap.c                 |   2 +-
+ drivers/clk/qcom/clk-regmap.h                 |   2 +-
+ drivers/clk/qcom/common.c                     |   6 +-
+ drivers/clk/qcom/gcc-apq8084.c                |   2 +-
+ drivers/clk/qcom/gcc-ipq806x.c                |   2 +-
+ drivers/clk/qcom/gcc-msm8660.c                |   2 +-
+ drivers/clk/qcom/gcc-msm8960.c                |   2 +-
+ drivers/clk/qcom/gcc-msm8974.c                |   2 +-
+ drivers/clk/qcom/mmcc-msm8960.c               |   6 +-
+ drivers/clk/rockchip/clk-pll.c                |   9 +-
+ drivers/clk/rockchip/clk-rk3188.c             |   2 +-
+ drivers/clk/rockchip/clk-rk3288.c             |   2 +-
+ drivers/clk/rockchip/clk-rockchip.c           |   2 +-
+ drivers/clk/rockchip/clk.c                    |  23 +-
+ drivers/clk/rockchip/clk.h                    |   5 +-
+ drivers/clk/samsung/clk-exynos-audss.c        |  16 +-
+ drivers/clk/samsung/clk-exynos-clkout.c       |   9 +-
+ drivers/clk/samsung/clk-exynos3250.c          |   1 -
+ drivers/clk/samsung/clk-exynos4.c             |   7 +-
+ drivers/clk/samsung/clk-exynos5250.c          |   1 -
+ drivers/clk/samsung/clk-exynos5260.c          |   1 -
+ drivers/clk/samsung/clk-exynos5410.c          |   1 -
+ drivers/clk/samsung/clk-exynos5420.c          |   1 -
+ drivers/clk/samsung/clk-exynos5440.c          |   1 -
+ drivers/clk/samsung/clk-pll.c                 |   6 +-
+ drivers/clk/samsung/clk-pll.h                 |   2 +-
+ drivers/clk/samsung/clk-s3c2410-dclk.c        |  30 +-
+ drivers/clk/samsung/clk-s3c2410.c             |   1 -
+ drivers/clk/samsung/clk-s3c2412.c             |   1 -
+ drivers/clk/samsung/clk-s3c2443.c             |   1 -
+ drivers/clk/samsung/clk-s3c64xx.c             |   1 -
+ drivers/clk/samsung/clk-s5pv210-audss.c       |  16 +-
+ drivers/clk/samsung/clk-s5pv210.c             |   1 -
+ drivers/clk/samsung/clk.c                     |  22 +-
+ drivers/clk/samsung/clk.h                     |   3 +-
+ drivers/clk/shmobile/clk-div6.c               |   2 +-
+ drivers/clk/shmobile/clk-emev2.c              |   4 +-
+ drivers/clk/shmobile/clk-mstp.c               |   6 +-
+ drivers/clk/shmobile/clk-r8a7740.c            |   6 +-
+ drivers/clk/shmobile/clk-r8a7779.c            |   6 +-
+ drivers/clk/shmobile/clk-rcar-gen2.c          |  10 +-
+ drivers/clk/shmobile/clk-rz.c                 |   6 +-
+ drivers/clk/sirf/clk-atlas6.c                 |   3 +-
+ drivers/clk/sirf/clk-common.c                 |  30 +-
+ drivers/clk/sirf/clk-prima2.c                 |   3 +-
+ drivers/clk/socfpga/clk-gate.c                |   3 +-
+ drivers/clk/socfpga/clk-periph.c              |   3 +-
+ drivers/clk/socfpga/clk-pll.c                 |   5 +-
+ drivers/clk/spear/clk-aux-synth.c             |   8 +-
+ drivers/clk/spear/clk-frac-synth.c            |   4 +-
+ drivers/clk/spear/clk-gpt-synth.c             |   4 +-
+ drivers/clk/spear/clk-vco-pll.c               |   8 +-
+ drivers/clk/spear/clk.h                       |  14 +-
+ drivers/clk/spear/spear1310_clock.c           |   3 +-
+ drivers/clk/spear/spear1340_clock.c           |   3 +-
+ drivers/clk/spear/spear3xx_clock.c            |  17 +-
+ drivers/clk/spear/spear6xx_clock.c            |   3 +-
+ drivers/clk/st/clk-flexgen.c                  |  12 +-
+ drivers/clk/st/clkgen-fsyn.c                  |  22 +-
+ drivers/clk/st/clkgen-mux.c                   |  32 +-
+ drivers/clk/st/clkgen-pll.c                   |  34 +-
+ drivers/clk/sunxi/clk-a10-hosc.c              |   2 +-
+ drivers/clk/sunxi/clk-a20-gmac.c              |   2 +-
+ drivers/clk/sunxi/clk-factors.c               |   4 +-
+ drivers/clk/sunxi/clk-sun6i-apb0-gates.c      |   2 +-
+ drivers/clk/sunxi/clk-sun6i-apb0.c            |   2 +-
+ drivers/clk/sunxi/clk-sun6i-ar100.c           |   6 +-
+ drivers/clk/sunxi/clk-sun8i-apb0.c            |   2 +-
+ drivers/clk/sunxi/clk-sunxi.c                 |  18 +-
+ drivers/clk/tegra/clk-audio-sync.c            |   4 +-
+ drivers/clk/tegra/clk-divider.c               |   5 +-
+ drivers/clk/tegra/clk-periph-gate.c           |   5 +-
+ drivers/clk/tegra/clk-periph.c                |   9 +-
+ drivers/clk/tegra/clk-pll-out.c               |   5 +-
+ drivers/clk/tegra/clk-pll.c                   |  41 +-
+ drivers/clk/tegra/clk-super.c                 |   5 +-
+ drivers/clk/tegra/clk-tegra-audio.c           |   5 +-
+ drivers/clk/tegra/clk-tegra-fixed.c           |   9 +-
+ drivers/clk/tegra/clk-tegra-periph.c          |  13 +-
+ drivers/clk/tegra/clk-tegra-pmc.c             |   5 +-
+ drivers/clk/tegra/clk-tegra-super-gen4.c      |   9 +-
+ drivers/clk/tegra/clk-tegra114.c              |  11 +-
+ drivers/clk/tegra/clk-tegra124.c              |   7 +-
+ drivers/clk/tegra/clk-tegra20.c               |  13 +-
+ drivers/clk/tegra/clk-tegra30.c               |   9 +-
+ drivers/clk/tegra/clk.c                       |  25 +-
+ drivers/clk/tegra/clk.h                       |  38 +-
+ drivers/clk/ti/apll.c                         |   8 +-
+ drivers/clk/ti/clk-2xxx.c                     |   8 +-
+ drivers/clk/ti/clk-33xx.c                     |  18 +-
+ drivers/clk/ti/clk-3xxx.c                     |   8 +-
+ drivers/clk/ti/clk-43xx.c                     |   8 +-
+ drivers/clk/ti/clk-44xx.c                     |  16 +-
+ drivers/clk/ti/clk-54xx.c                     |  25 +-
+ drivers/clk/ti/clk-7xx.c                      |  28 +-
+ drivers/clk/ti/clk-dra7-atl.c                 |   6 +-
+ drivers/clk/ti/clk.c                          |   2 +-
+ drivers/clk/ti/clockdomain.c                  |   4 +-
+ drivers/clk/ti/composite.c                    |   2 +-
+ drivers/clk/ti/divider.c                      |   6 +-
+ drivers/clk/ti/dpll.c                         |   8 +-
+ drivers/clk/ti/fixed-factor.c                 |   2 +-
+ drivers/clk/ti/gate.c                         |   2 +-
+ drivers/clk/ti/interface.c                    |   2 +-
+ drivers/clk/ti/mux.c                          |   6 +-
+ drivers/clk/ux500/abx500-clk.c                |   3 +-
+ drivers/clk/ux500/clk-prcc.c                  |   8 +-
+ drivers/clk/ux500/clk-prcmu.c                 |  16 +-
+ drivers/clk/ux500/clk-sysctrl.c               |  10 +-
+ drivers/clk/ux500/clk.h                       |  23 +-
+ drivers/clk/ux500/u8500_clk.c                 |   3 +-
+ drivers/clk/ux500/u8500_of_clk.c              |  13 +-
+ drivers/clk/ux500/u8540_clk.c                 |   3 +-
+ drivers/clk/ux500/u9540_clk.c                 |   1 -
+ drivers/clk/versatile/clk-icst.c              |   5 +-
+ drivers/clk/versatile/clk-icst.h              |   2 +-
+ drivers/clk/versatile/clk-impd1.c             |  19 +-
+ drivers/clk/versatile/clk-realview.c          |   3 +-
+ drivers/clk/versatile/clk-sp810.c             |  30 +-
+ drivers/clk/versatile/clk-versatile.c         |   3 +-
+ drivers/clk/versatile/clk-vexpress-osc.c      |   2 +-
+ drivers/clk/versatile/clk-vexpress.c          |   6 +-
+ drivers/clk/x86/clk-lpt.c                     |   3 +-
+ drivers/clk/zynq/clkc.c                       |  22 +-
+ drivers/clk/zynq/pll.c                        |   4 +-
+ drivers/gpu/drm/msm/hdmi/hdmi_phy_8960.c      |   3 +-
+ drivers/media/platform/exynos4-is/media-dev.c |  18 +-
+ drivers/media/platform/exynos4-is/media-dev.h |   7 +-
+ drivers/media/platform/omap3isp/isp.h         |   2 +-
+ drivers/rtc/rtc-hym8563.c                     |   4 +-
+ drivers/spi/spi-pxa2xx-pci.c                  |   1 -
+ drivers/staging/imx-drm/imx-tve.c             |  27 +-
+ include/asm-generic/clkdev.h                  |   6 +-
+ include/linux/clk-private.h                   |  51 +-
+ include/linux/clk-provider.h                  | 137 +++--
+ include/linux/clk.h                           |  53 +-
+ include/linux/clk/ti.h                        |  10 +-
+ include/linux/clk/zynq.h                      |   3 +-
+ include/linux/clkdev.h                        |  24 +-
+ include/linux/platform_data/si5351.h          |   4 +-
+ sound/soc/mxs/mxs-saif.c                      |   4 +-
+ 281 files changed, 2370 insertions(+), 1919 deletions(-)
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.9.3
+
