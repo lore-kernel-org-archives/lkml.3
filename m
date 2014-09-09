@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590AbaIILm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:42:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44255 "EHLO mail.skyhub.de"
+	id S1756592AbaIILn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:43:28 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:47993 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931AbaIILm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:42:56 -0400
-Date: Tue, 9 Sep 2014 13:42:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] edac, amd64_edac: Modify usage of
- amd64_read_dct_pci_cfg()
-Message-ID: <20140909114250.GA30662@nazgul.tnic>
-References: <1409679957-3536-1-git-send-email-aravind.gopalakrishnan@amd.com>
+	id S1753640AbaIILn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 07:43:27 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: dianders@chromium.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, sameo@linux.intel.com, lee.jones@linaro.org,
+        lgirdwood@gmail.com, a.zummo@towertech.it, mturquette@linaro.org,
+        akpm@linux-foundation.org, broonie@kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, olof@lixom.net, sonnyrao@chromium.org,
+        dtor@chromium.org, javier.martinez@collabora.co.uk,
+        kever.yang@rock-chips.com
+Subject: Re: [PATCH v9 0/3] Add rockchip RK808 pmic driver
+Date: Tue, 09 Sep 2014 13:45:24 +0200
+Message-ID: <6686857.xs1HS8QUx8@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
+References: <1409793159-2573-1-git-send-email-zyw@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1409679957-3536-1-git-send-email-aravind.gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 12:45:57PM -0500, Aravind Gopalakrishnan wrote:
-> @@ -495,15 +493,56 @@ int __amd64_read_pci_cfg_dword(struct pci_dev *pdev, int offset,
->  			       u32 *val, const char *func);
->  int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
->  				u32 val, const char *func);
-> -
-> +void f15h_select_dct(struct amd64_pvt *pvt, u8 dct);
->  #define amd64_read_pci_cfg(pdev, offset, val)	\
->  	__amd64_read_pci_cfg_dword(pdev, offset, val, __func__)
->  
->  #define amd64_write_pci_cfg(pdev, offset, val)	\
->  	__amd64_write_pci_cfg_dword(pdev, offset, val, __func__)
->  
-> -#define amd64_read_dct_pci_cfg(pvt, offset, val) \
-> -	pvt->ops->read_dct_pci_cfg(pvt, offset, val, __func__)
-> +/*
-> + * Depending on the family, F2 DCT reads need special handling:
-> + *
-> + * K8: has a single DCT only and no address offsets >= 0x100
-> + *
-> + * F10h: each DCT has its own set of regs
-> + *	DCT0 -> F2x040..
-> + *	DCT1 -> F2x140..
-> + *
-> + * F16h: has only 1 DCT
-> + *
-> + * For all above families, we should use the 'raw' version
-> + * i.e, amd64_read_pci_cfg() function
-> + */
-> +static inline int amd64_read_dct_pci_cfg(struct amd64_pvt *pvt, u8 dct,
-> +					 int offset, u32 *val)
+Hi Chris,
 
-Why is this function in the header since it is being used only in
-amd64_edac.c, AFAICT?
+Am Donnerstag, 4. September 2014, 09:12:36 schrieb Chris Zhong:
+> This is the initial version of the RK808 PMIC. This is a power management IC
+> for multimedia products.
+> 
+> It provides regulators that are able to supply power to processor cores
+> and other components. The chip provides other modules including RTC,
+> Clockout
 
-This makes you export f15h_select_dct() too, for no apparent reason.
 
-> +{
-> +	if (pvt->fam == 0xf) {
-> +		if (dct || offset >= 0x100)
-> +			return -EINVAL;
-> +	} else if (pvt->fam == 0x10 && dct) {
-> +		/*
-> +		 * Note: If ganging is enabled, barring the regs
-> +		 * F2x[1,0]98 and F2x[1,0]9C; reads reads to F2x1xx
-> +		 * return 0. (cf. Section 2.8.1 F10h BKDG)
-> +		 */
-> +		if (dct_ganging_enabled(pvt))
-> +			return 0;
-> +
-> +		offset += 0x100;
-> +	} else if (pvt->fam == 0x15) {
-> +		/*
-> +		 * F15h: F2x1xx addresses do not map explicitly to DCT1.
-> +		 * We should select which DCT we access using F1x10C[DctCfgSel]
-> +		 */
-> +		dct = (dct && pvt->model == 0x30) ? 3 : dct;
-> +		f15h_select_dct(pvt, dct);
-> +
-> +	} else if (pvt->fam == 0x16 && dct)
-> +		return -EINVAL;
-> +
-> +	return amd64_read_pci_cfg(pvt->F2, offset, val);
-> +}
->  
->  int amd64_get_dram_hole_info(struct mem_ctl_info *mci, u64 *hole_base,
->  			     u64 *hole_offset, u64 *hole_size);
+> Chris Zhong (3):
+>   RTC: RK808: add RTC driver for RK808
+>   clk: RK808: Add clkout driver for RK808
+>   regulator: RK808: Remove pdata from the regulator
 
--- 
-Regards/Gruss,
-    Boris.
---
+It looks like the rk808 driver that is currently in the regulator tree [0] is 
+producing compile errors. After applying your regulator patch from this series 
+it again compiles - and works.
+
+So could you try to fast track this please? If you're short on time you could 
+also just fix the small comment you received for patch3 and send it alone 
+without the first two.
+
+
+Heiko
+
+
+[0] 
+https://git.kernel.org/cgit/linux/kernel/git/broonie/regulator.git/log/?h=topic/rk808
