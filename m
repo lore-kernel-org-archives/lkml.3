@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaIISne (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:43:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44307 "EHLO
+	id S1752610AbaIISoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:44:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44820 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaIISnc (ORCPT
+	with ESMTP id S1751557AbaIISoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:43:32 -0400
-Date: Tue, 9 Sep 2014 11:43:31 -0700
+	Tue, 9 Sep 2014 14:44:05 -0400
+Date: Tue, 9 Sep 2014 11:44:03 -0700
 From: Christoph Hellwig <hch@infradead.org>
 To: Ming Lei <ming.lei@canonical.com>
 Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
         linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 5/8] block: introduce blk_flush_queue to drive flush
- machinery
-Message-ID: <20140909184331.GE16750@infradead.org>
+Subject: Re: [PATCH 6/8] block: flush: avoid to figure out flush queue
+ unnecessarily
+Message-ID: <20140909184403.GF16750@infradead.org>
 References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
- <1410267949-21904-6-git-send-email-ming.lei@canonical.com>
+ <1410267949-21904-7-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410267949-21904-6-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1410267949-21904-7-git-send-email-ming.lei@canonical.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -28,70 +28,6 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 09:05:46PM +0800, Ming Lei wrote:
-> This patch introduces 'struct blk_flush_queue' and puts all
-> flush machinery related stuff into this strcuture, so that
-
-s/stuff/fields/
-s/strcuture/structure/
-
-Looks good, but a few more nitpicks below.
+Looks good,
 
 Reviewed-by: Christoph Hellwig <hch@lst.de>
-
-> +int blk_init_flush(struct request_queue *q)
-> +{
-> +	int ret;
-> +	struct blk_flush_queue *fq = kzalloc(sizeof(*fq), GFP_KERNEL);
->  
-> +	if (!fq)
->  		return -ENOMEM;
->  
-> +	q->fq = fq;
-
-I think it would be cleaner to return the flush data structure and
-assign it in the caller.
-
-> +	INIT_LIST_HEAD(&fq->flush_queue[0]);
-> +	INIT_LIST_HEAD(&fq->flush_queue[1]);
-> +	INIT_LIST_HEAD(&fq->flush_data_in_flight);
-> +
-> +	if (q->mq_ops) {
-> +		ret = blk_mq_init_flush(q);
-
-I think we can just remove blk_mq_init_flush now that it's only
-called in blk-flush.c anyway.
-
->  void blk_exit_flush(struct request_queue *q)
->  {
-> +	if (q->mq_ops)
-> +		blk_mq_exit_flush(q);
-> +	else {
-> +		struct blk_flush_queue *fq = blk_get_flush_queue(q);
-> +		kfree(fq->flush_rq);
-> +		kfree(fq);
-> +	}
-
-Similarly I would pass the flush structure here.
-
-> +struct blk_flush_queue {
-> +	unsigned int		flush_queue_delayed:1;
-> +	unsigned int		flush_pending_idx:1;
-> +	unsigned int		flush_running_idx:1;
-> +	unsigned long		flush_pending_since;
-> +	struct list_head	flush_queue[2];
-> +	struct list_head	flush_data_in_flight;
-> +	struct request		*flush_rq;
-> +	spinlock_t		mq_flush_lock;
-> +};
-
-As this isn't really a queue I would call it blk_flush_data.
-
-> +static inline struct blk_flush_queue *blk_get_flush_queue(
-> +		struct request_queue *q)
-> +{
-> +	return q->fq;
-> +}
-
-I don't think there is a need for this helper.
-
