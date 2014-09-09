@@ -1,149 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbaIIO2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:28:50 -0400
-Received: from mail.pawisda.de ([213.157.4.156]:46180 "EHLO
-	mailrelay.pawisda.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593AbaIIO2s (ORCPT
+	id S1756792AbaIIOdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:33:13 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:37667 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaIIOdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:28:48 -0400
-X-Greylist: delayed 1965 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 10:28:48 EDT
-Message-ID: <540F06F1.1040608@lsexperts.de>
-Date: Tue, 09 Sep 2014 15:56:01 +0200
-From: Eric Sesterhenn <eric.sesterhenn@lsexperts.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 9 Sep 2014 10:33:11 -0400
 MIME-Version: 1.0
-To: Conrad Kostecki <ck@conrad-kostecki.de>, "H. Peter Anvin" <hpa@zytor.com>,
+In-Reply-To: <20140909123829.GK1754@arm.com>
+References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
+	<1409781429-27593-4-git-send-email-keescook@chromium.org>
+	<20140904170349.GL7156@arm.com>
+	<CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
+	<20140904172748.GO7156@arm.com>
+	<20140908191634.GV5598@outflux.net>
+	<20140908215506.GA4759@dator>
+	<CAGXu5jJFB+pcDVkcMoRZ9DnJu7MQuN=kceDhpkGrO=6ZLFy6Kw@mail.gmail.com>
+	<20140909123829.GK1754@arm.com>
+Date: Tue, 9 Sep 2014 07:33:11 -0700
+X-Google-Sender-Auth: 1L4ATCkT4PZENxrOHOJhxB52Ook
+Message-ID: <CAGXu5jJoW-B7WwuFUhbN4e1aL-HVxa9x4da9hB9DcCGEXVLgzw@mail.gmail.com>
+Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+From: Kees Cook <keescook@chromium.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Rabin Vincent <rabin@rab.in>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: AW: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
-References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.e <0363648bf9644167bf5aa0a954cd145b@DB4PR04MB265.eurprd04.prod.outlook.com>
-In-Reply-To: <0363648bf9644167bf5aa0a954cd145b@DB4PR04MB265.eurprd04.prod.outlook.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Conrad,
-
-On 02/14/2014 07:28 PM, Conrad Kostecki wrote:
->> On 02/14/2014 10:13 AM, Conrad Kostecki wrote:
->>>>
->>>> Does it have DMI?
->>>
->>> Unfortunately not.
->>>
->>> # dmidecode 2.12
->>> # No SMBIOS nor DMI entry point found, sorry.
->>>
+On Tue, Sep 9, 2014 at 5:38 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Mon, Sep 08, 2014 at 11:40:43PM +0100, Kees Cook wrote:
+>> On Mon, Sep 8, 2014 at 2:55 PM, Rabin Vincent <rabin@rab.in> wrote:
+>> > On Mon, Sep 08, 2014 at 12:16:34PM -0700, Kees Cook wrote:
+>> >> On Thu, Sep 04, 2014 at 06:27:48PM +0100, Will Deacon wrote:
+>> >> > On Thu, Sep 04, 2014 at 06:23:42PM +0100, Kees Cook wrote:
+>> >> > > Ah! If this is the case, perhaps we can get away with
+>> >> > > local_flush_tlb_kernel_range() then?
+>> >> >
+>> >> > That's a bit tricky, since you need to ensure that preemption is disabled
+>> >> > until the mapping is put back like it was.
+>> >>
+>> >> Okay, under both real hardware with the errata, and under QEMU, things seem
+>> >> to work with this change to the series. What do you think?
+>> >
+>> > Preemption is already disabled until the mapping is put back in this
+>> > patch.c code because interrupts are disabled from before the time
+>> > set_fixmap() is called until after clear_fixmap() is called.
 >>
->> Sigh.  Does anyone have contacts at Soekris who can 
->> complain about this stuff?
-> 
-> I don't think, that Soekris will fix this. No model of Soekris ever
-> had implemented DMI. Their BIOS (called comBIOS) is completely written
-> by them. Output is via serial port only. 
-> At least I know, that the technical engineers at Soekris respond on 
-> sales@soekris.com.
-> 
-> Maybe the patch could be extended, that HPET would be only enabled if 
-> there is no ACPI present?
-we are facing the same issue with these systems. Maybe the following patch,
-which is based on yours, would be acceptable for mainline.
+>> Should I drop the preempt_disable/enable(), and just add a comment to
+>> set_fixmap()?
+>>
+>> > I'd guess that Will meant other (future) callers of set_fixmap() would
+>> > have to ensure similar behaviour with set_fixmap() / clear_fixmap().
+>> >
+>> > Unless I'm missing something set/clear_fixmap() seem to be quite arch
+>> > specific and only really used on x86, so we could ensure that future
+>> > users on ARM perform the correct tlb flush:  the first user on ARM with
+>> > a non-atomic context (or you) could implement a set_fixmap() which does
+>> > the global flush and have this patch.c (and any other atomic context
+>> > callers) call __set_fixmap() directly.
+>> >
+>> > The change to local_flush_tlb_kernel_range() in __set_fixmap() would of
+>> > course be needed in that case, and IIRC that was what my original patch
+>> > had (via set_top_pte()).
+>>
+>> Ah, so it was, yes! Will, which version of this logic would you prefer?
+>
+> I still don't think we're solving the general problem here -- we're actually
+> just making the ftrace case work. It is perfectly possible for another CPU
+> to undergo a TLB miss and refill whilst the page table is being modified by
+> the CPU with preemption disabled. In this case, a local tlb flush won't
+> invalidate that entry on the other core, and we have no way of knowing when
+> the original permissions are actually observed across the system.
 
-Best regards,
-Eric Sesterhenn
+The fixmap is used by anything doing patching _except_ ftrace,
+actually. It's used by jump labels, kprobes, and kgdb. This code is
+the general case. Access to set_fixmap is done via the kernel patching
+interface: patch_text().
 
+Right now, the patch_text interface checks cache_ops_need_broadcast(),
+and conditionally runs under stop_machine(). We could make this
+unconditional, and we'll avoid any problem with TLB misses on another
+CPU.
 
-This patch enables a quirk for the Soekris net6501 HPET if
-pciquirks=soekris_e6xx" is supplied at the kernel commandline,
-Without these patches the clocksource defaults to jiffies, which
-is unstable.
+> So I think we need to figure out a way to invalidate the TLB properly. What
+> do architectures that use IPIs for TLB broadcasting do (x86, some powerpc,
+> mips, ...)? They must have exactly the same problem.
 
-Signed-off-by: Eric Sesterhenn <eric.sesterhenn@lsexperts.de>
+I don't think this should be done at the set_fixmap level, as it is
+more a primitive. I think making sure patch_text() always works would
+be best. What do you think of using an unconditional stop_machine()
+instead?
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index ff898bb..7c3faf5 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -6,6 +6,25 @@
+-Kees
 
- #include <asm/hpet.h>
-
-+static int pciquirk_soekris;
-+
-+static int __init parse_pciquirks(char *str)
-+{
-+
-+	while (str) {
-+		char *next = strchr(str, ',');
-+
-+		if (next)
-+			*next++ = 0;
-+		if (!strncmp("soekris_e6xx", str, 12))
-+			pciquirk_soekris = 1;
-+		str = next;
-+	}
-+        return 1;
-+}
-+__setup("pciquirks=", parse_pciquirks);
-+
-+
- #if defined(CONFIG_X86_IO_APIC) && defined(CONFIG_SMP) && defined(CONFIG_PCI)
-
- static void quirk_intel_irqbalance(struct pci_dev *dev)
-@@ -498,6 +517,28 @@ void force_hpet_resume(void)
- }
-
- /*
-+ * Soekris net6501, based on Atom E6xx series, does not have ACPI.
-+ * HPET should be force enabled on such platforms.
-+ */
-+static void e6xx_force_enable_hpet(struct pci_dev *dev)
-+{
-+	if (hpet_address || force_hpet_address)
-+		return;
-+
-+	if (pciquirk_soekris != 1)
-+		return;
-+
-+	force_hpet_address = 0xFED00000;
-+	force_hpet_resume_type = NONE_FORCE_HPET_RESUME;
-+	dev_printk(KERN_DEBUG, &dev->dev, "Force enabled HPET at "
-+		"0x%lx\n", force_hpet_address);
-+	return;
-+}
-+
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_E6XX_CU,
-+			 e6xx_force_enable_hpet);
-+
-+/*
-  * HPET MSI on some boards (ATI SB700/SB800) has side effect on
-  * floppy DMA. Disable HPET MSI on such platforms.
-  * See erratum #27 (Misinterpreted MSI Requests May Result in
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 6ed0bb7..aa0d390 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2860,6 +2860,7 @@
- #define PCI_DEVICE_ID_INTEL_82372FB_1	0x7601
- #define PCI_DEVICE_ID_INTEL_SCH_LPC	0x8119
- #define PCI_DEVICE_ID_INTEL_SCH_IDE	0x811a
-+#define PCI_DEVICE_ID_INTEL_E6XX_CU	0x8183
- #define PCI_DEVICE_ID_INTEL_ITC_LPC	0x8186
- #define PCI_DEVICE_ID_INTEL_82454GX	0x84c4
- #define PCI_DEVICE_ID_INTEL_82450GX	0x84c5
-
-
-
-
-
-
-
-
-
-
-
+-- 
+Kees Cook
+Chrome OS Security
