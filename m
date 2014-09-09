@@ -1,126 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736AbaIIOnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:43:24 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56663 "EHLO arroyo.ext.ti.com"
+	id S1756965AbaIIOn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:43:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57618 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495AbaIIOnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:43:22 -0400
-Date: Tue, 9 Sep 2014 09:42:25 -0500
+	id S1756784AbaIIOn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 10:43:26 -0400
+Date: Tue, 9 Sep 2014 09:43:09 -0500
 From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for
- exynos5420/5800
-Message-ID: <20140909144225.GF6151@saruman.home>
+To: Robert Baldyga <r.baldyga@samsung.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND v7 2/2] usb: gadget: f_fs: virtual endpoint
+ address mapping
+Message-ID: <20140909144309.GG6151@saruman.home>
 Reply-To: <balbi@ti.com>
-References: <1409656338-20337-1-git-send-email-gautam.vivek@samsung.com>
- <1409656338-20337-5-git-send-email-gautam.vivek@samsung.com>
- <20140902143438.GB16872@saruman.home>
- <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
- <20140903144225.GD31855@saruman.home>
- <CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
- <20140905175651.GK24449@saruman.home>
- <CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
- <20140908134454.GK22409@saruman.home>
- <CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
+References: <1410163020-13910-1-git-send-email-r.baldyga@samsung.com>
+ <1410163020-13910-3-git-send-email-r.baldyga@samsung.com>
+ <20140908134733.GL22409@saruman.home>
+ <540E97E8.80701@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DO5DiztRLs659m5i"
+	protocol="application/pgp-signature"; boundary="j2AXaZ4YhVcLc+PQ"
 Content-Disposition: inline
-In-Reply-To: <CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
+In-Reply-To: <540E97E8.80701@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---DO5DiztRLs659m5i
-Content-Type: text/plain; charset=us-ascii
+--j2AXaZ4YhVcLc+PQ
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Sep 09, 2014 at 07:19:50AM +0530, Vivek Gautam wrote:
-> Hi,
->=20
->=20
-> On Mon, Sep 8, 2014 at 7:14 PM, Felipe Balbi <balbi@ti.com> wrote:
+On Tue, Sep 09, 2014 at 08:02:16AM +0200, Robert Baldyga wrote:
+> On 09/08/2014 03:47 PM, Felipe Balbi wrote:
 > > Hi,
-> >
-> > On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
-> >> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wrote:
-> >> > On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
-> >> >> > Don't we have phy_power_on()
-> >> >> > for that ? It looks like you could just as well do this from
-> >> >> > phy_power_on() ?
-> >> >>
-> >> >> No, unfortunately keeping these calibration settings in phy_power_o=
-n()
-> >> >> doesn't help, since we need to do this after XHCI reset has happene=
-d.
-> >> >
-> >> > teach xHCI about PHYs ?
+> >=20
+> > On Mon, Sep 08, 2014 at 09:57:00AM +0200, Robert Baldyga wrote:
+> >> This patch introduces virtual endpoint address mapping. It separates
+> >> function logic form physical endpoint addresses making it more hardware
+> >> independent.
 > >>
-> >> sorry i couldn't understand you here.
-> >> Aren't we trying to do the same with Heikki's patch about dwc3 :
-> >> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
+> >> Following modifications changes user space API, so to enable them user
+> >> have to switch on the FUNCTIONFS_VIRTUAL_ADDR flag in descriptors.
 > >>
-> >> and the 2nd patch in this series :
-> >> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
+> >> Endpoints are now refered using virtual endpoint addresses chosen by
+> >> user in endpoint descpriptors. This applies to each context when endpo=
+int
+> >> address can be used:
+> >> - when accessing endpoint files in FunctionFS filesystemi (in file nam=
+e),
+> >> - in setup requests directed to specific endpoint (in wIndex field),
+> >> - in descriptors returned by FUNCTIONFS_ENDPOINT_DESC ioctl.
 > >>
-> >> Is there something else that is expected ?
-> >
-> > right, use that to call phy_init() at the right time, then you need to
-> > add a new ->calibrate() method which, likely, will only be used by you
-> > ;-)
+> >> In endpoint file names the endpoint address number is formatted as
+> >> double-digit hexadecimal value ("ep%02x") which has few advantages -
+> >> it is easy to parse, allows to easly recognize endpoint direction basi=
+ng
+> >> on its name (IN endpoint number starts with digit 8, and OUT with 0)
+> >> which can be useful for debugging purpose, and it makes easier to intr=
+oduce
+> >> further features allowing to use each endpoint number in both directio=
+ns
+> >> to have more endpoints available for function if hardware supports this
+> >> (for example we could have ep01 which is endpoint 1 with OUT direction,
+> >> and ep81 which is endpoint 1 with IN direction).
+> >>
+> >> Physical endpoint address can be still obtained using ioctl named
+> >> FUNCTIONFS_ENDPOINT_REVMAP, but now it's not neccesary to handle
+> >> USB transactions properly.
+> >>
+> >> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> >> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> >=20
+> > after this patch I get build errors:
+> >=20
+> > drivers/usb/gadget/function/f_fs.c: In function =E2=80=98ffs_epfiles_cr=
+eate=E2=80=99:
+> > drivers/usb/gadget/function/f_fs.c:1555:40: error: =E2=80=98struct ffs_=
+data=E2=80=99 has no member named =E2=80=98eps_addrmap=E2=80=99
+> >     sprintf(epfiles->name, "ep%02x", ffs->eps_addrmap[i]);
+> >                                         ^
+> > drivers/usb/gadget/function/f_fs.c: In function =E2=80=98ffs_func_setup=
+=E2=80=99:
+> > drivers/usb/gadget/function/f_fs.c:2900:19: error: =E2=80=98struct ffs_=
+data=E2=80=99 has no member named =E2=80=98eps_addrmap=E2=80=99
+> >     ret =3D func->ffs->eps_addrmap[ret];
+> >                    ^
+> > make[3]: *** [drivers/usb/gadget/function/f_fs.o] Error 1
+> > make[3]: *** Waiting for unfinished jobs....
+> > make[2]: *** [drivers/usb/gadget/function] Error 2
+> > make[1]: *** [drivers/usb/gadget] Error 2
+> > make[1]: *** Waiting for unfinished jobs....
+> > make: *** [drivers/usb/] Error 2
+> >=20
 >=20
-> so you mean, the xhci should itself call phy_init() at a time suitable,
-> so that ->calibrate() is not required at all ?
->=20
-> i think you meant there - "then you __do not__ need to
+> Array "eps_addrmap" was introduced in patch "usb: gadget: f_fs: fix the
+> redundant ep files problem". I have received mails from you and Greg
+> that it's already applied to usb tree, so I have assumed that there is
+> no need to include it to this patchset. I can resend this patch if it's
+> needed.
 
-right :-)
-
-> > add a new ->calibrate() method which, likely,
-> will only be used by you", is it ?
-
-yup
+No, no, I was didn't have -rc4 merged on my next. Now I do.
 
 --=20
 balbi
 
---DO5DiztRLs659m5i
+--j2AXaZ4YhVcLc+PQ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUDxHRAAoJEIaOsuA1yqRE2wAP/R2EshzK10SMAvnGqNGl8SnA
-CIFqb9R0HKjtuWOLwPlcC0gAwkObrKzv+eJaD4adnhfARwee1HN2PzZ/QNmvSU2G
-FNHeOfT2WPnopmPkqAixsH1hF0llP3xhLnBOHgeHTYBQxCEi1x6eMpcp4RGGvhjI
-YXM+eF+lrLE9CotyUEt2YW79tt0Vgjp/GIWoftZL5GCK4Y8QoNrsfwZEeD5Nxn9Z
-xgG/z4Nw9QWR3uarUlvYw0l2sq+j4h5JGgXerNTRjOJ3Pb+iLTiEj8mT7HOKUA4+
-qHq1hDog2szmYcTWaqLroFUSbURP20XQgRdD2xYjpuzjTl900uiSRVeL77fnWzO3
-TNeuvCOMK+wMq1m42WnlR3ErSYCtOUJhBg5TRVLsrGI3Viadm7hmSelcKxpZaIal
-EDucYL2KovBqtarq1qrmQr0MjdvaFTjIpi/zswwuvDIQdxEkiUIbyXWwgdlgC1HW
-uePAtDnIKXF0oD60wxtROtP9e0BRwvD1OW/3lH+InM5rlRhikHaBhgqxx/VA/G5z
-5ZsArc9fycjwl3Jnhc+0Qfb7I0PLos1zaOQeZgO9/5yGdtsuYFMlV91TUbGvbDCC
-xD03xsO8TFJfqUk4bcPniRcFIvxalsrqEf8UiAYfVt50is0Gn5YSIlwrDbzvu/bt
-CQaAnJV/ebQiA8odRnYJ
-=5c+5
+iQIcBAEBAgAGBQJUDxH9AAoJEIaOsuA1yqREjrsP/jmZx+FPrBTgyrA2t++YUrYw
+lV3wxBChBY8nO+OqLfdW4f7rS4lgWVZTRHYTBd2lSo8c3Tz/Sn6cPrRpoj+z47bZ
+alZYpN/nmpIT8cPZbc9CGm1ZfrY1bdZCsjnXVClo1uD8z6llnuDorHLz8zZgSHp5
+2Mm7aDM1O3/zoxRaNpvW+xJbyz1HxXrtYizR9KuK6uhmC+dtb2PjxEeKy1iJaY1S
+5DO2XXIo8XUCBUvzjWT2QOYoS7OXN8V08BMrNdiJg8F0b8tI9JsQKV01sOEO8A3Z
+h40FBBye1msiO2jHwYWNgklkPKgZovPfiLwo8FlC5CUC4+LgNS8KcFPu0n3Q84kq
+qOoPjxTS8DeJqGeCqG7+jo1ax78iDIaIRhf84mOhL3sGhqHbMLf4XQ2Uow3bpVfT
+zAQkigbUpKs9Y3qFq9+e06FEvhYpX7urwEDUmlT0kvThZ9HPuen6oV9Ko5uQ49Nq
+Zd3jZl0vuCZru1ADfgOtKc6gyIIwq79kaF9Ur9cK+QEnC2Ws6Ieq2pLd+Upu0Tyg
+2ayvNKkO6T17eMI79THJkarEcoX4+yFmKiLfPV7YHfWd+FJsGaAiRKiDZsDwjNZA
+7UreMX2hsO5hBBeRHL0Oc/kYYBsYi51ASedshT1gj3S43e7EKKVjNg5yFeUr/Qvg
+bsOUyLMYG8XC4ETzBqbL
+=NhA+
 -----END PGP SIGNATURE-----
 
---DO5DiztRLs659m5i--
+--j2AXaZ4YhVcLc+PQ--
