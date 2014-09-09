@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713AbaIIBUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 21:20:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61613 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755568AbaIIBUv convert rfc822-to-8bit (ORCPT
+	id S1755824AbaIIBWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 21:22:39 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44237 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034AbaIIBWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 21:20:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,489,1406617200"; 
-   d="scan'208";a="570285196"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	Mon, 8 Sep 2014 21:22:37 -0400
+Date: Tue, 9 Sep 2014 10:22:27 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Subject: RE: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver binding
- to MFD driver
-Thread-Topic: [PATCH 1/3 v2] GPIO: gpio-dwapb: Enable platform driver
- binding to MFD driver
-Thread-Index: AQHPyP+JkBMLSfD+Nk6gyOY6CiHQz5v4BmAA
-Date: Tue, 9 Sep 2014 01:20:29 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E983253@SHSMSX101.ccr.corp.intel.com>
-References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
- <1409928798-31895-2-git-send-email-alvin.chen@intel.com>
- <3465722.Gc9y01nQRe@wuerfel>
-In-Reply-To: <3465722.Gc9y01nQRe@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140909012227.GE11706@mtj.dyndns.org>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org>
+ <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org>
+ <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org>
+ <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909011059.GB11706@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > +#ifdef CONFIG_OF_GPIO
-> > +
-> > +static struct dwapb_platform_data *
-> > +dwapb_gpio_get_pdata_of(struct device *dev) {
-> > +	struct device_node *node, *port_np;
-> > +	struct dwapb_platform_data *pdata;
-> > +	struct dwapb_port_property *pp;
-> > +	int nports;
-> > +	int i;
-> > +
-> > +	node = dev->of_node;
-> > +	if (!node)
-> > +		return ERR_PTR(-ENODEV);
+On Tue, Sep 09, 2014 at 10:10:59AM +0900, Tejun Heo wrote:
+> I'm not too convinced this is such a difficult problem to figure out.
+> We already have most of logic in place and the only thing missing is
+> how to switch it.  Wouldn't something like the following work?
 > 
-> Please replace the #ifdef above with
-> 
-> 	if (!IS_ENABLED(CONFIG_OF_GPIO) || !node)
-> 
-> here so get you proper compile-time coverage of the DT code path.
-OK, I will improve it.
+> * Add a sysctl knob to enable asynchronous device probing on module
+>   load and enable asynchronous probing globally if the knob is set.
+
+Alternatively, add a module-generic param "async_probe" or whatever
+and use that to switch the behavior should work too.  I don't know
+which way is better but either should work fine.
+
+Thanks.
+
+-- 
+tejun
