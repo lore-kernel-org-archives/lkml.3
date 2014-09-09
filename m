@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091AbaIIJAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:00:37 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:57261 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaIIJAe (ORCPT
+	id S1756224AbaIIJAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:00:52 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:47707 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756168AbaIIJAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:00:34 -0400
+	Tue, 9 Sep 2014 05:00:46 -0400
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         kishon@ti.com, srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
         patrice.chotard@st.com
 Cc: peter.griffin@linaro.org, lee.jones@linaro.org, peppe.cavallaro@st.com,
         devicetree@vger.kernel.org
-Subject: [PATCH v2 0/4] Add picoPHY usb phy driver found on stih407 family SoC's
-Date: Tue,  9 Sep 2014 10:00:14 +0100
-Message-Id: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org>
+Subject: [PATCH v2 3/4] MAINTAINERS: Add phy-stih407-usb.c file to ARCH/STI architecture
+Date: Tue,  9 Sep 2014 10:00:17 +0100
+Message-Id: <1410253218-18318-4-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org>
+References: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for the picoPHY usb phy which is used by the usb2
-and usb3 host controllers when controlling usb2/1.1 devices. It is found on
-stih407 family SoC's from the consumer electronics devision of STMicroelectronics.
+This patch adds the new phy-stih407-usb.c usb phy driver found on
+STMicroelectronics stih407 consumer electronics SoC's into the STI
+arch section of the maintainers file.
 
-Changes since v1:
- - Remove reference to stih410 in dt documentation
- - Fix alignment issue in dt example
- - usbpicophy@f8 since you have a reg property
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-Peter Griffin (4):
-  phy: phy-stih407-usb: Add usb picoPHY driver found on stih407 SoC
-    family
-  phy: phy-stih407-usb: Add dt documentation for USB picophy found on
-    stih407 SoC family
-  MAINTAINERS: Add phy-stih407-usb.c file to ARCH/STI architecture
-  ARM: multi_v7_defconfig: Enable stih407 usb picophy
-
- .../devicetree/bindings/phy/phy-stih407-usb.txt    |  30 ++++
- MAINTAINERS                                        |   1 +
- arch/arm/configs/multi_v7_defconfig                |   1 +
- drivers/phy/Kconfig                                |   8 +
- drivers/phy/Makefile                               |   2 +
- drivers/phy/phy-stih407-usb.c                      | 185 +++++++++++++++++++++
- 6 files changed, 227 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
- create mode 100644 drivers/phy/phy-stih407-usb.c
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index cf24bb5..3ccb4cc 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1398,6 +1398,7 @@ F:	drivers/media/rc/st_rc.c
+ F:	drivers/i2c/busses/i2c-st.c
+ F:	drivers/tty/serial/st-asc.c
+ F:	drivers/mmc/host/sdhci-st.c
++F:	drivers/phy/phy-stih407-usb.c
+ 
+ ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
 -- 
 1.9.1
 
