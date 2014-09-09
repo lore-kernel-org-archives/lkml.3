@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897AbaIIOHa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:07:30 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:35223 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359AbaIIOH1 (ORCPT
+	id S1756925AbaIIOHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:07:54 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:42320 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756801AbaIIOH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:07:27 -0400
+	Tue, 9 Sep 2014 10:07:29 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Stephen Warren <swarren@wwwdotorg.org>,
@@ -15,9 +15,9 @@ Cc: Stephen Warren <swarren@wwwdotorg.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v10 7/9] clk: Take the prepare lock when updating the list of per-user clks
-Date: Tue,  9 Sep 2014 16:06:50 +0200
-Message-Id: <1410271612-27389-5-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v10 8/9] clk: Take the prepare lock when updating the per-user constraints
+Date: Tue,  9 Sep 2014 16:06:51 +0200
+Message-Id: <1410271612-27389-6-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410271612-27389-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -28,23 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 ---
- drivers/clk/clk.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/clk/clk.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 3018f37..f283dcc 100644
+index f283dcc..1ad8cb7 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -560,7 +560,9 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 	clk->dev_id = dev;
- 	clk->con_id = con;
- 
+@@ -1734,15 +1734,25 @@ EXPORT_SYMBOL_GPL(clk_set_rate);
+ int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
+ {
+ 	struct clk_core *clk = clk_to_clk_core(clk_user);
++	int ret;
++
 +	clk_prepare_lock();
- 	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
-+	clk_prepare_unlock();
  
- 	return clk;
+ 	clk_user->floor_constraint = rate;
+-	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
++	ret = clk_provider_set_rate(clk, clk_provider_get_rate(clk));
++
++	clk_prepare_unlock();
++
++	return ret;
  }
+ EXPORT_SYMBOL_GPL(clk_set_floor_rate);
+ 
+ int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
+ {
+ 	struct clk_core *clk = clk_to_clk_core(clk_user);
++	int ret;
++
++	clk_prepare_lock();
+ 
+ 	WARN(rate > 0 && rate < clk_user->floor_constraint,
+ 	     "clk %s dev %s con %s: new ceiling %lu lower than existing floor %lu\n",
+@@ -1750,7 +1760,11 @@ int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
+ 	     clk_user->floor_constraint);
+ 
+ 	clk_user->ceiling_constraint = rate;
+-	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
++	ret = clk_provider_set_rate(clk, clk_provider_get_rate(clk));
++
++	clk_prepare_unlock();
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
+ 
 -- 
 1.9.3
 
