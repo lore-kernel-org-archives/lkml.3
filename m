@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388AbaIIRJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:09:54 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:38637 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918AbaIIRJv (ORCPT
+	id S1757491AbaIIRKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:10:55 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:31391 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164AbaIIRKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:09:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>
-References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
-	<CAAObsKAYqpJMJnxSMxhkkRtnoEwLwgUa1y7ij5ZHvHf1jRok+Q@mail.gmail.com>
-	<CAL1qeaF7U9aoBp5gQPS=r+pe6krKmXdP1qak2gjhNqQMoHFB8A@mail.gmail.com>
-	<CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>
-Date: Tue, 9 Sep 2014 10:09:50 -0700
-X-Google-Sender-Auth: 2WSATgj_gPUlAbCWI0ARF_owDH0
-Message-ID: <CAL1qeaFUaqs9SDv1p+dYDYLn9hwDxdTQ=K-wo+Qa5+KGY=U47w@mail.gmail.com>
-Subject: Re: [PATCH v3 0/9] Tegra xHCI support
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Tomeu Vizoso <tomeu@tomeuvizoso.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Sep 2014 13:10:52 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-cd-540f3498a204
+Message-id: <540F3481.5030900@samsung.com>
+Date: Tue, 09 Sep 2014 19:10:25 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCHv2 2/3] [media] s5p-jpeg: Fix compilation with COMPILE_TEST
+References: <20140909124306.2d5a0d76@canb.auug.org.au>
+ <6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
+ <b7343e6296b5d1d68b7229b8307442fd4141bcb3.1410273306.git.m.chehab@samsung.com>
+ <540F15B2.3000902@samsung.com> <20140909120936.527bd852.m.chehab@samsung.com>
+ <540F1D11.9030400@samsung.com> <20140909131036.7265121f.m.chehab@samsung.com>
+In-reply-to: <20140909131036.7265121f.m.chehab@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xy7ozTPhDDG5PE7Povfqc0eLH6wts
+	Fr0LrrJZnG16w26x6fE1VovLu+awWfRs2MpqcXBhG6PFjPP7mCwurpO32HFqEbPF1r1X2R14
+	PBpv3GDz2LxCy2PzknqPvi2rGD0+b5ILYI3isklJzcksSy3St0vgyvj2t5Gl4CxLxfNFfYwN
+	jO+Yuxg5OSQETCSe7zjEBmGLSVy4tx7MFhJYyihxcAprFyMXkP2JUWLl/5XsIAleAS2J6/3X
+	mEBsFgFVid4zS8EGsQkYSvQe7WMEsUUFwiSe/TrIBFEvKPFj8j0WEFtEwEDi8aKT7CBDmQWO
+	MEtcubINbJuwgJ/Ehu6V7BDbfjBJtG5cBdbNKWAt8f7EFKCpHEAdehL3L2qBhJkF5CU2r3nL
+	PIFRYBaSHbMQqmYhqVrAyLyKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyQivuxgXHzM6hCj
+	AAejEg9vQwZfiBBrYllxZe4hRgkOZiURXusXQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MQUdY
+	T+RvSV3Ye8T2yFpfs2sMznEJyzRXbXf9ff/99VN6H5a3JzjMMr601taVd5XJ1s+uv755qK0Q
+	bIt78k669fypiuVGon4PL4kWL10r6KxmsE3gfm7I/SMch6fPabewNlzjJ3dPX/9qo8psfrOq
+	d6+mX1gbuXqtoKP0ajaFHz/msBbYXuupVGIpzkg01GIuKk4EAJ3YwnVmAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 1:21 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
-> On 8 September 2014 18:22, Andrew Bresticker <abrestic@chromium.org> wrote:
->> On Mon, Sep 8, 2014 at 8:34 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
->>> On 2 September 2014 23:34, Andrew Bresticker <abrestic@chromium.org> wrote:
->>>>
->>>> Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
->>>> USB3.0 memory sticks and ethernet dongles using controller firmware
->>>> recently posted by Andrew Chew [2].
->>>
->>> I have had mixed results when testing this on a Jetson TK1 board. Of 8
->>> USB devices I tested with, about half where probed correctly, but the
->>> other half repeatedly fail in hub_port_init because in the GET_STATUS
->>> right after the reset, the C_PORT_CONNECTION bit is set.
->>>
->>> I don't see any correlation between the failure and the kind of usb
->>> device, but I don't have much experience with USB implementations
->>> either.
->>
->> Hmm... I haven't seen that before.  Which particular devices were you using?
->
-> Here they are:
->
-> work:
->
-> Genius keyboard: 05d5:6782
-> Logitech mouse: 046d:c06a
-> Denver MP3 player: 10d6:1100
-> Atheros Bluetooth dongle: 0cf3:3005
->
-> don't work:
->
-> MCS7830 ethernet dongle: 9710:7830
-> Genesys Logic hub: 05e3:0608
-> Alcor flash drive: 058f:6387
-> JMicron SATA bridge: 152d:2329
+On 09/09/14 18:10, Mauro Carvalho Chehab wrote:
+> ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undefined!
+> 
+> That happens because asm-generic doesn't like any ndelay time
+> bigger than 20us.
+> 
+> Currently, usleep_range() couldn't simply be used, since
+> exynos4_jpeg_sw_reset() is called with a spinlock held.
+> 
+> So, let's use ndelay() instead.
+> 
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-I have the same SATA bridge and it is enumerating fine for me, but
-I've ordered the hub as well and will check that out.
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-Did you have any other patches applied when testing these?  Were you
-using either SATA or PCIe at the same time?  Just trying to figure out
-if there's anything else different between our setups.
+--
+Thanks,
+Sylwester
