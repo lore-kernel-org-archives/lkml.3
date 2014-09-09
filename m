@@ -1,98 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaIIT3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:29:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45569 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950AbaIIT3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:29:10 -0400
-Date: Tue, 9 Sep 2014 12:29:10 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ankit Jindal <ankit.jindal@linaro.org>
-Cc: linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>,
-        patches@apm.com, linux-arm-kernel@lists.infradead.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Tushar Jagad <tushar.jagad@linaro.org>
-Subject: Re: [PATCH 1/5] uio: Add new UIO_MEM_PHYS_CACHE type for mem regions
-Message-ID: <20140909192910.GA7885@kroah.com>
-References: <1410256619-3213-1-git-send-email-ankit.jindal@linaro.org>
- <1410256619-3213-2-git-send-email-ankit.jindal@linaro.org>
+	id S1752455AbaIIT3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:29:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119AbaIIT3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 15:29:52 -0400
+Message-ID: <540F5526.8050902@redhat.com>
+Date: Tue, 09 Sep 2014 21:29:42 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410256619-3213-2-git-send-email-ankit.jindal@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org,
+        Andrew Duggan <aduggan@synaptics.com>
+Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
+References: <20140908165520.GA35051@core.coreip.homeip.net> <540EAFD1.2040307@redhat.com> <20140909170636.GA28774@core.coreip.homeip.net>
+In-Reply-To: <20140909170636.GA28774@core.coreip.homeip.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 03:26:55PM +0530, Ankit Jindal wrote:
-> Currently, three types of mem regions are supported: UIO_MEM_PHYS,
-> UIO_MEM_LOGICAL and UIO_MEM_VIRTUAL. Among these UIO_MEM_PHYS helps
-> UIO driver export physcial memory to user space as non-cacheable
-> user memory. Typcially memory-mapped registers of a device are exported
-> to user space as UIO_MEM_PHYS type mem region. The UIO_MEM_PHYS type
-> is not useful if dma-capable devices are capable of maintaining coherency
-> with CPU caches becasue we can allow cacheable access to memory shared
-> between such devices and user space.
-> 
-> This patch adds new type UIO_MEM_PHYS_CACHE for mem regions to enable
-> cacheable access to physical memory from user space.
-> 
-> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
-> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
-> ---
->  drivers/uio/uio.c          |   22 +++++++++++++---------
->  include/linux/uio_driver.h |    7 ++++---
->  2 files changed, 17 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index a673e5b..ff5b6c0 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -644,7 +644,7 @@ static const struct vm_operations_struct uio_physical_vm_ops = {
->  #endif
->  };
->  
-> -static int uio_mmap_physical(struct vm_area_struct *vma)
-> +static int uio_mmap_physical(struct vm_area_struct *vma, bool cacheable)
->  {
->  	struct uio_device *idev = vma->vm_private_data;
->  	int mi = uio_find_mem_index(vma);
-> @@ -659,7 +659,9 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
->  		return -EINVAL;
->  
->  	vma->vm_ops = &uio_physical_vm_ops;
-> -	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-> +
-> +	if (!cacheable)
-> +		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
->  
->  	/*
->  	 * We cannot use the vm_iomap_memory() helper here,
-> @@ -706,13 +708,15 @@ static int uio_mmap(struct file *filep, struct vm_area_struct *vma)
->  	}
->  
->  	switch (idev->info->mem[mi].memtype) {
-> -		case UIO_MEM_PHYS:
-> -			return uio_mmap_physical(vma);
-> -		case UIO_MEM_LOGICAL:
-> -		case UIO_MEM_VIRTUAL:
-> -			return uio_mmap_logical(vma);
-> -		default:
-> -			return -EINVAL;
-> +	case UIO_MEM_PHYS:
-> +		return uio_mmap_physical(vma, false);
-> +	case UIO_MEM_LOGICAL:
-> +	case UIO_MEM_VIRTUAL:
-> +		return uio_mmap_logical(vma);
-> +	case UIO_MEM_PHYS_CACHE:
-> +		return uio_mmap_physical(vma, true);
-> +	default:
-> +		return -EINVAL;
+Hi,
 
-Please don't do code style cleanups in the same patch you are adding new
-functionality.  I can't take this because of this, sorry.
+On 09/09/2014 07:06 PM, Dmitry Torokhov wrote:
+> On Tue, Sep 09, 2014 at 09:44:17AM +0200, Hans de Goede wrote:
+>> Hi,
+>>
+>> On 09/08/2014 06:55 PM, Dmitry Torokhov wrote:
+>>> ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
+>>> physical buttons, instead they generate primary button click when user
+>>> presses somewhat hard on the surface of the touchpad. Unfortunately they
+>>> also report primary button click whenever there are 2 or more contacts
+>>> on the pad, messing up all multi-finger gestures (2-finger scrolling,
+>>> multi-finger tapping, etc). To cope with this behavior we introduce a
+>>> delay (currently 50 msecs) in reporting primary press in case more
+>>> contacts appear.
+>>>
+>>> For now we are using DMI matching to detect ForcePads, hopefully we'll
+>>> be able to figure a better way down the road.
+>>
+>> What about using the pnp-id, in my experience with the recent lenovo
+>> laptops that tends to be more reliable.
+>
+> Not sure. So far I only know of HP 1040 having it. FWIW:
+>
+> dtor@dtor-glaptop:~$ cat /sys/bus/pnp/drivers/i8042\ aux/00\:07/id
+> SYN300d
+> SYN0100
+> SYN0002
+> PNP0f13
 
-greg k-h
+Hmm, those look pretty generic. Maybe the 300d is specific.
+
+> I think if we see generalities we can switch over later. I hope
+> Chris/Andrew will come with a capability bit though :)
+>
+>>
+>> Christopher, Andrew (added to the CC), can one of you tell us if there
+>> is a capability bit to detect this, and if not can you perhaps provide
+>> a list of pnp-ids of devices which behave like this ?
+>>
+>>> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>> ---
+>>>   drivers/input/mouse/synaptics.c | 80 ++++++++++++++++++++++++++++++++---------
+>>>   drivers/input/mouse/synaptics.h |  5 +++
+>>>   2 files changed, 69 insertions(+), 16 deletions(-)
+>>>
+>>> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+>>> index e8573c6..5de1bb6 100644
+>>> --- a/drivers/input/mouse/synaptics.c
+>>> +++ b/drivers/input/mouse/synaptics.c
+>>> @@ -618,6 +618,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
+>>>   	priv->agm_pending = true;
+>>>   }
+>>>
+>>> +static bool is_forcepad;
+>>> +
+>>>   static int synaptics_parse_hw_state(const unsigned char buf[],
+>>>   				    struct synaptics_data *priv,
+>>>   				    struct synaptics_hw_state *hw)
+>>> @@ -629,10 +631,58 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>>>   			 ((buf[0] & 0x04) >> 1) |
+>>>   			 ((buf[3] & 0x04) >> 2));
+>>>
+>>> +		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+>>> +			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
+>>> +		    hw->w == 2) {
+>>> +			synaptics_parse_agm(buf, priv, hw);
+>>> +			return 1;
+>>> +		}
+>>> +
+>>> +		hw->x = (((buf[3] & 0x10) << 8) |
+>>> +			 ((buf[1] & 0x0f) << 8) |
+>>> +			 buf[4]);
+>>> +		hw->y = (((buf[3] & 0x20) << 7) |
+>>> +			 ((buf[1] & 0xf0) << 4) |
+>>> +			 buf[5]);
+>>> +		hw->z = buf[2];
+>>> +
+>>>   		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+>>>   		hw->right = (buf[0] & 0x02) ? 1 : 0;
+>>>
+>>
+>> Moving this up means that on clickpads the button will no longer
+>> be checked + set for hw->w == 2 packets. That seems like an unintended
+>> side effect.
+>
+> I guess we can call it a side effect, but it is fine - we parse AGM and
+> stash the data, then when 2nd packet comes we parse and act upon it. In
+> the old code we'd parse x, y, z, in AGM etc. and then have it
+> overwritten with the data from the 2nd packet, here we do not bother.
+>
+>> If this is intended then this should probably be in its own
+>> patch.
+>
+> It does not make sense on its own as ForcePad support needs to know
+> values of Z and W when deciding how to handle primary click, otherwise
+> the old code was just fine.
+
+Ok.
+
+>
+>>
+>>> -		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+>>> +		if (is_forcepad) {
+>>> +			/* XXX is there a proper capability bit for this? */
+>>> +			/*
+>>> +			 * ForcePads, like Clickpads, use middle button
+>>> +			 * bits to report primary button clicks.
+>>> +			 * Unfortunately they report primary button not only
+>>> +			 * when user presses on the pad above certain threshold,
+>>> +			 * but also when there are more than one finger on the
+>>> +			 * touchpad, which interferes with out multi-finger
+>>> +			 * gestures.
+>>> +			 */
+>>> +			if (hw->z == 0) {
+>>> +				/* No contacts */
+>>> +				priv->press = priv->report_press = false;
+>>> +			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
+>>> +				/*
+>>> +				 * Single-finger touch with pressure above
+>>> +				 * the threshold.
+>>> +				 */
+>>> +				if  (!priv->press) {
+>>> +					priv->press_start = jiffies;
+>>> +					priv->press = true;
+>>> +				} else if (time_after(jiffies,
+>>> +						priv->press_start +
+>>> +							msecs_to_jiffies(50))) {
+>>> +					priv->report_press = true;
+>>> +				}
+>>
+>> You're not setting a timer here, instead relying on there to be further events,
+>> that is probably ok, but maybe put a comment to that extent here ?
+>
+> I can, any suggestion on what you want me to say? "If single point
+> contact held pressure long enough start reporting primary click"?
+
+What I mean is that this will not work if the finger is held perfectly still,
+at least AFAIK no more packets will be send in that case, but maybe that is
+me thinking too much in userspace terms where no evdev events will be
+generated in that case. If the touchpad will continue repeating events with
+exact the same location + pressure, then there is nothing to worry about
+and you can ignore my request for a comment.
+
+Regards,
+
+Hans
