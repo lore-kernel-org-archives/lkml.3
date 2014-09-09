@@ -1,64 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaIIEtA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 00:49:00 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:39593 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaIIEs7 (ORCPT
+	id S1752148AbaIIEu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 00:50:27 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:40105 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaIIEu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 00:48:59 -0400
-Message-ID: <540E86B3.7080700@linaro.org>
-Date: Tue, 09 Sep 2014 13:48:51 +0900
+	Tue, 9 Sep 2014 00:50:26 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: will.deacon@arm.com, viro@zeniv.linux.org.uk, eparis@redhat.com,
-        rgb@redhat.com, dsaxena@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: [PATCH] arm: prevent BUG_ON in audit_syscall_entry()
-References: <1409910393-30896-1-git-send-email-takahiro.akashi@linaro.org> <20140905095252.GF30401@n2100.arm.linux.org.uk>
-In-Reply-To: <20140905095252.GF30401@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux@arm.linux.org.uk, will.deacon@arm.com
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v2] arm: prevent BUG_ON in audit_syscall_entry()
+Date: Tue,  9 Sep 2014 13:49:59 +0900
+Message-Id: <1410238199-956-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+BUG_ON() in audit_syscall_entry() will be hit if user issues syscall(-1)
+while syscall auditing is enabled (that is, by starting auditd).
 
-On 09/05/2014 06:52 PM, Russell King - ARM Linux wrote:
-> On Fri, Sep 05, 2014 at 06:46:33PM +0900, AKASHI Takahiro wrote:
->> BUG_ON() in audit_syscall_entry() will be hit if user issues syscall(-1)
->> while syscall auditing is enabled (that is, by starting auditd).
->> In fact, syscall(-1) just fails (not signaled despite the expectation,
->> this is another minor bug), but the succeeding syscall hits BUG_ON.
->>
->> When auditing syscall(-1), audit_syscall_entry() is called anyway, but
->> audit_syscall_exit() is not called and then 'in_syscall' flag in thread's
->> audit context is kept on. In this way, audit_syscall_entry() against
->> the succeeding syscall will see BUG_ON(in_syscall).
->>
->> This patch fixes this bug by
->> 1) enforcing syscall exit tracing, including audit_syscall_exit(), to be
->>     executed in all cases,
->
-> Really, no.  That adds additional overhead to every syscall, and that
-> matters for system performance.  We want to have as little as possible
-> overhead here.
+------------[ cut here ]------------
+kernel BUG at /home/akashi/arm/armv7/linux/kernel/auditsc.c:1534!
+Internal error: Oops - BUG: 0 [#1] SMP ARM
+Modules linked in:
+CPU: 0 PID: 61 Comm: syscall_arm Not tainted 3.17.0-rc4 #60
+task: ea0c4380 ti: ea48e000 task.ti: ea48e000
+PC is at __audit_syscall_entry+0xe4/0x110
+LR is at 0xea0c4380
+pc : [<c02b2ae8>]    lr : [<ea0c4380>]    psr: 20000013
+sp : ea48ff68  ip : 00000001  fp : 0000869c
+r10: 00000200  r9 : ea48e000  r8 : c020f4e4
+r7 : 000000c5  r6 : ea48e000  r5 : ea48ffb0  r4 : ea490800
+r3 : bef1e718  r2 : 00000001  r1 : 000000c5  r0 : 40000028
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 8a4ac059  DAC: 00000015
+Process syscall_arm (pid: 61, stack limit = 0xea48e250)
+Stack: (0xea48ff68 to 0xea490000)
+ff60:                   540e7a69 3ab5e840 00000200 000000c5 ea48ffb0 ea48e000
+ff80: 000000c5 c02114bc bef1e718 00000001 b6efdb58 ffffffff 08400000 000000c5
+ffa0: c020f4e4 c020f49c b6efdb58 ffffffff 00000001 bef1e718 bef1e718 00000001
+ffc0: b6efdb58 ffffffff 08400000 000000c5 00000000 b6f22850 00000008 0000869c
+ffe0: 000000c5 bef1e704 b6ea315f b6e318e6 20000030 00000001 00000000 00000000
+[<c02b2ae8>] (__audit_syscall_entry) from [<c02114bc>] (syscall_trace_enter+0xf0/0x120)
+[<c02114bc>] (syscall_trace_enter) from [<c020f49c>] (__sys_trace+0xc/0x38)
+Code: e584500c e5842004 e28dd00c e8bd80f0 (e7f001f2)
+---[ end trace 0c4441660aba5692 ]---
 
-My words might have confused you, but this issue exists, in the current
-mainline kernel, not only against syscall(-1), but any invalid or pseudo syscalls.
-(And other archs seem to behave in the same way AFAIK.)
-But if you want, I can fix it.
-See my next version.
+In fact, syscall(-1) just fails (not signaled despite the expectation,
+this is another minor bug), but the succeeding syscall hits BUG_ON.
 
--Takahiro AKASHI
+When auditing syscall(-1), audit_syscall_entry() is called anyway, but
+audit_syscall_exit() is not called and then 'in_syscall' flag in thread's
+audit context is kept on. In this way, audit_syscall_entry() against
+the succeeding syscall will see BUG_ON(in_syscall).
 
-> The second issue here is that you haven't explained where the oops
-> occurs.  It's seen as a good practice to include the oops dump for the
-> bug you're fixing in the commit changelog, so that others can see the
-> starting point for the investigation, and see exactly where things are
-> going wrong.
->
+This patch fixes this bug by
+1) preventing syscall tracing, ftrace tracepoint and audit, from being
+   executed in case of invalid or pseudo system calls,
+2) handling user-issued syscall(-1) with arm_syscall().
+
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ arch/arm/include/asm/traps.h   |    1 +
+ arch/arm/kernel/entry-common.S |    4 ++--
+ arch/arm/kernel/ptrace.c       |   47 +++++++++++++++++++++++++---------------
+ 3 files changed, 32 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm/include/asm/traps.h b/arch/arm/include/asm/traps.h
+index f555bb3..de01145 100644
+--- a/arch/arm/include/asm/traps.h
++++ b/arch/arm/include/asm/traps.h
+@@ -49,6 +49,7 @@ static inline int in_exception_text(unsigned long ptr)
+ extern void __init early_trap_init(void *);
+ extern void dump_backtrace_entry(unsigned long where, unsigned long from, unsigned long frame);
+ extern void ptrace_break(struct task_struct *tsk, struct pt_regs *regs);
++extern int arm_syscall(int no, struct pt_regs *regs);
+ 
+ extern void *vectors_page;
+ 
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index e52fe5a..28d3931 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -426,7 +426,6 @@ ENTRY(vector_swi)
+ local_restart:
+ 	ldr	r10, [tsk, #TI_FLAGS]		@ check for syscall tracing
+ 	stmdb	sp!, {r4, r5}			@ push fifth and sixth args
+-
+ 	tst	r10, #_TIF_SYSCALL_WORK		@ are we tracing syscalls?
+ 	bne	__sys_trace
+ 
+@@ -476,10 +475,11 @@ __sys_trace:
+ 	cmp	scno, #-1			@ skip the syscall?
+ 	bne	2b
+ 	add	sp, sp, #S_OFF			@ restore stack
+-	b	ret_slow_syscall
++	b	__sys_trace_return_skipped
+ 
+ __sys_trace_return:
+ 	str	r0, [sp, #S_R0 + S_OFF]!	@ save returned r0
++__sys_trace_return_skipped:
+ 	mov	r0, sp
+ 	bl	syscall_trace_exit
+ 	b	ret_slow_syscall
+diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+index 0c27ed6..68b42cd 100644
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -930,7 +930,9 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+ 
+ asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
+ {
+-	current_thread_info()->syscall = scno;
++	int orig_scno;
++
++	current_thread_info()->syscall = orig_scno = scno;
+ 
+ 	/* Do the secure computing check first; failures should be fast. */
+ 	if (secure_computing(scno) == -1)
+@@ -941,31 +943,40 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
+ 
+ 	scno = current_thread_info()->syscall;
+ 
+-	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+-		trace_sys_enter(regs, scno);
++	if (scno >= 0 && scno < NR_syscalls) {
++		if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++			trace_sys_enter(regs, scno);
++
++		audit_syscall_entry(AUDIT_ARCH_ARM, scno,
++				    regs->ARM_r0, regs->ARM_r1,
++				    regs->ARM_r2, regs->ARM_r3);
++	}
+ 
+-	audit_syscall_entry(AUDIT_ARCH_ARM, scno, regs->ARM_r0, regs->ARM_r1,
+-			    regs->ARM_r2, regs->ARM_r3);
++	/* user-issued syscall of -1 */
++	if (scno == -1 && orig_scno == -1)
++		arm_syscall(scno, regs);
+ 
+ 	return scno;
+ }
+ 
+ asmlinkage void syscall_trace_exit(struct pt_regs *regs)
+ {
+-	/*
+-	 * Audit the syscall before anything else, as a debugger may
+-	 * come in and change the current registers.
+-	 */
+-	audit_syscall_exit(regs);
++	if (current_thread_info()->syscall < NR_syscalls) {
++		/*
++		 * Audit the syscall before anything else, as a debugger may
++		 * come in and change the current registers.
++		 */
++		audit_syscall_exit(regs);
+ 
+-	/*
+-	 * Note that we haven't updated the ->syscall field for the
+-	 * current thread. This isn't a problem because it will have
+-	 * been set on syscall entry and there hasn't been an opportunity
+-	 * for a PTRACE_SET_SYSCALL since then.
+-	 */
+-	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+-		trace_sys_exit(regs, regs_return_value(regs));
++		/*
++		 * Note that we haven't updated the ->syscall field for the
++		 * current thread. This isn't a problem because it will have
++		 * been set on syscall entry and there hasn't been
++		 * an opportunity for a PTRACE_SET_SYSCALL since then.
++		 */
++		if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++			trace_sys_exit(regs, regs_return_value(regs));
++	}
+ 
+ 	if (test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall(regs, PTRACE_SYSCALL_EXIT);
+-- 
+1.7.9.5
+
