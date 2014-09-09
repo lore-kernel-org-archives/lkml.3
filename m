@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313AbaIIKe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:34:26 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:36217 "EHLO mail.mev.co.uk"
+	id S1756504AbaIIK1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:27:23 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:36142 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756509AbaIIK1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:27:25 -0400
+	id S1756327AbaIIK1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:27:10 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 33/48] staging: comedi: ni_labpc_common: replace comedi_board() calls
-Date: Tue,  9 Sep 2014 11:26:42 +0100
-Message-Id: <1410258417-28230-34-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 04/48] staging: comedi: addi_apci_3120: replace comedi_board() calls
+Date: Tue,  9 Sep 2014 11:26:13 +0100
+Message-Id: <1410258417-28230-5-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
 References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
@@ -27,76 +27,72 @@ The `comedi_board(dev)` inline function calls just return
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/ni_labpc_common.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c | 10 +++++-----
+ drivers/staging/comedi/drivers/addi_apci_3120.c           |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc_common.c b/drivers/staging/comedi/drivers/ni_labpc_common.c
-index c54c88d..35bc2c2 100644
---- a/drivers/staging/comedi/drivers/ni_labpc_common.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc_common.c
-@@ -156,7 +156,7 @@ static void labpc_ai_set_chan_and_gain(struct comedi_device *dev,
- 				       unsigned int range,
- 				       unsigned int aref)
+diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c
+index 87dff80..a83e2ae 100644
+--- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c
++++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3120.c
+@@ -253,7 +253,7 @@ static int apci3120_ai_insn_config(struct comedi_device *dev,
+ 				   struct comedi_insn *insn,
+ 				   unsigned int *data)
  {
--	const struct labpc_boardinfo *board = comedi_board(dev);
-+	const struct labpc_boardinfo *board = dev->board_ptr;
- 	struct labpc_private *devpriv = dev->private;
+-	const struct addi_board *this_board = comedi_board(dev);
++	const struct addi_board *this_board = dev->board_ptr;
+ 	struct addi_private *devpriv = dev->private;
+ 	unsigned int i;
  
- 	if (board->is_labpc1200) {
-@@ -186,7 +186,7 @@ static void labpc_setup_cmd6_reg(struct comedi_device *dev,
- 				 unsigned int aref,
- 				 bool ena_intr)
+@@ -359,7 +359,7 @@ static int apci3120_ai_insn_read(struct comedi_device *dev,
+ 				 struct comedi_insn *insn,
+ 				 unsigned int *data)
  {
--	const struct labpc_boardinfo *board = comedi_board(dev);
-+	const struct labpc_boardinfo *board = dev->board_ptr;
- 	struct labpc_private *devpriv = dev->private;
- 
- 	if (!board->is_labpc1200)
-@@ -544,7 +544,7 @@ static int labpc_ai_check_chanlist(struct comedi_device *dev,
- static int labpc_ai_cmdtest(struct comedi_device *dev,
- 			    struct comedi_subdevice *s, struct comedi_cmd *cmd)
+-	const struct addi_board *this_board = comedi_board(dev);
++	const struct addi_board *this_board = dev->board_ptr;
+ 	struct addi_private *devpriv = dev->private;
+ 	unsigned short us_ConvertTiming, us_TmpValue, i;
+ 	unsigned char b_Tmp;
+@@ -802,7 +802,7 @@ static int apci3120_cyclic_ai(int mode,
+ 			      struct comedi_device *dev,
+ 			      struct comedi_subdevice *s)
  {
--	const struct labpc_boardinfo *board = comedi_board(dev);
-+	const struct labpc_boardinfo *board = dev->board_ptr;
- 	int err = 0;
- 	int tmp, tmp2;
- 	unsigned int stop_mask;
-@@ -652,7 +652,7 @@ static int labpc_ai_cmdtest(struct comedi_device *dev,
- 
- static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+-	const struct addi_board *this_board = comedi_board(dev);
++	const struct addi_board *this_board = dev->board_ptr;
+ 	struct addi_private *devpriv = dev->private;
+ 	struct comedi_cmd *cmd = &s->async->cmd;
+ 	unsigned char b_Tmp;
+@@ -1728,7 +1728,7 @@ static int apci3120_config_insn_timer(struct comedi_device *dev,
+ 				      struct comedi_insn *insn,
+ 				      unsigned int *data)
  {
--	const struct labpc_boardinfo *board = comedi_board(dev);
-+	const struct labpc_boardinfo *board = dev->board_ptr;
- 	struct labpc_private *devpriv = dev->private;
- 	struct comedi_async *async = s->async;
- 	struct comedi_cmd *cmd = &async->cmd;
-@@ -846,7 +846,7 @@ static void labpc_drain_dregs(struct comedi_device *dev)
- static irqreturn_t labpc_interrupt(int irq, void *d)
+-	const struct addi_board *this_board = comedi_board(dev);
++	const struct addi_board *this_board = dev->board_ptr;
+ 	struct addi_private *devpriv = dev->private;
+ 	unsigned int ui_Timervalue2;
+ 	unsigned short us_TmpValue;
+@@ -1873,7 +1873,7 @@ static int apci3120_write_insn_timer(struct comedi_device *dev,
+ 				     struct comedi_insn *insn,
+ 				     unsigned int *data)
+ {
+-	const struct addi_board *this_board = comedi_board(dev);
++	const struct addi_board *this_board = dev->board_ptr;
+ 	struct addi_private *devpriv = dev->private;
+ 	unsigned int ui_Timervalue2 = 0;
+ 	unsigned short us_TmpValue;
+diff --git a/drivers/staging/comedi/drivers/addi_apci_3120.c b/drivers/staging/comedi/drivers/addi_apci_3120.c
+index 050c724..84501a3 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_3120.c
++++ b/drivers/staging/comedi/drivers/addi_apci_3120.c
+@@ -44,7 +44,7 @@ static const struct addi_board apci3120_boardtypes[] = {
+ static irqreturn_t v_ADDI_Interrupt(int irq, void *d)
  {
  	struct comedi_device *dev = d;
--	const struct labpc_boardinfo *board = comedi_board(dev);
-+	const struct labpc_boardinfo *board = dev->board_ptr;
- 	struct labpc_private *devpriv = dev->private;
- 	struct comedi_subdevice *s = dev->read_subdev;
- 	struct comedi_async *async;
-@@ -923,7 +923,7 @@ static int labpc_ao_insn_write(struct comedi_device *dev,
- 			       struct comedi_insn *insn,
- 			       unsigned int *data)
- {
--	const struct labpc_boardinfo *board = comedi_board(dev);
-+	const struct labpc_boardinfo *board = dev->board_ptr;
- 	struct labpc_private *devpriv = dev->private;
- 	int channel, range;
- 	unsigned long flags;
-@@ -1248,7 +1248,7 @@ static int labpc_eeprom_insn_read(struct comedi_device *dev,
- int labpc_common_attach(struct comedi_device *dev,
- 			unsigned int irq, unsigned long isr_flags)
- {
--	const struct labpc_boardinfo *board = comedi_board(dev);
-+	const struct labpc_boardinfo *board = dev->board_ptr;
- 	struct labpc_private *devpriv = dev->private;
- 	struct comedi_subdevice *s;
- 	int ret;
+-	const struct addi_board *this_board = comedi_board(dev);
++	const struct addi_board *this_board = dev->board_ptr;
+ 
+ 	this_board->interrupt(irq, d);
+ 	return IRQ_RETVAL(1);
 -- 
 2.1.0
 
