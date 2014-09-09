@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306AbaIIPly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:41:54 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:54699 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757280AbaIIPlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:41:50 -0400
-Date: Tue, 9 Sep 2014 09:41:23 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yijing Wang <wangyijing@huawei.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI
- domain_nr
-Message-ID: <20140909154123.GA12906@obsidianresearch.com>
-References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
- <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com>
- <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com>
- <20140908145459.GO27864@e106497-lin.cambridge.arm.com>
- <CAL_JsqJdGKDVwJOpPp19OkVPGzR7Zqv3nh+ONHHaYnPLYTYoYg@mail.gmail.com>
- <20140908155931.GP27864@e106497-lin.cambridge.arm.com>
- <540E960D.7080408@huawei.com>
- <20140909084621.GS27864@e106497-lin.cambridge.arm.com>
- <540EC8CB.7010106@huawei.com>
- <CAErSpo4cAfom2=07NYDRfTCdHO22M0v+ueiaZuG6v2Xd18wEnQ@mail.gmail.com>
+	id S1757311AbaIIPml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:42:41 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42468 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145AbaIIPmj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 11:42:39 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/GfSqdX/U0LKMioj8L956j9AtMPF5h468=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D15035DC6F0
+Date: Tue, 9 Sep 2014 11:42:20 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Raphael Rigo <ml-arm@syscall.eu>, Arnaud Ebalard <arno@natisbad.org>,
+        Simon Boulay <simon.boulay@vitec.com>,
+        Leigh Brown <leigh@solinno.co.uk>
+Subject: Re: [PATCH V2 0/4] clk: mvebu: Improve clock drift
+Message-ID: <20140909154220.GN30828@titan.lakedaemon.net>
+References: <1409645719-20003-1-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo4cAfom2=07NYDRfTCdHO22M0v+ueiaZuG6v2Xd18wEnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <1409645719-20003-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 08:26:19AM -0600, Bjorn Helgaas wrote:
+On Tue, Sep 02, 2014 at 10:15:15AM +0200, Gregory CLEMENT wrote:
+> Hi Mike, Jason, Andrew and Sebastian,
+> 
+> Few users reported a timer drift on the Armada 370 based board such as
+> the mirabox or the Netgear ReadyNAS 102. This is the second series
+> with few improvements after the review of the 1st version.
+> 
+> The reason is that when the SSCG (Spread Spectrum Clock Generator) is
+> enabled, it shifts the frequency of the clock. The percentage is no
+> more than 1% but when the clock is used for a timer it leads to a
+> clock drift.
+> 
+> This series allows to correct the affected clock when the SSCG is
+> enabled. This drift can happen on all the mvebu SoC on the cpu clock
+> block (ie cpu, ddr and l2 cache). Currently the only notable effect is
+> for the Armada 370 because this SoC use the l2cache clock as source
+> for the timer. That's why even if the series allow any of the mvebu
+> SoC to benefit to this correction, Armada 370 is the only user of it.
+> 
+> The first 2 patches should go through the clk subsystem, whereas the
+> third one should go to the arm-soc through the mvebu tree.
+> 
+> The last one is just to fix a typo I found while I was reading the clk
+> code.
+> 
+> Thanks,
+> 
+> Gregory
+> 
+> Changelog:
+> 
+> v1 -> v2:
+> - made the function a370_is_sscg_enabled() a static one
+> - reword the comment to make clear that the formula in datasheet is
+>   erroneous
+> - added a fix_sscg_deviation() callback in order to be able to deal
+>   with the Dove case which is different from the other mvebu SoCs
+> 
+> 
+> Gregory CLEMENT (4):
+>   clk: mvebu: Fix clk frequency value if SSCG is enabled
+>   clk: mvebu: armada-370: Fix timer drift caused by the SSCG deviation
+>   ARM: mvebu: add SSCG to Armada 370 Device Tree
+>   clk: mvebu: armada-375: Fix the description of the SAR in the comment
+> 
+>  arch/arm/boot/dts/armada-370.dtsi |  4 ++
+>  drivers/clk/mvebu/armada-370.c    |  8 ++++
+>  drivers/clk/mvebu/armada-375.c    |  4 +-
+>  drivers/clk/mvebu/common.c        | 82 +++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/mvebu/common.h        |  7 ++++
+>  5 files changed, 103 insertions(+), 2 deletions(-)
 
-> So as long as the DT tells you the ECAM information for each host
-> bridge, that should be sufficient.  The domain number is then just a
-> Linux convenience and is not tied to the platform as it is on ia64.
+Patches 1, 2, and 4 applied to mvebu/drivers-clk with Leigh's Tested-by.
+#3 applied to mvebu/dt with same Tested-by.
 
-I think this is right for DT systems - the domain is purely internal
-to the kernel and userspace, it is used to locate the proper host
-bridge driver instance, which contains the proper config accessor (and
-register bases, etc).
+thx,
 
-AFAIK the main reason to have a DT alias to learn the domain number is
-to make it stable so things like udev/etc can reliably match on the
-PCI location.
-
-This is similar to i2c, etc that use the alias scheme, so IMHO
-whatever they do to assign ID's to drivers should be copied for domain
-numbers.
-
-Jason
+Jason.
