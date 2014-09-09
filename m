@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbaIISNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:13:42 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:44586 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaIISMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751811AbaIISMe (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 9 Sep 2014 14:12:34 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:49739 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaIISMc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 14:12:32 -0400
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>, Alan Stern <stern@rowland.harvard.edu>,
         Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org
-Subject: [RFC 07/10] fotg210: Remove superfluous macro definitions
-Date: Tue,  9 Sep 2014 13:11:33 -0500
-Message-Id: <1410286296-5109-8-git-send-email-chris@rorvick.com>
+Subject: [RFC 05/10] fusbh200: Use ehci_dbg_port struct
+Date: Tue,  9 Sep 2014 13:11:31 -0500
+Message-Id: <1410286296-5109-6-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410286296-5109-1-git-send-email-chris@rorvick.com>
 References: <1410286296-5109-1-git-send-email-chris@rorvick.com>
@@ -22,46 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fotg210_dbg_port struct is a copy of the ehci_dbg_port definition
-in the <linux/usb/ehci_def.h> header.  Embedded in this definition are
-a number of macros which came along for the ride.  These macros are not
-used in the fotg210 driver and will conflict those in the new
-<linux/usb/ehci-dbgp.h> header.
+The FUSBH200 debug port has a EHCI-compatible register layout so there
+is no need to define a custom struct.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 ---
- drivers/usb/host/fotg210.h | 14 --------------
- 1 file changed, 14 deletions(-)
+ drivers/usb/host/fusbh200.h | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-diff --git a/drivers/usb/host/fotg210.h b/drivers/usb/host/fotg210.h
-index 98c9670..c2e5134 100644
---- a/drivers/usb/host/fotg210.h
-+++ b/drivers/usb/host/fotg210.h
-@@ -298,24 +298,10 @@ struct fotg210_regs {
-  */
- struct fotg210_dbg_port {
- 	u32	control;
--#define DBGP_OWNER	(1<<30)
--#define DBGP_ENABLED	(1<<28)
--#define DBGP_DONE	(1<<16)
--#define DBGP_INUSE	(1<<10)
--#define DBGP_ERRCODE(x)	(((x)>>7)&0x07)
--#	define DBGP_ERR_BAD	1
--#	define DBGP_ERR_SIGNAL	2
--#define DBGP_ERROR	(1<<6)
--#define DBGP_GO		(1<<5)
--#define DBGP_OUT	(1<<4)
--#define DBGP_LEN(x)	(((x)>>0)&0x0f)
- 	u32	pids;
--#define DBGP_PID_GET(x)		(((x)>>16)&0xff)
--#define DBGP_PID_SET(data, tok)	(((data)<<8)|(tok))
- 	u32	data03;
- 	u32	data47;
- 	u32	address;
--#define DBGP_EPADDR(dev, ep)	(((dev)<<8)|(ep))
+diff --git a/drivers/usb/host/fusbh200.h b/drivers/usb/host/fusbh200.h
+index 47aecfc..d6e5b3d 100644
+--- a/drivers/usb/host/fusbh200.h
++++ b/drivers/usb/host/fusbh200.h
+@@ -86,7 +86,7 @@ struct fusbh200_hcd {			/* one per controller */
+ 	/* glue to PCI and HCD framework */
+ 	struct fusbh200_caps __iomem *caps;
+ 	struct fusbh200_regs __iomem *regs;
+-	struct fusbh200_dbg_port __iomem *debug;
++	struct ehci_dbg_port __iomem *debug;
+ 
+ 	__u32			hcs_params;	/* cached register copy */
+ 	spinlock_t		lock;
+@@ -287,17 +287,6 @@ struct fusbh200_regs {
+ #define BMIER_VBUS_ERR_EN	(1<<0)
  };
  
- #ifdef CONFIG_EARLY_PRINTK_DBGP
+-/* Appendix C, Debug port ... intended for use with special "debug devices"
+- * that can help if there's no serial console.  (nonstandard enumeration.)
+- */
+-struct fusbh200_dbg_port {
+-	u32	control;
+-	u32	pids;
+-	u32	data03;
+-	u32	data47;
+-	u32	address;
+-};
+-
+ /*-------------------------------------------------------------------------*/
+ 
+ #define	QTD_NEXT(fusbh200, dma)	cpu_to_hc32(fusbh200, (u32)dma)
 -- 
 1.9.3
 
