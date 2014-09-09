@@ -1,92 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaIIE5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 00:57:33 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:60360 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaIIE5b (ORCPT
+	id S1752330AbaIIE7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 00:59:21 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:40895 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaIIE7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 00:57:31 -0400
-Message-ID: <540E88A2.1000606@linaro.org>
-Date: Tue, 09 Sep 2014 12:57:06 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 9 Sep 2014 00:59:19 -0400
+Date: Tue, 9 Sep 2014 06:59:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/13] perf/core improvements and fixes
+Message-ID: <20140909045914.GA6770@gmail.com>
+References: <1410211089-28668-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-To: Jon Masters <jcm@redhat.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>, linaro-acpi@lists.linaro.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v3 09/17] ARM64 / ACPI: Parse MADT for SMP initialization
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org> <540E80BD.20801@redhat.com>
-In-Reply-To: <540E80BD.20801@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410211089-28668-1-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
 
-On 2014年09月09日 12:23, Jon Masters wrote:
-> On 09/01/2014 10:57 AM, Hanjun Guo wrote:
->> MADT contains the information for MPIDR which is essential for
->> SMP initialization, parse the GIC cpu interface structures to
->> get the MPIDR value and map it to cpu_logical_map(), and add
->> enabled cpu with valid MPIDR into cpu_possible_map.
->>
->> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
->> Parking protocol, but the Parking protocol is only specified for
->> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
->> before some updates for the ACPI spec or the Parking protocol spec.
->> +	/* CPU 0 was already initialized */
->> +	if (cpu) {
->> +		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
->> +			return -EOPNOTSUPP;
->> +
->> +		/* map the logical cpu id to cpu MPIDR */
->> +		cpu_logical_map(cpu) = mpidr;
-> I'm not sure it's worth noting in a comment or just in the dialogue that
-> none of these MPIDR values is literally the value in the MPIDR. Linux
-> doesn't store that anyway (even in the cpu_logical_map), since it is
-> pre-filtered against MPIDR_HWID_BITMASK to remove the non-affinity level
-> bits. And since the ACPI5.1 specification requires that non-affinity
-> bits be zero everything works. But it relies upon this assumption so it
-> might be worth explicitly masking out the bits when making the call into:
->
->        acpi_map_gic_cpu_interface(processor->arm_mpidr,
->                processor->flags & ACPI_MADT_ENABLED);
->
-> During the parsing of the processor object's MPIDR value.
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-Yes, I agree with you. When I tested this patch set on our
-ARM64 platform, I found this problem too. some firmware
-will just present the real MPIDR value to OS which some reserved
-bit set to 1, and it will lead to some logic problem in this patch.
-(actually firmware didn't obey with ACPI spec)
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 39b5a56ec0be5effe9b7d0f18cb27724bf2e5d47:
+> 
+>   Merge branch 'rfc/perf' into perf/core, because it's ready for inclusion (2014-08-24 22:35:42 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to fa3480cb0a96c8af9ded1a8c836c91bd5704bda1:
+> 
+>   perf tools: Add perf_pmu__scan_file() (2014-09-08 17:16:06 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> User visible:
+> 
+> o Add +field argument support for --sort option (Jiri Olsa)
+> 
+> Infrastructure:
+> 
+> o More intel PT prep work, from Adrian Hunter, including:
+> 
+>   - Let a user specify a PMU event without any config terms
+>   - Add perf-with-kcore script
+>   - Build programs to copy 32-bit compatibility VDSOs
+>   - Add support for 32-bit compatibility VDSOs
+>   - Let default config be defined for a PMU
+>   - Add perf_pmu__scan_file()
+> 
+> o Add feature checks to .gitignore (Alexander Shishkin)
+> 
+> o "perf kvm stat report" improvements by Alexander Yarygin:
+>   o  Save pid string in opts.target.pid
+>   o  Enable the target.system_wide flag
+>   o  Unify the title bar output
+> 
+> o Fix build issue on powerpc when DWARF support is disabled (Anton Blanchard)
+> 
+> o Allow to specify lib compile variable for spec usage (Jiri Olsa)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (6):
+>       perf tools: Let a user specify a PMU event without any config terms
+>       perf tools: Add perf-with-kcore script
+>       perf tools: Build programs to copy 32-bit compatibility VDSOs
+>       perf tools: Add support for 32-bit compatibility VDSOs
+>       perf tools: Let default config be defined for a PMU
+>       perf tools: Add perf_pmu__scan_file()
+> 
+> Alexander Shishkin (1):
+>       perf tools: Add feature checks to .gitignore
+> 
+> Alexander Yarygin (3):
+>       perf kvm stat report: Save pid string in opts.target.pid
+>       perf kvm stat report: Enable the target.system_wide flag
+>       perf kvm stat report: Unify the title bar output
+> 
+> Anton Blanchard (1):
+>       perf tools powerpc: Fix build issue when DWARF support is disabled
+> 
+> Jiri Olsa (2):
+>       perf tools: Add +field argument support for --sort option
+>       perf tools: Allow to specify lib compile variable for spec usage
+> 
+>  tools/perf/.gitignore            |   2 +
+>  tools/perf/Makefile.perf         |  42 ++++++-
+>  tools/perf/arch/powerpc/Makefile |   2 +-
+>  tools/perf/builtin-kvm.c         |  23 ++--
+>  tools/perf/config/Makefile       |  33 ++++-
+>  tools/perf/config/Makefile.arch  |   8 ++
+>  tools/perf/perf-read-vdso.c      |  59 +++++++++
+>  tools/perf/perf-with-kcore.sh    | 259 +++++++++++++++++++++++++++++++++++++++
+>  tools/perf/tests/pmu.c           |   2 +-
+>  tools/perf/util/kvm-stat.h       |   1 -
+>  tools/perf/util/parse-events.c   |  13 +-
+>  tools/perf/util/parse-events.y   |  10 ++
+>  tools/perf/util/pmu.c            |  79 +++++++++---
+>  tools/perf/util/pmu.h            |  12 +-
+>  tools/perf/util/sort.c           |  37 +++++-
+>  tools/perf/util/vdso.c           | 170 ++++++++++++++++++++++++-
+>  tools/perf/util/vdso.h           |   4 +-
+>  17 files changed, 712 insertions(+), 44 deletions(-)
+>  create mode 100644 tools/perf/perf-read-vdso.c
+>  create mode 100644 tools/perf/perf-with-kcore.sh
 
-I had updated the patch with:
+Hm, so I'm getting this error, when trying to profile a 32-bit 
+ELF binary on a 64-bit kernel, on a testbox:
 
-+	acpi_map_gic_cpu_interface(processor->arm_mpidr & MPIDR_HWID_BITMASK,
-+		processor->flags & ACPI_MADT_ENABLED);
+ $ perf record ~/hackbench  10
+ Time: 0.115
+ [ perf record: Woken up 1 times to write data ]
+ [ perf record: Captured and wrote 0.373 MB perf.data (~16279 samples) ]
+ sh: perf-read-vdso32: command not found
 
-and then the problem was gone :)
+comet:~/tip> file ~/hackbench 
+/home/mingo/hackbench: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.2.5, not stripped
 
-Thanks
-Hanjun
+64-bit executables work fine:
 
+ $ perf record perf bench sched pipe
+ # Running 'sched/pipe' benchmark:
+ # Executed 1000000 pipe operations between two processes
 
+      Total time: 13.374 [sec]
+
+       13.374352 usecs/op
+           74769 ops/sec
+ [ perf record: Woken up 14 times to write data ]
+ [ perf record: Captured and wrote 3.602 MB perf.data (~157354 samples) ]
+
+The kernel is an older one:
+
+ $ uname -a
+ Linux comet 3.14.17-100.fc19.x86_64 #1 SMP Thu Aug 14 17:17:26 
+ UTC 2014 x86_64 x86_64 x86_64 GNU/Linux
+
+Thanks,
+
+	Ingo
