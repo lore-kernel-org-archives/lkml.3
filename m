@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbaIIFdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:33:18 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:53372 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaIIFdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:33:17 -0400
+	id S932122AbaIIFeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:34:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8179 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932079AbaIIFeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 01:34:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208,223";a="383347446"
+Message-ID: <540E9145.50403@linux.intel.com>
+Date: Tue, 09 Sep 2014 13:33:57 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAKohponb199_zt11M2J39yHn45MjFMSrT+hPBp7rbqiHu4vKpQ@mail.gmail.com>
-References: <1410221424-20590-1-git-send-email-anupc@chromium.org> <CAKohponb199_zt11M2J39yHn45MjFMSrT+hPBp7rbqiHu4vKpQ@mail.gmail.com>
-From: Anup Chenthamarakshan <anupc@chromium.org>
-Date: Mon, 8 Sep 2014 22:32:34 -0700
-Message-ID: <CAN1Daczk+YT3ETviCL5d7xLGKzRL+AAo1z6rLs=r+j5+r45-xw@mail.gmail.com>
-Subject: Re: [PATCH] intel_pstate: track and export frequency residency stats
- via sysfs.
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI / LPSS: complete PM entries for LPSS power domain
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 10:03 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 9 September 2014 05:40, Anup Chenthamarakshan <anupc@chromium.org> wrote:
->> Exported stats appear in
->> <sysfs>/devices/system/cpu/intel_pstate/time_in_state as follows:
->>
->> ## CPU 0
->> 400000 3647
->> 500000 24342
->> 600000 144150
->> 700000 202469
->> ## CPU 1
->> 400000 4813
->> 500000 22628
->> 600000 149564
->> 700000 211885
->> 800000 173890
->>
->> Signed-off-by: Anup Chenthamarakshan <anupc@chromium.org>
->> ---
->>  drivers/cpufreq/intel_pstate.c | 77 ++++++++++++++++++++++++++++++++++++++++--
->>  1 file changed, 74 insertions(+), 3 deletions(-)
->
-> Why don't we reuse cpufreq_stats.c for all this?
+>From de3dfa34bd7f219586057a1e0679f9e7515fa722 Mon Sep 17 00:00:00 2001
+From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+Date: Tue, 9 Sep 2014 10:54:30 +0800
+Subject: [PATCH] ACPI / LPSS: complete PM entries for LPSS power domain
 
-Thanks for taking a look into this.
+PM entries of LPSS power domain were not implemented correctly
+in the patch "ACPI / LPSS: custom power domain for LPSS"
+commit ID c78b0830667a7e7c1f0ca65b76b33166a84806b3.
+This patch fixes and completes these PM entries.
 
-I had initially tried reusing cpufreq_stats.c to export stats.
-Calling cpufreq_stats_update() via the cpufreq notifier added
-some amount of overhead while switching frequencies. Specifically,
-looking up the index of the new frequency in freq_table_get_index()
-is a linear search through all available frequencies (vs a single
-subtraction with custom stats export). Also, the notifier mechanism
-itself added a level of indirection before calling stats_update.
+Signed-off-by: Li Aubrey <aubrey.li@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+---
+ drivers/acpi/acpi_lpss.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-There is a 5X increase in time taken to complete intel_pstate_set_pstate
-while using cpufreq_stats compared to having custom stats exported.
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index 9dfec48..fddc1e8 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -610,7 +610,7 @@ static int acpi_lpss_suspend_late(struct device *dev)
+ 	return acpi_dev_suspend_late(dev);
+ }
+ 
+-static int acpi_lpss_restore_early(struct device *dev)
++static int acpi_lpss_resume_early(struct device *dev)
+ {
+ 	int ret = acpi_dev_resume_early(dev);
+ 
+@@ -650,15 +650,15 @@ static int acpi_lpss_runtime_resume(struct device *dev)
+ static struct dev_pm_domain acpi_lpss_pm_domain = {
+ 	.ops = {
+ #ifdef CONFIG_PM_SLEEP
+-		.suspend_late = acpi_lpss_suspend_late,
+-		.restore_early = acpi_lpss_restore_early,
+ 		.prepare = acpi_subsys_prepare,
+ 		.complete = acpi_subsys_complete,
+ 		.suspend = acpi_subsys_suspend,
+-		.resume_early = acpi_subsys_resume_early,
++		.suspend_late = acpi_lpss_suspend_late,
++		.resume_early = acpi_lpss_resume_early,
+ 		.freeze = acpi_subsys_freeze,
+ 		.poweroff = acpi_subsys_suspend,
+-		.poweroff_late = acpi_subsys_suspend_late,
++		.poweroff_late = acpi_lpss_suspend_late,
++		.restore_early = acpi_lpss_resume_early,
+ #endif
+ #ifdef CONFIG_PM_RUNTIME
+ 		.runtime_suspend = acpi_lpss_runtime_suspend,
+-- 1.7.1
+
