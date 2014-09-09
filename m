@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968AbaIICCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:02:47 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:48358 "EHLO smtp.mei.co.jp"
+	id S1755940AbaIICCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:02:45 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:33476 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755655AbaIICCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:02:41 -0400
+	id S1755543AbaIICCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:02:39 -0400
 From: Masahiro Yamada <yamada.m@jp.panasonic.com>
 To: linux-mtd@lists.infradead.org
 Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
@@ -16,9 +16,9 @@ Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
         "grmoore@altera.com" <grmoore@altera.com>,
         Rashika Kheria <rashika.kheria@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/7] mtd: denali: remove unnecessary parentheses
-Date: Tue,  9 Sep 2014 11:01:56 +0900
-Message-Id: <1410228117-14820-7-git-send-email-yamada.m@jp.panasonic.com>
+Subject: [PATCH v2 5/7] mtd: denali: remove a set-but-unused variable
+Date: Tue,  9 Sep 2014 11:01:55 +0900
+Message-Id: <1410228117-14820-6-git-send-email-yamada.m@jp.panasonic.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410228117-14820-1-git-send-email-yamada.m@jp.panasonic.com>
 References: <1410228117-14820-1-git-send-email-yamada.m@jp.panasonic.com>
@@ -26,8 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should use parentheses only when they are necessary
-or they really improve the readability.
+The variable "retry" in wait_for_irq() is set, but not used.
 
 Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
@@ -35,73 +34,29 @@ Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
 Changes in v2: None
 
- drivers/mtd/nand/denali.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/mtd/nand/denali.c | 2 --
+ 1 file changed, 2 deletions(-)
 
 diff --git a/drivers/mtd/nand/denali.c b/drivers/mtd/nand/denali.c
-index d37c2e1..ed37b76 100644
+index 259ca0ba..d37c2e1 100644
 --- a/drivers/mtd/nand/denali.c
 +++ b/drivers/mtd/nand/denali.c
-@@ -267,10 +267,10 @@ static void nand_onfi_timing_set(struct denali_nand_info *denali,
- 
- 	acc_clks = CEIL_DIV(Trea[mode], CLK_X);
- 
--	while (((acc_clks * CLK_X) - Trea[mode]) < 3)
-+	while (acc_clks * CLK_X - Trea[mode] < 3)
- 		acc_clks++;
- 
--	if ((data_invalid - acc_clks * CLK_X) < 2)
-+	if (data_invalid - acc_clks * CLK_X < 2)
- 		dev_warn(denali->dev, "%s, Line %d: Warning!\n",
- 			__FILE__, __LINE__);
- 
-@@ -285,7 +285,7 @@ static void nand_onfi_timing_set(struct denali_nand_info *denali,
- 		cs_cnt = 1;
- 
- 	if (Tcea[mode]) {
--		while (((cs_cnt * CLK_X) + Trea[mode]) < Tcea[mode])
-+		while (cs_cnt * CLK_X + Trea[mode] < Tcea[mode])
- 			cs_cnt++;
- 	}
- 
-@@ -295,8 +295,8 @@ static void nand_onfi_timing_set(struct denali_nand_info *denali,
- #endif
- 
- 	/* Sighting 3462430: Temporary hack for MT29F128G08CJABAWP:B */
--	if ((ioread32(denali->flash_reg + MANUFACTURER_ID) == 0) &&
--		(ioread32(denali->flash_reg + DEVICE_ID) == 0x88))
-+	if (ioread32(denali->flash_reg + MANUFACTURER_ID) == 0 &&
-+		ioread32(denali->flash_reg + DEVICE_ID) == 0x88)
- 		acc_clks = 6;
- 
- 	iowrite32(acc_clks, denali->flash_reg + ACC_CLKS);
-@@ -577,7 +577,7 @@ static void denali_set_intr_modes(struct denali_nand_info *denali,
-  */
- static inline bool is_flash_bank_valid(int flash_bank)
+@@ -697,7 +697,6 @@ static uint32_t wait_for_irq(struct denali_nand_info *denali, uint32_t irq_mask)
  {
--	return (flash_bank >= 0 && flash_bank < 4);
-+	return flash_bank >= 0 && flash_bank < 4;
- }
+ 	unsigned long comp_res;
+ 	uint32_t intr_status;
+-	bool retry = false;
+ 	unsigned long timeout = msecs_to_jiffies(1000);
  
- static void denali_irq_init(struct denali_nand_info *denali)
-@@ -1103,7 +1103,7 @@ static int write_page(struct mtd_info *mtd, struct nand_chip *chip,
- 				"timeout on write_page (type = %d)\n",
- 				raw_xfer);
- 		denali->status =
--			(irq_status & INTR_STATUS__PROGRAM_FAIL) ?
-+			irq_status & INTR_STATUS__PROGRAM_FAIL ?
- 			NAND_STATUS_FAIL : PASS;
- 	}
+ 	do {
+@@ -717,7 +716,6 @@ static uint32_t wait_for_irq(struct denali_nand_info *denali, uint32_t irq_mask)
+ 			 * need to wait again
+ 			 */
+ 			spin_unlock_irq(&denali->irq_lock);
+-			retry = true;
+ 		}
+ 	} while (comp_res != 0);
  
-@@ -1296,7 +1296,7 @@ static int denali_erase(struct mtd_info *mtd, int page)
- 	irq_status = wait_for_irq(denali, INTR_STATUS__ERASE_COMP |
- 					INTR_STATUS__ERASE_FAIL);
- 
--	return (irq_status & INTR_STATUS__ERASE_FAIL) ? NAND_STATUS_FAIL : PASS;
-+	return irq_status & INTR_STATUS__ERASE_FAIL ? NAND_STATUS_FAIL : PASS;
- }
- 
- static void denali_cmdfunc(struct mtd_info *mtd, unsigned int cmd, int col,
 -- 
 1.9.1
 
