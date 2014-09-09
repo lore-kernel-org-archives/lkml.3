@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190AbaIIHsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:48:13 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:47329 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932099AbaIIHsM (ORCPT
+	id S1755915AbaIIHxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:53:00 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:34483 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315AbaIIHw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:48:12 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com
-Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: [PATCH v2] pinctrl: st: remove gpiochip in failure cases
-Date: Tue,  9 Sep 2014 13:21:40 +0530
-Message-Id: <1410249101-12234-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 9 Sep 2014 03:52:59 -0400
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Subject: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
+Date: Tue,  9 Sep 2014 09:52:38 +0200
+Message-Id: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch releases gpiochip related resources by calling
-gpiochip_remove when gpiochip_irqchip_add fails.
+For i2c devices in OF the modalias exposed to userspace is i2c:<node
+type>, for the Maxtouch driver this is i2c:maxtouch.
 
-CC: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.com>
-CC: Maxime Coquelin <maxime.coquelin@st.com>
-CC: Patrice Chotard <patrice.chotard@st.com>
-CC: Linus Walleij <linus.walleij@linaro.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Add maxtouch to the i2c id table such that userspace can correctly
+load the module for the device and drop the OF table as it's not
+needed for i2c devices.
 
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 ---
-Changes since v1:
-Dropped adding remove function as it will never be tested as 
-the driver is bool.
+ drivers/input/touchscreen/atmel_mxt_ts.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
- drivers/pinctrl/pinctrl-st.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-index 5475374..af2f589 100644
---- a/drivers/pinctrl/pinctrl-st.c
-+++ b/drivers/pinctrl/pinctrl-st.c
-@@ -1517,6 +1517,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
- 					   0, handle_simple_irq,
- 					   IRQ_TYPE_LEVEL_LOW);
- 		if (err) {
-+			gpiochip_remove(&bank->gpio_chip);
- 			dev_info(dev, "could not add irqchip\n");
- 			return err;
- 		}
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index db178ed..57ff26d 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -2267,16 +2267,11 @@ static int mxt_resume(struct device *dev)
+ 
+ static SIMPLE_DEV_PM_OPS(mxt_pm_ops, mxt_suspend, mxt_resume);
+ 
+-static const struct of_device_id mxt_of_match[] = {
+-	{ .compatible = "atmel,maxtouch", },
+-	{},
+-};
+-MODULE_DEVICE_TABLE(of, mxt_of_match);
+-
+ static const struct i2c_device_id mxt_id[] = {
+ 	{ "qt602240_ts", 0 },
+ 	{ "atmel_mxt_ts", 0 },
+ 	{ "atmel_mxt_tp", 0 },
++	{ "maxtouch", 0 },
+ 	{ "mXT224", 0 },
+ 	{ }
+ };
+@@ -2286,7 +2281,6 @@ static struct i2c_driver mxt_driver = {
+ 	.driver = {
+ 		.name	= "atmel_mxt_ts",
+ 		.owner	= THIS_MODULE,
+-		.of_match_table = of_match_ptr(mxt_of_match),
+ 		.pm	= &mxt_pm_ops,
+ 	},
+ 	.probe		= mxt_probe,
 -- 
-1.7.9.5
+2.1.0
 
