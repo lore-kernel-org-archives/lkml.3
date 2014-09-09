@@ -1,88 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaIITL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:11:57 -0400
-Received: from mail-by2on0109.outbound.protection.outlook.com ([207.46.100.109]:38816
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751285AbaIITLz convert rfc822-to-8bit (ORCPT
+	id S1752350AbaIITMZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:12:25 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:33165 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaIITMV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:11:55 -0400
-X-Greylist: delayed 1102 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 15:11:55 EDT
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Joerg Roedel" <jroedel@suse.de>
-Subject: RE: [PATCH 05/12] iommu/fsl: Convert to iommu_capable() API function
-Thread-Topic: [PATCH 05/12] iommu/fsl: Convert to iommu_capable() API function
-Thread-Index: AQHPyPeXadFLQZWCz0qs3N5S2212M5v5KEaw
-Date: Tue, 9 Sep 2014 18:38:37 +0000
-Message-ID: <d7e88d93cf5546a18b0f6c8ef199c577@BL2PR03MB468.namprd03.prod.outlook.com>
-References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
- <1409914384-21191-6-git-send-email-joro@8bytes.org>
-In-Reply-To: <1409914384-21191-6-git-send-email-joro@8bytes.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [182.69.93.41]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0329B15C8A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019018)(6009001)(377454003)(189002)(51704005)(199003)(13464003)(54356999)(81542001)(20776003)(85306004)(90102001)(105586002)(76576001)(77982001)(108616004)(19580395003)(106116001)(21056001)(66066001)(64706001)(80022001)(107046002)(79102001)(19580405001)(106356001)(74502001)(92566001)(83072002)(33646002)(99396002)(86362001)(101416001)(74662001)(99286002)(2656002)(85852003)(46102001)(4396001)(83322001)(31966008)(87936001)(95666004)(81342001)(50986999)(76482001)(74316001)(76176999)(97736003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB466;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Sep 2014 15:12:21 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8BIT
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1410271497-27148-1-git-send-email-tomeu.vizoso@collabora.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        shawn.guo@freescale.com
+References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1410271497-27148-1-git-send-email-tomeu.vizoso@collabora.com>
+Message-ID: <20140909191205.19023.61366@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v10 2/9] clk: Move all drivers to use internal API
+Date: Tue, 09 Sep 2014 12:12:05 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Friday, September 05, 2014 4:23 PM
-> To: iommu@lists.linux-foundation.org
-> Cc: linux-kernel@vger.kernel.org; Joerg Roedel; Sethi Varun-B16395
-> Subject: [PATCH 05/12] iommu/fsl: Convert to iommu_capable() API function
+Quoting Tomeu Vizoso (2014-09-09 07:04:57)
+> In preparation to change the public API to return a per-user clk structure,
+> remove any usage of this public API from the clock implementations.
 > 
-> From: Joerg Roedel <jroedel@suse.de>
+> The reason for having this in a separate commit from the one that introduces
+> the implementation of the new functions is to separate the changes generated
+> with Coccinelle from the rest, and keep the patches' size reasonable.
 > 
-> Cc: Varun Sethi <Varun.Sethi@freescale.com>
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> Tested-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> Tested-by: Heiko Stuebner <heiko@sntech.de>
+> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> 
 > ---
->  drivers/iommu/fsl_pamu_domain.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/iommu/fsl_pamu_domain.c
-> b/drivers/iommu/fsl_pamu_domain.c index 61d1daf..f43a80d 100644
-> --- a/drivers/iommu/fsl_pamu_domain.c
-> +++ b/drivers/iommu/fsl_pamu_domain.c
-> @@ -411,8 +411,7 @@ static phys_addr_t fsl_pamu_iova_to_phys(struct
-> iommu_domain *domain,
->  	return get_phys_addr(dma_domain, iova);  }
-> 
-> -static int fsl_pamu_domain_has_cap(struct iommu_domain *domain,
-> -				      unsigned long cap)
-> +static bool fsl_pamu_capable(enum iommu_cap cap)
+> v10: * Add a few more files to be converted
+>      * Re-generate the patch on top of the latest changes
+
+Hi Tomeu,
+
+Generating this on top of linux-next is a no-go. I can't apply it to my
+tree. The best thing is to generate it on top of -rc4, and that is what
+I will merge.
+
+Running the script against linux-next is still very useful and lets us
+patch up the stuff that is not going through the clk tree. E.g. the LPSS
+driver is already in mainline, so just running the semantic patch
+against -rc4 is sufficient for it. However a patch like Shawn's "ARM:
+imx: add an exclusive gate clock type" came in through the i.MX tree and
+we'll need to patch it after the fact.
+
+The best way to do that is for me to host a branch with just your
+changes in it that everyone can pull in as a dependency with the same
+commit ids.
+
+<snip>
+
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index bcbdbd2..f4c6ccf 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -11,7 +11,6 @@
+>   */
+>  
+>  #include <linux/acpi.h>
+> -#include <linux/clk.h>
+>  #include <linux/clkdev.h>
+>  #include <linux/clk-provider.h>
+>  #include <linux/err.h>
+> @@ -78,7 +77,7 @@ struct lpss_private_data {
+>         void __iomem *mmio_base;
+>         resource_size_t mmio_size;
+>         unsigned int fixed_clk_rate;
+> -       struct clk *clk;
+> +       struct clk_core *clk;
+>         const struct lpss_device_desc *dev_desc;
+>         u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
+>  };
+> @@ -229,7 +228,7 @@ static int register_device_clock(struct acpi_device *adev,
 >  {
->  	return cap == IOMMU_CAP_CACHE_COHERENCY;  } @@ -1074,6
-> +1073,7 @@ static u32 fsl_pamu_get_windows(struct iommu_domain
-> *domain)  }
-> 
->  static const struct iommu_ops fsl_pamu_ops = {
-> +	.capable	= fsl_pamu_capable,
->  	.domain_init	= fsl_pamu_domain_init,
->  	.domain_destroy = fsl_pamu_domain_destroy,
->  	.attach_dev	= fsl_pamu_attach_device,
-> @@ -1083,7 +1083,6 @@ static const struct iommu_ops fsl_pamu_ops = {
->  	.domain_get_windows = fsl_pamu_get_windows,
->  	.domain_set_windows = fsl_pamu_set_windows,
->  	.iova_to_phys	= fsl_pamu_iova_to_phys,
-> -	.domain_has_cap = fsl_pamu_domain_has_cap,
->  	.domain_set_attr = fsl_pamu_set_domain_attr,
->  	.domain_get_attr = fsl_pamu_get_domain_attr,
->  	.add_device	= fsl_pamu_add_device,
-Acked-by: Varun Sethi <varun.sethi@freescale.com>
+>         const struct lpss_device_desc *dev_desc = pdata->dev_desc;
+>         const char *devname = dev_name(&adev->dev);
+> -       struct clk *clk = ERR_PTR(-ENODEV);
+> +       struct clk_core *clk = ERR_PTR(-ENODEV);
+>         struct lpss_clk_data *clk_data;
+>         const char *parent, *clk_name;
+>         void __iomem *prv_base;
+
+I think the following hunk is missing from your change:
+
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -57,7 +57,7 @@ ACPI_MODULE_NAME("acpi_lpss");
+ struct lpss_shared_clock {
+        const char *name;
+        unsigned long rate;
+-       struct clk *clk;
++       struct clk_core *clk;
+ };
+
+
+Otherwise register_device_clock will blow up because we are assigning a
+struct clk * to a struct clk_core *.
+
+Do you mind testing with ARCH=x86_64 and allmodconfig? That will help
+catch issues like this.
+
+Regards,
+Mike
