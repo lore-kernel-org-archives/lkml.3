@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297AbaIIJb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:31:27 -0400
+	id S932403AbaIIJbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:31:43 -0400
 Received: from top.free-electrons.com ([176.31.233.9]:55355 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753366AbaIIJat (ORCPT
+	with ESMTP id S1756099AbaIIJar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:30:49 -0400
+	Tue, 9 Sep 2014 05:30:47 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -19,9 +19,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 5/6] rtc: at91sam9: use clk API instead of relying on AT91_SLOW_CLOCK
-Date: Tue,  9 Sep 2014 11:30:34 +0200
-Message-Id: <1410255035-26775-6-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 3/6] rtc: at91sam9: add DT support
+Date: Tue,  9 Sep 2014 11:30:32 +0200
+Message-Id: <1410255035-26775-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410255035-26775-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1410255035-26775-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -29,94 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RTT block is using the slow clock which is accessible through the clk
-API.
-Use the clk API to retrieve, enable and get the slow clk rate instead of
-the AT91_SLOW_CLOCK macro (which hardcodes the slow clk rate).
-Doing this allows us to reference the clk thus preventing the CCF from
-disabling it during the "disable unused" phase.
+Add of_match_table to the existing driver so that rtc nodes defined in at91
+DTs can be attached to this driver.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- drivers/rtc/rtc-at91sam9.c | 28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-at91sam9.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 57014b7..a6c498e 100644
+index 74a9ca0..57014b7 100644
 --- a/drivers/rtc/rtc-at91sam9.c
 +++ b/drivers/rtc/rtc-at91sam9.c
-@@ -21,6 +21,7 @@
- #include <linux/slab.h>
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
-+#include <linux/clk.h>
+@@ -454,6 +454,14 @@ static int at91_rtc_resume(struct device *dev)
  
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -59,8 +60,6 @@
- #define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
- #define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
+ static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
  
--#define AT91_SLOW_CLOCK		32768
--
- /*
-  * We store ALARM_DISABLED in ALMV to record that no alarm is set.
-  * It's also the reset value for that field.
-@@ -74,6 +73,7 @@ struct sam9_rtc {
- 	u32			imr;
- 	void __iomem		*gpbr;
- 	int 			irq;
-+	struct clk		*sclk;
++#ifdef CONFIG_OF
++static const struct of_device_id at91_rtc_dt_ids[] = {
++	{ .compatible = "atmel,at91sam9260-rtt" },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, at91_rtc_dt_ids);
++#endif
++
+ static struct platform_driver at91_rtc_driver = {
+ 	.probe		= at91_rtc_probe,
+ 	.remove		= at91_rtc_remove,
+@@ -462,6 +470,7 @@ static struct platform_driver at91_rtc_driver = {
+ 		.name	= "rtc-at91sam9",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &at91_rtc_pm_ops,
++		.of_match_table = of_match_ptr(at91_rtc_dt_ids),
+ 	},
  };
- 
- #define rtt_readl(rtc, field) \
-@@ -310,6 +310,7 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	struct sam9_rtc	*rtc;
- 	int		ret, irq;
- 	u32		mr;
-+	unsigned int	sclk_rate;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	r_gpbr = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-@@ -348,11 +349,27 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(rtc->sclk))
-+		return PTR_ERR(rtc->sclk);
-+
-+	sclk_rate = clk_get_rate(rtc->sclk);
-+	if (!sclk_rate || sclk_rate > AT91_RTT_RTTRST) {
-+		dev_err(&pdev->dev, "Invalid slow clock rate");
-+		return -EINVAL;
-+	}
-+
-+	ret = clk_prepare_enable(rtc->sclk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Could not enable slow clock");
-+		return ret;
-+	}
-+
- 	mr = rtt_readl(rtc, MR);
- 
- 	/* unless RTT is counting at 1 Hz, re-initialize it */
--	if ((mr & AT91_RTT_RTPRES) != AT91_SLOW_CLOCK) {
--		mr = AT91_RTT_RTTRST | (AT91_SLOW_CLOCK & AT91_RTT_RTPRES);
-+	if ((mr & AT91_RTT_RTPRES) != sclk_rate) {
-+		mr = AT91_RTT_RTTRST | (sclk_rate & AT91_RTT_RTPRES);
- 		gpbr_writel(rtc, 0);
- 	}
- 
-@@ -397,6 +414,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
- 	/* disable all interrupts */
- 	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
- 
-+	if (!IS_ERR(rtc->sclk))
-+		clk_disable_unprepare(rtc->sclk);
-+
- 	return 0;
- }
  
 -- 
 1.9.1
