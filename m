@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415AbaIIIuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:50:16 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:49304 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932394AbaIIIuL (ORCPT
+	id S1756112AbaIIIvC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:51:02 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:65021 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932230AbaIIIon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:50:11 -0400
-Message-ID: <1410252608.22255.5.camel@x220>
-Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Darren Hart <dvhart@infradead.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Frans Klaver <fransklaver@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Date: Tue, 09 Sep 2014 10:50:08 +0200
-In-Reply-To: <7288841.ayNsq2yeGO@vostro.rjw.lan>
-References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
-	 <1409814488.5546.63.camel@x220> <20140906021757.GA9197@vmdeb7>
-	 <7288841.ayNsq2yeGO@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Sep 2014 08:50:08.0531 (UTC) FILETIME=[0EFEA630:01CFCC0B]
-X-RcptDomain: vger.kernel.org
+	Tue, 9 Sep 2014 04:44:43 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-cd-540ebdf91012
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: Paul.Zimmerman@synopsys.com
+Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 5/6] usb: dwc2/gadget: delay enabling irq once hardware is
+ configured properly
+Date: Tue, 09 Sep 2014 10:44:12 +0200
+Message-id: <1410252253-13687-6-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1410252253-13687-1-git-send-email-r.baldyga@samsung.com>
+References: <1410252253-13687-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jQd2fe/lCDJZ0yFscvF9v0bx4PZvF
+	5V1z2CwWLWtltlh75C67xaOHW1ktHhzeye7A7rF/7hp2j74tqxg9tuz/zOhx/MZ2Jo/Pm+QC
+	WKO4bFJSczLLUov07RK4Mnr2rmYseM5T8bx/LXsD4wWuLkZODgkBE4mdvXOZIWwxiQv31rOB
+	2EIC0xklFr9P6mLkArLbmSRudPxlBEmwCehIbPk+AcwWEZCXuL7xJgtIEbPAPkaJ6Z+2sYMk
+	hAUSJK6e/AQ0iYODRUBV4ueVapAwr4CrxL6zK1kglslJnDw2mRXE5hRwk5jf2w+12FWi88la
+	xgmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBIfUM6kdjCsbLA4xCnAwKvHwZgTz
+	hQixJpYVV+YeYpTgYFYS4b2yGyjEm5JYWZValB9fVJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2
+	ampBahFMlomDU6qBsZ5pyiKhjkL2u5N4eA60HNDnP/vDlvf8SZbM/VfVCiflPlYJNeTTVHhQ
+	ELZ0onbHTWlGy1uB29J6vn2T3FvQoeD+fO7GT98W3nrqsjXn2o+3njqbl70tYubjqfBsX3W+
+	ZmNErb69TlUNz8azSfFap04tYNQSdHmjX3Oi+FCM+LbrjpvlPu+8qsRSnJFoqMVcVJwIALPE
+	kwglAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Darren,
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-On Sat, 2014-09-06 at 23:17 +0200, Rafael J. Wysocki wrote:
-> On Friday, September 05, 2014 07:17:57 PM Darren Hart wrote:
-> > On Thu, Sep 04, 2014 at 09:08:08AM +0200, Paul Bolle wrote:
-> > [...]
-> > >  static ssize_t store_sys_acpi(struct device *dev, int cm,
-> > > @@ -278,12 +276,13 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
-> > >  	struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
-> > >  	int rv, value;
-> > >  
-> > > -	rv = parse_arg(buf, count, &value);
-> > > -	if (rv > 0)
-> > > -		value = set_acpi(eeepc, cm, value);
-> > > +	rv = parse_arg(buf, &value);
-> > > +	if (rv < 0)
-> > > +		return rv;
-> > > +	value = set_acpi(eeepc, cm, value);
-> > >  	if (value < 0)
-> > 
-> > I suppose it's harmless, but it would be more explicit to reuse rv here instead
-> > of value.
+This patch fixes kernel panic/interrupt storm/etc issues if bootloader
+left s3c-hsotg module in enabled state. Now interrupt handler is enabled
+only after proper configuration of hardware registers.
 
-Fine with me.
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/usb/dwc2/gadget.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 474eae2..43fd3d5 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -3441,13 +3441,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
  
-> > >  		return -EIO;
-> > 
-> > And as with Frans' version, I suggest propogating the error. We're talking about
-> > a missing/invalid ACPI control method name here, ENODEV seems approprirate.
-> > 
-> > Rafael, do you have a strong preference about what to return in such an event?
-> 
-> No, I don't, although -ENXIO could be used here too.
-
-If you could say what value you'd like best I'll resend using that
-value. (I don't know what the effect is of using a specific error here,
-so I guess I'll have to bluff about it in the commit explanation.)
-
-Thanks,
-
-
-Paul Bolle
+ 	hsotg->irq = ret;
+ 
+-	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
+-				dev_name(dev), hsotg);
+-	if (ret < 0) {
+-		dev_err(dev, "cannot claim IRQ\n");
+-		goto err_clk;
+-	}
+-
+ 	dev_info(dev, "regs %p, irq %d\n", hsotg->regs, hsotg->irq);
+ 
+ 	hsotg->gadget.max_speed = USB_SPEED_HIGH;
+@@ -3495,6 +3488,17 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 	s3c_hsotg_init(hsotg);
+ 	s3c_hsotg_hw_cfg(hsotg);
+ 
++	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
++				dev_name(dev), hsotg);
++	if (ret < 0) {
++		s3c_hsotg_phy_disable(hsotg);
++		clk_disable_unprepare(hsotg->clk);
++		regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
++				       hsotg->supplies);
++		dev_err(dev, "cannot claim IRQ\n");
++		goto err_clk;
++	}
++
+ 	/* hsotg->num_of_eps holds number of EPs other than ep0 */
+ 
+ 	if (hsotg->num_of_eps == 0) {
+-- 
+1.9.1
 
