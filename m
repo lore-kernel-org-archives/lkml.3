@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899AbaIIPQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:16:57 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:23596 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaIIPQz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:16:55 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-05-540f19e4207d
-From: Maciej Matraszek <m.matraszek@samsung.com>
-To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: stable@vger.kernel.org, Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Maciej Matraszek <m.matraszek@samsung.com>
-Subject: [PATCH] [media] v4l2-common: fix overflow in v4l_bound_align_image()
-Date: Tue, 09 Sep 2014 17:16:41 +0200
-Message-id: <1410275801-17627-1-git-send-email-m.matraszek@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsVy+t/xq7pPJPlDDKbf4LfYOGM9q8WSn7uY
-	LF6/MLRYMnk+q8XlXXPYLHo2bGW1uLhO3uLki8uMFofftLNaLNj4iNGBy2PK742sHkveHGL1
-	6NuyitHj8ya5AJYoLpuU1JzMstQifbsEroyNv+awF8zhr9i7fD9jA+Nyni5GTg4JAROJBctP
-	skHYYhIX7q0Hsrk4hASWMkp0r7gK5fQySVy/spEZpIpNwEBi879+FpCEiMBrRomJHbcZQRxm
-	gfWMEtu7W9lBqoQFfCU+LL4JZrMIqEqsafsMtoNXwF1i7u3nUPvkJE4em8w6gZF7ASPDKkbR
-	1NLkguKk9FwjveLE3OLSvHS95PzcTYyQ0Pm6g3HpMatDjAIcjEo8vBPL+EKEWBPLiitzDzFK
-	cDArifBavwAK8aYkVlalFuXHF5XmpBYfYmTi4JRqYGzKSO1f6H6lQa0t3i6w63DyXcuEN4tK
-	Vrb1H42xkz3vdfbB9zWC5fuyHls8y3Lwfj7zqvbdqmVLu/eGTp9w+LhF45rdj+oav0qHs2yY
-	qeKSEhZYumXut6UeXS9lH36OEZWMO6SzJ2lF+POiXAapxk1HYmfZHIk9kh+5+5pR1jEGvpfL
-	Xde9E1BiKc5INNRiLipOBAAioTfL+wEAAA==
+	id S1756954AbaIIPRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:17:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48745 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756905AbaIIPRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 11:17:01 -0400
+Date: Tue, 9 Sep 2014 17:16:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140909151655.GB4851@dhcp22.suse.cz>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <3827451.ToKxd7Xb2J@vostro.rjw.lan>
+ <20140908222253.GB3806@mtj.dyndns.org>
+ <2588099.AI1YmNFQ25@vostro.rjw.lan>
+ <20140908225012.GE3806@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908225012.GE3806@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix clamp_align() used in v4l_bound_align_image() to prevent overflow when
-passed large value like UINT32_MAX. In the current implementation:
-    clamp_align(UINT32_MAX, 8, 8192, 3)
-returns 8, because in line:
-    x = (x + (1 << (align - 1))) & mask;
-x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
+On Tue 09-09-14 07:50:12, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Sep 09, 2014 at 12:48:28AM +0200, Rafael J. Wysocki wrote:
+> > Well, not exactly from anywhere.  Just from where try_to_freeze() is called
+> > I suppose?
+> 
+> Yeap, anywhere try_to_freeze() may be called.
+> 
+> > Which means that if this is a user space task, it won't to a lot before dying,
+> > will it?
+> 
+> Userland tasks aren't likely to a lot of damages before dying but then
+> again there's no guarantee.  As it currently stands, try_to_freeze()
+> can be anywhere.
 
-v4l_bound_align_image() is heavily used in VIDIOC_S_FMT
-and VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
-explicitly states that:
-
-"The modified format should be as close as possible to the original request."
-  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
-
-Thus one would expect, that passing UINT32_MAX as format width and height
-will result in setting maximum possible resolution for the device.
-Particularly, when the driver doesn't support VIDIOC_ENUM_FRAMESIZES ioctl,
-which is common in the codebase.
-
-Fixes: b0d3159be9a3 ("V4L/DVB (11901): v4l2: Create helper function for bounding and aligning images")
-Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
----
- drivers/media/v4l2-core/v4l2-common.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/media/v4l2-core/v4l2-common.c b/drivers/media/v4l2-core/v4l2-common.c
-index ccaa38f65cf1..506cf8b7763b 100644
---- a/drivers/media/v4l2-core/v4l2-common.c
-+++ b/drivers/media/v4l2-core/v4l2-common.c
-@@ -435,16 +435,13 @@ static unsigned int clamp_align(unsigned int x, unsigned int min,
- 	/* Bits that must be zero to be aligned */
- 	unsigned int mask = ~((1 << align) - 1);
- 
-+	/* Clamp to aligned min and max */
-+	x = clamp_t(unsigned int, x, (min + ~mask) & mask, max & mask);
-+
- 	/* Round to nearest aligned value */
- 	if (align)
- 		x = (x + (1 << (align - 1))) & mask;
- 
--	/* Clamp to aligned value of min and max */
--	if (x < min)
--		x = (min + ~mask) & mask;
--	else if (x > max)
--		x = max & mask;
--
- 	return x;
- }
- 
+But OOM killer doesn't kill kernel threads as they do not own any
+memory. So the check should be safe, no?
 -- 
-1.9.1
-
+Michal Hocko
+SUSE Labs
