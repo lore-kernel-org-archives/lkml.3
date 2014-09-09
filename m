@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275AbaIIK2w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:28:52 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:36304 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756613AbaIIK1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:27:35 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 44/48] staging: comedi: pcmad: replace comedi_board() calls
-Date: Tue,  9 Sep 2014 11:26:53 +0100
-Message-Id: <1410258417-28230-45-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
-References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
+	id S932343AbaIIK3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:29:13 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:46433 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932299AbaIIK3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:29:09 -0400
+Message-ID: <540ED671.5020103@itdev.co.uk>
+Date: Tue, 09 Sep 2014 11:29:05 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
+References: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk> <540ED495.20609@collabora.co.uk>
+In-Reply-To: <540ED495.20609@collabora.co.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The `comedi_board(dev)` inline function calls just return
-`dev->board_ptr`.  Expand the inline function calls.
+On 09/09/14 11:21, Javier Martinez Canillas wrote:
+> On 09/09/2014 09:52 AM, Sjoerd Simons wrote:
+>> For i2c devices in OF the modalias exposed to userspace is i2c:<node
+>> type>, for the Maxtouch driver this is i2c:maxtouch.
+>>
+>> Add maxtouch to the i2c id table such that userspace can correctly
+>> load the module for the device and drop the OF table as it's not
+>> needed for i2c devices.
+> I see that Lee is working to allow the I2C subsystem to not need an I2C ID
+> table to match [0]. I'll let Lee to comment what the future plans are and if
+> his series are going to solve your issue since I'm not that familiar with the
+> I2C core.
+> 
+> Best regards,
+> Javier
+> 
+> [0]: https://lkml.org/lkml/2014/6/20/199
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/pcmad.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/pcmad.c b/drivers/staging/comedi/drivers/pcmad.c
-index 87c61d9b..e3ac8ac 100644
---- a/drivers/staging/comedi/drivers/pcmad.c
-+++ b/drivers/staging/comedi/drivers/pcmad.c
-@@ -112,7 +112,7 @@ static int pcmad_ai_insn_read(struct comedi_device *dev,
- 
- static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
--	const struct pcmad_board_struct *board = comedi_board(dev);
-+	const struct pcmad_board_struct *board = dev->board_ptr;
- 	struct comedi_subdevice *s;
- 	int ret;
- 
--- 
-2.1.0
-
+I can see the benefit of not having the duplication. Am I correct that
+you're saying that it might make more sense to remove the i2c ids rather
+than the OF table, if Lee's changes are accepted?
