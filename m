@@ -1,119 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533AbaIIJ7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:59:53 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42967 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756088AbaIIJ5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:57:07 -0400
-From: Juri Lelli <juri.lelli@arm.com>
-To: peterz@infradead.org
-Cc: luca.abeni@unitn.it, rdunlap@infradead.org, mingo@redhat.com,
-        henrik@austad.us, raistlin@linux.it, juri.lelli@gmail.com,
-        juri.lelli@arm.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 2/5] Documentation/scheduler/sched-deadline.txt: Rewrite section 4 intro
-Date: Tue,  9 Sep 2014 10:57:13 +0100
-Message-Id: <1410256636-26171-3-git-send-email-juri.lelli@arm.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410256636-26171-1-git-send-email-juri.lelli@arm.com>
-References: <1410256636-26171-1-git-send-email-juri.lelli@arm.com>
-X-OriginalArrivalTime: 09 Sep 2014 09:57:03.0127 (UTC) FILETIME=[67E16270:01CFCC14]
-X-MC-Unique: 114090910570516601
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1756363AbaIIKAl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:00:41 -0400
+Received: from mail-bl2on0128.outbound.protection.outlook.com ([65.55.169.128]:26462
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753830AbaIIKAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:00:39 -0400
+X-Greylist: delayed 1977 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 06:00:39 EDT
+From: "qiang.zhao@freescale.com" <qiang.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: "LeoLi@freescale.com" <LeoLi@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Xiaobo Xie <X.Xie@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] QE: move qe code from arch/powerpc to drivers/soc
+Thread-Topic: [PATCH v2] QE: move qe code from arch/powerpc to drivers/soc
+Thread-Index: AQHPx/38+xbLVfMsRkK3ZAlSNrGVXZvxlD2AgAb4GQA=
+Date: Tue, 9 Sep 2014 09:27:38 +0000
+Message-ID: <88ded7369c0546aabeececed5f1a4c06@BLUPR03MB341.namprd03.prod.outlook.com>
+References: <1409807186-45816-1-git-send-email-B45475@freescale.com>
+ <1409870809.24184.163.camel@snotra.buserror.net>
+In-Reply-To: <1409870809.24184.163.camel@snotra.buserror.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+x-forefront-prvs: 0329B15C8A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019018)(6009001)(377454003)(51704005)(189002)(199003)(377424004)(24454002)(21056001)(64706001)(83322001)(92566001)(86362001)(19580395003)(87936001)(85852003)(83072002)(19580405001)(54356999)(76176999)(80022001)(81342001)(97736003)(20776003)(74316001)(108616004)(81542001)(4396001)(76576001)(66066001)(85306004)(2656002)(105586002)(106116001)(101416001)(50986999)(33646002)(90102001)(99286002)(106356001)(74662001)(95666004)(46102001)(74502001)(99396002)(76482001)(77982001)(31966008)(79102001)(110136001)(107046002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0724;H:BLUPR03MB341.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s899xuD0005230
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s89A0k4t005250
 
-Section 4 intro was still describing the old interface. Rewrite it.
-
-Signed-off-by: Juri Lelli <juri.lelli@arm.com>
-Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Henrik Austad <henrik@austad.us>
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- Documentation/scheduler/sched-deadline.txt | 51 +++++++++++++++---------------
- 1 file changed, 25 insertions(+), 26 deletions(-)
-
-diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-index a029891..f75d832 100644
---- a/Documentation/scheduler/sched-deadline.txt
-+++ b/Documentation/scheduler/sched-deadline.txt
-@@ -165,39 +165,38 @@ CONTENTS
- 
-  In order for the -deadline scheduling to be effective and useful, it is
-  important to have some method to keep the allocation of the available CPU
-- bandwidth to the tasks under control.
-- This is usually called "admission control" and if it is not performed at all,
-- no guarantee can be given on the actual scheduling of the -deadline tasks.
--
-- Since when RT-throttling has been introduced each task group has a bandwidth
-- associated, calculated as a certain amount of runtime over a period.
-- Moreover, to make it possible to manipulate such bandwidth, readable/writable
-- controls have been added to both procfs (for system wide settings) and cgroupfs
-- (for per-group settings).
-- Therefore, the same interface is being used for controlling the bandwidth
-- distrubution to -deadline tasks.
--
-- However, more discussion is needed in order to figure out how we want to manage
-- SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
-- uses (for now) a less sophisticated, but actually very sensible, mechanism to
-- ensure that a certain utilization cap is not overcome per each root_domain.
--
-- Another main difference between deadline bandwidth management and RT-throttling
-+ bandwidth to the tasks under control. This is usually called "admission
-+ control" and if it is not performed at all, no guarantee can be given on
-+ the actual scheduling of the -deadline tasks.
-+
-+ The interface used to control the fraction of CPU bandwidth that can be
-+ allocated to -deadline tasks is similar to the one already used for -rt
-+ tasks with real-time group scheduling (a.k.a. RT-throttling - see
-+ Documentation/scheduler/sched-rt-group.txt), and is based on readable/
-+ writable control files located in procfs (for system wide settings).
-+ Notice that per-group settings (controlled through cgroupfs) are still not
-+ defined for -deadline tasks, because more discussion is needed in order to
-+ figure out how we want to manage SCHED_DEADLINE bandwidth at the task group
-+ level.
-+
-+ A main difference between deadline bandwidth management and RT-throttling
-  is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
-- and thus we don't need an higher level throttling mechanism to enforce the
-- desired bandwidth.
-+ and thus we don't need a higher level throttling mechanism to enforce the
-+ desired bandwidth. Therefore, using this simple interface we can put a cap
-+ on total utilization of -deadline tasks (i.e., \Sum (runtime_i / period_i) <
-+ global_dl_utilization_cap).
- 
- 4.1 System wide settings
- ------------------------
- 
-  The system wide settings are configured under the /proc virtual file system.
- 
-- For now the -rt knobs are used for dl admission control and the -deadline
-- runtime is accounted against the -rt runtime. We realise that this isn't
-- entirely desirable; however, it is better to have a small interface for now,
-- and be able to change it easily later. The ideal situation (see 5.) is to run
-- -rt tasks from a -deadline server; in which case the -rt bandwidth is a direct
-- subset of dl_bw.
-+ For now the -rt knobs are used for -deadline admission control and the
-+ -deadline runtime is accounted against the -rt runtime. We realise that this
-+ isn't entirely desirable; however, it is better to have a small interface for
-+ now, and be able to change it easily later. The ideal situation (see 5.) is to
-+ run -rt tasks from a -deadline server; in which case the -rt bandwidth is a
-+ direct subset of dl_bw.
- 
-  This means that, for a root_domain comprising M CPUs, -deadline tasks
-  can be created while the sum of their bandwidths stays below:
--- 
-2.0.4
+On Fri, 2014-09-05 at 06:47 AM, Wood Scott wrote:
 
 
+
+> Subject: Re: [PATCH v2] QE: move qe code from arch/powerpc to drivers/soc
+> 
+> On Thu, 2014-09-04 at 13:06 +0800, Zhao Qiang wrote:
+> > LS1 is arm cpu and it has qe ip block.
+> > move qe code from platform directory to public directory.
+> >
+> > QE is an IP block integrates several comunications peripheral
+> > controllers. It can implement a variety of applications, such as uart,
+> > usb and tdm and so on.
+> >
+> > Signed-off-by: Zhao Qiang <B45475@freescale.com>
+> > ---
+> > Changes for v2:
+> > 	- mv code to drivers/soc
+> 
+> Who will be the maintainer of this code once it lives in drivers/soc,
+> especially once it is no longer used only by PPC?
+
+I have no idea about that, can you explain why you want to know who will be the maintainer.
+
+> 
+> >  44 files changed, 113 insertions(+), 113 deletions(-)  delete mode
+> > 100644 arch/powerpc/sysdev/qe_lib/Kconfig
+> >  create mode 100644 drivers/soc/qe/Kconfig  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/Makefile (100%)  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/gpio.c (99%)  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe.c (99%)  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe_ic.c (99%)  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe_ic.h (98%)  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/qe_io.c (99%)  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/ucc.c (98%)  rename
+> > {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/ucc_fast.c (98%)
+> > rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/ucc_slow.c (98%)
+> > rename {arch/powerpc/sysdev/qe_lib => drivers/soc/qe}/usb.c (96%)
+> 
+> drivers/soc/fsl-qe
+> 
+> > diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile index
+> > 0f7c447..5da1a482 100644
+> > --- a/drivers/soc/Makefile
+> > +++ b/drivers/soc/Makefile
+> > @@ -3,3 +3,5 @@
+> >  #
+> >
+> >  obj-$(CONFIG_ARCH_QCOM)		+= qcom/
+> > +
+> > +obj-$(CONFIG_QUICC_ENGINE)     += qe/
+> 
+> Please keep the file consistent regarding tabs versus spaces.
+> 
+> Plus, why do you need a newline between them?
+
+I will modify it in v3
+
+> 
+> > diff --git a/drivers/soc/qe/Kconfig b/drivers/soc/qe/Kconfig new file
+> > mode 100644 index 0000000..8b03ca2
+> > --- /dev/null
+> > +++ b/drivers/soc/qe/Kconfig
+> > @@ -0,0 +1,45 @@
+> > +#
+> > +# QE Communication options
+> > +#
+> > +config QUICC_ENGINE
+> > +	bool "Freescale QUICC Engine (QE) Support"
+> > +	depends on FSL_SOC && PPC32
+> > +	select PPC_LIB_RHEAP
+> > +	select CRC32
+> > +	help
+> > +	  The QUICC Engine (QE) is a new generation of communications
+> > +	  coprocessors on Freescale embedded CPUs (akin to CPM in older
+> chips).
+> > +	  Selecting this option means that you wish to build a kernel
+> > +	  for a machine with a QE coprocessor.
+> > +
+> > +config QE_GPIO
+> > +	bool "QE GPIO support"
+> > +	depends on QUICC_ENGINE
+> > +	select ARCH_REQUIRE_GPIOLIB
+> > +	help
+> > +	  Say Y here if you're going to use hardware that connects to the
+> > +	  QE GPIOs.
+> > +
+> > +config UCC_SLOW
+> > +	bool
+> > +	default y if SERIAL_QE
+> > +	help
+> > +	  This option provides qe_lib support to UCC slow
+> > +	  protocols: UART, BISYNC, QMC
+> > +
+> > +config UCC_FAST
+> > +	bool
+> > +	default y if UCC_GETH
+> > +	help
+> > +	  This option provides qe_lib support to UCC fast
+> > +	  protocols: HDLC, Ethernet, ATM, transparent
+> > +
+> > +config UCC
+> > +	bool
+> > +	default y if UCC_FAST || UCC_SLOW
+> > +
+> > +config QE_USB
+> > +	bool
+> > +	default y if USB_FSL_QE
+> > +	help
+> > +	  QE USB Controller support
+> 
+> First could we give these names better namespacing?
+
+Add FSL as prefix?
+
+> 
+> -Scott
+> 
+Regards,
+Zhao Qiang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
