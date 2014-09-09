@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaIIRyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:54:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37497 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaIIRyt (ORCPT
+	id S1751520AbaIIRz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:55:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:49318 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaIIRz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:54:49 -0400
-Message-ID: <540F3EE5.90500@codeaurora.org>
-Date: Tue, 09 Sep 2014 10:54:45 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 9 Sep 2014 13:55:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-next@vger.kernel.org,
+        Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 2/3] [media] s5p-jpeg: Fix compilation with COMPILE_TEST
+Date: Tue, 09 Sep 2014 19:54:19 +0200
+Message-ID: <60097822.tu6OncvLxQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140909120936.527bd852.m.chehab@samsung.com>
+References: <20140909124306.2d5a0d76@canb.auug.org.au> <540F15B2.3000902@samsung.com> <20140909120936.527bd852.m.chehab@samsung.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH] ARM: perf: Don't sleep while atomic when enabling per-cpu
- interrupts
-References: <1410200814-25878-1-git-send-email-sboyd@codeaurora.org> <20140909113943.GG1754@arm.com>
-In-Reply-To: <20140909113943.GG1754@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:IzrfR3kOd0SN8upvzrMnKIu4G2p9IPxZuTRNsl4eN/n
+ kHbtk8+idMGw99Lnk9ftbr6Z8CPy4pgs2D/zQ1+QPOdvH/u3Kj
+ Nr+kzKI5ZQ9nDdUCYRRBzsOX1n7BGY8PcHrOEvQt4SiUqEx1yB
+ KiHuDuwgZVTc4x8lawpZC5cRsEJdbo2JLKSLz2L3pWZy0CzBTO
+ Mag3050D1UvotGx/xxQ6DMFc60tJMZzOlM4wxDZfnW4JPnIpjA
+ RFBNFE6P8YdUy8LeLKCGljS/BjmPQYbbXsGLAiLq794neUrjDi
+ Gz5x3+eZnil7Zi6ia6lX16/KdZ47wTSff5FEpWmYCTM0kSlIOZ
+ O4hjX94r/W3XwXbdxmm8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 04:39, Will Deacon wrote:
-> It's interesting that arm64 isn't affected by this problem, since we don't
-> update the active_irqs mask for PPIs there and consequently just pass the
-> irq instead of the cpu_pmu. I can't see why we actually need to update the
-> active_irqs mask for arch/arm/, so could we remove that and follow arm64's
-> lead instead? That would remove the need for a new struct definition too.
->
+On Tuesday 09 September 2014 12:09:36 Mauro Carvalho Chehab wrote:
+> -exynos4.c
+> > > index e51c078360f5..01eeacf28843 100644
+> > > --- a/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
+> > > +++ b/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
+> > > @@ -23,7 +23,9 @@ void exynos4_jpeg_sw_reset(void __iomem *base)
+> > >     reg = readl(base + EXYNOS4_JPEG_CNTL_REG);
+> > >     writel(reg & ~EXYNOS4_SOFT_RESET_HI, base + EXYNOS4_JPEG_CNTL_REG);
+> > >  
+> > > +#ifndef CONFIG_COMPILE_TEST
+> > >     ndelay(100000);
+> > > +#endif
+> > 
+> > Wouldn't be a better fix to replace ndelay(100000); with udelay(100),
+> > rather than sticking in a not so pretty #ifndef ?
+> 
+> Works for me. I'll submit a new version.
 
-I guess you're saying that we don't need the active_irqs mask in the
-percpu irq case? It looks like we still use it to determine when the
-last CPU PMU has been disabled in the non-percpu case.
+New version looks good to me. On a more general level, I would argue
+that we should not disable code based on COMPILE_TEST. The typical
+use of this symbol is to make it possible to compile more code, not
+to change the behavior of code on machines that were able to build
+it already.
 
-Here's the interdiff. Is there a reason arm64 casts data to an unsigned
-int pointer when what's passed is an int pointer?
-
-----8<-----
-
-diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
-index 1f24b47cd81e..4bf4cce759fe 100644
---- a/arch/arm/kernel/perf_event_cpu.c
-+++ b/arch/arm/kernel/perf_event_cpu.c
-@@ -74,28 +74,17 @@ static struct pmu_hw_events *cpu_pmu_get_cpu_events(void)
- 	return this_cpu_ptr(&cpu_hw_events);
- }
- 
--struct pmu_enable {
--	struct arm_pmu *pmu;
--	int irq;
--};
--
- static void cpu_pmu_enable_percpu_irq(void *data)
- {
--	struct pmu_enable *pmu_enable = data;
--	struct arm_pmu *cpu_pmu = pmu_enable->pmu;
--	int irq = pmu_enable->irq;
-+	int irq = *(int *)data;
- 
- 	enable_percpu_irq(irq, IRQ_TYPE_NONE);
--	cpumask_set_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
- }
- 
- static void cpu_pmu_disable_percpu_irq(void *data)
- {
--	struct pmu_enable *pmu_enable = data;
--	struct arm_pmu *cpu_pmu = pmu_enable->pmu;
--	int irq = pmu_enable->irq;
-+	int irq = *(int *)data;
- 
--	cpumask_clear_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
- 	disable_percpu_irq(irq);
- }
- 
-@@ -103,15 +92,12 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
- {
- 	int i, irq, irqs;
- 	struct platform_device *pmu_device = cpu_pmu->plat_device;
--	struct pmu_enable pmu_enable;
- 
- 	irqs = min(pmu_device->num_resources, num_possible_cpus());
- 
- 	irq = platform_get_irq(pmu_device, 0);
- 	if (irq >= 0 && irq_is_percpu(irq)) {
--		pmu_enable.pmu = cpu_pmu;
--		pmu_enable.irq = irq;
--		on_each_cpu(cpu_pmu_disable_percpu_irq, &pmu_enable, 1);
-+		on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
- 		free_percpu_irq(irq, &percpu_pmu);
- 	} else {
- 		for (i = 0; i < irqs; ++i) {
-@@ -128,7 +114,6 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
- {
- 	int i, err, irq, irqs;
- 	struct platform_device *pmu_device = cpu_pmu->plat_device;
--	struct pmu_enable pmu_enable;
- 
- 	if (!pmu_device)
- 		return -ENODEV;
-@@ -147,9 +132,7 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
- 				irq);
- 			return err;
- 		}
--		pmu_enable.pmu = cpu_pmu;
--		pmu_enable.irq = irq;
--		on_each_cpu(cpu_pmu_enable_percpu_irq, &pmu_enable, 1);
-+		on_each_cpu(cpu_pmu_enable_percpu_irq, &irq, 1);
- 	} else {
- 		for (i = 0; i < irqs; ++i) {
- 			err = 0;
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+	Arnd
