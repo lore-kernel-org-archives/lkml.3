@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548AbaIIQAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:00:53 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:64162 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166AbaIIQAv (ORCPT
+	id S1757244AbaIIQBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:01:16 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:45235 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757202AbaIIQBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:00:51 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Tue, 9 Sep 2014 12:06:40 -0400 (EDT)
-To: Peter Zijlstra <peterz@infradead.org>
-cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-In-Reply-To: <20140908185115.GI6758@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 9 Sep 2014 12:01:14 -0400
+Message-ID: <540F2422.90105@linaro.org>
+Date: Wed, 10 Sep 2014 00:00:34 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jon Masters <jcm@redhat.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH v3 09/17] ARM64 / ACPI: Parse MADT for SMP initialization
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org> <540E80BD.20801@redhat.com> <540E88A2.1000606@linaro.org> <540E93A0.4040306@redhat.com>
+In-Reply-To: <540E93A0.4040306@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014, Peter Zijlstra wrote:
+On 2014年09月09日 13:44, Jon Masters wrote:
+> On 09/09/2014 12:57 AM, Hanjun Guo wrote:
+>> Hi Jon,
+>>
+>> On 2014年09月09日 12:23, Jon Masters wrote:
+>>> On 09/01/2014 10:57 AM, Hanjun Guo wrote:
+>>>> MADT contains the information for MPIDR which is essential for
+>>>> SMP initialization, parse the GIC cpu interface structures to
+>>>> get the MPIDR value and map it to cpu_logical_map(), and add
+>>>> enabled cpu with valid MPIDR into cpu_possible_map.
+>>>>
+>>>> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
+>>>> Parking protocol, but the Parking protocol is only specified for
+>>>> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
+>>>> before some updates for the ACPI spec or the Parking protocol spec.
+>>>> +	/* CPU 0 was already initialized */
+>>>> +	if (cpu) {
+>>>> +		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
+>>>> +			return -EOPNOTSUPP;
+>>>> +
+>>>> +		/* map the logical cpu id to cpu MPIDR */
+>>>> +		cpu_logical_map(cpu) = mpidr;
+>>> I'm not sure it's worth noting in a comment or just in the dialogue that
+>>> none of these MPIDR values is literally the value in the MPIDR. Linux
+>>> doesn't store that anyway (even in the cpu_logical_map), since it is
+>>> pre-filtered against MPIDR_HWID_BITMASK to remove the non-affinity level
+>>> bits. And since the ACPI5.1 specification requires that non-affinity
+>>> bits be zero everything works. But it relies upon this assumption so it
+>>> might be worth explicitly masking out the bits when making the call into:
+>>>
+>>>        acpi_map_gic_cpu_interface(processor->arm_mpidr,
+>>>                processor->flags & ACPI_MADT_ENABLED);
+>>>
+>>> During the parsing of the processor object's MPIDR value.
+>> Yes, I agree with you. When I tested this patch set on our
+>> ARM64 platform, I found this problem too. some firmware
+>> will just present the real MPIDR value to OS which some reserved
+>> bit set to 1, and it will lead to some logic problem in this patch.
+>> (actually firmware didn't obey with ACPI spec)
+>>
+>> I had updated the patch with:
+>>
+>> +	acpi_map_gic_cpu_interface(processor->arm_mpidr & MPIDR_HWID_BITMASK,
+>> +		processor->flags & ACPI_MADT_ENABLED);
+>>
+>> and then the problem was gone :)
+> Did I miss an updated patch posting then? It is possible...
 
-> On Mon, Sep 08, 2014 at 01:47:11PM -0400, Vince Weaver wrote:
-> > Hello
-> > 
-> > so I finally had time to run my perf_fuzzer again and it has rapidly 
-> > turned up an alarming crash that instant-reboots my core2 test machine.
-> 
-> Urgh, of course :/
+No, you didn't miss it, I'm still working on the new version, sorry I didn't
+clarify that in my previous email.
 
-So possibly was a waste of time, as it bisects to:
-
-	commit 5e467e27b7c7a11ef47068138248003e873674a1
-	Author: Tony Luck <tony.luck@intel.com>
-	Date:   Wed Jul 30 14:05:15 2014 -0700
-
-	    [IA64] Wire up getrandom() system call
-
-Which makes no sense at all :(
-
-The times the testcase fails give some pretty spectacular error messages:
-
-
-[   78.018145] NOHZ: local_softirq_pending 100
-[   83.012661] BUG: Bad page map in process perf_fuzzer  pte:ffff8800cafc5190 pmd:119d00067
-[   83.020863] addr:000000000120c000 vm_flags:00100073 anon_vma:ffff8800cae19dc0 mapping:          (null) index:120c
-
-[  316.040001] general protection fault: 0000 [#1] 
-
-[  178.024220] perf_fuzzer[2788]: segfault at ffff88011fa7bef8 ip 00007f8c0e088c2f sp 00007fff003315e0 error 5
-
-[ 2616.535995] Kernel panic - not syncing: Lost physical address for unconsumed uncorrectable error
-
-
-[  751.656861] NOHZ: local_softirq_pending 100
-[  756.009271] traps: perf_fuzzer[4236] trap invalid opcode ip:4044c0 sp:7fffb0ed6f90 error:0
-[  756.017590] BUG: unable to handle kernel paging request
-
-among others.
-
-Vince
+Thanks
+Hanjun
