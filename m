@@ -1,74 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229AbaIIIs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:48:27 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51236 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324AbaIIIpT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:45:19 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-16-540ebe1dc883
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: Paul.Zimmerman@synopsys.com
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 3/6] usb: dwc2/gadget: hide some not really needed debug
- messages
-Date: Tue, 09 Sep 2014 10:44:54 +0200
-Message-id: <1410252297-13738-4-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
-References: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jQV3ZfXwhBhdPmVocvF9v0bx4PZvF
-	5V1z2CwWLWtltlh75C67xaOHW1ktHhzeye7A7rF/7hp2j74tqxg9tuz/zOhx/MZ2Jo/Pm+QC
-	WKO4bFJSczLLUov07RK4MvY828FSMIezou+4fQPjA/YuRk4OCQETiZ1tF9kgbDGJC/fWA9lc
-	HEIC0xklTpx9wg7htDNJrHp0mRmkik1AR2LL9wmMILaIgLzE9Y03WUCKmAX2MUpM/7QNbKyw
-	QLDE9I2NLCA2i4CqRMv002BxXgFXiUtL1rNArJOTOHlsMiuIzSngJvHn2BewGiGgmn9zprFM
-	YORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4qJ5J7WBc2WBxiFGAg1GJhzcjmC9E
-	iDWxrLgy9xCjBAezkgjvld1AId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NT
-	C1KLYLJMHJxSDYyB2tKLK8Pi9iRJmzy4k6Zr++L9OyF5JYcJtTF7/u9a+CJ64k9N38rrAk/k
-	rh36mfLlxY1MyW3RbbncRy18/eN0Y1e+Nit89PpsjEzR/zV395w8EF292o1F6lE/t9G/VMtf
-	/27MN9lrtrfp4Gn2AM2TOxRfTz241f/jvL9Vk9Mqp7+br7un9Z6GEktxRqKhFnNRcSIAbxDj
-	gSYCAAA=
+	id S932392AbaIIItz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:49:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:47606 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756254AbaIIItu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 04:49:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="596703074"
+Message-ID: <540EBED4.70900@intel.com>
+Date: Tue, 09 Sep 2014 11:48:20 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [GIT PULL 00/13] perf/core improvements and fixes
+References: <1410211089-28668-1-git-send-email-acme@kernel.org>
+In-Reply-To: <1410211089-28668-1-git-send-email-acme@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+On 09/09/2014 12:17 AM, Arnaldo Carvalho de Melo wrote:
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
 
-Some DWC2/s3c-hsotg debug messages are really useless for typical user,
-so hide them behind dev_dbg().
+I am very sorry Arnaldo but 2 patches are older versions, namely:
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/dwc2/gadget.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	perf tools: Build programs to copy 32-bit compatibility VDSOs
+	perf tools: Add support for 32-bit compatibility VDSOs
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 186a3a8..f63858a 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -2568,7 +2568,7 @@ static int s3c_hsotg_ep_disable(struct usb_ep *ep)
- 	u32 epctrl_reg;
- 	u32 ctrl;
- 
--	dev_info(hsotg->dev, "%s(ep %p)\n", __func__, ep);
-+	dev_dbg(hsotg->dev, "%s(ep %p)\n", __func__, ep);
- 
- 	if (ep == &hsotg->eps[0].ep) {
- 		dev_err(hsotg->dev, "%s: called for ep0\n", __func__);
-@@ -2626,7 +2626,7 @@ static int s3c_hsotg_ep_dequeue(struct usb_ep *ep, struct usb_request *req)
- 	struct s3c_hsotg *hs = hs_ep->parent;
- 	unsigned long flags;
- 
--	dev_info(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
-+	dev_dbg(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
- 
- 	spin_lock_irqsave(&hs->lock, flags);
- 
--- 
-1.9.1
+Up-to-date versions can be found from 15 August:
+
+	patchwork:
+
+		https://patchwork.kernel.org/patch/4729131/
+		https://patchwork.kernel.org/patch/4729111/
+
+	marc.info:
+
+		http://marc.info/?l=linux-kernel&m=140812995414607&w=4
+		http://marc.info/?l=linux-kernel&m=140812993814585&w=4
+
+It looks like I reposted older versions by mistake on 31 July.
+Very sorry :-(
+
+The originals were changed as described here:
+
+	http://marc.info/?l=linux-kernel&m=140621020918615
+	http://marc.info/?l=linux-kernel&m=140618721010170
+
+> 
+> The following changes since commit 39b5a56ec0be5effe9b7d0f18cb27724bf2e5d47:
+> 
+>   Merge branch 'rfc/perf' into perf/core, because it's ready for inclusion (2014-08-24 22:35:42 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to fa3480cb0a96c8af9ded1a8c836c91bd5704bda1:
+> 
+>   perf tools: Add perf_pmu__scan_file() (2014-09-08 17:16:06 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> User visible:
+> 
+> o Add +field argument support for --sort option (Jiri Olsa)
+> 
+> Infrastructure:
+> 
+> o More intel PT prep work, from Adrian Hunter, including:
+> 
+>   - Let a user specify a PMU event without any config terms
+>   - Add perf-with-kcore script
+>   - Build programs to copy 32-bit compatibility VDSOs
+>   - Add support for 32-bit compatibility VDSOs
+>   - Let default config be defined for a PMU
+>   - Add perf_pmu__scan_file()
+> 
+> o Add feature checks to .gitignore (Alexander Shishkin)
+> 
+> o "perf kvm stat report" improvements by Alexander Yarygin:
+>   o  Save pid string in opts.target.pid
+>   o  Enable the target.system_wide flag
+>   o  Unify the title bar output
+> 
+> o Fix build issue on powerpc when DWARF support is disabled (Anton Blanchard)
+> 
+> o Allow to specify lib compile variable for spec usage (Jiri Olsa)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (6):
+>       perf tools: Let a user specify a PMU event without any config terms
+>       perf tools: Add perf-with-kcore script
+>       perf tools: Build programs to copy 32-bit compatibility VDSOs
+>       perf tools: Add support for 32-bit compatibility VDSOs
+>       perf tools: Let default config be defined for a PMU
+>       perf tools: Add perf_pmu__scan_file()
+> 
+> Alexander Shishkin (1):
+>       perf tools: Add feature checks to .gitignore
+> 
+> Alexander Yarygin (3):
+>       perf kvm stat report: Save pid string in opts.target.pid
+>       perf kvm stat report: Enable the target.system_wide flag
+>       perf kvm stat report: Unify the title bar output
+> 
+> Anton Blanchard (1):
+>       perf tools powerpc: Fix build issue when DWARF support is disabled
+> 
+> Jiri Olsa (2):
+>       perf tools: Add +field argument support for --sort option
+>       perf tools: Allow to specify lib compile variable for spec usage
+> 
+>  tools/perf/.gitignore            |   2 +
+>  tools/perf/Makefile.perf         |  42 ++++++-
+>  tools/perf/arch/powerpc/Makefile |   2 +-
+>  tools/perf/builtin-kvm.c         |  23 ++--
+>  tools/perf/config/Makefile       |  33 ++++-
+>  tools/perf/config/Makefile.arch  |   8 ++
+>  tools/perf/perf-read-vdso.c      |  59 +++++++++
+>  tools/perf/perf-with-kcore.sh    | 259 +++++++++++++++++++++++++++++++++++++++
+>  tools/perf/tests/pmu.c           |   2 +-
+>  tools/perf/util/kvm-stat.h       |   1 -
+>  tools/perf/util/parse-events.c   |  13 +-
+>  tools/perf/util/parse-events.y   |  10 ++
+>  tools/perf/util/pmu.c            |  79 +++++++++---
+>  tools/perf/util/pmu.h            |  12 +-
+>  tools/perf/util/sort.c           |  37 +++++-
+>  tools/perf/util/vdso.c           | 170 ++++++++++++++++++++++++-
+>  tools/perf/util/vdso.h           |   4 +-
+>  17 files changed, 712 insertions(+), 44 deletions(-)
+>  create mode 100644 tools/perf/perf-read-vdso.c
+>  create mode 100644 tools/perf/perf-with-kcore.sh
+> 
+> 
 
