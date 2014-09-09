@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212AbaIIL2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:28:13 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58816 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245AbaIIL2L (ORCPT
+	id S932303AbaIIL2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:28:16 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29070 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932234AbaIIL2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:28:11 -0400
-Date: Tue, 9 Sep 2014 12:27:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-Cc: timur@tabi.org, nicoleotsuka@gmail.com, Li.Xiubo@freescale.com,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140909112750.GS2601@sirena.org.uk>
-References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+	Tue, 9 Sep 2014 07:28:13 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/dx9T8KtI0fo6iRrkzjUWCQDICFS6IoYY=
+X-DKIM: OpenDKIM Filter v2.0.1 titan F37265DC240
+Date: Tue, 9 Sep 2014 07:27:50 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Matti Vaittinen <matti.vaittinen@nsn.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        "linux@roeck-us.net" <linux@roeck-us.net>, a.zummo@towertech.it,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [RESEND PATCH v3]     rtc: ds1307: add trickle charger device
+ tree binding
+Message-ID: <20140909112750.GK30828@titan.lakedaemon.net>
+References: <20140908073216.GA20850@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140908112657.GD30828@titan.lakedaemon.net>
+ <20140909082902.GD21342@fi-ourus-dhcp00977.emea.nsn-net.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NKys6zTV8iyMJiwY"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.152.174.147
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140909082902.GD21342@fi-ourus-dhcp00977.emea.nsn-net.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 09, 2014 at 11:29:11AM +0300, Matti Vaittinen wrote:
+> On Mon, Sep 08, 2014 at 07:26:57AM -0400, ext Jason Cooper wrote:
+> > Matti,
+> > 
+> > On Mon, Sep 08, 2014 at 10:32:24AM +0300, Matti Vaittinen wrote:
+> > > ---
+> > 
+> > Here.  Otherwise, it'll get included in the commit message, which I
+> > don't think was your intention.
+> 
+> Ok, thanks.
+> 
+> > 
+> > >  .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
+> > >  .../devicetree/bindings/rtc/dallas,ds1339.txt      | 18 ++++++
+> > >  drivers/rtc/rtc-ds1307.c                           | 66 ++++++++++++++++++++--
+> > >  3 files changed, 80 insertions(+), 5 deletions(-)
+> > >  create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
+> > 
+> > I would split this into two patches, one for the binding documentation,
+> > and one for the C file changes.  You can then use
+> > ./scripts/get_maintainer.pl to see who the rtc maintainer is (nothing
+> > jumps out from my memory).
+> 
+> Splitting sounds reasonable. I will do this and also invert the default
+> diode setting to be connected as was suggested by Pavel in mail responce
+> to v1 of patch. And Alessandro is the maintainer for rtc according to
+> the MAINTAINERS file.
+> 
+> > 
+> > Most likely, the rtc maintainer will take the series with the DT
+> > maintainers Acks.  You made all the binding changes as discussed by Mark
+> > and I, so fwiw,
+> > 
+> > Acked-by: Jason Cooper <jason@lakedaemon.net>
+> > 
+> > Just keep in mind that I'm not a DT maintainer, I've just moved a lot of
+> > patches into that area :-P  When you respin the series to split it, just
+> > throw my Ack on the binding docs.
+> 
+> Thanks, although the doc will change when I invert the default diode
+> setting  =)
 
---NKys6zTV8iyMJiwY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yep, I'm fine with the inversion.  Feel free to keep the Ack.
 
-On Tue, Sep 09, 2014 at 05:18:07PM +0800, Shengjiu Wang wrote:
+thx,
 
-> +	if (ssi_private->soc->imx)
-> +		clk_prepare_enable(ssi_private->clk);
-> +
-
-We're ignoring the error code here.
-
-> -	ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
-> +	ssi_private->clk = devm_clk_get(&pdev->dev, "ipg");
->  	if (IS_ERR(ssi_private->clk)) {
->  		ret = PTR_ERR(ssi_private->clk);
-> -		dev_err(&pdev->dev, "could not get clock: %d\n", ret);
-> -		return ret;
-
-Why is this change being made?  It wasn't mentioned in the commit log
-and doesn't seem relevant to moving where the enable and disable are
-done which is what the patch is supposed to be doing...
-
-Please don't make different changes in the same patch.
-
---NKys6zTV8iyMJiwY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUDuQ1AAoJECTWi3JdVIfQRFUH/A+c1fwfvIqcmYIlaJcAiWkO
-Uuq0EjAEHWoUitSMxR1m/fvZ/UYttYAxEv/hl6HjFyhUlVyVklJ8jmtOlWpGfpIX
-ZlisKPVpCFiE2bUdjjNxNvuVxu53MRUC6hmyDWiMN43UUNiBlYRpJrm+WKf0j8PB
-o1nGbFVrfp5xOUAly951EFXBgC5PDPMZIY8XgL3pH6HesIv3URAxlL8JeguIuSWM
-eM0i3O90aPHcfjKNT89fMru4Jhcw1jARkF9lE63EHXhbOnq+TDbWfIZKeYpNLoem
-mB38k6NQH9IoFvr9kIoVqa9xLgP/c6da1w+3as8s40YPNfFVFeoKikKhBNsQuNQ=
-=R1az
------END PGP SIGNATURE-----
-
---NKys6zTV8iyMJiwY--
+Jason.
