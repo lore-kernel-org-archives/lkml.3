@@ -1,87 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381AbaIILEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:04:20 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:55544 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932340AbaIILER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:04:17 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kbuild@vger.kernel.org
-Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] kbuild: simplify build, clean, modbuiltin shorthands
-Date: Tue,  9 Sep 2014 20:03:58 +0900
-Message-Id: <1410260638-23559-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.9.1
+	id S932417AbaIILFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:05:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51767 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992AbaIILFV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 07:05:21 -0400
+Date: Tue, 9 Sep 2014 13:04:51 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Patch v4 07/16] x86, irq: Prefer assigned ID in APIC ID register
+ for x86_64
+In-Reply-To: <1409192561-19744-8-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <alpine.DEB.2.10.1409091256270.11037@nanos>
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-8-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-$(if $(KBUILD_SRC),$(srctree)/) was a useful strategy
-to omit a long absolute path for in-source-tree build
-prior to commit 890676c65d699db3ad82e7dddd0cf8fb449031af
-(kbuild: Use relative path when building in the source tree).
+On Thu, 28 Aug 2014, Jiang Liu wrote:
 
-Now $(srctree) is "." when building in the source tree.
-It would not be annoying to add "$(srctree)/" all the time.
+> From: Yinghai Lu <yinghai@kernel.org>
+> 
+> Perfer the assigned ID in APIC ID register for x86_64 if it's still
+> available.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  arch/x86/kernel/apic/io_apic.c |   38 +++++++++++++++++++++++++++++++++-----
+>  1 file changed, 33 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 3faf9599ff29..196d9c15fdec 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3575,26 +3575,54 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+>  	return apic_id;
+>  }
+>  
+> -static u8 __init io_apic_unique_id(u8 id)
+> +static u8 io_apic_unique_id(int idx, u8 id)
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
----
+How is that change related to the changelog?
 
- Makefile               | 2 +-
- scripts/Kbuild.include | 4 ++--
- scripts/Makefile.clean | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+>  {
+>  	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
+>  	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
+> -		return io_apic_get_unique_id(nr_ioapics, id);
+> +		return io_apic_get_unique_id(idx, id);
+>  	else
+>  		return id;
+>  }
+>  #else
+> -static u8 __init io_apic_unique_id(u8 id)
+> +static u8 io_apic_unique_id(int idx, u8 id)
+>  {
+>  	int i;
+> +	u8 new_id;
+> +	unsigned long flags;
+>  	DECLARE_BITMAP(used, 256);
+> +	union IO_APIC_reg_00 reg_00;
+>  
+>  	bitmap_zero(used, 256);
+>  	for_each_ioapic(i)
+>  		__set_bit(mpc_ioapic_id(i), used);
+>  	if (!test_bit(id, used))
+>  		return id;
+> -	return find_first_zero_bit(used, 256);
+> +
+> +	/* check register at first */
+> +	raw_spin_lock_irqsave(&ioapic_lock, flags);
+> +	reg_00.raw = io_apic_read(idx, 0);
+> +	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+> +	new_id = reg_00.bits.ID;
+> +	if (!test_bit(new_id, used)) {
+> +		apic_printk(APIC_VERBOSE, KERN_INFO
+> +			"IOAPIC[%d]: Using reg apic_id %d instead of %d\n",
+> +			 idx, new_id, id);
+> +		return new_id;
+> +	}
+> +
+> +	new_id = find_first_zero_bit(used, 256);
+> +	reg_00.bits.ID = new_id;
+> +	raw_spin_lock_irqsave(&ioapic_lock, flags);
+> +	io_apic_write(idx, 0, reg_00.raw);
+> +	reg_00.raw = io_apic_read(idx, 0);
+> +	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+> +
+> +	/* Sanity check */
+> +	if (reg_00.bits.ID != new_id)
+> +		pr_warn("IOAPIC[%d]: Unable to change apic_id to %d!\n",
+> +			idx, new_id);
 
-diff --git a/Makefile b/Makefile
-index 1a60bdd..f7b9174 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1574,7 +1574,7 @@ endif
- # Shorthand for $(Q)$(MAKE) -f scripts/Makefile.clean obj=dir
- # Usage:
- # $(Q)$(MAKE) $(clean)=dir
--clean := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.clean obj
-+clean := -f $(srctree)/scripts/Makefile.clean obj
- 
- endif	# skip-makefile
- 
-diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index 8a9a4e1..65e7b08 100644
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -171,13 +171,13 @@ ld-ifversion = $(shell [ $(call ld-version) $(1) $(2) ] && echo $(3))
- # Shorthand for $(Q)$(MAKE) -f scripts/Makefile.build obj=
- # Usage:
- # $(Q)$(MAKE) $(build)=dir
--build := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.build obj
-+build := -f $(srctree)/scripts/Makefile.build obj
- 
- ###
- # Shorthand for $(Q)$(MAKE) -f scripts/Makefile.modbuiltin obj=
- # Usage:
- # $(Q)$(MAKE) $(modbuiltin)=dir
--modbuiltin := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.modbuiltin obj
-+modbuiltin := -f $(srctree)/scripts/Makefile.modbuiltin obj
- 
- # Prefix -I with $(srctree) if it is not an absolute path.
- # skip if -I has no parameter
-diff --git a/scripts/Makefile.clean b/scripts/Makefile.clean
-index c630ab5..b1c668d 100644
---- a/scripts/Makefile.clean
-+++ b/scripts/Makefile.clean
-@@ -10,7 +10,7 @@ __clean:
- # Shorthand for $(Q)$(MAKE) scripts/Makefile.clean obj=dir
- # Usage:
- # $(Q)$(MAKE) $(clean)=dir
--clean := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.clean obj
-+clean := -f $(srctree)/scripts/Makefile.clean obj
- 
- # The filename Kbuild has precedence over Makefile
- kbuild-dir := $(if $(filter /%,$(src)),$(src),$(srctree)/$(src))
--- 
-1.9.1
+So we detect, that the ID could not be changed and we return it
+nevertheless?
 
+Thanks,
+
+	tglx
