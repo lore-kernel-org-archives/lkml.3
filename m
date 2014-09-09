@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaIIIop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:44:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43470 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932206AbaIIIom (ORCPT
+	id S932316AbaIIIpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:45:14 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:47122 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932234AbaIIIpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:44:42 -0400
-Date: Tue, 9 Sep 2014 10:44:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
-Message-ID: <20140909084436.GY19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tsXbTCuc02oUSrD/"
-Content-Disposition: inline
-In-Reply-To: <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 9 Sep 2014 04:45:10 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-03-540ebe14a656
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: Paul.Zimmerman@synopsys.com
+Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 0/6] usb: dwc2/gadget: improvements for gadget driver
+Date: Tue, 09 Sep 2014 10:44:51 +0200
+Message-id: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t9jQV3RfXwhBh8mslgcvF9v0bx4PZvF
+	5V1z2CwWLWtltnj0cCurxYPDO9kd2Dz2z13D7tG3ZRWjx5b9nxk9jt/YzuTxeZNcAGsUl01K
+	ak5mWWqRvl0CV8atB/9YC2axVRx7uIutgbGBtYuRk0NCwERi8dGdTBC2mMSFe+vZuhi5OIQE
+	pjNKTH12nxnCaWeSuPJ9MVgHm4COxJbvExhBbBEBeYnrG2+ygBQxC/QzSqycvZgFJCEs4CrR
+	19vLBmKzCKhK3Nm9H6iZg4MXKN59IhNim5zEyWOTWScwci9gZFjFKJpakFxQnJSea6hXnJhb
+	XJqXrpecn7uJERwaz6R2MK5ssDjEKMDBqMTDmxHMFyLEmlhWXJl7iFGCg1lJhPfKbqAQb0pi
+	ZVVqUX58UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxsO8/3YfdTe3zDh9
+	PmammNyR9enJv/9MjF/7L3HGN1tfnuhty1x7XyVcYr77SN+4NCa9kZ/JNHBjofOfOfLtvl1M
+	nnZTZu6xYNE4kR04zf3a+rhsbtMzLGZ1E2bPX1URdmzyT/eK7Pvp7rMj/s/6Mueb84tXq/77
+	mYbzvXrn94b/9zWPL9kmnkosxRmJhlrMRcWJALnJ5AUJAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---tsXbTCuc02oUSrD/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I have splitted my patchset "usb: dwc2/gadget: fix series" into two series.
+This patch series contains improvements for dwc2/gadget driver. It's intended
+for 3.18.
 
-On Wed, Aug 20, 2014 at 03:36:06PM +0300, Alexander Shishkin wrote:
+Andrzej Pietrasiewicz (1):
+  usb: dwc2/gadget: Fix comment text
 
-> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-> index 925f369947..5006caba63 100644
-> --- a/kernel/events/ring_buffer.c
-> +++ b/kernel/events/ring_buffer.c
+Kamil Debski (1):
+  usb: dwc2/gadget: move phy bus legth initialization
 
-> @@ -294,9 +295,22 @@ void perf_aux_output_end(struct perf_output_handle *=
-handle, unsigned long size,
->  			 bool truncated)
->  {
->  	struct ring_buffer *rb =3D handle->rb;
-> +	unsigned long aux_head;
-> =20
-> +	aux_head =3D local_read(&rb->aux_head);
-> +
-> +	if (rb->aux_overwrite) {
-> +		local_set(&rb->aux_head, size);
-> +
-> +		/*
-> +		 * Send a RECORD_AUX with size=3D=3D0 to communicate aux_head
-> +		 * of this snapshot to userspace
-> +		 */
-> +		perf_event_aux_event(handle->event, size, 0, truncated);
+Marek Szyprowski (2):
+  usb: dwc2/gadget: hide some not really needed debug messages
+  usb: dwc2/gadget: ensure that all fifos have correct memory buffers
 
-Humm.. why not write a 'normal' AUX record?
+Robert Baldyga (2):
+  usb: dwc2/gadget: assign TX FIFO dynamically
+  usb: dwc2/gadget: disable clock when it's not needed
 
-Also, you didn't mention this in your Changelog _at_all_.
+ drivers/usb/dwc2/core.h   |   3 ++
+ drivers/usb/dwc2/gadget.c | 132 +++++++++++++++++++++++++++++-----------------
+ 2 files changed, 86 insertions(+), 49 deletions(-)
 
-> +	} else {
-> +		local_add(size, &rb->aux_head);
-> +		perf_event_aux_event(handle->event, aux_head, size, truncated);
-> +	}
-> =20
->  	smp_wmb();
->  	rb->user_page->aux_head =3D local_read(&rb->aux_head);
+-- 
+1.9.1
 
---tsXbTCuc02oUSrD/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUDr30AAoJEHZH4aRLwOS6lCoP/jQb5UxVEJ32Xoull2/DSlVw
-ZMBnlDwbW+ti3DlPIadaN3Te9bfUvH9f8B6X8NWz20kzwiX5cUIfDVKdBidwpRux
-Mf3wF4ur3zkdg5s/eGy3qTP3eFQPC54Gcs6onfnunJjJlWKf0kxTb1SiVHamdYnc
-yXegp/0qKIFnYjng+7mxw1HWAl7doetlzNYlNH43MfjMfi96X7ZympYLn7BpzMId
-DILl5buu9sb+06tKLvIDf1VKuOq7yB3sEn1m3qky3b5IOAfmGM87HdEFG5ej++xX
-BIQ7dj2nZnGKZwmGPWx28xPxVCdjd5y6JiRx43TUY7T3av11ZlWNIP0rZBq/lFWo
-6XFgU9tgv9NBIzJdOuQVAz1IVR/htk/xcc4aOpjNAVphaifTiAH6WnQ8hwxNLRBr
-ZV0rKq9VycoInY0rn1d4b+n5Jp9LHBkVgtOr+KC7Dv5n2Xn6x/3mlIix2Knzsq6y
-CWjYgFWCTbw8QGZLIChVzuYpmmDvKGvjPnnLztsR2j7AbxnhNINiaYY3PbvcZ9Dc
-LtAB2hLE0MW/dHjyr8p8IBNkc2dTIS9YsTureElao9JzEvA+YI4sxo8UFYXrWoXm
-lc7Z8VWtAIIw8WnIR7A0hPzFs7oDnW09KrDqgfVoVoWWN/Sdy+OlmtZ92dEvsel7
-N4PJB7zkSTy9h9R6XC66
-=U0qA
------END PGP SIGNATURE-----
-
---tsXbTCuc02oUSrD/--
