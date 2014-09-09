@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaIIWka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:40:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59886 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaIIWk2 (ORCPT
+	id S1752850AbaIIWlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:41:55 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:62149 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779AbaIIWlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:40:28 -0400
-Date: Tue, 9 Sep 2014 23:39:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Zhong <zyw@rock-chips.com>
-Message-ID: <20140909223952.GL2601@sirena.org.uk>
-References: <20140908183350.5a4e357c@canb.auug.org.au>
+	Tue, 9 Sep 2014 18:41:53 -0400
+Date: Wed, 10 Sep 2014 07:41:43 +0900
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140909224143.GB3154@mtj.dyndns.org>
+References: <20140905174925.GA12991@mtj.dyndns.org>
+ <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org>
+ <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org>
+ <1410241109.2028.22.camel@jarvis.lan>
+ <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
+ <1410291346.13298.16.camel@jarvis.lan>
+ <20140909214240.GA3154@mtj.dyndns.org>
+ <1410301562.13298.35.camel@jarvis.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GcxvFOCtgbxoSrcp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140908183350.5a4e357c@canb.auug.org.au>
-X-Cookie: Exercise caution in your daily affairs.
+In-Reply-To: <1410301562.13298.35.camel@jarvis.lan>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 81.132.226.177
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the regulator tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---GcxvFOCtgbxoSrcp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, Sep 09, 2014 at 03:26:02PM -0700, James Bottomley wrote:
+> > We no longer report back error on probe failure on module load.
+> 
+> Yes, we do; for every probe failure of a device on a driver we'll print
+> a warning (see drivers/base/dd.c).  Now if someone is proposing we
+> should report this in a better fashion, that's probably a good idea, but
+> I must have missed that patch.
 
-On Mon, Sep 08, 2014 at 06:33:50PM +1000, Stephen Rothwell wrote:
+We can do printks all the same from anywhere.  There's nothing special
+about printing from the module loading thread.  The only way to
+actually take advantage of the synchronisity would be propagating
+error return to the waiting issuer, which we used to do but no longer
+can.
 
-> drivers/regulator/rk808-regulator.c:312:18: warning: 'struct rk808_board' declared inside parameter list
->            struct rk808_board *pdata)
+> >   It
+> > used to make sense to indicate error for module load on probe failure
+> > when the hardware was a lot simpler and drivers did their own device
+> > enumeration.  With the current bus / device setup, it doesn't make any
+> > sense and driver core silently suppresses all probe failures.  There's
+> > nothing the probing thread can monitor anymore.
+> 
+> Except the length of time taken to probe.  That seems to be what systemd
+> is interested in, hence this whole thread, right?
 
-Chris, as previously requested please send me any changes needed to
-update for the changes in the MFD driver.
+No, systemd in this case isn't interested in the time taken to probe
+at all.  It is expecting module load to just do that - load the
+module.  Modern userlands, systemd or not, no longer depend on or make
+use of the wait.
 
---GcxvFOCtgbxoSrcp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> But that's nothing to do with sync or async.  Nowadays we register a
+> driver, the driver may bind to multiple devices.  If one of those
+> devices encounters an error during probe, we just report the fact in
+> dmesg and move on.  The module_init thread currently returns when all
+> the probe routines for all enumerated devices have been called, so
+> module_init has no indication of any failures (because they might be
+> mixed with successes); successes are indicated as the device appears but
+> we have nothing other than the kernel log to indicate the failures.  How
+> does moving to async probing alter this?  It doesn't as far as I can
+> see, except that module_init returns earlier but now we no longer have
+> an indication of when the probe completes, so we have to add yet another
+> mechanism to tell us if we're interested in that.  I really don't see
+> what this buys us.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+The thing is that we have to have dynamic mechanism to listen for
+device attachments no matter what and such mechanism has been in place
+for a long time at this point.  The synchronous wait simply doesn't
+serve any purpose anymore and kinda gets in the way in that it makes
+it a possibly extremely slow process to tell whether loading of a
+module succeeded or not because the wait for the initial round of
+probe is piggybacked.
 
-iQEcBAEBAgAGBQJUD4G0AAoJECTWi3JdVIfQ1H4H/R6HNDQ19wS2b0Zi4ZxFlCpf
-Bdyo8/by1EZUW+0jq6y2XLHHxQ/BPd/tXK/9QmMbmmUD/zCS/S3mNwkBmbYrxKXb
-t6m8Iy/vwnpfZZOMo9NwnbiwlUmSIWuyGXoNDKk5ACu+8xpu0zWuOFH6P5ERtIJx
-ciAVZKmBrN127U90ZhP78jhpd3iL/5Rc7aWgixlsb51PwSb8EYOHCuamuHFLN93j
-+TvvrFNPYS5e6y1bkqgTRWzoGg90+e3iNN0/cl+7lbvu+C0XxdsfjEh7qIKqeF1q
-q1vpCtJ/KIX0L4LP1uepyvFA5xFGpxYwOYyAqMVzCHH79ZF0xfZlzc4HfPsXwaQ=
-=Ya+u
------END PGP SIGNATURE-----
+Thanks.
 
---GcxvFOCtgbxoSrcp--
+-- 
+tejun
