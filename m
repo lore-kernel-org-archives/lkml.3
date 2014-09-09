@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaIIDCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 23:02:46 -0400
-Received: from mail-bn1on0141.outbound.protection.outlook.com ([157.56.110.141]:9680
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753802AbaIIDCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 23:02:44 -0400
-X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Sep 2014 23:02:44 EDT
-From: "Hong-Xing.Zhu@freescale.com" <Hong-Xing.Zhu@freescale.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Shawn Guo <Shawn.Guo@freescale.com>
-CC: Raymond van der Rots <raymond@electrocompaniet.no>,
+	id S1755544AbaIIDEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 23:04:05 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:56623 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808AbaIIDEC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 23:04:02 -0400
+Date: Tue, 9 Sep 2014 12:03:53 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Tim Harvey <tharvey@gateworks.com>
-Subject: RE: [PATCH] imx6 PCI Host initialisation order
-Thread-Topic: [PATCH] imx6 PCI Host initialisation order
-Thread-Index: AQHPy0TIlq5CYJg2AkKj34Cl9RDVGJv3GWeAgABaOQCAAKX+sA==
-Date: Tue, 9 Sep 2014 02:47:03 +0000
-Message-ID: <9d6437c810424c6fb558179dac09cb2e@DM2PR0301MB0862.namprd03.prod.outlook.com>
-References: <BD2B99C7-743D-429F-801E-FCFAFAE4A7DB@electrocompaniet.no>
- <20140908112810.GA2799@dragon>
- <CAErSpo4scddSydpoVqb73pBvJshOq=YJcV17ePGe0uyQ+xymhw@mail.gmail.com>
-In-Reply-To: <CAErSpo4scddSydpoVqb73pBvJshOq=YJcV17ePGe0uyQ+xymhw@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.50]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0329B15C8A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019018)(6009001)(13464003)(24454002)(189002)(51704005)(199003)(377454003)(85306004)(86362001)(76576001)(108616004)(66066001)(74316001)(106116001)(15202345003)(107046002)(15975445006)(106356001)(2656002)(85852003)(92566001)(90102001)(87936001)(77096002)(31966008)(20776003)(74502001)(74662001)(64706001)(80022001)(81542001)(4396001)(99286002)(101416001)(54356999)(99396002)(19580405001)(95666004)(83072002)(77982001)(33646002)(76176999)(105586002)(81342001)(79102001)(21056001)(46102001)(19580395003)(50986999)(76482001)(97736003)(83322001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB351;H:DM2PR0301MB0862.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140909030353.GI11706@mtj.dyndns.org>
+References: <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org>
+ <20140909012227.GE11706@mtj.dyndns.org>
+ <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
+ <20140909012933.GF11706@mtj.dyndns.org>
+ <CAB=NE6V+of_RLQtjFpkLN49nKgfONx0T4cbu8kkNU69tUyNozw@mail.gmail.com>
+ <20140909014754.GG11706@mtj.dyndns.org>
+ <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
+ <20140909023943.GH11706@mtj.dyndns.org>
+ <CAB=NE6XH64QLfwoE3r7uf3SYKNJMzP-tjUkrxDwVca7G2zOxBQ@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6XH64QLfwoE3r7uf3SYKNJMzP-tjUkrxDwVca7G2zOxBQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8932pJE003061
 
-
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Tuesday, September 09, 2014 12:51 AM
-> To: Guo Shawn-R65073
-> Cc: Raymond van der Rots; Zhu Richard-R65037; linux-kernel@vger.kernel.org;
-> Lucas Stach; Tim Harvey
-> Subject: Re: [PATCH] imx6 PCI Host initialisation order
+On Mon, Sep 08, 2014 at 07:57:28PM -0700, Luis R. Rodriguez wrote:
+> > I think we
+> > just should make exceptions sensible so that it works fine in practice
+> > for now (and I don't think that'd be too hard).  So, the only
+> > cooperation necessary from userland would be just saying "I don't
+> > wanna wait for device probing on module load."
 > 
-> On Mon, Sep 8, 2014 at 5:28 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> > Hi Raymond,
-> >
-> > It seems that there is already a similar patch [1] from Tim floating
-> > on the list.
-> >
-> > Shawn
-> >
-> > [1] http://www.spinics.net/lists/linux-pci/msg33520.html
-> 
-> Yes.  MAINTAINERS lists Richard Zhu <r65037@freescale.com> and Shawn Guo
-> <shawn.guo@freescale.com> (hi Shawn :)) as the caretakers for pci-imx6.c.
-> Neither has acked it yet, and Richard asked for a comment update, which I
-> haven't seen yet.  So I haven't applied it yet.
-> 
-[Richard] Yes it is. I recommended to add one comment used to describe why
-the modification is required.
+> But we're talking about drivers that have a flag that says 'you gotta
+> wait sucker', what do we want systemd to do then? I'd be happy if it'd
+> would not send the sigkill for these drivers, for example.
 
-> > On Mon, Sep 08, 2014 at 11:10:37AM +0200, Raymond van der Rots wrote:
-> >> Hi,
-> >>
-> >> The imx6dl on our hardware board frequently had problems bringing up the
-> PCI link, with or without peripherals connected. I found these issues to be
-> due to the initialisation order of the PCI Host.
-> >>
-> >> The host driver first enables the phy, and then enables its clocks. However,
-> according to the reference manual (IMX6SDLRM, page 2033):
-> >> > The phy_ref_ssp_en signal must remain deasserted until the reference
-> clock is running at the appropriate frequency, at which point phy_ref_ssp_en
-> can be asserted.
-> >>
-> >>
-> >> Which implies that the clocks should be brought up first, after which the
-> peripheral should be enabled.
-> >> This patch changes that initialisation order.
-> >>
-> >> I do not have other hardware with an imx6dl, so this patch has only been
-> tested on our board. Could someone confirm that this is more technically
-> correct or improves behaviour?
-> >>
-> >> Signed-off-by: Raymond van der Rots <raymond@electrocompaniet.no>
-> >> ---
-> >> diff --git a/drivers/pci/host/pci-imx6.c
-> >> b/drivers/pci/host/pci-imx6.c index a568efa..17c35b4 100644
-> >> --- a/drivers/pci/host/pci-imx6.c
-> >> +++ b/drivers/pci/host/pci-imx6.c
-> >> @@ -228,11 +228,6 @@ static int imx6_pcie_deassert_core_reset(struct
-> pcie_port *pp)
-> >>       struct imx6_pcie *imx6_pcie = to_imx6_pcie(pp);
-> >>       int ret;
-> >>
-> >> -     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
-> >> -                     IMX6Q_GPR1_PCIE_TEST_PD, 0 << 18);
-> >> -     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
-> >> -                     IMX6Q_GPR1_PCIE_REF_CLK_EN, 1 << 16);
-> >> -
-> >>       ret = clk_prepare_enable(imx6_pcie->pcie_phy);
-> >>       if (ret) {
-> >>               dev_err(pp->dev, "unable to enable pcie_phy clock\n");
-> >> @@ -254,6 +249,11 @@ static int imx6_pcie_deassert_core_reset(struct
-> pcie_port *pp)
-> >>       /* allow the clocks to stabilize */
-> >>       usleep_range(200, 500);
-> >>
-> >> +     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
-> >> +                     IMX6Q_GPR1_PCIE_TEST_PD, 0 << 18);
-> >> +     regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR1,
-> >> +                     IMX6Q_GPR1_PCIE_REF_CLK_EN, 1 << 16);
-> >> +
-> >>       /* Some boards don't have PCIe reset GPIO. */
-> >>       if (gpio_is_valid(imx6_pcie->reset_gpio)) {
-> >>               gpio_set_value(imx6_pcie->reset_gpio, 0);
-> >>
-> >>
+Hah?  Can you give me an example?  I'm having hard time imagining a
+driver with such requirement given our current driver core
+implementation.
 
-Best Regards
-Richard Zhu
+Thanks.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+tejun
