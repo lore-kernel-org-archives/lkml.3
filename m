@@ -1,90 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782AbaIINWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:22:07 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:41734 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619AbaIINWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:22:05 -0400
+	id S1756621AbaIINZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:25:39 -0400
+Received: from muin.pair.com ([209.68.1.55]:57684 "EHLO muin.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753744AbaIINZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 09:25:38 -0400
+X-Greylist: delayed 466 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 09:25:38 EDT
+Message-ID: <540EFDFF.7050804@tabi.org>
+Date: Tue, 09 Sep 2014 08:17:51 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
 MIME-Version: 1.0
-In-Reply-To: <20140908204830.GA19307@kroah.com>
-References: <20140904171548.GA3265@ada>
-	<20140908204830.GA19307@kroah.com>
-Date: Tue, 9 Sep 2014 16:22:03 +0300
-Message-ID: <CALDM6bqS27zAGWy5NBAJLW=S2swNLTFKZ8z6ALFFZDuyF+uqRw@mail.gmail.com>
-Subject: Re: [PATCH] rtl8188eu: rtw_xmit: Replace rcu_dereference() with rcu_access_pointer()
-From: Andreea Bernat <bernat.ada@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Larry.Finger@lwfinger.net, navin patidar <navin.patidar@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Shengjiu Wang <shengjiu.wang@freescale.com>, nicoleotsuka@gmail.com,
+        Li.Xiubo@freescale.com, lgirdwood@gmail.com, broonie@kernel.org,
+        perex@perex.cz, tiwai@suse.de
+CC: alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
+References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+In-Reply-To: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rcu_dereference() calls are no longer there.
-They were removed.
+Shengjiu Wang wrote:
+> +	if (ssi_private->soc->imx)
+> +		clk_prepare_enable(ssi_private->clk);
 
-Sorry,
-Andreea
+How about this instead?
 
+if (ssi_private->clk)
+	clk_prepare_enable(ssi_private->clk);
 
-2014-09-08 23:48 GMT+03:00 Greg KH <gregkh@linuxfoundation.org>:
-> On Thu, Sep 04, 2014 at 08:15:48PM +0300, Andreea-Cristina Bernat wrote:
->> The "br_port" local variables obtained through the rcu_dereference() calls are
->> not dereferenced in the rest of their function.
->> Therefore, it is recommended to use rcu_access_pointer() instead of
->> rcu_dereference().
->> This patch makes the replacements.
->>
->> The first step to detect this was made with the following Coccinelle semantic
->> patch:
->> @@
->> identifier p;
->> @@
->>
->> * p = rcu_dereference(...)
->> ... when any
->>     when != p
->> (
->> * if( (<+...p...+>) ) { ... }
->> |
->> * while( (<+...p...+>) ) { ... }
->> )
->> ... when != p
->>
->> After the analysis of the output, the change was made manually.
->>
->> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
->> ---
->>  drivers/staging/rtl8188eu/core/rtw_xmit.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c b/drivers/staging/rtl8188eu/core/rtw_xmit.c
->> index 1413ec8..93228dc 100644
->> --- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
->> +++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
->> @@ -1684,7 +1684,7 @@ static int rtw_br_client_tx(struct adapter *padapter, struct sk_buff **pskb)
->>       void *br_port = NULL;
->>
->>       rcu_read_lock();
->> -     br_port = rcu_dereference(padapter->pnetdev->rx_handler_data);
->> +     br_port = rcu_access_pointer(padapter->pnetdev->rx_handler_data);
->>       rcu_read_unlock();
->>       spin_lock_bh(&padapter->br_ext_lock);
->>       if (!(skb->data[0] & 1) && br_port &&
->> @@ -1868,7 +1868,7 @@ s32 rtw_xmit(struct adapter *padapter, struct sk_buff **ppkt)
->>       }
->>
->>       rcu_read_lock();
->> -     br_port = rcu_dereference(padapter->pnetdev->rx_handler_data);
->> +     br_port = rcu_access_pointer(padapter->pnetdev->rx_handler_data);
->>       rcu_read_unlock();
->>
->>       if (br_port && check_fwstate(pmlmepriv, WIFI_STATION_STATE|WIFI_ADHOC_STATE)) {
->
-> This patch doesn't apply at all to my staging-next branch of the
-> staging.git tree on git.kernel.org :(
->
