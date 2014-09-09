@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310AbaIIJqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:46:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:55968 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755007AbaIIJqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:46:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
-   d="scan'208";a="476288433"
-Date: Tue, 9 Sep 2014 12:46:44 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>, Mark Brown <broonie@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, gpio: Increase ARCH_NR_GPIOs to 512
-Message-ID: <20140909094644.GP13406@lahna.fi.intel.com>
-References: <1410176880-22524-1-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdb=yO3TbStfEesJCGDL3D_bq6_C0jwPUmKVuE+Otg8G4g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb=yO3TbStfEesJCGDL3D_bq6_C0jwPUmKVuE+Otg8G4g@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932393AbaIIJrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:47:33 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:61285 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055AbaIIJra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:47:30 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-1f-540eccafc7d0
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RESEND PATCH 2/2] power: max8925: Use of_get_child_by_name
+Date: Tue, 09 Sep 2014 11:47:15 +0200
+Message-id: <1410256035-24051-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1410256035-24051-1-git-send-email-k.kozlowski@samsung.com>
+References: <1410256035-24051-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLJMWRmVeSWpSXmKPExsVy+t/xa7rrz/CFGLy7omEx6cl7ZouJKycz
+	W7x+YWhxedccNovPvUcYLU7vLnFg89g56y67x+YVWh6bVnWyefRtWcXo8XmTXABrFJdNSmpO
+	Zllqkb5dAlfGib6rrAUb2Cq6/11nbmDczNrFyMkhIWAice/hDDYIW0ziwr31YLaQwFJGiV0f
+	qrsYuYDsPiaJE88+gzWwCRhLbF6+hA0kISKwm1FiwtTlLCAJZgFDiZ/v/rCD2MICLhITPu1l
+	BrFZBFQlnn1dCVTDwcEr4C7xpoMJYpmcxMljk8Fmcgp4SNw7NYMRYrG7xM9rX9kmMPIuYGRY
+	xSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESRF93MC49ZnWIUYCDUYmHd2IZX4gQa2JZcWXu
+	IUYJDmYlEd7dB4FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGEPXfZufzJp4IXVruYvDsfyLu+Zw
+	NPNHHfzRYNw6++fu/bk1ATM5F/2UXTZNd9PkQn33I3MefkuOfbrlwhNvxdPn+3epKbvvZH+8
+	Sbu72fipyPLmVTK32mLnP3jLsj69kfPZmcd9ak4OFw+67twdINd3x+r9b1Xl9Z8/z6k6ueew
+	osbLR+tEznUqsRRnJBpqMRcVJwIAZPSTmgACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 09:24:59AM +0200, Linus Walleij wrote:
-> On Mon, Sep 8, 2014 at 1:47 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> 
-> > Some newer Intel SoCs like Braswell already have more than 256 GPIOs
-> > available so the default limit is exceeded. In order to support these add
-> > back the custom GPIO header with limit of 512 GPIOs for x86.
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> Argh! This is the kind of stuff I want to get rid of ....
-> 
-> Preferably gpio should be a subsystem without a lot of hooks all over
-> the place with arch-specific modifications for this and that, including
-> the max number of GPIOs.
-> 
-> I would actually prefer if you bump the value in
-> include/asm-generic/gpio.h to 512 over this.
+Use of_get_child_by_name to obtain reference to charger node instead of
+of_find_node_by_name which can walk outside of the parent node.
 
-OK, this makes sense and I can do the change for the next revision of
-the patch.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/power/max8925_power.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> But better still, now that we have descriptors etc would be to define
-> some new per-arch selectable config option like
-> CONFIG_ONLY_DYNAMIC_GPIO that changes the GPIO
-> core to use something like a radix tree to store and retrieve
-> descriptors.
-> 
-> I.e. in drivers/gpio/gpiolib.c get rid of this:
-> static struct gpio_desc gpio_desc[ARCH_NR_GPIOS];
-> 
-> Replace it with a radix tree of descriptors.
-> 
-> This however makes it *impossible* to use things like desc_to_gpio()
-> and/or gpio_to_desc() so the code has to be augmented all over the
-> place to avoid any uses of GPIO numbers on that architecture,
-> but I am sure it *can* be done on pure ACPI or device tree
-> systems, and that's what we should aim for.
-> 
-> Comments?
+diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+index 0cf237808d47..a6d45eef64dd 100644
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@ -443,7 +443,7 @@ max8925_power_dt_init(struct platform_device *pdev)
+ 	if (!nproot)
+ 		return pdev->dev.platform_data;
+ 
+-	np = of_find_node_by_name(nproot, "charger");
++	np = of_get_child_by_name(nproot, "charger");
+ 	if (!np) {
+ 		dev_err(&pdev->dev, "failed to find charger node\n");
+ 		return NULL;
+-- 
+1.9.1
 
-That's a rather big rework to the GPIO subsystem and its users. I agree
-that it should be the goal eventually. For x86 such conversion is not
-that simple because we have systems out there that have neither ACPI nor
-DT available.
