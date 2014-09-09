@@ -1,162 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455AbaIIRGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:06:44 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:39814 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840AbaIIRGk (ORCPT
+	id S1757475AbaIIRHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:07:12 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43987 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840AbaIIRHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:06:40 -0400
-Date: Tue, 9 Sep 2014 10:06:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: linux-input@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org,
-        Andrew Duggan <aduggan@synaptics.com>
-Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
-Message-ID: <20140909170636.GA28774@core.coreip.homeip.net>
-References: <20140908165520.GA35051@core.coreip.homeip.net>
- <540EAFD1.2040307@redhat.com>
+	Tue, 9 Sep 2014 13:07:10 -0400
+Date: Tue, 9 Sep 2014 13:02:31 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Rodrigo Freire <rfreire@redhat.com>
+Cc: dwmw2@infradead.org, Felix Fietkau <nbd@openwrt.org>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block2mtd: mtd: Present block2mtd timely on boot time
+Message-ID: <20140909170231.GA14429@logfs.org>
+References: <371358190.34795877.1410204429882.JavaMail.zimbra@redhat.com>
+ <1444809468.34812041.1410206680931.JavaMail.zimbra@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <540EAFD1.2040307@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1444809468.34812041.1410206680931.JavaMail.zimbra@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 09:44:17AM +0200, Hans de Goede wrote:
-> Hi,
+On Mon, 8 September 2014 16:04:40 -0400, Rodrigo Freire wrote:
 > 
-> On 09/08/2014 06:55 PM, Dmitry Torokhov wrote:
-> > ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-> > physical buttons, instead they generate primary button click when user
-> > presses somewhat hard on the surface of the touchpad. Unfortunately they
-> > also report primary button click whenever there are 2 or more contacts
-> > on the pad, messing up all multi-finger gestures (2-finger scrolling,
-> > multi-finger tapping, etc). To cope with this behavior we introduce a
-> > delay (currently 50 msecs) in reporting primary press in case more
-> > contacts appear.
-> > 
-> > For now we are using DMI matching to detect ForcePads, hopefully we'll
-> > be able to figure a better way down the road.
+> From: Felix Fietkau <nbd@openwrt.org>
 > 
-> What about using the pnp-id, in my experience with the recent lenovo
-> laptops that tends to be more reliable.
-
-Not sure. So far I only know of HP 1040 having it. FWIW:
-
-dtor@dtor-glaptop:~$ cat /sys/bus/pnp/drivers/i8042\ aux/00\:07/id
-SYN300d
-SYN0100
-SYN0002
-PNP0f13
-
-I think if we see generalities we can switch over later. I hope
-Chris/Andrew will come with a capability bit though :)
-
+> block2mtd: Ensure that block2mtd is presented in a timely fashion 
 > 
-> Christopher, Andrew (added to the CC), can one of you tell us if there
-> is a capability bit to detect this, and if not can you perhaps provide
-> a list of pnp-ids of devices which behave like this ?
+> Currently, a block MTD device is not presented to the system on time, in 
+> order to start mounting the filesystems. This patch ensures that block2mtd 
+> is presented at the right time, so filesystems can be mounted on boot time.
+> This issue was seen on BCM2708 (Raspberry Pi) systems when mounting JFFS2 
+> block2mtd filesystems.
+> This patchset also adds a MTD device name and a timeout option to the driver.
+
+Looks fine once the comments below are addressed.
+
+> Original patchset:
+> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/440-block2mtd_init.patch?rev=40444
+> https://dev.openwrt.org/browser/trunk/target/linux/generic/patches-3.12/441-block2mtd_probe.patch?rev=40444
 > 
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > ---
-> >  drivers/input/mouse/synaptics.c | 80 ++++++++++++++++++++++++++++++++---------
-> >  drivers/input/mouse/synaptics.h |  5 +++
-> >  2 files changed, 69 insertions(+), 16 deletions(-)
-> > 
-> > diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> > index e8573c6..5de1bb6 100644
-> > --- a/drivers/input/mouse/synaptics.c
-> > +++ b/drivers/input/mouse/synaptics.c
-> > @@ -618,6 +618,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
-> >  	priv->agm_pending = true;
-> >  }
-> >  
-> > +static bool is_forcepad;
-> > +
-> >  static int synaptics_parse_hw_state(const unsigned char buf[],
-> >  				    struct synaptics_data *priv,
-> >  				    struct synaptics_hw_state *hw)
-> > @@ -629,10 +631,58 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
-> >  			 ((buf[0] & 0x04) >> 1) |
-> >  			 ((buf[3] & 0x04) >> 2));
-> >  
-> > +		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-> > +			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-> > +		    hw->w == 2) {
-> > +			synaptics_parse_agm(buf, priv, hw);
-> > +			return 1;
-> > +		}
-> > +
-> > +		hw->x = (((buf[3] & 0x10) << 8) |
-> > +			 ((buf[1] & 0x0f) << 8) |
-> > +			 buf[4]);
-> > +		hw->y = (((buf[3] & 0x20) << 7) |
-> > +			 ((buf[1] & 0xf0) << 4) |
-> > +			 buf[5]);
-> > +		hw->z = buf[2];
-> > +
-> >  		hw->left  = (buf[0] & 0x01) ? 1 : 0;
-> >  		hw->right = (buf[0] & 0x02) ? 1 : 0;
-> >  
+> Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+> Signed-off-by: Rodrigo Freire <rfreire@redhat.com> 
 > 
-> Moving this up means that on clickpads the button will no longer
-> be checked + set for hw->w == 2 packets. That seems like an unintended
-> side effect.
+> --- a/drivers/mtd/devices/block2mtd.c	2014-09-05 11:13:39.143698413 -0300
+> +++ b/drivers/mtd/devices/block2mtd.c	2014-09-05 17:50:28.107366433 -0300
+> @@ -9,7 +9,15 @@
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> +/*
+> +* When the first attempt at device initialization fails, we may need to
+> +* wait a little bit and retry. This timeout, by default 3 seconds, gives
+> +* device time to start up. Required on BCM2708 and a few other chipsets.
+> +*/
+> +#define MTD_DEFAULT_TIMEOUT	3
+> +
+>  #include <linux/module.h>
+> +#include <linux/delay.h>
+>  #include <linux/fs.h>
+>  #include <linux/blkdev.h>
+>  #include <linux/bio.h>
+> @@ -17,6 +25,7 @@
+>  #include <linux/list.h>
+>  #include <linux/init.h>
+>  #include <linux/mtd/mtd.h>
+> +#include <linux/mtd/partitions.h>
+>  #include <linux/mutex.h>
+>  #include <linux/mount.h>
+>  #include <linux/slab.h>
+> @@ -209,12 +218,14 @@ static void block2mtd_free_device(struct
+>  }
+>  
+>  
+> -static struct block2mtd_dev *add_device(char *devname, int erase_size)
+> +static struct block2mtd_dev *add_device(char *devname, int erase_size, const char *mtdname, int timeout)
+>  {
+>  	const fmode_t mode = FMODE_READ | FMODE_WRITE | FMODE_EXCL;
+> -	struct block_device *bdev;
+> +	struct block_device *bdev = ERR_PTR(-ENODEV);
+>  	struct block2mtd_dev *dev;
+> +	struct mtd_partition *part;
+>  	char *name;
+> +	int i;
+>  
+>  	if (!devname)
+>  		return NULL;
+> @@ -225,15 +236,28 @@ static struct block2mtd_dev *add_device(
+>  
+>  	/* Get a handle on the device */
+>  	bdev = blkdev_get_by_path(devname, mode, dev);
+> -#ifndef MODULE
+> -	if (IS_ERR(bdev)) {
+>  
+> -		/* We might not have rootfs mounted at this point. Try
+> -		   to resolve the device name by other means. */
+> -
+> -		dev_t devt = name_to_dev_t(devname);
+> -		if (devt)
+> -			bdev = blkdev_get_by_dev(devt, mode, dev);
+> +#ifndef MODULE
+> +/*
+> +* We might not have the root device mounted at this point.
+> +* Try to resolve the device name by other means.
+> +*/
+> +	for (i = 0; IS_ERR(bdev) && i <= timeout; i++) {
+> +		dev_t devt;
+> +
+> +		if (i)
+> +			/*
+> +			 * Calling wait_for_device_probe in the first loop 
+> +			 * was not enough, sleep for a bit in subsequent
+> +			 * go-arounds.
+> +			*/
+> +			msleep(1000);
+> +		wait_for_device_probe();
+> +
+> +		devt = name_to_dev_t(devname);
+> +		if (!devt)
+> +			continue;
+> +		bdev = blkdev_get_by_dev(devt, mode, dev);
+>  	}
+>  #endif
+>  
+> @@ -257,13 +281,15 @@ static struct block2mtd_dev *add_device(
+>  
+>  	/* Setup the MTD structure */
+>  	/* make the name contain the block device in */
+> -	name = kasprintf(GFP_KERNEL, "block2mtd: %s", devname);
+> +	if (!mtdname)
+> +		mtdname = devname;
+> +	name = kmalloc(strlen(mtdname) + 1, GFP_KERNEL);
+>  	if (!name)
+>  		goto err_destroy_mutex;
+>  
+> +	strcpy(name, mtdname);
 
-I guess we can call it a side effect, but it is fine - we parse AGM and
-stash the data, then when 2nd packet comes we parse and act upon it. In
-the old code we'd parse x, y, z, in AGM etc. and then have it
-overwritten with the data from the 2nd packet, here we do not bother.
+kstrdup.
 
-> If this is intended then this should probably be in its own
-> patch.
+And see below for the ABI change.
 
-It does not make sense on its own as ForcePad support needs to know
-values of Z and W when deciding how to handle primary click, otherwise
-the old code was just fine.
+>  	dev->mtd.name = name;
+> -
+> -	dev->mtd.size = dev->blkdev->bd_inode->i_size & PAGE_MASK;
+> +	dev->mtd.size = dev->blkdev->bd_inode->i_size & PAGE_MASK & ~(erase_size - 1);
 
-> 
-> > -		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
-> > +		if (is_forcepad) {
-> > +			/* XXX is there a proper capability bit for this? */
-> > +			/*
-> > +			 * ForcePads, like Clickpads, use middle button
-> > +			 * bits to report primary button clicks.
-> > +			 * Unfortunately they report primary button not only
-> > +			 * when user presses on the pad above certain threshold,
-> > +			 * but also when there are more than one finger on the
-> > +			 * touchpad, which interferes with out multi-finger
-> > +			 * gestures.
-> > +			 */
-> > +			if (hw->z == 0) {
-> > +				/* No contacts */
-> > +				priv->press = priv->report_press = false;
-> > +			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
-> > +				/*
-> > +				 * Single-finger touch with pressure above
-> > +				 * the threshold.
-> > +				 */
-> > +				if  (!priv->press) {
-> > +					priv->press_start = jiffies;
-> > +					priv->press = true;
-> > +				} else if (time_after(jiffies,
-> > +						priv->press_start +
-> > +							msecs_to_jiffies(50))) {
-> > +					priv->report_press = true;
-> > +				}
-> 
-> You're not setting a timer here, instead relying on there to be further events,
-> that is probably ok, but maybe put a comment to that extent here ?
+PAGE_MASK is no longer needed with the new term.  Or does anyone
+seriously want to support erase_size < PAGE_SIZE?
 
-I can, any suggestion on what you want me to say? "If single point
-contact held pressure long enough start reporting primary click"?
+>  	dev->mtd.erasesize = erase_size;
+>  	dev->mtd.writesize = 1;
+>  	dev->mtd.writebufsize = PAGE_SIZE;
+> @@ -276,15 +302,19 @@ static struct block2mtd_dev *add_device(
+>  	dev->mtd.priv = dev;
+>  	dev->mtd.owner = THIS_MODULE;
+>  
+> -	if (mtd_device_register(&dev->mtd, NULL, 0)) {
+> +	part = kzalloc(sizeof(struct mtd_partition), GFP_KERNEL);
+> +	part->name = name;
+> +	part->offset = 0;
+> +	part->size = dev->mtd.size;
+> +	if (mtd_device_register(&dev->mtd, part, 1)) {
+>  		/* Device didn't get added, so free the entry */
+>  		goto err_destroy_mutex;
+>  	}
+> +
+>  	list_add(&dev->list, &blkmtd_device_list);
+>  	pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n",
+>  		dev->mtd.index,
+> -		dev->mtd.name + strlen("block2mtd: "),
+> -		dev->mtd.erasesize >> 10, dev->mtd.erasesize);
+> +		mtdname, dev->mtd.erasesize >> 10, dev->mtd.erasesize);
+>  	return dev;
+>  
+>  err_destroy_mutex:
+> @@ -353,11 +383,12 @@ static char block2mtd_paramline[80 + 12]
+>  
+>  static int block2mtd_setup2(const char *val)
+>  {
+> -	char buf[80 + 12]; /* 80 for device, 12 for erase size */
+> +	char buf[80 + 12 + 80 + 8]; /* 80 for device, 12 for erase size, 80 for name, 8 for timeout */
+>  	char *str = buf;
+> -	char *token[2];
+> +	char *token[4];
+>  	char *name;
+>  	size_t erase_size = PAGE_SIZE;
+> +	unsigned long timeout = MTD_DEFAULT_TIMEOUT;
+>  	int i, ret;
+>  
+>  	if (strnlen(val, sizeof(buf)) >= sizeof(buf)) {
+> @@ -368,7 +399,7 @@ static int block2mtd_setup2(const char *
+>  	strcpy(str, val);
+>  	kill_final_newline(str);
+>  
+> -	for (i = 0; i < 2; i++)
+> +	for (i = 0; i < 4; i++)
+>  		token[i] = strsep(&str, ",");
+>  
+>  	if (str) {
+> @@ -395,7 +426,13 @@ static int block2mtd_setup2(const char *
+>  		}
+>  	}
+>  
+> -	add_device(name, erase_size);
+> +	if (token[2] && (strlen(token[2]) + 1 > 80))
+> +		pr_err("mtd device name too long");
 
-Thanks.
+Timeout has a default value, but name defaults to NULL.  Add three
+devices without specifying the name and you get funny results.
 
--- 
-Dmitry
+If we handled the NULL case by doing what the driver used to do before
+this patch, I think this would be fine.
+
+> +
+> +	if (token[3] && kstrtoul(token[3], 0, &timeout))
+> +		pr_err("invalid timeout");
+> +	add_device(name, erase_size, token[2], timeout);
+>  
+>  	return 0;
+>  }
+> @@ -429,7 +466,7 @@ static int block2mtd_setup(const char *v
+>  
+>  
+>  module_param_call(block2mtd, block2mtd_setup, NULL, NULL, 0200);
+> -MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>]\"");
+> +MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>[,<name>[,<timeout>]]]\"");
+>  
+>  static int __init block2mtd_init(void)
+>  {
+> @@ -463,8 +500,7 @@ static void block2mtd_exit(void)
+>  	}
+>  }
+>  
+> -
+> -module_init(block2mtd_init);
+> +late_initcall(block2mtd_init);
+>  module_exit(block2mtd_exit);
+>  
+>  MODULE_LICENSE("GPL");
+
+Jörn
+
+--
+Most compromises I've seen have been have been a result of gross stupidity,
+not incredible technical skill on the part of the attacker.
+-- pr0f
