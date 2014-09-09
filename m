@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751155AbaIIRn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:43:56 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:58963 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaIIRny convert rfc822-to-8bit (ORCPT
+	id S1751156AbaIIRsD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:48:03 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:50969 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaIIRsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:43:54 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 9 Sep 2014 13:48:01 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 9 Sep 2014 13:53:50 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf: perf_fuzzer triggers instant reboot
+In-Reply-To: <alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Masahiro Yamada <yamada.m@jp.panasonic.com>, linux-kbuild@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1410258381-7088-2-git-send-email-yamada.m@jp.panasonic.com>
-Cc: "Masahiro Yamada" <yamada.m@jp.panasonic.com>,
-        "Ben Dooks" <ben-linux@fluff.org>,
-        "Kukjin Kim" <kgene.kim@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Laurent Pinchart" <laurent.pinchart+renesas@ideasonboard.com>,
-        "Simon Horman" <horms+renesas@verge.net.au>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        "Wolfram Sang" <wsa@sang-engineering.com>,
-        "Takashi Yoshii" <takasi-y@ops.dti.ne.jp>,
-        "Ulrich Hecht" <ulrich.hecht@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-References: <1410258381-7088-1-git-send-email-yamada.m@jp.panasonic.com>
- <1410258381-7088-2-git-send-email-yamada.m@jp.panasonic.com>
-Message-ID: <20140909174337.19023.97772@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 1/3] kbuild: remove unnecessary "obj- := dummy.o" trick
-Date: Tue, 09 Sep 2014 10:43:37 -0700
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Masahiro Yamada (2014-09-09 03:26:19)
-> In these Makefiles, at least one of "obj-y" and "obj-" is non-empty,
-> hence built-in.o is always created without such a trick.
-> 
-> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
+OK so trying to use ftrace to track this issue, and this happens (on 
+core2, 3.17-rc4)
 
-> ---
-> 
->  arch/arm/plat-samsung/Makefile | 1 -
->  drivers/clk/shmobile/Makefile  | 2 --
->  drivers/net/wimax/Makefile     | 4 ----
->  3 files changed, 7 deletions(-)
-> 
-> diff --git a/arch/arm/plat-samsung/Makefile b/arch/arm/plat-samsung/Makefile
-> index 5fe1750..a402262 100644
-> --- a/arch/arm/plat-samsung/Makefile
-> +++ b/arch/arm/plat-samsung/Makefile
-> @@ -8,7 +8,6 @@ ccflags-$(CONFIG_ARCH_MULTI_V7) += -I$(srctree)/$(src)/include
->  
->  obj-y                          :=
->  obj-m                          :=
-> -obj-n                          := dummy.o
->  obj-                           :=
->  
->  # Objects we always build independent of SoC choice
-> diff --git a/drivers/clk/shmobile/Makefile b/drivers/clk/shmobile/Makefile
-> index e002923..9aab51c8 100644
-> --- a/drivers/clk/shmobile/Makefile
-> +++ b/drivers/clk/shmobile/Makefile
-> @@ -6,5 +6,3 @@ obj-$(CONFIG_ARCH_R8A7790)              += clk-rcar-gen2.o
->  obj-$(CONFIG_ARCH_R8A7791)             += clk-rcar-gen2.o
->  obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += clk-div6.o
->  obj-$(CONFIG_ARCH_SHMOBILE_MULTI)      += clk-mstp.o
-> -# for emply built-in.o
-> -obj-n  := dummy
-> diff --git a/drivers/net/wimax/Makefile b/drivers/net/wimax/Makefile
-> index 992bc02..692184d 100644
-> --- a/drivers/net/wimax/Makefile
-> +++ b/drivers/net/wimax/Makefile
-> @@ -1,5 +1 @@
-> -
->  obj-$(CONFIG_WIMAX_I2400M)     += i2400m/
-> -
-> -# (from Sam Ravnborg) force kbuild to create built-in.o
-> -obj- := dummy.o
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[  295.992012] PANIC: double fault, error_code: 0x0
+[  295.992012] CPU: 1 PID: 2916 Comm: trace-cmd Not tainted 3.17.0-rc4+ #82
+[  295.992012] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[  295.992012] task: ffff8800cb20a800 ti: ffff8800ca30c000 task.ti: ffff8800ca30c000
+[  295.992012] RIP: 0010:[<ffffffff81037b92>]  [<ffffffff81037b92>] perf_trace_x86_exceptions+0x2d/0xb7
+[  295.992012] RSP: 0018:ffff8800bfffff58  EFLAGS: 00010082
+[  295.992012] RAX: 0000000000000001 RBX: ffff880037c9f490 RCX: 0000000000000000
+[  295.992012] RDX: ffff8800c0000098 RSI: ffffe8ffffc81010 RDI: ffffffff81a26600
+[  295.992012] RBP: ffff8800c0000058 R08: 0000000000044ea5 R09: ffffe8ffffc81010
+[  295.992012] R10: 0000000000000000 R11: ffff8800ca30fc48 R12: ffff8800c0000098
+[  295.992012] R13: ffffe8ffffc81010 R14: 0000000000000000 R15: ffffffff81a26600
+[  295.992012] FS:  00007f4217f82700(0000) GS:ffff88011fc80000(0000) knlGS:0000000000000000
+[  295.992012] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  295.992012] CR2: ffff8800bfffff48 CR3: 00000000ca0b9000 CR4: 00000000000407e0
+[  295.992012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  295.992012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[  295.992012] Stack:
+[  295.992012] PANIC: double fault, error_code: 0x0
+
+and the system reboots.
+
+Vince
