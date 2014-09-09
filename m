@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaIIB3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 21:29:44 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:35736 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911AbaIIB3m (ORCPT
+	id S932095AbaIIBf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 21:35:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37142 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911AbaIIBfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 21:29:42 -0400
-Date: Tue, 9 Sep 2014 10:29:33 +0900
-From: Tejun Heo <tj@kernel.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
+	Mon, 8 Sep 2014 21:35:54 -0400
+Date: Mon, 8 Sep 2014 18:35:53 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Azael Avalos <coproscefalo@gmail.com>, Jonathan Cameron <jic23@kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-Message-ID: <20140909012933.GF11706@mtj.dyndns.org>
-References: <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
- <20140905141241.GC10455@mtj.dyndns.org>
- <20140905164405.GA28964@core.coreip.homeip.net>
- <20140905174925.GA12991@mtj.dyndns.org>
- <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
- <20140905224047.GC15723@mtj.dyndns.org>
- <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
- <20140909011059.GB11706@mtj.dyndns.org>
- <20140909012227.GE11706@mtj.dyndns.org>
- <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 3/5] toshiba_acpi: Add accelerometer input polled device
+Message-ID: <20140909013553.GC16363@kroah.com>
+References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
+ <1409937247-2525-4-git-send-email-coproscefalo@gmail.com>
+ <20140906024253.GB11389@vmdeb7>
+ <CAGdLNWGhdQU3Fpud9Zgvx3AQ5Lb=WdEkJb_wWTb1hJoHxXPXpQ@mail.gmail.com>
+ <20140909000429.GB5835@vmdeb7>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
+In-Reply-To: <20140909000429.GB5835@vmdeb7>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 06:26:04PM -0700, Luis R. Rodriguez wrote:
-> > Alternatively, add a module-generic param "async_probe" or whatever
-> > and use that to switch the behavior should work too.  I don't know
-> > which way is better but either should work fine.
+On Mon, Sep 08, 2014 at 05:04:30PM -0700, Darren Hart wrote:
+> On Fri, Sep 05, 2014 at 11:04:18PM -0600, Azael Avalos wrote:
+> > Hi there,
+> > 
+> > 2014-09-05 20:42 GMT-06:00 Darren Hart <dvhart@infradead.org>:
+> > > On Fri, Sep 05, 2014 at 11:14:05AM -0600, Azael Avalos wrote:
+> > >> The accelerometer sensor is very sensitive, and having userspace
+> > >> poll the sysfs position entry is not very battery friendly.
+> > >>
+> > >> This patch removes the sysfs entry and instead, it creates an
+> > >> input polled device (joystick) for the built-in accelerometer.
+> > >
+> > > Hrm, while sysfs details can change across kernel versions, usually due to
+> > > driver core changes, we try to keep them as consistent as possible so as not to
+> > > break userspace.
+> > >
+> > > That said, if we are going to try and come up with a better model for
+> > > representing an accelerometer, wouldn't treating it as an IIO device be the more
+> > > logical approach?
+> > 
+> > Yes of course, but the actual accelerometer device (sensor?) is not
+> > really exposed,
+> > only certain "functions" it provides, and they are divided across two
+> > different ACPI devices,
+> > TOS620A exposes the protection, and the TOS1900 (and et. al.) only
+> > exposes the axes.
 > 
-> I take it by this you meant a generic system-wide sysctl or kernel cmd
-> line option to enable this for al drivers?
+> As I understand it, IIO defines an interface to a device, a standard sysfs set
+> of properties. I should think we could provide the appropriate callbacks even
+> for a partially implemented (or a pair of) accelerometer.
+> 
+> Jonathan, what are your thoughts here. Is such a "device" (ACPI accessors to
+> axis and threshold) a candidate for IIO, or is this input polled device more
+> appropriate?
+> 
+> > 
+> > I see your point in breaking userspace, but given the fact that it was
+> > recently introduced,
+> > I didn't thought it was already "adopted", that's why I decided to
+> > remove the sysfs entry.
+> 
+> Looks like since 3.15 if I read the log correctly. That is fairly recent and
+> this is not one of the "defined interfaces" in the sysfs documentation.
+> 
+> Greg, can you weigh in here - does this change count as "breaking userspace", or
+> is this more inline with the scheduler knobs in /proc/sched_debug which can
+> change from version to version.
+> 
+> > 
+> > Then we might as well keep the sysfs entry and have the input polled
+> > device as well.
+> 
+> Let's see what Greg has to say. If he isn't bothered by the change, I won't push
+> the issue.
 
-Well, either global or per-insmod switch should work.  There probably
-are details that I haven't mentioned - e.g. probably global switch is
-easier to backport and deploy to existing systems - but as long as it
-works I don't have fundmental objections either way.
+If it should be an IIO device, great, make it an IIO device, and move
+away from a custom sysfs interface that matches nothing else.
 
-Thanks.
+But I really doubt it should be a joystick device, that just doesn't
+make sense at all.
 
--- 
-tejun
+thanks,
+
+greg k-h
