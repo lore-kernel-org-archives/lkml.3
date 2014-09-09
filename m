@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073AbaIIJPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:15:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55103 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752484AbaIIJPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:15:03 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH] ARM: at91: enable new AIC driver even if the old one is selected
-Date: Tue,  9 Sep 2014 11:14:59 +0200
-Message-Id: <1410254099-24680-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	id S1756202AbaIIJP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:15:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2668 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754745AbaIIJP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:15:27 -0400
+Message-ID: <540EC52C.3000804@redhat.com>
+Date: Tue, 09 Sep 2014 11:15:24 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: linux-usb <linux-usb@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [REGRESSION 3.17] scsi (uas) disks no longer using tagged command
+ queuing
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new AIC driver is currently only selected when only DT board support
-is enabled (and not when both DT and non-DT boards are supported), thus,
-when booting a "DT + non-DT" kernel with a dtb, the irqchip is never
-initialized/registered which then triggers a panic.
+Hi All,
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- arch/arm/mach-at91/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+While working on making error handling in the uas driver more robust,
+I noticed that all the commands being send to a sata ssd hooked up
+over uas were untagged, where I would expect tcq to be used, as that
+is the big advantage of uas over usb-storage / bot.
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 7df2c9b..cd7c0cb 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -51,7 +51,7 @@ config HAVE_AT91_SMD
- config SOC_AT91SAM9
- 	bool
- 	select AT91_SAM9_TIME
--	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
-+	select ATMEL_AIC_IRQ
- 	select CPU_ARM926T
- 	select GENERIC_CLOCKEVENTS
- 
-@@ -111,7 +111,7 @@ endif
- if SOC_SAM_V4_V5
- config SOC_AT91RM9200
- 	bool "AT91RM9200"
--	select ATMEL_AIC_IRQ if !OLD_IRQ_AT91
-+	select ATMEL_AIC_IRQ
- 	select CPU_ARM920T
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_AT91_DBGU0
--- 
-1.9.1
+Taking the uas.c file from 3.17, and building it for 3.16 restores
+the use of tcq (debugged by adding a printk blk_rq_tagged + request->tag).
 
+So either uas is doing something wrong which happened to work in
+3.16, or something has broken in 3.17.
+
+I've already added debug printk-s of scsi_device->tagged_supported,
+queue_depth, ordered_tags and simple_tags and those all look good
+(1, 29, 1, 1).
+
+I've also tried setting disable_blk_mq and that does not help.
+
+Any hints to help debugging this further (other then a bisect) are
+appreciated. If no-one has any smart ideas I guess I'll end up doing
+a full bisect.
+
+Regards,
+
+Hans
