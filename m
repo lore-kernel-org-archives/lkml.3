@@ -1,143 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064AbaIIIp7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:45:59 -0400
-Received: from hgpmta01.sony.com.cn ([114.141.162.246]:42122 "EHLO
-	hgpmta01.sony.com.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815AbaIIIpy convert rfc822-to-8bit (ORCPT
+	id S1756121AbaIIIqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:46:31 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:11179 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378AbaIIIp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:45:54 -0400
-From: "Su, Friendy" <Friendy.Su@sony.com.cn>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 9 Sep 2014 16:34:52 +0800
-Subject: RE: [PATCH v2 1/1] iommu/amd: set iommu for early mapped ioapic/hpet
-Thread-Topic: [PATCH v2 1/1] iommu/amd: set iommu for early mapped
- ioapic/hpet
-Thread-Index: Ac/JEN+Cw8yB8PR6TOWxaWNtcQhGawC9cmvw
-Message-ID: <053191AD6E9023439BF3970DE870051856D274B417@APSHAXMS02.ap.sony.com>
-References: <053191AD6E9023439BF3970DE870051856D1EF3AC5@APSHAXMS02.ap.sony.com>
- <20140905135320.GP28786@8bytes.org>
-In-Reply-To: <20140905135320.GP28786@8bytes.org>
-Accept-Language: en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 9 Sep 2014 04:45:27 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-80-540ebe26b360
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: Paul.Zimmerman@synopsys.com
+Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 6/6] usb: dwc2/gadget: disable clock when it's not needed
+Date: Tue, 09 Sep 2014 10:44:57 +0200
+Message-id: <1410252297-13738-7-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
+References: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e+xoK7aPr4Qg5+/pSwO3q+3aF68ns3i
+	8q45bBaLlrUyWzx6uJXV4sHhnewObB77565h9+jbsorRY8v+z4wex29sZ/L4vEkugDWKyyYl
+	NSezLLVI3y6BK6Pt92nWgqV8FYs+eTQw3uXuYuTkkBAwkXj6/ioThC0mceHeerYuRi4OIYHp
+	jBL/f25jBUkICbQzSTy5GgliswnoSGz5PoERxBYRkJe4vvEmC0gDs0A/o8TK2YuBHA4OYQFP
+	iZ4OSZAaFgFViTt7P7GD2LwCrhJbNzWzQCyTkzh5bDLYfE4BN4k/x76wQ+xylfg3ZxrLBEbe
+	BYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCw+iZ9A7GVQ0WhxgFOBiVeHgzgvlChFgT
+	y4orcw8xSnAwK4nwXtkNFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1
+	CCbLxMEp1cC4/GX6m29bnZLj9vefaWS4M7tPMtA0WfuQ6XG9SbfW/3zMa7mwtuj72+06F9pv
+	Sm4PTWIPZuyILdN4N7EyKthZZ5r3pmjL6z8aOvqf6nHm8F6tOxt0NPjxtc/LdyW8j3tfoVn4
+	8kdrCmdv8QvFYuXwY4+WvVmsr98dc/3+goiNNpvqfpTOPBWnxFKckWioxVxUnAgAOS8JMh8C	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Joerg,
+When device is stopped or suspended clock is not needed so we
+can disable it for this time.
 
-> The problem you describe here should also be fixed by this (simpler)
-> patch. Can you test this please?
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/usb/dwc2/gadget.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-The running result of this patch is correct.
-
-My opinion is we should avoid modifying the original data "early_ioapic_map[i].devid" and "devid from IVHD" since they are original data from user command line and BIOS. At anytime, "early_ioapic_map[i].devid" should reflect the command line setting. So code should not give possibility to modify it. Same to "devid from IVHD" although it is just a local variable. This is why I imported a new argument to add_special_device().
-
-Best Regards
-Friendy
-
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Friday, September 05, 2014 9:53 PM
-> To: Su, Friendy
-> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2 1/1] iommu/amd: set iommu for early mapped
-> ioapic/hpet
-> 
-> On Fri, Sep 05, 2014 at 07:25:14PM +0800, Su, Friendy wrote:
-> > This issue is found on a mother board whose BIOS reports wrong
-> > IOAPIC devid in IVHD table. Without this fix, the early mapped
-> > does not really override IVHD. So that the wrong reported IOAPIC
-> > does not work.
-> 
-> The problem you describe here should also be fixed by this (simpler)
-> patch. Can you test this please?
-> 
-> Thanks,
-> 
-> 	Joerg
-> 
-> diff --git a/drivers/iommu/amd_iommu_init.c
-> b/drivers/iommu/amd_iommu_init.c
-> index 3783e0b..b0522f1 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -712,7 +712,7 @@ static void __init set_dev_entry_from_acpi(struct
-> amd_iommu *iommu,
->  	set_iommu_for_device(iommu, devid);
->  }
-> 
-> -static int __init add_special_device(u8 type, u8 id, u16 devid, bool cmd_line)
-> +static int __init add_special_device(u8 type, u8 id, u16 *devid, bool cmd_line)
->  {
->  	struct devid_map *entry;
->  	struct list_head *list;
-> @@ -731,6 +731,8 @@ static int __init add_special_device(u8 type, u8 id, u16
-> devid, bool cmd_line)
->  		pr_info("AMD-Vi: Command-line override present for %s id %d -
-> ignoring\n",
->  			type == IVHD_SPECIAL_IOAPIC ? "IOAPIC" : "HPET", id);
-> 
-> +		*devid = entry->devid;
-> +
->  		return 0;
->  	}
-> 
-> @@ -739,7 +741,7 @@ static int __init add_special_device(u8 type, u8 id, u16
-> devid, bool cmd_line)
->  		return -ENOMEM;
-> 
->  	entry->id	= id;
-> -	entry->devid	= devid;
-> +	entry->devid	= *devid;
->  	entry->cmd_line	= cmd_line;
-> 
->  	list_add_tail(&entry->list, list);
-> @@ -754,7 +756,7 @@ static int __init add_early_maps(void)
->  	for (i = 0; i < early_ioapic_map_size; ++i) {
->  		ret = add_special_device(IVHD_SPECIAL_IOAPIC,
->  					 early_ioapic_map[i].id,
-> -					 early_ioapic_map[i].devid,
-> +					 &early_ioapic_map[i].devid,
->  					 early_ioapic_map[i].cmd_line);
->  		if (ret)
->  			return ret;
-> @@ -763,7 +765,7 @@ static int __init add_early_maps(void)
->  	for (i = 0; i < early_hpet_map_size; ++i) {
->  		ret = add_special_device(IVHD_SPECIAL_HPET,
->  					 early_hpet_map[i].id,
-> -					 early_hpet_map[i].devid,
-> +					 &early_hpet_map[i].devid,
->  					 early_hpet_map[i].cmd_line);
->  		if (ret)
->  			return ret;
-> @@ -978,10 +980,17 @@ static int __init init_iommu_from_acpi(struct
-> amd_iommu *iommu,
->  				    PCI_SLOT(devid),
->  				    PCI_FUNC(devid));
-> 
-> -			set_dev_entry_from_acpi(iommu, devid, e->flags, 0);
-> -			ret = add_special_device(type, handle, devid, false);
-> +			ret = add_special_device(type, handle, &devid, false);
->  			if (ret)
->  				return ret;
-> +
-> +			/*
-> +			 * add_special_device might update the devid in case a
-> +			 * command-line override is present. So call
-> +			 * set_dev_entry_from_acpi after add_special_device.
-> +			 */
-> +			set_dev_entry_from_acpi(iommu, devid, e->flags, 0);
-> +
->  			break;
->  		}
->  		default:
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 29d7561..94f7a3f 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -2893,6 +2893,8 @@ static int s3c_hsotg_udc_start(struct usb_gadget *gadget,
+ 	hsotg->gadget.dev.of_node = hsotg->dev->of_node;
+ 	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
+ 
++	clk_enable(hsotg->clk);
++
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+ 				    hsotg->supplies);
+ 	if (ret) {
+@@ -2941,6 +2943,8 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
+ 
+ 	regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies), hsotg->supplies);
+ 
++	clk_disable(hsotg->clk);
++
+ 	return 0;
+ }
+ 
+@@ -2972,8 +2976,10 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
+ 	spin_lock_irqsave(&hsotg->lock, flags);
+ 	if (is_on) {
+ 		s3c_hsotg_phy_enable(hsotg);
++		clk_enable(hsotg->clk);
+ 		s3c_hsotg_core_init(hsotg);
+ 	} else {
++		clk_disable(hsotg->clk);
+ 		s3c_hsotg_phy_disable(hsotg);
+ 	}
+ 
+@@ -3636,6 +3642,7 @@ static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
+ 
+ 		ret = regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
+ 					     hsotg->supplies);
++		clk_disable(hsotg->clk);
+ 	}
+ 
+ 	return ret;
+@@ -3650,6 +3657,8 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
+ 	if (hsotg->driver) {
+ 		dev_info(hsotg->dev, "resuming usb gadget %s\n",
+ 			 hsotg->driver->driver.name);
++
++		clk_enable(hsotg->clk);
+ 		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+ 				      hsotg->supplies);
+ 	}
+-- 
+1.9.1
 
