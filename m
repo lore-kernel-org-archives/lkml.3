@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013AbaIIHXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 03:23:46 -0400
-Received: from sym2.noone.org ([178.63.92.236]:50451 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755571AbaIIHXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 03:23:45 -0400
-Date: Tue, 9 Sep 2014 09:23:41 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Adrian Nicoara <anicoara@uwaterloo.ca>
-Cc: shigekatsu.tateno@atmel.com, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] staging: ozwpan: use kmalloc_array over kmalloc
- with multiply
-Message-ID: <20140909072341.GE3578@distanz.ch>
-References: <20140908190249.GA17737@uwaterloo.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140908190249.GA17737@uwaterloo.ca>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932135AbaIIHYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 03:24:06 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:44069 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756014AbaIIHYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 03:24:04 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers: target: target_core_transport.c: build warning
+Date: Tue,  9 Sep 2014 12:53:50 +0530
+Message-Id: <1410247430-11293-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-08 at 21:02:49 +0200, Adrian Nicoara <anicoara@uwaterloo.ca> wrote:
-> Cleanup checkpatch.pl warnings.
+build is giving : 
+warning: passing argument 1 of 'strlen' makes pointer from integer 
+without a cast [enabled by default]
 
-Please state which warning this is fixing. Same goes for patches 1-3.
+the snprintf after the strlen is trying to put the "Unsupported" string
+at the end of exising string. so len should give the string length here
 
-> Signed-off-by: Adrian Nicoara <anicoara@uwaterloo.ca>
-> ---
-> 
-> Somehow I missed the comment Tobias made on the line indentation. I fixed the
-> patch, and added here as a reply - the previous patch should be ignored.
-> 
->  drivers/staging/ozwpan/ozhcd.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-> index ba2168f..e880452 100644
-> --- a/drivers/staging/ozwpan/ozhcd.c
-> +++ b/drivers/staging/ozwpan/ozhcd.c
-> @@ -1315,8 +1315,8 @@ static int oz_build_endpoints_for_config(struct usb_hcd *hcd,
->  	if (num_iface) {
->  		struct oz_interface *iface;
-> 
-> -		iface = kmalloc(num_iface*sizeof(struct oz_interface),
-> -				mem_flags | __GFP_ZERO);
-> +		iface = kmalloc_array(num_iface, sizeof(struct oz_interface),
-> +					mem_flags | __GFP_ZERO);
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ drivers/target/target_core_transport.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This still isn't entirely correct. It should rather look like this:
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 1dd1181..3ce85ed 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -953,7 +953,7 @@ int transport_dump_vpd_ident_type(
+ 		strlcat(buf, "SCSI name string\n", sizeof(buf));
+ 		break;
+ 	default:
+-		len = strlen(len);
++		len = strlen(buf);
+ 		snprintf(&buf[len], sizeof(buf) - len, "Unsupported: 0x%02x\n",
+ 				vpd->device_identifier_type);
+ 		ret = -EINVAL;
+-- 
+1.8.1.2
 
-		iface = kmalloc_array(num_iface, sizeof(struct oz_interface),
-				      mem_flags | __GFP_ZERO);
-
-Assume a tab width of 8 (as per CodingStyle) and use spaces to get the
-alignment right.
-
->  		if (!iface)
->  			return -ENOMEM;
->  		spin_lock_bh(&ozhcd->hcd_lock);
-> --
-> 2.0.1
-> 
