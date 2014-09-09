@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624AbaIILyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:54:08 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:55404 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaIILyG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:54:06 -0400
-Message-ID: <1410263641.15383.8.camel@marge.simpson.net>
-Subject: perf top -g -U --sort=symbol --children == lalalalala?
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Tue, 09 Sep 2014 13:54:01 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756649AbaIILyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:54:19 -0400
+Received: from mga14.intel.com ([192.55.52.115]:41522 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755237AbaIILyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 07:54:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="588513023"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
+In-Reply-To: <20140909105537.GJ6758@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com> <20140909084436.GY19379@twins.programming.kicks-ass.net> <87y4ttt9m0.fsf@ashishki-desk.ger.corp.intel.com> <20140909105537.GJ6758@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 09 Sep 2014 14:53:42 +0300
+Message-ID: <87sik1t3g9.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems the now default on --children thingy doesn't like -U much. 
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Samples: 5K of event 'cycles', Event count (approx.): 2268660922
-  Children      Self  Symbol
-+   46.42%     0.04%  [k] system_call_fastpath
-+   27.12%     0.80%  [k] apic_timer_interrupt
-+   26.26%     0.23%  [k] smp_apic_timer_interrupt
-+   20.43%     0.13%  [k] local_apic_timer_interrupt
-+   20.20%     0.74%  [k] hrtimer_interrupt
-+   18.01%     0.39%  [k] __run_hrtimer
-+   14.43%     0.35%  [k] tick_sched_timer
-+   13.60%     0.05%  [k] sys_poll
-+   13.09%     1.16%  [k] do_sys_poll
-+   12.16%     0.08%  [k] tick_sched_handle.isra.16
-+   11.70%     0.32%  [k] update_process_times
-+   11.41%     0.03%  [k] sys_read
-+   11.17%     0.11%  [k] vfs_read
-+   10.85%     0.09%  [k] seq_read
-+    8.27%     0.09%  [k] proc_single_show
-+    7.79%     1.19%  [k] page_fault
-+    7.01%     0.25%  [k] scheduler_tick
-+    6.26%     0.11%  [k] __do_page_fault
-+    5.97%     1.33%  [k] do_task_stat
-+    5.91%     0.23%  [k] handle_mm_fault
-+    5.40%     0.20%  [k] do_sys_open
-+    5.02%     0.09%  [k] ret_from_intr
-+    4.94%     0.05%  [k] do_IRQ
-+    4.70%     0.14%  [k] path_openat
-+    4.69%     0.62%  [k] tty_poll
-+    4.69%     0.16%  [k] irq_exit
-+    4.49%     0.63%  [k] __do_softirq
-+    4.27%     0.12%  [k] __alloc_pages_nodemask
-+    3.95%     0.03%  [k] handle_irq_event_percpu
-+    3.51%     0.71%  [k] __fget_light
-+    3.47%     0.04%  [k] sys_select
-+    3.39%     0.08%  [k] seq_printf
-+    3.37%     0.07%  [k] sys_open
-+    3.34%     0.11%  [k] seq_vprintf
-+    3.22%     0.02%  [k] core_sys_select
-+    3.15%     0.26%  [k] do_select
-+    3.15%     3.15%  [k] _raw_spin_lock
+> On Tue, Sep 09, 2014 at 12:40:39PM +0300, Alexander Shishkin wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>> 
+>> > On Wed, Aug 20, 2014 at 03:36:06PM +0300, Alexander Shishkin wrote:
+>> >
+>> >> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+>> >> index 925f369947..5006caba63 100644
+>> >> --- a/kernel/events/ring_buffer.c
+>> >> +++ b/kernel/events/ring_buffer.c
+>> >
+>> >> @@ -294,9 +295,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
+>> >>  			 bool truncated)
+>> >>  {
+>> >>  	struct ring_buffer *rb = handle->rb;
+>> >> +	unsigned long aux_head;
+>> >>  
+>> >> +	aux_head = local_read(&rb->aux_head);
+>> >> +
+>> >> +	if (rb->aux_overwrite) {
+>> >> +		local_set(&rb->aux_head, size);
+>> >> +
+>> >> +		/*
+>> >> +		 * Send a RECORD_AUX with size==0 to communicate aux_head
+>> >> +		 * of this snapshot to userspace
+>> >> +		 */
+>> >> +		perf_event_aux_event(handle->event, size, 0, truncated);
+>> >
+>> > Humm.. why not write a 'normal' AUX record?
+>> 
+>> In this mode, the hardware is running in a circular buffer mode,
+>> overwriting old data, so we don't actually know the size of the
+>> snapshot, we have userspace figure it out later on (based on timestamps,
+>> for example). I didn't want to configure PMI for this mode to avoid
+>> overhead, but with PMI we can try to keep track of the overwrites and
+>> try to infer the actual snapshot size in the kernel. For Intel PT. As
+>> far as I can tell, ARM's scatter-gather trace-to-memory storing block
+>> does not generate interrupts at all.
+>
+> Well, wouldn't the 'size' be basically the entire buffer. All you have
+> to then provide is the head pointer.
 
+Yes, that's what the code above is doing. We can replace size==0 with
+size==$buffer_size to mean the same thing.
 
+> Ideally you would also provide a
+> tail pointer so you know when to stop, but I suppose you can infer that
+> from the data stream itself?
 
+The tail pointer is the problem I mentioned above, because it's either
+
+  - where we stopped the previous time
+  - head+1, if old data is overwritten
+
+and in order to tell the difference, we need an interrupt.
+We can infer where the new data starts from the timestamps in the trace
+stream, so the decoder can take care of it (and that's how it's done at
+the moment).
+
+> If you can provide the tail you can indeed
+> compute the size etc.. at which point you don't have to rely on parsing
+> the stream etc.
+
+Ideally, there wouldn't be too many adjacent snapshots so it won't even
+be a problem. But yes, if we want to reliably know the tail/size, we
+need an interrupt.
+
+Regards,
+--
+Alex
