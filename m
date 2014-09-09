@@ -1,115 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaIIUiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 16:38:21 -0400
-Received: from smtprelay0241.hostedemail.com ([216.40.44.241]:58465 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752364AbaIIUiT (ORCPT
+	id S1752768AbaIIUjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 16:39:41 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:33687 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbaIIUjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 16:38:19 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3870:3871:3872:3874:4605:5007:6119:6742:7652:9040:9121:9149:10004:10400:10848:11026:11232:11233:11473:11658:11914:12043:12438:12517:12519:12555:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rice58_ddbd40298239
-X-Filterd-Recvd-Size: 4098
-Message-ID: <1410295093.12560.60.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Warn on macros with flow control statements
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Drokin, Oleg" <oleg.drokin@intel.com>
-Date: Tue, 09 Sep 2014 13:38:13 -0700
-In-Reply-To: <20140909125410.GJ6549@mwanda>
-References: <1410106715-9573-6-git-send-email-Julia.Lawall@lip6.fr>
-	 <20140909125410.GJ6549@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Sep 2014 16:39:37 -0400
+Date: Tue, 9 Sep 2014 13:37:55 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Chintan Pandya <cpandya@codeaurora.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+In-Reply-To: <540F141B.9060603@codeaurora.org>
+Message-ID: <alpine.LSU.2.11.1409091315240.8432@eggly.anvils>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
+ <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net> <540F141B.9060603@codeaurora.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macros with flow control statements (goto and return) are
-not very nice to read as any flow movement is unexpected.
-
-Try to highlight them and emit a warning on their definition.
-
-Avoid warning on macros that use argument concatenation as
-those macros commonly create another function where the
-concatenation is used in the function name definition like:
-	#define FOO_FUNC(name, rtn_type)	\
-	rtn_type func##name(arg1, ...)		\
-	{					\
-		rtn_type rtn;			\
-		[code...]			\
-		return rtn;			\
-	}
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
->    460  #define OBD_CHECK_DT_OP(obd, op, err)                      \
->    461  do {                                                        \
->    462          if (!OBT(obd) || !OBP((obd), op)) {                  \
->    463                  if (err)                                        \
->    464                          CERROR("obd_" #op ": dev %d no operation\n",    \
->    465                                 obd->obd_minor);          \
->    466                  return err;                                 \
->    467          }                                                      \
->    468  } while (0)
+On Tue, 9 Sep 2014, Chintan Pandya wrote:
+> Hello All,
 > 
-> Wow!  What a terrible macro!  None of the '\' are in a line.  There is
-> a hidden return statement in it which is a terrible thing and flow
-> control statements are not allowed inside macros.
+> Before its too late to discuss this basic question, allow me to share my view
+> on the deferrable timer approach.
+> 
+> I believe KSM at this point is tunable with predictable outcomes. When it
+> will get triggered, how many pages it will scan etc. This aggression control
+> is with user who can implement any complex logic based on its own flashy
+> parameters. Along the same line, I was seeing this deferrable timer knob.
+> 
+> Here I was hoping the same level of predictability with this knob. Kernel
+> still won't do smart work and user is free to play smart/complex with the
+> knob. I believe that there are many use-cases where a single strategy of "to
+> make KSM perform better while saving power at the same time" may not work.
+> So,
 
- scripts/checkpatch.pl | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+Understood.  Whereas seasoned developers grow increasingly sick and
+sceptical of such knobs, preferring to make an effort to get things
+working well without them.  Both attitudes are valid.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index da7b2d4..dc5434a 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4071,12 +4071,17 @@ sub process {
- 			my $cnt = $realcnt;
- 			my ($off, $dstat, $dcond, $rest);
- 			my $ctx = '';
-+			my $has_flow_statement = 0;
-+			my $has_arg_concat = 0;
- 			($dstat, $dcond, $ln, $cnt, $off) =
- 				ctx_statement_block($linenr, $realcnt, 0);
- 			$ctx = $dstat;
- 			#print "dstat<$dstat> dcond<$dcond> cnt<$cnt> off<$off>\n";
- 			#print "LINE<$lines[$ln-1]> len<" . length($lines[$ln-1]) . "\n";
- 
-+			$has_flow_statement = 1 if ($ctx =~ /\b(goto|return)\b/);
-+			$has_arg_concat = 1 if ($ctx =~ /\#\#/);
-+
- 			$dstat =~ s/^.\s*\#\s*define\s+$Ident(?:\([^\)]*\))?\s*//;
- 			$dstat =~ s/$;//g;
- 			$dstat =~ s/\\\n.//g;
-@@ -4141,6 +4146,19 @@ sub process {
- 				}
- 			}
- 
-+# check for macros with flow control, but without ## concatenation
-+# ## concatenation is commonly a macro that defines a function so ignore those
-+			if ($has_flow_statement && !$has_arg_concat) {
-+				my $herectx = $here . "\n";
-+				my $cnt = statement_rawlines($ctx);
-+
-+				for (my $n = 0; $n < $cnt; $n++) {
-+					$herectx .= raw_line($linenr, $n) . "\n";
-+				}
-+				WARN("MACRO_WITH_FLOW_CONTROL",
-+				     "Macros with flow control statements should be avoided\n" . "$herectx");
-+			}
-+
- # check for line continuations outside of #defines, preprocessor #, and asm
- 
- 		} else {
+> 
+> > On Mon, Sep 08, 2014 at 01:25:36AM -0700, Hugh Dickins wrote:
+> > > Well, yes, but... how do we know when there is no more work to do?
+> > 
+> > Yeah, I figured that out _after_ I send that email..
+> > 
+> > > Thomas has given reason why KSM might simply fail to do its job if we
+> > > rely on the deferrable timer.
+> 
+> With deferrable timer, KSM thread will be scheduled on the 'active' CPU at
+> that very same time. Yes, I understood from Thomas's clarification that if
+> that very CPU goes IDLE, KSM task will get deferred even if at the timeout,
+> we have some CPUs running. I think, this situation can be avoided potentially
+> very small timeout value (?). But in totality, this is where KSM will be idle
+> for sure, may be that is unwanted.
 
+I don't get how a very small timeout value would solve that.  But I am
+all for a KSM which works well even with timeout value 0: responsive,
+but not power hungry.
 
+> 
+> > > 
+> > > Chintan, even if the scheduler guys turn out to hate it, please would
+> > > you give the patch below a try, to see how well it works in your
+> > > environment, whether it seems to go better or worse than your own patch.
+> > > 
+> > > If it works well enough for you, maybe we can come up with ideas to
+> > > make it more palatable.  I do think your issue is an important one
+> > > to fix, one way or another.
+> 
+> It is taking a little more time for me to grasp your change :)
+
+Grasping the intent should be easy: I thought that was in the title,
+"ksm: avoid periodic wakeup while mergeable mms are quiet": just go
+to sleep until at least one of the MMF_VM_MERGEABLE tasks gets run.
+
+Checking the details, whether I'm accomplishing that intent, yes,
+that needs more understanding of ksm.c, which your deferrable timer
+approach did not need to get involved with at all (to its credit).
+
+> So, after Peter's comment, do you want me to try this out
+
+Certainly yes, please do.  I'm not saying that's a patch which will
+ever go into the kernel itself, but we do want to know whether it does
+the job for you or not, whether it's a worthwhile attempt in the right
+direction.  Does it save as much as your patch?  Does it save more?
+
+> or you are looking forward for even better idea ?
+
+I'd love a better idea: assuming mine works, is there some other way
+of accomplishing it, which does not pollute sched/core.c, but does
+not drag in mm_struct cachelines for a frequent flags check?
+
+> BTW, if deferrable timer patch gets any green signal,
+> I will publish new patch with your comments on v4.
+
+It seems to be a red light at present: but lights do change ;)
+
+> 
+> > > 
+> > > Thanks,
+> > > Hugh
+> > > 
+> > > [PATCH] ksm: avoid periodic wakeup while mergeable mms are quiet
+> > > 
+> > > Description yet to be written!
+> > > 
+> > > Reported-by: Chintan Pandya<cpandya@codeaurora.org>
+> > > Not-Signed-off-by: Hugh Dickins<hughd@google.com>
+> 
+> 
+> >>> So looking at Hughs test results I'm quite sure that the deferrable
+> >>> timer is just another tunable bandaid with dubious value and the
+> >>> potential of predictable bug/regresssion reports.
+> 
+> Here I am naive in understanding the obvious disadvantages of 'one more
+> knob'. And hence was inclined towards deferrable timer knob. Thomas, could
+> you explain what kind of bug/regression you foresee with such approach ?
+> 
+> -- 
+> Chintan Pandya
+> 
+> QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+> member of the Code Aurora Forum, hosted by The Linux Foundation
