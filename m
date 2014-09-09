@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaIIIB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:01:29 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.37]:59528 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaIIIB2 (ORCPT
+	id S1753095AbaIIICY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:02:24 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:42532 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752186AbaIIICW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:01:28 -0400
-Message-ID: <540EB3CE.6010700@ladisch.de>
-Date: Tue, 09 Sep 2014 10:01:18 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>
-CC: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, vinod.koul@intel.com
-Subject: Re: [PATCH] x86_64: Add memcpy32_toio to write to PCI MMIO
-References: <1410164046-15577-1-git-send-email-subhransu.s.prusty@intel.com>
-In-Reply-To: <1410164046-15577-1-git-send-email-subhransu.s.prusty@intel.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+	Tue, 9 Sep 2014 04:02:22 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Cc: John Crispin <blogic@openwrt.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v2] pinctrl: lantiq: Release gpiochip resources in fail case
+Date: Tue,  9 Sep 2014 13:35:52 +0530
+Message-Id: <1410249952-12456-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subhransu S. Prusty wrote:
-> This is needed because the hardware
+This patch releases gpiochip resources with of_gpiochip_remove
+and gpiochip_remove in failure cases.
 
-Which hardware?  Every x86-64 CPU ever built by AMD, Intel, and VIA?
+CC: John Crispin <blogic@openwrt.org>
+CC: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
 
-> does not support 64-bit moveq insructions while writing to PCI MMIO.
+Changes since v1:
+ Dropped call to of_gpiochip_remove() when ltq_pinctrl_register fails as
+ gpiochip_remove() calls of_gpiochip_remove()
 
-> +#ifndef CONFIG_X86_64
-> +#define MEMCPY_TOIO memcpy_toio
-> +#else
-> +#define MEMCPY_TOIO memcpy32_toio
-> +#endif
+ drivers/pinctrl/pinctrl-xway.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-This does not change any code that uses memcpy_toio().
+diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
+index e66f4ca..37040ab 100644
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -801,6 +801,7 @@ static int pinmux_xway_probe(struct platform_device *pdev)
+ 	of_gpiochip_add(&xway_chip);
+ 	ret = gpiochip_add(&xway_chip);
+ 	if (ret) {
++		of_gpiochip_remove(&xway_chip);
+ 		dev_err(&pdev->dev, "Failed to register gpio chip\n");
+ 		return ret;
+ 	}
+@@ -822,6 +823,7 @@ static int pinmux_xway_probe(struct platform_device *pdev)
+ 	/* register with the generic lantiq layer */
+ 	ret = ltq_pinctrl_register(pdev, &xway_info);
+ 	if (ret) {
++		gpiochip_remove(&xway_chip);
+ 		dev_err(&pdev->dev, "Failed to register pinctrl driver\n");
+ 		return ret;
+ 	}
+-- 
+1.7.9.5
 
-> +	for (i = 0; i < count/sizeof(u32); i++)
-> +		writel(*src_32++, dst_32++);
-
-This breaks when count is not a multiple of four.
-
-
-Regards,
-Clemens
