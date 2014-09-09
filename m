@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaIIRPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:15:48 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47045 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750980AbaIIRPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:15:46 -0400
-Date: Tue, 9 Sep 2014 18:15:41 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jon Masters <jcm@redhat.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
-Message-ID: <20140909171541.GD3896@leverpostej>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
- <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org>
- <20140909162648.GE2910@arm.com>
- <540F2DCF.1010104@redhat.com>
+	id S1757407AbaIIRQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:16:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40167 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754347AbaIIRQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 13:16:43 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: OMAP5+: Reuse OMAP4 PM code for OMAP5 and DRA7
+Date: Tue, 9 Sep 2014 12:15:33 -0500
+Message-ID: <1410282933-30131-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540F2DCF.1010104@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 05:41:51PM +0100, Jon Masters wrote:
-> On 09/09/2014 12:26 PM, Catalin Marinas wrote:
-> > On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
-> >> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
-> >> new file mode 100644
-> >> index 0000000..3899ee6
-> >> --- /dev/null
-> >> +++ b/arch/arm64/include/asm/acenv.h
-> >> @@ -0,0 +1,18 @@
-> >> +/*
-> >> + * ARM64 specific ACPICA environments and implementation
-> >> + *
-> >> + * Copyright (C) 2014, Linaro Ltd.
-> >> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
-> >> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or modify
-> >> + * it under the terms of the GNU General Public License version 2 as
-> >> + * published by the Free Software Foundation.
-> >> + */
-> >> +
-> >> +#ifndef _ASM_ACENV_H
-> >> +#define _ASM_ACENV_H
-> >> +
-> >> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
-> > 
-> > Does this mean that it will be supported at some point? Looking at the
-> > places where this function is called, I don't really see how this would
-> > ever work on ARM. Which means that we add such macro just to be able to
-> > compile code that would never be used on arm64. I would rather see the
-> > relevant ACPI files only compiled on x86/IA-64 rather than arm64.
-> 
-> That specific cache behavior is a part of e.g. ACPI C3 state support
-> (e.g. ACPI5.1 8.1.4 Processor Power State C3).
+OMAP4, OMAP5 and DRA7 share a lot of common logic and data structures.
+These have been enabled in the previous patches, however, this also
+means that OMAP5 or DRA7 only builds also need to build OMAP4 logic.
+Update to reuse OMAP4 logic.
 
-Per table 5-35, if neither WBINVD or WBINVD_FLUSH are set in the FADT,
-we don't get S1, S2, or S3 states either.
+This fixes the 'undefined reference to 'omap4_pm_init_early'' in
+OMAP5 or DRA7 only builds.
 
-> As you note, it's not going to work on 64-bit ARM as it does on x86,
-> but it's optional to implement C3 and early 64-bit ARM systems should
-> not report Wbindv flags in the FADT anyway.
+Fixes: 6af16a1dac5465c ("ARM: DRA7: Add hook in SoC initcalls to enable pm initialization")
+Fixes: 628ed4717000789 ("ARM: OMAP5: Add hook in SoC initcalls to enable pm initialization")
+Reported-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
 
-Unless the arm cache architecture changes, I wouldn't expect any 64-bit
-ARM system to set either of the WBINVD flags.
+This fixes the regression with randconfig that Tony reported with
+omap-for-v3.18/soc branch.
 
-> They can also set FADT.P_LVL3_LAT > 1000, which has the effect of
-> disabling C3 support, while also allowing for use of _CST objects to
-> define more flexible C-States later on.
+Tested with CONFIG_ARCH_OMAP2, CONFIG_ARCH_OMAP3, CONFIG_ARCH_OMAP4,
+CONFIG_SOC_OMAP5, CONFIG_SOC_AM33XX, CONFIG_SOC_AM43XX, CONFIG_SOC_DRA7XX
+only builds.
 
-It sounds like we should be sanity checking these in the arm64 ACPI code
-for the moment. I don't want us to discover that current platforms
-report the wrong thing only when new platforms come out that might
-actually report things correctly.
 
-Mark.
+ arch/arm/mach-omap2/Makefile |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 69bbcba..d9dd99c 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -87,9 +87,10 @@ ifeq ($(CONFIG_PM),y)
+ obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
+ obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
+ obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o
+-obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o omap-mpuss-lowpower.o
+-obj-$(CONFIG_SOC_OMAP5)			+= omap-mpuss-lowpower.o
+-obj-$(CONFIG_SOC_DRA7XX)		+= omap-mpuss-lowpower.o
++omap-4-5-pm-common			=  pm44xx.o omap-mpuss-lowpower.o
++obj-$(CONFIG_ARCH_OMAP4)		+= $(omap-4-5-pm-common)
++obj-$(CONFIG_SOC_OMAP5)			+= $(omap-4-5-pm-common)
++obj-$(CONFIG_SOC_DRA7XX)		+= $(omap-4-5-pm-common)
+ obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
+ 
+ obj-$(CONFIG_POWER_AVS_OMAP)		+= sr_device.o
+@@ -102,7 +103,10 @@ endif
+ 
+ ifeq ($(CONFIG_CPU_IDLE),y)
+ obj-$(CONFIG_ARCH_OMAP3)                += cpuidle34xx.o
+-obj-$(CONFIG_ARCH_OMAP4)                += cpuidle44xx.o
++omap-4-5-idle-common			=  cpuidle44xx.o
++obj-$(CONFIG_ARCH_OMAP4)		+= $(omap-4-5-idle-common)
++obj-$(CONFIG_SOC_OMAP5)			+= $(omap-4-5-idle-common)
++obj-$(CONFIG_SOC_DRA7XX)		+= $(omap-4-5-idle-common)
+ endif
+ 
+ # PRCM
+-- 
+1.7.9.5
+
