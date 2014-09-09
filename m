@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaIIXGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 19:06:20 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:56068 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaIIXGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 19:06:19 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
-        Heiko Stuebner <heiko@sntech.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-rockchip@lists.infradead.org,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: RK808: Add register caching
-Date: Tue,  9 Sep 2014 16:06:04 -0700
-Message-Id: <1410303964-6943-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S1753086AbaIIXHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 19:07:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751437AbaIIXHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 19:07:10 -0400
+Message-ID: <540F8816.5080908@redhat.com>
+Date: Wed, 10 Sep 2014 01:07:02 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Duggan <aduggan@synaptics.com>
+CC: linux-input@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: synaptics - add support for ForcePads
+References: <20140908165520.GA35051@core.coreip.homeip.net> <540EAFD1.2040307@redhat.com> <20140909170636.GA28774@core.coreip.homeip.net> <540F7A19.3070704@synaptics.com> <20140909225725.GA18901@core.coreip.homeip.net>
+In-Reply-To: <20140909225725.GA18901@core.coreip.homeip.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's define the voltatile registers (those that can't be cached) and
-enable caching.  The rk808 is accessed almost constantly with cpufreq
-so this is really nice.
+Hi,
 
-As measured by ftrace:
-  before this change: cpu0_set_target() => ~2200us
-  after this change:  cpu0_set_target() =>  ~500us
+On 09/10/2014 12:57 AM, Dmitry Torokhov wrote:
+> On Tue, Sep 09, 2014 at 03:07:21PM -0700, Andrew Duggan wrote:
+>> On 09/09/2014 10:06 AM, Dmitry Torokhov wrote:
+>>> On Tue, Sep 09, 2014 at 09:44:17AM +0200, Hans de Goede wrote:
+>>>> Hi,
+>>>>
+>>>> On 09/08/2014 06:55 PM, Dmitry Torokhov wrote:
+>>>>> ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
+>>>>> physical buttons, instead they generate primary button click when user
+>>>>> presses somewhat hard on the surface of the touchpad. Unfortunately they
+>>>>> also report primary button click whenever there are 2 or more contacts
+>>>>> on the pad, messing up all multi-finger gestures (2-finger scrolling,
+>>>>> multi-finger tapping, etc). To cope with this behavior we introduce a
+>>>>> delay (currently 50 msecs) in reporting primary press in case more
+>>>>> contacts appear.
+>>>>>
+>>>>> For now we are using DMI matching to detect ForcePads, hopefully we'll
+>>>>> be able to figure a better way down the road.
+>>>> What about using the pnp-id, in my experience with the recent lenovo
+>>>> laptops that tends to be more reliable.
+>>> Not sure. So far I only know of HP 1040 having it. FWIW:
+>>>
+>>> dtor@dtor-glaptop:~$ cat /sys/bus/pnp/drivers/i8042\ aux/00\:07/id
+>>> SYN300d
+>>> SYN0100
+>>> SYN0002
+>>> PNP0f13
+>>>
+>>> I think if we see generalities we can switch over later. I hope
+>>> Chris/Andrew will come with a capability bit though :)
+>>
+>> The ForcePad capabilities bit is 1 << 15.
+> 
+> Awesome, thanks!
+> 
+> Then I guess the patch below is what we'll be needing for these devices.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/mfd/rk808.c | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+Yep, the patch looks good to me.
 
-diff --git a/drivers/mfd/rk808.c b/drivers/mfd/rk808.c
-index 0324422..bd02150 100644
---- a/drivers/mfd/rk808.c
-+++ b/drivers/mfd/rk808.c
-@@ -29,10 +29,40 @@ struct rk808_reg_data {
- 	int value;
- };
- 
-+static bool rk808_is_volatile_reg(struct device *dev, unsigned int reg)
-+{
-+	/*
-+	 * Notes:
-+	 * - Technically the ROUND_30s bit makes RTC_CTRL_REG volatile, but
-+	 *   we don't use that feature.  It's better to cache.
-+	 * - It's unlikely we care that RK808_DEVCTRL_REG is volatile since
-+	 *   bits are cleared in case when we shutoff anyway, but better safe.
-+	 */
-+
-+	switch (reg) {
-+	case RK808_SECONDS_REG ... RK808_WEEKS_REG:
-+	case RK808_RTC_STATUS_REG:
-+	case RK808_VB_MON_REG:
-+	case RK808_THERMAL_REG:
-+	case RK808_DCDC_UV_STS_REG:
-+	case RK808_LDO_UV_STS_REG:
-+	case RK808_DCDC_PG_REG:
-+	case RK808_LDO_PG_REG:
-+	case RK808_DEVCTRL_REG:
-+	case RK808_INT_STS_REG1:
-+	case RK808_INT_STS_REG2:
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
- static const struct regmap_config rk808_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 	.max_register = RK808_IO_POL_REG,
-+	.cache_type = REGCACHE_RBTREE,
-+	.volatile_reg = rk808_is_volatile_reg,
- };
- 
- static struct resource rtc_resources[] = {
--- 
-2.1.0.rc2.206.gedb03e5
+Regards,
 
+Hans
