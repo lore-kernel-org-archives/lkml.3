@@ -1,145 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371AbaIILd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:33:26 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:47834 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202AbaIILdY convert rfc822-to-8bit (ORCPT
+	id S932384AbaIILea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:34:30 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35642 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996AbaIILe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:33:24 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Caesar Wang <caesar.wang@rock-chips.com>, edubezval@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
-        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
-        zhaoyifeng <zyf@rock-chips.com>
-Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
-Date: Tue, 09 Sep 2014 13:35:31 +0200
-Message-ID: <8397565.n78cHk4EtL@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1410229637.8085.158.camel@rzhang1-toshiba>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com> <5407BA10.2030402@rock-chips.com> <1410229637.8085.158.camel@rzhang1-toshiba>
+	Tue, 9 Sep 2014 07:34:28 -0400
+Date: Tue, 9 Sep 2014 13:34:25 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Matti Vaittinen <matti.vaittinen@nsn.com>
+Cc: ext Mark Rutland <mark.rutland@arm.com>,
+        ext Guenter Roeck <linux@roeck-us.net>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "arno@natisbad.org" <arno@natisbad.org>,
+        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
+        "san@rosetechnology.dk" <san@rosetechnology.dk>,
+        "hs@denx.de" <hs@denx.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Sverdlin Alexander <alexander.sverdlin@nsn.com>
+Subject: Re: [PATCH] rtc: ds1307: add trickle charger device tree binding
+Message-ID: <20140909113425.GC15404@amd>
+References: <20140828155157.GB23677@roeck-us.net>
+ <20140828161025.GO14650@leverpostej>
+ <20140828164825.GA12153@roeck-us.net>
+ <20140828172842.GF12769@titan.lakedaemon.net>
+ <20140828174034.GC15307@roeck-us.net>
+ <20140829073413.GN4587@fi-ourus-dhcp00977.emea.nsn-net.net>
+ <20140829104001.GB19424@leverpostej>
+ <20140908135242.GA21412@amd>
+ <20140908145825.GO12081@leverpostej>
+ <20140909062158.GB21342@fi-ourus-dhcp00977.emea.nsn-net.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909062158.GB21342@fi-ourus-dhcp00977.emea.nsn-net.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 9. September 2014, 10:27:17 schrieb Zhang Rui:
-> On Thu, 2014-09-04 at 09:02 +0800, Caesar Wang wrote:
-> > 在 2014年09月03日 16:07, Heiko Stübner 写道:
-> > > Am Mittwoch, 3. September 2014, 10:10:37 schrieb Caesar Wang:
-> > >> This add the necessary binding documentation for the thermal
-> > >> found on Rockchip SoCs
-> > >> 
-> > >> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> > >> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> > >> ---
-> > >> 
-> > >>   .../devicetree/bindings/thermal/rockchip-thermal.txt | 20
-> > >> 
-> > >> ++++++++++++++++++++ 1 file changed, 20 insertions(+)
-> > >> 
-> > >>   create mode 100644
-> > >> 
-> > >> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > >> 
-> > >> diff --git
-> > >> a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new
-> > >> file
-> > >> mode 100644
-> > >> index 0000000..1ed4d4c
-> > >> --- /dev/null
-> > >> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > >> @@ -0,0 +1,20 @@
-> > >> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
-> > >> +
-> > >> +Required properties:
-> > >> +- compatible: "rockchip,rk3288-tsadc"
-> > >> +- reg: physical base address of the controller and length of memory
-> > >> mapped
-> > >> +       region.
-> > >> +- interrupts: The interrupt number to the cpu. The interrupt specifier
-> > >> format +	      depends on the interrupt controller.
-> > >> +- clocks: Must contain an entry for each entry in clock-names.
-> > >> +- clock-names: Shall be "tsadc" for the converter-clock, and
-> > >> "apb_pclk" for +	       the peripheral clock.
+Hi!
+
+> > > > trickle-resistor-ohms = <250>
+> > > > diode-connected;
+> > > > 
+> > > > That's easy for a human to write and/or validate, we can easily extend
+> > > > it in future, requires no proliferation of macros, and describes the
+> > > > hardware rather than telling software what to do.
+> > > > 
+> > > > The driver becomes a little more complicated, but gains sanity checking,
+> > > > which is a good thing.
 > > > 
-> > > You're using the passive-temp, critical-temp and force-shut-temp
-> > > properties in your driver without declaring them here.
-> > 
-> > frankly,the about are need be declared. but  there are 4 types[0] for
-> > trip in thermal framework,
-> > there is no force-shut for me. So I want to change it three additional
-> > properties in [PATCH V4 4/4],
-> > 
-> > 
-> > [0]
-> > {
-> > 
-> >      THERMAL_TRIP_CRITICAL,
-> >      THERMAL_TRIP_HOT,
-> >      THERMAL_TRIP_PASSIVE,
-> >      THERMAL_TRIP_ACTIVE,
-> > 
-> > }
-> 
-> this sounds reasonable to me.
-> 
-> > > But more importantly, please use the generic trip-points for this. I
-> > > guess it shouldn't be a problem to introduce a "forced-shutdown"
-> > > trippoint [0] for the additional trip-point you have - thermal
-> > > maintainers, please shout if I'm wrong :-)
-> 
-> what is the difference between a critical trip point and a
-> "forced-shutdown" trip point?
-> Thermal core will do a shutdown in case the critical trip point is
-> triggered.
-
-The forced-shutdown is where the thermal controller is supposed to also do a 
-shutdown in hardware. As you said the thermal core will also shutdown at the 
-critical trip point, I guess we could map Caesar's value like
-
-trip-point		tsadc
-critical		forced-shutdown (the 120 degrees in patch 4)
-hot			critical (the 100 degrees)
-...
-
-
-> 
-> thanks,
-> rui
-> 
-> > It's a good option.
-> > I can send a patch,but I don't know whether the thermal maintainers will
-> > accept it.
-> > 
-> > Maybe,they have a better way to suggest it.:-)
-> > 
-> > 
-> > PS:I will sent a new patch If I still have no received their suggestions
-> > in two days.
-> > 
-> > > Heiko
+> > > Certainly looks better than register bit defines.
 > > > 
+> > > As rtc-bq32k has similar options, I'm interested, too. I believe we
+> > > should add
 > > > 
-> > > [0] in a separate patch, changing
-> > > - thermal_trip_type enum in include/linux/thermal.h
-> > > - trip_types mapping in drivers/thermal/of-thermal.c
-> > > - Documentation/devicetree/bindings/thermal/thermal.txt
-> > > 
-> > >> +
-> > >> +Example:
-> > >> +tsadc: tsadc@ff280000 {
-> > >> +	compatible = "rockchip,rk3288-tsadc";
-> > >> +	reg = <0xff280000 0x100>;
-> > >> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-> > >> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-> > >> +	clock-names = "tsadc", "apb_pclk";
-> > >> +};
+> > > trickle-charge-enable;
+> 
+> I am unsure about this. It makes sense for devices where we cannot
+> select resistor but just enable or disable charger. Is there any such
+> devices? For devices like ds1339 this makes no sense. For them it is
+> simpler to just enable the charger if resistor value is specified, and
+> default the charger to be off. But I do not see a problem in supporting
+> the trickle-charge-enable; for devices needing this (independently from
+> the ds1307 driver).
 
+Ok, just cc me on next version of the driver, and I'll adjust bq32k to
+be similar.
+
+> > > (we may not want to charge at all), and I believe the diode should be
+> > > 
+> > > disconnect-diode;
+> > > 
+> > > ... With diode connected, charge is slower, and that probably should
+> > > be the default value. We don't want to give too much current in
+> > > default case.  (bq32k has hard-coded resistor value for
+> > > diode/not-diode case).
+> > 
+> > I agree that if one case is less likely to be problematic / damaging
+> > that should be the default.
+> 
+> _Maybe_ 
+> diode-connected = <1>; or 
+> diode-connected = <0>; 
+
+That should work.
+
+Actually, make it "connect-diode = <0/1>;", because hardware can
+actually select if the diode is connected or not.
+
+> Then one question regarding the "process". Now if I cook up fourth patch
+> with inverted diode-connected default for ds1339, should I collect new
+> acks for this new patch? (V3 was acked by Alessandro and Jason.) I assume 
+> yes.
+
+It depends if patch changed "a lot". I guess you can keep the acks.
+
+								Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
