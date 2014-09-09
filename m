@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771AbaIIOAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:00:37 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:36905 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaIIOAe (ORCPT
+	id S1756816AbaIIOAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:00:55 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:56828 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883AbaIIOAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:00:34 -0400
-Message-ID: <540F07FD.7010106@gmail.com>
-Date: Tue, 09 Sep 2014 07:00:29 -0700
+	Tue, 9 Sep 2014 10:00:52 -0400
+Message-ID: <540F07CD.3080708@gmail.com>
+Date: Tue, 09 Sep 2014 06:59:41 -0700
 From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
@@ -19,27 +19,52 @@ CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
         Andy Lutomirski <luto@amacapital.net>, richard.weinberger@gmail.com,
         "Serge E. Hallyn" <serge@hallyn.com>
 Subject: Re: For review: user_namespace(7) man page
-References: <53F5310A.5080503@gmail.com>	<87d2bhfxvc.fsf@x220.int.ebiederm.org> <5404AD7F.4070004@gmail.com> <87sikade6s.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87sikade6s.fsf@x220.int.ebiederm.org>
+References: <53F5310A.5080503@gmail.com> <87d2bhfxvc.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87d2bhfxvc.fsf@x220.int.ebiederm.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On 08/30/2014 02:53 PM, Eric W. Biederman wrote:
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+[...]
 
-> On a related note.  One thing that has come up recently (in 3 separate
-> implementations is that mount(MS_REMOUNT|...,...) must include all of
-> the mount flags that need to be preserved.   People creating read-only
-> bind mounts tend to miss that and the locked flags in mount namespaces.
-> That issue was flushed out now that the kernel is now not allowing most
-> mount flags to be cleared in mount namespaces.
 
-So, are you meaning that something needs to be added to the page
-regarding this point?
+>>        The initial user namespace has no parent namespace, but, for con‐
+>>        sistency, the kernel provides dummy user  and  group  ID  mapping
+>>        files  for  this namespace.  Looking at the uid_map file (gid_map
+>>        is the same) from a shell in the initial namespace shows:
+>>
+>>            $ cat /proc/$$/uid_map
+>>                     0          0 4294967295
+>>
+>>        This mapping tells us that the range starting at  user  ID  0  in
+>>        this namespace maps to a range starting at 0 in the (nonexistent)
+>>        parent namespace, and the length of  the  range  is  the  largest
+>>        32-bit unsigned integer.
+> 
+> Which deliberately leaves 4294967295 32bit (-1) unmapped.  (uid_t)-1 is
+> used in several interfaces (like setreuid) as a way to specify no uid
+> leaving it unmapped and unusuable guarantees that there will be no
+> confusion when using those kernel methods.
 
-Thanks,
+So, I worked that piece into the text to give:
+
+       This  mapping  tells us that the range starting at user ID 0 in
+       this namespace maps to a range starting at 0 in  the  (nonexis‐
+       tent)  parent  namespace,  and  the  length of the range is the
+       largest 32-bit unsigned  integer.   (This  deliberately  leaves
+       4294967295  (the  32-bit  signed  -1  value) unmapped.  This is
+       deliberate: (uid_t) -1 is used  in  several  interfaces  (e.g.,
+       setreuid(2))  as  a  way  to  specify  "no  user  ID".  Leaving
+       setreuid(2)) unmapped and unusuable guarantees that there  will
+       be no confusion when using these interfaces.
+
+Okay?
+
+Cheers,
 
 Michael
 
