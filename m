@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808AbaIIB7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 21:59:43 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60760 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389AbaIIB7j (ORCPT
+	id S1754948AbaIICCc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:02:32 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45257 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681AbaIICCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 21:59:39 -0400
-Date: Mon, 8 Sep 2014 18:59:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140909015933.GA4704@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
- <1409824374.4246.62.camel@pasglop>
- <5408E458.3@zytor.com>
- <54090AF4.7060406@hurleysoftware.com>
- <54091B30.7080100@zytor.com>
- <5409D76D.2070203@hurleysoftware.com>
- <5409D9C0.7030403@zytor.com>
- <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
- <540DEE6C.2060904@zytor.com>
- <540E3207.7090007@hurleysoftware.com>
+	Mon, 8 Sep 2014 22:02:30 -0400
+Date: Tue, 9 Sep 2014 03:02:25 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH v3 00/29] nios2 Linux kernel port
+Message-ID: <20140909020225.GW7996@ZenIV.linux.org.uk>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <540E3207.7090007@hurleysoftware.com>
+In-Reply-To: <1410168160-3624-1-git-send-email-lftan@altera.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14090901-1542-0000-0000-000004A248E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 06:47:35PM -0400, Peter Hurley wrote:
-> On 09/08/2014 01:59 PM, H. Peter Anvin wrote:
-> > On 09/08/2014 10:52 AM, One Thousand Gnomes wrote:
-> >> On Fri, 05 Sep 2014 08:41:52 -0700
-> >> "H. Peter Anvin" <hpa@zytor.com> wrote:
-> >>
-> >>> On 09/05/2014 08:31 AM, Peter Hurley wrote:
-> >>>>
-> >>>> Which is a bit ironic because I remember when Digital had a team
-> >>>> working on emulating native x86 apps on Alpha/NT.
-> >>>>
-> >>>
-> >>> Right, because the x86 architecture was obsolete and would never scale...
-> >>
-> >> Talking about "not scaling" can anyone explain how a "you need to use
-> >> set_bit() and friends" bug report scaled into a hundred message plus
-> >> discussion about ambiguous properties of processors (and nobody has
-> >> audited all the embedded platforms we support yet, or the weirder ARMs)
-> >> and a propsal to remove Alpha support.
-> >>
-> >> Wouldn't it be *much* simpler to do what I suggested in the first place
-> >> and use the existing intended for purpose, deliberately put there,
-> >> functions for atomic bitops, because they are fast on sane processors and
-> >> they work on everything else.
-> >>
-> >> I think the whole "removing Alpha EV5" support is basically bonkers. Just
-> >> use set_bit in the tty layer. Alpha will continue to work as well as it
-> >> always has done and you won't design out support for any future processor
-> >> that turns out not to do byte aligned stores.
-> >>
-> >> Alan
-> >>
-> > 
-> > Is *that* what we are talking about?  I was added to this conversation
-> > in the middle where it had already generalized, so I had no idea.
-> 
-> No, this is just what brought this craziness to my attention.
-> 
-> For example, byte- and short-sized circular buffers could not possibly
-> be safe either, when the head nears the tail.
-> 
-> Who has audited global storage and ensured that _every_ byte-sized write
-> doesn't happen to be adjacent to some other storage that may not happen
-> to be protected by the same (or any) lock?
+On Mon, Sep 08, 2014 at 05:22:11PM +0800, Ley Foon Tan wrote:
+> This is the 3rd version of patchset adds the Linux kernel port for Nios II processor from
+> Altera. All of the feedback from v2 patchseries has been addressed. Thanks to all who
+> provided feedback on the previous version.
 
-This was my concern as well.
+a) signal caught in rt_sigreturn() (e.g. from change of the set of blocked
+signals) should *NOT* trigger syscall restart.  IOW, wrt syscall restart
+logics, rt_sigreturn() acts as exception, not as a syscall.  You are
+setting ->orig_r2 to -1, but that doesn't affect your syscall restart
+logics.
 
-							Thanx, Paul
+As the matter of fact, your 'in_syscall' argument is bogus - it's always
+1.  For return from interrupt as well as that from syscall.  And syscall
+restart logics _really_ shouldn't apply to return from interrupts - it's
+not only wrong, but very hard to debug.
 
+b) multiple pending signals should be all handled before return to
+userland.  Only the first one might have syscall restart logics triggered.
+The effect should be identical to what you'd get if e.g. a timer interrupt
+had hit just as you were returning to userland (possibly into handler)
+after handling the first one, etc.  At the absolute least, SIGSEGV from
+failing attempt to build a sigframe should be handled before returning
+to userland.
+
+c) rt_sigreturn() should reset ->restart_block.fn to do_no_restart_syscall
+
+d) what's
++       regs->estatus = (regs->estatus & 0xffffffff);
+in rt_restore_ucontext() about?
+
+e) restart in handlerless case is better off without leaving the kernel
+mode.  See what e.g. arm and s390 are doing.
