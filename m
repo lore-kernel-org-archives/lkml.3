@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992AbaIIIdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:33:10 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:56978 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaIIIdH (ORCPT
+	id S1756048AbaIIIdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:33:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43433 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255AbaIIIdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:33:07 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH] Input: matrix_keypad - make driver useable with GPIO drivers requiring threaded irqs
-Date: Tue,  9 Sep 2014 10:33:04 +0200
-Message-Id: <1410251584-5031-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 9 Sep 2014 04:33:08 -0400
+Date: Tue, 9 Sep 2014 10:33:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
+Message-ID: <20140909083303.GX19379@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/VG9mYbp8jL2/WoI"
+Content-Disposition: inline
+In-Reply-To: <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying to use the matrix-keypad driver with GPIO drivers that
-require nested irq handlers (e.g. I2C GPIO adapters like PCA9554),
-request_irq() fails because the GPIO driver requires a threaded
-interrupt handler.
 
-Use request_any_context_irq() to be able to use any GPIO driver as
-keypad driver.
+--/VG9mYbp8jL2/WoI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/input/keyboard/matrix_keypad.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+On Wed, Aug 20, 2014 at 03:36:06PM +0300, Alexander Shishkin wrote:
+> This adds support for overwrite mode in the AUX area, which means "keep
+> collecting data till you're stopped". It does not depend on data buffer's
+> overwrite mode, so that it doesn't lose sideband data that is instrumental
+> for processing AUX data.
 
-diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c
-index 8d2e19e..e651fa6 100644
---- a/drivers/input/keyboard/matrix_keypad.c
-+++ b/drivers/input/keyboard/matrix_keypad.c
-@@ -332,23 +332,24 @@ static int matrix_keypad_init_gpio(struct platform_device *pdev,
- 	}
- 
- 	if (pdata->clustered_irq > 0) {
--		err = request_irq(pdata->clustered_irq,
-+		err = request_any_context_irq(pdata->clustered_irq,
- 				matrix_keypad_interrupt,
- 				pdata->clustered_irq_flags,
- 				"matrix-keypad", keypad);
--		if (err) {
-+		if (err < 0) {
- 			dev_err(&pdev->dev,
- 				"Unable to acquire clustered interrupt\n");
- 			goto err_free_rows;
- 		}
- 	} else {
- 		for (i = 0; i < pdata->num_row_gpios; i++) {
--			err = request_irq(gpio_to_irq(pdata->row_gpios[i]),
-+			err = request_any_context_irq(
-+					gpio_to_irq(pdata->row_gpios[i]),
- 					matrix_keypad_interrupt,
- 					IRQF_TRIGGER_RISING |
- 					IRQF_TRIGGER_FALLING,
- 					"matrix-keypad", keypad);
--			if (err) {
-+			if (err < 0) {
- 				dev_err(&pdev->dev,
- 					"Unable to acquire interrupt for GPIO line %i\n",
- 					pdata->row_gpios[i]);
--- 
-1.7.10.4
+This patch is out of order as well, it would've made sense right after
+the other aux buffer patch. Also, its not specified (and I can't find it
+in the patch) how it _is_ set. The Changelog above only says how it is
+not.
 
+
+--/VG9mYbp8jL2/WoI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUDrs/AAoJEHZH4aRLwOS6nHwQAKGIRxxFhkxpxtuaTc5K3pkB
+dJOJ8cE+YMDAux6yOUjsToypZRE1qDNPGo7hz+FM5KEgvNDR+aBZL+KTmOtFXoCJ
+deVctL1z2SRUQgsCpbdUFe2wFNIeNsphuMmD8ut/dVgdxzLzZEm/MFC0kpuPqBJJ
+0V0G+TiIXCBg58EroyhxWRl7mDMSV7n4mvaCnltZ9yWVYM3PvS77in2pSJhbd5yR
+LNsKfAqsgPshMgFDa50a/WrMLd3oZ9Lf9EJANW36LhzccEgX8NBIby8Ys5qSaUgI
+9hsxw8VcrwxhKZeSU/oBlaL9mVasaFiGN19lQKtOnGnV+Sn/Md2qYcwI7ELfIKXt
+REoqrnHv0cE50xAV5P5NKMtzgsaTWoi7oOoVt0exG/GSzS0GOQlwf4298Uzd1RFW
+zw140YUr6aHbRpD/5gjGyh8do+nSXevPcsn1MGL4fUkQWqZRR1WbD3Ke1k4YtdQk
+2xZpBdZpPM+8hX3WpZq2/xFGxhbqH1ojpTP9ki8/Rjl/ZoQSL5X84DdGXurX0qBQ
+Msszm3FHGV+YEV30IoZ+IIOe/laeUuPxhRC+sXs7DiPhBgZPXB7/CKHpRPsgKsFC
+kGIMbrYDHMkbvaXzTzjoviAI0JHp0ws82JzHxr6XJwpiI9QLuWrLLZ+g2PRwsF77
+gPj25dR7GaumOokgT2r7
+=FZVr
+-----END PGP SIGNATURE-----
+
+--/VG9mYbp8jL2/WoI--
