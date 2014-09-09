@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbaIIKoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:44:46 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:38738 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755955AbaIIK05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:26:57 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kbuild@vger.kernel.org
-Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Ungerer <gerg@uclinux.org>, Ryan Mallon <rmallon@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Wolfram Sang <wsa@sang-engineering.com>,
-        Andrew Victor <linux@maxim.org.za>, linux-samsung-soc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        linux-omap@vger.kernel.org, Ulrich Hecht <ulrich.hecht@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 0/3] kbuild: Clean up makefiles and then drop obj-n an obj-n
-Date: Tue,  9 Sep 2014 19:26:18 +0900
-Message-Id: <1410258381-7088-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.9.1
+	id S1756689AbaIIKph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:45:37 -0400
+Received: from v032797.home.net.pl ([89.161.177.31]:65346 "HELO
+	v032797.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756222AbaIIKpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:45:35 -0400
+Message-ID: <540EDA58.1000202@elproma.com.pl>
+Date: Tue, 09 Sep 2014 12:45:44 +0200
+From: =?UTF-8?B?SmFudXN6IFXFvHlja2k=?= <j.uzycki@elproma.com.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Lisovy Rostislav <lisovy@gmail.com>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+CC: Michal Vokac <michal.vokac@comap.cz>
+Subject: Re: Watchdog start during boot
+References: <1410258569.15354.3.camel@lp-lvrv.comap.cz>
+In-Reply-To: <1410258569.15354.3.camel@lp-lvrv.comap.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
+Please join to the watchdog_dev thread: 
+http://www.spinics.net/lists/linux-watchdog/msg05004.html.
 
+best regards
+Janusz
 
-Masahiro Yamada (3):
-  kbuild: remove unnecessary "obj- := dummy.o" trick
-  kbuild: remove unnecessary variable initializaions
-  kbuild: remove obj-n and lib-n handling
-
- arch/arm/mach-at91/Makefile       | 3 ---
- arch/arm/mach-ebsa110/Makefile    | 3 ---
- arch/arm/mach-ep93xx/Makefile     | 3 ---
- arch/arm/mach-exynos/Makefile     | 5 -----
- arch/arm/mach-footbridge/Makefile | 3 ---
- arch/arm/mach-iop13xx/Makefile    | 5 -----
- arch/arm/mach-iop32x/Makefile     | 3 ---
- arch/arm/mach-iop33x/Makefile     | 3 ---
- arch/arm/mach-ks8695/Makefile     | 3 ---
- arch/arm/mach-rpc/Makefile        | 4 ----
- arch/arm/mach-s3c24xx/Makefile    | 5 -----
- arch/arm/mach-s3c64xx/Makefile    | 5 -----
- arch/arm/mach-s5pv210/Makefile    | 5 -----
- arch/arm/mach-sa1100/Makefile     | 3 ---
- arch/arm/mach-u300/Makefile       | 3 ---
- arch/arm/plat-iop/Makefile        | 6 ------
- arch/arm/plat-omap/Makefile       | 3 ---
- arch/arm/plat-samsung/Makefile    | 5 -----
- drivers/clk/shmobile/Makefile     | 2 --
- drivers/net/wimax/Makefile        | 4 ----
- firmware/Makefile                 | 2 +-
- scripts/Makefile.build            | 4 ++--
- scripts/Makefile.clean            | 4 +---
- scripts/Makefile.fwinst           | 2 +-
- 24 files changed, 5 insertions(+), 83 deletions(-)
-
--- 
-1.9.1
+W dniu 2014-09-09 12:29, Lisovy Rostislav pisze:
+> Hello;
+> If my understanding is correct, the purpose of the "watchdog subsystem"
+> is to provide an unified interface from user-space to watchdog devices
+> (via /dev). The issue I am trying to solve is how to start the watchdog
+> during boot (it would be sufficient just not to disable it since the
+> bootloader enables it) to be controlled later on with the user-space
+> tool -- i.e. when the user-space will not boot properly, I would like
+> the device to be rebooted.
+>
+> My "quick and dirty" device-specific solution is:
+>
+> diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+> index 3691b15..1e44b03f 100644
+> --- a/drivers/watchdog/omap_wdt.c
+> +++ b/drivers/watchdog/omap_wdt.c
+> @@ -53,6 +53,10 @@ static unsigned timer_margin;
+>   module_param(timer_margin, uint, 0);
+>   MODULE_PARM_DESC(timer_margin, "initial watchdog timeout (in seconds)");
+>   
+> +static bool start_on_boot = false;
+> +module_param(start_on_boot, bool, 0);
+> +MODULE_PARM_DESC(start_on_boot, "Start the watchdog during boot");
+> +
+>   struct omap_wdt_dev {
+>          void __iomem    *base;          /* physical */
+>          struct device   *dev;
+> @@ -269,6 +273,9 @@ static int omap_wdt_probe(struct platform_device *pdev)
+>   
+>          pm_runtime_put_sync(wdev->dev);
+>   
+> +       if (start_on_boot)
+> +               omap_wdt_start(omap_wdt);
+> +
+>          return 0;
+>   }
+>
+> however I think it would be much beneficial to do this in a generic way.
+> Maybe to create a device tree property, that would store some flag to
+> start the watchdog during boot?
+>
+> Your opinion is appreciated.
+>   
+> Best regards;
+> Rostislav Lisovy
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
