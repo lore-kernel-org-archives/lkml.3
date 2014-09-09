@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaIHX4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 19:56:38 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56731 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754610AbaIHX4h (ORCPT
+	id S1755111AbaIIABe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:01:34 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27769 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752856AbaIIABc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 19:56:37 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Shreyas Prabhu <shreyas@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH V2 0/2] cpufreq/powernv: Set core pstate to a minimum just before hotplugging it out
-Date: Tue, 09 Sep 2014 02:16:03 +0200
-Message-ID: <7863288.1rO87QF8NW@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpo=chEW_TtXWCHa3OEwrqU25TPBES4icjMVxL6nezrf8+w@mail.gmail.com>
-References: <20140905073812.3629.29175.stgit@preeti.in.ibm.com> <CAKohpo=chEW_TtXWCHa3OEwrqU25TPBES4icjMVxL6nezrf8+w@mail.gmail.com>
+	Mon, 8 Sep 2014 20:01:32 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18wFmQY7AAVdrq7p0znQp6n
+Date: Mon, 8 Sep 2014 17:01:26 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mfd: twl4030-power: use 'ti,system-power-controller'
+ as alternative way to support system power off
+Message-ID: <20140909000126.GU3238@atomide.com>
+References: <1409771208-21867-1-git-send-email-nm@ti.com>
+ <1409771208-21867-3-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409771208-21867-3-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 05, 2014 01:11:22 PM Viresh Kumar wrote:
-> On 5 September 2014 13:09, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> > Today cpus go to winkle when they are offlined. Since it is the deepest
-> > idle state that we have, it is expected to save good amount of power as compared
-> > to online state, where cores can enter nap/fastsleep only which are
-> > shallower idle states.
-> > However we observed no powersavings with winkle as compared to nap/fastsleep
-> > and traced the problem to the pstate of the core being kept at a high even
-> > when the core is offline. This can keep the socket pstate high, thus burning
-> > power unnecessarily. This patchset fixes this issue.
-> >
-> > Changes in V2: Changed smp_call_function_any() to smp_call_function_single() in Patch[2/2]
+* Nishanth Menon <nm@ti.com> [140903 12:07]:
+> ti,system-power-controller is more or less the standard way of
+> indicating that the PMIC is the system wide power controller and hence
+> may be used to switch off the system. Almost ALL TI PMIC drivers and
+> many Maxim PMIC drivers follow the same style.
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> So support 'ti,system-power-controller' in addition to the usual
+> 'ti,use_poweroff' to indicate that the PMIC instance has control for
+> switching off the system.
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-I've queued up the two patches for 3.18, thanks!
+Acked-by: Tony Lindgren <tony@atomide.com>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> ---
+>  drivers/mfd/twl4030-power.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+> index 3bc969a..1c129ba 100644
+> --- a/drivers/mfd/twl4030-power.c
+> +++ b/drivers/mfd/twl4030-power.c
+> @@ -627,6 +627,9 @@ static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
+>  	if (pdata && pdata->use_poweroff)
+>  		return true;
+>  
+> +	if (of_property_read_bool(node, "ti,system-power-controller"))
+> +		return true;
+> +
+>  	if (of_property_read_bool(node, "ti,use_poweroff"))
+>  		return true;
+>  
+> -- 
+> 1.7.9.5
+> 
