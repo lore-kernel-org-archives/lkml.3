@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524AbaIIKb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:31:57 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:36270 "EHLO mail.mev.co.uk"
+	id S1756571AbaIIK13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:27:29 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:36167 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756573AbaIIK1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:27:30 -0400
+	id S1755991AbaIIK1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:27:17 -0400
 From: Ian Abbott <abbotti@mev.co.uk>
 To: driverdev-devel@linuxdriverproject.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 37/48] staging: comedi: pcl711: replace comedi_board() calls
-Date: Tue,  9 Sep 2014 11:26:46 +0100
-Message-Id: <1410258417-28230-38-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 17/48] staging: comedi: das08_isa: replace comedi_board() calls
+Date: Tue,  9 Sep 2014 11:26:26 +0100
+Message-Id: <1410258417-28230-18-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
 References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
@@ -27,22 +27,22 @@ The `comedi_board(dev)` inline function calls just return
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/pcl711.c | 2 +-
+ drivers/staging/comedi/drivers/das08_isa.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcl711.c b/drivers/staging/comedi/drivers/pcl711.c
-index 094e513..20ed09c 100644
---- a/drivers/staging/comedi/drivers/pcl711.c
-+++ b/drivers/staging/comedi/drivers/pcl711.c
-@@ -459,7 +459,7 @@ static int pcl711_do_insn_bits(struct comedi_device *dev,
- 
- static int pcl711_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+diff --git a/drivers/staging/comedi/drivers/das08_isa.c b/drivers/staging/comedi/drivers/das08_isa.c
+index 4fb03d3..e4ba268 100644
+--- a/drivers/staging/comedi/drivers/das08_isa.c
++++ b/drivers/staging/comedi/drivers/das08_isa.c
+@@ -174,7 +174,7 @@ static const struct das08_board_struct das08_isa_boards[] = {
+ static int das08_isa_attach(struct comedi_device *dev,
+ 			    struct comedi_devconfig *it)
  {
--	const struct pcl711_board *board = comedi_board(dev);
-+	const struct pcl711_board *board = dev->board_ptr;
- 	struct pcl711_private *devpriv;
- 	struct comedi_subdevice *s;
+-	const struct das08_board_struct *thisboard = comedi_board(dev);
++	const struct das08_board_struct *thisboard = dev->board_ptr;
+ 	struct das08_private_struct *devpriv;
  	int ret;
+ 
 -- 
 2.1.0
 
