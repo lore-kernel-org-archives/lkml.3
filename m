@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303AbaIIL2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 07:28:16 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29070 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932234AbaIIL2N (ORCPT
+	id S1756382AbaIIL3Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 07:29:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22482 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbaIIL3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 07:28:13 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/dx9T8KtI0fo6iRrkzjUWCQDICFS6IoYY=
-X-DKIM: OpenDKIM Filter v2.0.1 titan F37265DC240
-Date: Tue, 9 Sep 2014 07:27:50 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Matti Vaittinen <matti.vaittinen@nsn.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        "linux@roeck-us.net" <linux@roeck-us.net>, a.zummo@towertech.it,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "arno@natisbad.org" <arno@natisbad.org>,
-        jgunthorpe@obsidianresearch.com, san@rosetechnology.dk, hs@denx.de,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Sverdlin Alexander <alexander.sverdlin@nsn.com>
-Subject: Re: [RESEND PATCH v3]     rtc: ds1307: add trickle charger device
- tree binding
-Message-ID: <20140909112750.GK30828@titan.lakedaemon.net>
-References: <20140908073216.GA20850@fi-ourus-dhcp00977.emea.nsn-net.net>
- <20140908112657.GD30828@titan.lakedaemon.net>
- <20140909082902.GD21342@fi-ourus-dhcp00977.emea.nsn-net.net>
+	Tue, 9 Sep 2014 07:29:24 -0400
+Date: Tue, 9 Sep 2014 13:28:47 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, mingo@redhat.com, hpa@zytor.com,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de
+Subject: Re: [Xen-devel] [PATCH] xen/efi: Directly include needed headers
+Message-ID: <20140909112847.GM3459@olila.local.net-space.pl>
+References: <1410182538-18783-1-git-send-email-daniel.kiper@oracle.com>
+ <540DE8F0.8040303@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140909082902.GD21342@fi-ourus-dhcp00977.emea.nsn-net.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <540DE8F0.8040303@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 11:29:11AM +0300, Matti Vaittinen wrote:
-> On Mon, Sep 08, 2014 at 07:26:57AM -0400, ext Jason Cooper wrote:
-> > Matti,
-> > 
-> > On Mon, Sep 08, 2014 at 10:32:24AM +0300, Matti Vaittinen wrote:
-> > > ---
-> > 
-> > Here.  Otherwise, it'll get included in the commit message, which I
-> > don't think was your intention.
-> 
-> Ok, thanks.
-> 
-> > 
-> > >  .../devicetree/bindings/i2c/trivial-devices.txt    |  1 -
-> > >  .../devicetree/bindings/rtc/dallas,ds1339.txt      | 18 ++++++
-> > >  drivers/rtc/rtc-ds1307.c                           | 66 ++++++++++++++++++++--
-> > >  3 files changed, 80 insertions(+), 5 deletions(-)
-> > >  create mode 100644 Documentation/devicetree/bindings/rtc/dallas,ds1339.txt
-> > 
-> > I would split this into two patches, one for the binding documentation,
-> > and one for the C file changes.  You can then use
-> > ./scripts/get_maintainer.pl to see who the rtc maintainer is (nothing
-> > jumps out from my memory).
-> 
-> Splitting sounds reasonable. I will do this and also invert the default
-> diode setting to be connected as was suggested by Pavel in mail responce
-> to v1 of patch. And Alessandro is the maintainer for rtc according to
-> the MAINTAINERS file.
-> 
-> > 
-> > Most likely, the rtc maintainer will take the series with the DT
-> > maintainers Acks.  You made all the binding changes as discussed by Mark
-> > and I, so fwiw,
-> > 
-> > Acked-by: Jason Cooper <jason@lakedaemon.net>
-> > 
-> > Just keep in mind that I'm not a DT maintainer, I've just moved a lot of
-> > patches into that area :-P  When you respin the series to split it, just
-> > throw my Ack on the binding docs.
-> 
-> Thanks, although the doc will change when I invert the default diode
-> setting  =)
+On Mon, Sep 08, 2014 at 06:35:44PM +0100, David Vrabel wrote:
+> On 08/09/14 14:22, Daniel Kiper wrote:
+> > I discovered that some needed stuff is defined/declared in headers
+> > which are not included directly. Currently it works but if somebody
+> > remove required headers from currently included headers then build
+> > will break. So, just in case directly include all needed headers.
+>
+> Seems rather pointless, but harmless.
+>
+> Applied to devel/for-linus-3.18
 
-Yep, I'm fine with the inversion.  Feel free to keep the Ack.
+Thanks.
 
-thx,
-
-Jason.
+Daniel
