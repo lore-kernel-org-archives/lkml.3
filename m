@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaIIWub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:50:31 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38050 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150AbaIIWu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:50:29 -0400
-Message-ID: <540F8425.70304@ti.com>
-Date: Tue, 9 Sep 2014 18:50:13 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752880AbaIIWw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:52:57 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:32819 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131AbaIIWwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 18:52:55 -0400
+Date: Wed, 10 Sep 2014 07:52:45 +0900
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140909225245.GC3154@mtj.dyndns.org>
+References: <20140905224047.GC15723@mtj.dyndns.org>
+ <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org>
+ <1410241109.2028.22.camel@jarvis.lan>
+ <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
+ <1410291346.13298.16.camel@jarvis.lan>
+ <20140909214240.GA3154@mtj.dyndns.org>
+ <1410301562.13298.35.camel@jarvis.lan>
+ <20140909224143.GB3154@mtj.dyndns.org>
+ <1410302783.13298.50.camel@jarvis.lan>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <bhelgaas@google.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] PCI: keystone: update to support multiple pci
- ports
-References: <1410293835-13050-1-git-send-email-m-karicheri2@ti.com> <9042477.aRbAhpkfQ5@wuerfel> <540F75DF.5050904@ti.com> <3967092.l9bxcqMaSa@wuerfel>
-In-Reply-To: <3967092.l9bxcqMaSa@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410302783.13298.50.camel@jarvis.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 05:52 PM, Arnd Bergmann wrote:
-> On Tuesday 09 September 2014 17:49:19 Murali Karicheri wrote:
->> Actually this is an inteded. The vendor ID is in a register indicated by
->> reg offset and as per the device spec, it needs to be read and updated
->> by the software. Now since multiple instances of PCI device needs to be
->> read the same register, the reading happens in the probe() and same is
->> unmapped after that.
->>
->> +       ks_pcie->device_id = readl(reg_p)>>  16;
->> +       devm_iounmap(dev, reg_p);
->> +       devm_release_mem_region(dev, res->start, resource_size(res));
->>
->> Afetr that in ks_pcie_host_init(), it update the device_id in the RC's
->> config space.
->
-> I'm not sure I understand the purpose of this. Do you mean you read
-> the vendor/device ID of whichever device happens to get probed first
-> and then program the same ID into all other devices as well?
+Hello, James.
 
-My mistake. It is the device ID, not vendor ID. The PCI driver supports 
-PCI h/w on K2HK, K2E and K2L SoCs for which PCI device IDs are assigned as
+On Tue, Sep 09, 2014 at 03:46:23PM -0700, James Bottomley wrote:
+> If you want the return of an individual device probe a log scraper gives
+> it to you ... and nothing else does currently.  The advantage of the
+> prink in dd.c is that it's standard for everything and can be scanned
+> for ... if you take that out, you'll get complaints about the lack of
+> standard messages (you'd be surprised at the number of enterprise
+> monitoring systems that actually do log scraping).
 
-+#define PCIE_RC_K2HK		0xb008
-+#define PCIE_RC_K2E		0xb009
-+#define PCIE_RC_K2L		0xb00a
-+
+Why would a log scaper care about which task is printing the messages?
+The printk can stay there.  There's nothing wrong with it.  Log
+scapers tend to be asynchronous in nature but if a log scraper wants
+to operate synchronously for whatever reason, it can simply not turn
+on async probing.
 
-and the same driver code runs on all these h/w. The device ID is not 
-filled in by default by the h/w, in the config space of the RC at offset 
-1000h "VENDOR_DEVICE_ID Vendor and Device Identification Register". 
-Same is available in a seperate SoC register whose offset is specified 
-by index 2. This is read by driver and updated in the config space. The 
-Vendor ID is however set by default.
+> OK, so we just fire and forget in userland ... why bother inventing an
+> elaborate new infrastructure in the kernel to do exactly what
+> 
+> modprobe <mod> &
+> 
+> would do?
 
-There is a mrrs PCI quirk required for Keystone PCI which depends on 
-this vendor ID to be filled correctly as it match vendor id/ device id 
-of the bridge device to apply the quirk.
+I think the argument there is that the issuer wants to know whether
+such operations succeeded or not and wants to report and record the
+result and possibly take other actions in response.  We're currently
+mixing wait and error reporting for one type of operation with wait
+for another.  I'm not saying it's a fatal flaw or anything but it can
+get in the way.
 
-Hope this clarify your question.
+Thanks.
 
-Murali
-
->
-> What if the order changes between two boots? Why does the vendor/device
-> ID of the host bridge even matter at all?
->
-> 	Arnd
-
+-- 
+tejun
