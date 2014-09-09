@@ -1,192 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990AbaIIPgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:36:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51396 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756704AbaIIPgv (ORCPT
+	id S1757139AbaIIPhI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:37:08 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:34937 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757026AbaIIPhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:36:51 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v4 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller driver
-Date: Tue,  9 Sep 2014 10:36:47 -0500
-Message-Id: <1410277008-20242-2-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
-References: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
+	Tue, 9 Sep 2014 11:37:04 -0400
+X-AuditID: cbfec373-b7f9d6d00000479f-ef-540f1e9ee220
+Date: Tue, 09 Sep 2014 12:36:54 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Peter Griffin <peter.griffin@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Nishanth Menon <nm@ti.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Tony Lindgren <tony@atomide.com>,
+        linux-omap <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 1/3] omap-dma: Allow compile-testing omap1_camera driver
+Message-id: <20140909123654.37d60f38.m.chehab@samsung.com>
+In-reply-to: <20140909144157.GF12361@n2100.arm.linux.org.uk>
+References: <20140909124306.2d5a0d76@canb.auug.org.au>
+ <6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
+ <20140909144157.GF12361@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/hEN15cvwhBhc2qFr8nXSM3WLq5O1s
+	FpPe3ma2uLxrDptFz4atrBYHF7YxWsxe0s9icfsyr8WOU4uYLd78OMtksWHGPxaLrXuvslvs
+	v+Jl8bJvP4sDn0dLcw+bx+9fkxg9vn2dxOLReOMGm8fmFVoei/e8ZPK4c20Pm8fxG9uZPB70
+	bWP0+LxJLoArissmJTUnsyy1SN8ugStj2bY5zAVTBCvOTjrI1MD4i6+LkZNDQsBE4sjEBYwQ
+	tpjEhXvr2boYuTiEBJYwSkxZOYcFJCEk0MwkcWl6AYjNIqAqsfD0UTYQm03ASOJVYwsriC0i
+	YCpx7dEzZpBmZoHZLBKvl/4CKxIW8JGYMGUOO4jNK2AlcfPJGyYQm1PARmJtezc7xLadjBLP
+	d26COsNZ4ufMSYwQDYISPybfA7uCWUBLYvO2JlYIW15i85q3zBMYBWYhKZuFpGwWkrIFjMyr
+	GEVLi5MLipPSc430ihNzi0vz0vWS83M3MUJiq3gH44sNVocYBTgYlXh4T8TwhQixJpYVV+Ye
+	YpTgYFYS4bV+ARTiTUmsrEotyo8vKs1JLT7EyMTBKdXAqC9g9reiyGR3/96e7MkTrincEBB/
+	VSO+9gVDuGnRmhuOVi0PRcue1ZzmvHP13O+VG+rSyp/fZKs4IWcaLhMtVf4r8jnbnkmTObMW
+	fJ99sCNmleCJ+k7xPp1Cfa4vIb2v9r4pv5dy4upb9huNphrT9Cz/MzLH/CueWelk57WbYd6E
+	W86xlyv3KrEUZyQaajEXFScCAD9zhMSLAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Qualcomm AHCI SATA controller that exists on several
-SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
-requires the associated IPQ806x SATA PHY Driver to be enabled as well.
+Em Tue, 9 Sep 2014 15:41:58 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> escreveu:
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
-(reposted with Hans on list)
+> On Tue, Sep 09, 2014 at 11:38:17AM -0300, Mauro Carvalho Chehab wrote:
+> > We want to be able to COMPILE_TEST the omap1_camera driver.
+> > It compiles fine, but it fails linkediting:
+> > 
+> > ERROR: "omap_stop_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_start_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_dma_link_lch" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_set_dma_dest_burst_mode" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_set_dma_src_params" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_request_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_set_dma_transfer_params" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_set_dma_dest_params" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > ERROR: "omap_free_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] undefined!
+> > 
+> > So, add some stub functions to avoid it.
+> 
+> The real answer to this is to find someone who still uses it, and convert
+> it to the DMA engine API.  If there's no users, the driver might as well
+> be killed off.
 
-v4:
-* Added simple PM ops implementation
-* Added setting of pmalive clk
+Hmm... it seems that there are still several drivers still relying on
+the functions declared at: omap-dma.h:
 
-v3:
-* Added comment about suspend/resume not supported
-* Fixup ahci_platform_init_host for upstream change to interface
-* cleanup error handling of rxoob clk, moved to devm_clk_get/put
+$ grep extern include/linux/omap-dma.h |perl -ne 'print "$1\n" if (m/extern\s\S+\s(.*)\(/)' >funcs && git grep -f funcs -l
+arch/arm/mach-omap1/pm.c
+arch/arm/mach-omap2/pm24xx.c
+arch/arm/plat-omap/dma.c
+drivers/dma/omap-dma.c
+drivers/media/platform/omap/omap_vout_vrfb.c
+drivers/media/platform/omap3isp/isphist.c
+drivers/media/platform/soc_camera/omap1_camera.c
+drivers/mtd/onenand/omap2.c
+drivers/usb/gadget/udc/omap_udc.c
+drivers/usb/musb/tusb6010_omap.c
+drivers/video/fbdev/omap/omapfb_main.c
+include/linux/omap-dma.h
 
-v2:
-* Fixed MODULE_LICENSE to be GPL v2
+Perhaps we can remove the header and mark all the above as BROKEN.
 
- drivers/ata/Kconfig     | 10 +++++
- drivers/ata/Makefile    |  1 +
- drivers/ata/ahci_qcom.c | 99 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 110 insertions(+)
- create mode 100644 drivers/ata/ahci_qcom.c
+If nobody fixes, we can strip all of them from the Kernel.
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index e1b9278..165d2fa 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -133,6 +133,16 @@ config AHCI_MVEBU
- 
- 	  If unsure, say N.
- 
-+config AHCI_QCOM
-+	tristate "Qualcomm AHCI SATA support"
-+	depends on ARCH_QCOM
-+	help
-+	  This option enables support for AHCI SATA controller
-+	  integrated into Qualcomm ARM SoC chipsets. For more
-+	  information please refer to http://www.qualcomm.com/chipsets.
-+
-+	  If unsure, say N.
-+
- config AHCI_SUNXI
- 	tristate "Allwinner sunxi AHCI SATA support"
- 	depends on ARCH_SUNXI
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index ae41107..812435c 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
- obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_MVEBU)	+= ahci_mvebu.o libahci.o libahci_platform.o
-+obj-$(CONFIG_AHCI_QCOM)		+= ahci_qcom.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_TEGRA)	+= ahci_tegra.o libahci.o libahci_platform.o
-diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
-new file mode 100644
-index 0000000..3da0c94
---- /dev/null
-+++ b/drivers/ata/ahci_qcom.c
-@@ -0,0 +1,99 @@
-+/*
-+ * Qualcomm ARM SoC AHCI SATA platform driver
-+ *
-+ * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
-+ *
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/ahci_platform.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/libata.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm.h>
-+#include "ahci.h"
-+
-+static const struct ata_port_info qcom_ahci_port_info = {
-+	.flags		= AHCI_FLAG_COMMON,
-+	.pio_mask	= ATA_PIO4,
-+	.udma_mask	= ATA_UDMA6,
-+	.port_ops	= &ahci_platform_ops,
-+};
-+
-+static int qcom_ahci_probe(struct platform_device *pdev)
-+{
-+	struct ahci_host_priv *hpriv;
-+	struct clk *rxoob_clk, *pmalive_clk;
-+	int rc;
-+
-+	hpriv = ahci_platform_get_resources(pdev);
-+	if (IS_ERR(hpriv))
-+		return PTR_ERR(hpriv);
-+
-+	/* Try and set the rxoob clk to 100Mhz */
-+	rxoob_clk = of_clk_get_by_name(pdev->dev.of_node, "rxoob");
-+	if (IS_ERR(rxoob_clk))
-+		return PTR_ERR(rxoob_clk);
-+
-+	rc = clk_set_rate(rxoob_clk, 100000000);
-+	if (rc)
-+		return rc;
-+
-+	/* Try and set the pmalive clk to 100Mhz */
-+	pmalive_clk = of_clk_get_by_name(pdev->dev.of_node, "pmalive");
-+	if (IS_ERR(pmalive_clk))
-+		return PTR_ERR(pmalive_clk);
-+
-+	rc = clk_set_rate(pmalive_clk, 100000000);
-+	if (rc)
-+		return rc;
-+
-+	rc = ahci_platform_enable_resources(hpriv);
-+	if (rc)
-+		return rc;
-+
-+	rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info);
-+	if (rc)
-+		goto disable_resources;
-+
-+	return 0;
-+disable_resources:
-+	ahci_platform_disable_resources(hpriv);
-+	return rc;
-+}
-+
-+static const struct of_device_id qcom_ahci_of_match[] = {
-+	{ .compatible = "qcom,msm-ahci", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
-+
-+static SIMPLE_DEV_PM_OPS(qcom_ahci_pm_ops, ahci_platform_suspend,
-+			 ahci_platform_resume);
-+
-+static struct platform_driver qcom_ahci_driver = {
-+	.probe = qcom_ahci_probe,
-+	.remove = ata_platform_remove_one,
-+	.driver = {
-+		.name = "qcom_ahci_qcom",
-+		.owner = THIS_MODULE,
-+		.of_match_table = qcom_ahci_of_match,
-+		.pm = &qcom_ahci_pm_ops,
-+	},
-+};
-+module_platform_driver(qcom_ahci_driver);
-+
-+MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("ahci:qcom");
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Regards,
+Mauro
