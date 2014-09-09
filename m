@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838AbaIIOUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:20:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798AbaIIOUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:20:12 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] RxRPC: Fix missing __user annotation
-From: David Howells <dhowells@redhat.com>
-To: netdev@vger.kernel.org
-Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 09 Sep 2014 15:19:44 +0100
-Message-ID: <20140909141944.18112.74852.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S932457AbaIIOVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:21:37 -0400
+Received: from eu1sys200aog127.obsmtp.com ([207.126.144.176]:55231 "EHLO
+	eu1sys200aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753406AbaIIOVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 10:21:35 -0400
+Message-ID: <540F0CD8.9070002@mellanox.com>
+Date: Tue, 9 Sep 2014 17:21:12 +0300
+From: Haggai Eran <haggaie@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
+To: Roland Dreier <roland@kernel.org>, Latchesar Ionkov <lionkov@lanl.gov>
+CC: Or Gerlitz <gerlitz.or@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        "Linux Kernel" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 for-next 00/16] On demand paging
+References: <1404377069-20585-1-git-send-email-haggaie@mellanox.com> <5405D2D8.1040700@mellanox.com> <CAJ3xEMj8BJLJvetNoqGOFhqeJHupEd=kbnFeO_Na=1ZYbvBk9g@mail.gmail.com> <CAOha14xthZHSpS_T+XRgZcPqwaZvtMw0iGTzKjTyjdBuLhJ4Eg@mail.gmail.com> <CAG4TOxO54LJgSjFFDge4X9OpaBNrM1z=iGSV0GEY+0iFFSs9sw@mail.gmail.com>
+In-Reply-To: <CAG4TOxO54LJgSjFFDge4X9OpaBNrM1z=iGSV0GEY+0iFFSs9sw@mail.gmail.com>
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.8.0.34]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a missing __user annotation in a cast of a user space pointer (found by
-checker).
+On 04/09/2014 00:15, Roland Dreier wrote:
+> Have you done any review or testing of these changes?  If so can you
+> share the results?
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+We have tested this feature thoroughly inside Mellanox. We ran random
+tests that performed MR registrations, memory mappings and unmappings,
+calls to madvise with MADV_DONTNEED for invalidations, sending and
+receiving of data, and RDMA operations. The test validated the integrity
+of the data, and we verified the integrity of kernel memory by running
+the tests under a debugging kernel.
 
- net/rxrpc/ar-key.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/rxrpc/ar-key.c b/net/rxrpc/ar-key.c
-index b45d080e64a7..1b24191167f1 100644
---- a/net/rxrpc/ar-key.c
-+++ b/net/rxrpc/ar-key.c
-@@ -1143,7 +1143,7 @@ static long rxrpc_read(const struct key *key,
- 		if (copy_to_user(xdr, (s), _l) != 0)			\
- 			goto fault;					\
- 		if (_l & 3 &&						\
--		    copy_to_user((u8 *)xdr + _l, &zero, 4 - (_l & 3)) != 0) \
-+		    copy_to_user((u8 __user *)xdr + _l, &zero, 4 - (_l & 3)) != 0) \
- 			goto fault;					\
- 		xdr += (_l + 3) >> 2;					\
- 	} while(0)
+Best regards,
+Haggai
 
