@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaIIGiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 02:38:25 -0400
-Received: from leviathan.tchmachines.com ([208.76.85.180]:58246 "EHLO
-	leviathan.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533AbaIIGiY (ORCPT
+	id S1755584AbaIIGsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 02:48:11 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:39013 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaIIGsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 02:38:24 -0400
-From: Eli Billauer <eli.billauer@gmail.com>
-To: gregkh@linuxfoundation.org, arnd@arndb.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Eli Billauer <eli.billauer@gmail.com>
-Subject: [PATCH] MAINTAINERS: Move Xillybus out of staging
-Date: Tue,  9 Sep 2014 09:38:01 +0300
-Message-Id: <1410244681-25756-1-git-send-email-eli.billauer@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - leviathan.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - billauer.co.il
-X-Get-Message-Sender-Via: leviathan.tchmachines.com: authenticated_id: billaue/sender_address_domain
+	Tue, 9 Sep 2014 02:48:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKszPgv4ML2byWtYCxHY0KNmW+VbPYWY3uQDr_XLg_9AFx960Q@mail.gmail.com>
+References: <CAG-aW04-=7rvPjLGqAWZ2oWT4K4EZ5gc96ZWpBo101u=f2+6EQ@mail.gmail.com>
+ <CAG-aW06pKUeCddJCAN7cDDcs-T2jmjV33zxdh-jyVSx1uhq2Ww@mail.gmail.com>
+ <CAKszPgvjBE5y35guVRXu7kp3nVZa4KPgh=AezVL-UXq=idRc-Q@mail.gmail.com>
+ <53EC8579.1030008@redhat.com> <20140814220740.GA32475@xanatos>
+ <CAKszPgservaZfMsV=c7c3yuPtm6cc2J14auDkG-pE-JPdrEXtQ@mail.gmail.com>
+ <53F78B66.6040202@redhat.com> <CAKszPgs3ULrDDTo=W+MsD-5PCd9yVNj3uxJ3LtGM9QTMT346aQ@mail.gmail.com>
+ <CAKszPgv4ML2byWtYCxHY0KNmW+VbPYWY3uQDr_XLg_9AFx960Q@mail.gmail.com>
+From: Claudio Bizzarri <claudio.bizzarri@gmail.com>
+Date: Tue, 9 Sep 2014 08:47:47 +0200
+Message-ID: <CAKszPgtHxncbwwDPAxSDMK4zNx0oktR-qE9qigrqru58tdd9=A@mail.gmail.com>
+Subject: Re: Kernel 3.16.0 USB crash
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: "Nyman, Mathias" <mathias.nyman@intel.com>, Matt <jackdachef@gmail.com>,
+        Gerd Hoffmann <kraxel@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi to all,
 
-Signed-off-by: Eli Billauer <eli.billauer@gmail.com>
----
- MAINTAINERS |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+I've installed new 3.16.2 kernel, and now:
+- if I use an USB 3.0 cable I've same crash as said using 3.16.1 version;
+- if I use an USB 2.0 cable works, I've made a complete backup without
+any problem.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index f040e7f..95bcdee 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8789,12 +8789,6 @@ M:	Arnaud Patard <arnaud.patard@rtp-net.org>
- S:	Odd Fixes
- F:	drivers/staging/xgifb/
- 
--STAGING - XILLYBUS DRIVER
--M:	Eli Billauer <eli.billauer@gmail.com>
--L:	devel@driverdev.osuosl.org
--S:	Supported
--F:	drivers/staging/xillybus/
--
- STARFIRE/DURALAN NETWORK DRIVER
- M:	Ion Badulescu <ionut@badula.org>
- S:	Odd Fixes
-@@ -10203,6 +10197,12 @@ L:	linux-serial@vger.kernel.org
- S:	Maintained
- F:	drivers/tty/serial/uartlite.c
- 
-+XILLYBUS DRIVER
-+M:	Eli Billauer <eli.billauer@gmail.com>
-+L:	linux-kernel@vger.kernel.org
-+S:	Supported
-+F:	drivers/char/xillybus/
-+
- XTENSA XTFPGA PLATFORM SUPPORT
- M:	Max Filippov <jcmvbkbc@gmail.com>
- L:	linux-xtensa@linux-xtensa.org
--- 
-1.7.2.3
+As told, tell me if I can help your works to determine how to resolve this bug.
 
+Ciao
+Claudio
+
+2014-08-23 12:07 GMT+02:00 Claudio Bizzarri <claudio.bizzarri@gmail.com>:
+>
+> I must make a correction to what I said earlier: on kernel 3.16.1 if I
+> use a normal micro USB cable (not USB 3.0 one) ...
