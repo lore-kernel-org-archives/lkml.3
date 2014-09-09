@@ -1,69 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaIIJyK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 05:54:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49853 "EHLO mga11.intel.com"
+	id S1755187AbaIIJzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 05:55:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1599 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666AbaIIJyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 05:54:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
-   d="scan'208";a="476289832"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com
-Subject: Re: [PATCH v4 06/22] perf: Redirect output from inherited events to parents
-In-Reply-To: <20140908152655.GU19379@twins.programming.kicks-ass.net>
-References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-7-git-send-email-alexander.shishkin@linux.intel.com> <20140908152655.GU19379@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 09 Sep 2014 12:54:04 +0300
-Message-ID: <87vboxt8zn.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1751627AbaIIJzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 05:55:10 -0400
+Date: Tue, 9 Sep 2014 10:54:59 +0100
+From: Joe Thornber <thornber@redhat.com>
+To: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] dm cache: fix race causing dirty blocks to be marked as
+ clean
+Message-ID: <20140909095457.GA2967@debian>
+Mail-Followup-To: Anssi Hannula <anssi.hannula@iki.fi>,
+	Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
+	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org
+References: <53F10F80.6080204@iki.fi>
+ <1409875888-1255-1-git-send-email-anssi.hannula@iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409875888-1255-1-git-send-email-anssi.hannula@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Ack.  Thanks.
 
-> On Wed, Aug 20, 2014 at 03:36:03PM +0300, Alexander Shishkin wrote:
->> In order to collect AUX data from an inherited event, we can redirect its
->> output to parent's ring buffer if possible (they must be cpu affine). This
->> patch adds set_output() to the inheritance path.
->> 
->> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
->> ---
->>  kernel/events/core.c | 6 ++++++
->>  1 file changed, 6 insertions(+)
->> 
->> diff --git a/kernel/events/core.c b/kernel/events/core.c
->> index 67f857ab56..e36478564c 100644
->> --- a/kernel/events/core.c
->> +++ b/kernel/events/core.c
->> @@ -7962,6 +7962,12 @@ inherit_event(struct perf_event *parent_event,
->>  		= parent_event->overflow_handler_context;
->>  
->>  	/*
->> +	 * Direct child's output to parent's ring buffer (if any)
->> +	 */
->> +	if (parent_event->cpu != -1)
->> +		(void)perf_event_set_output(child_event, parent_event);
->> +
->> +	/*
->>  	 * Precalculate sample_data sizes
->>  	 */
->>  	perf_event__header_size(child_event);
->
-> Uhm, nope, see perf_output_begin(), it always redirects output to parent
-> events.
-
-Ouch, indeed. We'll just do the same in perf_aux_output_begin().
-
-Regards,
---
-Alex
+On Fri, Sep 05, 2014 at 03:11:28AM +0300, Anssi Hannula wrote:
+> When a writeback or a promotion of a block is completed, the cell of
+> that block is removed from the prison, the block is marked as clean, and
+> the clear_dirty() callback of the cache policy is called.
+> 
+> Unfortunately, performing those actions in this order allows an incoming
+> new write bio for that block to come in before clearing the dirty status
+> is completed and therefore possibly causing one of these two scenarios:
+> 
+> Scenario A:
+> 
+> Thread 1                      Thread 2
+> cell_defer()                  .
+> - cell removed from prison    .
+> - detained bios queued        .
+> .                             incoming write bio
+> .                             remapped to cache
+> .                             set_dirty() called,
+> .                               but block already dirty
+> .                               => it does nothing
+> clear_dirty()                 .
+> - block marked clean          .
+> - policy clear_dirty() called .
+> 
+> Result: Block is marked clean even though it is actually dirty. No
+> writeback will occur.
+> 
+> Scenario B:
+> 
+> Thread 1                      Thread 2
+> cell_defer()                  .
+> - cell removed from prison    .
+> - detained bios queued        .
+> clear_dirty()                 .
+> - block marked clean          .
+> .                             incoming write bio
+> .                             remapped to cache
+> .                             set_dirty() called
+> .                             - block marked dirty
+> .                             - policy set_dirty() called
+> - policy clear_dirty() called .
+> 
+> Result: Block is properly marked as dirty, but policy thinks it is clean
+> and therefore never asks us to writeback it.
+> This case is visible in "dmsetup status" dirty block count (which
+> normally decreases to 0 on a quiet device).
+> 
+> Fix these issues by calling clear_dirty() before calling cell_defer().
+> Incoming bios for that block will then be detained in the cell and
+> released only after clear_dirty() has completed, so the race will not
+> occur.
+> 
+> Found by inspecting the code after noticing spurious dirty counts
+> (scenario B).
+> 
+> Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+> Cc: Joe Thornber <ejt@redhat.com>
+> Cc: stable@vger.kernel.org
+> ---
+> 
+> > Unfortunately it seems there is some other potentially more serious bug
+> > still in there...
+> 
+> After looking through the code that indeed seems to be the case, as
+> explained above.
+> 
+> Unless I'm missing something?
+> 
+> I can't say with 100% certainty if this fixes the spurious counts I saw
+> since those took quite a long time (1-2 weeks?) to appear and the load
+> of that system is somewhat irregular.
+> 
+> 
+>  drivers/md/dm-cache-target.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+> index 1af40ee209e2..7130505c2425 100644
+> --- a/drivers/md/dm-cache-target.c
+> +++ b/drivers/md/dm-cache-target.c
+> @@ -895,8 +895,8 @@ static void migration_success_pre_commit(struct dm_cache_migration *mg)
+>  	struct cache *cache = mg->cache;
+>  
+>  	if (mg->writeback) {
+> -		cell_defer(cache, mg->old_ocell, false);
+>  		clear_dirty(cache, mg->old_oblock, mg->cblock);
+> +		cell_defer(cache, mg->old_ocell, false);
+>  		cleanup_migration(mg);
+>  		return;
+>  
+> @@ -951,13 +951,13 @@ static void migration_success_post_commit(struct dm_cache_migration *mg)
+>  		}
+>  
+>  	} else {
+> +		clear_dirty(cache, mg->new_oblock, mg->cblock);
+>  		if (mg->requeue_holder)
+>  			cell_defer(cache, mg->new_ocell, true);
+>  		else {
+>  			bio_endio(mg->new_ocell->holder, 0);
+>  			cell_defer(cache, mg->new_ocell, false);
+>  		}
+> -		clear_dirty(cache, mg->new_oblock, mg->cblock);
+>  		cleanup_migration(mg);
+>  	}
+>  }
+> -- 
+> 1.8.4.5
+> 
