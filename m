@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573AbaIIQxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:53:55 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:52021 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151AbaIIQxx (ORCPT
+	id S1757586AbaIIQyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:54:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46806 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753967AbaIIQyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:53:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <540F2977.7010006@plexistor.com>
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
-	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
-	<540F2977.7010006@plexistor.com>
-Date: Tue, 9 Sep 2014 09:53:52 -0700
-Message-ID: <CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>
-Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
- memory driver
-From: Dan Williams <dan.j.williams@intel.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Tue, 9 Sep 2014 12:54:49 -0400
+Date: Tue, 9 Sep 2014 17:54:45 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvdimm@ml01.01.org
-Content-Type: text/plain; charset=UTF-8
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+Message-ID: <20140909165445.GC3896@leverpostej>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org>
+ <20140909162648.GE2910@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909162648.GE2910@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 9:23 AM, Boaz Harrosh <boaz@plexistor.com> wrote:
-> From: Ross Zwisler <ross.zwisler@linux.intel.com>
->
-> PMEM is a new driver that presents a reserved range of memory as a
-> block device.  This is useful for developing with NV-DIMMs, and
-> can be used with volatile memory as a development platform.
->
-> [boaz]
-> SQUASHME: pmem: Remove unused #include headers
-> SQUASHME: pmem: Request from fdisk 4k alignment
-> SQUASHME: pmem: Let each device manage private memory region
-> SQUASHME: pmem: Support of multiple memory regions
->
-> The API to pmem module a single string parameter named "map"
-> of the form:
->                  map=mapS[,mapS...]
->
->                  where mapS=nn[KMG]$ss[KMG],
->                  or    mapS=nn[KMG]@ss[KMG],
->
->                  nn=size, ss=offset
->
-> Just like the Kernel command line map && memmap parameters,
-> so anything you did at grub just copy/paste to here.
->
-> The "@" form is exactly the same as the "$" form only that
-> at bash prompt we need to escape the "$" with \$ so also
-> support the '@' char for convenience.
+On Tue, Sep 09, 2014 at 05:26:49PM +0100, Catalin Marinas wrote:
+> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
+> > diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
+> > new file mode 100644
+> > index 0000000..3899ee6
+> > --- /dev/null
+> > +++ b/arch/arm64/include/asm/acenv.h
+> > @@ -0,0 +1,18 @@
+> > +/*
+> > + * ARM64 specific ACPICA environments and implementation
+> > + *
+> > + * Copyright (C) 2014, Linaro Ltd.
+> > + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
+> > + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#ifndef _ASM_ACENV_H
+> > +#define _ASM_ACENV_H
+> > +
+> > +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
+> 
+> Does this mean that it will be supported at some point?
 
-Hmm this looks like a "ACPI/DeviceTree-over-kernel-command-line"
-description language.  I understand that this is borrowed from the
-memmap= precedent, but, if I'm not mistaken, that's really more for
-debug rather than a permanent platform-device descriptor.  <strawman>
-Since this looks like firmware why not go ahead and use
-request_firmware() to request a pmem range descriptor blob</strawman>?
- Given you can compile such a blob into a kernel image  or provide it
-in an initrd I think it makes deployment more straightforward, also
-the descriptor format can be extended going forward whereas the
-command line approach mandates ever increasingly complicated strings.
+>From what I recall it's impossible to support as we have no equivalent
+of WBINVD -- the possibility migration of dirty cache lines renders it
+impossible to guarantee that the caches remain empty (or that data even
+left the local caches in the first place).
+
+> Looking at the places where this function is called, I don't really
+> see how this would ever work on ARM. Which means that we add such
+> macro just to be able to compile code that would never be used on
+> arm64. I would rather see the relevant ACPI files only compiled on
+> x86/IA-64 rather than arm64.
+
+Agreed.
+
+It looks like include/acpi/platform/acenv.h defines an empty
+ACPI_FLUSH_CPU_CACHE() stub, so something else should probably be done
+to turn the use of ACPI_FLUSH_CPU_CACHE() into a build-time bug on
+arm64.
+
+Mark.
