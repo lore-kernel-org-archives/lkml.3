@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279AbaIIRVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 13:21:09 -0400
-Received: from longford.logfs.org ([213.229.74.203]:43988 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913AbaIIRVI (ORCPT
+	id S1754698AbaIIRbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 13:31:05 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58866 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060AbaIIRbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 13:21:08 -0400
-Date: Tue, 9 Sep 2014 13:16:58 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, cxie@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] printk: Print cpu number along with time
-Message-ID: <20140909171658.GB14429@logfs.org>
-References: <20140423125352.704f9fb2@annuminas.surriel.com>
- <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
- <20140424005247.GA17713@logfs.org>
- <20140424194024.GA25446@logfs.org>
- <20140428234039.GC6358@logfs.org>
- <20140428172219.4be61cf7.akpm@linux-foundation.org>
- <20140604231506.GA31276@logfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140604231506.GA31276@logfs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 9 Sep 2014 13:31:03 -0400
+Date: Tue, 09 Sep 2014 10:30:59 -0700 (PDT)
+Message-Id: <20140909.103059.1330265085939107782.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: mingo@kernel.org, torvalds@linuxfoundation.org, luto@amacapital.net,
+        rostedt@goodmis.org, dborkman@redhat.com, hannes@stressinduktion.org,
+        chema@google.com, edumazet@google.com, a.p.zijlstra@chello.nl,
+        hpa@zytor.com, akpm@linuxfoundation.org, keescook@chromium.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 net-next 0/2] load imm64 insn and uapi/linux/bpf.h
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1409894238-9055-1-git-send-email-ast@plumgrid.com>
+References: <1409894238-9055-1-git-send-email-ast@plumgrid.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Sep 2014 10:31:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 June 2014 19:15:06 -0400, Jörn Engel wrote:
-> On Mon, 28 April 2014 17:22:19 -0700, Andrew Morton wrote:
-> > On Mon, 28 Apr 2014 19:40:39 -0400 J__rn Engel <joern@logfs.org> wrote:
-> > > On Thu, 24 April 2014 15:40:24 -0400, J__rn Engel wrote:
-> > > > On Wed, 23 April 2014 20:52:47 -0400, J__rn Engel wrote:
-> > > > > 
-> > > > > I use the patch below for some time now.  While it doesn't avoid the
-> > > > > log pollution in the first place, it lessens the impact somewhat.
-> > > > 
-> > > > Added a config option and ported it to current -linus.  Andrew, would
-> > > > you take this patch?
-> > > 
-> > > Andrew?  Did you dislike this patch for some reason or just miss it in
-> > > the thread?
-> > 
-> > Neither ;) I try to respond in some way to all patches unless I think it's clear
-> > to the originator why I took no action.  And I think I'm pretty good at
-> > not losing stuff.
-> > 
-> > otoh, it has only been four days, three of which I spent offline...
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Thu,  4 Sep 2014 22:17:16 -0700
+
+> V9->V10
+> - no changes, added Daniel's ack
 > 
-> Ping.
+> Note they're on top of Hannes's patch in the same area [1]
+> 
+> V8 thread with 'why' reasoning and end goal [2]
+> 
+> Original set [3] of ~28 patches I'm planning to present in 4 stages:
+> 
+>   I. this 2 patches to fork off llvm upstreaming
+>  II. bpf syscall with manpage and map implementation
+> III. bpf program load/unload with verifier testsuite (1st user of
+>      instruction macros from bpf.h and 1st user of load imm64 insn)
+>  IV. tracing, etc
+> 
+> [1] http://patchwork.ozlabs.org/patch/385266/
+> [2] https://lkml.org/lkml/2014/8/27/628
+> [3] https://lkml.org/lkml/2014/8/26/859
 
-Ping.
+Begrudgingly, I've applied this series.
 
-Jörn
+Although I really wish you had included the mechanism for userland to
+use the eBPF instructions alongside exporting them to userspace.
 
---
-Fancy algorithms are slow when n is small, and n is usually small.
-Fancy algorithms have big constants. Until you know that n is
-frequently going to be big, don't get fancy.
--- Rob Pike
+You kept saying "LLVM is the user" but that's a bullshit argument
+because you aren't including the patches necessary to actually
+propagate native eBPF programs into the kernel.
+
+That's what, 1 or 2 patches, right?  Which is not an unreasonable
+request.
+
+Anyways, I'm just extremely frustrated with how you operate and work,
+you push things way too hard.  I hate to say this, but you are the
+kind of submitter who gets his way by being persistent rather than
+making well formed pleasant submissions that are easy to integrate.
