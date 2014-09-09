@@ -1,226 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758AbaIINba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:31:30 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:32859 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723AbaIINb0 (ORCPT
+	id S1756539AbaIINfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:35:55 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33166 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877AbaIINfx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:31:26 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        acme@redhat.com, cebbert.lkml@gmail.com
-Subject: [PATCH v5 1/6] perf: add ability to sample machine state on interrupt
-Date: Tue,  9 Sep 2014 15:30:52 +0200
-Message-Id: <1410269457-14426-2-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410269457-14426-1-git-send-email-eranian@google.com>
-References: <1410269457-14426-1-git-send-email-eranian@google.com>
+	Tue, 9 Sep 2014 09:35:53 -0400
+Date: Tue, 9 Sep 2014 14:35:46 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v10 08/10] OF: PCI: Add support for parsing PCI host
+ bridge resources from DT
+Message-ID: <20140909133546.GB2636@e102568-lin.cambridge.arm.com>
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
+ <1410184472-17630-9-git-send-email-Liviu.Dudau@arm.com>
+MIME-Version: 1.0
+In-Reply-To: <1410184472-17630-9-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 09 Sep 2014 13:35:48.0324 (UTC) FILETIME=[F71B8240:01CFCC32]
+X-MC-Unique: 114090914355002401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable capture of interrupted machine state for each
-sample.
+On Mon, Sep 08, 2014 at 02:54:30PM +0100, Liviu Dudau wrote:
+> Provide a function to parse the PCI DT ranges that can be used to
+> create a pci_host_bridge structure together with its associated
+> bus.
+> 
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> ---
+>  drivers/of/of_pci.c    | 102 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_pci.h |  11 ++++++
+>  2 files changed, 113 insertions(+)
+> 
+> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> index a107edb..36701da 100644
+> --- a/drivers/of/of_pci.c
+> +++ b/drivers/of/of_pci.c
+> @@ -1,7 +1,9 @@
+>  #include <linux/kernel.h>
+>  #include <linux/export.h>
+>  #include <linux/of.h>
+> +#include <linux/of_address.h>
+>  #include <linux/of_pci.h>
+> +#include <linux/slab.h>
+>  
+>  static inline int __of_pci_pci_compare(struct device_node *node,
+>  				       unsigned int data)
+> @@ -123,6 +125,106 @@ int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
+>  }
+>  EXPORT_SYMBOL_GPL(of_pci_get_domain_nr);
+>  
+> +/**
+> + * of_pci_get_host_bridge_resources - Parse PCI host bridge resources from DT
+> + * @dev: device node of the host bridge having the range property
+> + * @busno: bus number associated with the bridge root bus
+> + * @bus_max: maximum number of busses for this bridge
+> + * @resources: list where the range of resources will be added after DT parsing
+> + * @io_base: pointer to a variable that will contain on return the physical
+> + * address for the start of the I/O range.
+> + *
+> + * It is the callers job to free the @resources list.
+> + *
+> + * This function will parse the "ranges" property of a PCI host bridge device
+> + * node and setup the resource mapping based on its content. It is expected
+> + * that the property conforms with the Power ePAPR document.
 
-Registers to sample are passed per event in the
-sample_regs_intr bitmask.
+You should also define what it returns and when.
 
-To sample interrupt machine state, the
-PERF_SAMPLE_INTR_REGS must be passed in
-sample_type.
+> + *
+> + */
+> +int of_pci_get_host_bridge_resources(struct device_node *dev,
+> +			unsigned char busno, unsigned char bus_max,
+> +			struct list_head *resources, resource_size_t *io_base)
+> +{
+> +	struct resource *res;
+> +	struct resource *bus_range;
+> +	struct of_pci_range range;
+> +	struct of_pci_range_parser parser;
+> +	char range_type[4];
+> +	int err;
+> +
+> +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
+> +	if (!bus_range)
+> +		return -ENOMEM;
+> +
+> +	pr_info("PCI host bridge %s ranges:\n", dev->full_name);
+> +
+> +	err = of_pci_parse_bus_range(dev, bus_range);
+> +	if (err) {
+> +		bus_range->start = busno;
+> +		bus_range->end = bus_max;
+> +		bus_range->flags = IORESOURCE_BUS;
+> +		pr_info("  No bus range found for %s, using %pR\n",
+> +			dev->full_name, &bus_range);
+> +	} else {
+> +		if (bus_range->end > bus_range->start + bus_max)
+> +			bus_range->end = bus_range->start + bus_max;
+> +	}
+> +	pci_add_resource(resources, bus_range);
 
-The list of available registers is arch
-dependent and provided by asm/perf_regs.h
+This means that eg in the PCI generic host controller I cannot "filter"
+the bus resource, unless I remove it, "filter" it, and add it again.
 
-Registers are laid out as u64 in the order
-of the bit order of sample_intr_regs.
+I certainly can't filter a resource that has been already added without
+removing it first.
 
-This patch also adds a new ABI version
-PERF_ATTR_SIZE_VER4 because we extend
-the perf_event_attr struct with a new u64
-field.
+Thoughts ?
 
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- include/linux/perf_event.h      |    7 +++++--
- include/uapi/linux/perf_event.h |   15 ++++++++++++-
- kernel/events/core.c            |   44 +++++++++++++++++++++++++++++++++++++--
- 3 files changed, 61 insertions(+), 5 deletions(-)
+> +
+> +	/* Check for ranges property */
+> +	err = of_pci_range_parser_init(&parser, dev);
+> +	if (err)
+> +		goto parse_failed;
+> +
+> +	pr_debug("Parsing ranges property...\n");
+> +	for_each_of_pci_range(&parser, &range) {
+> +		/* Read next ranges element */
+> +		if ((range.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_IO)
+> +			snprintf(range_type, 4, " IO");
+> +		else if ((range.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_MEM)
+> +			snprintf(range_type, 4, "MEM");
+> +		else
+> +			snprintf(range_type, 4, "err");
+> +		pr_info("  %s %#010llx..%#010llx -> %#010llx\n", range_type,
+> +			range.cpu_addr, range.cpu_addr + range.size - 1,
+> +			range.pci_addr);
+> +
+> +		/*
+> +		 * If we failed translation or got a zero-sized region
+> +		 * then skip this range
+> +		 */
+> +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+> +			continue;
+> +
+> +		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> +		if (!res) {
+> +			err = -ENOMEM;
+> +			goto parse_failed;
+> +		}
+> +
+> +		err = of_pci_range_to_resource(&range, dev, res);
+> +		if (err) {
+> +			kfree(res);
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 893a0d0..68d46d5 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -79,7 +79,7 @@ struct perf_branch_stack {
- 	struct perf_branch_entry	entries[0];
- };
- 
--struct perf_regs_user {
-+struct perf_regs {
- 	__u64		abi;
- 	struct pt_regs	*regs;
- };
-@@ -600,7 +600,8 @@ struct perf_sample_data {
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
--	struct perf_regs_user		regs_user;
-+	struct perf_regs		regs_user;
-+	struct perf_regs		regs_intr;
- 	u64				stack_user_size;
- 	u64				weight;
- 	/*
-@@ -630,6 +631,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->weight = 0;
- 	data->data_src.val = PERF_MEM_NA;
- 	data->txn = 0;
-+	data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
-+	data->regs_intr.regs = NULL;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9269de2..f70f345 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -137,8 +137,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
- 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
- 	PERF_SAMPLE_TRANSACTION			= 1U << 17,
-+	PERF_SAMPLE_REGS_INTR			= 1U << 18,
- 
--	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
- };
- 
- /*
-@@ -238,6 +239,7 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
- #define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
- 					/* add: sample_stack_user */
-+#define PERF_ATTR_SIZE_VER4	104	/* add: sample_regs_intr */
- 
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-@@ -334,6 +336,15 @@ struct perf_event_attr {
- 
- 	/* Align to u64. */
- 	__u32	__reserved_2;
-+	/*
-+	 * Defines set of regs to dump for each sample
-+	 * state captured on:
-+	 *  - precise = 0: PMU interrupt
-+	 *  - precise > 0: sampled instruction
-+	 *
-+	 * See asm/perf_regs.h for details.
-+	 */
-+	__u64	sample_regs_intr;
- };
- 
- #define perf_flags(attr)	(*(&(attr)->read_format + 1))
-@@ -686,6 +697,8 @@ enum perf_event_type {
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
-+	 * 	{ u64			abi; # enum perf_sample_regs_abi
-+	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_INTR
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 01bd42e..7459b02 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4421,7 +4421,7 @@ perf_output_sample_regs(struct perf_output_handle *handle,
- 	}
- }
- 
--static void perf_sample_regs_user(struct perf_regs_user *regs_user,
-+static void perf_sample_regs_user(struct perf_regs *regs_user,
- 				  struct pt_regs *regs)
- {
- 	if (!user_mode(regs)) {
-@@ -4437,6 +4437,14 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
- 	}
- }
- 
-+static void perf_sample_regs_intr(struct perf_regs *regs_intr,
-+				  struct pt_regs *regs)
-+{
-+	regs_intr->regs = regs;
-+	regs_intr->abi  = perf_reg_abi(current);
-+}
-+
-+
- /*
-  * Get remaining task size from user stack pointer.
-  *
-@@ -4818,6 +4826,22 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_TRANSACTION)
- 		perf_output_put(handle, data->txn);
- 
-+	if (sample_type & PERF_SAMPLE_REGS_INTR) {
-+		u64 abi = data->regs_intr.abi;
-+		/*
-+		 * If there are no regs to dump, notice it through
-+		 * first u64 being zero (PERF_SAMPLE_REGS_ABI_NONE).
-+		 */
-+		perf_output_put(handle, abi);
-+
-+		if (abi) {
-+			u64 mask = event->attr.sample_regs_intr;
-+			perf_output_sample_regs(handle,
-+						data->regs_intr.regs,
-+						mask);
-+		}
-+	}
-+
- 	if (!event->attr.watermark) {
- 		int wakeup_events = event->attr.wakeup_events;
- 
-@@ -4904,7 +4928,7 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		 * in case new sample type is added, because we could eat
- 		 * up the rest of the sample size.
- 		 */
--		struct perf_regs_user *uregs = &data->regs_user;
-+		struct perf_regs *uregs = &data->regs_user;
- 		u16 stack_size = event->attr.sample_stack_user;
- 		u16 size = sizeof(u64);
- 
-@@ -4925,6 +4949,20 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		data->stack_user_size = stack_size;
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_REGS_INTR) {
-+		/* regs dump ABI info */
-+		int size = sizeof(u64);
-+
-+		perf_sample_regs_intr(&data->regs_intr, regs);
-+
-+		if (data->regs_intr.regs) {
-+			u64 mask = event->attr.sample_regs_intr;
-+			size += hweight64(mask) * sizeof(u64);
-+		}
-+
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -7125,6 +7163,8 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 			ret = -EINVAL;
- 	}
- 
-+	if (attr->sample_type & PERF_SAMPLE_REGS_INTR)
-+		ret = perf_reg_validate(attr->sample_regs_intr);
- out:
- 	return ret;
- 
--- 
-1.7.9.5
+You might want to add a label to free res to make things more uniform.
+
+> +			goto parse_failed;
+> +		}
+> +
+> +		if (resource_type(res) == IORESOURCE_IO) {
+> +			if (*io_base)
+
+You do not zero io_base in the first place so you should ask the API
+user to do that. Is 0 a valid value BTW ? If it is you've got to resort
+to something else to detect multiple IO resources.
+
+Lorenzo
 
