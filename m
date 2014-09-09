@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520AbaIIQAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:00:13 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:60400 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746AbaIIQAJ (ORCPT
+	id S932548AbaIIQAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:00:53 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:64162 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166AbaIIQAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:00:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com
-Subject: Re: [PATCH v2 5/8] net: pxa168_eth: get and set the mac address on the Ethernet controller
-Date: Tue, 09 Sep 2014 17:59:59 +0200
-Message-ID: <3876979.iyRVchmjb7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1410273848-24663-6-git-send-email-antoine.tenart@free-electrons.com>
-References: <1410273848-24663-1-git-send-email-antoine.tenart@free-electrons.com> <1410273848-24663-6-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 9 Sep 2014 12:00:51 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Tue, 9 Sep 2014 12:06:40 -0400 (EDT)
+To: Peter Zijlstra <peterz@infradead.org>
+cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: perf_fuzzer triggers instant reboot
+In-Reply-To: <20140908185115.GI6758@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:BRjXBgLI/T1wWUCALi6osPf9WnW6KjfQs4Q1wQ5RouD
- 7Fptt8Wk22OB3D5Q3QeCOVl78BV47z+HKw7lGGpr8XTG2pPJms
- 3V8bu/6Fck849qxDzeKKB+g4zTFK+2nLEzylJJ9iIJ7DPPCbY6
- InmM9Il1dRcRP5McoYkActWul9AlIG795SS7gGsSM9zwftblC2
- IN4FUEbTPc6g3zo8fuMnuhBtcVnJbvhof2qByXyuWZaEq1ypSz
- rhpuYjC9jaxzLD27AZkkGuDtXG9UpMdT32SnGwj1x0E/d26zZD
- w1KgIxyNJmMgDyvAmgm3O+jopvGgfBMwvMUeMtBNOgCRezm6fT
- C8HIPSPZDvL2FdnxRYOA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 September 2014 16:44:05 Antoine Tenart wrote:
-> When changing the MAC address, in addition to updating the dev_addr in
-> the net_device structure, this patch also update the MAC address
-> registers (high and low) of the Ethernet controller with the new MAC.
-> The address stored in these registers is used for IEEE 802.3x Ethernet
-> flow control, which is already enabled.
-> 
-> This patch also tries reading the MAC address stored in these registers
-> when probing the driver, to use the MAC address set by the bootloader
-> and avoid using a random one.
-> 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> 
+On Mon, 8 Sep 2014, Peter Zijlstra wrote:
 
-I think it would be good to allow overriding the address using a
-'mac-address' property from DT. It's very easy to call
-of_get_mac_address().
+> On Mon, Sep 08, 2014 at 01:47:11PM -0400, Vince Weaver wrote:
+> > Hello
+> > 
+> > so I finally had time to run my perf_fuzzer again and it has rapidly 
+> > turned up an alarming crash that instant-reboots my core2 test machine.
+> 
+> Urgh, of course :/
 
-	Arnd
+So possibly was a waste of time, as it bisects to:
+
+	commit 5e467e27b7c7a11ef47068138248003e873674a1
+	Author: Tony Luck <tony.luck@intel.com>
+	Date:   Wed Jul 30 14:05:15 2014 -0700
+
+	    [IA64] Wire up getrandom() system call
+
+Which makes no sense at all :(
+
+The times the testcase fails give some pretty spectacular error messages:
+
+
+[   78.018145] NOHZ: local_softirq_pending 100
+[   83.012661] BUG: Bad page map in process perf_fuzzer  pte:ffff8800cafc5190 pmd:119d00067
+[   83.020863] addr:000000000120c000 vm_flags:00100073 anon_vma:ffff8800cae19dc0 mapping:          (null) index:120c
+
+[  316.040001] general protection fault: 0000 [#1] 
+
+[  178.024220] perf_fuzzer[2788]: segfault at ffff88011fa7bef8 ip 00007f8c0e088c2f sp 00007fff003315e0 error 5
+
+[ 2616.535995] Kernel panic - not syncing: Lost physical address for unconsumed uncorrectable error
+
+
+[  751.656861] NOHZ: local_softirq_pending 100
+[  756.009271] traps: perf_fuzzer[4236] trap invalid opcode ip:4044c0 sp:7fffb0ed6f90 error:0
+[  756.017590] BUG: unable to handle kernel paging request
+
+among others.
+
+Vince
