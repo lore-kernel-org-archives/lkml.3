@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462AbaIIQAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:00:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38767 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617AbaIIQAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:00:04 -0400
-Date: Tue, 9 Sep 2014 12:59:54 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL 00/13] perf/core improvements and fixes
-Message-ID: <20140909155954.GL2773@kernel.org>
-References: <1410211089-28668-1-git-send-email-acme@kernel.org>
- <540EBED4.70900@intel.com>
- <20140909131239.GJ2773@kernel.org>
- <20140909145449.GB19536@gmail.com>
+	id S932520AbaIIQAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:00:13 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:60400 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746AbaIIQAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 12:00:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com
+Subject: Re: [PATCH v2 5/8] net: pxa168_eth: get and set the mac address on the Ethernet controller
+Date: Tue, 09 Sep 2014 17:59:59 +0200
+Message-ID: <3876979.iyRVchmjb7@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1410273848-24663-6-git-send-email-antoine.tenart@free-electrons.com>
+References: <1410273848-24663-1-git-send-email-antoine.tenart@free-electrons.com> <1410273848-24663-6-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909145449.GB19536@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:BRjXBgLI/T1wWUCALi6osPf9WnW6KjfQs4Q1wQ5RouD
+ 7Fptt8Wk22OB3D5Q3QeCOVl78BV47z+HKw7lGGpr8XTG2pPJms
+ 3V8bu/6Fck849qxDzeKKB+g4zTFK+2nLEzylJJ9iIJ7DPPCbY6
+ InmM9Il1dRcRP5McoYkActWul9AlIG795SS7gGsSM9zwftblC2
+ IN4FUEbTPc6g3zo8fuMnuhBtcVnJbvhof2qByXyuWZaEq1ypSz
+ rhpuYjC9jaxzLD27AZkkGuDtXG9UpMdT32SnGwj1x0E/d26zZD
+ w1KgIxyNJmMgDyvAmgm3O+jopvGgfBMwvMUeMtBNOgCRezm6fT
+ C8HIPSPZDvL2FdnxRYOA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 09, 2014 at 04:54:49PM +0200, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
- 
-> > Em Tue, Sep 09, 2014 at 11:48:20AM +0300, Adrian Hunter escreveu:
-> > > It looks like I reposted older versions by mistake on 31 July.
-> > > Very sorry :-(
+On Tuesday 09 September 2014 16:44:05 Antoine Tenart wrote:
+> When changing the MAC address, in addition to updating the dev_addr in
+> the net_device structure, this patch also update the MAC address
+> registers (high and low) of the Ethernet controller with the new MAC.
+> The address stored in these registers is used for IEEE 802.3x Ethernet
+> flow control, which is already enabled.
+> 
+> This patch also tries reading the MAC address stored in these registers
+> when probing the driver, to use the MAC address set by the bootloader
+> and avoid using a random one.
+> 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> 
 
-> > > The originals were changed as described here:
+I think it would be good to allow overriding the address using a
+'mac-address' property from DT. It's very easy to call
+of_get_mac_address().
 
-> > > 	http://marc.info/?l=linux-kernel&m=140621020918615
-> > > 	http://marc.info/?l=linux-kernel&m=140618721010170
-
-> > No problem, the good thing is that we're almost getting it all 
-> > in. I'll rework the branch and resubmit, Ingo, is that OK with 
-> > you? [...]
-
-> Yeah, that's perfectly OK.
-
-> > [...] Or have you already pulled and we should instead send a 
-> > patch on top, fixing the problem?
-
-> I pulled it locally then unpulled as it didn't pass my (very 
-> simple) tests and it looked like there's something fishy going 
-> on.
-
-Yeah, I should've tested this more, will make sure I test these things
-this time.
-
-Having a requirement that for each new feature we need an entry in 'perf
-test' and/or in make -C tools/perf build-test seems a bit harsh, but
-would be ideal, hook that to 'git request-pull' and this would hopefully
-only happen every celestial aligment nights or so :-\
- 
-- Arnaldo
+	Arnd
