@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaIIWAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:00:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57333 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950AbaIIWAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:00:42 -0400
-Date: Wed, 10 Sep 2014 00:00:31 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Tejun Heo <tj@kernel.org>, Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
+	id S1752469AbaIIWEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:04:33 -0400
+Received: from www.xora.org.uk ([80.68.91.202]:38968 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbaIIWEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 18:04:31 -0400
+Date: Tue, 9 Sep 2014 23:04:23 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>, Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Mark Brown <broonie@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-In-Reply-To: <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1409092355130.14816@twin.jikos.cz>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com> <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net> <20140905174925.GA12991@mtj.dyndns.org>
- <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com> <20140905224047.GC15723@mtj.dyndns.org> <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com> <20140909011059.GB11706@mtj.dyndns.org> <1410241109.2028.22.camel@jarvis.lan>
- <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v3 03/17] ARM64 / ACPI: Introduce lowlevel suspend
+ function
+Message-ID: <20140909220423.GL6558@xora-haswell.xora.org.uk>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583475-6978-4-git-send-email-hanjun.guo@linaro.org>
+ <20140909163529.GA6370@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909163529.GA6370@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Sep 2014, Luis R. Rodriguez wrote:
+On Tue, Sep 09, 2014 at 05:35:29PM +0100, Catalin Marinas wrote:
+> On Mon, Sep 01, 2014 at 03:57:41PM +0100, Hanjun Guo wrote:
+> > From: Graeme Gregory <graeme.gregory@linaro.org>
+> > 
+> > acpi_wakeup_address is used on x86 as the address bios jumps into
+> > when machine wakes up from suspend. As arm64 does not have such a
+> > bios this mechanism will be provided by other means. But the define
+> > is still required inside the acpi core.
+> > 
+> > Introduce a null stub for acpi_suspend_lowlevel as this is also
+> > required by core. This will be filled in when standards are
+> > defined for arm64 ACPI global power states.
+> 
+> Do we actually plan to use these on arm64? I'm worried most of these
+> don't make sense on arm64 (the aim is to use PSCI). Is it possible to
+> refactor the core code so that we don't have to define dummy macros or
+> variables just to be able to build the kernel?
+> 
+Currently ia64 does the same as this for stubbing out the functions.
 
-> By design it seems systemd should not allow worker processes to block
-> indefinitely and in fact it currently uses the same timeout for all
-> types of worker processes. 
+We did investigate removing the code but that ultimately ended with more
+functions and variables stubbed then this.
 
-And I whole-heartedly believe this is something that fundamentally needs 
-to be addressed in systemd, not in the kernel.
-
-This aproach is actually introducing a user-visible regressions. Look, for 
-example, exec() never times out. Therefore if your system is on its knees, 
-heavily overloaded (or completely broken), you are likely to be able to 
-`reboot' it, because exec("/sbin/reboot") ultimately succeeds.
-
-But with all the timeouts, dbus, "Failed to issue method call: Did 
-not receive a reply" messages, this is getting close to impossible.
-
--- 
-Jiri Kosina
-SUSE Labs
+Graeme
 
