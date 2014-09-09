@@ -1,116 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaIITMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:12:25 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:33165 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaIITMV convert rfc822-to-8bit (ORCPT
+	id S1752321AbaIITOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:14:04 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:36354 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaIITOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:12:21 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 9 Sep 2014 15:14:01 -0400
+Date: Tue, 9 Sep 2014 21:13:57 +0200
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: Bill Pemberton <wfp5p@worldbroken.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        lidza.louina@gmail.com, cascardo@linux.vnet.ibm.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Patch v2 0/2] Move Digi Neo card support from dgnc to jsm
+Message-ID: <20140909191357.GA13118@t400>
+References: <1409430958-2692-1-git-send-email-wfp5p@worldbroken.com>
+ <20140908201700.GA28282@kroah.com>
+ <540E10C3.2080805@worldbroken.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1410271497-27148-1-git-send-email-tomeu.vizoso@collabora.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        shawn.guo@freescale.com
-References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com>
- <1410271497-27148-1-git-send-email-tomeu.vizoso@collabora.com>
-Message-ID: <20140909191205.19023.61366@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v10 2/9] clk: Move all drivers to use internal API
-Date: Tue, 09 Sep 2014 12:12:05 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540E10C3.2080805@worldbroken.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tomeu Vizoso (2014-09-09 07:04:57)
-> In preparation to change the public API to return a per-user clk structure,
-> remove any usage of this public API from the clock implementations.
+On 09/08, Bill Pemberton wrote:
+> On 09/08/2014 04:17 PM, Greg KH wrote:
+> >On Sat, Aug 30, 2014 at 04:35:56PM -0400, wfp5p@worldbroken.com wrote:
+> >>From: Bill Pemberton <wfp5p@worldbroken.com>
+> >>
+> >>The jsm driver (drivers/tty/serial/jsm) already supports the Digi Neo
+> >>cards that dgnc (staging) supports.  In fact, it appears that jsm was
+> >>based on dgnc.  The dgnc driver has PCI ids for more cards than jsm,
+> >>this patch moves support for all the Neo cards to jsm.
+> >>
+> >>The result of this will be that dgnc will only support the Classic
+> >>cards since the jsm driver doesn't support those cards yet.
+> >>
+> >>
+> >>Bill Pemberton (2):
+> >>   jsm: add support for additional Neo cards
+> >>   staging: dgnc: remove Neo card ids from device table
+> >>
+> >>  drivers/staging/dgnc/dgnc_driver.c  | 13 -------------
+> >>  drivers/tty/serial/jsm/jsm.h        | 10 ++++++++++
+> >>  drivers/tty/serial/jsm/jsm_driver.c | 38 +++++++++++++++++++++++++++++++++----
+> >>  3 files changed, 44 insertions(+), 17 deletions(-)
+> >
+> >These are now applied, thanks.
+> >
+> >Do you think we can delete the dgnc driver now, or are there still some
+> >odd cards out there that it only supports?  What would it take to move
+> >that support to the jsm driver instead?
+> >
 > 
-> The reason for having this in a separate commit from the one that introduces
-> the implementation of the new functions is to separate the changes generated
-> with Coccinelle from the rest, and keep the patches' size reasonable.
+> The jsm driver still doesn't support the Classic cards, just the Neo
+> cards so dgnc would still be needed to support those cards.
 > 
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> Tested-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> Tested-by: Heiko Stuebner <heiko@sntech.de>
-> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> I think the right thing would be to put the Classic support into
+> jsm. I've started looking at that.  Dgnc and jsm are obviously from
+> the same base, so dgnc can be used as guide on what to do.  However,
+> I don't have a Classic card so I wouldn't be able to test any of the
+> Classic support.
+
+I have been working on the dgnc driver for a while now so I add what I
+know to this thread.
+
+Bill is right that the jsm and dgnc drivers have the same base, in fact
+it seems that the jsm driver is the dgnc driver modified in 2005 by the
+kernel folks to be good enough to be accepted. The scope of changes was
+to adjust the code to use proper coding style and proper Kernel APIs
+plus the ioctls and sysfs stuff was removed as not needed. The dgnc
+which is a direct import from the Digi has this features as they are
+needed by the Digi folks and their customers (old scripts like the old
+APIs).
+
+>From what I know so far about these drivers adding support for the
+Classic boards to the jsm driver should not be a big issue. It [more or
+less] boils down to adding jsm_cls [aka dgnc_cls] files and having the
+logic to assign the proper structure during board discovery.
+
+Would be great to find someone with the Classic card to test it. I tried
+to find one but it is damn hard to get.
+
+Hope this helps.
+
+/Konrad
+ 
+> -- 
+> Bill
 > 
-> ---
 > 
-> v10: * Add a few more files to be converted
->      * Re-generate the patch on top of the latest changes
-
-Hi Tomeu,
-
-Generating this on top of linux-next is a no-go. I can't apply it to my
-tree. The best thing is to generate it on top of -rc4, and that is what
-I will merge.
-
-Running the script against linux-next is still very useful and lets us
-patch up the stuff that is not going through the clk tree. E.g. the LPSS
-driver is already in mainline, so just running the semantic patch
-against -rc4 is sufficient for it. However a patch like Shawn's "ARM:
-imx: add an exclusive gate clock type" came in through the i.MX tree and
-we'll need to patch it after the fact.
-
-The best way to do that is for me to host a branch with just your
-changes in it that everyone can pull in as a dependency with the same
-commit ids.
-
-<snip>
-
-> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index bcbdbd2..f4c6ccf 100644
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -11,7 +11,6 @@
->   */
->  
->  #include <linux/acpi.h>
-> -#include <linux/clk.h>
->  #include <linux/clkdev.h>
->  #include <linux/clk-provider.h>
->  #include <linux/err.h>
-> @@ -78,7 +77,7 @@ struct lpss_private_data {
->         void __iomem *mmio_base;
->         resource_size_t mmio_size;
->         unsigned int fixed_clk_rate;
-> -       struct clk *clk;
-> +       struct clk_core *clk;
->         const struct lpss_device_desc *dev_desc;
->         u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
->  };
-> @@ -229,7 +228,7 @@ static int register_device_clock(struct acpi_device *adev,
->  {
->         const struct lpss_device_desc *dev_desc = pdata->dev_desc;
->         const char *devname = dev_name(&adev->dev);
-> -       struct clk *clk = ERR_PTR(-ENODEV);
-> +       struct clk_core *clk = ERR_PTR(-ENODEV);
->         struct lpss_clk_data *clk_data;
->         const char *parent, *clk_name;
->         void __iomem *prv_base;
-
-I think the following hunk is missing from your change:
-
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -57,7 +57,7 @@ ACPI_MODULE_NAME("acpi_lpss");
- struct lpss_shared_clock {
-        const char *name;
-        unsigned long rate;
--       struct clk *clk;
-+       struct clk_core *clk;
- };
-
-
-Otherwise register_device_clock will blow up because we are assigning a
-struct clk * to a struct clk_core *.
-
-Do you mind testing with ARCH=x86_64 and allmodconfig? That will help
-catch issues like this.
-
-Regards,
-Mike
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
