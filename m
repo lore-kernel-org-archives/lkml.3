@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951AbaIIKPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:15:25 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39895 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755203AbaIIKPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:15:23 -0400
-Date: Tue, 9 Sep 2014 11:15:15 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Charlebois <charlebm@gmail.com>
-Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
-        "anderson@redhat.com" <anderson@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "cl@linux.com" <cl@linux.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "jays.lee@samsung.com" <jays.lee@samsung.com>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "acme@kernel.org" <acme@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Matthew Leach <Matthew.Leach@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "paulus@samba.org" <paulus@samba.org>
-Subject: Re: [PATCH] arm64: LLVMLinux: Fix inline arm64 assembly for use with
- clang
-Message-ID: <20140909101515.GB1754@arm.com>
-References: <1409959460-15989-1-git-send-email-behanw@converseincode.com>
- <20140908105307.GF26030@arm.com>
- <CAFzeTN2Q-RkOeDx4jG5jiEtiN7i+gkfmyvBC1b3B1wpDPUDdxw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFzeTN2Q-RkOeDx4jG5jiEtiN7i+gkfmyvBC1b3B1wpDPUDdxw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932266AbaIIKQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:16:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51732 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752964AbaIIKQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:16:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="570461221"
+From: Weike Chen <alvin.chen@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>,
+        Alvin Chen <alvin.chen@intel.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 0/4 v3] The Designware GPIO Supporting
+Date: Tue,  9 Sep 2014 11:07:57 -0700
+Message-Id: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 07:35:47PM +0100, Mark Charlebois wrote:
-> When I compile
-> 
-> int main()
-> {
->         u64 foo, tmp;
-> 
->        // This fails for clang but not gcc
->         asm volatile(
->         "       mrs     %0, mair_el1\n"
->         "       bfi     %0, %1, #%2, #8\n"
->         "       msr     mair_el1, %0\n"
->         "       isb\n"
->         : "=&r" (tmp)
->         : "r" (foo), "i" (MT_NORMAL * 8));
-> }
-> 
-> Clang fails and GCC generates:
-> 
-> 00000000004004f0 <main>:
->   4004f0: d538a208 mrs x8, mair_el1
->   4004f4: b3601d08 bfi x8, x8, #32, #8
->   4004f8: d518a208 msr mair_el1, x8
->   4004fc: d5033fdf isb
->   400500: 2a1f03e0 mov w0, wzr
->   400504: d65f03c0 ret
+Hi,
+These patches are for Intel Quark X1000 designware GPIO supporting. The first
+patch enables the Synopsys DesignWare APB GPIO driver to support the MFD device.
+And the Quark designware GPIO controller is registered as MFD device,
+because Quark exports a single PCI device with both GPIO and I2C functions.
+It is about reviewing the GPIO changes in gpio-dwapb, and in near future,
+the Quark I2C driver and the MFD driver that binds these GPIO & I2C
+functions will be sent subsequently. The second patch replaces all
+'readl&writel' with 'dwapb_read'&'dwapb_write. The third patch enables the gpio
+'debounce' feature. And the fourth patch enables the power management.
 
-Ok, so we can just drop the '#' prefix as it probably shouldn't be there
-anyway. Can you send a patch making just that change, please?
+---
+v3:
+ Split [PATCH 2/3] into two patches [PATCH 2/4] and [PATCH 3/4],
+ and now inlucde 4 patches.
 
-Will
+ [PATCH 1/4]
+ * Use 'is_pdata_alloc' instead of 'is_of'.
+ * Allocate 'pdata' by 'kmalloc/kfree' instead of 'devm_*' for OF.
+ * Use 'IS_ENABLED(CONFIG_OF_GPIO)' instead of '#ifdef CONFIG_OF_GPIO'.
+ * A couple of other minor changes.
+ [PATCH 2/4]
+ * New patch splitted from the original [PATCH 2/3]
+ * Use 'dwapb_read/write' instead of readl&writel.
+ [PATCH 3/4]
+ * Move 'dwapb_read/write' defination to new patch [PATCH 2/4].
+ * Only port A support 'debounce' now.
+ [PATCH 4/4]
+ * The original patch [PATCH 3/3]
+ * Use 'struct dwapb_context' instead of 'struct gpio_saved_regs'.
+ * Allocate and save context dynamically by per port.
+
+v2:
+ [PATCH 1/3]
+ * Fixed a bug to set the base gpio number to '-1' for the OF flow.
+ * Set device node for each gpio chip for the OF flow.
+ * Change the name of 'struct dwapb_gpio_platform_data' to
+   'struct dwapb_platform_data'.
+ * Change the name of 'struct dwapb_gpio_port_property' to
+   'struct dwapb_port_property'.
+ * Access pdata directly in 'probe' instead of accesing it
+   by 'struct dwapb_gpio'.
+ * Free 'pdata' at the end of 'probe' if it is OF case to save memory.
+ * Improve the interrupt handler.
+ * Move 'irq_set_handler_data' together with 'irq_set_chained_hanlder'.
+ * Remove unncessary comments.
+ [PATCH 2/3]
+ * Change all 'readl'&'writel' to 'dwapb_read'&'dwapb_write'.
+ [PATCH 3/3]
+ * Change the name for 'struct gpio_saved_regs' to 'struct dwapb_context'.
+ * Save the registers for all ports according to the port index.
+ * Change '#if defined' to '#ifdef'.
+
+Weike Chen (4):
+  GPIO: gpio-dwapb: Enable platform driver binding to MFD driver
+  GPIO: gpio-dwapb: Change readl&writel to dwapb_read&dwapb_write
+  GPIO: gpio-dwapb: Support Debounce
+  GPIO: gpio-dwapb: Suspend & Resume PM enabling
+
+ drivers/gpio/Kconfig                     |    1 -
+ drivers/gpio/gpio-dwapb.c                |  400 +++++++++++++++++++++++++-----
+ include/linux/platform_data/gpio-dwapb.h |   32 +++
+ 3 files changed, 365 insertions(+), 68 deletions(-)
+ create mode 100644 include/linux/platform_data/gpio-dwapb.h
+
+-- 
+1.7.9.5
+
