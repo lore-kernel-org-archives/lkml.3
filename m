@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486AbaIIFpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:45:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777AbaIIFpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:45:09 -0400
-Message-ID: <540E93A0.4040306@redhat.com>
-Date: Tue, 09 Sep 2014 01:44:00 -0400
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755251AbaIIFvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:51:12 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:60581 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaIIFvL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 01:51:11 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s895oVYR031803, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: Ivan Vecera <ivecera@redhat.com>, Hau <hau@realtek.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>
+Subject: RE: [PATCH net-next v2] r8169:add support for RTL8168H and RTL8107E
+Thread-Topic: [PATCH net-next v2] r8169:add support for RTL8168H and RTL8107E
+Thread-Index: AQHPu9aTOx1ldhH+Hka8NZq9A476G5v2zASAgAGdD0A=
+Date: Tue, 9 Sep 2014 05:50:30 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB25211E3@RTITMBSV03.realtek.com.tw>
+References: <1408470844-30038-1-git-send-email-hau@realtek.com>
+ <540DA87D.9000302@redhat.com>
+In-Reply-To: <540DA87D.9000302@redhat.com>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>, linaro-acpi@lists.linaro.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v3 09/17] ARM64 / ACPI: Parse MADT for SMP initialization
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org> <540E80BD.20801@redhat.com> <540E88A2.1000606@linaro.org>
-In-Reply-To: <540E88A2.1000606@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 12:57 AM, Hanjun Guo wrote:
-> Hi Jon,
-> 
-> On 2014年09月09日 12:23, Jon Masters wrote:
->> On 09/01/2014 10:57 AM, Hanjun Guo wrote:
->>> MADT contains the information for MPIDR which is essential for
->>> SMP initialization, parse the GIC cpu interface structures to
->>> get the MPIDR value and map it to cpu_logical_map(), and add
->>> enabled cpu with valid MPIDR into cpu_possible_map.
->>>
->>> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
->>> Parking protocol, but the Parking protocol is only specified for
->>> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
->>> before some updates for the ACPI spec or the Parking protocol spec.
->>> +	/* CPU 0 was already initialized */
->>> +	if (cpu) {
->>> +		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
->>> +			return -EOPNOTSUPP;
->>> +
->>> +		/* map the logical cpu id to cpu MPIDR */
->>> +		cpu_logical_map(cpu) = mpidr;
->> I'm not sure it's worth noting in a comment or just in the dialogue that
->> none of these MPIDR values is literally the value in the MPIDR. Linux
->> doesn't store that anyway (even in the cpu_logical_map), since it is
->> pre-filtered against MPIDR_HWID_BITMASK to remove the non-affinity level
->> bits. And since the ACPI5.1 specification requires that non-affinity
->> bits be zero everything works. But it relies upon this assumption so it
->> might be worth explicitly masking out the bits when making the call into:
->>
->>        acpi_map_gic_cpu_interface(processor->arm_mpidr,
->>                processor->flags & ACPI_MADT_ENABLED);
->>
->> During the parsing of the processor object's MPIDR value.
-> 
-> Yes, I agree with you. When I tested this patch set on our
-> ARM64 platform, I found this problem too. some firmware
-> will just present the real MPIDR value to OS which some reserved
-> bit set to 1, and it will lead to some logic problem in this patch.
-> (actually firmware didn't obey with ACPI spec)
-> 
-> I had updated the patch with:
-> 
-> +	acpi_map_gic_cpu_interface(processor->arm_mpidr & MPIDR_HWID_BITMASK,
-> +		processor->flags & ACPI_MADT_ENABLED);
-> 
-> and then the problem was gone :)
+ From: Ivan Vecera [mailto:ivecera@redhat.com] 
+> Sent: Monday, September 08, 2014 9:01 PM
+> To: Hau; netdev@vger.kernel.org
+> Cc: nic_swsd; linux-kernel@vger.kernel.org; romieu@fr.zoreil.com
+> Subject: Re: [PATCH net-next v2] r8169:add support for 
+> RTL8168H and RTL8107E
+[...]
+> Where are these new firmware files ^^^^ located? They are missing at 
+> git://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-f
+> irmware.git
 
-Did I miss an updated patch posting then? It is possible...I was keeping
-out of this thread for "obvious" reasons (I'm somewhat biased in favor
-of ACPI on 64-bit ARM server platforms and thus not objective in all
-cases...so I am confining my feedback to technical specifics). But it's
-necessary that there be a little more discussion here. I've got a couple
-of requests into various vendors to get more vocal too.
-
-Jon.
-
+We don't update them, yet. We will update them after testing all of them.
+ 
+Best Regards,
+Hayes
