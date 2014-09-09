@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965AbaIIOn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:43:29 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57618 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756784AbaIIOn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:43:26 -0400
-Date: Tue, 9 Sep 2014 09:43:09 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v7 2/2] usb: gadget: f_fs: virtual endpoint
- address mapping
-Message-ID: <20140909144309.GG6151@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410163020-13910-1-git-send-email-r.baldyga@samsung.com>
- <1410163020-13910-3-git-send-email-r.baldyga@samsung.com>
- <20140908134733.GL22409@saruman.home>
- <540E97E8.80701@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="j2AXaZ4YhVcLc+PQ"
-Content-Disposition: inline
-In-Reply-To: <540E97E8.80701@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1757208AbaIIOoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:44:18 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58137 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757172AbaIIOoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 10:44:15 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 4/8] net: pxa168_eth: fix Ethernet flow control status
+Date: Tue,  9 Sep 2014 16:44:04 +0200
+Message-Id: <1410273848-24663-5-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410273848-24663-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1410273848-24663-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---j2AXaZ4YhVcLc+PQ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+IEEE 802.3x Ethernet flow control is disabled when bit (1 << 2) is set
+in the port status register. Fix the flow control detection in the link
+event handling function which was relying on the opposite assumption.
 
-On Tue, Sep 09, 2014 at 08:02:16AM +0200, Robert Baldyga wrote:
-> On 09/08/2014 03:47 PM, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Mon, Sep 08, 2014 at 09:57:00AM +0200, Robert Baldyga wrote:
-> >> This patch introduces virtual endpoint address mapping. It separates
-> >> function logic form physical endpoint addresses making it more hardware
-> >> independent.
-> >>
-> >> Following modifications changes user space API, so to enable them user
-> >> have to switch on the FUNCTIONFS_VIRTUAL_ADDR flag in descriptors.
-> >>
-> >> Endpoints are now refered using virtual endpoint addresses chosen by
-> >> user in endpoint descpriptors. This applies to each context when endpo=
-int
-> >> address can be used:
-> >> - when accessing endpoint files in FunctionFS filesystemi (in file nam=
-e),
-> >> - in setup requests directed to specific endpoint (in wIndex field),
-> >> - in descriptors returned by FUNCTIONFS_ENDPOINT_DESC ioctl.
-> >>
-> >> In endpoint file names the endpoint address number is formatted as
-> >> double-digit hexadecimal value ("ep%02x") which has few advantages -
-> >> it is easy to parse, allows to easly recognize endpoint direction basi=
-ng
-> >> on its name (IN endpoint number starts with digit 8, and OUT with 0)
-> >> which can be useful for debugging purpose, and it makes easier to intr=
-oduce
-> >> further features allowing to use each endpoint number in both directio=
-ns
-> >> to have more endpoints available for function if hardware supports this
-> >> (for example we could have ep01 which is endpoint 1 with OUT direction,
-> >> and ep81 which is endpoint 1 with IN direction).
-> >>
-> >> Physical endpoint address can be still obtained using ioctl named
-> >> FUNCTIONFS_ENDPOINT_REVMAP, but now it's not neccesary to handle
-> >> USB transactions properly.
-> >>
-> >> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> >> Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> >=20
-> > after this patch I get build errors:
-> >=20
-> > drivers/usb/gadget/function/f_fs.c: In function =E2=80=98ffs_epfiles_cr=
-eate=E2=80=99:
-> > drivers/usb/gadget/function/f_fs.c:1555:40: error: =E2=80=98struct ffs_=
-data=E2=80=99 has no member named =E2=80=98eps_addrmap=E2=80=99
-> >     sprintf(epfiles->name, "ep%02x", ffs->eps_addrmap[i]);
-> >                                         ^
-> > drivers/usb/gadget/function/f_fs.c: In function =E2=80=98ffs_func_setup=
-=E2=80=99:
-> > drivers/usb/gadget/function/f_fs.c:2900:19: error: =E2=80=98struct ffs_=
-data=E2=80=99 has no member named =E2=80=98eps_addrmap=E2=80=99
-> >     ret =3D func->ffs->eps_addrmap[ret];
-> >                    ^
-> > make[3]: *** [drivers/usb/gadget/function/f_fs.o] Error 1
-> > make[3]: *** Waiting for unfinished jobs....
-> > make[2]: *** [drivers/usb/gadget/function] Error 2
-> > make[1]: *** [drivers/usb/gadget] Error 2
-> > make[1]: *** Waiting for unfinished jobs....
-> > make: *** [drivers/usb/] Error 2
-> >=20
->=20
-> Array "eps_addrmap" was introduced in patch "usb: gadget: f_fs: fix the
-> redundant ep files problem". I have received mails from you and Greg
-> that it's already applied to usb tree, so I have assumed that there is
-> no need to include it to this patchset. I can resend this patch if it's
-> needed.
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+---
+ drivers/net/ethernet/marvell/pxa168_eth.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-No, no, I was didn't have -rc4 merged on my next. Now I do.
+diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
+index 953112f87c5f..10422f2df6cc 100644
+--- a/drivers/net/ethernet/marvell/pxa168_eth.c
++++ b/drivers/net/ethernet/marvell/pxa168_eth.c
+@@ -163,7 +163,7 @@
+ /* Bit definitions for Port status */
+ #define PORT_SPEED_100		(1 << 0)
+ #define FULL_DUPLEX		(1 << 1)
+-#define FLOW_CONTROL_ENABLED	(1 << 2)
++#define FLOW_CONTROL_DISABLED	(1 << 2)
+ #define LINK_UP			(1 << 3)
+ 
+ /* Bit definitions for work to be done */
+@@ -885,7 +885,7 @@ static void handle_link_event(struct pxa168_eth_private *pep)
+ 		speed = 10;
+ 
+ 	duplex = (port_status & FULL_DUPLEX) ? 1 : 0;
+-	fc = (port_status & FLOW_CONTROL_ENABLED) ? 1 : 0;
++	fc = (port_status & FLOW_CONTROL_DISABLED) ? 0 : 1;
+ 	netdev_info(dev, "link up, %d Mb/s, %s duplex, flow control %sabled\n",
+ 		    speed, duplex ? "full" : "half", fc ? "en" : "dis");
+ 	if (!netif_carrier_ok(dev))
+-- 
+1.9.1
 
---=20
-balbi
-
---j2AXaZ4YhVcLc+PQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUDxH9AAoJEIaOsuA1yqREjrsP/jmZx+FPrBTgyrA2t++YUrYw
-lV3wxBChBY8nO+OqLfdW4f7rS4lgWVZTRHYTBd2lSo8c3Tz/Sn6cPrRpoj+z47bZ
-alZYpN/nmpIT8cPZbc9CGm1ZfrY1bdZCsjnXVClo1uD8z6llnuDorHLz8zZgSHp5
-2Mm7aDM1O3/zoxRaNpvW+xJbyz1HxXrtYizR9KuK6uhmC+dtb2PjxEeKy1iJaY1S
-5DO2XXIo8XUCBUvzjWT2QOYoS7OXN8V08BMrNdiJg8F0b8tI9JsQKV01sOEO8A3Z
-h40FBBye1msiO2jHwYWNgklkPKgZovPfiLwo8FlC5CUC4+LgNS8KcFPu0n3Q84kq
-qOoPjxTS8DeJqGeCqG7+jo1ax78iDIaIRhf84mOhL3sGhqHbMLf4XQ2Uow3bpVfT
-zAQkigbUpKs9Y3qFq9+e06FEvhYpX7urwEDUmlT0kvThZ9HPuen6oV9Ko5uQ49Nq
-Zd3jZl0vuCZru1ADfgOtKc6gyIIwq79kaF9Ur9cK+QEnC2Ws6Ieq2pLd+Upu0Tyg
-2ayvNKkO6T17eMI79THJkarEcoX4+yFmKiLfPV7YHfWd+FJsGaAiRKiDZsDwjNZA
-7UreMX2hsO5hBBeRHL0Oc/kYYBsYi51ASedshT1gj3S43e7EKKVjNg5yFeUr/Qvg
-bsOUyLMYG8XC4ETzBqbL
-=NhA+
------END PGP SIGNATURE-----
-
---j2AXaZ4YhVcLc+PQ--
