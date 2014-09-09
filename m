@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230AbaIICnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:43:17 -0400
-Received: from ozlabs.org ([103.22.144.67]:39618 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754512AbaIICnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:43:16 -0400
-Date: Tue, 9 Sep 2014 12:43:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20140909124306.2d5a0d76@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1755409AbaIICnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:43:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34610 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071AbaIICnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:43:52 -0400
+Date: Mon, 8 Sep 2014 19:43:40 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-81f49a8fd7088cfcb588d182eeede862c0e3303e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <a0138ed8c709882aec06e4acc30bfa9b623b8717.1409954077.git.luto@amacapital.net>
+References: <a0138ed8c709882aec06e4acc30bfa9b623b8717.1409954077.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/seccomp] x86, x32, audit: Fix x32's AUDIT_ARCH wrt audit
+Git-Commit-ID: 81f49a8fd7088cfcb588d182eeede862c0e3303e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/sPsHYl2js_flSE/tgXQJb3X"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/sPsHYl2js_flSE/tgXQJb3X
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  81f49a8fd7088cfcb588d182eeede862c0e3303e
+Gitweb:     http://git.kernel.org/tip/81f49a8fd7088cfcb588d182eeede862c0e3303e
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Fri, 5 Sep 2014 15:13:52 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 8 Sep 2014 14:13:55 -0700
 
-Hi Mauro,
+x86, x32, audit: Fix x32's AUDIT_ARCH wrt audit
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64 allmodconf=
-ig)
-failed like this:
+is_compat_task() is the wrong check for audit arch; the check should
+be is_ia32_task(): x32 syscalls should be AUDIT_ARCH_X86_64, not
+AUDIT_ARCH_I386.
 
-ERROR: "omap_stop_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] =
-undefined!
-ERROR: "omap_start_dma" [drivers/media/platform/soc_camera/omap1_camera.ko]=
- undefined!
-ERROR: "omap_dma_link_lch" [drivers/media/platform/soc_camera/omap1_camera.=
-ko] undefined!
-ERROR: "omap_set_dma_dest_burst_mode" [drivers/media/platform/soc_camera/om=
-ap1_camera.ko] undefined!
-ERROR: "omap_set_dma_src_params" [drivers/media/platform/soc_camera/omap1_c=
-amera.ko] undefined!
-ERROR: "omap_request_dma" [drivers/media/platform/soc_camera/omap1_camera.k=
-o] undefined!
-ERROR: "omap_set_dma_transfer_params" [drivers/media/platform/soc_camera/om=
-ap1_camera.ko] undefined!
-ERROR: "omap_set_dma_dest_params" [drivers/media/platform/soc_camera/omap1_=
-camera.ko] undefined!
-ERROR: "omap_free_dma" [drivers/media/platform/soc_camera/omap1_camera.ko] =
-undefined!
-ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undefin=
-ed!
-ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_display.ko] undefin=
-ed!
-ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_capture.ko] undefin=
-ed!
+CONFIG_AUDITSYSCALL is currently incompatible with x32, so this has
+no visible effect.
 
-I have used the v4l-dvb tree from next-20140908 for today.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/a0138ed8c709882aec06e4acc30bfa9b623b8717.1409954077.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/ptrace.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-There were also lots of new warnings like:
-
-drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c: In function 's5p_mfc_get_c=
-rop_info_h_v6':
-drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c:2039:3: warning: cast from =
-pointer to integer of different size [-Wpointer-to-int-cast]
-   (unsigned int) ctx->dev->mfc_regs->d_display_crop_info1);
-   ^
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/sPsHYl2js_flSE/tgXQJb3X
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUDmlBAAoJEMDTa8Ir7ZwVUScQAJD5Gg3WHokB/NjVnyDiZM+M
-AM02zwBuYFBXqURlep/vagqqD8bZfK64a9ITI8sNQZdhM9BM+GNUTJfHPrgTLBnY
-yPCsnoaUm8TdY/Vy2mZx0LxaV7EfnxEC3KISLWDAJfVNLIQMk5PU0KzwUkKZmulf
-svK5w6oDwe9LkQmJ0cYIMXbTtddxcBjNYIBX6l6xPUgJUxJnoKjj00gb4S+6RTdm
-+1t0vxltQrBRi0rz+ELrK3WWzNdgoSOPaLm40X7DharDTluhX1HuBa+g0TvomP8+
-g71vcuyyfkhv1hq5lchgMd8yoIx1+GgUQL18/Ca+28R7swpNIWnXwsh5LRZVQNmm
-TBXlyxUcpNGic9eUpzX3NWeYnCPyxzUE628D6OAOhmKBEWDRPBgodFH1dTOMcE/i
-ECu9fAxKiRIJpQX4aIxTVvqtZxiJmmdJ+/uudcRy8JwVH7+37Si9xUV5AqCwqku7
-6YXw9jhVEXml5GV3h/53Iy1+VSo4xXdgai0MRrONTFDG3X9jNCuc3JyEQ9OKPxEP
-ksjHZhUCHNw5hSVrgv3QAl4lE2C34tSvuVK9xno2ZG9MWyxrUlqH+fqXX+RfAYxK
-aNPplb5n14mYigk/7whvvOU7z5Jb0mq9HFCiw9Hjx4RhzHNF/sMocuSs6rJ7cQM9
-KqZ57GDviiHch/e7YL3l
-=dZBi
------END PGP SIGNATURE-----
-
---Sig_/sPsHYl2js_flSE/tgXQJb3X--
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 93c182a..39296d2 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1441,15 +1441,6 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
+ 	force_sig_info(SIGTRAP, &info, tsk);
+ }
+ 
+-
+-#ifdef CONFIG_X86_32
+-# define IS_IA32	1
+-#elif defined CONFIG_IA32_EMULATION
+-# define IS_IA32	is_compat_task()
+-#else
+-# define IS_IA32	0
+-#endif
+-
+ /*
+  * We must return the syscall number to actually look up in the table.
+  * This can be -1L to skip running any syscall at all.
+@@ -1487,7 +1478,7 @@ long syscall_trace_enter(struct pt_regs *regs)
+ 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
+ 		trace_sys_enter(regs, regs->orig_ax);
+ 
+-	if (IS_IA32)
++	if (is_ia32_task())
+ 		audit_syscall_entry(AUDIT_ARCH_I386,
+ 				    regs->orig_ax,
+ 				    regs->bx, regs->cx,
