@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189AbaIIIrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 04:47:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:65080 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932350AbaIIIpW (ORCPT
+	id S1756229AbaIIIs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 04:48:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51236 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932324AbaIIIpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 04:45:22 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-1d-540ebe20ebfd
+	Tue, 9 Sep 2014 04:45:19 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-16-540ebe1dc883
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: Paul.Zimmerman@synopsys.com
 Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 4/6] usb: dwc2/gadget: ensure that all fifos have correct
- memory buffers
-Date: Tue, 09 Sep 2014 10:44:55 +0200
-Message-id: <1410252297-13738-5-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 3/6] usb: dwc2/gadget: hide some not really needed debug
+ messages
+Date: Tue, 09 Sep 2014 10:44:54 +0200
+Message-id: <1410252297-13738-4-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
 References: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t9jQV2FfXwhBs1ztC0O3q+3aF68ns3i
-	8q45bBaLlrUyW6w9cpfd4tHDrawWDw7vZHdg99g/dw27R9+WVYweW/Z/ZvQ4fmM7k8fnTXIB
-	rFFcNimpOZllqUX6dglcGf2nF7IVbBSumNhwhq2B8SJ/FyMnh4SAicTDy60sELaYxIV769m6
-	GLk4hASmM0p0rtjHCuG0M0msfXKEEaSKTUBHYsv3CWC2iIC8xPWNN1lAipgF9jFKTP+0jR0k
-	ISwQJXFz02RWEJtFQFXi/4M1zCA2r4CrxKp125gg1slJnDwGUcMp4Cbx59gXsF4hoJp/c6ax
-	TGDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOKyeSe1gXNlgcYhRgINRiYc3I5gv
-	RIg1say4MvcQowQHs5II75XdQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qtA4UE0hNLUrNT
-	UwtSi2CyTBycUg2M0i6ZX09t5Y3xCg/cJrhbmXdR3Sfzck/R1z+0f/RJtS59yqN4pcJ/xvb+
-	Y83qdd8E967rOfsrqeb/xy/b/CVWhr1X1vT73K5+js9Occ6Zr+vX/+k/kmIzL9vV5+jVQ7qH
-	Tx/6f/trJOua23/K73xTUNhdv9Ax4Y35NNGsNba/fHdKBTt/3/b5iRJLcUaioRZzUXEiAIqP
-	wv8nAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jQV3ZfXwhBhdPmVocvF9v0bx4PZvF
+	5V1z2CwWLWtltlh75C67xaOHW1ktHhzeye7A7rF/7hp2j74tqxg9tuz/zOhx/MZ2Jo/Pm+QC
+	WKO4bFJSczLLUov07RK4MvY828FSMIezou+4fQPjA/YuRk4OCQETiZ1tF9kgbDGJC/fWA9lc
+	HEIC0xklTpx9wg7htDNJrHp0mRmkik1AR2LL9wmMILaIgLzE9Y03WUCKmAX2MUpM/7QNbKyw
+	QLDE9I2NLCA2i4CqRMv002BxXgFXiUtL1rNArJOTOHlsMiuIzSngJvHn2BewGiGgmn9zprFM
+	YORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4qJ5J7WBc2WBxiFGAg1GJhzcjmC9E
+	iDWxrLgy9xCjBAezkgjvld1AId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tSs1NT
+	C1KLYLJMHJxSDYyB2tKLK8Pi9iRJmzy4k6Zr++L9OyF5JYcJtTF7/u9a+CJ64k9N38rrAk/k
+	rh36mfLlxY1MyW3RbbncRy18/eN0Y1e+Nit89PpsjEzR/zV395w8EF292o1F6lE/t9G/VMtf
+	/27MN9lrtrfp4Gn2AM2TOxRfTz241f/jvL9Vk9Mqp7+br7un9Z6GEktxRqKhFnNRcSIAbxDj
+	gSYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Print warning if FIFOs are configured in such a way that they don't fit
-into the SPRAM available on the s3c hsotg module.
+Some DWC2/s3c-hsotg debug messages are really useless for typical user,
+so hide them behind dev_dbg().
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/usb/dwc2/core.h   |  1 +
- drivers/usb/dwc2/gadget.c | 15 ++++++++++-----
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/usb/dwc2/gadget.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
-index 1efd10c..067390e 100644
---- a/drivers/usb/dwc2/core.h
-+++ b/drivers/usb/dwc2/core.h
-@@ -194,6 +194,7 @@ struct s3c_hsotg {
- 	struct regulator_bulk_data supplies[ARRAY_SIZE(s3c_hsotg_supply_names)];
- 
- 	u32                     phyif;
-+	int			fifo_mem;
- 	unsigned int            dedicated_fifos:1;
- 	unsigned char           num_of_eps;
- 
 diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index f63858a..bd58756 100644
+index 186a3a8..f63858a 100644
 --- a/drivers/usb/dwc2/gadget.c
 +++ b/drivers/usb/dwc2/gadget.c
-@@ -192,6 +192,8 @@ static void s3c_hsotg_init_fifo(struct s3c_hsotg *hsotg)
- 	for (ep = 1; ep <= 15; ep++) {
- 		val = addr;
- 		val |= size << FIFOSIZE_DEPTH_SHIFT;
-+		WARN_ONCE(addr + size > hsotg->fifo_mem,
-+			  "insufficient fifo memory");
- 		addr += size;
+@@ -2568,7 +2568,7 @@ static int s3c_hsotg_ep_disable(struct usb_ep *ep)
+ 	u32 epctrl_reg;
+ 	u32 ctrl;
  
- 		writel(val, hsotg->regs + DPTXFSIZN(ep));
-@@ -3029,19 +3031,22 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsotg,
-  */
- static void s3c_hsotg_hw_cfg(struct s3c_hsotg *hsotg)
- {
--	u32 cfg2, cfg4;
-+	u32 cfg2, cfg3, cfg4;
- 	/* check hardware configuration */
+-	dev_info(hsotg->dev, "%s(ep %p)\n", __func__, ep);
++	dev_dbg(hsotg->dev, "%s(ep %p)\n", __func__, ep);
  
- 	cfg2 = readl(hsotg->regs + 0x48);
- 	hsotg->num_of_eps = (cfg2 >> 10) & 0xF;
+ 	if (ep == &hsotg->eps[0].ep) {
+ 		dev_err(hsotg->dev, "%s: called for ep0\n", __func__);
+@@ -2626,7 +2626,7 @@ static int s3c_hsotg_ep_dequeue(struct usb_ep *ep, struct usb_request *req)
+ 	struct s3c_hsotg *hs = hs_ep->parent;
+ 	unsigned long flags;
  
--	dev_info(hsotg->dev, "EPs:%d\n", hsotg->num_of_eps);
-+	cfg3 = readl(hsotg->regs + 0x4C);
-+	hsotg->fifo_mem = (cfg3 >> 16);
+-	dev_info(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
++	dev_dbg(hs->dev, "ep_dequeue(%p,%p)\n", ep, req);
  
- 	cfg4 = readl(hsotg->regs + 0x50);
- 	hsotg->dedicated_fifos = (cfg4 >> 25) & 1;
+ 	spin_lock_irqsave(&hs->lock, flags);
  
--	dev_info(hsotg->dev, "%s fifos\n",
--		 hsotg->dedicated_fifos ? "dedicated" : "shared");
-+	dev_info(hsotg->dev, "EPs: %d, %s fifos, %d entries in SPRAM\n",
-+		 hsotg->num_of_eps,
-+		 hsotg->dedicated_fifos ? "dedicated" : "shared",
-+		 hsotg->fifo_mem);
- }
- 
- /**
-@@ -3485,8 +3490,8 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 	s3c_hsotg_phy_enable(hsotg);
- 
- 	s3c_hsotg_corereset(hsotg);
--	s3c_hsotg_init(hsotg);
- 	s3c_hsotg_hw_cfg(hsotg);
-+	s3c_hsotg_init(hsotg);
- 
- 	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
- 				dev_name(dev), hsotg);
 -- 
 1.9.1
 
