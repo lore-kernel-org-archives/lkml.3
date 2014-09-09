@@ -1,63 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709AbaIIN0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:26:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50328 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207AbaIIN0S (ORCPT
+	id S1754276AbaIIN3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:29:00 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:63994 "EHLO
+	mail.work-microwave.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaIIN27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:26:18 -0400
-Message-ID: <540EFFC9.4050207@ti.com>
-Date: Tue, 9 Sep 2014 16:25:29 +0300
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-CC: <perex@perex.cz>, <lgirdwood@gmail.com>, <tiwai@suse.de>,
-        <moinejf@free.fr>, <andrew@lunn.ch>,
-        <kuninori.morimoto.gx@renesas.com>, <devicetree@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 3/3] ASoC: simple-card: binding: update binding to support
- the new style.
-References: <1409711021-19277-1-git-send-email-Li.Xiubo@freescale.com> <1409711021-19277-4-git-send-email-Li.Xiubo@freescale.com> <20140909120948.GZ2601@sirena.org.uk>
-In-Reply-To: <20140909120948.GZ2601@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Sep 2014 09:28:59 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: robh+dt@kernel.org, riku.voipio@iki.fi, cooloney@gmail.com,
+        rpurdie@rpsys.net, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] leds: Add DT support for leds-pca9532
+Date: Tue,  9 Sep 2014 15:28:00 +0200
+Message-Id: <1410269280-8761-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 2.1.0
+X-FEAS-SYSTEM-WL: "Roland Stigge" <stigge@antcom.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 03:09 PM, Mark Brown wrote:
-> On Wed, Sep 03, 2014 at 10:23:41AM +0800, Xiubo Li wrote:
->> This update patch will split the DT node into old style and new style:
->> The new style will will be easier to add muti DAI links from old single
->> DAI link DTs.
->
->> This patch will maintian compatibility with the old DTs.
->
-> Is everyone happy with this new style binding?
->
+This patch adds DT support for leds-pca9532.
 
-If I read the diff correctly the only change in the syntax is moving the 
-bitclock-inversion and frame-inversion properties to DAI nodes also for 
-the new style bindings.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-I am Ok with that.
+---
+Applies to v3.17-rc4
 
-The document does not indicate that the same properties could be also 
-placed to DAI link level like they used to, from where they would apply 
-to both DAI nodes.
+ Documentation/devicetree/bindings/leds/leds-pca9532.txt |   43 ++++++++++++++
+ drivers/leds/leds-pca9532.c                             |   47 ++++++++++++++++
+ 2 files changed, 90 insertions(+)
 
-I am Ok with this too, but this breaks the backwards compatibility, 
-which I guess is generally considered a problem. However, I doubt anyone 
-but me has yet used this part of the new syntax and I am happy to fix my 
-dts files.
-
-Best regards,
-Jyri
-
-ps. I could not find the corresponding code changes in the previous 
-patch, so I assume they are coming later.
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/leds/leds-pca9532.txt
+@@ -0,0 +1,43 @@
++NXP PCA9532 LED (incl. GPIO) controller
++
++Required properties:
++- compatible: must be "nxp,pca9532"
++- reg: I2C address
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be 2:
++   1) pin number
++   2) optional parameters:
++      - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- nxp,typecodes: groups of 2 bits for each of the 16 pins:
++  0: None
++  1: LED
++  2: Beep
++  3: GPIO
++- nxp,statecodes: groups of 2 bits for each of the 16 pins:
++  0: off
++  1: on
++  2: pwm0
++  3: pwm1
++
++Optional properties:
++- nxp,psc: array of 2 numbers: PSC values for the two PWM channels (see datasheet)
++- nxp,pwm: array of 2 numbers: PWM values for the two PWM channels (see datasheet)
++
++Example:
++
++	pca9532: pca9532@60 {
++		compatible = "nxp,pca9532";
++		gpio-controller;
++		#gpio-cells = <2>;
++		nxp,typecodes = <0xffffffff>;
++		nxp,statecodes = <0x00000000>;
++		reg = <0x60>;
++	};
++
++	sd@20098000 {
++		wp-gpios = <&pca9532 5 0>;
++		cd-gpios = <&pca9532 4 0>;
++		cd-inverted;
++		bus-width = <4>;
++		status = "okay";
++	};
+--- linux-2.6.orig/drivers/leds/leds-pca9532.c
++++ linux-2.6/drivers/leds/leds-pca9532.c
+@@ -21,6 +21,7 @@
+ #include <linux/workqueue.h>
+ #include <linux/leds-pca9532.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
+ 
+ /* m =  num_leds*/
+ #define PCA9532_REG_INPUT(i)	((i) >> 3)
+@@ -442,6 +443,45 @@ exit:
+ 	return err;
+ }
+ 
++#ifdef CONFIG_OF
++static struct pca9532_platform_data *pca9532_parse_dt(struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct pca9532_platform_data *pca9532_pdata;
++	u32 typecodes, statecodes;
++	u32 pwm[2];
++	u32 psc[2];
++	int i;
++
++	pca9532_pdata = devm_kzalloc(dev, sizeof(*pca9532_pdata), GFP_KERNEL);
++	if (!pca9532_pdata)
++		return NULL;
++
++	if (!of_property_read_u32(np, "nxp,typecodes", &typecodes)) {
++		for (i = 0; i < 16; i++)
++			pca9532_pdata->leds[i].type =
++				(typecodes >> (2 * i)) & 0x3;
++	}
++	if (!of_property_read_u32(np, "nxp,statecodes", &statecodes)) {
++		for (i = 0; i < 16; i++)
++			pca9532_pdata->leds[i].state =
++				(statecodes >> (2 * i)) & 0x3;
++	}
++	if (!of_property_read_u32_array(np, "nxp,pwm", &pwm[0], 2)) {
++		for (i = 0; i < 2; i++)
++			pca9532_pdata->pwm[i] = pwm[i];
++	}
++	if (!of_property_read_u32_array(np, "nxp,psc", &psc[0], 2)) {
++		for (i = 0; i < 2; i++)
++			pca9532_pdata->psc[i] = psc[i];
++	}
++
++	pca9532_pdata->gpio_base = -1; /* dynamically assign gpio base */
++
++	return pca9532_pdata;
++}
++#endif
++
+ static int pca9532_probe(struct i2c_client *client,
+ 	const struct i2c_device_id *id)
+ {
+@@ -449,6 +489,11 @@ static int pca9532_probe(struct i2c_clie
+ 	struct pca9532_platform_data *pca9532_pdata =
+ 			dev_get_platdata(&client->dev);
+ 
++#ifdef CONFIG_OF
++	if (!pca9532_pdata && client->dev.of_node)
++		pca9532_pdata = pca9532_parse_dt(&client->dev);
++#endif
++
+ 	if (!pca9532_pdata)
+ 		return -EIO;
+ 
