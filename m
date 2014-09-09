@@ -1,88 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235AbaIIPiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:38:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51404 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769AbaIIPgw (ORCPT
+	id S1757258AbaIIPij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:38:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39462 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028AbaIIPii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:36:52 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hans de Goede <hdegoede@redhat.com>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 3/3] ata: qcom: Add device tree bindings information
-Date: Tue,  9 Sep 2014 10:36:48 -0500
-Message-Id: <1410277008-20242-3-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
-References: <1410277008-20242-1-git-send-email-galak@codeaurora.org>
+	Tue, 9 Sep 2014 11:38:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140909152028.GA13699@lst.de>
+References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
+	<20140909152028.GA13699@lst.de>
+Date: Tue, 9 Sep 2014 23:38:32 +0800
+Message-ID: <CACVXFVN3tTJGJqcykwBhS6fzRuQd-9kYmFQqKC_39Hdb9=N9GA@mail.gmail.com>
+Subject: Re: [PATCH 0/8] block: per-distpatch_queue flush machinery
+From: Ming Lei <ming.lei@canonical.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree binding for Qualcomm AHCI SATA controller and specifically
-the sata controller on the IPQ806x family of SoCs.
+On Tue, Sep 9, 2014 at 11:20 PM, Christoph Hellwig <hch@lst.de> wrote:
+> Hi Ming,
+>
+> thanks for doing this work!
+>
+> I've only taken a very cursory look at the series and I like most of it.
+>
+> But can you explain why you're not simply incrementing the number of
+> allocated requests in the blk-mq request allocation code instead of
+> allocating the flush request separately in the last patch?
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
-(reposted with Hans on list)
+Requests in tag_set may be shared by more than one queues, but flush
+rq per hctx can't be shared by request queues at all.
 
- .../devicetree/bindings/ata/qcom-sata.txt          | 40 ++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/ata/qcom-sata.txt
+Also it is simple to put it inside the introduce blk_flush_queue.
 
-diff --git a/Documentation/devicetree/bindings/ata/qcom-sata.txt b/Documentation/devicetree/bindings/ata/qcom-sata.txt
-new file mode 100644
-index 0000000..5e74e41
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/qcom-sata.txt
-@@ -0,0 +1,40 @@
-+* Qualcomm AHCI SATA Controller
-+
-+SATA nodes are defined to describe on-chip Serial ATA controllers.
-+Each SATA controller should have its own node.
-+
-+Required properties:
-+- compatible		: compatible list, contains "qcom,msm-ahci"
-+- interrupts		: <interrupt mapping for SATA IRQ>
-+- reg			: <registers mapping>
-+- phys			: Must contain exactly one entry as specified
-+			  in phy-bindings.txt
-+- phy-names		: Must be "sata-phy"
-+
-+Required properties for "qcom,ipq806x-ahci" compatible:
-+- clocks		: Must contain an entry for each entry in clock-names.
-+- clock-names		: Shall be:
-+				"slave_iface" - Fabric port AHB clock for SATA
-+				"iface" - AHB clock
-+				"core" - core clock
-+				"rxoob" - RX out-of-band clock
-+				"pmalive" - Power Module Alive clock
-+
-+Example:
-+	sata@29000000 {
-+		compatible = "qcom,ipq806x-ahci", "qcom,msm-ahci";
-+		reg = <0x29000000 0x180>;
-+
-+		interrupts = <0 209 0x0>;
-+
-+		clocks = <&gcc SFAB_SATA_S_H_CLK>,
-+			 <&gcc SATA_H_CLK>,
-+			 <&gcc SATA_A_CLK>,
-+			 <&gcc SATA_RXOOB_CLK>,
-+			 <&gcc SATA_PMALIVE_CLK>;
-+		clock-names = "slave_iface", "iface", "core",
-+				"rxoob", "pmalive";
-+
-+		phys = <&sata_phy>;
-+		phy-names = "sata-phy";
-+	};
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks,
