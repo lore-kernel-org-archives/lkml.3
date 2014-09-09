@@ -1,132 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119AbaIIC1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:27:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11177 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486AbaIIC1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:27:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,489,1406617200"; 
-   d="scan'208";a="596579723"
-Message-ID: <1410229637.8085.158.camel@rzhang1-toshiba>
-Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
-From: Zhang Rui <rui.zhang@intel.com>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>, edubezval@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
-        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
-        zhaoyifeng <zyf@rock-chips.com>
-Date: Tue, 09 Sep 2014 10:27:17 +0800
-In-Reply-To: <5407BA10.2030402@rock-chips.com>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
-	 <1409710239-19941-3-git-send-email-caesar.wang@rock-chips.com>
-	 <11280986.L6lv82O8Qv@diego> <5407BA10.2030402@rock-chips.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755854AbaIIC3Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:29:24 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:60555 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056AbaIIC3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:29:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140909014754.GG11706@mtj.dyndns.org>
+References: <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org> <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org> <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org> <20140909012227.GE11706@mtj.dyndns.org>
+ <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
+ <20140909012933.GF11706@mtj.dyndns.org> <CAB=NE6V+of_RLQtjFpkLN49nKgfONx0T4cbu8kkNU69tUyNozw@mail.gmail.com>
+ <20140909014754.GG11706@mtj.dyndns.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Mon, 8 Sep 2014 19:28:58 -0700
+X-Google-Sender-Auth: VhTf_AM_xpESfI3EWMnWb79BKcc
+Message-ID: <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Tejun Heo <tj@kernel.org>
+Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 09:02 +0800, Caesar Wang wrote:
-> 在 2014年09月03日 16:07, Heiko Stübner 写道:
-> > Am Mittwoch, 3. September 2014, 10:10:37 schrieb Caesar Wang:
-> >> This add the necessary binding documentation for the thermal
-> >> found on Rockchip SoCs
-> >>
-> >> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> >> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> >> ---
-> >>   .../devicetree/bindings/thermal/rockchip-thermal.txt | 20
-> >> ++++++++++++++++++++ 1 file changed, 20 insertions(+)
-> >>   create mode 100644
-> >> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new file
-> >> mode 100644
-> >> index 0000000..1ed4d4c
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> >> @@ -0,0 +1,20 @@
-> >> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
-> >> +
-> >> +Required properties:
-> >> +- compatible: "rockchip,rk3288-tsadc"
-> >> +- reg: physical base address of the controller and length of memory mapped
-> >> +       region.
-> >> +- interrupts: The interrupt number to the cpu. The interrupt specifier
-> >> format +	      depends on the interrupt controller.
-> >> +- clocks: Must contain an entry for each entry in clock-names.
-> >> +- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-> >> +	       the peripheral clock.
-> > You're using the passive-temp, critical-temp and force-shut-temp properties in
-> > your driver without declaring them here.
-> 
-> frankly,the about are need be declared. but  there are 4 types[0] for 
-> trip in thermal framework,
-> there is no force-shut for me. So I want to change it three additional 
-> properties in [PATCH V4 4/4],
-> 
-> 
-> [0]
-> {
->      THERMAL_TRIP_CRITICAL,
->      THERMAL_TRIP_HOT,
->      THERMAL_TRIP_PASSIVE,
->      THERMAL_TRIP_ACTIVE,
-> }
-> 
-this sounds reasonable to me.
+On Mon, Sep 8, 2014 at 6:47 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Mon, Sep 08, 2014 at 06:38:34PM -0700, Luis R. Rodriguez wrote:
+>> OK then one only concern I would have with this is that the presence
+>> of such a flag doesn't necessarily mean that all drivers on a system
+>> have been tested for asynch probe yet. I'd feel much more comfortable
+>
+> Given that the behvaior change is from driver core and that device
+> probing can happen post-loading anyway,
 
-> > But more importantly, please use the generic trip-points for this. I guess it
-> > shouldn't be a problem to introduce a "forced-shutdown" trippoint [0] for the
-> > additional trip-point you have - thermal maintainers, please shout if I'm
-> > wrong :-)
-> 
-what is the difference between a critical trip point and a
-"forced-shutdown" trip point?
-Thermal core will do a shutdown in case the critical trip point is
-triggered.
+Ah but lets not forget Dmitry's requirement which is for in-kernel
+drivers. We'd need to deal with both built-in and modules. Dmitry's
+case is completely orthogonal to the systemd issue and is just needed
+to help not stall boot but I see no reason to blend these two issues
+into one requirement together.
 
-thanks,
-rui
-> It's a good option.
-> I can send a patch,but I don't know whether the thermal maintainers will 
-> accept it.
-> 
-> Maybe,they have a better way to suggest it.:-)
-> 
-> 
-> PS:I will sent a new patch If I still have no received their suggestions 
-> in two days.
-> 
-> >
-> > Heiko
-> >
-> >
-> > [0] in a separate patch, changing
-> > - thermal_trip_type enum in include/linux/thermal.h
-> > - trip_types mapping in drivers/thermal/of-thermal.c
-> > - Documentation/devicetree/bindings/thermal/thermal.txt
-> >
-> >> +
-> >> +Example:
-> >> +tsadc: tsadc@ff280000 {
-> >> +	compatible = "rockchip,rk3288-tsadc";
-> >> +	reg = <0xff280000 0x100>;
-> >> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-> >> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-> >> +	clock-names = "tsadc", "apb_pclk";
-> >> +};
-> >
-> >
-> >
-> 
+> I don't think we need to worry
+> about drivers breaking from probing made asynchronous to loading.  The
+> problem is the expectation of the entity which initiated loading of
+> the module.  If it's depending on device being probed synchronously
+> but insmod returns before that, it can break things.  We probably
+> should audit request_module() users and see which ones expect such
+> behavior.
 
+Sure. Based on a quick glance I see sloppy uses of this, this should
+probably be fixed anyway.
 
+>> if this global flag allowed say specific drivers that *did* have such
+>> a bool enabled, for example. Then that would enable synchronous
+>> behaviour for the kernel by default, require the flag for enabling the
+>> new async feature but only for drivers that have been tested.
+>
+> If we're gonna do the global switch, I personally think the right
+> approach is blacklisting instead of the other way around because each
+> specific driver doesn't really have much to do with it and the
+> exceptions are about specific use cases that we don't have a good way
+> to identify them from module loading path.
+
+OK sure... even if we did whitelist I'm afraid such a white list might
+be subjective in terms of design to specific systems anyway... I
+suppose the only real way to do it right is to push and strive towards
+a full system whitelist and address the black list as you mention.
+
+In terms of approach we would still need to decide on a path for how
+to do asynch probing for both in-kernel drivers and modules, do we
+want async_schedule(), or queue_work()? If async_schedule() do we want
+to use a new domain or a new one shared for all drivers? Priority on
+the schedular was one of my other concerns which we'd need to make
+right to match existing load on drivers through finit_module() and
+synchronous probe.
+
+>> That also still would not technically solve the issue of the current
+>> existence of the timeout, unless of course we wish to ask systemd to
+>> only make the timeout take effect *iff* the global sysctl flag /
+>> whatever was enabled.
+>
+> Userland could backport a fix to set the sysctl.  Given that we need
+> both synchrnous and asynchronous behaviors, it's unlikely that we can
+> come up with a solution which doesn't need cooperation from userland.
+
+True and then the timeout would also have to be skipped for device
+drivers that have the sync_probe flag set, so I guess we'd need to
+expose that too. I'm not too sure if systemd is equipped to be happy
+with no timeout on module loading based previous discussions [0] so
+we'd need to ensure we're all in agreement there that such drivers
+exist and we may need *something*, if at the very least a really long
+fucking timeout (TM) for such drivers.
+
+[0] http://lists.freedesktop.org/archives/systemd-devel/2014-August/021852.html
+
+  Luis
