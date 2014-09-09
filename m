@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757258AbaIIPij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:38:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39462 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028AbaIIPii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:38:38 -0400
+	id S1757277AbaIIPkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:40:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36787 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751741AbaIIPkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 11:40:17 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC 4/5] ARM: shmobile: R-Mobile: Add DT support for PM domains
+References: <1410183344-14756-1-git-send-email-geert+renesas@glider.be>
+	<1410183344-14756-5-git-send-email-geert+renesas@glider.be>
+Date: Tue, 09 Sep 2014 08:40:13 -0700
+In-Reply-To: <1410183344-14756-5-git-send-email-geert+renesas@glider.be>
+	(Geert Uytterhoeven's message of "Mon, 8 Sep 2014 15:35:43 +0200")
+Message-ID: <7hfvg0kdk2.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140909152028.GA13699@lst.de>
-References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
-	<20140909152028.GA13699@lst.de>
-Date: Tue, 9 Sep 2014 23:38:32 +0800
-Message-ID: <CACVXFVN3tTJGJqcykwBhS6fzRuQd-9kYmFQqKC_39Hdb9=N9GA@mail.gmail.com>
-Subject: Re: [PATCH 0/8] block: per-distpatch_queue flush machinery
-From: Ming Lei <ming.lei@canonical.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 11:20 PM, Christoph Hellwig <hch@lst.de> wrote:
-> Hi Ming,
->
-> thanks for doing this work!
->
-> I've only taken a very cursory look at the series and I like most of it.
->
-> But can you explain why you're not simply incrementing the number of
-> allocated requests in the blk-mq request allocation code instead of
-> allocating the flush request separately in the last patch?
+Geert Uytterhoeven <geert+renesas@glider.be> writes:
 
-Requests in tag_set may be shared by more than one queues, but flush
-rq per hctx can't be shared by request queues at all.
+> Populate the PM domains from DT, and provide support to hook up devices
+> to their respective PM domain.
+>
+> The always-on power area (e.g. C5 on r8a7740) is created as a PM domain
+> without software control, to allow Run-Time management of module clocks
+> for hardware blocks inside this area in the future.
+> Power-on/off latencies are supported.
+>
+> Limitations and special cases in the non-DT case are handled through
+> rmobile_pm_quirks(). Checks for hardcoded PM domain indices should be
+> replaced by the analysis of relations between devices and PM domains in
+> DT.
+>
+> Initialization is done from core_initcall(), as the
+> "renesas,intc-irqpin" driver uses postcore_initcall().
+>
+> This is functionally almost equivalent to the non-DT case. Missing are
+> Run-Time management of the module clocks (pm_clk_*()), and device
+> latencies.
+>
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Also it is simple to put it inside the introduce blk_flush_queue.
+[...]
 
-Thanks,
+> +static int r8a7740_pd_a4s_suspend(void)
+> +{
+> +	/*
+> +	 * The A4S domain contains the CPU core and therefore it should
+> +	 * only be turned off if the CPU is in use.
+
+I think you meant "if the CPU is *not* in use."  ?  :)
+
+Kevin
+
