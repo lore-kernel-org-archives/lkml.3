@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbaIIK3e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:29:34 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:61567 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932299AbaIIK3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:29:32 -0400
-Message-ID: <1410258569.15354.3.camel@lp-lvrv.comap.cz>
-Subject: Watchdog start during boot
-From: Lisovy Rostislav <lisovy@gmail.com>
-To: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Michal Vokac <michal.vokac@comap.cz>
-Date: Tue, 09 Sep 2014 12:29:29 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932421AbaIIKaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:30:04 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:36301 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756244AbaIIK1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:27:34 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 43/48] staging: comedi: pcl818: replace comedi_board() calls
+Date: Tue,  9 Sep 2014 11:26:52 +0100
+Message-Id: <1410258417-28230-44-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
+References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello;
-If my understanding is correct, the purpose of the "watchdog subsystem"
-is to provide an unified interface from user-space to watchdog devices
-(via /dev). The issue I am trying to solve is how to start the watchdog
-during boot (it would be sufficient just not to disable it since the
-bootloader enables it) to be controlled later on with the user-space
-tool -- i.e. when the user-space will not boot properly, I would like
-the device to be rebooted.
+The `comedi_board(dev)` inline function calls just return
+`dev->board_ptr`.  Expand the inline function calls.
 
-My "quick and dirty" device-specific solution is:
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/drivers/pcl818.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
-index 3691b15..1e44b03f 100644
---- a/drivers/watchdog/omap_wdt.c
-+++ b/drivers/watchdog/omap_wdt.c
-@@ -53,6 +53,10 @@ static unsigned timer_margin;
- module_param(timer_margin, uint, 0);
- MODULE_PARM_DESC(timer_margin, "initial watchdog timeout (in seconds)");
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index 36c7751..ac19e83 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -738,7 +738,7 @@ static int check_single_ended(unsigned int port)
+ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		      struct comedi_cmd *cmd)
+ {
+-	const struct pcl818_board *board = comedi_board(dev);
++	const struct pcl818_board *board = dev->board_ptr;
+ 	struct pcl818_private *devpriv = dev->private;
+ 	int err = 0;
+ 	unsigned int arg;
+@@ -980,7 +980,7 @@ static int pcl818_do_insn_bits(struct comedi_device *dev,
  
-+static bool start_on_boot = false;
-+module_param(start_on_boot, bool, 0);
-+MODULE_PARM_DESC(start_on_boot, "Start the watchdog during boot");
-+
- struct omap_wdt_dev {
-        void __iomem    *base;          /* physical */
-        struct device   *dev;
-@@ -269,6 +273,9 @@ static int omap_wdt_probe(struct platform_device *pdev)
+ static void pcl818_reset(struct comedi_device *dev)
+ {
+-	const struct pcl818_board *board = comedi_board(dev);
++	const struct pcl818_board *board = dev->board_ptr;
+ 	unsigned long timer_base = dev->iobase + PCL818_TIMER_BASE;
+ 	unsigned int chan;
  
-        pm_runtime_put_sync(wdev->dev);
+@@ -1018,7 +1018,7 @@ static void pcl818_set_ai_range_table(struct comedi_device *dev,
+ 				      struct comedi_subdevice *s,
+ 				      struct comedi_devconfig *it)
+ {
+-	const struct pcl818_board *board = comedi_board(dev);
++	const struct pcl818_board *board = dev->board_ptr;
  
-+       if (start_on_boot)
-+               omap_wdt_start(omap_wdt);
-+
-        return 0;
- }
-
-however I think it would be much beneficial to do this in a generic way.
-Maybe to create a device tree property, that would store some flag to
-start the watchdog during boot?
-
-Your opinion is appreciated.
+ 	/* default to the range table from the boardinfo */
+ 	s->range_table = board->ai_range_type;
+@@ -1067,7 +1067,7 @@ static void pcl818_set_ai_range_table(struct comedi_device *dev,
  
-Best regards;
-Rostislav Lisovy
-
+ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
+-	const struct pcl818_board *board = comedi_board(dev);
++	const struct pcl818_board *board = dev->board_ptr;
+ 	struct pcl818_private *devpriv;
+ 	struct comedi_subdevice *s;
+ 	int ret;
+-- 
+2.1.0
 
