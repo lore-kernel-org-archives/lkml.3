@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751AbaIIGW3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 02:22:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753658AbaIIGW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 02:22:27 -0400
-Message-ID: <540E9C60.4090103@redhat.com>
-Date: Tue, 09 Sep 2014 02:21:20 -0400
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Hanjun Guo <hanjun.guo@linaro.org>
-CC: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-14-git-send-email-hanjun.guo@linaro.org> <5404AE56.80801@arm.com> <5405AE95.1020201@linaro.org> <5405BFE7.5060005@arm.com> <5405E626.4090306@linaro.org> <5406EDDC.3020208@arm.com>
-In-Reply-To: <5406EDDC.3020208@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755891AbaIIGXc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 02:23:32 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:28303 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaIIGXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 02:23:30 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-73-540e9ce0773c
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v8 0/3] usb: gadget: f_fs: userspace API fixes and improvements
+Date: Tue, 09 Sep 2014 08:23:14 +0200
+Message-id: <1410243797-9719-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLJMWRmVeSWpSXmKPExsVy+t9jAd2Hc/hCDDasYLY4eL/eonnxejaL
+	y7vmsFksWtbKbPHg8E52B1aP/XPXsHv0bVnF6HH8xnYmj8+b5AJYorhsUlJzMstSi/TtErgy
+	Fn04ylZwk7fi0O15rA2MU7m7GDk5JARMJOZ9amGFsMUkLtxbz9bFyMUhJLCIUWLxtX8sEE47
+	k8T1ppeMIFVsAjoSW75PALNFBAQk1r+4xA5SxCzQyCjx4/cMsFHCAv4Sa5/OZQaxWQRUJV6v
+	uMoCYvMKuEgsf3GQCWKdnMTJY5NZJzByL2BkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kR
+	HAjPpHYwrmywOMQowMGoxMObEcwXIsSaWFZcmXuIUYKDWUmE13sGUIg3JbGyKrUoP76oNCe1
+	+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVANjzrmPzVK3BFcf375b44/XpvNrGzea
+	fpwTGGcumlDzvzdFqGLvap193il74toOePWfM2tPko1tMfz7sHVTeJa5dJWh1OfPISWqahzX
+	H8a/OPZ83tQ9V0X6BbZbi/VtYRQIVLp0lXfSS/koub3sFxtvnNiX+dmLZcOW1k+KHGbOFkZd
+	r2cc23hJiaU4I9FQi7moOBEAGWQYjAACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 06:30 AM, Marc Zyngier wrote:
-> On 02/09/14 16:45, Hanjun Guo wrote:
+Hi Felipe,
 
->> This value is for max processors entries in MADT, and we will use it to scan MADT
->> for SMP/GIC Init, I just make it big enough for GICv3/4. since ACPI core will stop
->> scan MADT if the real numbers of processors entries are reached no matter
->> how big ACPI_MAX_GICV3_CPU_INTERFACE_ENTRIES is, I think we can just
->> define a number big enough then it will work (x86 and ia64 did the same thing).
-> 
-> Also, with GICv3++, there is no such thing as a memory-mapped CPU
-> interface anymore. What you get is a bunch of redistributors (one per
-> CPU). I assume what you have here actually describe the redistributors,
-> and its name should reflect that.
+I have finally prepated patchset that should apply and build with your
+testing/next tree.
 
-(though you could have a GICv3/v4 system providing a legacy GICv2(m)
-compatibility mode having the CPU memory interfaces still defined)
+Best regards
+Robert Baldyga
 
-Jon.
+Changelog:
+
+v8:
+- add patch "usb: gadget: f_fs: fix the redundant ep files problem" to
+  make it possible to apply to Felipe tree
+
+v7:
+- return proper value from ffs_epfile_ioctl() function
+- remove patch "usb: gadget: f_fs: fix the redundant ep files problem"
+  from this patchset because it's already in Gregs tree
+
+v6: https://lkml.org/lkml/2014/8/25/101
+- unlock spinlock before copy_to_user() call 
+- remove duplicated eps_count value check
+- few minor fixes
+
+v5: https://lkml.org/lkml/2014/8/21/252
+- fix typo pointed by Sergei Shtylyov
+
+v4: https://lkml.org/lkml/2014/8/20/277
+- change if() sequence into switch() statement
+v3: https://lkml.org/lkml/2014/7/30/115
+- move fix for the redundant ep files problem into sepatare patch
+- merge user space API affecting changes into single patch
+- add flag switching between old and new style API
+
+v2: https://lkml.org/lkml/2014/7/25/296
+- return proper endpont address in setup request handling
+- add patch usb: gadget: f_fs: add ioctl returning ep descriptor
+- add patch usb: gadget: f_fs: make numbers in ep file names the same
+  as ep addresses
+
+v1: https://lkml.org/lkml/2014/7/18/1010
+
+Robert Baldyga (3):
+  usb: gadget: f_fs: fix the redundant ep files problem
+  usb: gadget: f_fs: add ioctl returning ep descriptor
+  usb: gadget: f_fs: virtual endpoint address mapping
+
+ drivers/usb/gadget/function/f_fs.c  | 112 +++++++++++++++++++++++++++++++-----
+ drivers/usb/gadget/function/u_fs.h  |   4 ++
+ include/uapi/linux/usb/functionfs.h |   7 +++
+ 3 files changed, 110 insertions(+), 13 deletions(-)
+
+-- 
+1.9.1
 
