@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617AbaIIAnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 20:43:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:34059 "EHLO ozlabs.org"
+	id S1755558AbaIIArU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 20:47:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8833 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754621AbaIIAnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 20:43:03 -0400
-Message-ID: <1410223381.3223.1.camel@concordia>
-Subject: Re: [PATCH 0/2] PCI/MSI: Remove arch_msi_check_device()
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 09 Sep 2014 10:43:01 +1000
-In-Reply-To: <CAErSpo4XN01hgTUpcca=i-=LFV_bM-Cok8614LJzrOfVbx8MAA@mail.gmail.com>
-References: <cover.1405160163.git.agordeev@redhat.com>
-	 <20140905212528.GG8080@google.com>
-	 <CAErSpo4XN01hgTUpcca=i-=LFV_bM-Cok8614LJzrOfVbx8MAA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754477AbaIIArS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 20:47:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="383270707"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "atull@opensource.altera.com" <atull@opensource.altera.com>
+Subject: RE: [PATCH 2/3 v2] GPIO: gpio-dwapb: Support Debounce
+Thread-Topic: [PATCH 2/3 v2] GPIO: gpio-dwapb: Support Debounce
+Thread-Index: AQHPyNcp8n6awOMU40SWtvGXv+WZgZvyM52AgAAS5sCAABnogIAFnQIw
+Date: Tue, 9 Sep 2014 00:47:11 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E983231@SHSMSX101.ccr.corp.intel.com>
+References: <1409928798-31895-1-git-send-email-alvin.chen@intel.com>
+	 <1409928798-31895-3-git-send-email-alvin.chen@intel.com>
+	 <1409908999.30155.85.camel@intel.com>
+	 <4656BEB6164FC34F8171C6538F1A595B2E98298B@SHSMSX101.ccr.corp.intel.com>
+ <1409918621.30155.90.camel@intel.com>
+In-Reply-To: <1409918621.30155.90.camel@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s890lSqI002351
 
-On Fri, 2014-09-05 at 15:27 -0600, Bjorn Helgaas wrote:
-> On Fri, Sep 5, 2014 at 3:25 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Sat, Jul 12, 2014 at 01:21:06PM +0200, Alexander Gordeev wrote:
-> >> Hello,
-> >>
-> >> This is a cleanup effort to get rid of useless arch_msi_check_device().
-> >> I am not sure what were the reasons for its existence in the first place,
-> >> but at the moment it appears totally unnecessary.
-> >>
-> >> Thanks!
-> >>
-> >> Cc: linuxppc-dev@lists.ozlabs.org
-> >> Cc: linux-pci@vger.kernel.org
-> >>
-> >> Alexander Gordeev (2):
-> >>   PCI/MSI/PPC: Remove arch_msi_check_device()
-> >>   PCI/MSI: Remove arch_msi_check_device()
-> >
-> > I applied these (with Michael's ack on the first, and v2 of the second) to
-> > pci/msi for v3.18, thanks!
+> > Since the 'debounce' feature also needs read/write, if we splite this
+> > patch, then for 'debounce', One patch use readl/writel, and another
+> > patch change to dwapb_read/write. It seems duplicate since the previous
+> patch use readl/writel and the fllowing one change it immediately.
+> > Since this patch is small, could we just make them together? How do you
+> think?
 > 
-> Oh, I forgot -- if you'd rather take the first one through the PPC
-> tree, you can do that and I can merge the second one later.  Let me
-> know if you want to do that.
-
-You take them all, that code shouldn't be changing much in the powerpc tree.
-
-If the merge gets messy closer to the merge window we can always take the first
-patch into the powerpc tree then.
-
-cheers
-
-
+> Make the dwapb_writel/readl patch goes first in the series.
+> 
+OK.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
