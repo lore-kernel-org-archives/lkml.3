@@ -1,119 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417AbaIINDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:03:17 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:60524 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaIINDP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:03:15 -0400
-Message-ID: <540EFA94.1010905@linaro.org>
-Date: Tue, 09 Sep 2014 14:03:16 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1756578AbaIINDu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:03:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19252 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752241AbaIINDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 09:03:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
+   d="scan'208";a="476328156"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 09/22] perf: Support overwrite mode for AUX area
+In-Reply-To: <20140909124345.GN16043@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-10-git-send-email-alexander.shishkin@linux.intel.com> <20140909084436.GY19379@twins.programming.kicks-ass.net> <87y4ttt9m0.fsf@ashishki-desk.ger.corp.intel.com> <20140909105537.GJ6758@twins.programming.kicks-ass.net> <87sik1t3g9.fsf@ashishki-desk.ger.corp.intel.com> <20140909124345.GN16043@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 09 Sep 2014 16:00:43 +0300
+Message-ID: <87ppf5t0ck.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] asm-generic/io.h: Implement read[bwlq]_relaxed()
-References: <1410264760-29756-1-git-send-email-daniel.thompson@linaro.org> <20140909122818.GI1754@arm.com>
-In-Reply-To: <20140909122818.GI1754@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 13:28, Will Deacon wrote:
-> Hi Daniel,
-> 
-> On Tue, Sep 09, 2014 at 01:12:40PM +0100, Daniel Thompson wrote:
->> Currently the read[bwlq]_relaxed() family are implemented on every
->> architecture except blackfin, m68k[1], metag, openrisc, s390[2] and
->> score. Increasingly drivers are being optimized to exploit relaxed
->> reads putting these architectures at risk of compilation failures for
->> shared drivers.
->>
->> This patch addresses this by providing implementations of
->> read[bwlq]_relaxed() that are identical to the equivalent read[bwlq]().
->> All the above architectures include asm-generic/io.h .
->>
->> Note that currently only eight architectures (alpha, arm, arm64, avr32,
->> hexagon, microblaze, mips and sh) implement write[bwlq]_relaxed() meaning
->> these functions are deliberately not included in this patch.
->>
->> [1] m68k includes the relaxed family only when configured *without* MMU.
->> [2] s390 requires CONFIG_PCI to include the relaxed family.
->>
->> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: linux-arch@vger.kernel.org
->> ---
->>  include/asm-generic/io.h | 14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
-> 
-> I have a larger series adding these (and the write equivalents) to all
-> architectures that I periodically post and then fail to get on top of.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-That's why you're on Cc:...
+> On Tue, Sep 09, 2014 at 02:53:42PM +0300, Alexander Shishkin wrote:
+>
+>> We can infer where the new data starts from the timestamps in the trace
+>> stream, so the decoder can take care of it (and that's how it's done at
+>> the moment).
+>
+> So that means the data stream can be read from arbitrary locations,
+> right? I can imagine not all data streams are always readable like that
+> (for instance the perf datastream is not).
+>
+> Does it make sense to have the driver provide head,tail for this mode?
+> In your case you can simply provide whatever, but for those where it
+> matters they can ensure consistent data such that the stream might be
+> recoverable.
 
+Yes, there's no reason not to, and some HW might indeed benefit from
+this.
 
-> The key part you're missing is defining some generic semantics for these
-> accessors. Without those, I don't think it makes sense to put them into
-> asm-generic, because drivers can't safely infer any meaning from the relaxed
-> definition.
-
-Currently the semantics are described as:
---- cut here ---
-PCI ordering rules also guarantee that PIO read responses arrive after
-any outstanding DMA writes from that bus, since for some devices the
-result of a readb call may signal to the driver that a DMA transaction
-is complete. In many cases, however, the driver may want to indicate
-that the next readb call has no relation to any previous DMA writes
-performed by the device. The driver can use readb_relaxed for these
-cases, although only some platforms will honor the relaxed semantics.
-Using the relaxed read functions will provide significant performance
-benefits on platforms that support it. The qla2xxx driver provides
-examples of how to use readX_relaxed . In many cases, a majority of the
-driver’s readX calls can safely be converted to readX_relaxed calls,
-since only a few will indicate or depend on DMA completion.
---- cut here ---
-
-The implementation provided in the patch trivially meets this definition
-(by not honouring the relaxedness).
-
-
-> Ben and I agreed on something back in May:
-> 
->   https://lkml.org/lkml/2014/5/22/468
-
-... and didn't you also conclude with hpa that the very relaxed x86
-implementation of readl_relaxed() already meets this definition (as do
-these changes to asm-generic/io.h).
-
-Thus allowing its use to perculate more widely really shouldn't do an harm.
-
-
-> but I need to send a new version including:
-> 
->   - ioreadX_relaxed and iowriteX_relaxed
->   - Strengthening non-relaxed I/O accessors on architectures with non-empty
->     mmiowb()
-> 
-> I'll bump it up the list. In the meantime, you can have a look at my io
-> branch on kernel.org
-
-I'd really like to see your work included (which I spotted after I wrote
-the patch and when it occured to me to visit
-https://www.google.com/search?q=asm-generic+readl_relaxed to see if
-there was a well known reason not to make this change).
-
-However... I really can't see why we should delay introducing an already
-documented function to the remaining architectures.
-
-
-Daniel.
+Regards,
+--
+Alex
