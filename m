@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbaIITCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 15:02:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47085 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaIITCN (ORCPT
+	id S1752347AbaIITCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 15:02:54 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:49819 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaIITCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 15:02:13 -0400
-Date: Tue, 9 Sep 2014 22:02:00 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Nitin Kuppelur <nitinkuppelur@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: octeon-hcd: removed dummy label
-Message-ID: <20140909190200.GT6600@mwanda>
-References: <1410276139-7212-1-git-send-email-nitinkuppelur@gmail.com>
+	Tue, 9 Sep 2014 15:02:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410276139-7212-1-git-send-email-nitinkuppelur@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20140909185852.GA7037@kroah.com>
+References: <1410285991-24833-1-git-send-email-ricardo.ribalda@gmail.com>
+ <20140909184318.GA6231@kroah.com> <CAPybu_3wJ+UPbnkWPFLJdne6Rz8ouUap3E1GeA9NqX=gP4fPug@mail.gmail.com>
+ <20140909185852.GA7037@kroah.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 9 Sep 2014 21:02:31 +0200
+Message-ID: <CAPybu_3zhVvS9WzWHsBTFOeNp0VZ2Lx0LxKgDOKoe2zxzNqcNQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] parisc/uapi: Add definition of TIOC[SG]RS485
+To: Greg KH <greg@kroah.com>
+Cc: "James E . J . Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 05:22:19PM +0200, Nitin Kuppelur wrote:
-> This is a patch to the octeon-hcd.c file that
-> removes dummy label i.e. label followed by return of
-> void function
-> 
-> Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
-> ---
->  drivers/staging/octeon-usb/octeon-hcd.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/octeon-usb/octeon-hcd.c b/drivers/staging/octeon-usb/octeon-hcd.c
-> index 8a80982..5fffef2 100644
-> --- a/drivers/staging/octeon-usb/octeon-hcd.c
-> +++ b/drivers/staging/octeon-usb/octeon-hcd.c
-> @@ -2253,9 +2253,8 @@ static void __cvmx_usb_perform_complete(
->  			/* Increment to the next location in our packet array */
->  			transaction->iso_packets++;
->  			transaction->stage = CVMX_USB_STAGE_NON_CONTROL;
-> -			goto done;
-> +			return;
->  		}
-> -	}
->  
+Hello Greg,
 
-Wat?  Does this still compile without the curly brace?
+I have just resend the macros for the two other arches using the proper macros.
 
-regards,
-dan carpenter
+Thanks
 
+On Tue, Sep 9, 2014 at 8:58 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Sep 09, 2014 at 08:46:48PM +0200, Ricardo Ribalda Delgado wrote:
+>> Hello Greg.
+>>
+>>  I have just resend one for sparc. Are we sure that we prefer the
+>> macros instead of using the same value on all arches?
+>
+> Why would using a macro preclude the value being the same on all arches?
+
+
+
+-- 
+Ricardo Ribalda
