@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaIISs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:48:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46291 "EHLO
+	id S1752034AbaIISyS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:54:18 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48043 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaIISs6 (ORCPT
+	with ESMTP id S1751290AbaIISyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:48:58 -0400
-Date: Tue, 9 Sep 2014 11:48:56 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 8/8] blk-mq: support per-distpatch_queue flush machinery
-Message-ID: <20140909184856.GG16750@infradead.org>
-References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
- <1410267949-21904-9-git-send-email-ming.lei@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410267949-21904-9-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 9 Sep 2014 14:54:15 -0400
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCHv3 2/3] [media] s5p-jpeg: Fix compilation with COMPILE_TEST
+Date: Tue,  9 Sep 2014 15:54:05 -0300
+Message-Id: <e9793025e2d9a18dacfc302e2f032f2f49f9f746.1410288748.git.m.chehab@samsung.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
+References: <6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
+ <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
+In-Reply-To: <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
+References: <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	if (hctx) {
-> +		int cmd_sz = q->tag_set->cmd_size;
-> +		int node = hctx->numa_node;
-> +
-> +		fq = kzalloc_node(sizeof(*fq), GFP_KERNEL, node);
-> +		if (!fq)
-> +			goto failed;
-> +
-> +		rq_sz = round_up(rq_sz + cmd_sz, cache_line_size());
-> +		fq->flush_rq = kzalloc_node(rq_sz, GFP_KERNEL, node);
-> +		if (!fq->flush_rq)
-> +			goto rq_failed;
-> +
-> +		spin_lock_init(&fq->mq_flush_lock);
-> +	} else {
-> +		fq = kzalloc(sizeof(*fq), GFP_KERNEL);
-> +		if (!fq)
-> +			goto failed;
-> +
-> +		fq->flush_rq = kzalloc(rq_sz, GFP_KERNEL);
-> +		if (!fq->flush_rq)
-> +			goto rq_failed;
-> +	}
+ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undefined!
 
-Seems like this would be a lot cleaner by passing the cmd_size and
-node_id explicitly.  The added benefit would be that we could also
-pass the node for the blk_init_queue_node() case.
+That happens because asm-generic doesn't like any ndelay time
+bigger than 20us.
 
-> +static void __blk_mq_exit_flush(struct request_queue *q,
-> +		unsigned free_end, unsigned int exit_end)
-> +{
-> +	struct blk_mq_hw_ctx *hctx;
-> +	unsigned int k;
-> +	struct blk_flush_queue *fq;
-> +	struct blk_mq_tag_set *set = q->tag_set;
-> +	unsigned start_idx = set->queue_depth;
-> +
-> +	queue_for_each_hw_ctx(q, hctx, k) {
-> +		if (k >= free_end)
-> +			break;
-> +
-> +		fq = hctx->fq;
-> +		if (k < exit_end && set->ops->exit_request)
-> +			set->ops->exit_request(set->driver_data,
-> +					fq->flush_rq, k,
-> +					start_idx + k);
-> +
-> +		blk_free_flush_queue(fq);
-> +	}
+Currently, usleep_range() couldn't simply be used, since
+exynos4_jpeg_sw_reset() is called with a spinlock held.
 
-Can we merge the mq init/exit case into some existing for each hctx
-loop in blk-mq?
+So, let's use udelay() instead.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+
+diff --git a/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c b/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
+index e51c078360f5..ab6d6f43c96f 100644
+--- a/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
++++ b/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
+@@ -23,7 +23,7 @@ void exynos4_jpeg_sw_reset(void __iomem *base)
+ 	reg = readl(base + EXYNOS4_JPEG_CNTL_REG);
+ 	writel(reg & ~EXYNOS4_SOFT_RESET_HI, base + EXYNOS4_JPEG_CNTL_REG);
+ 
+-	ndelay(100000);
++	udelay(100);
+ 
+ 	writel(reg | EXYNOS4_SOFT_RESET_HI, base + EXYNOS4_JPEG_CNTL_REG);
+ }
+-- 
+1.9.3
 
