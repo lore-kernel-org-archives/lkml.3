@@ -1,59 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaIIC0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Sep 2014 22:26:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37975 "EHLO mga01.intel.com"
+	id S932119AbaIIC1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Sep 2014 22:27:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11177 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439AbaIIC0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Sep 2014 22:26:07 -0400
+	id S1755486AbaIIC1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Sep 2014 22:27:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,489,1406617200"; 
-   d="scan'208";a="588301974"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-gpio@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Lejun Zhu <lejun.zhu@intel.com>,
-        Radivoje Jovanovic <radivoje.jovanovic@intel.com>,
-        =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
-Subject: [PATCH 0/2] Support CrystalCove PMIC ACPI operation region
-Date: Tue,  9 Sep 2014 10:26:00 +0800
-Message-Id: <1410229562-11507-1-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.9.3
+   d="scan'208";a="596579723"
+Message-ID: <1410229637.8085.158.camel@rzhang1-toshiba>
+Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
+From: Zhang Rui <rui.zhang@intel.com>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>, edubezval@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
+        dianders@chromium.org, dtor@chromium.org, zyw@rock-chips.com,
+        addy.ke@rock-chips.com, dmitry.torokhov@gmail.com,
+        zhaoyifeng <zyf@rock-chips.com>
+Date: Tue, 09 Sep 2014 10:27:17 +0800
+In-Reply-To: <5407BA10.2030402@rock-chips.com>
+References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
+	 <1409710239-19941-3-git-send-email-caesar.wang@rock-chips.com>
+	 <11280986.L6lv82O8Qv@diego> <5407BA10.2030402@rock-chips.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The two patches add support for CrystalCove PMIC ACPI operation region.
-The PMIC chip has two customized operation regions: one for power rail
-manipulation and one for thermal purpose: sensor temperature reading
-and trip point value reading/setting.
+On Thu, 2014-09-04 at 09:02 +0800, Caesar Wang wrote:
+> 在 2014年09月03日 16:07, Heiko Stübner 写道:
+> > Am Mittwoch, 3. September 2014, 10:10:37 schrieb Caesar Wang:
+> >> This add the necessary binding documentation for the thermal
+> >> found on Rockchip SoCs
+> >>
+> >> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> >> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> >> ---
+> >>   .../devicetree/bindings/thermal/rockchip-thermal.txt | 20
+> >> ++++++++++++++++++++ 1 file changed, 20 insertions(+)
+> >>   create mode 100644
+> >> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new file
+> >> mode 100644
+> >> index 0000000..1ed4d4c
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> >> @@ -0,0 +1,20 @@
+> >> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
+> >> +
+> >> +Required properties:
+> >> +- compatible: "rockchip,rk3288-tsadc"
+> >> +- reg: physical base address of the controller and length of memory mapped
+> >> +       region.
+> >> +- interrupts: The interrupt number to the cpu. The interrupt specifier
+> >> format +	      depends on the interrupt controller.
+> >> +- clocks: Must contain an entry for each entry in clock-names.
+> >> +- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
+> >> +	       the peripheral clock.
+> > You're using the passive-temp, critical-temp and force-shut-temp properties in
+> > your driver without declaring them here.
+> 
+> frankly,the about are need be declared. but  there are 4 types[0] for 
+> trip in thermal framework,
+> there is no force-shut for me. So I want to change it three additional 
+> properties in [PATCH V4 4/4],
+> 
+> 
+> [0]
+> {
+>      THERMAL_TRIP_CRITICAL,
+>      THERMAL_TRIP_HOT,
+>      THERMAL_TRIP_PASSIVE,
+>      THERMAL_TRIP_ACTIVE,
+> }
+> 
+this sounds reasonable to me.
 
-For an example ASL code on ASUS T100 with CrystalCove PMIC, see here:
-https://gist.github.com/aaronlu/f5f65771a6c3251fae5d
+> > But more importantly, please use the generic trip-points for this. I guess it
+> > shouldn't be a problem to introduce a "forced-shutdown" trippoint [0] for the
+> > additional trip-point you have - thermal maintainers, please shout if I'm
+> > wrong :-)
+> 
+what is the difference between a critical trip point and a
+"forced-shutdown" trip point?
+Thermal core will do a shutdown in case the critical trip point is
+triggered.
 
-Aaron Lu (2):
-  gpio / CrystalCove: support virtual GPIO
-  PMIC / opregion: support PMIC customized operation region for
-    CrystalCove
+thanks,
+rui
+> It's a good option.
+> I can send a patch,but I don't know whether the thermal maintainers will 
+> accept it.
+> 
+> Maybe,they have a better way to suggest it.:-)
+> 
+> 
+> PS:I will sent a new patch If I still have no received their suggestions 
+> in two days.
+> 
+> >
+> > Heiko
+> >
+> >
+> > [0] in a separate patch, changing
+> > - thermal_trip_type enum in include/linux/thermal.h
+> > - trip_types mapping in drivers/thermal/of-thermal.c
+> > - Documentation/devicetree/bindings/thermal/thermal.txt
+> >
+> >> +
+> >> +Example:
+> >> +tsadc: tsadc@ff280000 {
+> >> +	compatible = "rockchip,rk3288-tsadc";
+> >> +	reg = <0xff280000 0x100>;
+> >> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+> >> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
+> >> +	clock-names = "tsadc", "apb_pclk";
+> >> +};
+> >
+> >
+> >
+> 
 
- drivers/gpio/gpio-crystalcove.c           |  19 +-
- drivers/mfd/Kconfig                       |  11 +
- drivers/mfd/Makefile                      |   1 +
- drivers/mfd/intel_soc_pmic_crc.c          |   3 +
- drivers/mfd/intel_soc_pmic_crc_opregion.c | 229 +++++++++++++++++++
- drivers/mfd/intel_soc_pmic_opregion.c     | 350 ++++++++++++++++++++++++++++++
- drivers/mfd/intel_soc_pmic_opregion.h     |  35 +++
- include/asm-generic/gpio.h                |   2 +-
- 8 files changed, 646 insertions(+), 4 deletions(-)
- create mode 100644 drivers/mfd/intel_soc_pmic_crc_opregion.c
- create mode 100644 drivers/mfd/intel_soc_pmic_opregion.c
- create mode 100644 drivers/mfd/intel_soc_pmic_opregion.h
-
--- 
-1.9.3
 
