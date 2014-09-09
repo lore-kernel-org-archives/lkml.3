@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459AbaIIQ25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:28:57 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:55966 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757442AbaIIQ2z (ORCPT
+	id S1757461AbaIIQ3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:29:49 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:35154 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237AbaIIQ3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:28:55 -0400
+	Tue, 9 Sep 2014 12:29:48 -0400
 MIME-Version: 1.0
 X-Originating-IP: [129.2.129.155]
-In-Reply-To: <1410260544-22657-2-git-send-email-yamada.m@jp.panasonic.com>
-References: <1410260544-22657-1-git-send-email-yamada.m@jp.panasonic.com> <1410260544-22657-2-git-send-email-yamada.m@jp.panasonic.com>
+In-Reply-To: <1410260638-23559-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1410260638-23559-1-git-send-email-yamada.m@jp.panasonic.com>
 From: Peter Foley <pefoley2@pefoley.com>
-Date: Tue, 9 Sep 2014 12:28:35 -0400
-Message-ID: <CAOFdcFM78JKo9Q+VwviBuFjfPWim63cqu2jgDhLT=KhWx4We4A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] kbuild: fake the "Entering directory ..." message
- more simply
+Date: Tue, 9 Sep 2014 12:29:27 -0400
+Message-ID: <CAOFdcFNvycz4B11ZBMeFrKfmvA8H-yBX7z+qDw_AUS5Ry03L4Q@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: simplify build, clean, modbuiltin shorthands
 To: Masahiro Yamada <yamada.m@jp.panasonic.com>
 Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
+        Sam Ravnborg <sam@ravnborg.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 7:02 AM, Masahiro Yamada
+On Tue, Sep 9, 2014 at 7:03 AM, Masahiro Yamada
 <yamada.m@jp.panasonic.com> wrote:
-> Commit c2e28dc975ea87feed84415006ae143424912ac7
-> (kbuild: Print the name of the build directory)
-> added a gimmick to show the "Entering directory ...".
+> $(if $(KBUILD_SRC),$(srctree)/) was a useful strategy
+> to omit a long absolute path for in-source-tree build
+> prior to commit 890676c65d699db3ad82e7dddd0cf8fb449031af
+> (kbuild: Use relative path when building in the source tree).
 >
-> Instead of echoing the hard-coded message (that is, we need to know
-> the exact message), moving --no-print-directory would be easier.
+> Now $(srctree) is "." when building in the source tree.
+> It would not be annoying to add "$(srctree)/" all the time.
 >
 > Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 
