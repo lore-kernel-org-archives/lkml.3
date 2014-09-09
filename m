@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211AbaIIK07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 06:26:59 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:47096 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521AbaIIK04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 06:26:56 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kbuild@vger.kernel.org
-Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Wolfram Sang <wsa@sang-engineering.com>,
-        Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Ulrich Hecht <ulrich.hecht@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/3] kbuild: remove unnecessary "obj- := dummy.o" trick
-Date: Tue,  9 Sep 2014 19:26:19 +0900
-Message-Id: <1410258381-7088-2-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410258381-7088-1-git-send-email-yamada.m@jp.panasonic.com>
-References: <1410258381-7088-1-git-send-email-yamada.m@jp.panasonic.com>
+	id S1756303AbaIIK1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 06:27:05 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:47814 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756238AbaIIK1A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 06:27:00 -0400
+Date: Tue, 9 Sep 2014 11:26:55 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, peppe.cavallaro@st.com, lee.jones@linaro.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] phy: phy-stih407-usb: Add usb picoPHY driver
+ found on stih407 SoC family
+Message-ID: <20140909102655.GA8544@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1410253218-18318-1-git-send-email-peter.griffin@linaro.org>
+ <1410253218-18318-2-git-send-email-peter.griffin@linaro.org>
+ <2894228.eRmxgHsWbh@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2894228.eRmxgHsWbh@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In these Makefiles, at least one of "obj-y" and "obj-" is non-empty,
-hence built-in.o is always created without such a trick.
+Hi Arnd,
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
----
+Thanks for reviewing :-)
 
- arch/arm/plat-samsung/Makefile | 1 -
- drivers/clk/shmobile/Makefile  | 2 --
- drivers/net/wimax/Makefile     | 4 ----
- 3 files changed, 7 deletions(-)
+> > +	phy = devm_phy_create(dev, NULL, match->data, NULL);
+> > +	if (IS_ERR(phy)) {
+> > +		dev_err(dev, "failed to create Display Port PHY\n");
+> > +		return PTR_ERR(phy);
+> > +	}
+> > +
+> 
+> There is only one entry in the match table, so it always points to
+> stih407_usb2_picophy_data. Do you have plans to add another set of
+> operations soon?
 
-diff --git a/arch/arm/plat-samsung/Makefile b/arch/arm/plat-samsung/Makefile
-index 5fe1750..a402262 100644
---- a/arch/arm/plat-samsung/Makefile
-+++ b/arch/arm/plat-samsung/Makefile
-@@ -8,7 +8,6 @@ ccflags-$(CONFIG_ARCH_MULTI_V7) += -I$(srctree)/$(src)/include
- 
- obj-y				:=
- obj-m				:=
--obj-n				:= dummy.o
- obj-				:=
- 
- # Objects we always build independent of SoC choice
-diff --git a/drivers/clk/shmobile/Makefile b/drivers/clk/shmobile/Makefile
-index e002923..9aab51c8 100644
---- a/drivers/clk/shmobile/Makefile
-+++ b/drivers/clk/shmobile/Makefile
-@@ -6,5 +6,3 @@ obj-$(CONFIG_ARCH_R8A7790)		+= clk-rcar-gen2.o
- obj-$(CONFIG_ARCH_R8A7791)		+= clk-rcar-gen2.o
- obj-$(CONFIG_ARCH_SHMOBILE_MULTI)	+= clk-div6.o
- obj-$(CONFIG_ARCH_SHMOBILE_MULTI)	+= clk-mstp.o
--# for emply built-in.o
--obj-n	:= dummy
-diff --git a/drivers/net/wimax/Makefile b/drivers/net/wimax/Makefile
-index 992bc02..692184d 100644
---- a/drivers/net/wimax/Makefile
-+++ b/drivers/net/wimax/Makefile
-@@ -1,5 +1 @@
--
- obj-$(CONFIG_WIMAX_I2400M)	+= i2400m/
--
--# (from Sam Ravnborg) force kbuild to create built-in.o
--obj- := dummy.o
--- 
-1.9.1
+Nope.
 
+> If not, just remove the .data pointer and hardcode the operations
+> in the devm_phy_create call.
+
+I've done as you suggest in v3 which I will send shortly.
+
+regards,
+
+Peter.
