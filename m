@@ -1,192 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaIIWYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 18:24:11 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59860 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092AbaIIWYK (ORCPT
+	id S1752916AbaIIW0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 18:26:07 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48314 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752151AbaIIW0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 18:24:10 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Date: Tue,  9 Sep 2014 23:23:54 +0100
-Message-Id: <1410301435-554-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 2.1.0
-X-SA-Exim-Connect-IP: 81.132.226.177
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 1/2] regulator: of: Provide simplified DT parsing method
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 9 Sep 2014 18:26:05 -0400
+Message-ID: <1410301562.13298.35.camel@jarvis.lan>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Tue, 09 Sep 2014 15:26:02 -0700
+In-Reply-To: <20140909214240.GA3154@mtj.dyndns.org>
+References: <20140905141241.GC10455@mtj.dyndns.org>
+	 <20140905164405.GA28964@core.coreip.homeip.net>
+	 <20140905174925.GA12991@mtj.dyndns.org>
+	 <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+	 <20140905224047.GC15723@mtj.dyndns.org>
+	 <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+	 <20140909011059.GB11706@mtj.dyndns.org>
+	 <1410241109.2028.22.camel@jarvis.lan>
+	 <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
+	 <1410291346.13298.16.camel@jarvis.lan>
+	 <20140909214240.GA3154@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Wed, 2014-09-10 at 06:42 +0900, Tejun Heo wrote:
+> Hey, James.
+> 
+> On Tue, Sep 09, 2014 at 12:35:46PM -0700, James Bottomley wrote:
+> > I don't have very strong views on this one.  However, I've got to say
+> > from a systems point of view that if the desire is to flag when the
+> > module is having problems, probing and initializing synchronously in a
+> > thread spawned by init which the init process can watchdog and thus can
+> > flash up warning messages seems to be more straightforwards than an
+> > elaborate asynchronous mechanism with completion signalling which
+> > achieves the same thing in a more complicated (and thus bug prone)
+> > fashion.
+> 
+> We no longer report back error on probe failure on module load.
 
-Currently regulator drivers which support DT all repeat very similar code
-to supply a list of known regulator identifiers to be matched with DT,
-convert that to platform data which is then matched up with the regulators
-as they are registered. This is both fiddly to get right and for devices
-which can use the standard helpers to provide their operations is the main
-source of code in the driver.
+Yes, we do; for every probe failure of a device on a driver we'll print
+a warning (see drivers/base/dd.c).  Now if someone is proposing we
+should report this in a better fashion, that's probably a good idea, but
+I must have missed that patch.
 
-Since this code is essentially identical for most drivers we can factor it
-out into the core, moving the identifiers in the match table into the
-regulator descriptors and also allowing drivers to pass in the name of the
-subnode to search. When a driver provides an of_match string for the
-regulator the core will attempt to use that to obtain init_data, allowing
-the driver to remove all explicit code for DT parsing and simply provide
-data instead.
+>   It
+> used to make sense to indicate error for module load on probe failure
+> when the hardware was a lot simpler and drivers did their own device
+> enumeration.  With the current bus / device setup, it doesn't make any
+> sense and driver core silently suppresses all probe failures.  There's
+> nothing the probing thread can monitor anymore.
 
-The current code leaks the phandles for the child nodes, this will be
-addressed incrementally and makes no practical difference for FDT anyway
-as the DT data structures are never freed.
+Except the length of time taken to probe.  That seems to be what systemd
+is interested in, hence this whole thread, right?
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/regulator/core.c         | 10 +++++---
- drivers/regulator/internal.h     |  4 ++++
- drivers/regulator/of_regulator.c | 51 ++++++++++++++++++++++++++++++++++++++++
- include/linux/regulator/driver.h |  4 ++++
- 4 files changed, 66 insertions(+), 3 deletions(-)
+> In that sense, we already separated out device probing from module
+> loading simply because the hardware reality mandated it and we have
+> dynamic mechanisms to listen for device probes exactly for the same
+> reason, so I think it makes sense to separate out the waiting too, at
+> least in the long term.  In a modern dynamic setup, the waits are
+> essentially arbitrary and doesn't buy us anything.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index b31d706..cd87c0c 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3602,12 +3602,17 @@ regulator_register(const struct regulator_desc *regulator_desc,
- 		return ERR_PTR(-EINVAL);
- 	}
- 
--	init_data = config->init_data;
--
- 	rdev = kzalloc(sizeof(struct regulator_dev), GFP_KERNEL);
- 	if (rdev == NULL)
- 		return ERR_PTR(-ENOMEM);
- 
-+	init_data = regulator_of_get_init_data(dev, regulator_desc,
-+					       &rdev->dev.of_node);
-+	if (!init_data) {
-+		init_data = config->init_data;
-+		rdev->dev.of_node = of_node_get(config->of_node);
-+	}
-+
- 	mutex_lock(&regulator_list_mutex);
- 
- 	mutex_init(&rdev->mutex);
-@@ -3634,7 +3639,6 @@ regulator_register(const struct regulator_desc *regulator_desc,
- 
- 	/* register with sysfs */
- 	rdev->dev.class = &regulator_class;
--	rdev->dev.of_node = of_node_get(config->of_node);
- 	rdev->dev.parent = dev;
- 	dev_set_name(&rdev->dev, "regulator.%d",
- 		     atomic_inc_return(&regulator_no) - 1);
-diff --git a/drivers/regulator/internal.h b/drivers/regulator/internal.h
-index 84bbda1..a6043ad 100644
---- a/drivers/regulator/internal.h
-+++ b/drivers/regulator/internal.h
-@@ -35,4 +35,8 @@ struct regulator {
- 	struct dentry *debugfs;
- };
- 
-+struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
-+			         const struct regulator_desc *desc,
-+				 struct device_node **node);
-+
- #endif
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index ee5e67b..7a51814 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -14,8 +14,11 @@
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/driver.h>
- #include <linux/regulator/of_regulator.h>
- 
-+#include "internal.h"
-+
- static void of_get_regulation_constraints(struct device_node *np,
- 					struct regulator_init_data **init_data)
- {
-@@ -189,3 +192,51 @@ int of_regulator_match(struct device *dev, struct device_node *node,
- 	return count;
- }
- EXPORT_SYMBOL_GPL(of_regulator_match);
-+
-+struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
-+					    const struct regulator_desc *desc,
-+					    struct device_node **node)
-+{
-+	struct device_node *search, *child;
-+	struct regulator_init_data *init_data = NULL;
-+	const char *name;
-+
-+	if (!dev->of_node || !desc->of_match)
-+		return NULL;
-+
-+	if (desc->regulators_node)
-+		search = of_get_child_by_name(dev->of_node,
-+					      desc->regulators_node);
-+	else
-+		search = dev->of_node;
-+
-+	if (!search) {
-+		dev_err(dev, "Failed to find regulator container node\n");
-+		return NULL;
-+	}
-+
-+	for_each_child_of_node(search, child) {
-+		name = of_get_property(child, "regulator-compatible", NULL);
-+		if (!name)
-+			name = child->name;
-+
-+		if (strcmp(desc->of_match, name))
-+			continue;
-+
-+		init_data = of_get_regulator_init_data(dev, child);
-+		if (!init_data) {
-+			dev_err(dev,
-+				"failed to parse DT for regulator %s\n",
-+				child->name);
-+			break;
-+		}
-+
-+		of_node_get(child);
-+		*node = child;
-+		break;
-+	}
-+
-+	of_node_put(search);
-+
-+	return init_data;
-+}
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 38b2f1a..fc0ee0c 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -203,6 +203,8 @@ enum regulator_type {
-  *
-  * @name: Identifying name for the regulator.
-  * @supply_name: Identifying the regulator supply
-+ * @of_match: Name used to identify regulator in DT.
-+ * @regulators_node: Name of node containing regulator definitions in DT.
-  * @id: Numerical identifier for the regulator.
-  * @ops: Regulator operations table.
-  * @irq: Interrupt number for the regulator.
-@@ -245,6 +247,8 @@ enum regulator_type {
- struct regulator_desc {
- 	const char *name;
- 	const char *supply_name;
-+	const char *of_match;
-+	const char *regulators_node;
- 	int id;
- 	bool continuous_voltage_range;
- 	unsigned n_voltages;
--- 
-2.1.0
+But that's nothing to do with sync or async.  Nowadays we register a
+driver, the driver may bind to multiple devices.  If one of those
+devices encounters an error during probe, we just report the fact in
+dmesg and move on.  The module_init thread currently returns when all
+the probe routines for all enumerated devices have been called, so
+module_init has no indication of any failures (because they might be
+mixed with successes); successes are indicated as the device appears but
+we have nothing other than the kernel log to indicate the failures.  How
+does moving to async probing alter this?  It doesn't as far as I can
+see, except that module_init returns earlier but now we no longer have
+an indication of when the probe completes, so we have to add yet another
+mechanism to tell us if we're interested in that.  I really don't see
+what this buys us.
+
+James
+
 
