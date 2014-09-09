@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179AbaIIQh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 12:37:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42481 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045AbaIIQh5 convert rfc822-to-8bit (ORCPT
+	id S1757266AbaIIQlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 12:41:39 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:34713 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840AbaIIQli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 12:37:57 -0400
-Date: Tue, 9 Sep 2014 17:37:45 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v3 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
-Message-ID: <20140909163745.GB6370@arm.com>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
- <1409583475-6978-5-git-send-email-hanjun.guo@linaro.org>
+	Tue, 9 Sep 2014 12:41:38 -0400
+Message-ID: <540F17E5.1020701@gmail.com>
+Date: Tue, 09 Sep 2014 17:08:21 +0200
+From: Nitin Kuppelur <nitinkuppelur@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1409583475-6978-5-git-send-email-hanjun.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 09 Sep 2014 16:37:51.0752 (UTC) FILETIME=[65FA5880:01CFCC4C]
-X-MC-Unique: 114090917375401501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Joe Perches <joe@perches.com>
+CC: akpm@linux-foundation.org, josh@joshtriplett.org, robh@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts: checkpatch.pl add warning for dummy label
+References: <1410270855-6639-1-git-send-email-nitinkuppelur@gmail.com> <1410277380.12560.38.camel@joe-AO725>
+In-Reply-To: <1410277380.12560.38.camel@joe-AO725>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 03:57:42PM +0100, Hanjun Guo wrote:
-> --- a/arch/arm64/kernel/acpi.c
-> +++ b/arch/arm64/kernel/acpi.c
-> @@ -74,3 +74,18 @@ void __init acpi_boot_table_init(void)
->   * TBD when ARM/ARM64 starts to support suspend...
->   */
->  int (*acpi_suspend_lowlevel)(void) = NULL;
-> +
-> +static int __init parse_acpi(char *arg)
-> +{
-> +	if (!arg)
-> +		return -EINVAL;
-> +
-> +	/* "acpi=off" disables both ACPI table parsing and interpreter */
-> +	if (strcmp(arg, "off") == 0)
-> +		disable_acpi();
-> +	else
-> +		return -EINVAL;	/* Core will print when we return error */
-> +
-> +	return 0;
-> +}
-> +early_param("acpi", parse_acpi);
+Hi Joe,
 
-I forgot about early param, so there is a way to set acpi_disabled to 1
-before populating the tables.
+Thanks for feedback.
 
--- 
-Catalin
+The idea of adding new warning came from the review comments from
+one of my PATCH, where it was suggested by few reviewers to remove such
+"Do-Nothing" labels. But current checkpatch.pl does not warn about that.
 
+[PATCH]
+http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg720639.html
+
+
+Regards,
+Nitin
+
+On 09/09/2014 05:43 PM, Joe Perches wrote:
+> On Tue, 2014-09-09 at 15:54 +0200, Nitin Kuppelur wrote:
+>> Added new warning DUMMY_LABEL in checkpatch.pl. This warns
+>> if return statement is encountered just after goto label target
+>> like "out:". In such scenario it is best to call "return;" directly
+>> instead of "goto out;"
+> 
+> I'm not sure this is desired/correct.
+> 
+> There are many functions written like:
+> 
+> return_type foo(...)
+> {
+> 	[some initialization...]
+> 
+> 	err = some_test(...);
+> 	if (err)
+> 		goto out;
+> 
+> 	[...]
+> 
+> out:
+> 	[some cleanup...]
+> 	return err;
+> }
+> 
+> In many cases, a void function is a simple
+> variant of a non-void function and many people
+> like to see the same code "shape" in functions,
+> just without the init and cleanup bits.
+> 
+>> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> []
+>> @@ -3798,10 +3798,14 @@ sub process {
+>>  		if ($sline =~ /^[ \+]}\s*$/ &&
+>>  		    $prevline =~ /^\+\treturn\s*;\s*$/ &&
+>>  		    $linenr >= 3 &&
+>> -		    $lines[$linenr - 3] =~ /^[ +]/ &&
+>> -		    $lines[$linenr - 3] !~ /^[ +]\s*$Ident\s*:/) {
+>> -			WARN("RETURN_VOID",
+>> -			     "void function return statements are not generally useful\n" . $hereprev);
+>> +		    $lines[$linenr - 3] =~ /^[ +]/) {
+>> +			if ($lines[$linenr - 3] !~ /^[ +]\s*$Ident\s*:/) {
+>> +				WARN("RETURN_VOID",
+>> +				     "void function return statements are not generally useful\n" . $hereprev);
+>> +			} elsif ($lines[$linenr - 3] =~ /^[ +]\s*$Ident\s*:/) {
+>> +				WARN("DUMMY_LABEL",
+>> +				     "labels doing nothing are not generally useful\n" . $hereprev);
+>> +			}
+>>                 }
+>>  
+>>  # if statements using unnecessary parentheses - ie: if ((foo == bar))
+> 
+> 
+> 
