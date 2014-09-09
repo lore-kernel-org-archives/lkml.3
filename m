@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983AbaIIOQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:16:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13037 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756937AbaIIOQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:16:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,491,1406617200"; 
-   d="scan'208";a="570572490"
-Message-ID: <540F0E53.4050106@linux.intel.com>
-Date: Tue, 09 Sep 2014 17:27:31 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Mathias Nyman <mathias.nyman@intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v3 0/4] Allow xHCI drivers to be built as separate modules
-References: <1408467712-27497-1-git-send-email-abrestic@chromium.org> <CAL1qeaFwGYgzL=n0My4eBQMhvtNQfHpU5d1tif0twtYyjw5yqg@mail.gmail.com>
-In-Reply-To: <CAL1qeaFwGYgzL=n0My4eBQMhvtNQfHpU5d1tif0twtYyjw5yqg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932251AbaIIOQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:16:51 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:57582 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756547AbaIIOPa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 10:15:30 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v4 3/6] arm64: Introduce dummy version of asm/fiq.h
+Date: Tue,  9 Sep 2014 15:15:08 +0100
+Message-Id: <1410272111-30516-4-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org>
+References: <1410190115-32604-1-git-send-email-daniel.thompson@linaro.org>
+ <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2014 10:51 PM, Andrew Bresticker wrote:
-> Mathias,
-> 
-> On Tue, Aug 19, 2014 at 10:01 AM, Andrew Bresticker
-> <abrestic@chromium.org> wrote:
->> It was suggested in the review of the Tegra xHCI driver [1] that we
->> allow xHCI drivers to be built as individual modules (like EHCI) instead
->> of building them all into the single xhci-hcd module as they are today.
->>
->> Patches 1-3 prepare for making the xHCI PCI and platform drivers able
->> to be built as individual modules and patch 4 actually creates the 3
->> separate modules (core, platform, PCI).
->>
->> Based on 3.17-rc1.
->>
->> Changes from v2:
->>  - fixed typo in xhci_register_plat
->>  - exported another symbol needed by xhci-pci module
->> Changes from v1:
->>  - rebased on changes introduced by xhci-rcar driver
->>
->> [1] http://patchwork.ozlabs.org/patch/361265/
->>
->> Andrew Bresticker (4):
->>   xhci: Introduce xhci_init_driver()
->>   xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
->>   xhci: Export symbols used by host-controller drivers
->>   xhci: Allow xHCI drivers to be built as separate modules
-> 
-> Any thoughts/comments on this series?
-> 
-> 
+Drivers that are shared between arm and arm64 and which employ
+FIQ on arm cannot include asm/fiq.h without #ifdef'ing. This patch
+introduces a dummy version of asm/fiq.h to arm64 to avoid this.
 
-Sorry about the delay.
-When I start looking at this I always get interrupted by some fire that needs to be put out.
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm64/include/asm/fiq.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 arch/arm64/include/asm/fiq.h
 
-I still need some more time to go through it
-
--Mathias
+diff --git a/arch/arm64/include/asm/fiq.h b/arch/arm64/include/asm/fiq.h
+new file mode 100644
+index 0000000..d3776b8
+--- /dev/null
++++ b/arch/arm64/include/asm/fiq.h
+@@ -0,0 +1,8 @@
++/*
++ * Placeholder to reduce #ifdef'ing in shared arm/arm64 drivers. It
++ * allows code of the following form to be made unconditional.
++ *
++ * #ifdef CONFIG_FIQ
++ * #include <asm/fiq.h>
++ * #endif
++ */
+-- 
+1.9.3
 
