@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaIIEmC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 00:42:02 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53492 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827AbaIIEl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 00:41:59 -0400
-Date: Mon, 8 Sep 2014 21:41:57 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Tommi Rantala <tt.rantala@gmail.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net,
-        Changman Lee <cm224.lee@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: f2fs get_dnode_of_data oops
-Message-ID: <20140909044157.GA24581@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <CA+ydwtrB-rJB1fURO+CC1J-=VZ16g9Un47cMSMAZsTFPNg2s+g@mail.gmail.com>
- <CA+ydwtrtyb5wQXCmyBigqufVz10UkKS76hVOY8mKc4FOyYmECw@mail.gmail.com>
- <20140908042056.GA13863@jaegeuk-mac02.hsd1.ca.comcast.net>
- <CA+ydwtrbsUD81u6FWysDvqNy942KOF9y=mAhxPfRQP8RG0sZuQ@mail.gmail.com>
+	id S1751740AbaIIEtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 00:49:00 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:39593 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaIIEs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 00:48:59 -0400
+Message-ID: <540E86B3.7080700@linaro.org>
+Date: Tue, 09 Sep 2014 13:48:51 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+ydwtrbsUD81u6FWysDvqNy942KOF9y=mAhxPfRQP8RG0sZuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: will.deacon@arm.com, viro@zeniv.linux.org.uk, eparis@redhat.com,
+        rgb@redhat.com, dsaxena@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH] arm: prevent BUG_ON in audit_syscall_entry()
+References: <1409910393-30896-1-git-send-email-takahiro.akashi@linaro.org> <20140905095252.GF30401@n2100.arm.linux.org.uk>
+In-Reply-To: <20140905095252.GF30401@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tommi,
+Russell,
 
-This patch should resolve this bug.
-Thanks a lot. :)
+On 09/05/2014 06:52 PM, Russell King - ARM Linux wrote:
+> On Fri, Sep 05, 2014 at 06:46:33PM +0900, AKASHI Takahiro wrote:
+>> BUG_ON() in audit_syscall_entry() will be hit if user issues syscall(-1)
+>> while syscall auditing is enabled (that is, by starting auditd).
+>> In fact, syscall(-1) just fails (not signaled despite the expectation,
+>> this is another minor bug), but the succeeding syscall hits BUG_ON.
+>>
+>> When auditing syscall(-1), audit_syscall_entry() is called anyway, but
+>> audit_syscall_exit() is not called and then 'in_syscall' flag in thread's
+>> audit context is kept on. In this way, audit_syscall_entry() against
+>> the succeeding syscall will see BUG_ON(in_syscall).
+>>
+>> This patch fixes this bug by
+>> 1) enforcing syscall exit tracing, including audit_syscall_exit(), to be
+>>     executed in all cases,
+>
+> Really, no.  That adds additional overhead to every syscall, and that
+> matters for system performance.  We want to have as little as possible
+> overhead here.
 
->From ee24677b9917583f50f16b6f59771439f91b890c Mon Sep 17 00:00:00 2001
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-Date: Mon, 8 Sep 2014 10:59:43 -0700
-Subject: [PATCH] f2fs: fix negative value for lseek offset
+My words might have confused you, but this issue exists, in the current
+mainline kernel, not only against syscall(-1), but any invalid or pseudo syscalls.
+(And other archs seem to behave in the same way AFAIK.)
+But if you want, I can fix it.
+See my next version.
 
-If application throws negative value of lseek with SEEK_DATA|SEEK_HOLE,
-previous f2fs went into BUG_ON in get_dnode_of_data, which was reported
-by Tommi Rantala.
+-Takahiro AKASHI
 
-He could make a simple code to detect this having:
-	lseek(fd, -17595150933902LL, SEEK_DATA);
-
-This patch should resolve that bug.
-
-Reported-by: Tommi Rentala <tt.rantala@gmail.com>
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
----
- fs/f2fs/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 9f0ea3d..c9a1295 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -281,7 +281,7 @@ static loff_t f2fs_seek_block(struct file *file, loff_t offset, int whence)
- 	mutex_lock(&inode->i_mutex);
- 
- 	isize = i_size_read(inode);
--	if (offset >= isize)
-+	if (offset >= isize || offset < 0)
- 		goto fail;
- 
- 	/* handle inline data case */
--- 
-1.8.5.2 (Apple Git-48)
-
+> The second issue here is that you haven't explained where the oops
+> occurs.  It's seen as a good practice to include the oops dump for the
+> bug you're fixing in the commit changelog, so that others can see the
+> starting point for the investigation, and see exactly where things are
+> going wrong.
+>
