@@ -1,67 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320AbaIIPvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 11:51:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37231 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753844AbaIIPu7 (ORCPT
+	id S1757360AbaIIPvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 11:51:08 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:58400 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757231AbaIIPvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 11:50:59 -0400
-Date: Tue, 9 Sep 2014 11:50:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tejun Heo <tj@kernel.org>
-cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Block: fix unbalanced bypass-disable in blk_register_queue
-In-Reply-To: <20140909151726.GA8890@mtj.dyndns.org>
-Message-ID: <Pine.LNX.4.44L0.1409091149360.968-100000@iolanthe.rowland.org>
+	Tue, 9 Sep 2014 11:51:04 -0400
+Message-ID: <540F21E4.5070801@plexistor.com>
+Date: Tue, 09 Sep 2014 18:51:00 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@fb.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 9/9] pmem: KISS, remove register_blkdev
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com> <540F1EC6.4000504@plexistor.com>
+In-Reply-To: <540F1EC6.4000504@plexistor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a queue is registered, the block layer turns off the bypass
-setting (because bypass is enabled when the queue is created).  This
-doesn't work well for queues that are unregistered and then registered
-again; we get a WARNING because of the unbalanced calls to
-blk_queue_bypass_end().
+From: Boaz Harrosh <boaz@plexistor.com>
 
-This patch fixes the problem by making blk_register_queue() call
-blk_queue_bypass_end() only the first time the queue is registered.
+Though this looks revolutionary, it actually does nothing
+but removes dead code.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Tejun Heo <tj@kernel.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>
+Since the move of pmem to the dynamic BLOCK_EXT_MAJOR
+range, by Ross, pmem_major returned from register_blkdev
+is not used.
 
+If inspecting the code at add_disk() we can see that
+whatever number we will put at
+	disk->major		= ...
+	disk->first_minor	= ...
+
+will be immediately overwritten with the BLOCK_EXT_MAJOR
+and a dynamically allocated minor. Regardless of the
+registration and/or what ever we put at disk->major.
+
+I have tested all the tests that I know how to perform
+on the devices, fdisk, partitions, multiple pmemX devices,
+mknode, lsblk, blkid, and it all behaves exactly as
+before this patch.
+
+I have also done:
+	find /sys/ -name "*pmem*"
+	find /proc/ -name "*pmem*"
+	find /dev/ -name "*pmem*"
+And get the same output as before this patch.
+
+The only thing missing is an entry in /proc/devices of
+the form: "250 pmem" (250 or what ever is free at the moment)
+
+But this is good because if one tries to look for 250
+devices after loading pmem he will fail because pmem
+is always registered as 259 (blkext) now.
+
+If anyone knows of what would work differently after this
+patch please do tell.
+
+But it looks like the calls to register_blkdev is just dead
+code for us right now
+
+Thanks
+
+Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
 ---
+ drivers/block/pmem.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
-[as1765]
-
-
- block/blk-sysfs.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-Index: usb-3.17/block/blk-sysfs.c
-===================================================================
---- usb-3.17.orig/block/blk-sysfs.c
-+++ usb-3.17/block/blk-sysfs.c
-@@ -554,8 +554,10 @@ int blk_register_queue(struct gendisk *d
- 	 * Initialization must be complete by now.  Finish the initial
- 	 * bypass from queue allocation.
- 	 */
--	queue_flag_set_unlocked(QUEUE_FLAG_INIT_DONE, q);
--	blk_queue_bypass_end(q);
-+	if (!blk_queue_init_done(q)) {
-+		queue_flag_set_unlocked(QUEUE_FLAG_INIT_DONE, q);
-+		blk_queue_bypass_end(q);
-+	}
+diff --git a/drivers/block/pmem.c b/drivers/block/pmem.c
+index 600d225..5eda95a 100644
+--- a/drivers/block/pmem.c
++++ b/drivers/block/pmem.c
+@@ -225,7 +225,6 @@ MODULE_PARM_DESC(map,
+ 	"mapS=nn[KMG]$ss[KMG] or mapS=nn[KMG]@ss[KMG], nn=size, ss=offset.");
  
- 	ret = blk_trace_init_sysfs(dev);
- 	if (ret)
+ static LIST_HEAD(pmem_devices);
+-static int pmem_major;
+ 
+ #ifdef CONFIG_BLK_DEV_PMEM_USE_PAGES
+ /* pmem->phys_addr and pmem->size need to be set.
+@@ -333,8 +332,6 @@ static struct pmem_device *pmem_alloc(phys_addr_t phys_addr, size_t disk_size,
+ 		goto out_free_queue;
+ 	}
+ 
+-	disk->major		= pmem_major;
+-	disk->first_minor	= 0;
+ 	disk->fops		= &pmem_fops;
+ 	disk->private_data	= pmem;
+ 	disk->queue		= pmem->pmem_queue;
+@@ -397,12 +394,6 @@ static int __init pmem_init(void)
+ 		return -EINVAL;
+ 	}
+ 
+-	result = register_blkdev(0, "pmem");
+-	if (result < 0)
+-		return -EIO;
+-	else
+-		pmem_major = result;
+-
+ 	i = 0;
+ 	while ((p = strsep(&pmem_map, ",")) != NULL) {
+ 		phys_addr_t phys_addr;
+@@ -433,7 +424,6 @@ out_free:
+ 		list_del(&pmem->pmem_list);
+ 		pmem_free(pmem);
+ 	}
+-	unregister_blkdev(pmem_major, "pmem");
+ 
+ 	return result;
+ }
+@@ -445,7 +435,6 @@ static void __exit pmem_exit(void)
+ 	list_for_each_entry_safe(pmem, next, &pmem_devices, pmem_list)
+ 		pmem_del_one(pmem);
+ 
+-	unregister_blkdev(pmem_major, "pmem");
+ 	pr_info("pmem: module unloaded\n");
+ }
+ 
+-- 
+1.9.3
 
