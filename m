@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607AbaIIMua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 08:50:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52616 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863AbaIIMu3 (ORCPT
+	id S1753752AbaIIMww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 08:52:52 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:54649 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaIIMwv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 08:50:29 -0400
-Date: Tue, 9 Sep 2014 14:50:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ted Percival <ted@tedp.id.au>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Christoph Lameter <cl@linux.com>,
-        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, apic: Fix unmasked CPU initialization
-In-Reply-To: <1410192947-6830-1-git-send-email-ted@tedp.id.au>
-Message-ID: <alpine.DEB.2.10.1409091448280.11037@nanos>
-References: <1410192947-6830-1-git-send-email-ted@tedp.id.au>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 9 Sep 2014 08:52:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20140909122753.GA3314@gmail.com>
+References: <CA+icZUXwwvAesGkqGkC+-AHMzLrFz3QtYb03LXdob9AKGY8dKg@mail.gmail.com>
+	<20140909122753.GA3314@gmail.com>
+Date: Tue, 9 Sep 2014 14:52:47 +0200
+Message-ID: <CA+icZUWKsPzZ0rC_11zNnE9-D4MLO7TjvakKyT5P1u=uqbqZDA@mail.gmail.com>
+Subject: Re: Linux kernels with LongTerm Support (LTS) VS. End-Of-Life [EOL]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Konstantin Ryabitsev <konstantin@linuxfoundation.org>
+Cc: webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014, Ted Percival wrote:
+Oh cool.
+Hmm, is it possible to link all "longterm:" labeled kernels to the
+page you pointed me to?
 
-> Commit 4ba2968420fa removed the application of the CPU mask resulting
-> in a hang when initializing the first CPU at boot:
-> 
->   x86: Booting SMP configuration
->   .... node  #0, CPUs:      #1_
-> 
-> Fixes: 4ba2968420fa ("percpu: Resolve ambiguities in __get_cpu_var/cpumask_var_t")
+- Sedat -
 
-I can't find that commit in any of my trees.
-
-Thanks,
-
-	tglx
+On Tue, Sep 9, 2014 at 2:27 PM, Konstantin Ryabitsev
+<konstantin@linuxfoundation.org> wrote:
+> On Tue, Sep 09, 2014 at 02:25:24PM +0200, Sedat Dilek wrote:
+>> Hi,
+>>
+>> it's a cool idea to label Linux-kernels with an "EOL" on the mainpage
+>> of <kernel.org>.
+>> But how can someone see how long a LongTerm Support (LTS) L-k is supported?
+>> Is it possible to add a date line or a web-link on the mainpage?
+>
+> https://www.kernel.org/releases.html
+>
+> --
+> Konstantin Ryabitsev
+> Linux Foundation Collab Projects
+> Montréal, Québec
