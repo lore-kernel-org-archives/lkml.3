@@ -1,47 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168AbaIIGAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 02:00:08 -0400
-Received: from plane.gmane.org ([80.91.229.3]:54127 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752434AbaIIGAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 02:00:06 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Ted Percival <ted@tedp.id.au>
-Subject: Re: [PATCH] percpu: Resolve ambiguities in =?utf-8?b?X19nZXRfY3B1X3Zhci9jcHVtYXNrX3Zhcl90?= -fix
-Date: Tue, 9 Sep 2014 05:55:15 +0000 (UTC)
-Message-ID: <loom.20140909T074606-26@post.gmane.org>
-References: <20140908220654.GO17501@suse.de> <alpine.DEB.2.11.1409081846340.869@gentwo.org> <20140909003450.GA11623@mtj.dyndns.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 76.27.34.2 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36)
+	id S1755652AbaIIGBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 02:01:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35231 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaIIGBv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 02:01:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAL85gmBRUuc3mtOGSkNuspEgkRQe42LV0e=fQfNmwcCicjT=vA@mail.gmail.com>
+References: <1393537013-6264-1-git-send-email-fkan@apm.com>
+	<CAFdej02vSm8TbUWGsMr936WN1GNmJ0SBuEKQkKyzKoEjtVmc+g@mail.gmail.com>
+	<CAL85gmBRUuc3mtOGSkNuspEgkRQe42LV0e=fQfNmwcCicjT=vA@mail.gmail.com>
+Date: Tue, 9 Sep 2014 11:31:49 +0530
+Message-ID: <CAFdej03AmUn92sSH=7Hfk0+yWEFWaywJt63DjeTc+nHSZeb61A@mail.gmail.com>
+Subject: Re: [PATCH V3] irqchip:gic: change access of gicc_ctrl register to
+ read modify write.
+From: Arun Chandran <achandran@mvista.com>
+To: Feng Kan <fkan@apm.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>, patches <patches@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Vinayak Kale <vkale@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj <at> kernel.org> writes:
-> On Mon, Sep 08, 2014 at 06:46:47PM -0500, Christoph Lameter wrote:
-> > I already acked a patch like this today.
-> 
-> It isn't in my inbox.
+On Mon, Sep 8, 2014 at 10:27 PM, Feng Kan <fkan@apm.com> wrote:
+> On Mon, Sep 8, 2014 at 1:52 AM, Arun Chandran <achandran@mvista.com> wrote:
+>> Hi Feng,
+>>
+>> Is this patch still needed to fix perf calltrace?
+> Yes, if the someone decide to run the secure mode of the GIC, which is
+> what is present in
+> the kernel tree now.
+>
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265814.html
+>>
+>> On Fri, Feb 28, 2014 at 3:06 AM, Feng Kan <fkan@apm.com> wrote:
+>>> This change is made to preserve the GIC v2 releated bits in the
+>>> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+>>> The original code only set the enable/disable group bit in this register.
+>>> This code will preserve the bypass bits configured by the bootload except
+>>> the enable/disable bit. The main reason for this change is to allow the
+>>> bypass bits specified in the v2 spec to remain untouched by the current
+>>> GIC code. In the X-Gene platform, the bypass functionality is not used
+>>> and bypass must be disabled at all time.
+>>>
+>>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>>> Acked-by: Anup Patel <apatel@apm.com>
+>>> Signed-off-by: Feng Kan <fkan@apm.com>
+>>> ---
+>>> V3 Changes:
+>>>         - Sorry, forgot to change the mask for cpu_init path
+>>>           assumed bootloader setup bits correctly.
+>>> V2 Changes:
+>>>         - only mask off v2 bypass bits
+>>>  drivers/irqchip/irq-gic.c |   32 +++++++++++++++++++++++++++++---
+>>>  1 files changed, 29 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>> index 341c601..3ca7995 100644
+>>> --- a/drivers/irqchip/irq-gic.c
+>>> +++ b/drivers/irqchip/irq-gic.c
+>>> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>         void __iomem *dist_base = gic_data_dist_base(gic);
+>>>         void __iomem *base = gic_data_cpu_base(gic);
+>>>         unsigned int cpu_mask, cpu = smp_processor_id();
+>>> +       unsigned int ctrl_mask;
+>>>         int i;
+>>>
+>>>         /*
+>>> @@ -449,13 +450,29 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>>>
+>>>         writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+>>> -       writel_relaxed(1, base + GIC_CPU_CTRL);
+>>> +
+>>> +       ctrl_mask = readl(base + GIC_CPU_CTRL);
+>>
+>> readl_relaxed() here?
+>>
+>>> +
+>>> +       /* Mask out the gic v2 bypass bits */
+>>> +       ctrl_mask &= 0x1e0;
+>>> +
+>>> +       /* Enable group 0 */
+>>> +       ctrl_mask |= 0x1;
+>>> +       writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
+>>>  }
+>>>
+>>>  void gic_cpu_if_down(void)
+>>>  {
+>>> +       unsigned int ctrl_mask;
+>>>         void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+>>> -       writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
+>>> +
+>>> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
+>> readl_relaxed() here?
+>>
+>>> +       /*
+>>> +        * Disable grp enable bit, leave the bypass bits alone as changing
+>>> +        * them could leave the system unstable
+>>> +        */
+>>> +       ctrl_mask &= 0x1e0;
+>>> +       writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
+>>>  }
+>>>
+>>>  #ifdef CONFIG_CPU_PM
+>>> @@ -566,6 +583,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>>  {
+>>>         int i;
+>>>         u32 *ptr;
+>>> +       unsigned int ctrl_mask;
+>>>         void __iomem *dist_base;
+>>>         void __iomem *cpu_base;
+>>>
+>>> @@ -590,7 +608,15 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>>                 writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+>>>
+>>>         writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+>>> -       writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+>>> +
+>>> +       ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
+>>
+>> readl_relaxed() here?
+> Trying to make sure read is completed before write back out to gic.
+>>
 
-It was "[PATCH] x86, apic: Fix unmasked CPU initialization" 
-<http://www.spinics.net/lists/kernel/msg1820725.html>
+Will the cpu reorder  readl_relaxed() and a writel_relaxed() calls?
 
-Sorry you weren't included; I used get_maintainer.pl for the recipient list.
+val = readl_relaxed(reg1);
+val += 1;
+wrietl_relaxed(val, reg1);
 
-I also posted it with a smaller recipient list including you on Friday under 
-the title
-"[PATCH] x86: Restore missing cpumask_copy() in __x2apic_send_IPI_mask" 
-<http://www.spinics.net/lists/kernel/msg1819784.html>
+In the above code reg1 getting 'val+1' is not guaranteed?
 
-Good to see it's solved now anyway. Since I've been using the same patch for 
-the last few days,
-
-Tested-by: Ted Percival <ted@tedp.id.au>
-
+--Arun
