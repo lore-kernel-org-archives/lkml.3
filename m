@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaIIFNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 01:13:08 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54199 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827AbaIIFNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 01:13:06 -0400
-Date: Mon, 8 Sep 2014 22:13:03 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>, Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2] f2fs: Remove lock from check_valid_map
-Message-ID: <20140909051303.GB24581@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1410059104-9060-1-git-send-email-ying.huang@intel.com>
- <1410061110-31081-1-git-send-email-ying.huang@intel.com>
- <20140908035024.GA13009@jaegeuk-mac02.hsd1.ca.comcast.net>
- <CAC=cRTOdvOp=zBT986SqGXC2+iRxGzSgKdFYzTQjbAamYsGVsg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAC=cRTOdvOp=zBT986SqGXC2+iRxGzSgKdFYzTQjbAamYsGVsg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752356AbaIIFR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 01:17:57 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:61744 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaIIFRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 01:17:55 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Joe Schultz <jschultz@xes-inc.com>, Ingo Molnar <mingo@elte.hu>,
+        Doug Anderson <dianders@chromium.org>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 1/2] serial/8250_core: Add reference to uacess.h
+Date: Tue,  9 Sep 2014 07:17:45 +0200
+Message-Id: <1410239865-22678-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huang,
+Commit: e676253b19b2d269cccf67fdb1592120a0cd0676 [3/21] serial/8250: Add
+support for RS485 IOCTLs, adds a building error on arch m32r.
 
-On Mon, Sep 08, 2014 at 03:36:35PM +0800, huang ying wrote:
-> Hi, Jaegeuk,
-> 
-> On Mon, Sep 8, 2014 at 11:50 AM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> 
-> > Hi,
-> >
-> > On Sun, Sep 07, 2014 at 11:38:30AM +0800, Huang Ying wrote:
-> > > Only one bit is read in check_valid_map, holding a lock to do that
-> > > doesn't help anything except decreasing performance.
-> > >
-> > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
-> > > ---
-> > >
-> > > v2: Fixed a build warning.
-> > >
-> > > ---
-> > >  fs/f2fs/gc.c |    3 ---
-> > >  1 file changed, 3 deletions(-)
-> > >
-> > > --- a/fs/f2fs/gc.c
-> > > +++ b/fs/f2fs/gc.c
-> > > @@ -378,14 +378,11 @@ static void put_gc_inode(struct list_hea
-> > >  static int check_valid_map(struct f2fs_sb_info *sbi,
-> > >                               unsigned int segno, int offset)
-> > >  {
-> > > -     struct sit_info *sit_i = SIT_I(sbi);
-> > >       struct seg_entry *sentry;
-> > >       int ret;
-> > >
-> > > -     mutex_lock(&sit_i->sentry_lock);
-> > >       sentry = get_seg_entry(sbi, segno);
-> > >       ret = f2fs_test_bit(offset, sentry->cur_valid_map);
-> > > -     mutex_unlock(&sit_i->sentry_lock);
-> > >       return ret;
-> >
-> > The f2fs_test_bit is not atomic, so I'm not sure this is a good approach.
-> > How about introducing rw_semaphore?
-> >
-> 
-> IMO, f2fs_test_bit just read a global variable (a byte in cur_valid_map),
-> then check its value. The byte may be changed in another CPU concurrently.
-> But even protected with a mutex, it can be changed in another CPU
-> immediately after mutex_unlock.  So mutex does not help  here.  Here we
-> just read a global variable, not read/modify/write, so, we don't need
-> atomic too.
+All error/warnings:
 
-Hmm. This is a pretty hard corner case to allow the mutex removal under the
-following assumption.
+   drivers/tty/serial/8250/8250_core.c: In function 'serial8250_ioctl':
+>> drivers/tty/serial/8250/8250_core.c:2859:3: error: implicit declaration of function 'copy_from_user' [-Werror=implicit-function-declaration]
+      if (copy_from_user(&rs485_config, (void __user *)arg,
+      ^
+>> drivers/tty/serial/8250/8250_core.c:2871:3: error: implicit declaration of function 'copy_to_user' [-Werror=implicit-function-declaration]
+      if (copy_to_user((void __user *)arg, &up->rs485,
+      ^
+   cc1: some warnings being treated as errors
 
-1. All the sit entries are cached in a global array, which means that it never
-happens that any sit entry pointers are changed.
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/tty/serial/8250/8250_core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-2. I agree that f2fs_gc tries to conduct the cleaning with best effort, and
-it triggers again when it detects there is something to do more.
-So, check_valid_bitmap doesn't need to make a precise decision.
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 872c020..a0c1d64 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -37,6 +37,7 @@
+ #include <linux/nmi.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/uaccess.h>
+ #ifdef CONFIG_SPARC
+ #include <linux/sunserialcore.h>
+ #endif
+-- 
+2.1.0
 
-But, what I concern is the consistent policy to use such the mutex.
-If we break the rule, it becomes harder to debug potential bugs.
-
-Anyway, have you been facing with such the lock contention?
-
-Thanks,
-
-> 
-> Best Regards,
-> Huang, Ying
