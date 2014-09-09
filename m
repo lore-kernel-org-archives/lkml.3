@@ -1,143 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623AbaIIOye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 10:54:34 -0400
-Received: from sauhun.de ([89.238.76.85]:34778 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757330AbaIIOyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 10:54:25 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-i2c@vger.kernel.org
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Jean Delvare <jdelvare@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: [RFC 1/4] i2c: core changes for slave support
-Date: Tue,  9 Sep 2014 16:54:27 +0200
-Message-Id: <1410274470-12712-2-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
+	id S932751AbaIIO5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 10:57:20 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:61219 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805AbaIIO5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 10:57:16 -0400
+Date: Tue, 9 Sep 2014 16:57:11 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL v2] EFI urgent fixes
+Message-ID: <20140909145711.GD19536@gmail.com>
+References: <20140909080233.GG18582@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140909080233.GG18582@console-pimps.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
-Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
----
- drivers/i2c/i2c-core.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/i2c.h    | 22 ++++++++++++++++++++++
- 2 files changed, 66 insertions(+)
+* Matt Fleming <matt@console-pimps.org> wrote:
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 632057a44615..6713d438539b 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -27,6 +27,7 @@
-    OF support is copyright (c) 2008 Jochen Friedrich <jochen@scram.de>
-    (based on a previous patch from Jon Smirl <jonsmirl@gmail.com>) and
-    (c) 2013  Wolfram Sang <wsa@the-dreams.de>
-+   I2C slave support (c) 2014 by Wolfram Sang <wsa@sang-engineering.com> 
-  */
- 
- #include <linux/module.h>
-@@ -2536,6 +2537,49 @@ trace:
- }
- EXPORT_SYMBOL(i2c_smbus_xfer);
- 
-+int i2c_slave_register(struct i2c_client *client, i2c_slave_cb_t slave_cb)
-+{
-+	int ret;
-+
-+	if (!client || !slave_cb)
-+		return -EINVAL;
-+
-+	if (!(client->flags & I2C_CLIENT_TEN)) {
-+		/* Enforce stricter address checking */
-+		ret = i2c_check_addr_validity(client->addr);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	if (!client->adapter->algo->reg_slave)
-+		return -EOPNOTSUPP;
-+
-+	client->slave_cb = slave_cb;
-+
-+	ret = client->adapter->algo->reg_slave(client);
-+	if (ret)
-+		client->slave_cb = NULL;
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(i2c_slave_register);
-+
-+int i2c_slave_unregister(struct i2c_client *client)
-+{
-+	int ret;
-+
-+	if (!client->adapter->algo->unreg_slave)
-+		return -EOPNOTSUPP;
-+
-+	ret = client->adapter->algo->unreg_slave(client);
-+
-+	if (ret == 0)
-+		client->slave_cb = NULL;
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(i2c_slave_unregister);
-+
- MODULE_AUTHOR("Simon G. Vogl <simon@tk.uni-linz.ac.at>");
- MODULE_DESCRIPTION("I2C-Bus main module");
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index a95efeb53a8b..11d4edb1ab3e 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -121,6 +121,24 @@ extern s32 i2c_smbus_write_i2c_block_data(const struct i2c_client *client,
- 					  const u8 *values);
- #endif /* I2C */
- 
-+/* I2C slave support */
-+
-+enum i2c_slave_event {
-+	I2C_SLAVE_REQ_READ_START,
-+	I2C_SLAVE_REQ_READ_END,
-+	I2C_SLAVE_REQ_WRITE_START,
-+	I2C_SLAVE_REQ_WRITE_END,
-+	I2C_SLAVE_STOP,
-+};
-+
-+typedef int (*i2c_slave_cb_t)(struct i2c_client *, enum i2c_slave_event, u8 *);
-+
-+extern int i2c_slave_register(struct i2c_client *client, i2c_slave_cb_t slave_cb);
-+extern int i2c_slave_unregister(struct i2c_client *client);
-+
-+#define i2c_slave_event(__client, __event, __value) \
-+	__client->slave_cb(__client, __event, __value)
-+
- /**
-  * struct i2c_driver - represent an I2C device driver
-  * @class: What kind of i2c device we instantiate (for detect)
-@@ -224,6 +242,7 @@ struct i2c_client {
- 	struct device dev;		/* the device structure		*/
- 	int irq;			/* irq issued by device		*/
- 	struct list_head detected;
-+	i2c_slave_cb_t slave_cb;	/* callback for slave mode	*/
- };
- #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
- 
-@@ -377,6 +396,9 @@ struct i2c_algorithm {
- 
- 	/* To determine what the adapter supports */
- 	u32 (*functionality) (struct i2c_adapter *);
-+
-+	int (*reg_slave)(struct i2c_client *client);
-+	int (*unreg_slave)(struct i2c_client *client);
- };
- 
- /**
--- 
-2.0.0
+> Folks, this is a resend of the EFI urgent pull request from yesterday
+> with the non-regression-fixing patches dropped as Ingo requested. The
+> patches fix two regressions introduced during the merge window, and one
+> introduced in -rc2.
+> 
+> The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> 
+>   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+> 
+> for you to fetch changes up to 0ceac9e094b065fe3fec19669740f338d3480498:
+> 
+>   efi/arm64: Fix fdt-related memory reservation (2014-09-09 07:51:09 +0100)
+> 
+> ----------------------------------------------------------------
+>  * Fix early boot regression affecting x86 EFI boot stub when loading
+>    initrds above 4GB - Yinghai Lu
+> 
+>  * Relocate GOT entries in the x86 EFI boot stub now that we have
+>    symbols with global visibility - Matt Fleming
+> 
+>  * fdt memory reservation fix for arm64 - Mark Salter
+> 
+> ----------------------------------------------------------------
+> Mark Salter (1):
+>       efi/arm64: Fix fdt-related memory reservation
+> 
+> Matt Fleming (1):
+>       x86/efi: Fixup GOT in all boot code paths
+> 
+> Yinghai Lu (1):
+>       x86/efi: Only load initrd above 4g on second try
+> 
+>  arch/arm64/mm/init.c               |  3 +-
+>  arch/x86/boot/compressed/eboot.c   | 18 +++++++-----
+>  arch/x86/boot/compressed/head_32.S | 54 ++++++++++++++++++++++++++----------
+>  arch/x86/boot/compressed/head_64.S | 56 ++++++++++++++++++++++++++++----------
+>  drivers/firmware/efi/libstub/fdt.c | 10 ++++++-
+>  5 files changed, 102 insertions(+), 39 deletions(-)
 
+Pulled into tip:x86/urgent, thanks a lot Matt!
+
+	Ingo
