@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaIIS0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 14:26:54 -0400
-Received: from www.augenpunkt.de ([213.239.207.9]:43920 "EHLO
-	www.augenpunkt.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661AbaIIS0w (ORCPT
+	id S1751765AbaIISaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 14:30:18 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:50684 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaIISaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 14:26:52 -0400
-Message-ID: <540F4B88.5080108@lategoodbye.de>
-Date: Tue, 09 Sep 2014 20:48:40 +0200
-From: Stefan Wahren <info@lategoodbye.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 9 Sep 2014 14:30:15 -0400
+Date: Tue, 9 Sep 2014 14:27:34 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Sergey Ryazanov <ryazanov.s.a@gmail.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Jiri Slaby <jirislaby@gmail.com>,
+        Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
+        open@hauke-m.de,
+        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+Message-ID: <20140909182734.GJ29412@tuxdriver.com>
+References: <20140213201421.GJ22203@tuxdriver.com>
+ <1397581703.8212.5.camel@x220>
+ <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
+ <1403087119.1984.93.camel@x220>
+ <CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
+ <1403091974.1984.102.camel@x220>
+ <1409911856.7832.9.camel@x220>
+ <CAHNKnsRipRHicKOUW4dCutD1-sUG6qPnP2QuOveH_t1MFX9XgQ@mail.gmail.com>
+ <1409916824.7832.20.camel@x220>
+ <CAHNKnsQ1gt=DRBTd9Q9yos1idqmXMepEPvhm8a7unP-whzNAgg@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "stefan.wahren@i2se.com" <stefan.wahren@i2se.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "festevam@gmail.com" <festevam@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC 1/3] DT: add binding for MXS regulator
-References: <1410089869-6611-1-git-send-email-info@lategoodbye.de> <1410089869-6611-2-git-send-email-info@lategoodbye.de> <20140909175940.GF3896@leverpostej>
-In-Reply-To: <20140909175940.GF3896@leverpostej>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHNKnsQ1gt=DRBTd9Q9yos1idqmXMepEPvhm8a7unP-whzNAgg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Fri, Sep 05, 2014 at 04:02:10PM +0400, Sergey Ryazanov wrote:
+> 2014-09-05 15:33 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
+> > Hi Sergey,
+> >
+> > On Fri, 2014-09-05 at 15:12 +0400, Sergey Ryazanov wrote:
+> >> 2014-09-05 14:10 GMT+04:00, Paul Bolle <pebolle@tiscali.nl>:
+> >> > On Wed, 2014-06-18 at 13:46 +0200, Paul Bolle wrote:
+> >> >> Having this conversation every rc1 is getting a bit silly. Could Jiri
+> >> >> e.a. perhaps set some specific deadline for ATHEROS_AR231X to be
+> >> >> submitted?
+> >> >
+> >> > I waited until rc3. Have you seen any activity on this front? If not,
+> >> > should I resend the patch that removes the code in mainline that depends
+> >> > on ATHEROS_AR231X (ie, AHB bus support)?
+> >> >
+> >> Recent activity always could be found in [1]. Now I finish another one
+> >> round of cleanups and have a plan to fix several things (you can
+> >> always find something that you really want to improve). But if you
+> >> insist I could immediately switch to "send upstream" mode. And seems
+> >> that this would be better approach.
+> >>
+> >> 1. https://dev.openwrt.org/log/trunk/target/linux/atheros
+> >
+> > And where can the related PULL requests or patch submissions be found?
+> >
+> I have not sent patches yet, since I thought that it would be easier
+> to cleanup them in openwrt tree and then send them upstream.
 
-Am 09.09.2014 19:59, schrieb Mark Rutland:
-> On Sun, Sep 07, 2014 at 12:37:47PM +0100, Stefan Wahren wrote:
->> This patch adds the Device tree bindings for the Freescale MXS on-chip
->> regulators.
->>
->> Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
->> ---
->>   .../bindings/regulator/mxs-regulator.txt           | 38 ++++++++++++++++++++++
->>   1 file changed, 38 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/regulator/mxs-regulator.txt
->>
->> diff --git a/Documentation/devicetree/bindings/regulator/mxs-regulator.txt b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
->> new file mode 100644
->> index 0000000..c3226cc
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
->> @@ -0,0 +1,38 @@
->> +MXS regulators
->> +
->> +Required node properties:
->> +- compatible: Should be "fsl,<soc>-power", where soc is "imx23" or "imx28"
->> +- reg: Offset and length of the register set for the device
->
-> We require #address-cells and #size-cells if the child nodes have reg
-> entries.
+That excuse has worn a bit thin.  Perhaps Paul should repost his
+removal and you can add a revert to the start of your patch series?
 
-okay.
-
->
->> +
->> +Required regulator properties:
->> +- compatible: Must be "fsl,mxs-regulator"
->> +- reg: Offset of the register set for the regulator
->
-> Is this the offset or the absolute physical address?
->
-> The example seems to be absolute.
-
-You are right, the description is wrong.
-
->
->> +- mxs-max-reg-val: Maximum value of this register
->
-> What does this even mean? What's the format?
->
-> Is this not implied by standard properties like regulator-max-microvolt?
-
-Unfortunately not as long the step size in microvolt isn't defined. The 
-parameter defines the register value in hex corresponding to 
-regulator-max-microvolt.
-
-step size = (regulator-max-microvolt - regulator-min-microvolt) / 
-mxs-max-reg-val
-
-May be i missed or understand something wrong?
-
->
->> +Optional regulator properties:
->> +- mxs-default-microvolt: initial voltage of the regulator
->
-> Why is this necessary?
-
-The original driver from Freescale set the MX28 regulator vddio to 3.38 
-V during registering. I think that is ugly to implement in the driver 
-part, so i add a more general property in the devicetree binding.
-
->
-> Mark.
-
-Stefan
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
