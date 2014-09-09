@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaIINQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 09:16:59 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:38620 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaIINQ5 (ORCPT
+	id S1756668AbaIINRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 09:17:06 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:16655 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaIINRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 09:16:57 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-d8-540efdc62544
+	Tue, 9 Sep 2014 09:17:00 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-7d-540efdc9d1fd
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,56 +18,53 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 0/9] drm/exynos: initialization/deinitialization fixes
-Date: Tue, 09 Sep 2014 15:16:04 +0200
-Message-id: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 1/9] drm/exynos/ipp: traverse ipp drivers list safely
+Date: Tue, 09 Sep 2014 15:16:05 +0200
+Message-id: <1410268573-2297-2-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xK7rH/vKFGGz4zGdxa905VosrX9+z
+In-reply-to: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
+References: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xK7on//KFGMy9L2Bxa905VosrX9+z
 	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJXx80EjY8EUroqL346zNTBu4+hi5OSQEDCRmL14GTOELSZx4d56
-	NhBbSGApo8TPxSpdjFxAdh+TxPrZf5lAEmwCmhJ/N98EKxIRUJZYta+dHaSIWeAjk8SVpW/A
-	JgkLuEl8XfoUqIiDg0VAVWLGRFuQMK+Ak8S9ixOZIJbJSZw8Npl1AiP3AkaGVYyiqaXJBcVJ
-	6blGesWJucWleel6yfm5mxghQfJ1B+PSY1aHGAU4GJV4eCeW8YUIsSaWFVfmHmKU4GBWEuG1
-	fgEU4k1JrKxKLcqPLyrNSS0+xMjEwSnVwDhf44hh1++30pnRnHELr7ywPLo7dI3706wSH151
-	m4KnaY17llzee2dKyNv8kh5haY44pdPVnGvOWzxY8Jvjjmnui4KnC9SDd91wvrhwyla187mP
-	q1cvlkmcuf7HCUnRK4dZjs1On6nHIvH9Blv+6gmZrx79uHCfQWfTGm6bgHuPX/JPan5o3OCg
-	xFKckWioxVxUnAgANLyEdfABAAA=
+	F8AcxWWTkpqTWZZapG+XwJVx9e0DxoKNHBXbP25ib2CcxN7FyMkhIWAisf/6bUYIW0ziwr31
+	bF2MXBxCAksZJaY+3MMO4fQxSZybNYENpIpNQFPi7+abYLaIgLLEqn3tYEXMAh+ZJK4sfcMM
+	khAWcJVoe3sbbAWLgKpEx56/YA28Ak4Sp3ons0Ksk5M4eQzE5uDgFHCWePsvACQsBFSy4O03
+	9gmMvAsYGVYxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihITVlx2Mi49ZHWIU4GBU4uFtyOAL
+	EWJNLCuuzD3EKMHBrCTCa/0CKMSbklhZlVqUH19UmpNafIiRiYNTqoGxSVTysJ5Szrmy+23O
+	B5+0Wmc+6djH/KaGneHr3Z0bfH8XeQrac/wztrmRLXd1KSu3mqnHvOiF1bozdv7mVuV+X3sn
+	jDvppfqcm7IvagUkPT4eLHC5aLvWdfXjQ8yrrGPLN7Ezdgi3LZtnr3yJUZKJOfL2r0uZBVXH
+	pAKaTnxL0jaftqBpyj8lluKMREMt5qLiRAAzO+dyCQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches contains fixes of initialization and deinitialization
-code of exynos_drm core and components.
-It is based on exynos-drm-next branch.
+On ipp subsystem removal list of ipp drivers is traversed
+and their members are deleted. To do it properly safe version
+of list_for_each* should be used.
 
-Patchset has been tested on trats and universal_c210 platforms.
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+---
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Regards
-Andrzej
-
-
-Andrzej Hajda (9):
-  drm/exynos/ipp: traverse ipp drivers list safely
-  drm/exynos: fix drm driver de-initialization order
-  drm/exynos/fbdev: fix fbdev gem object cleanup
-  drm/exynos/fb: free exynos framebuffer on error
-  drm/exynos/crtc: fix framebuffer reference sequence
-  drm/exynos/dsi: unregister connector on removal
-  drm/exynos/dpi: unregister connector and panel on removal
-  drm/exynos/dp: unregister connector on removal
-  drm/exynos/hdmi: unregister connector on removal
-
- drivers/gpu/drm/exynos/exynos_dp_core.c   | 4 +++-
- drivers/gpu/drm/exynos/exynos_drm_crtc.c  | 6 ++++++
- drivers/gpu/drm/exynos/exynos_drm_dpi.c   | 6 +++++-
- drivers/gpu/drm/exynos/exynos_drm_drv.c   | 8 ++++----
- drivers/gpu/drm/exynos/exynos_drm_dsi.c   | 9 ++++++---
- drivers/gpu/drm/exynos/exynos_drm_fb.c    | 1 +
- drivers/gpu/drm/exynos/exynos_drm_fbdev.c | 3 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c   | 4 ++--
- drivers/gpu/drm/exynos/exynos_hdmi.c      | 4 +++-
- 9 files changed, 30 insertions(+), 15 deletions(-)
-
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+index 4f36a9d..00d74b1 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
+@@ -1605,11 +1605,11 @@ err:
+ 
+ static void ipp_subdrv_remove(struct drm_device *drm_dev, struct device *dev)
+ {
+-	struct exynos_drm_ippdrv *ippdrv;
++	struct exynos_drm_ippdrv *ippdrv, *t;
+ 	struct ipp_context *ctx = get_ipp_context(dev);
+ 
+ 	/* get ipp driver entry */
+-	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
++	list_for_each_entry_safe(ippdrv, t, &exynos_drm_ippdrv_list, drv_list) {
+ 		if (is_drm_iommu_supported(drm_dev))
+ 			drm_iommu_detach_device(drm_dev, ippdrv->dev);
+ 
 -- 
 1.9.1
 
