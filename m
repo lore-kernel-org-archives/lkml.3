@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaIJPwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:52:00 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:53088 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaIJPv5 (ORCPT
+	id S1752572AbaIJPwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:52:07 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:58135 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751190AbaIJPwD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:51:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alban Bedel <alban.bedel@avionic-design.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH V4] pwm: lpc32xx - Add a driver for the motor PWM
-Date: Wed, 10 Sep 2014 17:51:36 +0200
-Message-ID: <12709842.iga6ki5KTS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1410363822-22151-1-git-send-email-alban.bedel@avionic-design.de>
-References: <1410363822-22151-1-git-send-email-alban.bedel@avionic-design.de>
+	Wed, 10 Sep 2014 11:52:03 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: Re: [PATCH] clk: fractional-divider: cast parent_rate to u64 before multiplying
+Date: Wed, 10 Sep 2014 17:54:16 +0200
+Message-ID: <1689033.QyEHbUY0c9@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1585132.bTTmCCK9Ot@diego>
+References: <3033670.TV3SpkKZGq@diego> <20140902002629.5251.42667@quantum> <1585132.bTTmCCK9Ot@diego>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cPL8SRMjiivjMoW2MHC0pE+klhpFSg/36QRjdyeFG6z
- oWpeV5tctHxYHvy7G8oKGe4gb1fN0cKcNo5EYlNcfndB4slepC
- 23VJLYL61547ys0r45cLJKn+wVxy7pq0ebF5FloLLnVfakFsyJ
- 3ST35I50rau/rP8Rrpn3JCYNOEoNBMVbAbr7CLA1mC5w0+bIp3
- BfW7P5n3GFl2QUJLRKyxOxH25FT7kDneFZwM0L4p9RRllQEqC2
- m7VkgkwjVg1aoNt9gATApB4MZJ5vSmEXwfP3UnRU6kr4QlbSvv
- DTuwD30b2CYgRb5Rm0nZAH1JCAX+sdFLmjl96gSCR7DDir+D7t
- uA9Csa17RlGv5Y5TH1hQ=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 September 2014 17:43:42 Alban Bedel wrote:
-> +- #pwm-cells: should be 3. See pwm.txt in this directory for a description of
-> +  the cells format. The only third cell flag supported by this binding is
-> +  PWM_POLARITY_INVERTED.
+Hi Mike,
 
-If you don't have multiple pwm outputs or programmable period, I would say it
-should use #pwm-cells=<1> and only pass the polarity.
+Am Dienstag, 2. September 2014, 09:33:21 schrieb Heiko Stübner:
+> Am Montag, 1. September 2014, 17:26:29 schrieb Mike Turquette:
+> > Quoting Heiko Stübner (2014-08-28 03:46:10)
+> > 
+> > > On 32bit architectures, like ARM calculating the fractional rate will
+> > > do the multiplication before converting the value to u64 when it gets
+> > > assigned to ret, which can produce overflows.
+> > > 
+> > > The error in question happened with a parent_rate of 386MHz, m = 3000,
+> > > n = 60000, which resulted in a wrong rate value of 15812Hz.
+> > > 
+> > > Therefore cast parent_rate to u64 to make sure the multiplication
+> > > happens in a 64bit space and produces the correct 192MHz in the example.
+> > > 
+> > > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > 
+> > Looks good to me. Have you observed this issue using the vanilla
+> > kernel.org sources or on a downstream tree? I'm trying to decide if I
+> > should take this into clk-fixes or clk-next.
+> > 
+> > If this doesn't happen in practice on any merged platform then I'll take
+> > it for 3.18.
+> 
+> It happens on the Rockchip platform with the newly added fractional branches
+> you just applied ... so it doesn't look like anybody else is affected right
+> now.
 
-	Arnd
+will you take this one into clk-next?
+
+
+Thanks
+Heiko
+
+
+> 
+> 
+> Heiko
+> 
+> > Regards,
+> > Mike
+> > 
+> > > ---
+> > > 
+> > >  drivers/clk/clk-fractional-divider.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/clk/clk-fractional-divider.c
+> > > b/drivers/clk/clk-fractional-divider.c index ede685c..82a59d0 100644
+> > > --- a/drivers/clk/clk-fractional-divider.c
+> > > +++ b/drivers/clk/clk-fractional-divider.c
+> > > @@ -36,7 +36,7 @@ static unsigned long clk_fd_recalc_rate(struct clk_hw
+> > > *hw,>
+> > > 
+> > >         m = (val & fd->mmask) >> fd->mshift;
+> > >         n = (val & fd->nmask) >> fd->nshift;
+> > > 
+> > > -       ret = parent_rate * m;
+> > > +       ret = (u64)parent_rate * m;
+> > > 
+> > >         do_div(ret, n);
+> > >         
+> > >         return ret;
+
