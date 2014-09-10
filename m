@@ -1,39 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaIJTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:02:59 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:54037 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701AbaIJTC4 (ORCPT
+	id S1752919AbaIJTGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:06:06 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51569 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaIJTGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:02:56 -0400
-Date: Wed, 10 Sep 2014 12:02:53 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linuxfoundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Make paranoid check in move_freepages
- a VM_BUG_ON
-In-Reply-To: <20140909145228.GB12309@suse.de>
-Message-ID: <alpine.DEB.2.02.1409101202400.27173@chino.kir.corp.google.com>
-References: <20140909145228.GB12309@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 10 Sep 2014 15:06:04 -0400
+Message-ID: <5410A111.6040007@kernel.org>
+Date: Wed, 10 Sep 2014 20:05:53 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Hartmut Knaack <knaack.h@gmx.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] iio: adc: rockchip_saradc: add support for rk3066-tsadc
+ variant
+References: <1999284.oRCTeZRSv1@diego> <540642CA.9080007@gmx.de> <38104193.mr2XbIjNkb@diego>
+In-Reply-To: <38104193.mr2XbIjNkb@diego>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Sep 2014, Mel Gorman wrote:
-
-> Since 2.6.24 there has been a paranoid check in move_freepages that looks
-> up the zone of two pages. This is a very slow path and the only time I've
-> seen this bug trigger recently is when memory initialisation was broken
-> during patch development. Despite the fact it's a slow path, this patch
-> converts the check to a VM_BUG_ON anyway as it is served its purpose by now.
+On 03/09/14 11:13, Heiko Stübner wrote:
+> Am Mittwoch, 3. September 2014, 00:20:58 schrieb Hartmut Knaack:
+>> Heiko Stübner schrieb:
+>>> Older Rockchip SoCs, at least the rk3066, used a slightly modified saradc
+>>> for temperature measurements. This so called tsadc does not contain any
+>>> active parts like temperature interrupts and only supports polling the
+>>> current temperature. The returned voltage can then be converted by a
+>>> suitable thermal driver to and actual temperature and used for thermal
+>>> handling.
+>>>
+>>> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+>>> ---
+>>
+>> Looks mostly good to me, just some minor style issues inline.
+>>
+>>> This is a different IP than the rk3288-tsadc Ceasar provided a driver for.
+>>> As the commit messages states, the one used on the rk3066 is just a
+>>> saradc,
+>>> while the new tsadc in the rk3288 contains active components for thermal
+>>> handling.
+>>>
+>>> A working example using the pending iio-thermal driver can found on
+>>> https://github.com/mmind/linux-rockchip/commit/c07e02f069d9677d489f2541766
+>>> 19fae36f2aad0> 
+>>>  .../bindings/iio/adc/rockchip-saradc.txt           |  2 +-
+>>>  drivers/iio/adc/rockchip_saradc.c                  | 62
+>>>  +++++++++++++++++----- 2 files changed, 50 insertions(+), 14
+>>>  deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+>>> b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt index
+>>> 5d3ec1d..a9a5fe1 100644
+>>> --- a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+>>> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+>>> @@ -1,7 +1,7 @@
+>>>
+>>>  Rockchip Successive Approximation Register (SAR) A/D Converter bindings
+>>>
+>>>  Required properties:
+>>> -- compatible: Should be "rockchip,saradc"
+>>> +- compatible: Should be "rockchip,saradc" or "rockchip,rk3066-tsadc"
+>>>
+>>>  - reg: physical base address of the controller and length of memory
+>>>  mapped
+>>>  
+>>>         region.
+>>>  
+>>>  - interrupts: The interrupt number to the cpu. The interrupt specifier
+>>>  format> 
+>>> diff --git a/drivers/iio/adc/rockchip_saradc.c
+>>> b/drivers/iio/adc/rockchip_saradc.c index e074a0b..7effada 100644
+>>> --- a/drivers/iio/adc/rockchip_saradc.c
+>>> +++ b/drivers/iio/adc/rockchip_saradc.c
+>>> @@ -18,13 +18,13 @@
+>>>
+>>>  #include <linux/interrupt.h>
+>>>  #include <linux/io.h>
+>>>  #include <linux/of.h>
+>>>
+>>> +#include <linux/of_device.h>
+>>>
+>>>  #include <linux/clk.h>
+>>>  #include <linux/completion.h>
+>>>  #include <linux/regulator/consumer.h>
+>>>  #include <linux/iio/iio.h>
+>>>  
+>>>  #define SARADC_DATA			0x00
+>>>
+>>> -#define SARADC_DATA_MASK		0x3ff
+>>>
+>>>  #define SARADC_STAS			0x04
+>>>  #define SARADC_STAS_BUSY		BIT(0)
+>>>
+>>> @@ -38,15 +38,22 @@
+>>>
+>>>  #define SARADC_DLY_PU_SOC		0x0c
+>>>  #define SARADC_DLY_PU_SOC_MASK		0x3f
+>>>
+>>> -#define SARADC_BITS			10
+>>>
+>>>  #define SARADC_TIMEOUT			msecs_to_jiffies(100)
+>>>
+>>> +struct rockchip_saradc_data {
+>>> +	int				num_bits;
+>>> +	const struct iio_chan_spec	*channels;
+>>> +	int				num_channels;
+>>> +	unsigned long			clk_rate;
+>>> +};
+>>> +
+>>>
+>>>  struct rockchip_saradc {
+>>>  
+>>>  	void __iomem		*regs;
+>>>  	struct clk		*pclk;
+>>>  	struct clk		*clk;
+>>>  	struct completion	completion;
+>>>  	struct regulator	*vref;
+>>>
+>>> +	const struct rockchip_saradc_data *data;
+>>>
+>>>  	u16			last_val;
+>>>  
+>>>  };
+>>
+>> The alignment of the whole block should be adjusted to fit with the new
+>> element.
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Hmm, I'm not sure if this should be in this patch, as changing the indentation 
+> is more or less an unrelated change which makes recognizing the actual change 
+> of adding the data field harder to see. 
+> 
+> It could be a second patch on top to adapt the formating, but this also sounds 
+> a bit like overkill.
+> 
+> In any case I guess I'll wait for Jonathan to decide how he likes this to be 
+> approached.
+> 
+Personally I hate this sort of careful block alignment for structures precisely because
+it generates churn.  I just don't hate it enough to moan about it in reviews :)
 
-Acked-by: David Rientjes <rientjes@google.com>
+Definitely doesn't want to be in this patch, but feel free to submit another
+either tidying up or dropping it in favour of not bothering to align it.
+
+
+> 
+>>> @@ -90,7 +97,7 @@ static int rockchip_saradc_read_raw(struct iio_dev
+>>> *indio_dev,> 
+>>>  		}
+>>>  		
+>>>  		*val = ret / 1000;
+>>>
+>>> -		*val2 = SARADC_BITS;
+>>> +		*val2 = info->data->num_bits;
+>>>
+>>>  		return IIO_VAL_FRACTIONAL_LOG2;
+>>>  	
+>>>  	default:
+>>>  		return -EINVAL;
+>>>
+>>> @@ -103,7 +110,7 @@ static irqreturn_t rockchip_saradc_isr(int irq, void
+>>> *dev_id)> 
+>>>  	/* Read value */
+>>>  	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
+>>>
+>>> -	info->last_val &= SARADC_DATA_MASK;
+>>> +	info->last_val &= BIT(info->data->num_bits) - 1;
+>>
+>> I think using GENMASK would reflect the intention better, that you want to
+>> mask out your data.
+> 
+> I didn't know GENMASK before, so thanks for the pointer .. this looks quite 
+> cool :-)
+> 
+> 
+>>>  	/* Clear irq & power down adc */
+>>>  	writel_relaxed(0, info->regs + SARADC_CTRL);
+>>>
+>>> @@ -133,12 +140,44 @@ static const struct iio_chan_spec
+>>> rockchip_saradc_iio_channels[] = {> 
+>>>  	ADC_CHANNEL(2, "adc2"),
+>>>  
+>>>  };
+>>>
+>>> +static const struct rockchip_saradc_data saradc_data = {
+>>> +	.num_bits = 10,
+>>> +	.channels = rockchip_saradc_iio_channels,
+>>> +	.num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels),
+>>> +	.clk_rate = 1000000,
+>>> +};
+>>> +
+>>> +static const struct iio_chan_spec rockchip_rk3066_tsadc_iio_channels[] =
+>>> {
+>>> +	ADC_CHANNEL(0, "adc0"),
+>>> +	ADC_CHANNEL(1, "adc1"),
+>>> +};
+>>> +
+>>> +static const struct rockchip_saradc_data rk3066_tsadc_data = {
+>>> +	.num_bits = 12,
+>>> +	.channels = rockchip_rk3066_tsadc_iio_channels,
+>>> +	.num_channels = ARRAY_SIZE(rockchip_rk3066_tsadc_iio_channels),
+>>> +	.clk_rate = 50000,
+>>> +};
+>>> +
+>>> +static const struct of_device_id rockchip_saradc_match[] = {
+>>> +	{
+>>> +		.compatible = "rockchip,saradc",
+>>> +		.data = &saradc_data,
+>>> +	}, {
+>>> +		.compatible = "rockchip,rk3066-tsadc",
+>>> +		.data = &rk3066_tsadc_data,
+>>> +	},
+>>> +	{},
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
+>>> +
+>>>
+>>>  static int rockchip_saradc_probe(struct platform_device *pdev)
+>>>  {
+>>>  
+>>>  	struct rockchip_saradc *info = NULL;
+>>>  	struct device_node *np = pdev->dev.of_node;
+>>>  	struct iio_dev *indio_dev = NULL;
+>>>  	struct resource	*mem;
+>>>
+>>> +	const struct of_device_id *match;
+>>>
+>>>  	int ret;
+>>>  	int irq;
+>>>
+>>> @@ -152,6 +191,9 @@ static int rockchip_saradc_probe(struct
+>>> platform_device *pdev)> 
+>>>  	}
+>>>  	info = iio_priv(indio_dev);
+>>>
+>>> +	match = of_match_device(rockchip_saradc_match, &pdev->dev);
+>>> +	info->data = match->data;
+>>> +
+>>>
+>>>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>  	info->regs = devm_ioremap_resource(&pdev->dev, mem);
+>>>  	if (IS_ERR(info->regs))
+>>>
+>>> @@ -195,7 +237,7 @@ static int rockchip_saradc_probe(struct
+>>> platform_device *pdev)> 
+>>>  	 * Use a default of 1MHz for the converter clock.
+>>>  	 * This may become user-configurable in the future.
+>>>  	 */
+>>>
+>>> -	ret = clk_set_rate(info->clk, 1000000);
+>>> +	ret = clk_set_rate(info->clk, info->data->clk_rate);
+>>>
+>>>  	if (ret < 0) {
+>>>  	
+>>>  		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
+>>>  		return ret;
+>>>
+>>> @@ -227,8 +269,8 @@ static int rockchip_saradc_probe(struct
+>>> platform_device *pdev)> 
+>>>  	indio_dev->info = &rockchip_saradc_iio_info;
+>>>  	indio_dev->modes = INDIO_DIRECT_MODE;
+>>>
+>>> -	indio_dev->channels = rockchip_saradc_iio_channels;
+>>> -	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
+>>> +	indio_dev->channels = info->data->channels;
+>>> +	indio_dev->num_channels = info->data->num_channels;
+>>>
+>>>  	ret = iio_device_register(indio_dev);
+>>>  	if (ret)
+>>>
+>>> @@ -296,12 +338,6 @@ static int rockchip_saradc_resume(struct device *dev)
+>>>
+>>>  static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
+>>>  
+>>>  			 rockchip_saradc_suspend, rockchip_saradc_resume);
+>>>
+>>> -static const struct of_device_id rockchip_saradc_match[] = {
+>>> -	{ .compatible = "rockchip,saradc" },
+>>> -	{},
+>>> -};
+>>> -MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
+>>> -
+>>>
+>>>  static struct platform_driver rockchip_saradc_driver = {
+>>>  
+>>>  	.probe		= rockchip_saradc_probe,
+>>>  	.remove		= rockchip_saradc_remove,
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
