@@ -1,87 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaIJHdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:33:45 -0400
-Received: from ozlabs.org ([103.22.144.67]:51025 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaIJHdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:33:43 -0400
-Date: Wed, 10 Sep 2014 17:33:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@linaro.org>, Simon Horman <horms@verge.net.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>
-Subject: linux-next: manual merge of the clk tree with the renesas tree
-Message-ID: <20140910173335.594bf533@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1751538AbaIJHgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:36:09 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35148 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaIJHgH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 03:36:07 -0400
+Message-ID: <540FFF61.1010107@collabora.com>
+Date: Wed, 10 Sep 2014 09:36:01 +0200
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/f/26H2T0/Lx5SdFyXpwI7vb"; protocol="application/pgp-signature"
+To: Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        shawn.guo@freescale.com
+Subject: Re: [PATCH v10 2/9] clk: Move all drivers to use internal API
+References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com> <1410271497-27148-1-git-send-email-tomeu.vizoso@collabora.com> <20140909191205.19023.61366@quantum>
+In-Reply-To: <20140909191205.19023.61366@quantum>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/f/26H2T0/Lx5SdFyXpwI7vb
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/09/2014 09:12 PM, Mike Turquette wrote:
+> Quoting Tomeu Vizoso (2014-09-09 07:04:57)
+>> In preparation to change the public API to return a per-user clk structure,
+>> remove any usage of this public API from the clock implementations.
+>>
+>> The reason for having this in a separate commit from the one that introduces
+>> the implementation of the new functions is to separate the changes generated
+>> with Coccinelle from the rest, and keep the patches' size reasonable.
+>>
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>> Tested-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+>> Tested-by: Heiko Stuebner <heiko@sntech.de>
+>> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+>>
+>> ---
+>>
+>> v10: * Add a few more files to be converted
+>>      * Re-generate the patch on top of the latest changes
+> 
+> Hi Tomeu,
+> 
+> Generating this on top of linux-next is a no-go. I can't apply it to my
+> tree. The best thing is to generate it on top of -rc4, and that is what
+> I will merge.
 
-Hi Mike,
+Makes sense now, will do that.
 
-Today's linux-next merge of the clk tree got a conflict in
-Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
-between commit b32c44b93af3 ("clk: shmobile: Add r8a7740, sh73a0 SoCs
-to MSTP bindings") from the renesas tree and commit 5acb7bbbab7c ("ARM:
-shmobile: r8a7794: document MSTP clock support") from the clk tree.
+> Running the script against linux-next is still very useful and lets us
+> patch up the stuff that is not going through the clk tree. E.g. the LPSS
+> driver is already in mainline, so just running the semantic patch
+> against -rc4 is sufficient for it. However a patch like Shawn's "ARM:
+> imx: add an exclusive gate clock type" came in through the i.MX tree and
+> we'll need to patch it after the fact.
+> 
+> The best way to do that is for me to host a branch with just your
+> changes in it that everyone can pull in as a dependency with the same
+> commit ids.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Sounds good to me.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> <snip>
+> 
+>> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+>> index bcbdbd2..f4c6ccf 100644
+>> --- a/drivers/acpi/acpi_lpss.c
+>> +++ b/drivers/acpi/acpi_lpss.c
+>> @@ -11,7 +11,6 @@
+>>   */
+>>  
+>>  #include <linux/acpi.h>
+>> -#include <linux/clk.h>
+>>  #include <linux/clkdev.h>
+>>  #include <linux/clk-provider.h>
+>>  #include <linux/err.h>
+>> @@ -78,7 +77,7 @@ struct lpss_private_data {
+>>         void __iomem *mmio_base;
+>>         resource_size_t mmio_size;
+>>         unsigned int fixed_clk_rate;
+>> -       struct clk *clk;
+>> +       struct clk_core *clk;
+>>         const struct lpss_device_desc *dev_desc;
+>>         u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
+>>  };
+>> @@ -229,7 +228,7 @@ static int register_device_clock(struct acpi_device *adev,
+>>  {
+>>         const struct lpss_device_desc *dev_desc = pdata->dev_desc;
+>>         const char *devname = dev_name(&adev->dev);
+>> -       struct clk *clk = ERR_PTR(-ENODEV);
+>> +       struct clk_core *clk = ERR_PTR(-ENODEV);
+>>         struct lpss_clk_data *clk_data;
+>>         const char *parent, *clk_name;
+>>         void __iomem *prv_base;
+> 
+> I think the following hunk is missing from your change:
+> 
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -57,7 +57,7 @@ ACPI_MODULE_NAME("acpi_lpss");
+>  struct lpss_shared_clock {
+>         const char *name;
+>         unsigned long rate;
+> -       struct clk *clk;
+> +       struct clk_core *clk;
+>  };
+> 
+> 
+> Otherwise register_device_clock will blow up because we are assigning a
+> struct clk * to a struct clk_core *.
 
-diff --cc Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.t=
-xt
-index 8f1424f0fa43,a03c8c029a94..000000000000
---- a/Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
-+++ b/Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
-@@@ -15,7 -14,7 +15,8 @@@ Required Properties
-      - "renesas,r8a7779-mstp-clocks" for R8A7779 (R-Car H1) MSTP gate cloc=
-ks
-      - "renesas,r8a7790-mstp-clocks" for R8A7790 (R-Car H2) MSTP gate cloc=
-ks
-      - "renesas,r8a7791-mstp-clocks" for R8A7791 (R-Car M2) MSTP gate cloc=
-ks
-+     - "renesas,r8a7794-mstp-clocks" for R8A7794 (R-Car E2) MSTP gate cloc=
-ks
- +    - "renesas,sh73a0-mstp-clocks" for SH73A0 (SH-MobileAG5) MSTP gate cl=
-ocks
-      - "renesas,cpg-mstp-clock" for generic MSTP gate clocks
-    - reg: Base address and length of the I/O mapped registers used by the =
-MSTP
-      clocks. The first register is the clock control register and is manda=
-tory.
+Yeah, that one isn't there because the code has been removed in
+linux-next by this patch:
 
---Sig_/f/26H2T0/Lx5SdFyXpwI7vb
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+http://permalink.gmane.org/gmane.linux.acpi.devel/70205
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> Do you mind testing with ARCH=x86_64 and allmodconfig? That will help
+> catch issues like this.
 
-iQIcBAEBCAAGBQJUD/7VAAoJEMDTa8Ir7ZwVugUP/07rvzIz4QrQ7Q7tOtczr1Ro
-l8aoTVmYt+5vur20rZSnkBtVm5qy0r3DCIhtnMSrM6/+AGsu3nrLjICFLNVfSzNG
-EOy17ZVGXjWPTFhXGNt6+/6gIBDnNGVsw9GjUhRVrpbymLbpEMr2e4zq2NNYJpRL
-ojjRsWmA9PGqgo4GcAJGhtT+Fx4Umtk+I2HBqwOgfeIwnZ4zOKPzW03XeWJjKnlW
-WujblPrLeOdKgT8P3SFVXN4Z1cowpy/tSQePFPOZgqCzOgvjkK4oHbk7e66wmW2P
-bUushSTUl2FpnR+F+rUuJz+bI2wQqaa94xzttCPt3m2ly5tjYn+kdo+AyhbKWOaN
-VGn+37Ik+N/8RihZ1+/wbic854Ot81rUQ53OshxsNAHFtjXQ3qFp+AtAYfstKgT9
-oD5Cs4AsuN2wg+NCGh7rucvtgNVBbj+L2hTrbj43903R4rU8ilD2KDRXxs/yUZGN
-yiCVhe7ufnbt79oY1PE8iJfYsC23htwo/sSwU/+xLhpopHbZ2rFQ1DJL3zgQD95B
-oJY5Tj8W/B4TgmFjwsQBjW/vAyEGtbe1BEPLYAvtWLJigRJhCWwY+u9BCDKEmGHX
-a3fnmZkaVXb/7agFnYx5XBw5DJlvGHCjpL/PeBAAbQsMCQuljpYgACnPUqh4PjE1
-eHKvjI0pTkmAgfQfjZwN
-=40jD
------END PGP SIGNATURE-----
+Will do. I have been having trouble building in a finite amount of time
+as many configs as I would have liked, and for some reason I'm not
+getting 0day notifications. So sorry about that and I hope no more such
+issues will slip through.
 
---Sig_/f/26H2T0/Lx5SdFyXpwI7vb--
+Regards,
+
+Tomeu
+
+> Regards,
+> Mike
+> 
+
