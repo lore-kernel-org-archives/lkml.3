@@ -1,137 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaIJPUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:20:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092AbaIJPUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:20:44 -0400
-Date: Wed, 10 Sep 2014 11:20:25 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Baoquan He <bhe@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, ebiederm@xmission.com,
-        tglx@linutronix.de, mingo@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v2 1/3] take the segment adding out of locate_mem_hole
- functions
-Message-ID: <20140910152025.GC7898@redhat.com>
-References: <1410262580-1561-1-git-send-email-bhe@redhat.com>
+	id S1752000AbaIJPVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:21:23 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:34699 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaIJPVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 11:21:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410262580-1561-1-git-send-email-bhe@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54106BBF.7010907@redhat.com>
+References: <1410044994-14943-1-git-send-email-hch@lst.de>
+	<CACVXFVMRqgEh7EFQ0cDEatsqtxsgBrbSQNH9b6UZTsSD+=OWdA__14121.5735966854$1410309057$gmane$org@mail.gmail.com>
+	<54106BBF.7010907@redhat.com>
+Date: Wed, 10 Sep 2014 23:21:20 +0800
+Message-ID: <CACVXFVNqFSFz7--VGi8j2aShT_QcVEqs0zxXkpgteqVMtqu18A@mail.gmail.com>
+Subject: Re: [PATCH] virtio_blk: merge S/G list entries by default
+From: Ming Lei <tom.leiming@gmail.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 07:36:18PM +0800, Baoquan He wrote:
-> In locate_mem_hole functions, a memory hole is located and added as
-> kexec_segment. But from the name of locate_mem_hole, it should only
-> take responsibility of searching a available memory hole to contain
-> data of a specified size.
-> 
-> So in this patch add a new field 'mem' into kexec_buf, then take that
-> kexec segment adding code out of locate_mem_hole_top_down and
-> locate_mem_hole_bottom_up. This make clear of the functionality of
-> locate_mem_hole just like it declars to do. And by this
-> locate_mem_hole_callback chould be used later if anyone want to locate
-> a memory hole for other use.
-> 
-> Meanwhile Vivek suggested opening code function __kexec_add_segment(),
-> that way we have to retreive ksegment pointer once and it is easy to
-> read. So just do it in this patch and remove __kexec_add_segment()
-> since no one use it anymore.
-> 
-> Signed-off-by: Baoquan He <bhe@redhat.com>
+On Wed, Sep 10, 2014 at 11:18 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 07/09/2014 12:32, Ming Lei ha scritto:
+>> It is a good idea to disable SG merge for vq incapable of indirect because
+>> there are very limited direct descriptors.
+>
+> I think you mean _enabling_ SG merge if indirect descriptors are not there.
 
-Bao,
+You are right, sorry for the typo.
 
-These 3 patches look good to me. I am assuming you have tested these
-to make sure nothing is broken.
+>> For vq capable of indirect, it should be better to not do SG merge at default
+>> because:
+>>
+>> - from hypervisor view, no matter how many segments one req has, all are
+>> submitted to host kernel by one syscall, such as readv/io_submit
+>>
+>> - host kernel still need to do the same merge again
+>
+> Here we agree.
+>
+> Paolo
+>
+>> From my test(virtio-blk over null_blk), looks enabling SG merge may cause
+>> throughput a little drop(~3%).
+>
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Thanks
-Vivek
-
-> ---
->  include/linux/kexec.h |  1 +
->  kernel/kexec.c        | 29 ++++++++---------------------
->  2 files changed, 9 insertions(+), 21 deletions(-)
-> 
-> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> index 4b2a0e1..9d957b7 100644
-> --- a/include/linux/kexec.h
-> +++ b/include/linux/kexec.h
-> @@ -178,6 +178,7 @@ struct kexec_buf {
->  	struct kimage *image;
->  	char *buffer;
->  	unsigned long bufsz;
-> +	unsigned long mem;
->  	unsigned long memsz;
->  	unsigned long buf_align;
->  	unsigned long buf_min;
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 2bee072..63bc3cd 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -2016,22 +2016,6 @@ static int __init crash_save_vmcoreinfo_init(void)
->  subsys_initcall(crash_save_vmcoreinfo_init);
->  
->  #ifdef CONFIG_KEXEC_FILE
-> -static int __kexec_add_segment(struct kimage *image, char *buf,
-> -			       unsigned long bufsz, unsigned long mem,
-> -			       unsigned long memsz)
-> -{
-> -	struct kexec_segment *ksegment;
-> -
-> -	ksegment = &image->segment[image->nr_segments];
-> -	ksegment->kbuf = buf;
-> -	ksegment->bufsz = bufsz;
-> -	ksegment->mem = mem;
-> -	ksegment->memsz = memsz;
-> -	image->nr_segments++;
-> -
-> -	return 0;
-> -}
-> -
->  static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
->  				    struct kexec_buf *kbuf)
->  {
-> @@ -2064,8 +2048,7 @@ static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
->  	} while (1);
->  
->  	/* If we are here, we found a suitable memory range */
-> -	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
-> -			    kbuf->memsz);
-> +	kbuf->mem = temp_start;
->  
->  	/* Success, stop navigating through remaining System RAM ranges */
->  	return 1;
-> @@ -2099,8 +2082,7 @@ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
->  	} while (1);
->  
->  	/* If we are here, we found a suitable memory range */
-> -	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
-> -			    kbuf->memsz);
-> +	kbuf->mem = temp_start;
->  
->  	/* Success, stop navigating through remaining System RAM ranges */
->  	return 1;
-> @@ -2187,7 +2169,12 @@ int kexec_add_buffer(struct kimage *image, char *buffer, unsigned long bufsz,
->  	}
->  
->  	/* Found a suitable memory range */
-> -	ksegment = &image->segment[image->nr_segments - 1];
-> +	ksegment = &image->segment[image->nr_segments];
-> +	ksegment->kbuf = kbuf->buffer;
-> +	ksegment->bufsz = kbuf->bufsz;
-> +	ksegment->mem = kbuf->mem;
-> +	ksegment->memsz = kbuf->memsz;
-> +	image->nr_segments++;
->  	*load_addr = ksegment->mem;
->  	return 0;
->  }
-> -- 
-> 1.8.5.3
+Thanks,
+-- 
+Ming Lei
