@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413AbaIJJva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 05:51:30 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:33210 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaIJJv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 05:51:26 -0400
-Date: Wed, 10 Sep 2014 10:51:19 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-Cc: Varka Bhadram <varkabhadram@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Support Opensource <Support.Opensource@diasemi.com>
-Subject: Re: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
- fuel-gauge device
-Message-ID: <20140910095119.GO30307@lee--X1>
-References: <cover.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <d6c7de200c9447dbafa74ee76739da943a0b73b2.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <53FF16BC.9050701@gmail.com>
- <2E89032DDAA8B9408CB92943514A0337AB5144B5@SW-EX-MBX01.diasemi.com>
+	id S1751706AbaIJJ7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 05:59:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879AbaIJJ7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 05:59:07 -0400
+Message-ID: <541020CB.8010302@redhat.com>
+Date: Wed, 10 Sep 2014 11:58:35 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB5144B5@SW-EX-MBX01.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Ching Huang <ching2048@areca.com.tw>, jbottomley@parallels.com,
+        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
+References: <1408433122.4748.73.camel@Centos6.3-64> <53FDE490.1070201@redhat.com> <1409240809.4762.259.camel@Centos6.3-64> <53FF2544.8020601@redhat.com> <20140909163057.GA25745@infradead.org>
+In-Reply-To: <20140909163057.GA25745@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 09 Sep 2014, Opensource [Adam Thomson] wrote:
-> On August 28, 2014 12:47, Varka Bhadram wrote:
-> 
-> > On 08/28/2014 04:18 PM, Adam Thomson wrote:
-> > 
-> > (...)
-> > 
-> > > +static int da9150_probe(struct i2c_client *client,
-> > > +			const struct i2c_device_id *id)
-> > > +{
-> > > +	struct da9150 *da9150;
-> > > +	int ret;
-> > > +
-> > > +	da9150 = devm_kzalloc(&client->dev, sizeof(struct da9150), GFP_KERNEL);
-> > > +	if (da9150 == NULL)
-> > > +		return -ENOMEM;
-> > 
-> > da9150 = devm_kzalloc(&client->dev, sizeof(*da9150), GFP_KERNEL);
-> > if (!da9150)
-> > 	return -ENOMEM;
-> 
-> Ok, no real difference, but can change it.
+On 09/09/2014 06:30 PM, Christoph Hellwig wrote:
+> Ching,
+>
+> do you have a chance to address Thomas second concern below?  As
+> far as I can tell (Thomas, please correct me) that's the last
+> outstanding concern, and I'd really like to merge the arcmsr updates
+> for the Linux 3.18 merge window.
 
-Not functionally, but we like to do things as succinctly as possible.
+Correct, still awaiting a response.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
