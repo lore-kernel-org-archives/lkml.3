@@ -1,134 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575AbaIJOMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:12:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36040 "EHLO mx1.redhat.com"
+	id S1752339AbaIJOKl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:10:41 -0400
+Received: from mga14.intel.com ([192.55.52.115]:46182 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774AbaIJOMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:12:18 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH] cpufreq, release policy->rwsem on error
-Date: Wed, 10 Sep 2014 10:12:08 -0400
-Message-Id: <1410358328-27303-1-git-send-email-prarit@redhat.com>
+	id S1752285AbaIJOKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:10:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
+   d="scan'208";a="589215291"
+From: kan.liang@intel.com
+To: a.p.zijlstra@chello.nl, eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        acme@kernel.org, ak@linux.intel.com, kan.liang@intel.com,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH V5 11/16] perf, core: Pass perf_sample_data to perf_callchain()
+Date: Wed, 10 Sep 2014 10:09:08 -0400
+Message-Id: <1410358153-421-12-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1410358153-421-1-git-send-email-kan.liang@intel.com>
+References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have not been able to reliably reproduce the hardware failure that caused
-the warning.  In order to reproduce this I resorted to (sorry for the
-cut-and-paste)
+From: Kan Liang <kan.liang@intel.com>
 
-	diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
-	index 728a2d8..c7724d2 100644
-	--- a/drivers/cpufreq/pcc-cpufreq.c
-	+++ b/drivers/cpufreq/pcc-cpufreq.c
-	@@ -146,6 +146,8 @@ static unsigned int pcc_get_freq(unsigned int cpu)
-		u32 input_buffer;
-		u32 output_buffer;
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers.
+The LBR call stack facility can help perf to get call chains of progam
+without frame pointer.
 
-	+       return 0;
-	+
-		spin_lock(&pcc_lock);
+This patch modifies various architectures' perf_callchain() to accept
+perf sample data. Later patch will add code that use the sample data to
+get call chains.
 
-		pr_debug("get: get_freq for CPU %d\n", cpu);
-
-to simulate the cpufreq_driver->get() hardware failure.
-
----8<---
-
-While debugging a cpufreq-related hardware failure on a system I saw the
-following lockdep warning:
-
- =========================
- [ BUG: held lock freed! ] 3.17.0-rc4+ #1 Tainted: G            E
- -------------------------
- insmod/2247 is freeing memory ffff88006e1b1400-ffff88006e1b17ff, with a lock still held there!
-  (&policy->rwsem){+.+...}, at: [<ffffffff8156d37d>] __cpufreq_add_dev.isra.21+0x47d/0xb80
- 3 locks held by insmod/2247:
-  #0:  (subsys mutex#5){+.+.+.}, at: [<ffffffff81485579>] subsys_interface_register+0x69/0x120
-  #1:  (cpufreq_rwsem){.+.+.+}, at: [<ffffffff8156cf73>] __cpufreq_add_dev.isra.21+0x73/0xb80
-  #2:  (&policy->rwsem){+.+...}, at: [<ffffffff8156d37d>] __cpufreq_add_dev.isra.21+0x47d/0xb80
-
- stack backtrace:
- CPU: 0 PID: 2247 Comm: insmod Tainted: G            E  3.17.0-rc4+ #1
- Hardware name: HP ProLiant MicroServer Gen8, BIOS J06 08/24/2013
-  0000000000000000 000000008f3063c4 ffff88006f87bb30 ffffffff8171b358
-  ffff88006bcf3750 ffff88006f87bb68 ffffffff810e09e1 ffff88006e1b1400
-  ffffea0001b86c00 ffffffff8156d327 ffff880073003500 0000000000000246
- Call Trace:
-  [<ffffffff8171b358>] dump_stack+0x4d/0x66
-  [<ffffffff810e09e1>] debug_check_no_locks_freed+0x171/0x180
-  [<ffffffff8156d327>] ? __cpufreq_add_dev.isra.21+0x427/0xb80
-  [<ffffffff8121412b>] kfree+0xab/0x2b0
-  [<ffffffff8156d327>] __cpufreq_add_dev.isra.21+0x427/0xb80
-  [<ffffffff81724cf7>] ? _raw_spin_unlock+0x27/0x40
-  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
-  [<ffffffff8156da8e>] cpufreq_add_dev+0xe/0x10
-  [<ffffffff814855d1>] subsys_interface_register+0xc1/0x120
-  [<ffffffff8156bcf2>] cpufreq_register_driver+0x112/0x340
-  [<ffffffff8121415a>] ? kfree+0xda/0x2b0
-  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
-  [<ffffffffa003562e>] pcc_cpufreq_init+0x4af/0xe81 [pcc_cpufreq]
-  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
-  [<ffffffff81002144>] do_one_initcall+0xd4/0x210
-  [<ffffffff811f7472>] ? __vunmap+0xd2/0x120
-  [<ffffffff81127155>] load_module+0x1315/0x1b70
-  [<ffffffff811222a0>] ? store_uevent+0x70/0x70
-  [<ffffffff811229d9>] ? copy_module_from_fd.isra.44+0x129/0x180
-  [<ffffffff81127b86>] SyS_finit_module+0xa6/0xd0
-  [<ffffffff81725b69>] system_call_fastpath+0x16/0x1b
- cpufreq: __cpufreq_add_dev: ->get() failed
-insmod: ERROR: could not insert module pcc-cpufreq.ko: No such device
-
-The warning occurs in the __cpufreq_add_dev() code which does
-
-        down_write(&policy->rwsem);
-	...
-        if (cpufreq_driver->get && !cpufreq_driver->setpolicy) {
-                policy->cur = cpufreq_driver->get(policy->cpu);
-                if (!policy->cur) {
-                        pr_err("%s: ->get() failed\n", __func__);
-                        goto err_get_freq;
-                }
-
-If cpufreq_driver->get(policy->cpu) returns an error we execute the
-code at err_get_freq, which does not up the policy->rwsem.  This causes
-the lockdep warning.
-
-Trivial patch to up the policy->rwsem in the error path.
-
-After the patch has been applied, and an error occurs in the
-cpufreq_driver->get(policy->cpu) call we will now see
-
-cpufreq: __cpufreq_add_dev: ->get() failed
-cpufreq: __cpufreq_add_dev: ->get() failed
-modprobe: ERROR: could not insert 'pcc_cpufreq': No such device
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- drivers/cpufreq/cpufreq.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/kernel/perf_event.c     | 4 ++--
+ arch/powerpc/perf/callchain.c    | 4 ++--
+ arch/sparc/kernel/perf_event.c   | 4 ++--
+ arch/x86/kernel/cpu/perf_event.c | 4 ++--
+ include/linux/perf_event.h       | 4 +++-
+ kernel/events/callchain.c        | 8 +++++---
+ kernel/events/core.c             | 2 +-
+ kernel/events/internal.h         | 3 ++-
+ 8 files changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index d9fdedd..aadaed0 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1289,6 +1289,8 @@ err_get_freq:
- 		per_cpu(cpufreq_cpu_data, j) = NULL;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 266cba4..9532bd0 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -584,8 +584,8 @@ user_backtrace(struct frame_tail __user *tail,
+ 	return buftail.fp - 1;
+ }
  
-+	up_write(&policy->rwsem);
-+
- 	if (cpufreq_driver->exit)
- 		cpufreq_driver->exit(policy);
- err_set_policy_cpu:
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
+ {
+ 	struct frame_tail __user *tail;
+ 
+diff --git a/arch/powerpc/perf/callchain.c b/arch/powerpc/perf/callchain.c
+index 74d1e78..b379ebc 100644
+--- a/arch/powerpc/perf/callchain.c
++++ b/arch/powerpc/perf/callchain.c
+@@ -482,8 +482,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
+ 	}
+ }
+ 
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
+ {
+ 	if (current_is_64bit())
+ 		perf_callchain_user_64(entry, regs);
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index d35c490..9078fe2 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1791,8 +1791,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
+ 	} while (entry->nr < PERF_MAX_STACK_DEPTH);
+ }
+ 
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
+ {
+ 	perf_callchain_store(entry, regs->tpc);
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index a18fd78..71e293a 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -2049,8 +2049,8 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+ }
+ #endif
+ 
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
+ {
+ 	struct stack_frame frame;
+ 	const void __user *fp;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index a190e91..8db3520 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -735,7 +735,9 @@ extern void perf_event_fork(struct task_struct *tsk);
+ /* Callchains */
+ DECLARE_PER_CPU(struct perf_callchain_entry, perf_callchain_entry);
+ 
+-extern void perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs);
++extern void perf_callchain_user(struct perf_callchain_entry *entry,
++				struct pt_regs *regs,
++				struct perf_sample_data *data);
+ extern void perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs);
+ 
+ static inline void perf_callchain_store(struct perf_callchain_entry *entry, u64 ip)
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index f2a88de..4a18e1e 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -30,7 +30,8 @@ __weak void perf_callchain_kernel(struct perf_callchain_entry *entry,
+ }
+ 
+ __weak void perf_callchain_user(struct perf_callchain_entry *entry,
+-				struct pt_regs *regs)
++				struct pt_regs *regs,
++				struct perf_sample_data *data)
+ {
+ }
+ 
+@@ -157,7 +158,8 @@ put_callchain_entry(int rctx)
+ }
+ 
+ struct perf_callchain_entry *
+-perf_callchain(struct perf_event *event, struct pt_regs *regs)
++perf_callchain(struct perf_event *event, struct pt_regs *regs,
++	       struct perf_sample_data *data)
+ {
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
+@@ -198,7 +200,7 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
+ 				goto exit_put;
+ 
+ 			perf_callchain_store(entry, PERF_CONTEXT_USER);
+-			perf_callchain_user(entry, regs);
++			perf_callchain_user(entry, regs, data);
+ 		}
+ 	}
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b37f2f3..eed0424 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4885,7 +4885,7 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
+ 
+-		data->callchain = perf_callchain(event, regs);
++		data->callchain = perf_callchain(event, regs, data);
+ 
+ 		if (data->callchain)
+ 			size += data->callchain->nr;
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 569b2187..cd18b64 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -147,7 +147,8 @@ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+ 
+ /* Callchain handling */
+ extern struct perf_callchain_entry *
+-perf_callchain(struct perf_event *event, struct pt_regs *regs);
++perf_callchain(struct perf_event *event, struct pt_regs *regs,
++	       struct perf_sample_data *data);
+ extern int get_callchain_buffers(void);
+ extern void put_callchain_buffers(void);
+ 
 -- 
-1.7.9.3
+1.8.3.2
 
