@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaIJHuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:50:10 -0400
-Received: from sym2.noone.org ([178.63.92.236]:41777 "EHLO sym2.noone.org"
+	id S1752066AbaIJHud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:50:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:21032 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751260AbaIJHuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:50:05 -0400
-Date: Wed, 10 Sep 2014 09:49:59 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Chung-Lin Tang <chunglin_tang@mentor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Valdis.Kletnieks@vt.edu,
-        Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        lftan.linux@gmail.com, cltang@codesourcery.com
-Subject: Re: [PATCH v3 25/29] nios2: Module support
-Message-ID: <20140910074959.GA14260@distanz.ch>
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>
- <1410168160-3624-26-git-send-email-lftan@altera.com>
- <75377.1410297958@turing-police.cc.vt.edu>
- <540FFDD5.8000403@mentor.com>
+	id S1752026AbaIJHua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 03:50:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,496,1406617200"; 
+   d="scan'208";a="589054300"
+Date: Wed, 10 Sep 2014 10:50:26 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of
+ LPSS devices
+Message-ID: <20140910075026.GB13406@lahna.fi.intel.com>
+References: <540E91F0.2060306@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <540FFDD5.8000403@mentor.com>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <540E91F0.2060306@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-10 at 09:29:25 +0200, Chung-Lin Tang <chunglin_tang@mentor.com> wrote:
-> On 14/9/10 5:25 AM, Valdis.Kletnieks@vt.edu wrote:
-> > On Mon, 08 Sep 2014 17:22:36 +0800, Ley Foon Tan said:
-> >> This patch adds support for loadable modules.
-> >>
-> >> Signed-off-by: Ley Foon Tan <lftan@altera.com>
-> > 
-> >> +/*
-> >> + * Modules should NOT be allocated with kmalloc for (obvious) reasons.
-> >> + * But we do it for now to avoid relocation issues. CALL26/PCREL26 cannot reach
-> >> + * from 0x80000000 (vmalloc area) to 0xc00000000 (kernel) (kmalloc returns
-> >> + * addresses in 0xc0000000)
-> >> + */
-> > 
-> > That's a nice scary comment to see. :)
-> > 
-> > What's the long-term plan here?
-> > 
+On Tue, Sep 09, 2014 at 01:36:48PM +0800, Fu, Zhonghui wrote:
+> >From 6deb00230f5df68da3ca7490402a0c537bf386bb Mon Sep 17 00:00:00 2001
+> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+> Date: Tue, 9 Sep 2014 13:02:25 +0800
+> Subject: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
 > 
-> We would probably need to add the ability to add trampolines in some
-> way, though this of course impairs a little performance. Or if the
-> default region of vmalloc can be configured to use the same 256MB region
-> as the kernel.
+> LPSS devices must suspend/resume in fixed order. Or some LPSS devices
+> will hang during the transition to ACPI_STATE_D0 state.
+
+In addition to the comment from Rafael, I would like to have more
+details here why we must suspend/resume the LPSS devices in certain
+order.
+
 > 
-> I wonder how MIPS (which has similar same-region call/jump instructions)
-> deals with this?
-
-Please see Arnd's comment on the v2 of this patch [1] for a solution.
-
-[1] http://www.spinics.net/lists/linux-arch/msg27059.html
+> Signed-off-by: Li Aubrey <aubrey.li@linux.intel.com>
+> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+> ---
+>  drivers/acpi/acpi_lpss.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index fddc1e8..54e5c97 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -419,7 +419,7 @@ static int acpi_lpss_create_device(struct acpi_device *adev,
+>  	adev->driver_data = pdata;
+>  	pdev = acpi_create_platform_device(adev);
+>  	if (!IS_ERR_OR_NULL(pdev)) {
+> -		device_enable_async_suspend(&pdev->dev);
+> +		device_disable_async_suspend(&pdev->dev);
+>  		return 1;
+>  	}
+>  
+> -- 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
