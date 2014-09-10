@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaIJVWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:22:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28673 "EHLO mx1.redhat.com"
+	id S1753750AbaIJVWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:22:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753580AbaIJVWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:22:07 -0400
+	id S1753580AbaIJVWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 17:22:13 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 1/6] KEYS: Fix termination condition in assoc array garbage
- collection
+Subject: [PATCH 2/6] KEYS: Reinstate EPERM for a key type name beginning
+ with a '.'
 From: David Howells <dhowells@redhat.com>
 To: jmorris@namei.org
-Cc: Don Zickus <dzickus@redhat.com>, dhowells@redhat.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 10 Sep 2014 22:22:00 +0100
-Message-ID: <20140910212200.10752.68314.stgit@warthog.procyon.org.uk>
+Cc: keyrings@linux-nfs.org, linux-kernel@vger.kernel.org, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>, Vivek Goyal <vgoyal@redhat.com>
+Date: Wed, 10 Sep 2014 22:22:06 +0100
+Message-ID: <20140910212206.10752.21818.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140910212154.10752.23343.stgit@warthog.procyon.org.uk>
 References: <20140910212154.10752.23343.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -29,103 +29,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes CVE-2014-3631.
+Reinstate the generation of EPERM for a key type name beginning with a '.' in
+a userspace call.  Types whose name begins with a '.' are internal only.
 
-It is possible for an associative array to end up with a shortcut node at the
-root of the tree if there are more than fan-out leaves in the tree, but they
-all crowd into the same slot in the lowest level (ie. they all have the same
-first nibble of their index keys).
+The test was removed by:
 
-When assoc_array_gc() returns back up the tree after scanning some leaves, it
-can fall off of the root and crash because it assumes that the back pointer
-from a shortcut (after label ascend_old_tree) must point to a normal node -
-which isn't true of a shortcut node at the root.
+	commit a4e3b8d79a5c6d40f4a9703abf7fe3abcc6c3b8d
+	Author: Mimi Zohar <zohar@linux.vnet.ibm.com>
+	Date:   Thu May 22 14:02:23 2014 -0400
+	Subject: KEYS: special dot prefixed keyring name bug fix
 
-Should we find we're ascending rootwards over a shortcut, we should check to
-see if the backpointer is zero - and if it is, we have completed the scan.
+I think we want to keep the restriction on type name so that userspace can't
+add keys of a special internal type.
 
-This particular bug cannot occur if the root node is not a shortcut - ie. if
-you have fewer than 17 keys in a keyring or if you have at least two keys that
-sit into separate slots (eg. a keyring and a non keyring).
-
-This can be reproduced by:
-
-	ring=`keyctl newring bar @s`
-	for ((i=1; i<=18; i++)); do last_key=`keyctl newring foo$i $ring`; done
-	keyctl timeout $last_key 2
-
-Doing this:
-
-	echo 3 >/proc/sys/kernel/keys/gc_delay
-
-first will speed things up.
-
-If we do fall off of the top of the tree, we get the following oops:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-IP: [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
-PGD dae15067 PUD cfc24067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in: xt_nat xt_mark nf_conntrack_netbios_ns nf_conntrack_broadcast ip6t_rpfilter ip6t_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_ni
-CPU: 0 PID: 26011 Comm: kworker/0:1 Not tainted 3.14.9-200.fc20.x86_64 #1
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-Workqueue: events key_garbage_collector
-task: ffff8800918bd580 ti: ffff8800aac14000 task.ti: ffff8800aac14000
-RIP: 0010:[<ffffffff8136cea7>] [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
-RSP: 0018:ffff8800aac15d40  EFLAGS: 00010206
-RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff8800aaecacc0
-RDX: ffff8800daecf440 RSI: 0000000000000001 RDI: ffff8800aadc2bc0
-RBP: ffff8800aac15da8 R08: 0000000000000001 R09: 0000000000000003
-R10: ffffffff8136ccc7 R11: 0000000000000000 R12: 0000000000000000
-R13: 0000000000000000 R14: 0000000000000070 R15: 0000000000000001
-FS:  0000000000000000(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000018 CR3: 00000000db10d000 CR4: 00000000000006f0
-Stack:
- ffff8800aac15d50 0000000000000011 ffff8800aac15db8 ffffffff812e2a70
- ffff880091a00600 0000000000000000 ffff8800aadc2bc3 00000000cd42c987
- ffff88003702df20 ffff88003702dfa0 0000000053b65c09 ffff8800aac15fd8
-Call Trace:
- [<ffffffff812e2a70>] ? keyring_detect_cycle_iterator+0x30/0x30
- [<ffffffff812e3e75>] keyring_gc+0x75/0x80
- [<ffffffff812e1424>] key_garbage_collector+0x154/0x3c0
- [<ffffffff810a67b6>] process_one_work+0x176/0x430
- [<ffffffff810a744b>] worker_thread+0x11b/0x3a0
- [<ffffffff810a7330>] ? rescuer_thread+0x3b0/0x3b0
- [<ffffffff810ae1a8>] kthread+0xd8/0xf0
- [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
- [<ffffffff816ffb7c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
-Code: 08 4c 8b 22 0f 84 bf 00 00 00 41 83 c7 01 49 83 e4 fc 41 83 ff 0f 4c 89 65 c0 0f 8f 5a fe ff ff 48 8b 45 c0 4d 63 cf 49 83 c1 02 <4e> 8b 34 c8 4d 85 f6 0f 84 be 00 00 00 41 f6 c6 01 0f 84 92
-RIP  [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
- RSP <ffff8800aac15d40>
-CR2: 0000000000000018
----[ end trace 1129028a088c0cbd ]---
+Note that removal of the test causes several of the tests in the keyutils
+testsuite to fail.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
 
- lib/assoc_array.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ security/keys/keyctl.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/lib/assoc_array.c b/lib/assoc_array.c
-index ae146f0734eb..2404d03e251a 100644
---- a/lib/assoc_array.c
-+++ b/lib/assoc_array.c
-@@ -1723,11 +1723,13 @@ ascend_old_tree:
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
- 		slot = shortcut->parent_slot;
- 		cursor = shortcut->back_pointer;
-+		if (!cursor)
-+			goto gc_complete;
- 	} else {
- 		slot = node->parent_slot;
- 		cursor = ptr;
- 	}
--	BUG_ON(!ptr);
-+	BUG_ON(!cursor);
- 	node = assoc_array_ptr_to_node(cursor);
- 	slot++;
- 	goto continue_node;
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index e26f860e5f2e..eff88a5f5d40 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -37,6 +37,8 @@ static int key_get_type_from_user(char *type,
+ 		return ret;
+ 	if (ret == 0 || ret >= len)
+ 		return -EINVAL;
++	if (type[0] == '.')
++		return -EPERM;
+ 	type[len - 1] = '\0';
+ 	return 0;
+ }
 
