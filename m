@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaIJCh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:37:28 -0400
-Received: from mail-bl2on0109.outbound.protection.outlook.com ([65.55.169.109]:64544
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751432AbaIJCh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:37:26 -0400
-X-Greylist: delayed 85692 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 22:37:26 EDT
-From: Robin Gong <b38343@freescale.com>
-To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <Frank.Li@freescale.com>
-Subject: [PATCH v1] ARM: dts: imx6dl: disable dma support for spi on i.mx6dl
-Date: Wed, 10 Sep 2014 09:33:36 +0800
-Message-ID: <1410312816-32171-1-git-send-email-b38343@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(189002)(199003)(107046002)(229853001)(47776003)(64706001)(46102001)(4396001)(50226001)(80022001)(76482001)(20776003)(74502001)(83322001)(21056001)(6806004)(74662001)(19580405001)(31966008)(19580395003)(87286001)(68736004)(44976005)(50986999)(79102001)(95666004)(105606002)(81342001)(81542001)(62966002)(99396002)(84676001)(104016003)(77982001)(77156001)(106466001)(85306004)(87936001)(48376002)(88136002)(89996001)(97736003)(575784001)(93916002)(50466002)(90102001)(92726001)(104166001)(85852003)(26826002)(102836001)(36756003)(92566001)(33646002)(83072002)(32563001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB343;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1752039AbaIJCpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:45:21 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:62518 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaIJCpS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:45:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 033054F29A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140909154123.GA12906@obsidianresearch.com>
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
+ <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com>
+ <20140908145459.GO27864@e106497-lin.cambridge.arm.com> <CAL_JsqJdGKDVwJOpPp19OkVPGzR7Zqv3nh+ONHHaYnPLYTYoYg@mail.gmail.com>
+ <20140908155931.GP27864@e106497-lin.cambridge.arm.com> <540E960D.7080408@huawei.com>
+ <20140909084621.GS27864@e106497-lin.cambridge.arm.com> <540EC8CB.7010106@huawei.com>
+ <CAErSpo4cAfom2=07NYDRfTCdHO22M0v+ueiaZuG6v2Xd18wEnQ@mail.gmail.com> <20140909154123.GA12906@obsidianresearch.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 9 Sep 2014 21:44:56 -0500
+Message-ID: <CAL_JsqJMRqbwNkB2K6Mg2DU9mSHwAObtD7LLG2_n=4jGDAFhyQ@mail.gmail.com>
+Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI domain_nr
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yijing Wang <wangyijing@huawei.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is one weird data in rxfifo after one full rx/tx transfer
-done sometimes. It looks a design issue and hard to workaround
-totally, so disable dma functhion here. And will re-enable it
-once the root cause found.
+On Tue, Sep 9, 2014 at 10:41 AM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> On Tue, Sep 09, 2014 at 08:26:19AM -0600, Bjorn Helgaas wrote:
+>
+>> So as long as the DT tells you the ECAM information for each host
+>> bridge, that should be sufficient.  The domain number is then just a
+>> Linux convenience and is not tied to the platform as it is on ia64.
+>
+> I think this is right for DT systems - the domain is purely internal
+> to the kernel and userspace, it is used to locate the proper host
+> bridge driver instance, which contains the proper config accessor (and
+> register bases, etc).
+>
+> AFAIK the main reason to have a DT alias to learn the domain number is
+> to make it stable so things like udev/etc can reliably match on the
+> PCI location.
 
-Signed-off-by: Robin Gong <b38343@freescale.com>
----
- arch/arm/boot/dts/imx6dl.dtsi | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+For what purpose?
 
-diff --git a/arch/arm/boot/dts/imx6dl.dtsi b/arch/arm/boot/dts/imx6dl.dtsi
-index b453e0e..e84a1ff 100644
---- a/arch/arm/boot/dts/imx6dl.dtsi
-+++ b/arch/arm/boot/dts/imx6dl.dtsi
-@@ -102,6 +102,22 @@
- 	};
- };
- 
-+&ecspi1 {
-+	dma-names = "", "";
-+};
-+
-+&ecspi2 {
-+	dma-names = "", "";
-+};
-+
-+&ecspi3 {
-+	dma-names = "", "";
-+};
-+
-+&ecspi4 {
-+	dma-names = "", "";
-+};
-+
- &hdmi {
- 	compatible = "fsl,imx6dl-hdmi";
- };
--- 
-1.9.1
+> This is similar to i2c, etc that use the alias scheme, so IMHO
+> whatever they do to assign ID's to drivers should be copied for domain
+> numbers.
 
+IMO they should not. We really want to move away from aliases, not
+expand their use. They are used for serial because there was no good
+way to not break things like "console=ttyS0". I2C I think was more
+internal, but may have been for i2c-dev. What are we going to break if
+we don't have consistent domain numbering? If the domain goes into the
+DT, I'd rather see it as part of the PCI root node. But I'm not
+convinced it is needed.
+
+It doesn't really sound like we have any actual need to solve this for
+DT ATM. It's not clear to me if all buses should be domain 0 or a
+simple incrementing index for each bus in absence of any firmware set
+value.
+
+Rob
