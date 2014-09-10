@@ -1,76 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaIJAe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 20:34:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64708 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379AbaIJAez convert rfc822-to-8bit (ORCPT
+	id S1751950AbaIJAms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 20:42:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37650 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaIJAmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 20:34:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,494,1406617200"; 
-   d="scan'208";a="597160754"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Darren Hart <dvhart@infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: RE: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver binding
- to MFD driver
-Thread-Topic: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver
- binding to MFD driver
-Thread-Index: AQHPzI8IMspPYHZrw0K1hKT+7ysaLQ==
-Date: Wed, 10 Sep 2014 00:34:50 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E98854F@SHSMSX101.ccr.corp.intel.com>
-References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
- <1410286081-16653-2-git-send-email-alvin.chen@intel.com>
- <D034802C.A7BEE%dvhart@linux.intel.com>
-In-Reply-To: <D034802C.A7BEE%dvhart@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Sep 2014 20:42:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <540F9E6C.9050505@jp.fujitsu.com>
+Date: Wed, 10 Sep 2014 09:42:20 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: cminyard@mvista.com
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        gouji.masayuki@jp.fujitsu.com
+Subject: Re: [RESEND PATCH] ipmi: Clear drvdata when interface is removed
+ by hotmod
+References: <1410221957-4120-1-git-send-email-indou.takao@jp.fujitsu.com> <540F4420.9090505@mvista.com>
+In-Reply-To: <540F4420.9090505@mvista.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >@@ -136,7 +136,6 @@ config GPIO_DWAPB
-> > 	tristate "Synopsys DesignWare APB GPIO driver"
-> > 	select GPIO_GENERIC
-> > 	select GENERIC_IRQ_CHIP
-> >-	depends on OF_GPIO
+(2014/09/10 3:17), Corey Minyard wrote:
+> Ok, I can see the problem.  Instead of the change you have, can you add
+> something like:
 > 
-> You cover this specific dependencies with inline ifdefs, but you lose the
-> CONFIG_OF depends by dropping it, and there are no such checks in the probe
-> routine. Assumptions of OF are not limited to probe in this driver.
+> if (!info)
+>          return;
+> if (info->dev)
+>          dev_set_drvdata(info->dev, NULL);
 > 
-> While I would like to see this assumption properly abstracted, the most
-> expedient/immediate fix is probably to add a depends on OF above.
+> to the top of cleanup_one_si() instead?  I think that would be a cleaner
+> and more general.
 
-Andriy, how do you think? 
+Ok, agreed.
 
-How about 
-depends on OF_GPIO || MFD_GPIO_DWAPB, or
-depends on OF_GPIO || MFD_INTEL_QUARK_I2C_GPIO?
+  > if (!info)
+  >          return;
+
+This is already done in the top of cleanup_one_si(), so I'll just 
+add this:
+
+  > if (info->dev)
+  >          dev_set_drvdata(info->dev, NULL);
+
+Thanks,
+Takao Indoh
 
 
-> --
-> Darren
-> Intel Open Source Technology Center
 > 
+> -corey
+> 
+> 
+> On 09/08/2014 07:19 PM, Takao Indoh wrote:
+>> Add another email of maintainer just in case.
+>>
+>>
+>> This patch fixes a bug on hotmod removing.
+>>
+>> After ipmi interface is removed using hotmod, kernel panic occurs when
+>> rmmod impi_si. For example, try this:
+>>
+>>   # echo "remove,"`cat /proc/ipmi/0/params` > \
+>>   /sys/module/ipmi_si/parameters/hotmod
+>>   # rmmod ipmi_si
+>>
+>> Then, rmmod fails with the following messages.
+>>
+>> ------------[ cut here ]------------
+>> WARNING: CPU: 12 PID: 10819 at /mnt/repos/linux/lib/list_debug.c:53
+>> __list_del_entry+0x63/0xd0()
+>> (snip)
+>> CPU: 12 PID: 10819 Comm: rmmod Not tainted 3.17.0-rc1 #19
+>> Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015
+>> Rev.3D81.3030 02/10/2012
+>>   0000000000000009 ffff88022d547d40 ffffffff81575778 ffff88022d547d88
+>>   ffff88022d547d78 ffffffff8104ec5d ffff88023908cdb0 ffffffffa06fa4e0
+>>   ffff8800bac20860 0000000000000000 0000000002046090 ffff88022d547dd8
+>> Call Trace:
+>>   [<ffffffff81575778>] dump_stack+0x45/0x56
+>>   [<ffffffff8104ec5d>] warn_slowpath_common+0x7d/0xa0
+>>   [<ffffffff8104eccc>] warn_slowpath_fmt+0x4c/0x50
+>>   [<ffffffff811f60bf>] ? __kernfs_remove+0xdf/0x220
+>>   [<ffffffff81291213>] __list_del_entry+0x63/0xd0
+>>   [<ffffffff8129128d>] list_del+0xd/0x30
+>>   [<ffffffffa06f285a>] cleanup_one_si+0x2a/0x230 [ipmi_si]
+>>   [<ffffffffa06f2f05>] ipmi_pnp_remove+0x15/0x20 [ipmi_si]
+>>   [<ffffffff8131c7d4>] pnp_device_remove+0x24/0x40
+>>   [<ffffffff8137175f>] __device_release_driver+0x7f/0xf0
+>>   [<ffffffff81372100>] driver_detach+0xb0/0xc0
+>>   [<ffffffff81371415>] bus_remove_driver+0x55/0xd0
+>>   [<ffffffff8137283c>] driver_unregister+0x2c/0x50
+>>   [<ffffffff8131ca02>] pnp_unregister_driver+0x12/0x20
+>>   [<ffffffffa06f347c>] cleanup_ipmi_si+0xbc/0xf0 [ipmi_si]
+>>   [<ffffffff810c33f2>] SyS_delete_module+0x132/0x1c0
+>>   [<ffffffff81002ab9>] ? do_notify_resume+0x59/0x80
+>>   [<ffffffff8157c45a>] ? int_signal+0x12/0x17
+>>   [<ffffffff8157c1d2>] system_call_fastpath+0x16/0x1b
+>> ---[ end trace 70b4377268f85c23 ]---
+>>
+>> list_del in cleanup_one_si() fails because the smi_info is already
+>> removed when hotmod removing.
+>>
+>> When ipmi interface is removed by hotmod, smi_info is removed by
+>> cleanup_one_si(), but it is still set in drvdata. Therefore when rmmod
+>> ipmi_si, ipmi_pnp_remove tries to remove it again and fails.
+>>
+>> By this patch, a pointer to smi_info in drvdata is cleared when hotmod
+>> removing so that it will be not accessed when rmmod.
+>>
+>> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+>> ---
+>>   drivers/char/ipmi/ipmi_si_intf.c | 27 +++++++++++++++++++++------
+>>   1 file changed, 21 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+>> index 5d66568..20a3739 100644
+>> --- a/drivers/char/ipmi/ipmi_si_intf.c
+>> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+>> @@ -1904,8 +1904,14 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
+>>   					continue;
+>>   				if (e->si_type != si_type)
+>>   					continue;
+>> -				if (e->io.addr_data == addr)
+>> -					cleanup_one_si(e);
+>> +				if (e->io.addr_data != addr)
+>> +					continue;
+>> +
+>> +				/* Clear driver data */
+>> +				if (e->dev)
+>> +					dev_set_drvdata(e->dev, NULL);
+>> +
+>> +				cleanup_one_si(e);
+>>   			}
+>>   			mutex_unlock(&smi_infos_lock);
+>>   		}
+>> @@ -2316,7 +2322,8 @@ static void ipmi_pnp_remove(struct pnp_dev *dev)
+>>   {
+>>   	struct smi_info *info = pnp_get_drvdata(dev);
+>>   
+>> -	cleanup_one_si(info);
+>> +	if (info)
+>> +		cleanup_one_si(info);
+>>   }
+>>   
+>>   static const struct pnp_device_id pnp_dev_table[] = {
+>> @@ -2621,7 +2628,8 @@ static int ipmi_pci_probe(struct pci_dev *pdev,
+>>   static void ipmi_pci_remove(struct pci_dev *pdev)
+>>   {
+>>   	struct smi_info *info = pci_get_drvdata(pdev);
+>> -	cleanup_one_si(info);
+>> +	if (info)
+>> +		cleanup_one_si(info);
+>>   	pci_disable_device(pdev);
+>>   }
+>>   
+>> @@ -2729,7 +2737,10 @@ static int ipmi_probe(struct platform_device *dev)
+>>   static int ipmi_remove(struct platform_device *dev)
+>>   {
+>>   #ifdef CONFIG_OF
+>> -	cleanup_one_si(dev_get_drvdata(&dev->dev));
+>> +	struct smi_info *info = dev_get_drvdata(&dev->dev);
+>> +
+>> +	if (info)
+>> +		cleanup_one_si(info);
+>>   #endif
+>>   	return 0;
+>>   }
+>> @@ -2796,7 +2807,11 @@ static int ipmi_parisc_probe(struct parisc_device *dev)
+>>   
+>>   static int ipmi_parisc_remove(struct parisc_device *dev)
+>>   {
+>> -	cleanup_one_si(dev_get_drvdata(&dev->dev));
+>> +	struct smi_info *info = dev_get_drvdata(&dev->dev);
+>> +
+>> +	if (info)
+>> +		cleanup_one_si(info);
+>> +
+>>   	return 0;
+>>   }
+>>   
+> 
+> 
+> 
+
 
