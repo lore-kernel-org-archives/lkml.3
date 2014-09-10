@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaIJNsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:48:00 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:44628 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaIJNr6 (ORCPT
+	id S1751576AbaIJNte (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:49:34 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:57621 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaIJNtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:47:58 -0400
-Message-ID: <5410568B.3050005@imgtec.com>
-Date: Wed, 10 Sep 2014 14:47:55 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 10 Sep 2014 09:49:33 -0400
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: filter: Add MIPS to architectures with
- BPF JIT
-References: <1409322218-3689-1-git-send-email-markos.chandras@imgtec.com> <54009D34.3010800@redhat.com> <541050D0.1020302@imgtec.com> <541052A1.9010700@redhat.com>
-In-Reply-To: <541052A1.9010700@redhat.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.67]
+In-Reply-To: <20140908152206.GH6758@twins.programming.kicks-ass.net>
+References: <CABPqkBRREcix0TtLLUgiq8uabUqG=m2un79WKLqPXF=LccSQbw@mail.gmail.com>
+	<20140908124945.GD17728@krava.brq.redhat.com>
+	<CABPqkBRPWh+=CfXBYaYW=P6FJke3KB-7y-U1ky8JAKjDY3JaEg@mail.gmail.com>
+	<20140908143107.GG17728@krava.brq.redhat.com>
+	<20140908152206.GH6758@twins.programming.kicks-ass.net>
+Date: Wed, 10 Sep 2014 15:49:32 +0200
+Message-ID: <CABPqkBTp2Sh788hmgC-w74MzTJZ-ySzEM-Su2M4oMO4OgDMsJA@mail.gmail.com>
+Subject: Re: [PATCH] perf: Do not check PERF_EVENT_STATE_EXIT on syscall read path
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 02:31 PM, Daniel Borkmann wrote:
-> On 09/10/2014 03:23 PM, Markos Chandras wrote:
->> On 08/29/2014 04:33 PM, Daniel Borkmann wrote:
->>> On 08/29/2014 04:23 PM, Markos Chandras wrote:
->>>> MIPS supports BPF JIT since v3.16-rc1
->>>>
->>>> Cc: Randy Dunlap <rdunlap@infradead.org>
->>>> Cc: "David S. Miller" <davem@davemloft.net>
->>>> Cc: Daniel Borkmann <dborkman@redhat.com>
->>>> Cc: Alexei Starovoitov <ast@plumgrid.com>
->>>> Cc: linux-doc@vger.kernel.org
->>>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
->>>
->>> Acked-by: Daniel Borkmann <dborkman@redhat.com>
-> ...
->> I think this hasn't been merged yet (I can't see it in mainline or
->> linux-next). Do I need to ping someone or does it have to go via the
->> MIPS tree?
-> 
-> You need to send this patch to netdev@vger.kernel.org so Dave
-> can pick it up from there.
+Peter,
 
-Ok thanks. I will add your Acked-by and resend it to that list.
 
--- 
-markos
+
+On Mon, Sep 8, 2014 at 5:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Sep 08, 2014 at 04:31:07PM +0200, Jiri Olsa wrote:
+>> Revert PERF_EVENT_STATE_EXIT check on read syscall path.
+>> It breaks standard way to read counter, which is to open
+>> the counter, wait for the monitored process to die and
+>> read the counter.
+>>
+>> Reported-by: Stephane Eranian <eranian@google.com>
+>> Acked-by: Stephane Eranian <eranian@google.com>
+>> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Cc: Stephane Eranian <eranian@google.com>
+>> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+>
+> Thanks!
+Still don't see this fix in tip.git.
+
+>> ---
+>>  kernel/events/core.c | 3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/events/core.c b/kernel/events/core.c
+>> index d8cb4d21a346..6d1c9ce1643e 100644
+>> --- a/kernel/events/core.c
+>> +++ b/kernel/events/core.c
+>> @@ -3600,8 +3600,7 @@ perf_read_hw(struct perf_event *event, char __user *buf, size_t count)
+>>        * error state (i.e. because it was pinned but it couldn't be
+>>        * scheduled on to the CPU at some point).
+>>        */
+>> -     if ((event->state == PERF_EVENT_STATE_ERROR) ||
+>> -         (event->state == PERF_EVENT_STATE_EXIT))
+>> +     if (event->state == PERF_EVENT_STATE_ERROR)
+>>               return 0;
+>>
+>>       if (count < event->read_size)
+>> --
+>> 1.8.3.1
+>>
