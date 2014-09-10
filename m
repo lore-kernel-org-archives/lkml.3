@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaIJLdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:33:10 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:54796 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaIJLdH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 07:33:07 -0400
-Message-ID: <541036F0.2030001@mojatatu.com>
-Date: Wed, 10 Sep 2014 07:33:04 -0400
-From: Jamal Hadi Salim <jhs@mojatatu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751931AbaIJLfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:35:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816AbaIJLfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 07:35:53 -0400
+Message-ID: <54103776.3080706@redhat.com>
+Date: Wed, 10 Sep 2014 13:35:18 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
-        grant.likely@linaro.org, devicetree@vger.kernel.org, sandeep_n@ti.com,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        shrijeet Mukherjee <shm@cumulusnetworks.com>
-Subject: Re: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
-References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com> <20140821.163612.282672926741753926.davem@davemloft.net> <53F79DC5.8030003@ti.com> <540DC00F.1080103@ti.com> <540EE809.9020901@mojatatu.com> <540F1A9A.1020309@ti.com>
-In-Reply-To: <540F1A9A.1020309@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 net-next 12/12] bpf: mini eBPF library, test stubs
+ and verifier testsuite
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com> <1410325808-3657-13-git-send-email-ast@plumgrid.com>
+In-Reply-To: <1410325808-3657-13-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 11:19, Santosh Shilimkar wrote:
-
-> All the documentation is open including packet accelerator offload
-> in ti.com.
-
-Very nice.
-Would you do me a kindness and point to the switch interface
-documentation (and other ones on that soc)?
-
-> We got such requests from customers but couldn't
-> support it for Linux.
-
-It has been difficult because every chip vendor is trying
-to do their own thing. Some have huge (fugly) SDKs in user space
-which make it worse. Thats the struggle we are trying to
-deal with. Of course none of those vendors want to open
-up their specs. You present a nice opportunity to not follow
-that path.
-
-> We are also looking for such
-> support and any direction are welcome. Your slide
-> deck seems to capture the key topics like L2/IPSEC
-> offload which we are also interested to hear.
+On 09/10/2014 07:10 AM, Alexei Starovoitov wrote:
+> 1.
+> the library includes a trivial set of BPF syscall wrappers:
+> int bpf_create_map(int key_size, int value_size, int max_entries);
+> int bpf_update_elem(int fd, void *key, void *value);
+> int bpf_lookup_elem(int fd, void *key, void *value);
+> int bpf_delete_elem(int fd, void *key);
+> int bpf_get_next_key(int fd, void *key, void *next_key);
+> int bpf_prog_load(enum bpf_prog_type prog_type,
+> 		  const struct sock_filter_int *insns, int insn_len,
+> 		  const char *license);
+> bpf_prog_load() stores verifier log into global bpf_log_buf[] array
 >
-
-The slides list the most popular offloads. But not necessarily
-all known offloads.
-
-> Just to be clear, your point was about L2 switch offload
-> which the driver don't support at the moment. It might confuse
-> others. The driver doesn't implements anything non-standard.
+> 2.
+> test stubs configure eBPF infra with 'unspec' map and program types.
+> These are fake types used by user space testsuite only.
 >
+> 3.
+> verifier tests valid and invalid programs and expects predefined
+> error log messages from kernel.
+> 40 tests so far.
+>
+> $ sudo ./test_verifier
+>   #0 add+sub+mul OK
+>   #1 unreachable OK
+>   #2 unreachable2 OK
+>   #3 out of range jump OK
+>   #4 out of range jump2 OK
+>   #5 test1 ld_imm64 OK
+>   ...
+>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 
-If i understood you correctly:
-Your initial patches dont intend to expose any offloads - you are just
-abstracting this as a NIC. I think that is a legit reason.
-However, the problem is you are also exposing the packet processors
-and switch offloading in a proprietary way.
-For a sample of how L2 basic functions like FDB tables are controlled
-within a NIC - take a look at the Intel NICs.
-Either that or you hide all the offload interfaces and over time add
-them (starting with L2 - NICs with L2 are common).
-
-cheers,
-jamal
+Since we already have an extensive BPF test suite, that is, lib/test_bpf.c,
+which currently also does sanity checks for the classic BPF verifier, is
+there a reason these verifier test cases cannot be extended/integrated there
+as well but have to go to kernel/bpf/test_stub.c resp. samples/bpf/test_verifier.c ?
+I don't like that we put testing code into kernel/bpf/ whereas we already
+have a BPF test infrastructure in the kernel elsewhere.
