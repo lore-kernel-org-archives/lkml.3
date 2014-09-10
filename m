@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaIJMiL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:38:11 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:47603 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbaIJMiJ (ORCPT
+	id S1751413AbaIJMlD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:41:03 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:46472 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaIJMk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:38:09 -0400
+	Wed, 10 Sep 2014 08:40:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <714b7551f5a6ea5e721fed705568a39eeae4623b.1410322181.git.joe@perches.com>
-References: <cover.1410322181.git.joe@perches.com>
-	<714b7551f5a6ea5e721fed705568a39eeae4623b.1410322181.git.joe@perches.com>
-Date: Wed, 10 Sep 2014 16:38:07 +0400
-Message-ID: <CALFYKtCiGXhMZ-f0B=TGSNGZCng8NVYWCV-wwOHq3xPdKO+-Kw@mail.gmail.com>
-Subject: Re: [PATCH net-next 2/5] ceph: Convert pr_warning to pr_warn
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, Sage Weil <sage@inktank.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <7h1trkkc49.fsf@deeprootsystems.com>
+References: <1410183344-14756-1-git-send-email-geert+renesas@glider.be>
+	<1410183344-14756-5-git-send-email-geert+renesas@glider.be>
+	<7h1trkkc49.fsf@deeprootsystems.com>
+Date: Wed, 10 Sep 2014 14:40:57 +0200
+X-Google-Sender-Auth: RvVBJ_s4AUjovcVmSKIq9gLpbJU
+Message-ID: <CAMuHMdUcaGNQWmfS4U=XhksscuWh6hk8gA8fOpaUwxSmChDbiQ@mail.gmail.com>
+Subject: Re: [PATCH/RFC 4/5] ARM: shmobile: R-Mobile: Add DT support for PM domains
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 8:17 AM, Joe Perches <joe@perches.com> wrote:
-> Use the more common pr_warn.
->
-> Other miscellanea:
->
-> o Coalesce formats
-> o Realign arguments
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  net/ceph/ceph_common.c | 15 +++++++++------
->  net/ceph/messenger.c   | 19 ++++++++++---------
->  net/ceph/osd_client.c  | 15 +++++++--------
->  net/ceph/osdmap.c      | 20 ++++++++++----------
->  4 files changed, 36 insertions(+), 33 deletions(-)
->
-> diff --git a/net/ceph/ceph_common.c b/net/ceph/ceph_common.c
-> index 1675021..58fbfe1 100644
-> --- a/net/ceph/ceph_common.c
-> +++ b/net/ceph/ceph_common.c
-> @@ -293,17 +293,20 @@ static int get_secret(struct ceph_crypto_key *dst, const char *name) {
->                 key_err = PTR_ERR(ukey);
->                 switch (key_err) {
->                 case -ENOKEY:
-> -                       pr_warning("ceph: Mount failed due to key not found: %s\n", name);
-> +                       pr_warn("ceph: Mount failed due to key not found: %s\n",
-> +                               name);
->                         break;
->                 case -EKEYEXPIRED:
-> -                       pr_warning("ceph: Mount failed due to expired key: %s\n", name);
-> +                       pr_warn("ceph: Mount failed due to expired key: %s\n",
-> +                               name);
->                         break;
->                 case -EKEYREVOKED:
-> -                       pr_warning("ceph: Mount failed due to revoked key: %s\n", name);
-> +                       pr_warn("ceph: Mount failed due to revoked key: %s\n",
-> +                               name);
->                         break;
->                 default:
-> -                       pr_warning("ceph: Mount failed due to unknown key error"
-> -                              " %d: %s\n", key_err, name);
-> +                       pr_warn("ceph: Mount failed due to unknown key error %d: %s\n",
-> +                               key_err, name);
->                 }
->                 err = -EPERM;
->                 goto out;
-> @@ -433,7 +436,7 @@ ceph_parse_options(char *options, const char *dev_name,
->
->                         /* misc */
->                 case Opt_osdtimeout:
-> -                       pr_warning("ignoring deprecated osdtimeout option\n");
-> +                       pr_warn("ignoring deprecated osdtimeout option\n");
->                         break;
->                 case Opt_osdkeepalivetimeout:
->                         opt->osd_keepalive_timeout = intval;
-> diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-> index b2f571d..a7203be 100644
-> --- a/net/ceph/messenger.c
-> +++ b/net/ceph/messenger.c
-> @@ -1937,11 +1937,11 @@ static int process_banner(struct ceph_connection *con)
->                    sizeof(con->peer_addr)) != 0 &&
->             !(addr_is_blank(&con->actual_peer_addr.in_addr) &&
->               con->actual_peer_addr.nonce == con->peer_addr.nonce)) {
-> -               pr_warning("wrong peer, want %s/%d, got %s/%d\n",
-> -                          ceph_pr_addr(&con->peer_addr.in_addr),
-> -                          (int)le32_to_cpu(con->peer_addr.nonce),
-> -                          ceph_pr_addr(&con->actual_peer_addr.in_addr),
-> -                          (int)le32_to_cpu(con->actual_peer_addr.nonce));
-> +               pr_warn("wrong peer, want %s/%d, got %s/%d\n",
-> +                       ceph_pr_addr(&con->peer_addr.in_addr),
-> +                       (int)le32_to_cpu(con->peer_addr.nonce),
-> +                       ceph_pr_addr(&con->actual_peer_addr.in_addr),
-> +                       (int)le32_to_cpu(con->actual_peer_addr.nonce));
->                 con->error_msg = "wrong peer at address";
->                 return -1;
->         }
-> @@ -2302,7 +2302,7 @@ static int read_partial_message(struct ceph_connection *con)
->
->                 BUG_ON(!con->in_msg ^ skip);
->                 if (con->in_msg && data_len > con->in_msg->data_length) {
-> -                       pr_warning("%s skipping long message (%u > %zd)\n",
-> +                       pr_warn("%s skipping long message (%u > %zd)\n",
->                                 __func__, data_len, con->in_msg->data_length);
->                         ceph_msg_put(con->in_msg);
->                         con->in_msg = NULL;
-> @@ -2712,7 +2712,7 @@ static bool con_sock_closed(struct ceph_connection *con)
->         CASE(OPEN);
->         CASE(STANDBY);
->         default:
-> -               pr_warning("%s con %p unrecognized state %lu\n",
-> +               pr_warn("%s con %p unrecognized state %lu\n",
->                         __func__, con, con->state);
->                 con->error_msg = "unrecognized con state";
->                 BUG();
-> @@ -2828,8 +2828,9 @@ static void con_work(struct work_struct *work)
->   */
->  static void con_fault(struct ceph_connection *con)
->  {
-> -       pr_warning("%s%lld %s %s\n", ENTITY_NAME(con->peer_name),
-> -              ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
-> +       pr_warn("%s%lld %s %s\n",
-> +               ENTITY_NAME(con->peer_name),
-> +               ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
+Hi Kevin,
 
-Just wondering, why did you move ENITITY_NAME argument to the next
-line?  I see you are doing this pretty consistently.  Is this a style
-guideline or something?
+On Tue, Sep 9, 2014 at 6:11 PM, Kevin Hilman <khilman@kernel.org> wrote:
+>> +static int r8a7740_pd_a4s_suspend(void)
+>> +{
+>> +     /*
+>> +      * The A4S domain contains the CPU core and therefore it should
+>> +      * only be turned off if the CPU is in use.
+>> +      */
+>> +     return -EBUSY;
+>> +}
+>
+>
+> Do you have plans to use pm_genpd_attach_cpuidle() for this eventually,
+> maybe by checking if the enclosing node is a CPU?  If not, are there
+> other plans to handle idle for the power domains that contain CPUs?
 
-Thanks,
+Yes, the plan is to add more power saving features, and use DT topology
+analysis to get rid of the hardcoded domain logic.
 
-                Ilya
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
