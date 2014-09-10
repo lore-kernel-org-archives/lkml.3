@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320AbaIJKIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:08:06 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:33311 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaIJKID (ORCPT
+	id S1752387AbaIJKI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:08:28 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:38030 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaIJKIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:08:03 -0400
-X-Originating-IP: 82.169.106.120
-Message-ID: <541022F4.4020501@crashplan.pro>
-Date: Wed, 10 Sep 2014 12:07:48 +0200
-From: Ceriel Jacobs <linux-scsi@crashplan.pro>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Tom Gundersen <teg@jklm.no>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        hare <hare@suse.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Wu Zhangjin <falcon@meizu.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>
-Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if
- not OOM
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com> <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net> <20140905174925.GA12991@mtj.dyndns.org> <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com> <20140905224047.GC15723@mtj.dyndns.org> <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com> <20140909011059.GB11706@mtj.dyndns.org> <1410241109.2028.22.camel@jarvis.lan> <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com> <1410291346.13298.16.camel@jarvis.lan> <CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com> <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
-In-Reply-To: <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Sep 2014 06:08:25 -0400
+From: Kever Yang <kever.yang@rock-chips.com>
+To: heiko@sntech.de
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
+        huangtao@rock-chips.com, Kever Yang <kever.yang@rock-chips.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/2] add basic rk3288 smp support
+Date: Wed, 10 Sep 2014 18:05:52 +0800
+Message-Id: <1410343554-8383-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tom Gundersen schreef op 10-09-14 om 08:46:
->> >Indeed. What I proposed with a multiplier for the timeout for the
->> >different types of built in commands was deemed complex but saw no
->> >alternatives proposed despite my interest to work on one and
->> >clarifications noted that this was a design regression. Not quite sure
->> >what else I could have done here. I'm interested in learning what the
->> >better approach is for the future as if we want to marry init + kernel
->> >we need a smooth way for us to discuss design without getting worked
->> >up about it, or taking it personal. I really want this to work as I
->> >personally like systemd so far.
-> How about this: keep the timeout global, but also introduce a
-> (relatively short, say 10 or 15 seconds) timeout after which a warning
-> is printed. Even if nothing is actually killed, having workers (be it
-> insmod or something else) take longer than a couple of seconds is
-> likely a sign that something is seriously off somewhere.
+rk3288 is dual-core CPU Soc, we need to enable the smp.
+This patchset works with either arch-timer use the phisical counter
+in kernel or the firmware initialize the arch-timer virtual counter
+offset and use virtual counter in kernel.
 
-I don't agree with the statement that something is seriously off when it 
-takes more then 10 to 15 seconds.
 
-When probing only one hard disk drive, then I do agree that something is 
-seriously off after 10 to 15 seconds.
+Kever Yang (2):
+  ARM: rockchip: add basic smp support for rk3288
+  ARM: dts: add intmem node for rk3288 smp support
 
-When probing a SAS bus with one hundred hard disk drives in standby 
-mode, then I do expect that to take longer then 10 to 15 seconds.
+ arch/arm/boot/dts/rk3288.dtsi    | 18 ++++++++++++
+ arch/arm/mach-rockchip/core.h    |  1 +
+ arch/arm/mach-rockchip/platsmp.c | 60 +++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 75 insertions(+), 4 deletions(-)
+
+-- 
+1.9.1
+
