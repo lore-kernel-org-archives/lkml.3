@@ -1,101 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487AbaIJMeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:34:09 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:37312 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaIJMeD (ORCPT
+	id S1751411AbaIJMfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:35:44 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:37561 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaIJMfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:34:03 -0400
+	Wed, 10 Sep 2014 08:35:42 -0400
+Date: Wed, 10 Sep 2014 07:35:25 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
+ namespaces
+Message-ID: <20140910123525.GA29064@ubuntu-hedt>
+Mail-Followup-To: Miklos Szeredi <miklos@szeredi.hu>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Serge Hallyn <serge.hallyn@ubuntu.com>,
+	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <540F0381.7010500@ti.com>
-References: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
-	<7hr3zln692.fsf@linaro.org>
-	<540F0381.7010500@ti.com>
-Date: Wed, 10 Sep 2014 14:34:02 +0200
-X-Google-Sender-Auth: Q4KbDUOUj8hMKZOG8RlUZ40dBlE
-Message-ID: <CAMuHMdXRx6QUs2zhsXXz6aia0=v521+_B4NR61JVv61aWnwyPw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] PM / clock_ops: allow to specify custom
- pm_clk_notifier callback
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grygorii,
+On Tue, Sep 02, 2014 at 10:44:53AM -0500, Seth Forshee wrote:
+> Another issue mentioned by Eric was what to use for i_[ug]id if the ids
+> from userspace don't map into the user namespace, which is going to be a
+> problem for any other filesystems which become mountable from user
+> namespaces as well. We discussed a few options for addressing this, the
+> most promising of which seems to be either using INVALID_[UG]ID for
+> these inodes or creating vfs-wide "nobody" ids for this purpose. After
+> thinking about it for a while I'm favoring using the invalid ids, but
+> I'm hoping to solicit some more feedback.
+> 
+> For now these patches are using invalid ids if the user doesn't map into
+> the namespace. I went through the vfs code and found one place where
+> this could be handled better (addressed in patch 1 of the series). The
+> only other issue I found was that currently no one, not even root, can
+> change onwership of such inodes, but I suspect we can find a way around
+> this.
 
-On Tue, Sep 9, 2014 at 3:41 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
->>> Also, It updates Keystone 2 platform code to provide custom
->>> callback which fills list of clocks for Device with all clocks assigned to this
->>> Device in DT.
->>> More over, It's safe for Keystone 2 to perform CLK PM domain initialization
->>> at device's binding time instead of device's creation time.
->>>
->>> I've posted these patches because I need fully enable Runtime PM on Keystone 2
->>> where all HW modules are controlled using clocks only. That's why CLK PM domain
->>> fits our needs perfectly.
->>
->> Heh, doesn't seem like a perfect fit to me ;)
->>
->>> Also, on Keystone 2 clocks are initialized early and
->>> they are available at device creation time. The main problems from my side are:
->>>   - every time when support for new HW modules is added the ".con_ids" array
->>>     need to be checked and updated;
->>>   - restriction for clock's names in DT - to be named using only above con_ids
->>>     It's ugly.
->>>
->>> I hope, this approach to be accepted at least as temporal solution until
->>> the generic solution is not found.
->>
->> Sorry if I missed it, but is there ongoing discussion of a more generic
->> solution other than this one:
->
-> Yep. :( But It's ongoing more than 2 months already and seems there is no
-> light at the end of tunnel.
->
->>
->>> [1] Previously, same problem was discussed in, but no final solution was accepted:
->>>   "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
->>>   https://lkml.org/lkml/2014/4/24/1118
->>
->> Personally, I still like Geert's approach better.
->>
->
-> Unfortunately, Geert is not going to continue working on it (as I know).
+I started playing around with using -2 as a global nobody id. The
+changes below (made on top of this series) are working fine in light
+testing. I'm still not sure about the security implications of doing
+this though. Possibly the nobody id should be removed from init_user_ns
+to prevent any use of the id to gain unauthroized access to such files.
+Thoughts?
 
-For the record, I had postponed working on it, as we had an interim solution for
-multiplatform shmobile being broken in mainline (drivers/sh/pm_runtime.c).
 
-Currently I'm tackling "real" power domains. As this is incompatible with
-the above hack (you can attach only one power domain to a device, as Ulf
-had pointed out before --- Hm, why is the DT property called "power-domains"
-(plural) then?), I'll have to revisit anyway, and get back to it.
-Furthermore, not all shmobile SoCs have such fine-grained power domains
-as sh7372/sh73a0/r8a7740/r8a73a4, so we still need something better there.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index c0b9968db6a1..893fc0d6ff96 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -905,8 +905,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
+ 	stat->ino = attr->ino;
+ 	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
+ 	stat->nlink = attr->nlink;
+-	stat->uid = make_kuid(fc->user_ns, attr->uid);
+-	stat->gid = make_kgid(fc->user_ns, attr->gid);
++	stat->uid = make_kuid_munged(fc->user_ns, attr->uid);
++	stat->gid = make_kgid_munged(fc->user_ns, attr->gid);
+ 	stat->rdev = inode->i_rdev;
+ 	stat->atime.tv_sec = attr->atime;
+ 	stat->atime.tv_nsec = attr->atimensec;
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index f3a3ded82f85..330ac3d502a6 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -167,8 +167,8 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+ 	inode->i_ino     = fuse_squash_ino(attr->ino);
+ 	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
+ 	set_nlink(inode, attr->nlink);
+-	inode->i_uid     = make_kuid(fc->user_ns, attr->uid);
+-	inode->i_gid     = make_kgid(fc->user_ns, attr->gid);
++	inode->i_uid     = make_kuid_munged(fc->user_ns, attr->uid);
++	inode->i_gid     = make_kgid_munged(fc->user_ns, attr->gid);
+ 	inode->i_blocks  = attr->blocks;
+ 	inode->i_atime.tv_sec   = attr->atime;
+ 	inode->i_atime.tv_nsec  = attr->atimensec;
+diff --git a/include/linux/uidgid.h b/include/linux/uidgid.h
+index 6c302267f7cc..9054273af163 100644
+--- a/include/linux/uidgid.h
++++ b/include/linux/uidgid.h
+@@ -45,6 +45,9 @@ static inline gid_t __kgid_val(kgid_t gid)
+ #define INVALID_UID KUIDT_INIT(-1)
+ #define INVALID_GID KGIDT_INIT(-1)
+ 
++#define NOBODY_UID KUIDT_INIT(-2)
++#define NOBODY_GID KGIDT_INIT(-2)
++
+ static inline bool uid_eq(kuid_t left, kuid_t right)
+ {
+ 	return __kuid_val(left) == __kuid_val(right);
+@@ -175,4 +178,44 @@ static inline bool kgid_has_mapping(struct user_namespace *ns, kgid_t gid)
+ 
+ #endif /* CONFIG_USER_NS */
+ 
++/**
++ *	make_kuid_munged - Map a user-namespace uid pair into a kuid
++ * 	@from: User namespace that the uid is in
++ * 	@uid:  User identifier
++ *
++ *	Maps a user-namespace uid pair into a kernel internal kuid,
++ *	and returns that kuid.
++ *
++ *	Unlike make_kuid, make_kuid_munged never fails and always
++ *	returns a valid uid. If @uid has no mapping in @from
++ *	NOBODY_UID is returned.
++ */
++static inline kuid_t make_kuid_munged(struct user_namespace *from, uid_t uid)
++{
++	kuid_t kuid = make_kuid(from, uid);
++	if (!uid_valid(kuid))
++		kuid = NOBODY_UID;
++	return kuid;
++}
++
++/**
++ *	make_kgid_munged - Map a user-namespace gid pair into a kgid
++ * 	@from: User namespace that the gid is in
++ * 	@gid:  User identifier
++ *
++ *	Maps a user-namespace gid pair into a kernel internal kgid,
++ *	and returns that kgid.
++ *
++ *	Unlike make_kgid, make_kgid_munged never fails and always
++ *	returns a valid gid. If @gid has no mapping in @from
++ *	NOBODY_GID is returned.
++ */
++static inline kgid_t make_kgid_munged(struct user_namespace *from, gid_t gid)
++{
++	kgid_t kgid = make_kgid(from, gid);
++	if (!gid_valid(kgid))
++		kgid = NOBODY_GID;
++	return kgid;
++}
++
+ #endif /* _LINUX_UIDGID_H */
