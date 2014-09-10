@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaIJVjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:39:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58276 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344AbaIJVjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:39:40 -0400
-Message-ID: <5410C4F7.4080704@zytor.com>
-Date: Wed, 10 Sep 2014 14:39:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Toshi Kani <toshi.kani@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+	id S1753663AbaIJVpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:45:31 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:36515 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857AbaIJVpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 17:45:30 -0400
+Message-ID: <1410384895.28990.312.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 6/6] x86, pat: Update documentation for WT changes
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Arnd Bergmann <arnd@arndb.de>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -22,31 +22,49 @@ CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
         Yigal Korman <yigal@plexistor.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle
- WT
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com> <1410367910-6026-3-git-send-email-toshi.kani@hp.com> <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com> <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com> <1410381050.28990.295.camel@misato.fc.hp.com> <CALCETrUz016rDogLFTVETLh7ybVjgOMOhkL5kF2wJTLUF041xQ@mail.gmail.com> <1410383484.28990.303.camel@misato.fc.hp.com> <CALCETrV4DEr7tQUPCSzJMjBwgJ3-Xgcw8PFt_CCDbMoWRQ4Uug@mail.gmail.com>
-In-Reply-To: <CALCETrV4DEr7tQUPCSzJMjBwgJ3-Xgcw8PFt_CCDbMoWRQ4Uug@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Date: Wed, 10 Sep 2014 15:34:55 -0600
+In-Reply-To: <CALCETrUh20-2PX_KN2KWO085n=5XJpOnPysmCGbk7bufaD3Mhw@mail.gmail.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+	 <1410367910-6026-7-git-send-email-toshi.kani@hp.com>
+	 <CALCETrVnHg0X=R23qyiPtxYs3knHaXq65L0Jw_1oY4=gX5kpXQ@mail.gmail.com>
+	 <1410379933.28990.287.camel@misato.fc.hp.com>
+	 <CALCETrUh20-2PX_KN2KWO085n=5XJpOnPysmCGbk7bufaD3Mhw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 02:27 PM, Andy Lutomirski wrote:
->>
->> That's possible, but the only benefit is that we can enable WT on
->> pre-PAT systems, which I do not think anyone cares now...  WB & UC work
->> on pre-PAT systems.  WC & WT need PAT.  I think this requirement is
->> reasonable.
+On Wed, 2014-09-10 at 13:29 -0700, Andy Lutomirski wrote:
+> On Wed, Sep 10, 2014 at 1:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > On Wed, 2014-09-10 at 11:30 -0700, Andy Lutomirski wrote:
+> >> On Wed, Sep 10, 2014 at 9:51 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> >> > +Drivers may map the entire NV-DIMM range with ioremap_cache and then change
+> >> > +a specific range to wt with set_memory_wt.
+> >>
+> >> That's mighty specific :)
+> >
+> > How about below?
+> >
+> > Drivers may use set_memory_wt to set WT type for cached reserve ranges.
 > 
-> It might end up being a cleanup, though.  A whole bunch of
-> rarely-exercised if (!pat_enabled) things would go away.
+> Do they have to be cached?
+
+Yes, set_memory_xyz only supports WB->type->WB transition.
+
+> How about:
 > 
+> Drivers may call set_memory_wt on ioremapped ranges.  In this case,
+> there is no need to change the memory type back before calling
+> iounmap.
+> 
+> (Or only on cached ioremapped ranges if that is, in fact, the case.)
 
-Yes.  Don't think of it as PAT vs non-PAT.  Think of it as a specific
-set of cache types available on different processors.  The fact that you
-may have to frob an MSR to initialize it is almost trivial in comparison.
+Sounds good.  Yes, I will use cashed ioremapped ranges.
 
-	-hpa
+Thanks,
+-Toshi
 
 
