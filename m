@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaIJIDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:03:18 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41076 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaIJIDO convert rfc822-to-8bit (ORCPT
+	id S1752167AbaIJIEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:04:23 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:15474 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaIJIES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:03:14 -0400
-Message-ID: <541005D5.7020902@arm.com>
-Date: Wed, 10 Sep 2014 09:03:33 +0100
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Henrik Austad <henrik@austad.us>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "raistlin@linux.it" <raistlin@linux.it>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/5] SCHED_DEADLINE documentation fixes and improvements
-References: <1410256636-26171-1-git-send-email-juri.lelli@arm.com> <20140909211739.GA20822@sisyphus.home.austad.us>
-In-Reply-To: <20140909211739.GA20822@sisyphus.home.austad.us>
-X-OriginalArrivalTime: 10 Sep 2014 08:03:09.0322 (UTC) FILETIME=[A9073EA0:01CFCCCD]
-X-MC-Unique: 114091009031112301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Sep 2014 04:04:18 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-76-541005ff95e7
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCHv3 1/3] [media] disable OMAP1 COMPILE_TEST
+Date: Wed, 10 Sep 2014 10:04:12 +0200
+Message-id: <3055703.v1cXzV8T6U@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
+References: <6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
+ <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t9jAd3/rAIhBpMWGli83ziPyeLyrjls
+	Fj0btrJaHFzYxmhxcZ28xY5Ti5gttu69yu7A7tF44wabx4ePcR6bV2h59G1ZxejxeZNcAGsU
+	l01Kak5mWWqRvl0CV8an1S/ZCvp4KqZ+vsvawPiZs4uRk0NCwERi5r0PzBC2mMSFe+vZQGwh
+	gUWMEq3fRbsYuYDsFiaJbU2f2UESbAJWEhPbVzGC2CICBhKPF51kByliFmhkkriy9CbYJGEB
+	W4lLl9cygdgsAqoSz24cYgGxeQU0JVY1zAKzRQU8JXZsXwm2jVMgVqJjeTcrxLa1jBLTT09h
+	hmgQlPgx+R5YA7OAvMS+/VNZIWwdif2t09gmMArMQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca
+	6RUn5haX5qXrJefnbmIEh/gz6R2MqxosDjEKcDAq8fAK1PKHCLEmlhVX5h5ilOBgVhLhnfUK
+	KMSbklhZlVqUH19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoEx30ttcVue
+	+pUpzCqP9zGnvrf4ofwler5yr1xfROrXksN8C/X4Rf+8WcV5fE37Y4M3L2wXLW57vWavoNfF
+	upObHzk+j3C9eF/mmbvLm1de9kKci2bk/2FleP634eMz2TeidizTBB/+Twqr4fcvZzlvGbLo
+	fFxZnrNBwizBZawJMWd3dj3N4l2gxFKckWioxVxUnAgA2s+q120CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
 
-On 09/09/14 22:17, Henrik Austad wrote:
-> On Tue, Sep 09, 2014 at 10:57:11AM +0100, Juri Lelli wrote:
->> Hello everyone,
-> 
-> Hi Juri,
-> 
-> Looks good! Didn't spot anything and pleased to see that minimal main() 
-> made it into the appendix! :D
-> 
+Hi,
 
-Great! Thanks a lot.
+On Tuesday, September 09, 2014 03:54:04 PM Mauro Carvalho Chehab wrote:
+> This driver depends on a legacy OMAP DMA API. So, it won't
+> compile-test on other archs.
+> 
+> While we might add stubs to the functions, this is not a
+> good idea, as the hole API should be replaced.
 
-Best,
+This is also not a good idea becaouse it would break the driver
+for OMAP1 once somebody enables COMPILE_TEST option while also
+having ARCH_OMAP1 enabled (which is perfectly fine and shouldn't
+cause the driver breakage).  In general COMPILE_TEST option is
+completely independent from the arch specific ones and it should
+not change behaviour of the existing code.
 
-- Juri
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
->> This is version 4 of a small patchset that fixes and improves SCHED_DEADLINE
->> documentation.
->>
->> Patch 1/5 fixes and clarifies terminology; patch 2/5 aligns Section 4 to
->> the current interface; patch 3/5 improves and clarifies what admission
->> control means on UP an SMP systems; patch 4/5 introduces an appendix about
->> testing; patch 5/5 introduces an appendix with a minimal main() for
->> application developers.
->>
->> Changes since v1:
->>
->>  - fixed typos spotted by Randy and Peter (thanks!)
->>
->> Changes since v2:
->>
->>  - fixed typos and rewrote paragraphs as suggested by Ingo (thanks!)
->>
->> Changes since v3:
->>
->>  - addressed comments made by Henrik (thanks!)
->>  - added patch 5/5 (as Henrik asked)
+> So, for now, let's just remove COMPILE_TEST and wait for
+> some time for people to fix. If not fixed, then we'll end
+> by removing this driver as a hole.
 > 
-> To the whole series,
+> Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 > 
-> Reviewed-by: Henrik Austad <henrik@austad.us>
-> 
->> Best Regards,
->>
->> - Juri
->>
->> Juri Lelli (3):
->>   Documentation/scheduler/sched-deadline.txt: Rewrite section 4 intro
->>   Documentation/scheduler/sched-deadline.txt: add tests suite appendix
->>   Documentation/scheduler/sched-deadline.txt: add minimal main()
->>     appendix
->>
->> Luca Abeni (2):
->>   Documentation/scheduler/sched-deadline.txt: fix terminology and
->>     improve clarity
->>   Documentation/scheduler/sched-deadline.txt: improve and clarify AC
->>     bits
->>
->>  Documentation/scheduler/sched-deadline.txt | 340 +++++++++++++++++++++++++----
->>  1 file changed, 292 insertions(+), 48 deletions(-)
->>
->> -- 
->> 2.0.4
->>
->>
-> 
+> diff --git a/drivers/media/platform/soc_camera/Kconfig b/drivers/media/platform/soc_camera/Kconfig
+> index 6af6c6dccda8..f2776cd415ca 100644
+> --- a/drivers/media/platform/soc_camera/Kconfig
+> +++ b/drivers/media/platform/soc_camera/Kconfig
+> @@ -63,7 +63,7 @@ config VIDEO_SH_MOBILE_CEU
+>  config VIDEO_OMAP1
+>  	tristate "OMAP1 Camera Interface driver"
+>  	depends on VIDEO_DEV && SOC_CAMERA
+> -	depends on ARCH_OMAP1 || COMPILE_TEST
+> +	depends on ARCH_OMAP1
+>  	depends on HAS_DMA
+>  	select VIDEOBUF_DMA_CONTIG
+>  	select VIDEOBUF_DMA_SG
 
