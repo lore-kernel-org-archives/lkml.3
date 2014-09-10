@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbaIJNV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:21:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37285 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084AbaIJNVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:21:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
-   d="scan'208";a="597436012"
-Message-ID: <54104FFF.60805@intel.com>
-Date: Wed, 10 Sep 2014 16:19:59 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751768AbaIJNWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:22:23 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:61844 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaIJNWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 09:22:21 -0400
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL 00/13] perf/core improvements and fixes
-References: <1410211089-28668-1-git-send-email-acme@kernel.org> <540EBED4.70900@intel.com> <20140909190812.GA5917@kernel.org>
-In-Reply-To: <20140909190812.GA5917@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140910130419.GJ28488@arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583475-6978-5-git-send-email-hanjun.guo@linaro.org> <CAErSpo6G89mkPgas8Wk3ofq__dUo5MKvBjob5D_w5_GaBJWH0w@mail.gmail.com>
+ <540F7BE2.8060403@redhat.com> <20140910130419.GJ28488@arm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 10 Sep 2014 07:21:59 -0600
+Message-ID: <CAErSpo58eWadcyTrsBPAa-QFNmWn5jO7yQGc=N6F6PgNXnXcJA@mail.gmail.com>
+Subject: Re: [PATCH v3 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
+To: Will Deacon <will.deacon@arm.com>
+Cc: "jcm@redhat.com" <jcm@redhat.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 10:08 PM, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Sep 09, 2014 at 11:48:20AM +0300, Adrian Hunter escreveu:
->> On 09/09/2014 12:17 AM, Arnaldo Carvalho de Melo wrote:
->>> Hi Ingo,
->>>
->>> 	Please consider pulling,
->>>
->>> - Arnaldo
->>
->> I am very sorry Arnaldo but 2 patches are older versions, namely:
->>
->> 	perf tools: Build programs to copy 32-bit compatibility VDSOs
->> 	perf tools: Add support for 32-bit compatibility VDSOs
->>
->> Up-to-date versions can be found from 15 August:
->>
->> 	patchwork:
->>
->> 		https://patchwork.kernel.org/patch/4729131/
->> 		https://patchwork.kernel.org/patch/4729111/
-> 
-> Ok, those don't apply, as it expects other stuff, that you sent before,
-> but were not processed yet, to be in place, I'm fixing it up.
-> 
+On Wed, Sep 10, 2014 at 7:04 AM, Will Deacon <will.deacon@arm.com> wrote:
 
-Something like this might prevent Ingo's error message:
+> It's blindingly obvious that acpi=off is there to disable ACPI at boot.
+> We either support that option or we don't -- none of this `oh, well you
+> can use it in this specific case I suppose' rubbish. I'm not questioning
+> your use-case, but there's really no need to talk about an `orderly
+> adoption' when all you need to say is that your ACPI is busted and passing
+> acpi=off lets you boot with a devicetree.
 
+Maybe we should set a taint bit or give some other indication that
+we're using a flag to work around breakage.
 
-From: Adrian Hunter <adrian.hunter@intel.com>
-Date: Wed, 10 Sep 2014 16:14:50 +0300
-Subject: [PATCH] perf tools: Do not attempt to run perf-read-vdso32 if it
- wasn't built
+There's a big difference between parameters like "root=", "console=",
+"quiet", etc., and the ones like "pci=nocrs", "pci=realloc",
+"acpi=off".  The latter are basically workarounds for deficiencies in
+Linux or the platform, and we should try really hard to minimize their
+use.  We might need some of them as interim workarounds, but I don't
+think we should regard their use as acceptable standard practice for
+end users.
 
-popen() causes an error message to print if perf-read-vdso32
-does not run.  Avoid that by not trying to run it if it was
-not built.  Ditto perf-read-vdsox32.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/config/Makefile |  8 ++++++--
- tools/perf/util/vdso.c     | 10 ++++++++++
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 3ba2382..71264e4 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -627,7 +627,9 @@ endif
- ifeq (${IS_64_BIT}, 1)
-   ifndef NO_PERF_READ_VDSO32
-     $(call feature_check,compile-32)
--    ifneq ($(feature-compile-32), 1)
-+    ifeq ($(feature-compile-32), 1)
-+      CFLAGS += -DHAVE_PERF_READ_VDSO32
-+    else
-       NO_PERF_READ_VDSO32 := 1
-     endif
-   endif
-@@ -636,7 +638,9 @@ ifeq (${IS_64_BIT}, 1)
-   endif
-   ifndef NO_PERF_READ_VDSOX32
-     $(call feature_check,compile-x32)
--    ifneq ($(feature-compile-x32), 1)
-+    ifeq ($(feature-compile-x32), 1)
-+      CFLAGS += -DHAVE_PERF_READ_VDSOX32
-+    else
-       NO_PERF_READ_VDSOX32 := 1
-     endif
-   endif
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index 69daef6..5c7dd79 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -255,6 +255,16 @@ static int vdso__dso_findnew_compat(struct machine
-*machine,
- 	enum dso_type dso_type;
-
- 	dso_type = machine__thread_dso_type(machine, thread);
-+
-+#ifndef HAVE_PERF_READ_VDSO32
-+	if (dso_type == DSO__TYPE_32BIT)
-+		return 0;
-+#endif
-+#ifndef HAVE_PERF_READ_VDSOX32
-+	if (dso_type == DSO__TYPE_X32BIT)
-+		return 0;
-+#endif
-+
- 	switch (dso_type) {
- 	case DSO__TYPE_32BIT:
- 		*dso = vdso__findnew_compat(machine, &vdso_info->vdso32);
--- 
-1.8.3.2
-
-
-
+Bjorn
