@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaIJPrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:47:17 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45655 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbaIJPrQ convert rfc822-to-8bit (ORCPT
+	id S1752342AbaIJPud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:50:33 -0400
+Received: from mail-la0-f74.google.com ([209.85.215.74]:62298 "EHLO
+	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931AbaIJPub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:47:16 -0400
-Date: Wed, 10 Sep 2014 16:47:09 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Doug Anderson <dianders@chromium.org>, Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-Message-ID: <20140910154709.GF31237@localhost>
-References: <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
- <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
- <53FE5B09.2020403@codeaurora.org>
- <CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
- <53FE7E3B.1010500@codeaurora.org>
- <CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
- <CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
- <20140828093505.GC14650@leverpostej>
- <CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
- <54106707.4010006@codeaurora.org>
-MIME-Version: 1.0
-In-Reply-To: <54106707.4010006@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 10 Sep 2014 15:47:11.0468 (UTC) FILETIME=[7C3D92C0:01CFCD0E]
-X-MC-Unique: 114091016471401101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Wed, 10 Sep 2014 11:50:31 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Felipe Balbi <balbi@ti.com>, Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH 1/2] usb: f_fs: refactor and document __ffs_ep0_read_events better
+Date: Wed, 10 Sep 2014 17:50:24 +0200
+Message-Id: <1410364225-6087-1-git-send-email-mina86@mina86.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 03:58:15PM +0100, Christopher Covington wrote:
-> On 09/05/2014 06:11 PM, Doug Anderson wrote:
-> > On Thu, Aug 28, 2014 at 2:35 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> >> Not if you boot Linux at hyp, as we've recommended for this precise
-> >> reason. That doesn't fix other things like CNTFRQ if the secure
-> >> initialisation doesn't poke that, however.
-> > 
-> > I'll freely admit that I'm out of my league and out of my comfort zone
-> > here, but...
-> > 
-> > In the theory that firmware ought to be as minimal as possible
-> > (because it's hard to update and hard to keep in sync with kernel
-> > versions), it seems like firmware ought to start the kernel out in as
-> > permissive mode as it's willing to provide, right?
-> > 
-> > If the kernel is started out as permissive as possible then it can do
-> > anything it needs to.  Future versions of the kernel can be
-> > implemented to do any way-cool things that they want to do without an
-> > update to firmware, right?  ...and current versions of the kernel can
-> > just shed permissions if they don't want them.
-> > 
-> > ...so if I understand correctly, "Secure SVC" mode is more permissive
-> > than "Non Secure HYP" mode, right?  It looks to me as if we currently
-> > start the kernel in "Secure SVC" mode.  What do you think about the
-> > kernel detecting Secure SVC and then dropping down permission levels
-> > (to Non Secure HYP).  Once it did this, it could update things like
-> > the virtual offset and then transition down further into non-secure
-> > SVC mode.
-> > 
-> > ...or maybe this has been discussed millions of times already and I'm
-> > just clueless.  ...or maybe this is just too hard for the kernel to do
-> > in a generic way?
-> 
-> I think this is a great idea. When running on simulators, it would make (the
-> non-DTB parts of) the bootwrapper and QEMU's built-in bootloader unnecessary.
-> 
-> Implementing it on AArch64 should be trivial as you can just read CurrentEL
-> and work from whatever EL/PL you're at. Is there an easy way to check whether
-> you're in secure or nonsecure mode in AArch32? I seem to recall discussion
-> about putting this information into the DTB, which makes me think there isn't.
+Instead of using variable length array, use a static length equal to
+the size of the ffs->ev.types array.  This gets rid of a sparse warning:
 
-(I replied couple of days ago but the SMTP server I was using still
-hasn't delivered it)
+	drivers/usb/gadget/function/f_fs.c:401:44: warning:
+	Variable length array is used.
 
-Anyway, for AArch64 you get the CurrentEL but does not tell you whether
-it's secure or not (the same as the mode bits in CPSR basically). Secure
-EL1 is not more permissive than non-secure EL2, you still have to go
-through EL3 firmware using an SMC call to be able to switch to EL2. So
-for AArch64, you need to rely on firmware to do at least the correct
-initialisation (unless you start the kernel at EL3).
+and makes it more explicit that the array has a very tight upper size
+limit.  Also add some more documentation about the ev.types array and
+how its size is limited and affects the rest of the code.
 
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ This has been compile tested only.
+
+ drivers/usb/gadget/function/f_fs.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
+index dc30adf1..ec50e0d 100644
+--- a/drivers/usb/gadget/function/f_fs.c
++++ b/drivers/usb/gadget/function/f_fs.c
+@@ -385,14 +385,16 @@ done_spin:
+ 	return ret;
+ }
+ 
++/* Called with ffs->ev.waitq.lock and ffs->mutex held, both released on exit. */
+ static ssize_t __ffs_ep0_read_events(struct ffs_data *ffs, char __user *buf,
+ 				     size_t n)
+ {
+ 	/*
+-	 * We are holding ffs->ev.waitq.lock and ffs->mutex and we need
+-	 * to release them.
++	 * n cannot be bigger than ffs->ev.count, which cannot be bigger than
++	 * size of ffs->ev.types array (which is four) so that's how much space
++	 * we reserve.
+ 	 */
+-	struct usb_functionfs_event events[n];
++	struct usb_functionfs_event events[ARRAY_SIZE(ffs->ev.types)];
+ 	unsigned i = 0;
+ 
+ 	memset(events, 0, sizeof events);
+@@ -405,12 +407,10 @@ static ssize_t __ffs_ep0_read_events(struct ffs_data *ffs, char __user *buf,
+ 		}
+ 	} while (++i < n);
+ 
+-	if (n < ffs->ev.count) {
+-		ffs->ev.count -= n;
++	ffs->ev.count -= n;
++	if (ffs->ev.count) {
+ 		memmove(ffs->ev.types, ffs->ev.types + n,
+ 			ffs->ev.count * sizeof *ffs->ev.types);
+-	} else {
+-		ffs->ev.count = 0;
+ 	}
+ 
+ 	spin_unlock_irq(&ffs->ev.waitq.lock);
+@@ -2293,6 +2293,13 @@ static void __ffs_event_add(struct ffs_data *ffs,
+ 	if (ffs->setup_state == FFS_SETUP_PENDING)
+ 		ffs->setup_state = FFS_SETUP_CANCELLED;
+ 
++	/*
++	 * Logic of this function guarantees that there will be at most four
++	 * pending evens on the ffs->ev.types queue.  This is important since
++	 * that array has only place for four elements and __ffs_event_add
++	 * function also depends on that limit.  If more event types are added,
++	 * those limits have to be revisited or guaranteed to still hold.
++	 */
+ 	switch (type) {
+ 	case FUNCTIONFS_RESUME:
+ 		rem_type2 = FUNCTIONFS_SUSPEND;
 -- 
-Catalin
+2.1.0.rc2.206.gedb03e5
 
