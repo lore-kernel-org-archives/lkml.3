@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaIJIkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:40:10 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:49535 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040AbaIJIkF (ORCPT
+	id S1752113AbaIJIlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:41:37 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:54043 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaIJIlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:40:05 -0400
+	Wed, 10 Sep 2014 04:41:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-kernel@lists.linaro.org
+Cc: Anton Vorontsov <anton@enomsg.org>, Felix Fietkau <nbd@openwrt.org>,
+        kernel-build-reports@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Build bot for Mark Brown <broonie@kernel.org>,
+        Imre Kaloz <kaloz@openwrt.org>
+Subject: Re: CNS3xxx maintainer (was Re: master build: 0 failures 28 warnings (v3.17-rc4-158-ge874a5f))
+Date: Wed, 10 Sep 2014 10:41:18 +0200
+Message-ID: <15299684.3JflHn3FpC@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140910082416.GA31925@d1stkfactory>
+References: <E1XRaM1-0006oX-7W@cassiel.sirena.org.uk> <3041301.pUTzAnrqpK@wuerfel> <20140910082416.GA31925@d1stkfactory>
 MIME-Version: 1.0
-In-Reply-To: <54100AE5.6050401@imgtec.com>
-References: <1410263575-26720-1-git-send-email-markos.chandras@imgtec.com>
- <20140909191736.GA7467@kroah.com> <54100AE5.6050401@imgtec.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 10 Sep 2014 10:39:45 +0200
-Message-ID: <CAPybu_128PsDN7wywntyTuCCfenBWTiS60P2g6_Hk68EMQc1CQ@mail.gmail.com>
-Subject: Re: [PATCH linux-next] MIPS: ioctls: Add missing TIOC{S,G}RS485 definitions
-To: Markos Chandras <Markos.Chandras@imgtec.com>
-Cc: Greg KH <greg@kroah.com>, linux-mips@linux-mips.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:woiPvPhGwNWQetpF631EQBO0iEjAhAOKcxCkirkfj8C
+ M4UZ6UQZz/0ThYpLhGwzNbM7DmEk7xk0BkDcN9RgRY1c9Q6sh4
+ nzeZ1i3p1592kBn/ogcDQuTYlioOjq/Pl7Y5+5h5a79KMJj2CY
+ IX5DTQauWDAzyjPZQWjEFJ9gOnhVXfARaC5GRf+MnmEOnmghY4
+ dyufBjXajJ8k5FwxocpTGxlqfd81pH1hTP638r4osgmfyNUUFN
+ 7cmXLHYkiLzoDOQe4jrMtqECp7IQMu0sdcE1PaQahubOYRs1nJ
+ qyr7R/50xyTgjg2ve652UXqNF9jy7Lwrn0EYwQ5p6y5GvMdbUt
+ zFGrEhVs/LsEhu4hsaNE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg
+On Wednesday 10 September 2014 01:24:16 Anton Vorontsov wrote:
+> On Wed, Sep 10, 2014 at 10:01:43AM +0200, Arnd Bergmann wrote:
+> [...]
+> > > -------------------------------------------------------------------------------
+> > > arm-allmodconfig : PASS, 0 errors, 18 warnings, 0 section mismatches
+> > > 
+> > > Warnings:
+> > >     ../arch/arm/mach-cns3xxx/pcie.c:311:1: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+> > 
+> > I guess we should try to find a new cns3xxx maintainer
+> 
+> I'd be more than happy to hand it over. As far as I know, OpenWRT is a
+> major user of cns3xxx nowadays, so Cc'ing some of the active folks.
 
-Sorry, Probably my bad :). I did resend a new patch using the _IO*
-macros, that has been now merged to tty-next
+I agree that would be best. Also, looking at the code that sits in the
+OpenWRT git, most of the cns3xxx patches should just get merged upstream,
+I'll take them as soon as someone can write a changelog for them.
 
-Regards!
-
-On Wed, Sep 10, 2014 at 10:25 AM, Markos Chandras
-<Markos.Chandras@imgtec.com> wrote:
-> On 09/09/2014 08:17 PM, Greg KH wrote:
->> On Tue, Sep 09, 2014 at 12:52:55PM +0100, Markos Chandras wrote:
->>> Commit e676253b19b2d269cccf67fdb1592120a0cd0676
->>> (serial/8250: Add support for RS485 IOCTLs) added cases for the
->>> TIOC{S,G}RS485 commands but this broke the build for MIPS:
->>>
->>> drivers/tty/serial/8250/8250_core.c: In function 'serial8250_ioctl':
->>> drivers/tty/serial/8250/8250_core.c:2874:7: error: 'TIOCSRS485' undeclared
->>> (first use in this function)
->>> drivers/tty/serial/8250/8250_core.c:2886:7: error: 'TIOCGRS485' undeclared
->>> (first use in this function)
->>>
->>> This patch adds these missing definitions
->>>
->>> Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->>> Cc: <linux-next@vger.kernel.org>
->>> Cc: <linux-kernel@vger.kernel.org>
->>> Cc: <linux-serial@vger.kernel.org>
->>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
->>> ---
->>>  arch/mips/include/uapi/asm/ioctls.h | 2 ++
->>>  1 file changed, 2 insertions(+)
->>>
->>> diff --git a/arch/mips/include/uapi/asm/ioctls.h b/arch/mips/include/uapi/asm/ioctls.h
->>> index b1e637757fe3..34050cb6b631 100644
->>> --- a/arch/mips/include/uapi/asm/ioctls.h
->>> +++ b/arch/mips/include/uapi/asm/ioctls.h
->>> @@ -76,6 +76,8 @@
->>>
->>>  #define TIOCSBRK    0x5427  /* BSD compatibility */
->>>  #define TIOCCBRK    0x5428  /* BSD compatibility */
->>> +#define TIOCGRS485  0x542E
->>> +#define TIOCSRS485  0x542F
->>
->> Any reason you aren't using the _IOR() type macros here?
->>
->> thanks,
->>
->> greg k-h
->>
-> Hi Greg,
->
-> Not really. I am being consistent with what
-> include/uapi/asm-generic/ioctls.h is using, and with the xtensa patch
-> that was posted yesterday
->
-> https://lkml.org/lkml/2014/9/9/27
->
-> --
-> markos
+The SMP support, in particular the fiq usage is probably the only
+thing that will need a few review rounds.
 
 
+> > and the patch I made for this needs to be tested.
+> 
+> Fwiw, it looked really good.
 
--- 
-Ricardo Ribalda
+Thanks.
+
+	Arnd
