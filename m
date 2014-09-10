@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751142AbaIJHP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:15:58 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45768 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854AbaIJHP4 (ORCPT
+	id S1751413AbaIJHSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:18:10 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35136 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaIJHSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:15:56 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH] checkpatch: struct of_device_id should usually be const
-Date: Wed, 10 Sep 2014 09:15:46 +0200
-Message-Id: <1410333346-29062-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 2.1.0
+	Wed, 10 Sep 2014 03:18:09 -0400
+Message-ID: <540FFB2B.6010203@collabora.co.uk>
+Date: Wed, 10 Sep 2014 09:18:03 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier@dowhile0.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9 0/6] Add Maxim 77802 clocks support
+References: <1408350784-15577-1-git-send-email-javier.martinez@collabora.co.uk> <CABxcv=mww1wcf+vo5uLxBrNZBVJhj9zvbwGu_oAKXm4XDUNvCQ@mail.gmail.com> <20140909205739.19023.50828@quantum>
+In-Reply-To: <20140909205739.19023.50828@quantum>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- scripts/checkpatch.pl | 1 +
- 1 file changed, 1 insertion(+)
+Hello Mike,
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b385bcbbf2f5..01f503e0ebbd 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4941,6 +4941,7 @@ sub process {
- 				mtrr_ops|
- 				neigh_ops|
- 				nlmsvc_binding|
-+				of_device_id|
- 				pci_raw_ops|
- 				pipe_buf_operations|
- 				platform_hibernation_ops|
--- 
-2.1.0
+On 09/09/2014 10:57 PM, Mike Turquette wrote:
+> Quoting Javier Martinez Canillas (2014-09-07 23:49:28)
+>> 
+>> Since we are in 3.17-rc4 already, I'm afraid that this series may miss
+>> 3.18 again, is there anything else you need from me to pick this
+>> series? It will obviously conflict with Tomeu's "Per-user clock
+>> constraints" series [0] so if you want I can rebase it on top of your
+>> clk-next-tomeu-kirkwood-v2 branch [1].
+> 
+> Thanks for pinging me about it. I've pulled this series into clk-next
+> for 3.18. Everything is going to conflict with Tomeu's series so we'll
+> just handle that when it comes to merge his series (which I've since
+> removed from clk-next due to pending issues).
+> 
 
+Great, thanks a lot!
+
+> Regards,
+> Mike
+> 
+
+Best regards,
+Javier
