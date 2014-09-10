@@ -1,179 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400AbaIJQmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:42:32 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:64360 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaIJQma (ORCPT
+	id S1752282AbaIJQor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:44:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23635 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaIJQop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:42:30 -0400
-Date: Wed, 10 Sep 2014 11:42:12 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
- namespaces
-Message-ID: <20140910164212.GA32587@ubuntu-hedt>
-Mail-Followup-To: "Serge E. Hallyn" <serge@hallyn.com>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Serge Hallyn <serge.hallyn@ubuntu.com>,
-	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
- <20140910123525.GA29064@ubuntu-hedt>
- <20140910162155.GA7748@mail.hallyn.com>
+	Wed, 10 Sep 2014 12:44:45 -0400
+Message-ID: <54107FD3.90300@oracle.com>
+Date: Wed, 10 Sep 2014 12:44:03 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910162155.GA7748@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+References: <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com> <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de> <540F7D42.1020402@oracle.com> <alpine.LSU.2.11.1409091903390.10989@eggly.anvils> <54104E24.5010402@oracle.com> <20140910134014.GU17501@suse.de>
+In-Reply-To: <20140910134014.GU17501@suse.de>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 06:21:55PM +0200, Serge E. Hallyn wrote:
-> Quoting Seth Forshee (seth.forshee@canonical.com):
-> > On Tue, Sep 02, 2014 at 10:44:53AM -0500, Seth Forshee wrote:
-> > > Another issue mentioned by Eric was what to use for i_[ug]id if the ids
-> > > from userspace don't map into the user namespace, which is going to be a
-> > > problem for any other filesystems which become mountable from user
-> > > namespaces as well. We discussed a few options for addressing this, the
-> > > most promising of which seems to be either using INVALID_[UG]ID for
-> > > these inodes or creating vfs-wide "nobody" ids for this purpose. After
-> > > thinking about it for a while I'm favoring using the invalid ids, but
-> > > I'm hoping to solicit some more feedback.
-> > > 
-> > > For now these patches are using invalid ids if the user doesn't map into
-> > > the namespace. I went through the vfs code and found one place where
-> > > this could be handled better (addressed in patch 1 of the series). The
-> > > only other issue I found was that currently no one, not even root, can
-> > > change onwership of such inodes, but I suspect we can find a way around
-> > > this.
-> > 
-> > I started playing around with using -2 as a global nobody id. The
-> > changes below (made on top of this series) are working fine in light
-> > testing. I'm still not sure about the security implications of doing
-> > this though. Possibly the nobody id should be removed from init_user_ns
-> > to prevent any use of the id to gain unauthroized access to such files.
-> > Thoughts?
+On 09/10/2014 09:40 AM, Mel Gorman wrote:
+> On Wed, Sep 10, 2014 at 09:12:04AM -0400, Sasha Levin wrote:
+>> <SNIP, haven't digested the rest>
+>>
+>> I've spotted a new trace in overnight fuzzing, it could be related to this issue:
+>>
+>> [ 3494.324839] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>> [ 3494.332153] Dumping ftrace buffer:
+>> [ 3494.332153]    (ftrace buffer empty)
+>> [ 3494.332153] Modules linked in:
+>> [ 3494.332153] CPU: 8 PID: 2727 Comm: trinity-c929 Not tainted 3.17.0-rc4-next-20140909-sasha-00032-gc16d47b #1135
+>> [ 3494.332153] task: ffff88047e52b000 ti: ffff8804d491c000 task.ti: ffff8804d491c000
+>> [ 3494.332153] RIP: task_numa_work (include/linux/mempolicy.h:177 kernel/sched/fair.c:1956)
+>> [ 3494.332153] RSP: 0000:ffff8804d491feb8  EFLAGS: 00010206
+>> [ 3494.332153] RAX: 0000000000000000 RBX: ffff8804bf4e8000 RCX: 000000000000e8e8
+>> [ 3494.343974] RDX: 000000000000000a RSI: 0000000000000000 RDI: ffff8804bd6d4da8
+>> [ 3494.343974] RBP: ffff8804d491fef8 R08: ffff8804bf4e84c8 R09: 0000000000000000
+>> [ 3494.343974] R10: 00007f53e443c000 R11: 0000000000000001 R12: 00007f53e443c000
+>> [ 3494.343974] R13: 000000000000dc51 R14: 006f732e61727478 R15: ffff88047e52b000
+>> [ 3494.343974] FS:  00007f53e463f700(0000) GS:ffff880277e00000(0000) knlGS:0000000000000000
+>> [ 3494.343974] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [ 3494.369895] CR2: 0000000001670fa8 CR3: 0000000283562000 CR4: 00000000000006a0
+>> [ 3494.369895] DR0: 00000000006f0000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [ 3494.369895] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+>> [ 3494.380081] Stack:
+>> [ 3494.380081]  ffff8804bf4e80a8 0000000000000014 00007f53e4437000 0000000000000000
+>> [ 3494.380081]  ffffffff9b976e70 ffff88047e52bbd8 ffff88047e52b000 0000000000000000
+>> [ 3494.380081]  ffff8804d491ff28 ffffffff95193d84 0000000000000002 ffff8804d491ff58
+>> [ 3494.380081] Call Trace:
+>> [ 3494.380081] task_work_run (kernel/task_work.c:125 (discriminator 1))
+>> [ 3494.380081] do_notify_resume (include/linux/tracehook.h:190 arch/x86/kernel/signal.c:758)
+>> [ 3494.380081] retint_signal (arch/x86/kernel/entry_64.S:918)
+>> [ 3494.380081] Code: e8 1e e5 01 00 48 89 df 4c 89 e6 e8 a3 2d 13 00 49 89 c6 48 85 c0 0f 84 07 02 00 00 48 c7 45 c8 00 00 00 00 0f 1f 80 00 00 00 00 <49> f7 46 50 00 44 00 00 0f 85 42 01 00 00 49 8b 86 a0 00 00 00
 > 
-> Can you explain the downsides of just using -1?  What are we able to do
-> (as a fuse-in-container user) when we use -2 that we can't do when it
-> uses -1?
+> Shot in dark, can you test this please? Pagetable teardown can schedule
+> and I'm wondering if we are trying to add hinting faults to an address
+> space that is in the process of going away. The TASK_DEAD check is bogus
+> so replacing it.
 
-The thing that happens with -1 is that checks like
-capable_wrt_inode_uidgid() always fail on those inodes because
-INVALID_UID isn't ever mapped into any namespace, even if you're
-system-wide root. If we use a real id this check would at least pass in
-init_user_ns, assuming that we don't have to remove -2 from init_user_ns
-for security reasons.
+Mel, I ran today's -next with both of your patches, but the issue still remains:
 
-Or we could modify these checks so that CAP_SYS_ADMIN always gets
-permission or something like that, which might be the better way to go.
+[ 3114.540976] kernel BUG at include/asm-generic/pgtable.h:724!
+[ 3114.541857] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 3114.543112] Dumping ftrace buffer:
+[ 3114.544056]    (ftrace buffer empty)
+[ 3114.545000] Modules linked in:
+[ 3114.545717] CPU: 18 PID: 30217 Comm: trinity-c617 Tainted: G        W      3.17.0-rc4-next-20140910-sasha-00032-g6825fb5-dirty #1137
+[ 3114.548058] task: ffff880415050000 ti: ffff88076f584000 task.ti: ffff88076f584000
+[ 3114.549284] RIP: 0010:[<ffffffff952e527a>]  [<ffffffff952e527a>] change_pte_range+0x4ea/0x4f0
+[ 3114.550028] RSP: 0000:ffff88076f587d68  EFLAGS: 00010246
+[ 3114.550028] RAX: 0000000314625900 RBX: 0000000041218000 RCX: 0000000000000100
+[ 3114.550028] RDX: 0000000314625900 RSI: 0000000041218000 RDI: 0000000314625900
+[ 3114.550028] RBP: ffff88076f587dc8 R08: ffff8802cf973600 R09: 0000000000b50000
+[ 3114.550028] R10: 0000000000032c01 R11: 0000000000000008 R12: ffff8802a81070c0
+[ 3114.550028] R13: 8000000000000025 R14: 0000000041343000 R15: ffffc00000000fff
+[ 3114.550028] FS:  00007fabb91c8700(0000) GS:ffff88025ec00000(0000) knlGS:0000000000000000
+[ 3114.550028] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3114.550028] CR2: 00007fffdb7678e8 CR3: 0000000713935000 CR4: 00000000000006a0
+[ 3114.550028] DR0: 00000000006f0000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 3114.550028] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000050602
+[ 3114.550028] Stack:
+[ 3114.550028]  0000000000000001 0000000314625900 0000000000000018 ffff8802685f2260
+[ 3114.550028]  0000000016840000 ffff8802cf973600 ffff880616840000 0000000041343000
+[ 3114.550028]  ffff880108805048 0000000041005000 0000000041200000 0000000041343000
+[ 3114.550028] Call Trace:
+[ 3114.550028]  [<ffffffff952e5534>] change_protection+0x2b4/0x4e0
+[ 3114.550028]  [<ffffffff952ff24b>] change_prot_numa+0x1b/0x40
+[ 3114.550028]  [<ffffffff951adf16>] task_numa_work+0x1f6/0x330
+[ 3114.550028]  [<ffffffff95193de4>] task_work_run+0xc4/0xf0
+[ 3114.550028]  [<ffffffff95071477>] do_notify_resume+0x97/0xb0
+[ 3114.550028]  [<ffffffff9850f06a>] int_signal+0x12/0x17
+[ 3114.550028] Code: 66 90 48 8b 7d b8 e8 e6 88 22 03 48 8b 45 b0 e9 6f ff ff ff 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 0f 0b <0f> 0b 0f 0b 0f 0b 66 66 66 66 90 55 48 89 e5 41 57 49 89 d7 41
+[ 3114.550028] RIP  [<ffffffff952e527a>] change_pte_range+0x4ea/0x4f0
+[ 3114.550028]  RSP <ffff88076f587d68>
 
-> > diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> > index c0b9968db6a1..893fc0d6ff96 100644
-> > --- a/fs/fuse/dir.c
-> > +++ b/fs/fuse/dir.c
-> > @@ -905,8 +905,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
-> >  	stat->ino = attr->ino;
-> >  	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
-> >  	stat->nlink = attr->nlink;
-> > -	stat->uid = make_kuid(fc->user_ns, attr->uid);
-> > -	stat->gid = make_kgid(fc->user_ns, attr->gid);
-> > +	stat->uid = make_kuid_munged(fc->user_ns, attr->uid);
-> > +	stat->gid = make_kgid_munged(fc->user_ns, attr->gid);
-> >  	stat->rdev = inode->i_rdev;
-> >  	stat->atime.tv_sec = attr->atime;
-> >  	stat->atime.tv_nsec = attr->atimensec;
-> > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> > index f3a3ded82f85..330ac3d502a6 100644
-> > --- a/fs/fuse/inode.c
-> > +++ b/fs/fuse/inode.c
-> > @@ -167,8 +167,8 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
-> >  	inode->i_ino     = fuse_squash_ino(attr->ino);
-> >  	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
-> >  	set_nlink(inode, attr->nlink);
-> > -	inode->i_uid     = make_kuid(fc->user_ns, attr->uid);
-> > -	inode->i_gid     = make_kgid(fc->user_ns, attr->gid);
-> > +	inode->i_uid     = make_kuid_munged(fc->user_ns, attr->uid);
-> > +	inode->i_gid     = make_kgid_munged(fc->user_ns, attr->gid);
-> >  	inode->i_blocks  = attr->blocks;
-> >  	inode->i_atime.tv_sec   = attr->atime;
-> >  	inode->i_atime.tv_nsec  = attr->atimensec;
-> > diff --git a/include/linux/uidgid.h b/include/linux/uidgid.h
-> > index 6c302267f7cc..9054273af163 100644
-> > --- a/include/linux/uidgid.h
-> > +++ b/include/linux/uidgid.h
-> > @@ -45,6 +45,9 @@ static inline gid_t __kgid_val(kgid_t gid)
-> >  #define INVALID_UID KUIDT_INIT(-1)
-> >  #define INVALID_GID KGIDT_INIT(-1)
-> >  
-> > +#define NOBODY_UID KUIDT_INIT(-2)
-> > +#define NOBODY_GID KGIDT_INIT(-2)
-> > +
-> >  static inline bool uid_eq(kuid_t left, kuid_t right)
-> >  {
-> >  	return __kuid_val(left) == __kuid_val(right);
-> > @@ -175,4 +178,44 @@ static inline bool kgid_has_mapping(struct user_namespace *ns, kgid_t gid)
-> >  
-> >  #endif /* CONFIG_USER_NS */
-> >  
-> > +/**
-> > + *	make_kuid_munged - Map a user-namespace uid pair into a kuid
-> > + * 	@from: User namespace that the uid is in
-> > + * 	@uid:  User identifier
-> > + *
-> > + *	Maps a user-namespace uid pair into a kernel internal kuid,
-> > + *	and returns that kuid.
-> > + *
-> > + *	Unlike make_kuid, make_kuid_munged never fails and always
-> > + *	returns a valid uid. If @uid has no mapping in @from
-> > + *	NOBODY_UID is returned.
-> > + */
-> > +static inline kuid_t make_kuid_munged(struct user_namespace *from, uid_t uid)
-> > +{
-> > +	kuid_t kuid = make_kuid(from, uid);
-> > +	if (!uid_valid(kuid))
-> > +		kuid = NOBODY_UID;
-> > +	return kuid;
-> > +}
-> > +
-> > +/**
-> > + *	make_kgid_munged - Map a user-namespace gid pair into a kgid
-> > + * 	@from: User namespace that the gid is in
-> > + * 	@gid:  User identifier
-> > + *
-> > + *	Maps a user-namespace gid pair into a kernel internal kgid,
-> > + *	and returns that kgid.
-> > + *
-> > + *	Unlike make_kgid, make_kgid_munged never fails and always
-> > + *	returns a valid gid. If @gid has no mapping in @from
-> > + *	NOBODY_GID is returned.
-> > + */
-> > +static inline kgid_t make_kgid_munged(struct user_namespace *from, gid_t gid)
-> > +{
-> > +	kgid_t kgid = make_kgid(from, gid);
-> > +	if (!gid_valid(kgid))
-> > +		kgid = NOBODY_GID;
-> > +	return kgid;
-> > +}
-> > +
-> >  #endif /* _LINUX_UIDGID_H */
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+Thanks,
+Sasha
+
