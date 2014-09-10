@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaIJSOT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:14:19 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44657 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaIJSOQ (ORCPT
+	id S1753111AbaIJSOi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:14:38 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:52301 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054AbaIJSOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:14:16 -0400
+	Wed, 10 Sep 2014 14:14:36 -0400
+Message-ID: <54109514.4090901@kernel.dk>
+Date: Wed, 10 Sep 2014 12:14:44 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140910142740.GC16489@pengutronix.de>
-References: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
-	<1410356809-26179-3-git-send-email-d.lavnikevich@sam-solutions.com>
-	<20140910142740.GC16489@pengutronix.de>
-Date: Wed, 10 Sep 2014 11:14:15 -0700
-Message-ID: <CAGoOwPSpkNy6uNVAjG2HgiHHscKZjL5wgVrkyGwWCmyU7x+gWg@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH 2/5] ASoC: fsl: add imx-tlv320aic3x machine driver
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
-        shawn.guo@freescale.com, kernel@pengutronix.de, linux@arm.linux.org.uk,
-        "perex@perex.cz" <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Timur Tabi <timur@tabi.org>, Xiubo Li <Li.Xiubo@freescale.com>,
-        grant.likely@linaro.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Robert Elliott <relliott@beardog.cce.hp.com>, elliott@hp.com, hch@lst.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
+References: <20140910001417.9294.40414.stgit@beardog.cce.hp.com> <20140910001801.9294.79720.stgit@beardog.cce.hp.com>
+In-Reply-To: <20140910001801.9294.79720.stgit@beardog.cce.hp.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 7:27 AM, Markus Pargmann <mpa@pengutronix.de> wrote:
-> Hi,
->
-> On Wed, Sep 10, 2014 at 04:46:46PM +0300, Dmitry Lavnikevich wrote:
->> This is driver for i.MX6 boards with tlv320aic3x audio codecs.
->>
->> Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
->> ---
->>  .../bindings/sound/fsl,imx-audio-tlv320aic3x.txt   |  27 ++++
->>  sound/soc/fsl/Kconfig                              |  13 ++
->>  sound/soc/fsl/Makefile                             |   2 +
->>  sound/soc/fsl/imx-tlv320aic3x.c                    | 177 +++++++++++++++++++++
->>  4 files changed, 219 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/sound/fsl,imx-audio-tlv320aic3x.txt
->>  create mode 100644 sound/soc/fsl/imx-tlv320aic3x.c
->
-> Is it possible to use the simple-card
-> (Documentation/devicetree/bindings/sound/simple-card.txt) instead of
-> adding a new audio card driver? There are also DT bindings for the imx
-> audiomultiplexer (imx-audmux.txt).
+On 09/09/2014 06:18 PM, Robert Elliott wrote:
+> From: Robert Elliott <elliott@hp.com>
+> 
+> One change introduced by blk-mq is that it does all
+> the completion work in hard irq context rather than
+> soft irq context.
+> 
+> On a 6 core system, if all interrupts are routed to
+> one CPU, then you can easily run into this:
+> * 5 CPUs submitting IOs
+> * 1 CPU spending 100% of its time in hard irq context
+> processing IO completions, not able to submit anything
+> itself
+> 
+> Example with CPU5 receiving all interrupts:
+>    CPU usage:   CPU0   CPU1   CPU2   CPU3   CPU4   CPU5
+>         %usr:   0.00   3.03   1.01   2.02   2.00   0.00
+>         %sys:  14.58  75.76  14.14   4.04  78.00   0.00
+>         %irq:   0.00   0.00   0.00   1.01   0.00 100.00
+>        %soft:   0.00   0.00   0.00   0.00   0.00   0.00
+> %iowait idle:  85.42  21.21  84.85  92.93  20.00   0.00
+>        %idle:   0.00   0.00   0.00   0.00   0.00   0.00
+> 
+> When the submitting CPUs are forced to process their own
+> completion interrupts, this steals time from new
+> submissions and self-throttles them.
+> 
+> Without that, there is no direct feedback to the
+> submitters to slow down.  The only feedback is:
+> * reaching max queue depth
+> * lots of timeouts, resulting in aborts, resets, soft
+>   lockups and self-detected stalls on CPU5, bogus
+>   clocksource tsc unstable reports, network
+>   drop-offs, etc.
+> 
+> The SCSI LLD can set affinity_hint for each of its
+> interrupts to request that a program like irqbalance
+> route the interrupts back to the submitting CPU.
+> The latest version of irqbalance ignores those hints,
+> though, instead offering an option to run a policy
+> script that could honor them. Otherwise, it balances
+> them based on its own algorithms. So, we cannot rely
+> on this.
+> 
+> Hardware might perform interrupt coalescing to help,
+> but it cannot help 1 CPU keep up with the work
+> generated by many other CPUs.
+> 
+> rq_affinity=2 helps by pushing most of the block layer
+> and SCSI midlayer completion work back to the submitting
+> CPU (via an IPI).
+> 
+> Change the default rq_affinity=2 under blk-mq
+> so there's at least some feedback to slow down the
+> submitters.
 
-I don't know why my mutt doesn't display this mail.
+I don't think we should do this generically. For "sane" devices with
+multiple completion queues, and with proper affinity setting in the
+driver, this is going to be a loss.
 
-Anyway, if Simple Card supports audmux, yes, it's also a good idea.
+So lets not add it to QUEUE_FLAG_MQ_DEFAULT, but we can make it default
+for nr_hw_queues == 1. I think that would be way saner.
+
+-- 
+Jens Axboe
+
