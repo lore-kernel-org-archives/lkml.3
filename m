@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaIJNcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:32:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65315 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634AbaIJNca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:32:30 -0400
-Date: Wed, 10 Sep 2014 14:29:33 +0100
-From: Aaron Tomlin <atomlin@redhat.com>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: peterz@infradead.org, mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com,
-        jcastillo@redhat.com, oleg@redhat.com, pzijlstr@redhat.com,
-        riel@redhat.com, prarit@redhat.com, jgh@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
-        rostedt@goodmis.org, hannes@cmpxchg.org,
-        aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
-Subject: Re: [PATCH v2 1/3] init/main.c: Give init_task a canary
-Message-ID: <20140910132933.GG1436@atomlin.usersys.redhat.com>
-References: <20140904161124.GD1436@atomlin.usersys.redhat.com>
- <1410255749-2956-1-git-send-email-atomlin@redhat.com>
- <1410255749-2956-2-git-send-email-atomlin@redhat.com>
- <20140910022654.29abc9f3@as>
+	id S1751723AbaIJNcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:32:39 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:55808 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaIJNcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 09:32:36 -0400
+Date: Wed, 10 Sep 2014 09:32:32 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
+Message-ID: <20140910093232.1252707e@tlielax.poochiereds.net>
+In-Reply-To: <20140909161820.GH1776@fieldses.org>
+References: <5405FBAE.5020303@parallels.com>
+	<20140902184456.GC31793@fieldses.org>
+	<54061562.4080306@parallels.com>
+	<20140909161820.GH1776@fieldses.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140910022654.29abc9f3@as>
-X-PGP-Key: http://pgp.mit.edu/pks/lookup?search=atomlin%40redhat.com
-X-PGP-Fingerprint: 7906 84EB FA8A 9638 8D1E  6E9B E2DE 9658 19CC 77D6
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 02:26:54AM -0500, Chuck Ebbert wrote:
-> On Tue,  9 Sep 2014 10:42:27 +0100
-> Aaron Tomlin <atomlin@redhat.com> wrote:
+On Tue, 9 Sep 2014 12:18:21 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
+
+> On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
+> > > Would it make sense to return the lock type held instead, so you could
+> > > do one flock(fd, LOCK_TEST) instead of flock(fd, LOCK_TEST|LOCK_SH) and
+> > > flock(fd, LOCK_TEST|LOCK_EX) ?
+> > 
+> > Well, in our case we parse /proc/locks anyway to see what
+> > files at least to test for being locked. But what you propose
+> > looks even better. I'll look what can be done here.
 > 
-> > +void task_stack_end_magic(struct task_struct *tsk)
-> > +{
-> > +	unsigned long *stackend;
-> > +
-> > +	stackend = end_of_stack(tsk);
-> > +	*stackend = STACK_END_MAGIC;	/* for overflow detection */
-> > +}
-> > +
+> Actually I think I prefer your version.  It seems cleaner to define
+> LOCK_TEST as returning the same result as you'd get if you actually
+> tried the lock, just without applying the lock.  It avoids having a
+> different return-value convention for this one command.  It might avoid
+> some ambiguity in cases where the flock might be denied for reasons
+> other than a conflicting flock (e.g. on NFS where flocks and fcntl locks
+> conflict).  It's closer to what GETLK does in the fcntl case.
 > 
-> For clarity this should probably be called set_task_stack_end_magic().
 
-Agreed.
+Yeah, I think I agree here too. Best to keep the interface as simple
+as possible, and the principle of least surprise would dictate that the
+return value match how other flock() calls work.
 
-> And has this been tested on parisc and metag, which use STACK_GROWSUP ?
-> I can't see how end_of_stack() as it's defined now could work on those archs.
+I would still like to see a proposed manpage update for it. For bonus
+points, writing a section on flock() for the glibc manual might help
+get that piece merged as well.
 
-AFAIU, dup_task_struct() has always done this explicitly.
-I see no reason why init_task requires special attention.
+It was my experience that getting the small header file #defines into
+glibc for OFD locks was much more difficult than the kernel piece. YMMV
+of course, but getting the glibc folks to buy into the idea ahead of
+time would be good if possible.
 
 -- 
-Aaron Tomlin
+Jeff Layton <jlayton@poochiereds.net>
