@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaIJReg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:34:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35871 "EHLO
+	id S1751711AbaIJRic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:38:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35947 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751269AbaIJRef (ORCPT
+	by vger.kernel.org with ESMTP id S1750734AbaIJRib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:34:35 -0400
-Date: Wed, 10 Sep 2014 18:34:01 +0100
+	Wed, 10 Sep 2014 13:38:31 -0400
+Date: Wed, 10 Sep 2014 18:38:29 +0100
 From: Will Deacon <will.deacon@arm.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
+To: Olof Johansson <olof@lixom.net>
+Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
+        "anderson@redhat.com" <anderson@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "cl@linux.com" <cl@linux.com>,
+        "cov@codeaurora.org" <cov@codeaurora.org>,
+        "jays.lee@samsung.com" <jays.lee@samsung.com>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
         Sudeep Holla <Sudeep.Holla@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        "takahiro.akashi@linaro.org" <takahiro.akashi@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "acme@kernel.org" <acme@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-Message-ID: <20140910173401.GG1710@arm.com>
-References: <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
- <53FE5B09.2020403@codeaurora.org>
- <CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
- <53FE7E3B.1010500@codeaurora.org>
- <CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
- <CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
- <20140828093505.GC14650@leverpostej>
- <CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
- <20140908135436.GC22717@arm.com>
- <CAD=FV=Up=+zNneY-behnkFbhupi50_f5R=ECgJQeqGV5kz5d2g@mail.gmail.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Matthew Leach <Matthew.Leach@arm.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] arm64: LLVMLinux: Fix inline arm64 assembly for use with
+ clang
+Message-ID: <20140910173829.GI1710@arm.com>
+References: <1409959460-15989-1-git-send-email-behanw@converseincode.com>
+ <20140908093051.GA12657@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=Up=+zNneY-behnkFbhupi50_f5R=ECgJQeqGV5kz5d2g@mail.gmail.com>
+In-Reply-To: <20140908093051.GA12657@localhost>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 06:17:23PM +0100, Doug Anderson wrote:
-> On Mon, Sep 8, 2014 at 6:54 AM, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > On Fri, Sep 05, 2014 at 11:11:47PM +0100, Doug Anderson wrote:
-> >> On Thu, Aug 28, 2014 at 2:35 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> >> > Not if you boot Linux at hyp, as we've recommended for this precise
-> >> > reason. That doesn't fix other things like CNTFRQ if the secure
-> >> > initialisation doesn't poke that, however.
-> >>
-> >> I'll freely admit that I'm out of my league and out of my comfort zone
-> >> here, but...
-> >>
-> >> In the theory that firmware ought to be as minimal as possible
-> >> (because it's hard to update and hard to keep in sync with kernel
-> >> versions), it seems like firmware ought to start the kernel out in as
-> >> permissive mode as it's willing to provide, right?
-> >
-> > Not necessarily (and definitely not for arm64). And we've seen in
-> > practice that the actual deployed kernel may run in a different security
-> > mode than what's in mainline and used for initial development (you may
-> > just not see all the patches upstream). For development, that's indeed
-> > simpler, but once you go into production, a customer requesting some
-> > secure OS for payments etc. and Linux is moved to the non-secure side
-> > (and you end up putting hacks in the kernel because they were not
-> > spotted during initial development with Linux running in secure mode).
+On Mon, Sep 08, 2014 at 10:30:51AM +0100, Olof Johansson wrote:
+> On Fri, Sep 05, 2014 at 04:24:20PM -0700, behanw@converseincode.com wrote:
+> > From: Mark Charlebois <charlebm@gmail.com>
+> > 
+> > Fix variable types for 64-bit inline assembly.
+> > 
+> > This patch now works with both gcc and clang.
+> > 
+> > Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> > Signed-off-by: Behan Webster <behanw@converseincode.com>
+> > ---
+> >  arch/arm64/include/asm/arch_timer.h | 26 +++++++++++++++-----------
+> >  arch/arm64/include/asm/uaccess.h    |  2 +-
+> >  arch/arm64/kernel/debug-monitors.c  |  8 ++++----
+> >  arch/arm64/kernel/perf_event.c      | 34 +++++++++++++++++-----------------
+> >  arch/arm64/mm/mmu.c                 |  2 +-
+> >  5 files changed, 38 insertions(+), 34 deletions(-)
+> > 
+> > diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> > index 9400596..c1f87e0 100644
+> > --- a/arch/arm64/include/asm/arch_timer.h
+> > +++ b/arch/arm64/include/asm/arch_timer.h
+> > @@ -37,19 +37,23 @@ void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
+> >  	if (access == ARCH_TIMER_PHYS_ACCESS) {
+> >  		switch (reg) {
+> >  		case ARCH_TIMER_REG_CTRL:
+> > -			asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
+> > +			asm volatile("msr cntp_ctl_el0,  %0"
+> > +				: : "r" ((u64)val));
 > 
-> I guess the important part of my statement is "as it's willing to
-> provide".  In your case your firmware isn't willing to provide "secure
-> SVC".  In our case it is.
+> Ick. Care to elaborate in the patch description why this is needed with
+> LLVM? It's really messy and very annoying having to cast register values
+> every time they're passed in, instead of the compiler handling it for you.
 > 
-> We've actually shipped products where the firmware boots the kernel in
-> "secure" mode.  These products have a very different security model
-> than you're envisioning, I guess.  In these products, less firmware is
-> better and adding firmware code to do the whole transition to "non
-> secure hyp mode" just isn't worth it.  It's not just a one-time blob
-> of code in the firmware before booting the kernel.  (I'm told) it
-> means somehow keeping firmware code around to help out with turning
-> processors off/on and to help with resume from S3.  That's
-> infrastructure that we don't want to add.
+> Is there a way to catch this with GCC? If not, I expect you to get broken
+> all the time on this by people who don't notice.
 
-Setting aside the security model, booting in secure mode can also have a
-significant impact on the programming model of system IP, not just the CPU.
-For example, the SMMU register file suddenly looks different and the way in
-which it is programmed also changes. The GIC (v3+) is similar. Linux doesn't
-have drivers that know about this so, whilst not impossible, there's a
-non-trivial amount of work (and then maintenance overhead) if you want to
-support booting Linux on the secure side.
-
-The secure world may be more permissive in some regards, but it's actually
-a burden in others. It's not a simple superset of non-secure, and this is
-more evident than ever in ARMv8.
-
-As I understand it, this conversation started because we're booting at
-non-secure EL1 with a badly configured EL2. That sounds like something
-we may have to fix/work around in Linux (Olof points out that it used to
-work), but we shouldn't conflate that with booting on the secure side to
-get away from broken firmware.
+Question to the clang people (Clangers?): what happens if the %0 above is
+rewritten as %x0 and the cast on val is dropped? I could stomach a change
+adding that, but it's still likely to regress without regular build testing.
 
 Will
