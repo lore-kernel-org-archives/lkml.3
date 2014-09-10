@@ -1,36 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaIJXqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 19:46:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:49899 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283AbaIJXqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 19:46:10 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ming Lei <ming.lei@canonical.com>, Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        Kick In <pierre-andre.morey@canonical.com>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
-In-Reply-To: <878ulyjn23.fsf@rustcorp.com.au>
-References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com> <20140902162146.GA28741@infradead.org> <5405EF38.60007@kernel.dk> <20140903121902.7a9f5a5a@tom-ThinkPad-T410> <87bnquk4fe.fsf@rustcorp.com.au> <878ulyjn23.fsf@rustcorp.com.au>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 11 Sep 2014 09:08:36 +0930
-Message-ID: <87y4trhwqr.fsf@rustcorp.com.au>
+	id S1752207AbaIJXuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 19:50:22 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53449 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751740AbaIJXuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 19:50:21 -0400
+Message-ID: <5410E3AE.8020609@hurleysoftware.com>
+Date: Wed, 10 Sep 2014 19:50:06 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>				 <20140904090952.GW17454@tucnak.redhat.com>				 <540859EC.5000407@hurleysoftware.com>				 <20140904175044.4697aee4@alan.etchedpixels.co.uk>				 <5408C0AB.6050801@hurleysoftware.com>				 <20140905001751.GL5001@linux.vnet.ibm.com>				 <1409883098.5078.14.camel@jarvis.lan>			 <5409243C.4080704@hurleysoftware.com>				 <20140905040645.GO5001@linux.vnet.ibm.com>				 <1410066442.12512.13.camel@jarvis.lan>				 <20140907162146.GK5001@linux.vnet.ibm.com>			 <1410116687.2027.19.camel@jarvis.lan>		 <540CC305.8010407@hurleysoftware.com>	 <1410155407.2027.29.camel@jarvis.lan>		 <540E3BFF.7080307@hurleysoftware.com>	 <1410231392.2028.15.camel@jarvis.lan> <540ED929.5040305@hurleysoftware.com> <1410385686.28237.5.camel@jarvis>
+In-Reply-To: <1410385686.28237.5.camel@jarvis>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> writes:
-> Rusty Russell <rusty@rustcorp.com.au> writes:
-> Here's what I have.  It seems to work as expected, but I haven't
-> benchmarked it.
+On 09/10/2014 05:48 PM, James Bottomley wrote:
+> On Tue, 2014-09-09 at 06:40 -0400, Peter Hurley wrote:
+>> On 09/08/2014 10:56 PM, James Bottomley wrote:
+>>> On Mon, 2014-09-08 at 19:30 -0400, Peter Hurley wrote:
+>>>> On 09/08/2014 01:50 AM, James Bottomley wrote:
+>>>>>> But additionally, even if gcc combines adjacent writes _that are part
+>>>>>> of the program flow_ then I believe the situation is no worse than
+>>>>>> would otherwise exist.
+>>>>>>
+>>>>>> For instance, given the following:
+>>>>>>
+>>>>>> struct x {
+>>>>>> 	spinlock_t lock;
+>>>>>> 	long a;
+>>>>>> 	byte b;
+>>>>>> 	byte c;
+>>>>>> };
+>>>>>>
+>>>>>> void locked_store_b(struct x *p)
+>>>>>> {
+>>>>>> 	spin_lock(&p->lock);
+>>>>>> 	p->b = 1;
+>>>>>> 	spin_unlock(&p->lock);
+>>>>>> 	p->c = 2;
+>>>>>> }
+>>>>>>
+>>>>>> Granted, the author probably expects ordered writes of
+>>>>>> 	STORE B
+>>>>>> 	STORE C
+>>>>>> but that's not guaranteed because there is no memory barrier
+>>>>>> ordering B before C.
+>>>>>
+>>>>> Yes, there is: loads and stores may not migrate into or out of critical
+>>>>> sections.
+>>>>
+>>>> That's a common misconception.
+>>>>
+>>>> The processor is free to re-order this to:
+>>>>
+>>>> 	STORE C
+>>>> 	STORE B
+>>>> 	UNLOCK
+>>>>
+>>>> That's because the unlock() only guarantees that:
+>>>>
+>>>> Stores before the unlock in program order are guaranteed to complete
+>>>> before the unlock completes. Stores after the unlock _may_ complete
+>>>> before the unlock completes.
+>>>>
+>>>> My point was that even if compiler barriers had the same semantics
+>>>> as memory barriers, the situation would be no worse. That is, code
+>>>> that is sensitive to memory barriers (like the example I gave above)
+>>>> would merely have the same fragility with one-way compiler barriers
+>>>> (with respect to the compiler combining writes).
+>>>>
+>>>> That's what I meant by "no worse than would otherwise exist".
+>>>
+>>> Actually, that's not correct.  This is actually deja vu with me on the
+>>> other side of the argument.  When we first did spinlocks on PA, I argued
+>>> as you did: lock only a barrier for code after and unlock for code
+>>> before.  The failing case is that you can have a critical section which
+>>> performs an atomically required operation and a following unit which
+>>> depends on it being performed.  If you begin the following unit before
+>>> the atomic requirement, you may end up losing.  It turns out this kind
+>>> of pattern is inherent in a lot of mail box device drivers: you need to
+>>> set up the mailbox atomically then poke it.  Setup is usually atomic,
+>>> deciding which mailbox to prime and actually poking it is in the
+>>> following unit.  Priming often involves an I/O bus transaction and if
+>>> you poke before priming, you get a misfire.
+>>
+>> Take it up with the man because this was discussed extensively last
+>> year and it was decided that unlocks would not be full barriers.
+>> Thus the changes to memory-barriers.txt that explicitly note this
+>> and the addition of smp_mb__after_unlock_lock() (for two different
+>> locks; an unlock followed by a lock on the same lock is a full barrier).
+>>
+>> Code that expects ordered writes after an unlock needs to explicitly
+>> add the memory barrier.
+> 
+> I don't really care what ARM does; spin locks are full barriers on
+> architectures that need them.  The driver problem we had that detected
+> our semi permeable spinlocks was an LSI 53c875 which is enterprise class
+> PCI, so presumably not relevant to ARM anyway.
 
-Hi Ming,
+Almost certainly ia64 arch_spin_unlock() is not a full barrier.
 
-        Any chance you can run your benchmarks against this patch?
 
-Thanks,
-Rusty.
