@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565AbaIJUuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:50:55 -0400
-Received: from relay1.sgi.com ([192.48.180.66]:53016 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449AbaIJUuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:50:54 -0400
-Message-ID: <5410B9AD.7050008@sgi.com>
-Date: Wed, 10 Sep 2014 15:50:53 -0500
-From: Gary Kroening <gfk@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>, Nathan Zimmer <nzimmer@sgi.com>,
-        jroedel@suse.de
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] iommu/vt-d: Use the SIRTP when enabling remapping
-References: <1410297096-54096-1-git-send-email-nzimmer@sgi.com> <540FF614.8000003@siemens.com> <541004B6.8070800@sgi.com>
-In-Reply-To: <541004B6.8070800@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753607AbaIJUvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:51:41 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:56036 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446AbaIJUvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 16:51:39 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Romain Perier <romain.perier@gmail.com>,
+        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        Arnd Bergmann <arnd@arndb.de>, Tobias Klauser <tklauser@distanz.ch>,
+        Jingoo Han <jg1.han@samsung.com>, Max Schwarz <max.schwarz@online.de>,
+        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH v2 0/2] net: arc_emac: fix tx issues
+Date: Wed, 10 Sep 2014 22:50:01 +0200
+Message-Id: <1410382203-10395-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not really a kernel developer and don't know the proper etiquette for
-this, but just wanted to say thanks to Jan for the guidance. With your help,
-I was able to track our problem down to a much more fundamental problem of
-incorrect bit position of the fields in our VT-d GLBCMD register, attributable
-to our now-manual process of generating register information from Intel
-socket documentation. (We used to used Intel's SoftSDV to determine register
-fields, but that's no longer available and we have to use fallible human
-eyes! Thousands of registers in each new socket...)
+Hi,
 
-Gary
+the patches below solve some issues found in the tx ring reclaim
+strategy currently implemented in the arc_emac driver.
 
-On 09/10/2014 02:58 AM, Gary Kroening wrote:
-> On 9/10/2014 1:56 AM, Jan Kiszka wrote:
->> On 2014-09-09 23:11, Nathan Zimmer wrote:
->>> The previous change (iommu/vt-d: Don't store SIRTP request) to this area
->>> caused a crash in our simulator. In particular is seems that by the time a
->>> UART interrupt is sent through the system, we don't see interrupt remapping
->>> to be enabled.  So the interrupt does not get translated to a logical
->>> interrupt and crashes.
->>>
->>> OR'ing the SIRTP request to make sure it is seen but hopefully not sticky.
->>> This seems like a clean fix, at least on our simulator; if you don't agree,
->>> our simulator guy will take a closer look at our iommu model.
->>
->> Check the VT-d spec (6.7, Set Interrupt Remapping Table Pointer
->> Operation): "Software must always follow the interrupt-remapping table
->> pointer set operation with a global invalidate of the IEC to ensure
->> hardware references the new structures *before* enabling interrupt
->> remapping." There is also (command register description): "If multiple
->> control fields in this register need to be modified, software must
->> serialize the modifications through multiple writes to this register."
->> This, in combination with the command registers description of bits 24
->> and 25 strongly suggests that your model is broken.
->
-> Thanks, Jan. I'll read up on it. Still working out some kinks with
-> the relatively new IOMMU/interrupt-remapping logic which we added over
-> the last 18 months or so. Sorry for any distraction, and thanks for the
-> help/info.
-> Gary
->
->>
->>>
->>> Found testing on our simulator, not real hardware.
->>
->> Funnily, the original issue was found by the QEMU model of VT-d that
->> used to take the last cited sentence very strictly (I asked to remove it
->> due to the preexisting Linux versions).
->>
->> Jan
->>
+Without these patches a simple outgoing UDP flow blocks almost
+immediately with the socket send buffer full, until some new rx
+packets trigger a clean of the tx ring.
+
+Everything seems to work fine on a Radxa Rock with this fix applied.
+
+Changes since v1:
+ - reworded commit messages
+
+Beniamino Galvani (2):
+  net: arc_emac: enable tx interrupts
+  net: arc_emac: prevent reuse of unreclaimed tx descriptors
+
+ drivers/net/ethernet/arc/emac_main.c | 53 +++++++++++++++++++++++++-----------
+ 1 file changed, 37 insertions(+), 16 deletions(-)
+
+-- 
+1.9.1
 
