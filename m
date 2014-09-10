@@ -1,85 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaIJIEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:04:23 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:15474 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaIJIES (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:04:18 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-76-541005ff95e7
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCHv3 1/3] [media] disable OMAP1 COMPILE_TEST
-Date: Wed, 10 Sep 2014 10:04:12 +0200
-Message-id: <3055703.v1cXzV8T6U@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
-References: <6cbd00c5f2d342b573aaf9c0e533778374dd2e1e.1410273306.git.m.chehab@samsung.com>
- <5f850d5d45a27c50dabf3da08689cbedf986841b.1410288748.git.m.chehab@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t9jAd3/rAIhBpMWGli83ziPyeLyrjls
-	Fj0btrJaHFzYxmhxcZ28xY5Ti5gttu69yu7A7tF44wabx4ePcR6bV2h59G1ZxejxeZNcAGsU
-	l01Kak5mWWqRvl0CV8an1S/ZCvp4KqZ+vsvawPiZs4uRk0NCwERi5r0PzBC2mMSFe+vZQGwh
-	gUWMEq3fRbsYuYDsFiaJbU2f2UESbAJWEhPbVzGC2CICBhKPF51kByliFmhkkriy9CbYJGEB
-	W4lLl9cygdgsAqoSz24cYgGxeQU0JVY1zAKzRQU8JXZsXwm2jVMgVqJjeTcrxLa1jBLTT09h
-	hmgQlPgx+R5YA7OAvMS+/VNZIWwdif2t09gmMArMQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca
-	6RUn5haX5qXrJefnbmIEh/gz6R2MqxosDjEKcDAq8fAK1PKHCLEmlhVX5h5ilOBgVhLhnfUK
-	KMSbklhZlVqUH19UmpNafIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoEx30ttcVue
-	+pUpzCqP9zGnvrf4ofwler5yr1xfROrXksN8C/X4Rf+8WcV5fE37Y4M3L2wXLW57vWavoNfF
-	upObHzk+j3C9eF/mmbvLm1de9kKci2bk/2FleP634eMz2TeidizTBB/+Twqr4fcvZzlvGbLo
-	fFxZnrNBwizBZawJMWd3dj3N4l2gxFKckWioxVxUnAgA2s+q120CAAA=
+	id S1751998AbaIJIFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:05:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7658 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803AbaIJIFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:05:34 -0400
+Message-ID: <5410062A.4090003@redhat.com>
+Date: Wed, 10 Sep 2014 10:04:58 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 net-next 04/12] bpf: expand BPF syscall with program
+ load/unload
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com> <1410325808-3657-5-git-send-email-ast@plumgrid.com>
+In-Reply-To: <1410325808-3657-5-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/10/2014 07:10 AM, Alexei Starovoitov wrote:
+> eBPF programs are similar to kernel modules. They are loaded by the user
+> process and automatically unloaded when process exits. Each eBPF program is
+> a safe run-to-completion set of instructions. eBPF verifier statically
+> determines that the program terminates and is safe to execute.
+>
+> The following syscall wrapper can be used to load the program:
+> int bpf_prog_load(enum bpf_prog_type prog_type,
+>                    const struct bpf_insn *insns, int insn_cnt,
+>                    const char *license)
+> {
+>      union bpf_attr attr = {
+>          .prog_type = prog_type,
+>          .insns = insns,
+>          .insn_cnt = insn_cnt,
+>          .license = license,
+>      };
+>
+>      return bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
+> }
+> where 'insns' is an array of eBPF instructions and 'license' is a string
+> that must be GPL compatible to call helper functions marked gpl_only
+>
+> Upon succesful load the syscall returns prog_fd.
+> Use close(prog_fd) to unload the program.
+>
+> User space tests and examples follow in the later patches
+>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+...
+> diff --git a/include/linux/filter.h b/include/linux/filter.h
+> index 4b59edead908..9727616693e5 100644
+> --- a/include/linux/filter.h
+> +++ b/include/linux/filter.h
+> @@ -15,6 +15,7 @@
+>   struct sk_buff;
+>   struct sock;
+>   struct seccomp_data;
+> +struct bpf_prog_info;
+>
+>   /* ArgX, context and stack frame pointer register positions. Note,
+>    * Arg1, Arg2, Arg3, etc are used as argument mappings of function
+> @@ -302,8 +303,12 @@ struct bpf_work_struct {
+>   struct bpf_prog {
+>   	u16			pages;		/* Number of allocated pages */
+>   	bool			jited;		/* Is our filter JIT'ed? */
+> +	bool			has_info;	/* whether 'info' is valid */
+>   	u32			len;		/* Number of filter blocks */
+> -	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
+> +	union {
+> +		struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
+> +		struct bpf_prog_info	*info;
+> +	};
 
-Hi,
+All members of this bpf_prog_info should go into bpf_work_struct,
+as I have intended this to be a ancillary structure here. Since
+we already allocate this anyway, you can reduce complexity by doing
+the additional allocation plus remove the has_info member.
 
-On Tuesday, September 09, 2014 03:54:04 PM Mauro Carvalho Chehab wrote:
-> This driver depends on a legacy OMAP DMA API. So, it won't
-> compile-test on other archs.
-> 
-> While we might add stubs to the functions, this is not a
-> good idea, as the hole API should be replaced.
+>   	struct bpf_work_struct	*work;		/* Deferred free work struct */
+>   	unsigned int		(*bpf_func)(const struct sk_buff *skb,
+>   					    const struct bpf_insn *filter);
+> diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+> index 3a03fdf4db0e..1d0411965576 100644
+> --- a/include/uapi/linux/bpf.h
+> +++ b/include/uapi/linux/bpf.h
+> @@ -99,12 +99,23 @@ enum bpf_cmd {
+...
+> +/* called by sockets/tracing/seccomp before attaching program to an event
+> + * pairs with bpf_prog_put()
+> + */
 
-This is also not a good idea becaouse it would break the driver
-for OMAP1 once somebody enables COMPILE_TEST option while also
-having ARCH_OMAP1 enabled (which is perfectly fine and shouldn't
-cause the driver breakage).  In general COMPILE_TEST option is
-completely independent from the arch specific ones and it should
-not change behaviour of the existing code.
+But seccomp already does refcounting on each BPF filter. Or, is the
+intention to remove this from seccomp?
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+> +struct bpf_prog *bpf_prog_get(u32 ufd)
+> +{
+> +	struct fd f = fdget(ufd);
+> +	struct bpf_prog *prog;
+> +
+> +	prog = get_prog(f);
+> +
+> +	if (IS_ERR(prog))
+> +		return prog;
+> +
+> +	atomic_inc(&prog->info->refcnt);
+> +	fdput(f);
+> +	return prog;
+> +}
+...
+> diff --git a/net/core/filter.c b/net/core/filter.c
+> index dfc716ffa44b..d771e4f03745 100644
+> --- a/net/core/filter.c
+> +++ b/net/core/filter.c
+> @@ -835,6 +835,7 @@ static void bpf_release_orig_filter(struct bpf_prog *fp)
+>   {
+>   	struct sock_fprog_kern *fprog = fp->orig_prog;
+>
+> +	BUG_ON(fp->has_info);
 
-> So, for now, let's just remove COMPILE_TEST and wait for
-> some time for people to fix. If not fixed, then we'll end
-> by removing this driver as a hole.
-> 
-> Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> 
-> diff --git a/drivers/media/platform/soc_camera/Kconfig b/drivers/media/platform/soc_camera/Kconfig
-> index 6af6c6dccda8..f2776cd415ca 100644
-> --- a/drivers/media/platform/soc_camera/Kconfig
-> +++ b/drivers/media/platform/soc_camera/Kconfig
-> @@ -63,7 +63,7 @@ config VIDEO_SH_MOBILE_CEU
->  config VIDEO_OMAP1
->  	tristate "OMAP1 Camera Interface driver"
->  	depends on VIDEO_DEV && SOC_CAMERA
-> -	depends on ARCH_OMAP1 || COMPILE_TEST
-> +	depends on ARCH_OMAP1
->  	depends on HAS_DMA
->  	select VIDEOBUF_DMA_CONTIG
->  	select VIDEOBUF_DMA_SG
+Why BUG_ON() (also in so many other places)?
 
+>   	if (fprog) {
+>   		kfree(fprog->filter);
+>   		kfree(fprog);
+> @@ -973,6 +974,7 @@ static struct bpf_prog *bpf_prepare_filter(struct bpf_prog *fp)
+>
+>   	fp->bpf_func = NULL;
+>   	fp->jited = false;
+> +	fp->has_info = false;
+>
+>   	err = bpf_check_classic(fp->insns, fp->len);
+>   	if (err) {
+>
