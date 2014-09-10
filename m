@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaIJIW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:22:28 -0400
-Received: from mail-bn1bon0143.outbound.protection.outlook.com ([157.56.111.143]:8588
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751048AbaIJIW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:22:26 -0400
-Date: Wed, 10 Sep 2014 16:28:55 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <broonie@kernel.org>,
-        <marex@denx.de>, <shawn.guo@linaro.org>, <Frank.Li@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <linux-spi@vger.kernel.org>
-Subject: Re: [PATCH v5] spi: spi-imx: add DMA support
-Message-ID: <20140910082853.GA29906@Robin-OptiPlex-780>
-References: <1410312604-31949-1-git-send-email-b38343@freescale.com>
- <5412055.BAOgFikuh9@wuerfel>
+	id S1752032AbaIJIWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:22:47 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:53040 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaIJIWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:22:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        bhelgaas@google.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] PCI: keystone: update to support multiple pci ports
+Date: Wed, 10 Sep 2014 10:22:36 +0200
+Message-ID: <3814561.AbrslYBNjb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <540F8425.70304@ti.com>
+References: <1410293835-13050-1-git-send-email-m-karicheri2@ti.com> <3967092.l9bxcqMaSa@wuerfel> <540F8425.70304@ti.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5412055.BAOgFikuh9@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(199003)(24454002)(51704005)(189002)(105606002)(46102001)(110136001)(23726002)(6806004)(81156004)(104016003)(21056001)(80022001)(95666004)(90102001)(85306004)(76482001)(92566001)(107046002)(92726001)(76176999)(50986999)(106466001)(54356999)(81342001)(84676001)(44976005)(4396001)(33656002)(50466002)(20776003)(77982001)(79102001)(83506001)(68736004)(69596002)(97756001)(87936001)(83072002)(46406003)(85852003)(74662001)(81542001)(99396002)(83322001)(19580395003)(19580405001)(64706001)(31966008)(102836001)(33716001)(97736003)(47776003)(74502001)(26826002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB494;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033054F29A
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-OriginatorOrg: freescale.com
+X-Provags-ID: V02:K0:2AXh9JVxY7IDGQe3xiZX9Hxkt1Cko88vQunvDG3yuHh
+ IDD1Q1QVooVSkzrAeAS+Q6GtwGIKPnvMceHwgjvp08616VWfFY
+ uRA/K3dEgKGO8YTsWj4lTqK0z3i6lwEMn4dHqYAlMISDKatYfP
+ lhuIo3Az4+Cl4R7O3/4bf5C13hWquTlG+xT+flxDO9ZLVrybn8
+ kAOkj8Bv/zWDL+p/Lh3vAGV86JnGh6Hc6hrlp3Zmt9/tFzPrq/
+ +uiQtpFuwmfL0S66tZ7ANk3i6elpPU7m1vXJWyG3w77wer1NMP
+ inX8dselA8doNrJP1VmiED8Gx6soqIZa2ceLRDthhzw1B2WAvl
+ RabRQ1bkJ8CDgF/y7IPY=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 10:17:14AM +0200, Arnd Bergmann wrote:
-> On Wednesday 10 September 2014 09:30:04 Robin Gong wrote:
-> > Enable DMA support on i.mx6. The read speed can increase from 600KB/s
-> > to 1.2MB/s on i.mx6q. You can disable or enable dma function in dts.
-> > If not set "dma-names" in dts, spi will use PIO mode. This patch only
-> > validate on i.mx6, not i.mx5, but encourage ones to apply this patch
-> > on i.mx5 since they share the same IP.
-> > 
-> > Note:
-> >   Sometime, there is a weid data in rxfifo after one full tx/rx
-> > transfer finish by DMA on i.mx6dl, so we disable dma functhion on
-> > i.mx6dl.
-> > 
-> > Signed-off-by: Frank Li <Frank.Li@freescale.com>
-> > Signed-off-by: Robin Gong <b38343@freescale.com>
-> > 
-> > 
+On Tuesday 09 September 2014 18:50:13 Murali Karicheri wrote:
+> My mistake. It is the device ID, not vendor ID. The PCI driver supports 
+> PCI h/w on K2HK, K2E and K2L SoCs for which PCI device IDs are assigned as
 > 
-> The patch looks good to me, but you need to also update the
-> Documentation/devicetree/bindings/spi/fsl-imx-cspi.txt file to
-> document the additional optional properties.
+> +#define PCIE_RC_K2HK           0xb008
+> +#define PCIE_RC_K2E            0xb009
+> +#define PCIE_RC_K2L            0xb00a
+> +
 > 
-> 	Arnd
-Thanks for your reminding, I'll add it in the v6.
+> and the same driver code runs on all these h/w. The device ID is not 
+> filled in by default by the h/w, in the config space of the RC at offset 
+> 1000h "VENDOR_DEVICE_ID Vendor and Device Identification Register". 
+> Same is available in a seperate SoC register whose offset is specified 
+> by index 2. This is read by driver and updated in the config space. The 
+> Vendor ID is however set by default.
+> 
+> There is a mrrs PCI quirk required for Keystone PCI which depends on 
+> this vendor ID to be filled correctly as it match vendor id/ device id 
+> of the bridge device to apply the quirk.
+> 
+> Hope this clarify your question.
+
+Ok, I understand now. Yes, this makes sense, though I wonder if it would
+have been easier to handle the quirk in a different way based on the
+driver rather than the PCI ID. It's probably not worth revisiting though,
+unless Bjorn wants to see it done differently now.
+
+	Arnd
