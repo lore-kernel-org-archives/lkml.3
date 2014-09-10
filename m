@@ -1,166 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaIJTvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:51:43 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:61921 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaIJTvl (ORCPT
+	id S1753473AbaIJTxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:53:06 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:38140 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751044AbaIJTxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:51:41 -0400
-Message-ID: <5410ABD5.9060106@kernel.dk>
-Date: Wed, 10 Sep 2014 13:51:49 -0600
-From: Jens Axboe <axboe@kernel.dk>
+	Wed, 10 Sep 2014 15:53:03 -0400
+Message-ID: <5410AC1B.9000700@hurleysoftware.com>
+Date: Wed, 10 Sep 2014 15:52:59 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Robert Elliott <relliott@beardog.cce.hp.com>,
-        "hch@lst.de" <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
-References: <20140910001417.9294.40414.stgit@beardog.cce.hp.com> <20140910001801.9294.79720.stgit@beardog.cce.hp.com> <54109514.4090901@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958C71B00@G9W0745.americas.hpqcorp.net>
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958C71B00@G9W0745.americas.hpqcorp.net>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] tty: serial: core: Only invoke ->start_tx() if there
+ is data to send
+References: <1410377601-26794-1-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1410377601-26794-1-git-send-email-bigeasy@linutronix.de>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 01:35 PM, Elliott, Robert (Server Storage) wrote:
+On 09/10/2014 03:33 PM, Sebastian Andrzej Siewior wrote:
+> I noticed that the serial8250_tx_dma() is invoked sometimes while
+> uart_circ_empty() says that the buffer is empty.
 > 
+> I tracked one occuring down to:
 > 
->> -----Original Message-----
->> From: Jens Axboe [mailto:axboe@kernel.dk]
->> Sent: Wednesday, 10 September, 2014 1:15 PM
->> To: Robert Elliott; Elliott, Robert (Server Storage); hch@lst.de;
->> linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
->>
->> On 09/09/2014 06:18 PM, Robert Elliott wrote:
->>> From: Robert Elliott <elliott@hp.com>
->>>
->>> One change introduced by blk-mq is that it does all
->>> the completion work in hard irq context rather than
->>> soft irq context.
->>>
->>> On a 6 core system, if all interrupts are routed to
->>> one CPU, then you can easily run into this:
->>> * 5 CPUs submitting IOs
->>> * 1 CPU spending 100% of its time in hard irq context
->>> processing IO completions, not able to submit anything
->>> itself
->>>
->>> Example with CPU5 receiving all interrupts:
->>>    CPU usage:   CPU0   CPU1   CPU2   CPU3   CPU4   CPU5
->>>         %usr:   0.00   3.03   1.01   2.02   2.00   0.00
->>>         %sys:  14.58  75.76  14.14   4.04  78.00   0.00
->>>         %irq:   0.00   0.00   0.00   1.01   0.00 100.00
->>>        %soft:   0.00   0.00   0.00   0.00   0.00   0.00
->>> %iowait idle:  85.42  21.21  84.85  92.93  20.00   0.00
->>>        %idle:   0.00   0.00   0.00   0.00   0.00   0.00
->>>
->>> When the submitting CPUs are forced to process their own
->>> completion interrupts, this steals time from new
->>> submissions and self-throttles them.
->>>
->>> Without that, there is no direct feedback to the
->>> submitters to slow down.  The only feedback is:
->>> * reaching max queue depth
->>> * lots of timeouts, resulting in aborts, resets, soft
->>>   lockups and self-detected stalls on CPU5, bogus
->>>   clocksource tsc unstable reports, network
->>>   drop-offs, etc.
->>>
->>> The SCSI LLD can set affinity_hint for each of its
->>> interrupts to request that a program like irqbalance
->>> route the interrupts back to the submitting CPU.
->>> The latest version of irqbalance ignores those hints,
->>> though, instead offering an option to run a policy
->>> script that could honor them. Otherwise, it balances
->>> them based on its own algorithms. So, we cannot rely
->>> on this.
->>>
->>> Hardware might perform interrupt coalescing to help,
->>> but it cannot help 1 CPU keep up with the work
->>> generated by many other CPUs.
->>>
->>> rq_affinity=2 helps by pushing most of the block layer
->>> and SCSI midlayer completion work back to the submitting
->>> CPU (via an IPI).
->>>
->>> Change the default rq_affinity=2 under blk-mq
->>> so there's at least some feedback to slow down the
->>> submitters.
->>
->> I don't think we should do this generically. For "sane" devices with
->> multiple completion queues, and with proper affinity setting in the
->> driver, this is going to be a loss.
->>
->> So lets not add it to QUEUE_FLAG_MQ_DEFAULT, but we can make it
->> default
->> for nr_hw_queues == 1. I think that would be way saner.
->>
->> --
->> Jens Axboe
+> n_tty_write()
+> 	 => O_OPOST(tty))
+> 	   => the while loop did something but neither tty's ->write()
+> 	      nor its ->uart_put_char() callback was invoked().
+> 	   => tty->ops->flush_chars() is invoked with an empty buffer.
 > 
-> If the interrupt does arrive on the submitting CPU, then it 
-> meets the criteria for all the cases:
-> * 1: complete on any CPU
-> * 2: complete on submitting CPU's node (QUEUE_FLAG_SAME_COMP)
-> * 3: complete on submitting CPU (QUEUE_FLAG_SAME_FORCE)
+> For the 8250 uart driver we end up with:
+> - DMA enabled
+>   nothing, just return (except there is DMA_TX bug or runtime-PM then we
+>   behave like in the no DMA case)
 > 
-> and _blk_complete_request handles it locally rather
-> than sending an IPI.
+> - no DMA
+>   enable THRI interrupt, wait for it, disable THRI interrupt again
+>   because there is nothing to be done.
 > 
->         if (req->cpu != -1) {
->                 ccpu = req->cpu;
->                 if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags))
->                         shared = cpus_share_cache(cpu, ccpu);
->         } else
->                 ccpu = cpu;
->         ...
->         if (ccpu == cpu || shared) {
->                 struct list_head *list;
-> do_local:
->         ...
->         } else if (raise_blk_irq(ccpu, req))
->                 goto do_local;
+> While I don't know if it safe to drop that flush in n_tty if the buffer
+> is empty, it should not do any harm in serial's core part to not invoke
+> ->start_tx() if the buffer is empty.
 
-I forgot about the shared case being handled appropriately, so that
-should probably be fine to do. My primary concern here is a performance
-penalty on sync IO, I'll run a few test on a single IRQ case (like the
-mtip32xx) and see how that performs. But you are right, it might not be
-a bad thing to do by default.
+The serial core can't assume that start_tx() does not need invoking
+because hardware that can stop_tx() with data in the transmitter
+won't restart if the ring buffer is empty but data is still in the
+transmitter. [Note that the 16C950 port type does this in the 8250 driver.]
 
-> Are you saying you want the blk_queue_bio submission to 
-> not even set the req->cpu field (which defaulted to -1):
->         if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags))
->                 req->cpu = raw_smp_processor_id();
+So this has to be handled in the 8250 driver.
+
+What is the actual issue? Are you trying not to unnecessarily wake
+the omap hardware if runtime-PM is on?
+
+Regards,
+Peter Hurley
+
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  drivers/tty/serial/serial_core.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> when you expect the interrupt routing is good so that
-> _blk_complete_request can avoid the test_bit and 
-> cpus_share_cache calls?
-
-No, and since those are non-serializing tests, I suspect if we start
-adding a branch to avoid that we will negate any potential win on that.
-The flags should basically never get dirtied. Well I guess they could
-for heavy uses of start/stop queue, but that might be something that's
-worthwhile to tackle separately.
-
-> With irqbalance no longer honoring affinity_hint
-> by default, I'm worried that most LLDs will not find
-> their interrupts routed that way anymore.  That's
-> how we ran into this; scsi-mq + kernel-3.17 on an
-> up-to-date RHEL 6.5 distro (which now carries the
-> new irqbalance).
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index 5a78f6940760..e55724a911d5 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -90,7 +90,8 @@ static void __uart_start(struct tty_struct *tty)
+>  	struct uart_state *state = tty->driver_data;
+>  	struct uart_port *port = state->uart_port;
+>  
+> -	if (!tty->stopped && !tty->hw_stopped)
+> +	if (!tty->stopped && !tty->hw_stopped &&
+> +			!uart_circ_empty(&port->state->xmit))
+>  		port->ops->start_tx(port);
+>  }
+>  
 > 
-> We plan to create a policyscript for the new irqbalance
-> for hpsa devices, but other high-IOPS drivers will hit
-> the same problem.
-
-irqbalance has _always_ been a pain in the butt... Suboptimal or
-changing behaviour from release to release, it's been one of the most
-annoying parts of performance tuning.
-
--- 
-Jens Axboe
 
