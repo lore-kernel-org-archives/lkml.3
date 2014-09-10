@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaIJCpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:45:21 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:62518 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaIJCpS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:45:18 -0400
+	id S1752129AbaIJCqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:46:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25017 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501AbaIJCqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:46:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,495,1406617200"; 
+   d="scan'208";a="570912420"
+Message-ID: <540FBB93.4020509@linux.intel.com>
+Date: Wed, 10 Sep 2014 10:46:43 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140909154123.GA12906@obsidianresearch.com>
-References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
- <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com>
- <20140908145459.GO27864@e106497-lin.cambridge.arm.com> <CAL_JsqJdGKDVwJOpPp19OkVPGzR7Zqv3nh+ONHHaYnPLYTYoYg@mail.gmail.com>
- <20140908155931.GP27864@e106497-lin.cambridge.arm.com> <540E960D.7080408@huawei.com>
- <20140909084621.GS27864@e106497-lin.cambridge.arm.com> <540EC8CB.7010106@huawei.com>
- <CAErSpo4cAfom2=07NYDRfTCdHO22M0v+ueiaZuG6v2Xd18wEnQ@mail.gmail.com> <20140909154123.GA12906@obsidianresearch.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 9 Sep 2014 21:44:56 -0500
-Message-ID: <CAL_JsqJMRqbwNkB2K6Mg2DU9mSHwAObtD7LLG2_n=4jGDAFhyQ@mail.gmail.com>
-Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI domain_nr
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yijing Wang <wangyijing@huawei.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Prarit Bhargava <prarit@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [Patch v4 14/16] x86, irq: Introduce helper to check whether
+ an IOAPIC has been registered
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-15-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091433150.11037@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409091433150.11037@nanos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 10:41 AM, Jason Gunthorpe
-<jgunthorpe@obsidianresearch.com> wrote:
-> On Tue, Sep 09, 2014 at 08:26:19AM -0600, Bjorn Helgaas wrote:
->
->> So as long as the DT tells you the ECAM information for each host
->> bridge, that should be sufficient.  The domain number is then just a
->> Linux convenience and is not tied to the platform as it is on ia64.
->
-> I think this is right for DT systems - the domain is purely internal
-> to the kernel and userspace, it is used to locate the proper host
-> bridge driver instance, which contains the proper config accessor (and
-> register bases, etc).
->
-> AFAIK the main reason to have a DT alias to learn the domain number is
-> to make it stable so things like udev/etc can reliably match on the
-> PCI location.
 
-For what purpose?
 
-> This is similar to i2c, etc that use the alias scheme, so IMHO
-> whatever they do to assign ID's to drivers should be copied for domain
-> numbers.
+On 2014/9/9 20:37, Thomas Gleixner wrote:
+> On Thu, 28 Aug 2014, Jiang Liu wrote:
+> 
+>> Introduce acpi_ioapic_registered() to check whether an IOAPIC has already
+>> been registered, it will be used when enabling IOAPIC hotplug.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  arch/x86/include/asm/io_apic.h |    1 +
+>>  arch/x86/kernel/acpi/boot.c    |   11 +++++++++++
+>>  arch/x86/kernel/apic/io_apic.c |   11 +++++++++++
+>>  include/linux/acpi.h           |    1 +
+>>  4 files changed, 24 insertions(+)
+>>
+>> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+>> index ce63cf34c93c..0db2b7037e4b 100644
+>> --- a/arch/x86/include/asm/io_apic.h
+>> +++ b/arch/x86/include/asm/io_apic.h
+>> @@ -191,6 +191,7 @@ extern void mp_unmap_irq(int irq);
+>>  extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+>>  			      struct ioapic_domain_cfg *cfg);
+>>  extern int mp_unregister_ioapic(u32 gsi_base);
+>> +extern int mp_ioapic_registered(u32 gsi_base);
+>>  extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+>>  			    irq_hw_number_t hwirq);
+>>  extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
+>> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+>> index 560a6d1cb0f4..6aa796f77b71 100644
+>> --- a/arch/x86/kernel/acpi/boot.c
+>> +++ b/arch/x86/kernel/acpi/boot.c
+>> @@ -810,6 +810,17 @@ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
+>>  }
+>>  EXPORT_SYMBOL(acpi_unregister_ioapic);
+>>  
+>> +int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base)
+>> +{
+>> +	int ret;
+>> +
+>> +	down_write(&acpi_ioapic_rwsem);
+> 
+> Why down_write? You are merily checking whether the thing is
+> registered already.
+Yeah, a down_read() should be enough:)
 
-IMO they should not. We really want to move away from aliases, not
-expand their use. They are used for serial because there was no good
-way to not break things like "console=ttyS0". I2C I think was more
-internal, but may have been for i2c-dev. What are we going to break if
-we don't have consistent domain numbering? If the domain goes into the
-DT, I'd rather see it as part of the PCI root node. But I'm not
-convinced it is needed.
-
-It doesn't really sound like we have any actual need to solve this for
-DT ATM. It's not clear to me if all buses should be domain 0 or a
-simple incrementing index for each bus in absence of any firmware set
-value.
-
-Rob
+>> +	ret  = mp_ioapic_registered(gsi_base);
+>> +	up_write(&acpi_ioapic_rwsem);
+>> +
+>> +	return ret;
+>> +}
+> 
+> So I assume that this is for a particular caller in the apci ioapic
+> hotplug code and that call site has its own serialization. Otherwise
+> the return value is not protected at all.
+> 
+> Please add a Docbook comment to that function, and document the
+> locking rules as thats pretty non obvious.
+How about this comments about locking rules?
+/*
+ * Locks related to IOAPIC hotplug
+ * Hotplug side:
+ *      ->lock_device_hotplug() //device_hotplug_lock
+ *              ->acpi_ioapic_rwsem
+ *                      ->ioapic_lock
+ * Interrupt mapping side:
+ *      ->acpi_ioapic_rwsem
+ *              ->ioapic_mutex
+ *                      ->ioapic_lock
+ */
+Regards!
+Gerry
+> 
+> The such is missing in some other patches as well.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
