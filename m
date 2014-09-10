@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaIJUl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:41:27 -0400
-Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:6437 "EHLO
-	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaIJUl0 (ORCPT
+	id S1753401AbaIJUoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:44:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57854 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaIJUoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:41:26 -0400
-Message-ID: <1410381050.28990.295.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle
- WT
-From: Toshi Kani <toshi.kani@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 10 Sep 2014 14:30:51 -0600
-In-Reply-To: <5410B10A.4030207@zytor.com>
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
-		 <1410367910-6026-3-git-send-email-toshi.kani@hp.com>
-		 <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>
-	 <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+	Wed, 10 Sep 2014 16:44:13 -0400
+Date: Wed, 10 Sep 2014 13:44:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: dianders@chromium.org, heiko@sntech.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        a.zummo@towertech.it, mturquette@linaro.org, broonie@kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, olof@lixom.net, sonnyrao@chromium.org,
+        dtor@chromium.org, javier.martinez@collabora.co.uk,
+        kever.yang@rock-chips.com
+Subject: Re: [PATCH v10 1/3] RTC: RK808: add RTC driver for RK808
+Message-Id: <20140910134411.8128acce79f2423d4448e8f4@linux-foundation.org>
+In-Reply-To: <1410311886-4579-2-git-send-email-zyw@rock-chips.com>
+References: <1410311886-4579-1-git-send-email-zyw@rock-chips.com>
+	<1410311886-4579-2-git-send-email-zyw@rock-chips.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 13:14 -0700, H. Peter Anvin wrote:
-> On 09/10/2014 12:30 PM, Toshi Kani wrote:
-> > 
-> > When WT is unavailable due to the PAT errata, it does not fail but gets
-> > redirected to UC-.  Similarly, when PAT is disabled, WT gets redirected
-> > to UC- as well.
-> > 
+On Wed, 10 Sep 2014 09:18:04 +0800 Chris Zhong <zyw@rock-chips.com> wrote:
+
+> Adding RTC driver for supporting RTC device present inside RK808 PMIC.
 > 
-> But on pre-PAT hardware you can still do WT.
+> ...
+>
+> +	ret = rtc_valid_tm(&tm);
+> +	if (ret) {
+> +		dev_warn(&pdev->dev, "invalid date/time and init time\n");
+> +		rk808_rtc_set_time(&pdev->dev, &tm_def);
+> +	}
 
-Yes, if we manipulates the bits directly, but such code is no longer
-allowed for PAT systems.  The PAT-based kernel interfaces won't work for
-pre-PAT systems, and therefore requests are redirected to UC- on such
-systems. 
+This is somewhat unusual.  Most drivers will emit a warning and give up
+when they find the time is wrong.  Why is this driver different and is
+this desirable behaviour?
 
-Thanks,
--Toshi
+
+Also, I did this:
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: rtc-rk808-add-rtc-driver-for-rk808-fix
+
+make tm_def static
+
+Cc: Chris Zhong <zyw@rock-chips.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/rtc/rtc-rk808.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff -puN drivers/rtc/Kconfig~rtc-rk808-add-rtc-driver-for-rk808-fix drivers/rtc/Kconfig
+diff -puN drivers/rtc/Makefile~rtc-rk808-add-rtc-driver-for-rk808-fix drivers/rtc/Makefile
+diff -puN drivers/rtc/rtc-rk808.c~rtc-rk808-add-rtc-driver-for-rk808-fix drivers/rtc/rtc-rk808.c
+--- a/drivers/rtc/rtc-rk808.c~rtc-rk808-add-rtc-driver-for-rk808-fix
++++ a/drivers/rtc/rtc-rk808.c
+@@ -326,14 +326,14 @@ static SIMPLE_DEV_PM_OPS(rk808_rtc_pm_op
+ 	rk808_rtc_suspend, rk808_rtc_resume);
+ 
+ /* 2014.1.1 12:00:00 Saturday */
+-struct rtc_time tm_def = {
+-			.tm_wday = 6,
+-			.tm_year = 114,
+-			.tm_mon = 0,
+-			.tm_mday = 1,
+-			.tm_hour = 12,
+-			.tm_min = 0,
+-			.tm_sec = 0,
++static struct rtc_time tm_def = {
++	.tm_wday = 6,
++	.tm_year = 114,
++	.tm_mon = 0,
++	.tm_mday = 1,
++	.tm_hour = 12,
++	.tm_min = 0,
++	.tm_sec = 0,
+ };
+ 
+ static int rk808_rtc_probe(struct platform_device *pdev)
+_
+
 
