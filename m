@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328AbaIJQQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:16:52 -0400
-Received: from resqmta-po-06v.sys.comcast.net ([96.114.154.165]:55708 "EHLO
-	resqmta-po-06v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751077AbaIJQQv (ORCPT
+	id S1751824AbaIJQSn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:18:43 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:55318 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaIJQSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:16:51 -0400
-Date: Wed, 10 Sep 2014 11:16:37 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: linux-kernel@vger.kernel.org, Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC/PATCH v2 04/10] mm: slub: introduce virt_to_obj function.
-In-Reply-To: <1410359487-31938-5-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.DEB.2.11.1409101116160.1654@gentwo.org>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-5-git-send-email-a.ryabinin@samsung.com>
+	Wed, 10 Sep 2014 12:18:41 -0400
+Date: Wed, 10 Sep 2014 12:18:37 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Jason Cooper <jason@lakedaemon.net>
+cc: Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+In-Reply-To: <20140910150447.GV30828@titan.lakedaemon.net>
+Message-ID: <alpine.LFD.2.11.1409101211170.16533@knanqh.ubzr>
+References: <20140901230728.GM29327@sirena.org.uk> <1627064.QhxvejlWdk@amdc1032> <alpine.DEB.2.11.1409020857110.9201@gentwo.org> <alpine.DEB.2.11.1409020958530.9608@gentwo.org> <20140904171123.GD26364@mtj.dyndns.org> <20140909003729.GA11706@mtj.dyndns.org>
+ <alpine.DEB.2.11.1409100914180.23942@gentwo.org> <20140910150447.GV30828@titan.lakedaemon.net>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014, Andrey Ryabinin wrote:
+On Wed, 10 Sep 2014, Jason Cooper wrote:
 
-> virt_to_obj takes kmem_cache address, address of slab page,
-> address x pointing somewhere inside slab object,
-> and returns address of the begging of object.
+> Christoph,
+> 
+> On Wed, Sep 10, 2014 at 09:15:30AM -0500, Christoph Lameter wrote:
+> > On Tue, 9 Sep 2014, Tejun Heo wrote:
+> > > On Fri, Sep 05, 2014 at 02:11:23AM +0900, Tejun Heo wrote:
+> > > > On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
+> > > > > Subject: irqchip: Properly fetch the per cpu offset
+> > > > >
+> > > > > The raw_cpu_read() conversion dropped the fetch of the offset
+> > > > > from base->percpu_base in gic_get_percpu_base.
+> > > > >
+> > > > > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > > > >
+> > > > > Index: linux/drivers/irqchip/irq-gic.c
+> > > > > ===================================================================
+> > > > > --- linux.orig/drivers/irqchip/irq-gic.c
+> > > > > +++ linux/drivers/irqchip/irq-gic.c
+> > > > > @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+> > > > >  #ifdef CONFIG_GIC_NON_BANKED
+> > > > >  static void __iomem *gic_get_percpu_base(union gic_base *base)
+> > > > >  {
+> > > > > -	return raw_cpu_read(base->percpu_base);
+> > > > > +	return raw_cpu_read(*base->percpu_base);
+> > > >
+> > > > I suppose this should go through percpu/for-3.18-consistent-ops?  Can
+> > > > we please cc irq folks and get acks?
+> > >
+> > > Christoph, please drive this forward.
+> > 
+> > CCing IRQ subsystem and IRQCHIP drivers maintainers.
+> 
+> Thanks Chris.  I'm a bit behind on irqchip stuff, so I may have missed
+> something here...  Did we get Cc'd on the original patch that caused the
+> regression?  I'm fairly certain I haven't seen it to Ack it.
+> 
+> It wouldn't be an issue worth mentioning if it were a vendor-specific
+> driver, however, the gic is used by damn near every major ARM SoC.
 
-This function is SLUB specific. Does it really need to be in slab.h?
+In fact the problematic code lives in a code path that very few 
+platform use i.e. CONFIG_GIC_NON_BANKED set by CONFIG_ARCH_EXYNOS4.
+
+And I did ask for a clarification on the proposed fix which produced no 
+answer so far.
+
+
+Nicolas
