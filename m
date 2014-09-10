@@ -1,177 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaIJVKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:10:45 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:54385 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752282AbaIJVKn (ORCPT
+	id S1753775AbaIJVLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:11:05 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:34238 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaIJVK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:10:43 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [RFC] tty: Override and virtualize flow control for tty_send_xchar()
-Date: Wed, 10 Sep 2014 17:10:31 -0400
-Message-Id: <1410383431-4578-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.1.0
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Wed, 10 Sep 2014 17:10:58 -0400
+From: Purnendu Kapadia <pro8linux@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        pro8linux@gmail.com
+Subject: [PATCH] staging: android: checkpatch fixes for sw_sync files
+Date: Wed, 10 Sep 2014 22:10:49 +0100
+Message-Id: <1410383449-28680-1-git-send-email-pro8linux@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm offering this patch as an RFC rather than a PATCH because I think
-it's added complexity is not worth the hassle, given that it is only
-needed for drivers which don't support the send_xchar() method.
+   - add line after declaration
+   - allignment should match open parenthesis
+   - remove unnecessary new line
 
-But it does complete the flow control patch series, by fixing a
-problem with flow control where a driver that does not support the
-send_xchar() method can accidentally restore a stopped terminal,
-even though other flow control has restarted the terminal.
-
-Regards,
-Peter Hurley
-
---- >% ---
-Subject: [RFC] tty: Override and virtualize flow control for
- tty_send_xchar()
-
-When sending START/STOP from tcflow(TCIxxx), if the tty driver does
-not support the send_xchar() method, tty_send_xchar() uses the
-normal driver write() routine. Because the tty may stopped,
-tty_send_xchar() must override the flow control state and restore
-it after START/STOP has been written.
-
-Add file-scope helper, force_start_tty(), which saves the current
-flow control state, and starts the tty if necessary (but not if
-the output flow has been stopped by tcflow(TCOOFF)). While the
-flow control state is overridden, stop_tty() and start_tty()
-continue to track the virtual flow control state without notifying
-the driver (so the actual flow state does not change).
-
-If, while the override is on, tcflow(TCOOFF) turns off flow control,
-the override is ended and the actual flow control is stopped.
-
-Also, add file-scope helper, restore_tty_stopped(), which restores
-the actual flow control state to the tracked virtual flow control
-state, stopping the tty if necessary.
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Purnendu Kapadia <pro8linux@gmail.com>
 ---
- drivers/tty/tty_io.c | 52 ++++++++++++++++++++++++++++++++++++++++++++++------
- include/linux/tty.h  |  4 +++-
- 2 files changed, 49 insertions(+), 7 deletions(-)
+ drivers/staging/android/sw_sync.c | 9 +++++----
+ drivers/staging/android/sw_sync.h | 2 +-
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 54e359b..11461ba 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -937,6 +937,13 @@ void no_tty(void)
+diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
+index a76db3f..c90838d 100644
+--- a/drivers/staging/android/sw_sync.c
++++ b/drivers/staging/android/sw_sync.c
+@@ -48,11 +48,11 @@ EXPORT_SYMBOL(sw_sync_pt_create);
  
- void __stop_tty(struct tty_struct *tty)
+ static struct sync_pt *sw_sync_pt_dup(struct sync_pt *sync_pt)
  {
-+	if (tty->override_stopped) {
-+		if (!tty->flow_stopped) {
-+			tty->virt_stopped = 1;
-+			return;
-+		}
-+		tty->override_stopped = 0;
-+	}
- 	if (tty->stopped)
- 		return;
- 	tty->stopped = 1;
-@@ -968,6 +975,13 @@ EXPORT_SYMBOL(stop_tty);
+-	struct sw_sync_pt *pt = (struct sw_sync_pt *) sync_pt;
++	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
+ 	struct sw_sync_timeline *obj =
+ 		(struct sw_sync_timeline *)sync_pt_parent(sync_pt);
  
- void __start_tty(struct tty_struct *tty)
- {
-+	if (tty->override_stopped) {
-+		if (!tty->flow_stopped) {
-+			tty->virt_stopped = 0;
-+			return;
-+		}
-+		tty->override_stopped = 0;
-+	}
- 	if (!tty->stopped || tty->flow_stopped)
- 		return;
- 	tty->stopped = 0;
-@@ -986,6 +1000,35 @@ void start_tty(struct tty_struct *tty)
+-	return (struct sync_pt *) sw_sync_pt_create(obj, pt->value);
++	return (struct sync_pt *)sw_sync_pt_create(obj, pt->value);
  }
- EXPORT_SYMBOL(start_tty);
  
-+/* Used by tty_send_xchar() to force the tty to start */
-+static void force_start_tty(struct tty_struct *tty)
-+{
-+	spin_lock_irq(&tty->flow_lock);
-+	if (!tty->flow_stopped) {
-+		tty->override_stopped = 1;
-+		tty->virt_stopped = tty->stopped;
-+		if (tty->stopped) {
-+			tty->stopped = 0;
-+			if (tty->ops->start)
-+				tty->ops->start(tty);
-+			tty_wakeup(tty);
-+		}
-+	}
-+	spin_unlock_irq(&tty->flow_lock);
-+}
-+
-+static void restore_tty_stopped(struct tty_struct *tty)
-+{
-+	spin_lock_irq(&tty->flow_lock);
-+	if (tty->override_stopped) {
-+		tty->override_stopped = 0;
-+		tty->stopped = tty->virt_stopped;
-+		if (tty->stopped && tty->ops->stop)
-+			tty->ops->stop(tty);
-+	}
-+	spin_unlock_irq(&tty->flow_lock);
-+}
-+
- /* We limit tty time update visibility to every 8 seconds or so. */
- static void tty_update_time(struct timespec *time)
- {
-@@ -1241,8 +1284,6 @@ ssize_t redirected_tty_write(struct file *file, const char __user *buf,
+ static int sw_sync_pt_has_signaled(struct sync_pt *sync_pt)
+@@ -94,9 +94,10 @@ static void sw_sync_timeline_value_str(struct sync_timeline *sync_timeline,
+ }
  
- int tty_send_xchar(struct tty_struct *tty, char ch)
+ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
+-				       char *str, int size)
++				 char *str, int size)
  {
--	int	was_stopped = tty->stopped;
+ 	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
++
+ 	snprintf(str, size, "%d", pt->value);
+ }
+ 
+@@ -110,7 +111,6 @@ static struct sync_timeline_ops sw_sync_timeline_ops = {
+ 	.pt_value_str = sw_sync_pt_value_str,
+ };
+ 
 -
- 	if (tty->ops->send_xchar) {
- 		tty->ops->send_xchar(tty, ch);
- 		return 0;
-@@ -1251,11 +1292,10 @@ int tty_send_xchar(struct tty_struct *tty, char ch)
- 	if (tty_write_lock(tty, 0) < 0)
- 		return -ERESTARTSYS;
- 
--	if (was_stopped)
--		start_tty(tty);
-+	force_start_tty(tty);
- 	tty->ops->write(tty, &ch, 1);
--	if (was_stopped)
--		stop_tty(tty);
-+	restore_tty_stopped(tty);
+ struct sw_sync_timeline *sw_sync_timeline_create(const char *name)
+ {
+ 	struct sw_sync_timeline *obj = (struct sw_sync_timeline *)
+@@ -156,6 +156,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
+ static int sw_sync_release(struct inode *inode, struct file *file)
+ {
+ 	struct sw_sync_timeline *obj = file->private_data;
 +
- 	tty_write_unlock(tty);
+ 	sync_timeline_destroy(&obj->obj);
  	return 0;
  }
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 7a0a796..9c79497 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -264,7 +264,9 @@ struct tty_struct {
- 	struct winsize winsize;		/* winsize_mutex */
- 	unsigned long stopped:1,	/* flow_lock */
- 		      flow_stopped:1,
--		      unused:62;
-+		      virt_stopped:1,
-+		      override_stopped:1,
-+		      unused:60;
- 	int hw_stopped;
- 	unsigned long ctrl_status:8,	/* ctrl_lock */
- 		      packet:1,
+diff --git a/drivers/staging/android/sw_sync.h b/drivers/staging/android/sw_sync.h
+index 1a50669..c87ae9e 100644
+--- a/drivers/staging/android/sw_sync.h
++++ b/drivers/staging/android/sw_sync.h
+@@ -50,7 +50,7 @@ static inline void sw_sync_timeline_inc(struct sw_sync_timeline *obj, u32 inc)
+ }
+ 
+ static inline struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj,
+-		u32 value)
++						u32 value)
+ {
+ 	return NULL;
+ }
 -- 
-2.1.0
+1.9.1
 
