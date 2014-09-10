@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaIJQMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:12:03 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:41703 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224AbaIJQMA (ORCPT
+	id S1752167AbaIJQNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:13:15 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:47060 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaIJQNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:12:00 -0400
+	Wed, 10 Sep 2014 12:13:14 -0400
+From: "Patel, Gaurav" <gspatel@hp.com>
+To: Ming Lei <ming.lei@canonical.com>, Robert Hancock <hancockrwd@gmail.com>
+CC: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata
+ controller
+Thread-Topic: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata
+ controller
+Thread-Index: AQHPxb3TXu8CM/mi30KTwmTJFT1LRpv5xfoAgAAxCwCAAJ/iAA==
+Date: Wed, 10 Sep 2014 16:11:59 +0000
+Message-ID: <4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
+References: <CACVXFVN6f3Og+D_70M+4j_qhGNsryJWzTJK8G+rY0sxXweMqQg@mail.gmail.com>
+	<540FC7C8.1070904@gmail.com>
+ <CACVXFVOFci3572cJ=G8vAQ0-R_0A9rcDUcwa-8t0rjuGduJdwg@mail.gmail.com>
+In-Reply-To: <CACVXFVOFci3572cJ=G8vAQ0-R_0A9rcDUcwa-8t0rjuGduJdwg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.201.12.26]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <541071CF.9030901@gmail.com>
-References: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>
-	<541071CF.9030901@gmail.com>
-Date: Wed, 10 Sep 2014 12:11:58 -0400
-Message-ID: <CAJ5Y-eYRiq8ZFuKQHR0cDBWQfp7eEQLVfzvXNHpxOwEFQZeEeg@mail.gmail.com>
-Subject: Re: [RFC v1 0/6] CPPC as a PID backend
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "rwells@codeaurora.org" <rwells@codeaurora.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8AGDKN7017097
 
-On 10 September 2014 11:44, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
-> Hi Ashwin,
 
-Hi Dirk,
+">> When we use hdparm to download firmware on system with Marvell 
+>> 88SE9125 SATA controller, it returns failure always and it has been 
+>> observed in several systems:"
 
+ [Gaurav]:  So I have another moonshot cartridge with same SATA controller and I was able to update FW with hdparm with RedHat65 without any issues. So this looks to me issue with Ubuntu kernel dos not have correct driver (or something is missing to support hdparm or sata controller).  
+
+
+Thanks,
+Gaurav Patel
+Email: Gspatel@hp.com
+Cell # 832-382-5550
+
+
+-----Original Message-----
+From: Ming Lei [mailto:ming.lei@canonical.com] 
+Sent: Wednesday, September 10, 2014 1:34 AM
+To: Robert Hancock
+Cc: linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List; Patel, Gaurav
+Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
+
+On Wed, Sep 10, 2014 at 11:38 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
+> On 01/09/14 02:22 AM, Ming Lei wrote:
+>>
+>> Hi Guys,
+>>
+>> When we use hdparm to download firmware on system with Marvell 
+>> 88SE9125 SATA controller, it returns failure always and it has been 
+>> observed in several systems:
+>>
+>> #hdparm --fwdownload-mode7 fw.bin
+>> --yes-i-kno-what-i-am-doing --please-destroy-my-drive /dev/sda
+>>
+>> /dev/sda:
+>> fwdownload: xfer_mode=7 min=1 max=65535 size=699392
+>> FAILED: Input/output error
 >
-> I think the CPPC based driver should be a separate driver.
 >
-> We made the conscious decision to not use any of the ACPI mechanisms
-> to enumerate or control P state selection.  Experience over the years
-> has shown that the quality/accuracy of the BIOS/ACPI implementations
-> vary widely across OEM's and platform types from a single OEM. Features
-> that always work on a server platform from a given OEM may not work or
-> provide bad information on client platforms for example.
->
-> Another reason for doing intel_pstate was to be able to land intel specific
-> features and fixes without breaking other architectures as the power
-> management capabilities of the platform evolve. As processors that support
-> Hardware P states (HWP) as described in section 14.4 of the current SDM
-> come into the market intel_pstate will change to not doing much other
-> than enabling HWP and providing an interface to forward user configuration
-> requests to the processor if the user chooses to enable HWP otherwise the
-> current mechanisms will be used.  This is why the intel_pstate sysfs
-> interface is the way it is to be able to map cleanly to HWP and provide
-> an abstract interface going forward.
->
-> Having separate drivers allows the system integrator/user to select the
-> most appropriate mechanism for their system.
->
-> --Dirk
+> Any errors in dmesg after doing this?
 
-With the current split I think you will still be able to maintain
-Intel specific changes for the future in the backend driver. The PID
-algorithm seems platform independent anyway and the PID knobs are
-exported to userspace for platform specific tuning. The Intel backend
-driver should be unaffected by the CPPC (ACPI) backend. We can also
-make them mutually exclusive at runtime.
+No any failure log from kernel.
 
-Or are you suggesting using PID + CPPC as another driver? IIUC, that
-would lead to a lot of redundancy.
-
-Cheers,
-Ashwin
+Thanks,
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
