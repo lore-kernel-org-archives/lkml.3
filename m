@@ -1,136 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaIJHgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:36:09 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35148 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaIJHgH (ORCPT
+	id S1751432AbaIJHqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:46:14 -0400
+Received: from forward2m.mail.yandex.net ([37.140.138.2]:56108 "EHLO
+	forward2m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaIJHqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:36:07 -0400
-Message-ID: <540FFF61.1010107@collabora.com>
-Date: Wed, 10 Sep 2014 09:36:01 +0200
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 10 Sep 2014 03:46:12 -0400
+X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 03:46:12 EDT
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "sasha.levin@oracle.com" <sasha.levin@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jjherne@linux.vnet.ibm.com" <jjherne@linux.vnet.ibm.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+In-Reply-To: <tip-5cd038f53ed9ec7a17ab7d536a727363080f4210@git.kernel.org>
+References: <538ED7EB.5050303@cn.fujitsu.com> <tip-5cd038f53ed9ec7a17ab7d536a727363080f4210@git.kernel.org>
+Subject: Re: [tip:sched/core] sched: Migrate waking tasks
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        shawn.guo@freescale.com
-Subject: Re: [PATCH v10 2/9] clk: Move all drivers to use internal API
-References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com> <1410271497-27148-1-git-send-email-tomeu.vizoso@collabora.com> <20140909191205.19023.61366@quantum>
-In-Reply-To: <20140909191205.19023.61366@quantum>
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <2397411410334685@web16m.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 10 Sep 2014 11:38:05 +0400
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 09:12 PM, Mike Turquette wrote:
-> Quoting Tomeu Vizoso (2014-09-09 07:04:57)
->> In preparation to change the public API to return a per-user clk structure,
->> remove any usage of this public API from the clock implementations.
->>
->> The reason for having this in a separate commit from the one that introduces
->> the implementation of the new functions is to separate the changes generated
->> with Coccinelle from the rest, and keep the patches' size reasonable.
->>
->> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->> Tested-by: Boris Brezillon <boris.brezillon@free-electrons.com>
->> Tested-by: Heiko Stuebner <heiko@sntech.de>
->> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
->>
->> ---
->>
->> v10: * Add a few more files to be converted
->>      * Re-generate the patch on top of the latest changes
-> 
-> Hi Tomeu,
-> 
-> Generating this on top of linux-next is a no-go. I can't apply it to my
-> tree. The best thing is to generate it on top of -rc4, and that is what
-> I will merge.
+09.09.2014, 18:54, "tip-bot for Lai Jiangshan" <tipbot@zytor.com>:
+> Commit-ID: š5cd038f53ed9ec7a17ab7d536a727363080f4210
+> Gitweb: ššššhttp://git.kernel.org/tip/5cd038f53ed9ec7a17ab7d536a727363080f4210
+> Author: ššššLai Jiangshan <laijs@cn.fujitsu.com>
+> AuthorDate: Wed, 4 Jun 2014 16:25:15 +0800
+> Committer: šIngo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 9 Sep 2014 06:47:27 +0200
+>
+> sched: Migrate waking tasks
+>
+> Current code can fail to migrate a waking task (silently) when TTWU_QUEUE is
+> enabled.
+>
+> When a task is waking, it is pending on the wake_list of the rq, but it is not
+> queued (task->on_rq == 0). In this case, set_cpus_allowed_ptr() and
+> __migrate_task() will not migrate it because its invisible to them.
+>
+> This behavior is incorrect, because the task has been already woken, it will be
+> running on the wrong CPU without correct placement until the next wake-up or
+> update for cpus_allowed.
+>
+> To fix this problem, we need to finish the wakeup (so they appear on
+> the runqueue) before we migrate them.
+>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Reported-by: Jason J. Herne <jjherne@linux.vnet.ibm.com>
+> Tested-by: Jason J. Herne <jjherne@linux.vnet.ibm.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Link: http://lkml.kernel.org/r/538ED7EB.5050303@cn.fujitsu.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+> škernel/sched/core.c | 8 +++++++-
+> š1 file changed, 7 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index a814b3c..78e5c83 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4666,7 +4666,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+>  		goto out;
+>
+>	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
+> -	if (task_on_rq_queued(p)) {
+> +	if (task_on_rq_queued(p) || p->state == TASK_WAKING) {
+>  		struct migration_arg arg = { p, dest_cpu };
+> š		/* Need help from migration thread: drop lock and wait. */
+> š		task_rq_unlock(rq, p, &flags);
 
-Makes sense now, will do that.
 
-> Running the script against linux-next is still very useful and lets us
-> patch up the stuff that is not going through the clk tree. E.g. the LPSS
-> driver is already in mainline, so just running the semantic patch
-> against -rc4 is sufficient for it. However a patch like Shawn's "ARM:
-> imx: add an exclusive gate clock type" came in through the i.MX tree and
-> we'll need to patch it after the fact.
-> 
-> The best way to do that is for me to host a branch with just your
-> changes in it that everyone can pull in as a dependency with the same
-> commit ids.
+About migration_cpu_stop():
 
-Sounds good to me.
+> @@ -4799,6 +4799,12 @@ static int migration_cpu_stop(void *data)
+>  	* be on another cpu but it doesn't matter.
+>  	*/
+>  	local_irq_disable();
+> +	/*
+> +	* We need to explicitly wake pending tasks before running
+> +	* __migrate_task() such that we will not miss enforcing cpus_allowed
+> +	* during wakeups, see set_cpus_allowed_ptr()'s TASK_WAKING test.
+> +	*/
+> +	sched_ttwu_pending();
+>	__migrate_task(arg->task, raw_smp_processor_id(), arg->dest_cpu);
+>	local_irq_enable();
+>	return 0;
 
-> <snip>
-> 
->> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
->> index bcbdbd2..f4c6ccf 100644
->> --- a/drivers/acpi/acpi_lpss.c
->> +++ b/drivers/acpi/acpi_lpss.c
->> @@ -11,7 +11,6 @@
->>   */
->>  
->>  #include <linux/acpi.h>
->> -#include <linux/clk.h>
->>  #include <linux/clkdev.h>
->>  #include <linux/clk-provider.h>
->>  #include <linux/err.h>
->> @@ -78,7 +77,7 @@ struct lpss_private_data {
->>         void __iomem *mmio_base;
->>         resource_size_t mmio_size;
->>         unsigned int fixed_clk_rate;
->> -       struct clk *clk;
->> +       struct clk_core *clk;
->>         const struct lpss_device_desc *dev_desc;
->>         u32 prv_reg_ctx[LPSS_PRV_REG_COUNT];
->>  };
->> @@ -229,7 +228,7 @@ static int register_device_clock(struct acpi_device *adev,
->>  {
->>         const struct lpss_device_desc *dev_desc = pdata->dev_desc;
->>         const char *devname = dev_name(&adev->dev);
->> -       struct clk *clk = ERR_PTR(-ENODEV);
->> +       struct clk_core *clk = ERR_PTR(-ENODEV);
->>         struct lpss_clk_data *clk_data;
->>         const char *parent, *clk_name;
->>         void __iomem *prv_base;
-> 
-> I think the following hunk is missing from your change:
-> 
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -57,7 +57,7 @@ ACPI_MODULE_NAME("acpi_lpss");
->  struct lpss_shared_clock {
->         const char *name;
->         unsigned long rate;
-> -       struct clk *clk;
-> +       struct clk_core *clk;
->  };
-> 
-> 
-> Otherwise register_device_clock will blow up because we are assigning a
-> struct clk * to a struct clk_core *.
+It looks like we do not need this hunk, because IPI happens earlier then
+stop class begins migration_cpu_stop() execution.
 
-Yeah, that one isn't there because the code has been removed in
-linux-next by this patch:
+In the first hunk the check "p->state == TASK_WAKING" is under pi_lock,
+so if the task is really waking then the IPI is already set.
 
-http://permalink.gmane.org/gmane.linux.acpi.devel/70205
+So, the first hunk is enough here, the second is not need.
 
-> Do you mind testing with ARCH=x86_64 and allmodconfig? That will help
-> catch issues like this.
+Kirill
 
-Will do. I have been having trouble building in a finite amount of time
-as many configs as I would have liked, and for some reason I'm not
-getting 0day notifications. So sorry about that and I hope no more such
-issues will slip through.
-
-Regards,
-
-Tomeu
-
-> Regards,
-> Mike
-> 
-
+P.S. Formatting may be in punk style
