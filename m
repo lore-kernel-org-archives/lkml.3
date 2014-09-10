@@ -1,64 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaIJN4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:56:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26722 "EHLO mx1.redhat.com"
+	id S1752198AbaIJN4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:56:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42930 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520AbaIJN4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:56:17 -0400
-Date: Wed, 10 Sep 2014 21:55:55 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 2/4] kaslr: check if the random addr is available
-Message-ID: <20140910135555.GA1887@dhcp-17-102.nay.redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
- <1409926097-2101-3-git-send-email-bhe@redhat.com>
- <CAGXu5jJXvR9c3OvkX-gBMjhJEwXh5-wBdT+jjMwBFXDs8_-40Q@mail.gmail.com>
- <20140905221657.GA1675@dhcp-17-102.nay.redhat.com>
- <20140909194118.GA20681@redhat.com>
+	id S1751064AbaIJN4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 09:56:38 -0400
+Message-ID: <54105893.70804@ti.com>
+Date: Wed, 10 Sep 2014 08:56:35 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909194118.GA20681@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mugunthan V N <mugunthanvnm@ti.com>, <bcousson@baylibre.com>,
+        <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] ARM: dts: dra7-evm: Enable CPSW and MDIO for dra7xx
+ EVM
+References: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com> <1410356247-25925-3-git-send-email-mugunthanvnm@ti.com>
+In-Reply-To: <1410356247-25925-3-git-send-email-mugunthanvnm@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 at 03:41pm, Vivek Goyal wrote:
-> On Sat, Sep 06, 2014 at 06:16:57AM +0800, Baoquan He wrote:
+On 09/10/2014 08:37 AM, Mugunthan V N wrote:
+> Adding CPSW phy-id, CPSW and MDIO pinmux configuration for active and
+> sleep states and enable them in board evm dts file.
 > 
-> [CC hpa ]
+> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+> ---
+>  arch/arm/boot/dts/dra7-evm.dts | 107 +++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 107 insertions(+)
 > 
-> > Hi Kees,
-> > 
-> > Yes, process_e820_entry() can make sure the choice+output_len <
-> > CONFIG_RANDOMIZE_BASE_MAX_OFFSET, but that can't stop other bootloaders
-> > to put kernel in region above CONFIG_RANDOMIZE_BASE_MAX_OFFSET.
-> > 
-> > E.g in kdump, we can set crashkernel=256M@1024M in cmdline. Then the 1st
-> > kernel will reserve 256M memory just at 1024M place. So if load kdump
-> > kernel now, the output will be 1024M before choose_kernel_location().
-> > With this value, output won't be changed in choose_kernel_location(),
-> > then it will do decompress(), then call handle_relocations(). Then since
-> > 1024 is not equal to LOAD_PHYSICAL_ADDR, it will start relocatoins
-> > handling. And this cause _text stamping into MODULES vaddr range. System
-> > will be exceptional.
-> 
-> Bao,
-> 
-> If you apply your first patch where output_orig == output, then
-> handle_relocations() will not do anything for x86_64 case and bail
-> out. That should take care of this issue. Isn't it? And we should
-> not require this patch.
+> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+> index 50f8022..e5c4e33 100644
+> --- a/arch/arm/boot/dts/dra7-evm.dts
+> +++ b/arch/arm/boot/dts/dra7-evm.dts
+> @@ -151,6 +151,87 @@
+>  			0xd0	(PIN_OUTPUT | MUX_MODE0)	/* gpmc_be0n_cle */
+>  		>;
+>  	};
+> +
+> +	cpsw_default: cpsw_default {
+> +		pinctrl-single,pins = <
+> +			/* Slave 1 */
+> +			0x250 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_tclk */
+> +			0x254 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_tctl */
+> +			0x258 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td3 */
+> +			0x25c (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td2 */
+> +			0x260 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td1 */
+> +			0x264 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td0 */
+> +			0x268 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rclk */
+> +			0x26c (PIN_INPUT | MUX_MODE0)	/* rgmii1_rctl */
+> +			0x270 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd3 */
+> +			0x274 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd2 */
+> +			0x278 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd1 */
+> +			0x27c (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd0 */
 
-Yes, exactly.
+Cant we do this based on emac0 and emac1?
 
+> +
+> +			/* Slave 2 */
+> +			0x198 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_tclk */
+
+NAK. reason comment style -> we use the style:
+ /* mode0_name.mode3_name */
+
+> +			0x19c (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_tctl */
+> +			0x1a0 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td3 */
+> +			0x1a4 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td2 */
+> +			0x1a8 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td1 */
+> +			0x1ac (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td0 */
+> +			0x1b0 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rclk */
+> +			0x1b4 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rctl */
+> +			0x1b8 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd3 */
+> +			0x1bc (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd2 */
+> +			0x1c0 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd1 */
+> +			0x1c4 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd0 */
+> +		>;
+> +
+> +	};
+> +
+> +	cpsw_sleep: cpsw_sleep {
+> +		pinctrl-single,pins = <
+> +			/* Slave 1 */
+> +			0x250 (MUX_MODE15)
+> +			0x254 (MUX_MODE15)
+> +			0x258 (MUX_MODE15)
+> +			0x25c (MUX_MODE15)
+> +			0x260 (MUX_MODE15)
+> +			0x264 (MUX_MODE15)
+> +			0x268 (MUX_MODE15)
+> +			0x26c (MUX_MODE15)
+> +			0x270 (MUX_MODE15)
+> +			0x274 (MUX_MODE15)
+> +			0x278 (MUX_MODE15)
+> +			0x27c (MUX_MODE15)
+> +
+> +			/* Slave 1 */
+^^ Slave 1?
+> +			0x198 (MUX_MODE15)
+> +			0x19c (MUX_MODE15)
+> +			0x1a0 (MUX_MODE15)
+> +			0x1a4 (MUX_MODE15)
+> +			0x1a8 (MUX_MODE15)
+> +			0x1ac (MUX_MODE15)
+> +			0x1b0 (MUX_MODE15)
+> +			0x1b4 (MUX_MODE15)
+> +			0x1b8 (MUX_MODE15)
+> +			0x1bc (MUX_MODE15)
+> +			0x1c0 (MUX_MODE15)
+> +			0x1c4 (MUX_MODE15)
+> +		>;
+> +	};
+> +
+> +	davinci_mdio_default: davinci_mdio_default {
+> +		pinctrl-single,pins = <
+> +			/* MDIO */
+^^ you can drop the comment. it is redundant.
+> +			0x23c (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* mdio_data */
+> +			0x240 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mdio_clk */
+> +		>;
+> +	};
+> +
+> +	davinci_mdio_sleep: davinci_mdio_sleep {
+> +		pinctrl-single,pins = <
+> +			0x23c (MUX_MODE15)
+> +			0x240 (MUX_MODE15)
+> +		>;
+> +	};
+> +
+>  };
+>  
+>  &i2c1 {
+> @@ -504,3 +585,29 @@
+>  &usb2_phy2 {
+>  	phy-supply = <&ldousb_reg>;
+>  };
+> +
+> +&mac {
+> +	status = "okay";
+> +	pinctrl-names = "default", "sleep";
+> +	pinctrl-0 = <&cpsw_default>;
+> +	pinctrl-1 = <&cpsw_sleep>;
+> +	dual_emac;
+> +};
+> +
+> +&cpsw_emac0 {
+> +	phy_id = <&davinci_mdio>, <2>;
+> +	phy-mode = "rgmii";
+> +	dual_emac_res_vlan = <1>;
+> +};
+> +
+> +&cpsw_emac1 {
+> +	phy_id = <&davinci_mdio>, <3>;
+> +	phy-mode = "rgmii";
+> +	dual_emac_res_vlan = <2>;
+> +};
+> +
+> +&davinci_mdio {
+> +	pinctrl-names = "default", "sleep";
+> +	pinctrl-0 = <&davinci_mdio_default>;
+> +	pinctrl-1 = <&davinci_mdio_sleep>;
+> +};
 > 
-> Thanks
-> Vivek
+
+
+-- 
+Regards,
+Nishanth Menon
