@@ -1,77 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaIJOUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:20:22 -0400
-Received: from smtprelay0176.hostedemail.com ([216.40.44.176]:41617 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752554AbaIJOUS (ORCPT
+	id S1752726AbaIJOU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:20:29 -0400
+Received: from s250.sam-solutions.net ([217.21.49.219]:35912 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554AbaIJOUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:20:18 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:2917:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3873:4321:4605:5007:6119:7652:7903:10004:10400:10450:10455:10848:11026:11232:11233:11658:11914:12043:12296:12517:12519:12740:13069:13071:13095:13311:13357:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sky51_7608bb4fc0c3a
-X-Filterd-Recvd-Size: 2489
-Message-ID: <1410358807.24028.44.camel@joe-AO725>
-Subject: Re: [PATCH net-next 2/5] ceph: Convert pr_warning to pr_warn
-From: Joe Perches <joe@perches.com>
-To: Ilya Dryomov <ilya.dryomov@inktank.com>
-Cc: netdev@vger.kernel.org, Sage Weil <sage@inktank.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Sep 2014 07:20:07 -0700
-In-Reply-To: <CALFYKtCiGXhMZ-f0B=TGSNGZCng8NVYWCV-wwOHq3xPdKO+-Kw@mail.gmail.com>
-References: <cover.1410322181.git.joe@perches.com>
-	 <714b7551f5a6ea5e721fed705568a39eeae4623b.1410322181.git.joe@perches.com>
-	 <CALFYKtCiGXhMZ-f0B=TGSNGZCng8NVYWCV-wwOHq3xPdKO+-Kw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Sep 2014 10:20:25 -0400
+From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <linux@arm.linux.org.uk>, <perex@perex.cz>, <tiwai@suse.de>,
+        <timur@tabi.org>, <nicoleotsuka@gmail.com>, <Li.Xiubo@freescale.com>,
+        <grant.likely@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        "Dmitry Lavnikevich" <d.lavnikevich@sam-solutions.com>
+Subject: [PATCH 1/5] ARM: dts: pbab01: move i2c pins and frequency configuration into pfla02
+Date: Wed, 10 Sep 2014 16:46:45 +0300
+Message-ID: <1410356809-26179-2-git-send-email-d.lavnikevich@sam-solutions.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
+References: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.117.165]
+X-ClientProxiedBy: S326.sam-solutions.net (217.21.35.11) To
+ S326.sam-solutions.net (217.21.35.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 16:38 +0400, Ilya Dryomov wrote:
-> On Wed, Sep 10, 2014 at 8:17 AM, Joe Perches <joe@perches.com> wrote:
-> > Use the more common pr_warn.
-> >
-> > Other miscellanea:
-> >
-> > o Coalesce formats
-> > o Realign arguments
-[]
-> > diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-[]
-> > @@ -2828,8 +2828,9 @@ static void con_work(struct work_struct *work)
-> >   */
-> >  static void con_fault(struct ceph_connection *con)
-> >  {
-> > -       pr_warning("%s%lld %s %s\n", ENTITY_NAME(con->peer_name),
-> > -              ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
-> > +       pr_warn("%s%lld %s %s\n",
-> > +               ENTITY_NAME(con->peer_name),
-> > +               ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
-> 
-> Just wondering, why did you move ENITITY_NAME argument to the next
-> line?  I see you are doing this pretty consistently.  Is this a style
-> guideline or something?
+Since pins and frequency are specific to module (pfla02), not base board
+(pbab02), it is better to be initialized in corresponding dts file.
 
-Hello Ilya.
+Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+---
+ arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi | 22 ----------------------
+ arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi | 26 ++++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 22 deletions(-)
 
-It's just a personal preference to have the
-formats on one line and its arguments on
-another when the format and its arguments
-don't fit 80 columns.
-
-Maximal 80 column fill isn't always easy for me
-to read.
-
-I find it easier to match formats and arguments
-when scanning because my eye doesn't have to
-scan to the end of the format line.
-
-If you don't like it, it's your code.  Change it.
-
-cheers, Joe
+diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
+index 584721264121..f1bdcae5b97d 100644
+--- a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
+@@ -28,9 +28,6 @@
+ };
+ 
+ &i2c2 {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_i2c2>;
+-	clock-frequency = <100000>;
+ 	status = "okay";
+ 
+ 	tlv320@18 {
+@@ -55,9 +52,6 @@
+ };
+ 
+ &i2c3 {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_i2c3>;
+-	clock-frequency = <100000>;
+ 	status = "okay";
+ };
+ 
+@@ -84,19 +78,3 @@
+ &usdhc3 {
+ 	status = "okay";
+ };
+-
+-&iomuxc {
+-	pinctrl_i2c2: i2c2grp {
+-		fsl,pins = <
+-			MX6QDL_PAD_EIM_EB2__I2C2_SCL		0x4001b8b1
+-			MX6QDL_PAD_EIM_D16__I2C2_SDA		0x4001b8b1
+-		>;
+-	};
+-
+-	pinctrl_i2c3: i2c3grp {
+-		fsl,pins = <
+-			MX6QDL_PAD_EIM_D17__I2C3_SCL		0x4001b8b1
+-			MX6QDL_PAD_EIM_D18__I2C3_SDA		0x4001b8b1
+-		>;
+-	};
+-};
+diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
+index 2694aa84e187..a927e88ccc98 100644
+--- a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
+@@ -162,6 +162,18 @@
+ 	};
+ };
+ 
++&i2c2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c2>;
++	clock-frequency = <100000>;
++};
++
++&i2c3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c3>;
++	clock-frequency = <100000>;
++};
++
+ &iomuxc {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_hog>;
+@@ -235,6 +247,20 @@
+ 			>;
+ 		};
+ 
++		pinctrl_i2c2: i2c2grp {
++			fsl,pins = <
++				MX6QDL_PAD_EIM_EB2__I2C2_SCL		0x4001b8b1
++				MX6QDL_PAD_EIM_D16__I2C2_SDA		0x4001b8b1
++			>;
++		};
++
++		pinctrl_i2c3: i2c3grp {
++			fsl,pins = <
++				MX6QDL_PAD_EIM_D17__I2C3_SCL		0x4001b8b1
++				MX6QDL_PAD_EIM_D18__I2C3_SDA		0x4001b8b1
++			>;
++		};
++
+ 		pinctrl_uart3: uart3grp {
+ 			fsl,pins = <
+ 				MX6QDL_PAD_EIM_D24__UART3_TX_DATA	0x1b0b1
+-- 
+2.1.0
 
