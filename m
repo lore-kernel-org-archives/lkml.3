@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaIJUO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:14:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57458 "EHLO mail.zytor.com"
+	id S1753411AbaIJUSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:18:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57518 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865AbaIJUO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:14:57 -0400
-Message-ID: <5410B10A.4030207@zytor.com>
-Date: Wed, 10 Sep 2014 13:14:02 -0700
+	id S1752446AbaIJUSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 16:18:51 -0400
+Message-ID: <5410B1FE.9090504@zytor.com>
+Date: Wed, 10 Sep 2014 13:18:06 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>, Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle
- WT
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>	 <1410367910-6026-3-git-send-email-toshi.kani@hp.com>	 <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com> <1410377428.28990.260.camel@misato.fc.hp.com>
-In-Reply-To: <1410377428.28990.260.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com>	<54079B70.4050200@hurleysoftware.com>	<1409785893.30640.118.camel@pasglop>	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>	<1409824374.4246.62.camel@pasglop>	<5408E458.3@zytor.com>	<54090AF4.7060406@hurleysoftware.com>	<54091B30.7080100@zytor.com>	<5409D76D.2070203@hurleysoftware.com>	<5409D9C0.7030403@zytor.com> <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+In-Reply-To: <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 12:30 PM, Toshi Kani wrote:
+On 09/08/2014 10:52 AM, One Thousand Gnomes wrote:
 > 
-> When WT is unavailable due to the PAT errata, it does not fail but gets
-> redirected to UC-.  Similarly, when PAT is disabled, WT gets redirected
-> to UC- as well.
+> I think the whole "removing Alpha EV5" support is basically bonkers. Just
+> use set_bit in the tty layer. Alpha will continue to work as well as it
+> always has done and you won't design out support for any future processor
+> that turns out not to do byte aligned stores.
 > 
 
-But on pre-PAT hardware you can still do WT.
+I think it's pretty safe to say such a processor is unlikely to ever be
+created, for the same reason there weren't any 48-bit computers when
+32-bit computers ran out of steam: it caused more problems than it
+solved, and Alpha pretty much proved that.  The engineering advantages
+would have to be so overwhelmingly in favor for someone to want to walk
+down that road again.
 
 	-hpa
+
 
