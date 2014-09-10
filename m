@@ -1,186 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaIJRdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:33:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55880 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799AbaIJRdX (ORCPT
+	id S1752869AbaIJReg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:34:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35871 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751269AbaIJRef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:33:23 -0400
-Date: Wed, 10 Sep 2014 10:31:54 -0700
-From: tip-bot for Waiman Long <tipbot@zytor.com>
-Message-ID: <tip-2ff810a7ef38b55ba6c7b80bb7ff22847fd3be69@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, davej@redhat.com,
-        Waiman.Long@hp.com, tglx@linutronix.de, scott.norton@hp.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, davej@redhat.com,
-        Waiman.Long@hp.com, tglx@linutronix.de, scott.norton@hp.com
-In-Reply-To: <1408037251-45918-2-git-send-email-Waiman.Long@hp.com>
-References: <1408037251-45918-2-git-send-email-Waiman.Long@hp.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] locking/rwlock, x86: Clean up asm/
- spinlock*.h to remove old rwlock code
-Git-Commit-ID: 2ff810a7ef38b55ba6c7b80bb7ff22847fd3be69
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 10 Sep 2014 13:34:35 -0400
+Date: Wed, 10 Sep 2014 18:34:01 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
+ when requested
+Message-ID: <20140910173401.GG1710@arm.com>
+References: <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
+ <53FE5B09.2020403@codeaurora.org>
+ <CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
+ <53FE7E3B.1010500@codeaurora.org>
+ <CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
+ <CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
+ <20140828093505.GC14650@leverpostej>
+ <CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
+ <20140908135436.GC22717@arm.com>
+ <CAD=FV=Up=+zNneY-behnkFbhupi50_f5R=ECgJQeqGV5kz5d2g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAD=FV=Up=+zNneY-behnkFbhupi50_f5R=ECgJQeqGV5kz5d2g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2ff810a7ef38b55ba6c7b80bb7ff22847fd3be69
-Gitweb:     http://git.kernel.org/tip/2ff810a7ef38b55ba6c7b80bb7ff22847fd3be69
-Author:     Waiman Long <Waiman.Long@hp.com>
-AuthorDate: Thu, 14 Aug 2014 13:27:30 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 10 Sep 2014 11:46:38 +0200
+On Wed, Sep 10, 2014 at 06:17:23PM +0100, Doug Anderson wrote:
+> On Mon, Sep 8, 2014 at 6:54 AM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Fri, Sep 05, 2014 at 11:11:47PM +0100, Doug Anderson wrote:
+> >> On Thu, Aug 28, 2014 at 2:35 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> >> > Not if you boot Linux at hyp, as we've recommended for this precise
+> >> > reason. That doesn't fix other things like CNTFRQ if the secure
+> >> > initialisation doesn't poke that, however.
+> >>
+> >> I'll freely admit that I'm out of my league and out of my comfort zone
+> >> here, but...
+> >>
+> >> In the theory that firmware ought to be as minimal as possible
+> >> (because it's hard to update and hard to keep in sync with kernel
+> >> versions), it seems like firmware ought to start the kernel out in as
+> >> permissive mode as it's willing to provide, right?
+> >
+> > Not necessarily (and definitely not for arm64). And we've seen in
+> > practice that the actual deployed kernel may run in a different security
+> > mode than what's in mainline and used for initial development (you may
+> > just not see all the patches upstream). For development, that's indeed
+> > simpler, but once you go into production, a customer requesting some
+> > secure OS for payments etc. and Linux is moved to the non-secure side
+> > (and you end up putting hacks in the kernel because they were not
+> > spotted during initial development with Linux running in secure mode).
+> 
+> I guess the important part of my statement is "as it's willing to
+> provide".  In your case your firmware isn't willing to provide "secure
+> SVC".  In our case it is.
+> 
+> We've actually shipped products where the firmware boots the kernel in
+> "secure" mode.  These products have a very different security model
+> than you're envisioning, I guess.  In these products, less firmware is
+> better and adding firmware code to do the whole transition to "non
+> secure hyp mode" just isn't worth it.  It's not just a one-time blob
+> of code in the firmware before booting the kernel.  (I'm told) it
+> means somehow keeping firmware code around to help out with turning
+> processors off/on and to help with resume from S3.  That's
+> infrastructure that we don't want to add.
 
-locking/rwlock, x86: Clean up asm/spinlock*.h to remove old rwlock code
+Setting aside the security model, booting in secure mode can also have a
+significant impact on the programming model of system IP, not just the CPU.
+For example, the SMMU register file suddenly looks different and the way in
+which it is programmed also changes. The GIC (v3+) is similar. Linux doesn't
+have drivers that know about this so, whilst not impossible, there's a
+non-trivial amount of work (and then maintenance overhead) if you want to
+support booting Linux on the secure side.
 
-As the x86 architecture now uses qrwlock for its read/write lock
-implementation, it is no longer necessary to keep the old rwlock code
-around. This patch removes the old rwlock code in the asm/spinlock.h
-and asm/spinlock_types.h files. Now the ARCH_USE_QUEUE_RWLOCK
-config parameter cannot be removed from x86/Kconfig or there will be
-a compilation error.
+The secure world may be more permissive in some regards, but it's actually
+a burden in others. It's not a simple superset of non-secure, and this is
+more evident than ever in ARMv8.
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Scott J Norton <scott.norton@hp.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Link: http://lkml.kernel.org/r/1408037251-45918-2-git-send-email-Waiman.Long@hp.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/spinlock.h       | 81 +----------------------------------
- arch/x86/include/asm/spinlock_types.h |  4 --
- 2 files changed, 2 insertions(+), 83 deletions(-)
+As I understand it, this conversation started because we're booting at
+non-secure EL1 with a badly configured EL2. That sounds like something
+we may have to fix/work around in Linux (Olof points out that it used to
+work), but we shouldn't conflate that with booting on the secure side to
+get away from broken firmware.
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 54f1c80..9295016 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -187,7 +187,6 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
- 		cpu_relax();
- }
- 
--#ifndef CONFIG_QUEUE_RWLOCK
- /*
-  * Read-write spinlocks, allowing multiple readers
-  * but only one writer.
-@@ -198,91 +197,15 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
-  * irq-safe write-lock, but readers can get non-irqsafe
-  * read-locks.
-  *
-- * On x86, we implement read-write locks as a 32-bit counter
-- * with the high bit (sign) being the "contended" bit.
-+ * On x86, we implement read-write locks using the generic qrwlock with
-+ * x86 specific optimization.
-  */
- 
--/**
-- * read_can_lock - would read_trylock() succeed?
-- * @lock: the rwlock in question.
-- */
--static inline int arch_read_can_lock(arch_rwlock_t *lock)
--{
--	return lock->lock > 0;
--}
--
--/**
-- * write_can_lock - would write_trylock() succeed?
-- * @lock: the rwlock in question.
-- */
--static inline int arch_write_can_lock(arch_rwlock_t *lock)
--{
--	return lock->write == WRITE_LOCK_CMP;
--}
--
--static inline void arch_read_lock(arch_rwlock_t *rw)
--{
--	asm volatile(LOCK_PREFIX READ_LOCK_SIZE(dec) " (%0)\n\t"
--		     "jns 1f\n"
--		     "call __read_lock_failed\n\t"
--		     "1:\n"
--		     ::LOCK_PTR_REG (rw) : "memory");
--}
--
--static inline void arch_write_lock(arch_rwlock_t *rw)
--{
--	asm volatile(LOCK_PREFIX WRITE_LOCK_SUB(%1) "(%0)\n\t"
--		     "jz 1f\n"
--		     "call __write_lock_failed\n\t"
--		     "1:\n"
--		     ::LOCK_PTR_REG (&rw->write), "i" (RW_LOCK_BIAS)
--		     : "memory");
--}
--
--static inline int arch_read_trylock(arch_rwlock_t *lock)
--{
--	READ_LOCK_ATOMIC(t) *count = (READ_LOCK_ATOMIC(t) *)lock;
--
--	if (READ_LOCK_ATOMIC(dec_return)(count) >= 0)
--		return 1;
--	READ_LOCK_ATOMIC(inc)(count);
--	return 0;
--}
--
--static inline int arch_write_trylock(arch_rwlock_t *lock)
--{
--	atomic_t *count = (atomic_t *)&lock->write;
--
--	if (atomic_sub_and_test(WRITE_LOCK_CMP, count))
--		return 1;
--	atomic_add(WRITE_LOCK_CMP, count);
--	return 0;
--}
--
--static inline void arch_read_unlock(arch_rwlock_t *rw)
--{
--	asm volatile(LOCK_PREFIX READ_LOCK_SIZE(inc) " %0"
--		     :"+m" (rw->lock) : : "memory");
--}
--
--static inline void arch_write_unlock(arch_rwlock_t *rw)
--{
--	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
--		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
--}
--#else
- #include <asm/qrwlock.h>
--#endif /* CONFIG_QUEUE_RWLOCK */
- 
- #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
- #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
- 
--#undef READ_LOCK_SIZE
--#undef READ_LOCK_ATOMIC
--#undef WRITE_LOCK_ADD
--#undef WRITE_LOCK_SUB
--#undef WRITE_LOCK_CMP
--
- #define arch_spin_relax(lock)	cpu_relax()
- #define arch_read_relax(lock)	cpu_relax()
- #define arch_write_relax(lock)	cpu_relax()
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 73c4c00..5f9d757 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -34,10 +34,6 @@ typedef struct arch_spinlock {
- 
- #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
- 
--#ifdef CONFIG_QUEUE_RWLOCK
- #include <asm-generic/qrwlock_types.h>
--#else
--#include <asm/rwlock.h>
--#endif
- 
- #endif /* _ASM_X86_SPINLOCK_TYPES_H */
+Will
