@@ -1,107 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656AbaIJNnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:43:51 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:60058 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaIJNnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:43:49 -0400
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Kamil Debski <k.debski@samsung.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH] [media] coda: Improve runtime PM support
-Date: Wed, 10 Sep 2014 15:43:33 +0200
-Message-Id: <1410356613-16811-1-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1751690AbaIJNoG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:44:06 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:34029 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaIJNoE (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 10 Sep 2014 09:44:04 -0400
+Date: Wed, 10 Sep 2014 21:43:47 +0800
+From: joeyli <jlee@suse.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Takashi Iwai <tiwai@suse.de>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Hibernate: Do not assume the first e820 area to be RAM
+Message-ID: <20140910134347.GB18567@linux-rxt1.site>
+References: <1407754252-22779-1-git-send-email-jlee@suse.com>
+ <1561567.ev2pEO8C5v@vostro.rjw.lan>
+ <CAE9FiQUROUAxFk8_gtMp0Fu6aBLbL8GtKhJg0Y-01s4n3BDjtw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUROUAxFk8_gtMp0Fu6aBLbL8GtKhJg0Y-01s4n3BDjtw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For several reasons it's good practice to leave devices in runtime PM
-active state while those have been probed.
+Hi Yinghai, 
 
-In this cases we also want to prevent the device from going inactive,
-until the firmware has been completely installed, especially when using
-a PM domain.
+Thanks for your review, first!
 
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- drivers/media/platform/coda/coda-common.c | 42 ++++++++-----------------------
- 1 file changed, 11 insertions(+), 31 deletions(-)
+On Tue, Sep 09, 2014 at 11:08:45PM -0700, Yinghai Lu wrote:
+> On Mon, Sep 8, 2014 at 3:52 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Monday, August 11, 2014 06:50:52 PM Lee, Chun-Yi wrote:
+> >> In arch/x86/kernel/setup.c::trim_bios_range(), the codes introduced
+> >> by 1b5576e6 (base on d8a9e6a5), it updates the first 4Kb of memory
+> >> to be E820_RESERVED region. That's because it's a BIOS owned area
+> >> but generally not listed in the E820 table:
+> >>
+> >> [    0.000000] e820: BIOS-provided physical RAM map:
+> >> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x0000000000096fff] usable
+> >> [    0.000000] BIOS-e820: [mem 0x0000000000097000-0x0000000000097fff] reserved
+> >> ...
+> >> [    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+> >> [    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+> >>
+> >> But the region of first 4Kb didn't register to nosave memory:
+> >>
+> >> [    0.000000] PM: Registered nosave memory: [mem 0x00097000-0x00097fff]
+> >> [    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+> >>
+> >> The codes in e820_mark_nosave_regions() assumes the first e820 area to be
+> >> RAM, so it causes the first 4Kb E820_RESERVED region ignored when register
+> >> to nosave. This patch removed assumption of the first e820 area.
+> >>
+> >> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> >> Cc: Len Brown <len.brown@intel.com>
+> >> Cc: Pavel Machek <pavel@ucw.cz>
+> >> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >> Cc: Ingo Molnar <mingo@redhat.com>
+> >> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+> >
+> > Thomas, Ingo, Peter, any objections here?
+> >
+> > If not, do you want to handle it or do you want me to do that?
+> 
+> Did it address any regression?
+> 
 
-diff --git a/drivers/media/platform/coda/coda-common.c b/drivers/media/platform/coda/coda-common.c
-index 0997b5c..361f28d 100644
---- a/drivers/media/platform/coda/coda-common.c
-+++ b/drivers/media/platform/coda/coda-common.c
-@@ -1703,39 +1703,16 @@ static void coda_fw_callback(const struct firmware *fw, void *context)
- 	memcpy(dev->codebuf.vaddr, fw->data, fw->size);
- 	release_firmware(fw);
- 
--	if (pm_runtime_enabled(&pdev->dev) && pdev->dev.pm_domain) {
--		/*
--		 * Enabling power temporarily will cause coda_hw_init to be
--		 * called via coda_runtime_resume by the pm domain.
--		 */
--		ret = pm_runtime_get_sync(&dev->plat_dev->dev);
--		if (ret < 0) {
--			v4l2_err(&dev->v4l2_dev, "failed to power on: %d\n",
--				 ret);
--			return;
--		}
--
--		ret = coda_check_firmware(dev);
--		if (ret < 0)
--			return;
--
--		pm_runtime_put_sync(&dev->plat_dev->dev);
--	} else {
--		/*
--		 * If runtime pm is disabled or pm_domain is not set,
--		 * initialize once manually.
--		 */
--		ret = coda_hw_init(dev);
--		if (ret < 0) {
--			v4l2_err(&dev->v4l2_dev, "HW initialization failed\n");
--			return;
--		}
--
--		ret = coda_check_firmware(dev);
--		if (ret < 0)
--			return;
-+	ret = coda_hw_init(dev);
-+	if (ret < 0) {
-+		v4l2_err(&dev->v4l2_dev, "HW initialization failed\n");
-+		return;
- 	}
- 
-+	ret = coda_check_firmware(dev);
-+	if (ret < 0)
-+		return;
-+
- 	dev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
- 	if (IS_ERR(dev->alloc_ctx)) {
- 		v4l2_err(&dev->v4l2_dev, "Failed to alloc vb2 context\n");
-@@ -1771,6 +1748,7 @@ static void coda_fw_callback(const struct firmware *fw, void *context)
- 	v4l2_info(&dev->v4l2_dev, "codec registered as /dev/video[%d-%d]\n",
- 		  dev->vfd[0].num, dev->vfd[1].num);
- 
-+	pm_runtime_put_sync(&pdev->dev);
- 	return;
- 
- rel_m2m:
-@@ -1998,6 +1976,8 @@ static int coda_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, dev);
- 
-+	pm_runtime_get_noresume(&pdev->dev);
-+	pm_runtime_set_active(&pdev->dev);
- 	pm_runtime_enable(&pdev->dev);
- 
- 	return coda_firmware_request(dev);
--- 
-1.9.1
+I found this situation when comparing the e820 region with nosave memory address.
+But, I don't know any real machine which has bug report against this.
 
+> >
+> >> ---
+> >>  arch/x86/kernel/e820.c | 7 +++----
+> >>  1 file changed, 3 insertions(+), 4 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+> >> index 988c00a..d595240 100644
+> >> --- a/arch/x86/kernel/e820.c
+> >> +++ b/arch/x86/kernel/e820.c
+> >> @@ -682,18 +682,17 @@ void __init parse_e820_ext(u64 phys_addr, u32 data_len)
+> >>   * hibernation (32 bit) or software suspend and suspend to RAM (64 bit).
+> >>   *
+> >>   * This function requires the e820 map to be sorted and without any
+> >> - * overlapping entries and assumes the first e820 area to be RAM.
+> >> + * overlapping entries.
+> >>   */
+> >>  void __init e820_mark_nosave_regions(unsigned long limit_pfn)
+> >>  {
+> >>       int i;
+> >>       unsigned long pfn;
+> >>
+> >> -     pfn = PFN_DOWN(e820.map[0].addr + e820.map[0].size);
+> >> -     for (i = 1; i < e820.nr_map; i++) {
+> >> +     for (i = 0; i < e820.nr_map; i++) {
+> >>               struct e820entry *ei = &e820.map[i];
+> >>
+> >> -             if (pfn < PFN_UP(ei->addr))
+> >> +             if (i > 0 && pfn < PFN_UP(ei->addr))
+> >>                       register_nosave_region(pfn, PFN_UP(ei->addr));
+> 
+> could avoid the i > 0 checking.
+> 
+> >>
+> >>               pfn = PFN_DOWN(ei->addr + ei->size);
+> >>
+> >
+> 
+> following would be better ?
+> 
+> @@ -682,15 +682,14 @@ void __init parse_e820_ext(u64 phys_addr, u32 data_len)
+>   * hibernation (32 bit) or software suspend and suspend to RAM (64 bit).
+>   *
+>   * This function requires the e820 map to be sorted and without any
+> - * overlapping entries and assumes the first e820 area to be RAM.
+> + * overlapping entries.
+>   */
+>  void __init e820_mark_nosave_regions(unsigned long limit_pfn)
+>  {
+>      int i;
+> -    unsigned long pfn;
+> +    unsigned long pfn = 0;
+> 
+> -    pfn = PFN_DOWN(e820.map[0].addr + e820.map[0].size);
+> -    for (i = 1; i < e820.nr_map; i++) {
+> +    for (i = 0; i < e820.nr_map; i++) {
+>          struct e820entry *ei = &e820.map[i];
+> 
+>          if (pfn < PFN_UP(ei->addr))
+
+Yes, thanks for your suggestion, your change can avoid the i > 0 checking.
+I will send v2 patch to add your improvement.
+
+
+Thanks a lot!
+Joey Lee
