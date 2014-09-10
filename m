@@ -1,114 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553AbaIJHx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:53:56 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55419 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaIJHxz (ORCPT
+	id S1751795AbaIJH5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:57:00 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:59944 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaIJH46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:53:55 -0400
-Date: Wed, 10 Sep 2014 09:53:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "sasha.levin@oracle.com" <sasha.levin@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "jjherne@linux.vnet.ibm.com" <jjherne@linux.vnet.ibm.com>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/core] sched: Migrate waking tasks
-Message-ID: <20140910075347.GK6758@twins.programming.kicks-ass.net>
-References: <538ED7EB.5050303@cn.fujitsu.com>
- <tip-5cd038f53ed9ec7a17ab7d536a727363080f4210@git.kernel.org>
- <2397411410334685@web16m.yandex.ru>
+	Wed, 10 Sep 2014 03:56:58 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XvrhuzKSC4pLtZe9"
-Content-Disposition: inline
-In-Reply-To: <2397411410334685@web16m.yandex.ru>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAFp+6iHMhbi4V4LAkNsgzDc192ihT2a1mZHgLbia=K2U8+x=2w@mail.gmail.com>
+References: <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
+	<20140903144225.GD31855@saruman.home>
+	<CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
+	<20140905175651.GK24449@saruman.home>
+	<CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
+	<20140908134454.GK22409@saruman.home>
+	<CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
+	<20140909144225.GF6151@saruman.home>
+	<CAFp+6iHJKmeothDM67WW60Sqqj8BQroBCzZ8zecKwM_GcYL8HA@mail.gmail.com>
+	<CAFp+6iHRJ5oAA+K1Y0Y2uadPhsR6wmrd13DM39dqiL4jj+swHg@mail.gmail.com>
+	<20140910045328.GA32475@saruman.home>
+	<CAFp+6iHMhbi4V4LAkNsgzDc192ihT2a1mZHgLbia=K2U8+x=2w@mail.gmail.com>
+Date: Wed, 10 Sep 2014 13:26:57 +0530
+X-Google-Sender-Auth: VXEKsprRg9QGxtwNt7MoUh_B9E0
+Message-ID: <CAFp+6iErXKpXgE0tRPB=tEqXxcXgQAeFJP1TpSwRN6fNu9a-qw@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Julius Werner <jwerner@google.com>, Julius Werner <jwerner@chromium.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 10, 2014 at 10:53 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> On Wed, Sep 10, 2014 at 10:23 AM, Felipe Balbi <balbi@ti.com> wrote:
+>> On Wed, Sep 10, 2014 at 09:09:57AM +0530, Vivek Gautam wrote:
+>>> On Wed, Sep 10, 2014 at 9:07 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>>> > adding Julius here,
+>>>
+>>> i think i had missed adding Julius for this entire series :-(
+>>> I should be more careful with the CC list in future.
+>>> Added his chromium id, since that seems to be more active.
+>>>
+>>> >
+>>> >
+>>> > On Tue, Sep 9, 2014 at 8:12 PM, Felipe Balbi <balbi@ti.com> wrote:
+>>> >> On Tue, Sep 09, 2014 at 07:19:50AM +0530, Vivek Gautam wrote:
+>>> >>> Hi,
+>>> >>>
+>>> >>>
+>>> >>> On Mon, Sep 8, 2014 at 7:14 PM, Felipe Balbi <balbi@ti.com> wrote:
+>>> >>> > Hi,
+>>> >>> >
+>>> >>> > On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
+>>> >>> >> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wrote:
+>>> >>> >> > On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
+>>> >>> >> >> > Don't we have phy_power_on()
+>>> >>> >> >> > for that ? It looks like you could just as well do this from
+>>> >>> >> >> > phy_power_on() ?
+>>> >>> >> >>
+>>> >>> >> >> No, unfortunately keeping these calibration settings in phy_power_on()
+>>> >>> >> >> doesn't help, since we need to do this after XHCI reset has happened.
+>>> >>> >> >
+>>> >>> >> > teach xHCI about PHYs ?
+>>> >>> >>
+>>> >>> >> sorry i couldn't understand you here.
+>>> >>> >> Aren't we trying to do the same with Heikki's patch about dwc3 :
+>>> >>> >> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
+>>> >>> >>
+>>> >>> >> and the 2nd patch in this series :
+>>> >>> >> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
+>>> >>> >>
+>>> >>> >> Is there something else that is expected ?
+>>> >>> >
+>>> >>> > right, use that to call phy_init() at the right time, then you need to
+>>> >>> > add a new ->calibrate() method which, likely, will only be used by you
+>>> >>> > ;-)
+>>> >>>
+>>> >>> so you mean, the xhci should itself call phy_init() at a time suitable,
+>>> >>> so that ->calibrate() is not required at all ?
 
---XvrhuzKSC4pLtZe9
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+but wait, dwc3 does a phy_init() already, then how xhci will be able to
+do that again. We can't do phy_init() multiple times right ?
 
-On Wed, Sep 10, 2014 at 11:38:05AM +0400, Kirill Tkhai wrote:
-> 09.09.2014, 18:54, "tip-bot for Lai Jiangshan" <tipbot@zytor.com>:
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index a814b3c..78e5c83 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -4666,7 +4666,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, c=
-onst struct cpumask *new_mask)
-> >  		goto out;
-> >
-> >	dest_cpu =3D cpumask_any_and(cpu_active_mask, new_mask);
-> > -	if (task_on_rq_queued(p)) {
-> > +	if (task_on_rq_queued(p) || p->state =3D=3D TASK_WAKING) {
-> >  		struct migration_arg arg =3D { p, dest_cpu };
-> > =A0		/* Need help from migration thread: drop lock and wait. */
-> > =A0		task_rq_unlock(rq, p, &flags);
->=20
->=20
-> About migration_cpu_stop():
->=20
-> > @@ -4799,6 +4799,12 @@ static int migration_cpu_stop(void *data)
-> >  	* be on another cpu but it doesn't matter.
-> >  	*/
-> >  	local_irq_disable();
-> > +	/*
-> > +	* We need to explicitly wake pending tasks before running
-> > +	* __migrate_task() such that we will not miss enforcing cpus_allowed
-> > +	* during wakeups, see set_cpus_allowed_ptr()'s TASK_WAKING test.
-> > +	*/
-> > +	sched_ttwu_pending();
-> >	__migrate_task(arg->task, raw_smp_processor_id(), arg->dest_cpu);
-> >	local_irq_enable();
-> >	return 0;
->=20
-> It looks like we do not need this hunk, because IPI happens earlier then
-> stop class begins migration_cpu_stop() execution.
->=20
-> In the first hunk the check "p->state =3D=3D TASK_WAKING" is under pi_loc=
-k,
-> so if the task is really waking then the IPI is already set.
->=20
-> So, the first hunk is enough here, the second is not need.
+>>> >>>
+>>> >>> i think you meant there - "then you __do not__ need to
+>>> >>
+>>> >> right :-)
+>>> >
+>>> > alright, i will prepare a patch for the suggested change.
+>>> >
+>>> > But AFAI remember we had discussion for this patch in earlier
+>>> > version, and Julius suggested to use a generic approach for such
+>>> > change wherein other users in future may be able to use the
+>>> > facility.
+>>
+>> right, and what's more generic than adding the support for PHYs straight
+>> into xHCI ?
+>>
+>> What I fear is that we end up opening the doors for every odd
+>> platform-specific operation to be added to the framework without really
+>> considering what needs to be done. That would defeat the idea of having
+>> a generic framework altogether.
+>
+> Ok, i will prepare the patch series as suggested and post it
+> to gather opinion from you. :-)
+>
+>>
+>> cheers
+>>
+>> --
+>> balbi
+>
+>
+>
+> --
+> Best Regards
+> Vivek Gautam
+> Samsung R&D Institute, Bangalore
+> India
 
-If the cpu is idle and has TIF_POLLING_NRFLAG we'll never send the IPI,
-then again, the wake from idle required to start running the stop task
-will also flush that pending queue. So you're probably right.
 
-I'll leave it in though, better safe than sorry and its not a critical
-fast path. Good thinking though.
 
---XvrhuzKSC4pLtZe9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUEAOGAAoJEHZH4aRLwOS6LM0P/2NdS/qXzvZaCif0Ybn21wE+
-dnJvy0AML9x0lWQaVJ0vYogFXgEP2Q6bEBMm/5jyw+v6CAXPKQqY/IG4cofeuOSv
-bcjA1f5/AB9j5sVTiy7E0AD/Q0ss7Uc2J9ZuwSw9Q4E+bN4+bTE7O8d/Wj7s0/Cw
-sjGlI8HmhWdeaPnDkuRBFep+jVBLzOLYpNO6h87X2koGYJC+XZMM5nxMaEnhVPSi
-D1DPr/u7oumA3UWZpwj9xXZMpL/uFn7q71pZWTTFiCaXt4KlT8j7thCmpHRvyDFs
-dhj0xVvmMuaPnAsfZ3gP3daWV30JtLAv4fMW9H4010IQvf3a54zLA0wjwWqk/t1i
-1YE7pRxIN8qehtjRNm7XRj8Qiyn/Jo6l6gYmgz2mJ677OzPIv19C8ltrpRr6XkIC
-v6njCpqvgHeznhdNcLtEUrPTwT3gjN88cG9NmfJhnelPT0+Im0QpsyVM0573/T3P
-UJTgc9ReyF9+i6GftRjQy2zpW1qcvMswYkCGQusbUPT9fviSvlcugY/ruTtLr+77
-jT/iSVRrMUHpa6V69yl8zuVNUAMJyYA1V3CMOpAPM6vdAWsz8r6zHrNUT9PxZfBM
-eLCFis9uo/50xiZIk+sBm31vNyng2llU8xmvJWBlxmyY1pNoG6Vzv7/RFQPMYym5
-aL9sxGCSL+9QhghY1kcW
-=i/yK
------END PGP SIGNATURE-----
-
---XvrhuzKSC4pLtZe9--
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
