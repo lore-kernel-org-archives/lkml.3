@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaIJK6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:58:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58763 "EHLO
+	id S1752638AbaIJK6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:58:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58762 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaIJK6e (ORCPT
+	with ESMTP id S1751959AbaIJK6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Sep 2014 06:58:34 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
@@ -17,9 +17,9 @@ Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 6/8] drm: use for_each_endpoint_of_node macro in drm_of_find_possible_crtcs
-Date: Wed, 10 Sep 2014 12:58:26 +0200
-Message-Id: <1410346708-5125-7-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v2 5/8] of: Add of_graph_get_port_by_id function
+Date: Wed, 10 Sep 2014 12:58:25 +0200
+Message-Id: <1410346708-5125-6-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
 References: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
@@ -31,41 +31,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the for_each_... macro should make the code a bit shorter and
-easier to read.
+This patch adds a function to get a port device tree node by port id,
+or reg property value.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/gpu/drm/drm_of.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Changes since v1:
+ - Fixed whitespace in comment
+ - Changed id parameter to of_graph_get_port_by_id to u32
+ - Simplified of_graph_get_port_by_id as suggested by Laurent,
+   making use of port id defaulting to 0 if no "reg" property is given.
+---
+ drivers/of/base.c        | 26 ++++++++++++++++++++++++++
+ include/linux/of_graph.h |  7 +++++++
+ 2 files changed, 33 insertions(+)
 
-diff --git a/drivers/gpu/drm/drm_of.c b/drivers/gpu/drm/drm_of.c
-index 16150a0..024fa77 100644
---- a/drivers/gpu/drm/drm_of.c
-+++ b/drivers/gpu/drm/drm_of.c
-@@ -46,11 +46,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device *dev,
- 	struct device_node *remote_port, *ep = NULL;
- 	uint32_t possible_crtcs = 0;
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index a49b5628..b282474 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -2053,6 +2053,32 @@ int of_graph_parse_endpoint(const struct device_node *node,
+ EXPORT_SYMBOL(of_graph_parse_endpoint);
  
--	do {
--		ep = of_graph_get_next_endpoint(port, ep);
--		if (!ep)
--			break;
--
-+	for_each_endpoint_of_node(port, ep) {
- 		remote_port = of_graph_get_remote_port(ep);
- 		if (!remote_port) {
- 			of_node_put(ep);
-@@ -60,7 +56,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device *dev,
- 		possible_crtcs |= drm_crtc_port_mask(dev, remote_port);
- 
- 		of_node_put(remote_port);
--	} while (1);
+ /**
++ * of_graph_get_port_by_id() - get the port matching a given id
++ * @parent: pointer to the parent device node
++ * @id: id of the port
++ *
++ * Return: A 'port' node pointer with refcount incremented. The caller
++ * has to use of_node_put() on it when done.
++ */
++struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id)
++{
++	struct device_node *port = NULL;
++	u32 port_id = 0;
++
++	while (true) {
++		port = of_get_next_child(node, port);
++		if (!port)
++			return NULL;
++		if (of_node_cmp(port->name, "port") != 0)
++			continue;
++		of_property_read_u32(port, "reg", &port_id);
++		if (id == port_id)
++			return port;
 +	}
- 
- 	return possible_crtcs;
++}
++EXPORT_SYMBOL(of_graph_get_port_by_id);
++
++/**
+  * of_graph_get_next_endpoint() - get next endpoint node
+  * @parent: pointer to the parent device node
+  * @prev: previous endpoint node, or NULL to get first
+diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+index e43442e..e028e49 100644
+--- a/include/linux/of_graph.h
++++ b/include/linux/of_graph.h
+@@ -40,6 +40,7 @@ struct of_endpoint {
+ #ifdef CONFIG_OF
+ int of_graph_parse_endpoint(const struct device_node *node,
+ 				struct of_endpoint *endpoint);
++struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id);
+ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ 					struct device_node *previous);
+ struct device_node *of_graph_get_remote_port_parent(
+@@ -53,6 +54,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
+ 	return -ENOSYS;
  }
+ 
++static inline struct device_node *of_graph_get_port_by_id(
++					struct device_node *node, int id)
++{
++	return NULL;
++}
++
+ static inline struct device_node *of_graph_get_next_endpoint(
+ 					const struct device_node *parent,
+ 					struct device_node *previous)
 -- 
 2.1.0
 
