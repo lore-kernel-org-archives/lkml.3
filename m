@@ -1,57 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaIJTgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:36:07 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:49987 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaIJTgE (ORCPT
+	id S1752850AbaIJTgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:36:55 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:19885 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaIJTgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:36:04 -0400
+	Wed, 10 Sep 2014 15:36:54 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Jens Axboe <axboe@kernel.dk>, Robert Elliott <relliott@beardog.cce.hp.com>,
+        "hch@lst.de" <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
+Thread-Topic: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
+Thread-Index: AQHPzIzONXybNGbZR0S9g0FZEZHFTZv6rRcAgAACu3A=
+Date: Wed, 10 Sep 2014 19:35:22 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C71B00@G9W0745.americas.hpqcorp.net>
+References: <20140910001417.9294.40414.stgit@beardog.cce.hp.com>
+ <20140910001801.9294.79720.stgit@beardog.cce.hp.com>
+ <54109514.4090901@kernel.dk>
+In-Reply-To: <54109514.4090901@kernel.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <5410A652.8070006@kernel.org>
-References: <1410332226-5481-1-git-send-email-daniel.baluta@intel.com>
-	<54109112.90508@gmx.de>
-	<5410A652.8070006@kernel.org>
-Date: Wed, 10 Sep 2014 22:36:02 +0300
-X-Google-Sender-Auth: R73LtHB3opAn10YXWBCxosOl-Ro
-Message-ID: <CAEnQRZAu5X6j4HG8_hbrx8ZSKqYcdQCg=SodX63jvM_71_USrQ@mail.gmail.com>
-Subject: Re: [PATCH v7] iio: Add Dyna-Image AL3320A ambient light sensor driver
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        linux-iio@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tsechih_Lin@asus.com
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8AJaxXC018704
 
-On Wed, Sep 10, 2014 at 10:28 PM, Jonathan Cameron <jic23@kernel.org> wrote:
-> On 10/09/14 18:57, Hartmut Knaack wrote:
->> Daniel Baluta schrieb, Am 10.09.2014 08:57:
->>> Minimal implementation. This driver provides raw illuminance readings.
->>>
->>> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
->>> by Tsechih Lin <Tsechih_Lin@asus.com>
->>>
->>> * https://android.googlesource.com/kernel/msm.git
->>>
->>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->> Reviewed-by: Hartmut Knaack <knaack.h@gmx.de>
-> Thanks Daniel.
-> Also thanks to Hartmut for reviewing stamina.
->
-> I've been effectively offline for a 10 days (some of it spent in a fridge)
-> so am even more grateful to those who help with reviewing than normal.
->
-> Applied to the togreg branch of iio.git which I will push out as testing
-> for the autobuilders to play when not in an airport departure lounge on the
-> 30 mins of free airport wifi.  What fun.
->
-> I wonder if this will send?
 
-Well, it's here ;). Have a nice flight!
 
-thanks,
-Daniel.
+> -----Original Message-----
+> From: Jens Axboe [mailto:axboe@kernel.dk]
+> Sent: Wednesday, 10 September, 2014 1:15 PM
+> To: Robert Elliott; Elliott, Robert (Server Storage); hch@lst.de;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
+> 
+> On 09/09/2014 06:18 PM, Robert Elliott wrote:
+> > From: Robert Elliott <elliott@hp.com>
+> >
+> > One change introduced by blk-mq is that it does all
+> > the completion work in hard irq context rather than
+> > soft irq context.
+> >
+> > On a 6 core system, if all interrupts are routed to
+> > one CPU, then you can easily run into this:
+> > * 5 CPUs submitting IOs
+> > * 1 CPU spending 100% of its time in hard irq context
+> > processing IO completions, not able to submit anything
+> > itself
+> >
+> > Example with CPU5 receiving all interrupts:
+> >    CPU usage:   CPU0   CPU1   CPU2   CPU3   CPU4   CPU5
+> >         %usr:   0.00   3.03   1.01   2.02   2.00   0.00
+> >         %sys:  14.58  75.76  14.14   4.04  78.00   0.00
+> >         %irq:   0.00   0.00   0.00   1.01   0.00 100.00
+> >        %soft:   0.00   0.00   0.00   0.00   0.00   0.00
+> > %iowait idle:  85.42  21.21  84.85  92.93  20.00   0.00
+> >        %idle:   0.00   0.00   0.00   0.00   0.00   0.00
+> >
+> > When the submitting CPUs are forced to process their own
+> > completion interrupts, this steals time from new
+> > submissions and self-throttles them.
+> >
+> > Without that, there is no direct feedback to the
+> > submitters to slow down.  The only feedback is:
+> > * reaching max queue depth
+> > * lots of timeouts, resulting in aborts, resets, soft
+> >   lockups and self-detected stalls on CPU5, bogus
+> >   clocksource tsc unstable reports, network
+> >   drop-offs, etc.
+> >
+> > The SCSI LLD can set affinity_hint for each of its
+> > interrupts to request that a program like irqbalance
+> > route the interrupts back to the submitting CPU.
+> > The latest version of irqbalance ignores those hints,
+> > though, instead offering an option to run a policy
+> > script that could honor them. Otherwise, it balances
+> > them based on its own algorithms. So, we cannot rely
+> > on this.
+> >
+> > Hardware might perform interrupt coalescing to help,
+> > but it cannot help 1 CPU keep up with the work
+> > generated by many other CPUs.
+> >
+> > rq_affinity=2 helps by pushing most of the block layer
+> > and SCSI midlayer completion work back to the submitting
+> > CPU (via an IPI).
+> >
+> > Change the default rq_affinity=2 under blk-mq
+> > so there's at least some feedback to slow down the
+> > submitters.
+> 
+> I don't think we should do this generically. For "sane" devices with
+> multiple completion queues, and with proper affinity setting in the
+> driver, this is going to be a loss.
+> 
+> So lets not add it to QUEUE_FLAG_MQ_DEFAULT, but we can make it
+> default
+> for nr_hw_queues == 1. I think that would be way saner.
+> 
+> --
+> Jens Axboe
+
+If the interrupt does arrive on the submitting CPU, then it 
+meets the criteria for all the cases:
+* 1: complete on any CPU
+* 2: complete on submitting CPU's node (QUEUE_FLAG_SAME_COMP)
+* 3: complete on submitting CPU (QUEUE_FLAG_SAME_FORCE)
+
+and _blk_complete_request handles it locally rather
+than sending an IPI.
+
+        if (req->cpu != -1) {
+                ccpu = req->cpu;
+                if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags))
+                        shared = cpus_share_cache(cpu, ccpu);
+        } else
+                ccpu = cpu;
+        ...
+        if (ccpu == cpu || shared) {
+                struct list_head *list;
+do_local:
+        ...
+        } else if (raise_blk_irq(ccpu, req))
+                goto do_local;
+
+
+Are you saying you want the blk_queue_bio submission to 
+not even set the req->cpu field (which defaulted to -1):
+        if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags))
+                req->cpu = raw_smp_processor_id();
+
+when you expect the interrupt routing is good so that
+_blk_complete_request can avoid the test_bit and 
+cpus_share_cache calls?
+
+With irqbalance no longer honoring affinity_hint
+by default, I'm worried that most LLDs will not find
+their interrupts routed that way anymore.  That's
+how we ran into this; scsi-mq + kernel-3.17 on an
+up-to-date RHEL 6.5 distro (which now carries the
+new irqbalance).
+
+We plan to create a policyscript for the new irqbalance
+for hpsa devices, but other high-IOPS drivers will hit
+the same problem.
+
+---
+Rob Elliott    HP Server Storage
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
