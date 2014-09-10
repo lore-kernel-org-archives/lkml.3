@@ -1,456 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaIJOmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:42:51 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:11127 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaIJOi1 (ORCPT
+	id S1753318AbaIJOnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:43:08 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:65442 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621AbaIJOmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:38:27 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-df-541062628fc3
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: [RFC/PATCH v2 02/10] x86_64: add KASan support
-Date: Wed, 10 Sep 2014 18:31:19 +0400
-Message-id: <1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.0
-In-reply-to: <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t/xq7pJSQIhBtcnclps+/WIzeL33pms
-	FnPWr2GzOHLtO7vF9W9vGC0+vXzAaPH84UN2iwkP29gtpm0Ut1jZ3cxmsf3ZWyaLlZ0PWC0u
-	75rDZnFvzX9Wi0sHFjBZLD5ym9ni3bPJzBabN01ltri66iC7xY8Nj1kdRDzm7/zI6LFz1l12
-	jwWbSj0W73nJ5LFpVSebx6ZPk9g9ut5eYfJ4d+4cu8eJGb9ZPJ5cmc7k8fHpLRaP9/uusnn0
-	bVnF6PF5k5zHiZYvrAH8UVw2Kak5mWWpRfp2CVwZR0/dYyz4Gl9x4NI7tgbGaf5djJwcEgIm
-	Ej+3nWKBsMUkLtxbz9bFyMUhJLCUUeJ/01NGCKePSeL4x1/MIFVsAnoS/2ZtZwOxRQQUJDb3
-	PmMFKWIW2MsqMfX3LVaQhLCAucTVX03sIDaLgKrErU+XwWxeATeJvdv+sEGsk5PYsPs/I4jN
-	KeAucerkCiaIbU2MEksubGKfwMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZI9HzZ
-	wbj4mNUhRgEORiUe3sKL/CFCrIllxZW5hxglOJiVRHibHARChHhTEiurUovy44tKc1KLDzEy
-	cXBKNTCu4Yg6sf2g5IxFGXvYFGSSn2usOs9gbMUsH5xr8Xo3V6W22qIPRsV7l3FaPFTMrHA3
-	lnJ78frWlXdH/n/PO2V4+LGJyBLLAwfrLna+F9tQ7XF2+fXlbEt5H4T0BHze4lWkZif2dmp0
-	j7nH1BgF+amP6zfW61+9ctBst9PxVfc8OXbGPq17LyqrxFKckWioxVxUnAgAeq/QynwCAAA=
+	Wed, 10 Sep 2014 10:42:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140910033304.GB39541@vmdeb7>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+	<1409814488.5546.63.camel@x220>
+	<20140906021757.GA9197@vmdeb7>
+	<7288841.ayNsq2yeGO@vostro.rjw.lan>
+	<1410252608.22255.5.camel@x220>
+	<20140910033304.GB39541@vmdeb7>
+Date: Wed, 10 Sep 2014 16:42:49 +0200
+Message-ID: <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
+Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
+From: Frans Klaver <fransklaver@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add arch specific code for kernel address sanitizer.
+On Wed, Sep 10, 2014 at 5:33 AM, Darren Hart <dvhart@infradead.org> wrote:
+> On Tue, Sep 09, 2014 at 10:50:08AM +0200, Paul Bolle wrote:
+>> Hi Darren,
+>>
+>> On Sat, 2014-09-06 at 23:17 +0200, Rafael J. Wysocki wrote:
+>> > On Friday, September 05, 2014 07:17:57 PM Darren Hart wrote:
+>> > > On Thu, Sep 04, 2014 at 09:08:08AM +0200, Paul Bolle wrote:
+>> > > [...]
+>> > > >  static ssize_t store_sys_acpi(struct device *dev, int cm,
+>> > > > @@ -278,12 +276,13 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
+>> > > >         struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
+>> > > >         int rv, value;
+>> > > >
+>> > > > -       rv = parse_arg(buf, count, &value);
+>> > > > -       if (rv > 0)
+>> > > > -               value = set_acpi(eeepc, cm, value);
+>> > > > +       rv = parse_arg(buf, &value);
+>> > > > +       if (rv < 0)
+>> > > > +               return rv;
+>> > > > +       value = set_acpi(eeepc, cm, value);
+>> > > >         if (value < 0)
+>> > >
+>> > > I suppose it's harmless, but it would be more explicit to reuse rv here instead
+>> > > of value.
+>>
+>> Fine with me.
+>>
+>> > > >                 return -EIO;
+>> > >
+>> > > And as with Frans' version, I suggest propogating the error. We're talking about
+>> > > a missing/invalid ACPI control method name here, ENODEV seems approprirate.
+>> > >
+>> > > Rafael, do you have a strong preference about what to return in such an event?
+>> >
+>> > No, I don't, although -ENXIO could be used here too.
+>>
+>> If you could say what value you'd like best I'll resend using that
+>> value. (I don't know what the effect is of using a specific error here,
+>> so I guess I'll have to bluff about it in the commit explanation.)
+>
+> First, I would prefer we propogate the error code rather than remap it.
+>
+> We could consider changing what the callee returns...
+>
+> #define EIO              5      /* I/O error */
+> #define ENXIO            6      /* No such device or address */
+> #define ENODEV          19      /* No such device */
+>
+> Of those, ENXIO seems like the most appropriate in this case.
 
-16TB of virtual addressed used for shadow memory.
-It's located in range [0xffff800000000000 - 0xffff900000000000]
-Therefore PAGE_OFFSET has to be changed from 0xffff880000000000
-to 0xffff900000000000.
-
-At early stage we map whole shadow region with zero page.
-Latter, after pages mapped to direct mapping address range
-we unmap zero pages from corresponding shadow (see kasan_map_shadow())
-and allocate and map a real shadow memory reusing vmemmap_populate()
-function.
-
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-
----
-
-It would be nice to not have different PAGE_OFFSET with and without CONFIG_KASAN.
-We have big enough hole between vmemmap and esp fixup stacks.
-So how about moving all direct mapping, vmalloc and vmemmap 8TB up without
-hiding it under CONFIG_KASAN?
----
- arch/x86/Kconfig                     |  1 +
- arch/x86/boot/Makefile               |  2 ++
- arch/x86/boot/compressed/Makefile    |  2 ++
- arch/x86/include/asm/kasan.h         | 20 ++++++++++++
- arch/x86/include/asm/page_64_types.h |  4 +++
- arch/x86/include/asm/pgtable.h       |  7 ++++-
- arch/x86/kernel/Makefile             |  2 ++
- arch/x86/kernel/dumpstack.c          |  5 ++-
- arch/x86/kernel/head64.c             |  6 ++++
- arch/x86/kernel/head_64.S            | 16 ++++++++++
- arch/x86/mm/Makefile                 |  3 ++
- arch/x86/mm/init.c                   |  3 ++
- arch/x86/mm/kasan_init_64.c          | 59 ++++++++++++++++++++++++++++++++++++
- arch/x86/realmode/Makefile           |  2 +-
- arch/x86/realmode/rm/Makefile        |  1 +
- arch/x86/vdso/Makefile               |  1 +
- include/linux/kasan.h                |  3 ++
- lib/Kconfig.kasan                    |  1 +
- 18 files changed, 135 insertions(+), 3 deletions(-)
- create mode 100644 arch/x86/include/asm/kasan.h
- create mode 100644 arch/x86/mm/kasan_init_64.c
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5b1b180..3b8770e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -135,6 +135,7 @@ config X86
- 	select HAVE_ACPI_APEI if ACPI
- 	select HAVE_ACPI_APEI_NMI if ACPI
- 	select ACPI_LEGACY_TABLES_LOOKUP if ACPI
-+	select HAVE_ARCH_KASAN if X86_64 && !XEN
- 
- config INSTRUCTION_DECODER
- 	def_bool y
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index dbe8dd2..9204cc0 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -14,6 +14,8 @@
- # Set it to -DSVGA_MODE=NORMAL_VGA if you just want the EGA/VGA mode.
- # The number is the same as you would ordinarily press at bootup.
- 
-+KASAN_SANITIZE := n
-+
- SVGA_MODE	:= -DSVGA_MODE=NORMAL_VGA
- 
- targets		:= vmlinux.bin setup.bin setup.elf bzImage
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 7a801a3..8e5b9b3 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -4,6 +4,8 @@
- # create a compressed vmlinux image from the original vmlinux
- #
- 
-+KASAN_SANITIZE := n
-+
- targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma \
- 	vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4
- 
-diff --git a/arch/x86/include/asm/kasan.h b/arch/x86/include/asm/kasan.h
-new file mode 100644
-index 0000000..bff6a1a
---- /dev/null
-+++ b/arch/x86/include/asm/kasan.h
-@@ -0,0 +1,20 @@
-+#ifndef _ASM_X86_KASAN_H
-+#define _ASM_X86_KASAN_H
-+
-+#define KASAN_SHADOW_START	0xffff800000000000UL
-+#define KASAN_SHADOW_END	0xffff900000000000UL
-+
-+#ifndef __ASSEMBLY__
-+extern pte_t zero_pte[];
-+extern pte_t zero_pmd[];
-+extern pte_t zero_pud[];
-+
-+#ifdef CONFIG_KASAN
-+void __init kasan_map_zero_shadow(pgd_t *pgd);
-+#else
-+static inline void kasan_map_zero_shadow(pgd_t *pgd) { }
-+#endif
-+
-+#endif
-+
-+#endif
-diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-index 6782051..ed98909 100644
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -30,7 +30,11 @@
-  * hypervisor to fit.  Choosing 16 slots here is arbitrary, but it's
-  * what Xen requires.
-  */
-+#ifdef CONFIG_KASAN
-+#define __PAGE_OFFSET           _AC(0xffff900000000000, UL)
-+#else
- #define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
-+#endif
- 
- #define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
- 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index aa97a07..295263e 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -671,9 +671,14 @@ static inline int pgd_none(pgd_t pgd)
-  */
- #define pgd_offset_k(address) pgd_offset(&init_mm, (address))
- 
--
-+#ifndef CONFIG_KASAN
- #define KERNEL_PGD_BOUNDARY	pgd_index(PAGE_OFFSET)
- #define KERNEL_PGD_PTRS		(PTRS_PER_PGD - KERNEL_PGD_BOUNDARY)
-+#else
-+#include <asm/kasan.h>
-+#define KERNEL_PGD_BOUNDARY	pgd_index(KASAN_SHADOW_START)
-+#define KERNEL_PGD_PTRS		(PTRS_PER_PGD - KERNEL_PGD_BOUNDARY)
-+#endif
- 
- #ifndef __ASSEMBLY__
- 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index ada2e2d..4c59d7f 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -16,6 +16,8 @@ CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
- endif
- 
-+KASAN_SANITIZE_head$(BITS).o := n
-+
- CFLAGS_irq.o := -I$(src)/../include/asm/trace
- 
- obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index b74ebc7..cf3df1d 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -265,7 +265,10 @@ int __die(const char *str, struct pt_regs *regs, long err)
- 	printk("SMP ");
- #endif
- #ifdef CONFIG_DEBUG_PAGEALLOC
--	printk("DEBUG_PAGEALLOC");
-+	printk("DEBUG_PAGEALLOC ");
-+#endif
-+#ifdef CONFIG_KASAN
-+	printk("KASAN");
- #endif
- 	printk("\n");
- 	if (notify_die(DIE_OOPS, str, regs, err,
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index eda1a86..9d97e3a 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -27,6 +27,7 @@
- #include <asm/bios_ebda.h>
- #include <asm/bootparam_utils.h>
- #include <asm/microcode.h>
-+#include <asm/kasan.h>
- 
- /*
-  * Manage page tables very early on.
-@@ -158,6 +159,9 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
- 	/* Kill off the identity-map trampoline */
- 	reset_early_page_tables();
- 
-+	kasan_map_zero_shadow(early_level4_pgt);
-+	write_cr3(__pa(early_level4_pgt));
-+
- 	/* clear bss before set_intr_gate with early_idt_handler */
- 	clear_bss();
- 
-@@ -179,6 +183,8 @@ asmlinkage __visible void __init x86_64_start_kernel(char * real_mode_data)
- 	/* set init_level4_pgt kernel high mapping*/
- 	init_level4_pgt[511] = early_level4_pgt[511];
- 
-+	kasan_map_zero_shadow(init_level4_pgt);
-+
- 	x86_64_start_reservations(real_mode_data);
- }
- 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index a468c0a..6be3af7 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -514,6 +514,22 @@ ENTRY(phys_base)
- 	/* This must match the first entry in level2_kernel_pgt */
- 	.quad   0x0000000000000000
- 
-+#ifdef CONFIG_KASAN
-+#define FILL(VAL, COUNT)				\
-+	.rept (COUNT) ;					\
-+	.quad	(VAL) ;					\
-+	.endr
-+
-+NEXT_PAGE(zero_pte)
-+	FILL(empty_zero_page - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+NEXT_PAGE(zero_pmd)
-+	FILL(zero_pte - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+NEXT_PAGE(zero_pud)
-+	FILL(zero_pmd - __START_KERNEL_map + __PAGE_KERNEL_RO, 512)
-+#undef FILL
-+#endif
-+
-+
- #include "../../x86/xen/xen-head.S"
- 	
- 	__PAGE_ALIGNED_BSS
-diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-index 6a19ad9..b6c5168 100644
---- a/arch/x86/mm/Makefile
-+++ b/arch/x86/mm/Makefile
-@@ -8,6 +8,8 @@ CFLAGS_setup_nx.o		:= $(nostackp)
- 
- CFLAGS_fault.o := -I$(src)/../include/asm/trace
- 
-+KASAN_SANITIZE_kasan_init_$(BITS).o := n
-+
- obj-$(CONFIG_X86_PAT)		+= pat_rbtree.o
- obj-$(CONFIG_SMP)		+= tlb.o
- 
-@@ -30,3 +32,4 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
- obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
- 
- obj-$(CONFIG_MEMTEST)		+= memtest.o
-+obj-$(CONFIG_KASAN)		+= kasan_init_$(BITS).o
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 66dba36..ef017a7 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -4,6 +4,7 @@
- #include <linux/swap.h>
- #include <linux/memblock.h>
- #include <linux/bootmem.h>	/* for max_low_pfn */
-+#include <linux/kasan.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/e820.h>
-@@ -685,5 +686,7 @@ void __init zone_sizes_init(void)
- #endif
- 
- 	free_area_init_nodes(max_zone_pfns);
-+
-+	kasan_map_shadow();
- }
- 
-diff --git a/arch/x86/mm/kasan_init_64.c b/arch/x86/mm/kasan_init_64.c
-new file mode 100644
-index 0000000..1efda37
---- /dev/null
-+++ b/arch/x86/mm/kasan_init_64.c
-@@ -0,0 +1,59 @@
-+#include <linux/mm.h>
-+#include <linux/bootmem.h>
-+#include <linux/sched.h>
-+#include <linux/kasan.h>
-+
-+#include <asm/tlbflush.h>
-+
-+extern pgd_t early_level4_pgt[PTRS_PER_PGD];
-+extern struct range pfn_mapped[E820_X_MAX];
-+
-+static int __init map_range(struct range *range)
-+{
-+	int ret;
-+	unsigned long start = kasan_mem_to_shadow(pfn_to_kaddr(range->start));
-+	unsigned long end = kasan_mem_to_shadow(pfn_to_kaddr(range->end));
-+
-+	ret = vmemmap_populate(start, end, NUMA_NO_NODE);
-+
-+	return ret;
-+}
-+
-+static void __init clear_zero_shadow_mapping(unsigned long start,
-+					unsigned long end)
-+{
-+	for (; start < end; start += PGDIR_SIZE)
-+		pgd_clear(pgd_offset_k(start));
-+}
-+
-+void __init kasan_map_zero_shadow(pgd_t *pgd)
-+{
-+	int i;
-+	unsigned long start = KASAN_SHADOW_START;
-+	unsigned long end = KASAN_SHADOW_END;
-+
-+	for (i = pgd_index(start); start < end; i++) {
-+		pgd[i] = __pgd(__pa(zero_pud) | __PAGE_KERNEL_RO);
-+		start += PGDIR_SIZE;
-+	}
-+}
-+
-+void __init kasan_map_shadow(void)
-+{
-+	int i;
-+
-+	memcpy(early_level4_pgt, init_level4_pgt, 4096);
-+	load_cr3(early_level4_pgt);
-+
-+	clear_zero_shadow_mapping(kasan_mem_to_shadow(PAGE_OFFSET),
-+				kasan_mem_to_shadow(0xffffc80000000000UL));
-+
-+	for (i = 0; i < E820_X_MAX; i++) {
-+		if (pfn_mapped[i].end == 0)
-+			break;
-+
-+		if (map_range(&pfn_mapped[i]))
-+			panic("kasan: unable to allocate shadow!");
-+	}
-+	load_cr3(init_level4_pgt);
-+}
-diff --git a/arch/x86/realmode/Makefile b/arch/x86/realmode/Makefile
-index 94f7fbe..e02c2c6 100644
---- a/arch/x86/realmode/Makefile
-+++ b/arch/x86/realmode/Makefile
-@@ -6,7 +6,7 @@
- # for more details.
- #
- #
--
-+KASAN_SANITIZE := n
- subdir- := rm
- 
- obj-y += init.o
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index 7c0d7be..2730d77 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -6,6 +6,7 @@
- # for more details.
- #
- #
-+KASAN_SANITIZE := n
- 
- always := realmode.bin realmode.relocs
- 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 5a4affe..2aacd7c 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -3,6 +3,7 @@
- #
- 
- KBUILD_CFLAGS += $(DISABLE_LTO)
-+KASAN_SANITIZE := n
- 
- VDSO64-$(CONFIG_X86_64)		:= y
- VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
-diff --git a/include/linux/kasan.h b/include/linux/kasan.h
-index 6055f64..f957ee9 100644
---- a/include/linux/kasan.h
-+++ b/include/linux/kasan.h
-@@ -29,6 +29,7 @@ static inline void kasan_disable_local(void)
- }
- 
- void kasan_unpoison_shadow(const void *address, size_t size);
-+void kasan_map_shadow(void);
- 
- #else /* CONFIG_KASAN */
- 
-@@ -37,6 +38,8 @@ static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
- static inline void kasan_enable_local(void) {}
- static inline void kasan_disable_local(void) {}
- 
-+static inline void kasan_map_shadow(void) {}
-+
- #endif /* CONFIG_KASAN */
- 
- #endif /* LINUX_KASAN_H */
-diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-index 22fec2d..156d3e6 100644
---- a/lib/Kconfig.kasan
-+++ b/lib/Kconfig.kasan
-@@ -5,6 +5,7 @@ if HAVE_ARCH_KASAN
- 
- config KASAN
- 	bool "AddressSanitizer: dynamic memory error detector"
-+	depends on !MEMORY_HOTPLUG
- 	default n
- 	help
- 	  Enables address sanitizer - dynamic memory error detector,
--- 
-1.8.5.5
-
+Would it be fair to say that for consistency we should then also
+change the return values of acpi_setter_handle()? It has the same
+basic layout and checks as set_acpi() and get_acpi() have.
