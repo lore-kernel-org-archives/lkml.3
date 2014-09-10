@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaIJXfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 19:35:17 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:2775 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbaIJXfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 19:35:16 -0400
-Message-ID: <1410391481.28990.317.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle
- WT
-From: Toshi Kani <toshi.kani@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 10 Sep 2014 17:24:41 -0600
-In-Reply-To: <5410C9F1.7030603@zytor.com>
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
-		 <1410367910-6026-3-git-send-email-toshi.kani@hp.com>
-		 <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>
-		 <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com>
-		 <1410381050.28990.295.camel@misato.fc.hp.com>
-		 <CALCETrUz016rDogLFTVETLh7ybVjgOMOhkL5kF2wJTLUF041xQ@mail.gmail.com>
-		 <1410383484.28990.303.camel@misato.fc.hp.com>
-		 <CALCETrV4DEr7tQUPCSzJMjBwgJ3-Xgcw8PFt_CCDbMoWRQ4Uug@mail.gmail.com>
-		 <5410C4F7.4080704@zytor.com> <1410385673.28990.313.camel@misato.fc.hp.com>
-	 <5410C9F1.7030603@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753659AbaIJXfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 19:35:25 -0400
+Received: from ozlabs.org ([103.22.144.67]:35426 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624AbaIJXfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 19:35:22 -0400
+Date: Thu, 11 Sep 2014 09:35:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Please add an IPMI tree to linux-next
+Message-ID: <20140911093514.5b40f0ec@canb.auug.org.au>
+In-Reply-To: <541051A5.1040801@mvista.com>
+References: <541051A5.1040801@mvista.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/U0.mjuP.QIl38.Hu8M1fhqX"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 15:00 -0700, H. Peter Anvin wrote:
-> On 09/10/2014 02:47 PM, Toshi Kani wrote:
-> >>
-> >> Yes.  Don't think of it as PAT vs non-PAT.  Think of it as a specific
-> >> set of cache types available on different processors.  The fact that you
-> >> may have to frob an MSR to initialize it is almost trivial in comparison.
-> > 
-> > Right.
-> > 
-> 
-> In that sense the Xen "fixed PAT" fits right in.
+--Sig_/U0.mjuP.QIl38.Hu8M1fhqX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Got it. Nicely simplified. :) 
+Hi Corey,
 
-Thanks,
--Toshi
+On Wed, 10 Sep 2014 08:27:01 -0500 Corey Minyard <cminyard@mvista.com> wrot=
+e:
+>
+> Could you add:
+>=20
+>    git://git.code.sf.net/p/openipmi/linux-ipmi for-next
+>=20
+> to the linux-next tree?  This is bug fixes and minor enhancements for the
+> IPMI driver.
 
+Added from today with just you listed as the contact.
 
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+        Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+--Sig_/U0.mjuP.QIl38.Hu8M1fhqX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUEOA3AAoJEMDTa8Ir7ZwVQJcP/jaKigAhzeGCJDL7lgTreNH5
+fyX3mgkAVomz7O63iNCDO/a+5vs3dy7MRP/W57TK2lms03jp7F+2zyUPch9AofzO
+v2ZmFWch2hV7Pk8xEGlkeMCAh/Gr73/sEZXXWuQUeLzgxywyYVdZLd353BM1s0AW
+DTsLU9RTPog1UGHPWBklmDJhEqLJprTryPQ1rKrbfHBhh2NOCRkyR4XvdoIgyM4n
+mlBqzKkvIkbD24sZ2Cw2G0v9c6fSS/kx286UuSyClm7x2qw+Czmuv0IQFK7EHLWl
+I7qVvtu6kQa+7oINS+WyJ/HeV6cWTsjZK3JlLksWy8d3bkbFrQ+z+EivRV+kf7LE
+9jcdZ5agZPX+0kXydL90gtfAcHVBk90UAOAm6G5pWbVbHBLGG8B6Ecq+8fq++CN0
+E99B5wat9d5EC4PA5tS8bX3Dur7BXmuYplWCwh6a5P+PKwyvAJY5HppQaPAI+F3S
+huoMBklBGmflI0mW51nhLf8KqTv4g4MrOdWcKr14YbJvET+isGbW6FBwL534y6Qt
+KUOzr66mQKBcRBfr3eNzlvr9mGsK3KhU1R9SwgIIcxTyOBHIYD1fo/raFcckOES8
+XSQ9uMNzzgAfL7sVuXJUCPw/Fwtgsdxz8Ep88LB8+i+2n38h5qg3drm1Ma9Y+iLP
+I+C+IkwXSJ51q2k8Xwjr
+=qkxU
+-----END PGP SIGNATURE-----
+
+--Sig_/U0.mjuP.QIl38.Hu8M1fhqX--
