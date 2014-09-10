@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063AbaIJV7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:59:12 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:53911 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441AbaIJV7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:59:11 -0400
-Date: Wed, 10 Sep 2014 23:59:08 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: BUG uncore_assign_events
-Message-ID: <20140910215908.GL4120@two.firstfloor.org>
-References: <20140910091626.GO16043@twins.programming.kicks-ass.net>
+	id S1753399AbaIJWAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 18:00:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58471 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967AbaIJWAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 18:00:52 -0400
+Message-ID: <5410C9F1.7030603@zytor.com>
+Date: Wed, 10 Sep 2014 15:00:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910091626.GO16043@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle
+ WT
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>	 <1410367910-6026-3-git-send-email-toshi.kani@hp.com>	 <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>	 <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com>	 <1410381050.28990.295.camel@misato.fc.hp.com>	 <CALCETrUz016rDogLFTVETLh7ybVjgOMOhkL5kF2wJTLUF041xQ@mail.gmail.com>	 <1410383484.28990.303.camel@misato.fc.hp.com>	 <CALCETrV4DEr7tQUPCSzJMjBwgJ3-Xgcw8PFt_CCDbMoWRQ4Uug@mail.gmail.com>	 <5410C4F7.4080704@zytor.com> <1410385673.28990.313.camel@misato.fc.hp.com>
+In-Reply-To: <1410385673.28990.313.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> # addr2line -i -e ivb-ep-build/vmlinux ffffffff81025f18
+On 09/10/2014 02:47 PM, Toshi Kani wrote:
+>>
+>> Yes.  Don't think of it as PAT vs non-PAT.  Think of it as a specific
+>> set of cache types available on different processors.  The fact that you
+>> may have to frob an MSR to initialize it is almost trivial in comparison.
 > 
-> arch/x86/include/asm/bitops.h:318
-> arch/x86/kernel/cpu/perf_event_intel_uncore.c:3339
+> Right.
+> 
 
-i == zero  (ok)
-c points to some kernel looking address
-hwc->idx is 64
+In that sense the Xen "fixed PAT" fits right in.
 
-     /* fastpath, try to reuse previous register */
-        for (i = 0; i < n; i++) {
-                hwc = &box->event_list[i]->hw;
-                c = hwc->constraint;
+	-hpa
 
-                /* never assigned */
-                if (hwc->idx == -1)
-                        break;
 
-                /* constraint still honored */
-                if (!test_bit(hwc->idx, c->idxmsk))
-                        break;
-
-My best bet is something goes wrong in uncore_pmu_to_box or
-uncore_event_to_pmu in hte caller, so the box is bogus.
-
-Did the test do CPU hot plug?
-
-BTW i don't think it's a security issue because the uncore driver
-is only accesible for root.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
