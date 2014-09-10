@@ -1,108 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaIJGKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 02:10:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38501 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978AbaIJGKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 02:10:52 -0400
-Date: Wed, 10 Sep 2014 14:10:35 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Deutschmann <whissi@whissi.de>,
-        Dave Young <dyoung@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>
-Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
- relocations
-Message-ID: <20140910061035.GC25867@dhcp-16-116.nay.redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
- <1409926097-2101-2-git-send-email-bhe@redhat.com>
- <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
- <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
- <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
+	id S1751176AbaIJGVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 02:21:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58393 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854AbaIJGVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 02:21:34 -0400
+Date: Wed, 10 Sep 2014 08:21:18 +0200
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+Cc: Shengjiu Wang <shengjiu.wang@freescale.com>, timur@tabi.org,
+        Li.Xiubo@freescale.com, lgirdwood@gmail.com, broonie@kernel.org,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
+Message-ID: <20140910062118.GA26348@pengutronix.de>
+References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+ <20140909183804.GA6944@Asurada>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
+In-Reply-To: <20140909183804.GA6944@Asurada>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:13:14 up 24 days, 18:33, 75 users,  load average: 0.20, 0.09,
+ 0.06
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 at 08:53am, Kees Cook wrote:
- >
-> > Hi Kees,
-> >
-> > Checking handle_relocations() again, I just didn't notice it's mandatory
-> > to do the relocations handling in i386. So in this function delta is
-> > checked to see if it's a kaslr relocation handling. This might be a
-> > little confusing. But I am fine with it.
-> >
-> > Per your comment, you prefer to compare the output before and after
-> > choose_kernel_location(). That's also good, Lu Yinghai posted a draft
-> > patch in this way before, however the checking and the delta calculation
-> > are not correct. I changed that and test all cases, it works well. So
-> > do you like this it? If yes  I will repost it.
-> >
-> > From 13471bd838c52a0e143c2aee81e3863cfff585bd Mon Sep 17 00:00:00 2001
-> > From: Baoquan He <bhe@redhat.com>
-> > Date: Mon, 25 Aug 2014 14:57:43 +0800
-> > Subject: [PATCH] kaslr: check if kernel location is changed
-> >
-> > Signed-off-by: Baoquan He <bhe@redhat.com>
-> > ---
-> >  arch/x86/boot/compressed/misc.c | 15 +++++++++++----
-> >  1 file changed, 11 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-> > index 57ab74d..887f404 100644
-> > --- a/arch/x86/boot/compressed/misc.c
-> > +++ b/arch/x86/boot/compressed/misc.c
-> > @@ -230,8 +230,9 @@ static void error(char *x)
-> >                 asm("hlt");
-> >  }
-> >
-> > -#if CONFIG_X86_NEED_RELOCS
-> > -static void handle_relocations(void *output, unsigned long output_len)
-> > +#ifdef CONFIG_X86_NEED_RELOCS
-> > +static void handle_relocations(void *output_orig, void *output,
-> > +                              unsigned long output_len)
-> >  {
-> >         int *reloc;
-> >         unsigned long delta, map, ptr;
-> > @@ -242,6 +243,9 @@ static void handle_relocations(void *output, unsigned long output_len)
-> >          * Calculate the delta between where vmlinux was linked to load
-> >          * and where it was actually loaded.
-> >          */
-> > +       if (output_orig == output)
-> > +               return;
-> > +
-> 
-> I still think this needs a test for the 32-bit case, since IUIC, it
-> requires relocations unconditionally.
 
-Oops, just understood that 32 bit kernel alwasy need relocations, but
-only focus on x86_64 and kaslr again when I was doing it. You are right,
-this is not correct for 32 bit kernel.
+--OXfL5xGRrasGEqWY
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I am thinking if I can add a compiling condition check like below. This
-only works only when x86_64 or when kaslr is compiled in. Otherwise it
-wokrs as before.
+On Tue, Sep 09, 2014 at 11:38:05AM -0700, Nicolin Chen wrote:
+> On Tue, Sep 09, 2014 at 05:18:07PM +0800, Shengjiu Wang wrote:
+> > @@ -1321,7 +1333,11 @@ static int fsl_ssi_probe(struct platform_device =
+*pdev)
+> >  		return -ENOMEM;
+> >  	}
+> > =20
+> > -	ssi_private->regs =3D devm_regmap_init_mmio(&pdev->dev, iomem,
+> > +	if (ssi_private->soc->imx)
+> > +		ssi_private->regs =3D devm_regmap_init_mmio_clk(&pdev->dev,
+> > +			"ipg", iomem, &fsl_ssi_regconfig);
+> > +	else
+> > +		ssi_private->regs =3D devm_regmap_init_mmio(&pdev->dev, iomem,
+>=20
+> As Markus mentioned, the key point here is to be compatible with those
+> non-clock-name platforms.
+>=20
+> I think it would be safer to keep the current code while adding an extra
+> clk_disable_unprepare() at the end of probe() as a common routine. And
+> meantime, make sure to have the call for imx only because it seems that
+> the other platforms do not depend on the clock. //a bit guessing here :)
+>=20
+> Then we can get a patch like:
+> open() {
+> +	clk_prepare_enable();
+> 	....
+> }
+>=20
+> close() {
+> 	....
+> +	clk_disable_unprepare()
+> }
+>=20
+> probe() {
+> 	clk_get();
+> 	clk_prepare_enable();
+> 	....
+> 	if (xxx)
+> -		goto err_xx;
+> +		return ret;
+> 	....
+> +	clk_disable_unprepare();
+> 	return 0;
+> -err_xx:
+> -	clk_disable_unprepare()
+> }
+>=20
+> remove() {
+> 	....
+> -	clk_disable_unprepare()
+> }
 
-#if CONFIG_X86_64
-	if (output_orig == output)
-		return;
-#endif
+If I remember correctly, there may be AC97 communication with the codec
+before any substream is created. That's why we enable the SSI unit right
+at the beginning for AC97 in fsl_ssi_setup_reg_vals(). So we need to
+check for AC97 before disabling clocks.
 
-or
-#if CONFIG_RANDOMIZE_BASE
-	if (output_orig == output)
-		return;
-#endif
+Best regards,
 
+Markus
 
+--=20
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
-> 
-> -Kees
-> 
+--OXfL5xGRrasGEqWY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUD+3eAAoJEEpcgKtcEGQQpIwP/13uS6ra+9yDsKky0JK7ndGC
+Rh2J1DaRbJLJ3xw0iDbY9FzccLVUCfhyxc1fRtkr4o2fjPztA5fBKv9lj1j0cWpk
+LhsW4ceHxZECUNOFIq+ZzW8C7dEk9fVYTVGsMeC5phbrGrg0C860B5Sa0S0ZbF8u
+wRxpKr1GElW0+Z5fXlzhWbORxO5oqKQhMYJoyM9hPdmM51olzI4AtqylgddmbURO
+jjebQv6XG25rbYdlHgWxjwJ7QjePEdmKC1lATApANItTEZtMtEG9Swm37PS+D+Yf
+efLXDhWYyw9cj/vSxBoze0cBG90SUaHn10rbjOSlYyYm7of78uisyeG7IFL0h20e
++dOaT5YbxC/JDLpjCWOo77aMdrfYmkU9hKlaZXs2XM1N0Eour1zVjPB4TUZVAa0a
+foE6+66vOkM8XfmHQBEH4z/L7yq/8PIJBtTVBYdN+41/0Ql3cu70OHFKzoXdW+QG
+GEffwkIOJYts0SAtVRUSb2ZIvIdU8U8SEM335zqOwOy1iPKDtBQa40WAWYJFz/Sy
+hZyqsb68uW7TZENSh5m24JCwzpxUOg3C7YDoQCmpKTxWjeSIwdhnsMO+0k4C9aXT
+d1xXFaHh9+mPjmJ+AngG+U2b6Vbd7lxkxcbteGE35XuFHA6+wj5KL43XQmKympFT
+P4R0PBncjKGHy82hV++M
+=KAho
+-----END PGP SIGNATURE-----
+
+--OXfL5xGRrasGEqWY--
