@@ -1,154 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751186AbaIJEyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 00:54:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47523 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092AbaIJEyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 00:54:14 -0400
-Date: Tue, 9 Sep 2014 23:53:28 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>, Julius Werner <jwerner@google.com>,
-        Julius Werner <jwerner@chromium.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for
- exynos5420/5800
-Message-ID: <20140910045328.GA32475@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
- <20140903144225.GD31855@saruman.home>
- <CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
- <20140905175651.GK24449@saruman.home>
- <CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
- <20140908134454.GK22409@saruman.home>
- <CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
- <20140909144225.GF6151@saruman.home>
- <CAFp+6iHJKmeothDM67WW60Sqqj8BQroBCzZ8zecKwM_GcYL8HA@mail.gmail.com>
- <CAFp+6iHRJ5oAA+K1Y0Y2uadPhsR6wmrd13DM39dqiL4jj+swHg@mail.gmail.com>
+	id S1751296AbaIJEy3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 00:54:29 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:51341 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaIJEy0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 00:54:26 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iHRJ5oAA+K1Y0Y2uadPhsR6wmrd13DM39dqiL4jj+swHg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <540F7A13.4030802@gmx.de>
+References: <1410163999-26703-1-git-send-email-daniel.baluta@intel.com>
+	<540F7A13.4030802@gmx.de>
+Date: Wed, 10 Sep 2014 07:54:24 +0300
+X-Google-Sender-Auth: pfJJQ2fIBy-jJofxkiLqUDWNXSU
+Message-ID: <CAEnQRZC3=P793sMqtoWS7QmAmrvNxaXUVD8mOYTFh6_m5rg4xw@mail.gmail.com>
+Subject: Re: [PATCH v6] iio: Add Dyna-Image AL3320A ambient light sensor driver
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: Hartmut Knaack <knaack.h@gmx.de>
+Cc: Daniel Baluta <daniel.baluta@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tsechih_Lin@asus.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 10, 2014 at 1:07 AM, Hartmut Knaack <knaack.h@gmx.de> wrote:
+> Daniel Baluta schrieb, Am 08.09.2014 10:13:
+>> Minimal implementation. This driver provides raw illuminance readings.
+>>
+>> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
+>> by Tsechih Lin <Tsechih_Lin@asus.com>
+>>
+>> * https://android.googlesource.com/kernel/msm.git
+>>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+>> ---
+>>
+>> Changes since v5: (reported by Hartmut)
+>>       * fix comments for al3320a_range
+>>       * make sure we always use a valid index in al3320a_scales
+>>
+>> Changes since v4: (reported by Peter)
+>>       * no need to fix endianess when reading raw value
+>>
+>> Changes since v3: (reported by Hartmut and Jonathan)
+>>         * dropped the local store for the range, instead read it when necessary
+>>         * removed wrapper functions
+>>         * added in_illuminance_scale_available attribute
+>>         * fix bug when reading raw value, use i2c_smbus_read_word instead of
+>>           i2c_smbus_read_word_swapped and fix the endianess after read.
+>>         * small coding style fixes
+>>
+>> Changes since v2: (reported by Peter Meerwald)
+>>         * removed definition of DATA_HIGH and SW_RESET as they are not used
+>>         * added a comment to al3320a_get_adc_value() function
+>>         * added thresholds on TODO list
+>>         * small style fixes
+>>
+>> Changes since v1: (reported by Peter Meerwald)
+>>         * used u8 instead of int for passing gain and mean_time
+>>         * used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
+>>         * used devm_iio_device_register instead of iio_device_register
+>>         * small style fixes
+>>
+>>  drivers/iio/light/Kconfig   |  10 ++
+>>  drivers/iio/light/Makefile  |   1 +
+>>  drivers/iio/light/al3320a.c | 232 ++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 243 insertions(+)
+>>  create mode 100644 drivers/iio/light/al3320a.c
+>>
+>> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+>> index bf05ca5..5bea821 100644
+>> --- a/drivers/iio/light/Kconfig
+>> +++ b/drivers/iio/light/Kconfig
+>> @@ -17,6 +17,16 @@ config ADJD_S311
+>>        This driver can also be built as a module.  If so, the module
+>>        will be called adjd_s311.
+>>
+>> +config AL3320A
+>> +     tristate "AL3320A ambient light sensor"
+>> +     depends on I2C
+>> +     help
+>> +      Say Y here if you want to build a driver for the Dyna Image AL3320A
+>> +      ambient light sensor.
+>> +
+>> +      To compile this driver as a module, choose M here: the
+>> +      module will be called al3320a.
+>> +
+>>  config APDS9300
+>>       tristate "APDS9300 ambient light sensor"
+>>       depends on I2C
+>> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+>> index 8b8c09f..47877a3 100644
+>> --- a/drivers/iio/light/Makefile
+>> +++ b/drivers/iio/light/Makefile
+>> @@ -4,6 +4,7 @@
+>>
+>>  # When adding new entries keep the list in alphabetical order
+>>  obj-$(CONFIG_ADJD_S311)              += adjd_s311.o
+>> +obj-$(CONFIG_AL3320A)                += al3320a.o
+>>  obj-$(CONFIG_APDS9300)               += apds9300.o
+>>  obj-$(CONFIG_CM32181)                += cm32181.o
+>>  obj-$(CONFIG_CM36651)                += cm36651.o
+>> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
+>> new file mode 100644
+>> index 0000000..bc6d670
+>> --- /dev/null
+>> +++ b/drivers/iio/light/al3320a.c
+>> @@ -0,0 +1,232 @@
+>> +/*
+>> + * AL3320A - Dyna Image Ambient Light Sensor
+>> + *
+>> + * Copyright (c) 2014, Intel Corporation.
+>> + *
+>> + * This file is subject to the terms and conditions of version 2 of
+>> + * the GNU General Public License.  See the file COPYING in the main
+>> + * directory of this archive for more details.
+>> + *
+>> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
+>> + *
+>> + * TODO: interrupt support, thresholds
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/i2c.h>
+>> +
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +
+>> +#define AL3320A_DRV_NAME "al3320a"
+>> +
+>> +#define AL3320A_REG_CONFIG           0x00
+>> +#define AL3320A_REG_STATUS           0x01
+>> +#define AL3320A_REG_INT                      0x02
+>> +#define AL3320A_REG_WAIT             0x06
+>> +#define AL3320A_REG_CONFIG_RANGE     0x07
+>> +#define AL3320A_REG_PERSIST          0x08
+>> +#define AL3320A_REG_MEAN_TIME                0x09
+>> +#define AL3320A_REG_ADUMMY           0x0A
+>> +#define AL3320A_REG_DATA_LOW         0x22
+>> +
+>> +#define AL3320A_REG_LOW_THRESH_LOW   0x30
+>> +#define AL3320A_REG_LOW_THRESH_HIGH  0x31
+>> +#define AL3320A_REG_HIGH_THRESH_LOW  0x32
+>> +#define AL3320A_REG_HIGH_THRESH_HIGH 0x33
+>> +
+>> +#define AL3320A_CONFIG_DISABLE               0x00
+>> +#define AL3320A_CONFIG_ENABLE                0x01
+>> +
+>> +#define AL3320A_GAIN_SHIFT           1
+>> +#define AL3320A_GAIN_MASK            (BIT(2) | BIT(1))
+>> +
+>> +/* chip params default values */
+>> +#define AL3320A_DEFAULT_MEAN_TIME    4
+>> +#define AL3320A_DEFAULT_WAIT_TIME    0 /* no waiting */
+>> +
+>> +#define AL3320A_SCALE_AVAILABLE "0.512 0.128 0.032 0.01"
+>> +
+>> +enum al3320a_range {
+>> +     AL3320A_RANGE_1, /* 33.28 Klx */
+>> +     AL3320A_RANGE_2, /* 8.32 Klx  */
+>> +     AL3320A_RANGE_3, /* 2.08 Klx  */
+>> +     AL3320A_RANGE_4  /* 0.65 Klx  */
+>> +};
+>> +
+>> +static const int al3320a_scales[][2] = {
+>> +     {0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
+>> +};
+>> +
+>> +struct al3320a_data {
+>> +     struct i2c_client *client;
+>> +};
+>> +
+>> +static const struct iio_chan_spec al3320a_channels[] = {
+>> +     {
+>> +             .type   = IIO_LIGHT,
+>> +             .info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>> +                                   BIT(IIO_CHAN_INFO_SCALE),
+>> +     }
+>> +};
+>> +
+>> +static IIO_CONST_ATTR(in_illuminance_scale_available, AL3320A_SCALE_AVAILABLE);
+>> +
+>> +static struct attribute *al3320a_attributes[] = {
+>> +     &iio_const_attr_in_illuminance_scale_available.dev_attr.attr,
+>> +     NULL,
+>> +};
+>> +
+>> +static const struct attribute_group al3320a_attribute_group = {
+>> +     .attrs = al3320a_attributes,
+>> +};
+>> +
+>> +static int al3320a_init(struct al3320a_data *data)
+>> +{
+>> +     int ret;
+>> +
+>> +     /* power on */
+>> +     ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
+>> +                                     AL3320A_CONFIG_ENABLE);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
+>> +                                     AL3320A_RANGE_3 << AL3320A_GAIN_SHIFT);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
+>> +                                     AL3320A_DEFAULT_MEAN_TIME);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
+>> +                                     AL3320A_DEFAULT_WAIT_TIME);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int al3320a_read_raw(struct iio_dev *indio_dev,
+>> +                         struct iio_chan_spec const *chan, int *val,
+>> +                         int *val2, long mask)
+>> +{
+>> +     struct al3320a_data *data = iio_priv(indio_dev);
+>> +     int ret, i;
+>> +
+>> +     switch (mask) {
+>> +     case IIO_CHAN_INFO_RAW:
+>> +             /*
+>> +              * ALS ADC value is stored in two adjacent registers:
+>> +              * - low byte of output is stored at AL3320A_REG_DATA_LOW
+>> +              * - high byte of output is stored at AL3320A_REG_DATA_LOW + 1
+>> +              */
+>> +             ret = i2c_smbus_read_word_data(data->client,
+>> +                                            AL3320A_REG_DATA_LOW);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +             *val = ret;
+>> +             return IIO_VAL_INT;
+>> +     case IIO_CHAN_INFO_SCALE:
+>> +             ret = i2c_smbus_read_byte_data(data->client,
+>> +                                            AL3320A_REG_CONFIG_RANGE);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +
+>> +             i = (ret & AL3320A_GAIN_MASK) >> AL3320A_GAIN_SHIFT;
+>> +             *val = al3320a_scales[i][0];
+>> +             *val2 = al3320a_scales[i][1];
+> I think there is no real need to introduce i, as it can be replaced by ret.
 
-On Wed, Sep 10, 2014 at 09:09:57AM +0530, Vivek Gautam wrote:
-> On Wed, Sep 10, 2014 at 9:07 AM, Vivek Gautam <gautam.vivek@samsung.com> =
-wrote:
-> > adding Julius here,
->=20
-> i think i had missed adding Julius for this entire series :-(
-> I should be more careful with the CC list in future.
-> Added his chromium id, since that seems to be more active.
->=20
-> >
-> >
-> > On Tue, Sep 9, 2014 at 8:12 PM, Felipe Balbi <balbi@ti.com> wrote:
-> >> On Tue, Sep 09, 2014 at 07:19:50AM +0530, Vivek Gautam wrote:
-> >>> Hi,
-> >>>
-> >>>
-> >>> On Mon, Sep 8, 2014 at 7:14 PM, Felipe Balbi <balbi@ti.com> wrote:
-> >>> > Hi,
-> >>> >
-> >>> > On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
-> >>> >> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wrote:
-> >>> >> > On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
-> >>> >> >> > Don't we have phy_power_on()
-> >>> >> >> > for that ? It looks like you could just as well do this from
-> >>> >> >> > phy_power_on() ?
-> >>> >> >>
-> >>> >> >> No, unfortunately keeping these calibration settings in phy_pow=
-er_on()
-> >>> >> >> doesn't help, since we need to do this after XHCI reset has hap=
-pened.
-> >>> >> >
-> >>> >> > teach xHCI about PHYs ?
-> >>> >>
-> >>> >> sorry i couldn't understand you here.
-> >>> >> Aren't we trying to do the same with Heikki's patch about dwc3 :
-> >>> >> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
-> >>> >>
-> >>> >> and the 2nd patch in this series :
-> >>> >> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
-> >>> >>
-> >>> >> Is there something else that is expected ?
-> >>> >
-> >>> > right, use that to call phy_init() at the right time, then you need=
- to
-> >>> > add a new ->calibrate() method which, likely, will only be used by =
-you
-> >>> > ;-)
-> >>>
-> >>> so you mean, the xhci should itself call phy_init() at a time suitabl=
-e,
-> >>> so that ->calibrate() is not required at all ?
-> >>>
-> >>> i think you meant there - "then you __do not__ need to
-> >>
-> >> right :-)
-> >
-> > alright, i will prepare a patch for the suggested change.
-> >
-> > But AFAI remember we had discussion for this patch in earlier
-> > version, and Julius suggested to use a generic approach for such
-> > change wherein other users in future may be able to use the
-> > facility.
+I know, but I wanted to make clear it that there is an index.
+I will change it in the next version.
 
-right, and what's more generic than adding the support for PHYs straight
-into xHCI ?
-
-What I fear is that we end up opening the doors for every odd
-platform-specific operation to be added to the framework without really
-considering what needs to be done. That would defeat the idea of having
-a generic framework altogether.
-
-cheers
-
---=20
-balbi
-
---d6Gm4EdcadzBjdND
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUD9lIAAoJEIaOsuA1yqREjQQQAKGPe5DdtVF8lgqzyrDml5J+
-2dlaXKlL8/TFUhU/P/hScwU4zc31gOZhNJ0V9fR9p9bhQxWpWXEsepuPy3unk4Sr
-DbSgaVXC3cvS++4pWKsJoRcDeid0C+K++vMlgRqY2mzhY4wYzvtDMjIsf6CQ0fdf
-7PFsap9E0N7Qn/nlzFxV2qLYWdoVygc9639qpHVK+v/HOMRTePfLT7EachY6H6TL
-X04qx414MYyBGi2Xk/RFGHcuzChN6PTMImFoKnCappBc5egOJHpJBZC03aaxxHfB
-nVBQ5tRnxvt5cXNAikqnLIT3m/Ot5ckMPdythjfis1uoXkxYqj+1NkJleDDlZiQC
-goydyPTxCPu+cp/YGTxBIoZIR0iWaEFhvUz5wiuY7+SDTWelQGz/JlcDwzyT2seU
-lOTfdGF3MVGdptkPPeufXlbWJmzIK9E43J7EmdYJdXSSyTgnPd4vvwSFhMw/9Jge
-i12FVH8oNWr5Vanf6Zw+SoLPy3KGwNDEqsBjn5lThgJzh2U9sUpayrgdF3tEVQMm
-sJfVyKoYpxag2aRkVfReCP7Ia/iQogJBViaICefdZ1gor2gRW0ByRYhxYXG/CybR
-nEUAp2iAxYi5VKZxH3MuNFgHRKGxo6YGaIsl/5ls/Nwo9Q9dGKIb8m+j3oANjd3S
-2x5tpmxZl1u937W9AD1Z
-=93B6
------END PGP SIGNATURE-----
-
---d6Gm4EdcadzBjdND--
+thanks,
+Daniel.
