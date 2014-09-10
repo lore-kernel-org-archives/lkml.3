@@ -1,236 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaIJMaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:30:52 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:45623 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaIJMat (ORCPT
+	id S1751432AbaIJMeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:34:00 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58332 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaIJMd6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:30:49 -0400
+	Wed, 10 Sep 2014 08:33:58 -0400
+Date: Wed, 10 Sep 2014 13:33:52 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <guohanjun@huawei.com>
+Cc: "jcm@redhat.com" <jcm@redhat.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+Message-ID: <20140910123352.GA31237@localhost>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org>
+ <20140909162648.GE2910@arm.com>
+ <540F2DCF.1010104@redhat.com>
+ <20140909171541.GD3896@leverpostej>
+ <20140909175010.GF4948@e102568-lin.cambridge.arm.com>
+ <540F4155.4090200@arm.com>
+ <540F4FCF.1090508@redhat.com>
+ <5410326F.8080104@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <714b7551f5a6ea5e721fed705568a39eeae4623b.1410322181.git.joe@perches.com>
-References: <cover.1410322181.git.joe@perches.com>
-	<714b7551f5a6ea5e721fed705568a39eeae4623b.1410322181.git.joe@perches.com>
-Date: Wed, 10 Sep 2014 16:30:48 +0400
-Message-ID: <CALFYKtBsETt-PPmENUtKZuypqMH0rF2+ZOm0Dv0jWn1_yutFhA@mail.gmail.com>
-Subject: Re: [PATCH net-next 2/5] ceph: Convert pr_warning to pr_warn
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, Sage Weil <sage@inktank.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <5410326F.8080104@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 10 Sep 2014 12:33:54.0530 (UTC) FILETIME=[7BED4420:01CFCCF3]
+X-MC-Unique: 114091013335605501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 8:17 AM, Joe Perches <joe@perches.com> wrote:
-> Use the more common pr_warn.
->
-> Other miscellanea:
->
-> o Coalesce formats
-> o Realign arguments
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  net/ceph/ceph_common.c | 15 +++++++++------
->  net/ceph/messenger.c   | 19 ++++++++++---------
->  net/ceph/osd_client.c  | 15 +++++++--------
->  net/ceph/osdmap.c      | 20 ++++++++++----------
->  4 files changed, 36 insertions(+), 33 deletions(-)
->
-> diff --git a/net/ceph/ceph_common.c b/net/ceph/ceph_common.c
-> index 1675021..58fbfe1 100644
-> --- a/net/ceph/ceph_common.c
-> +++ b/net/ceph/ceph_common.c
-> @@ -293,17 +293,20 @@ static int get_secret(struct ceph_crypto_key *dst, const char *name) {
->                 key_err = PTR_ERR(ukey);
->                 switch (key_err) {
->                 case -ENOKEY:
-> -                       pr_warning("ceph: Mount failed due to key not found: %s\n", name);
-> +                       pr_warn("ceph: Mount failed due to key not found: %s\n",
-> +                               name);
->                         break;
->                 case -EKEYEXPIRED:
-> -                       pr_warning("ceph: Mount failed due to expired key: %s\n", name);
-> +                       pr_warn("ceph: Mount failed due to expired key: %s\n",
-> +                               name);
->                         break;
->                 case -EKEYREVOKED:
-> -                       pr_warning("ceph: Mount failed due to revoked key: %s\n", name);
-> +                       pr_warn("ceph: Mount failed due to revoked key: %s\n",
-> +                               name);
->                         break;
->                 default:
-> -                       pr_warning("ceph: Mount failed due to unknown key error"
-> -                              " %d: %s\n", key_err, name);
-> +                       pr_warn("ceph: Mount failed due to unknown key error %d: %s\n",
-> +                               key_err, name);
->                 }
->                 err = -EPERM;
->                 goto out;
-> @@ -433,7 +436,7 @@ ceph_parse_options(char *options, const char *dev_name,
->
->                         /* misc */
->                 case Opt_osdtimeout:
-> -                       pr_warning("ignoring deprecated osdtimeout option\n");
-> +                       pr_warn("ignoring deprecated osdtimeout option\n");
->                         break;
->                 case Opt_osdkeepalivetimeout:
->                         opt->osd_keepalive_timeout = intval;
-> diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-> index b2f571d..a7203be 100644
-> --- a/net/ceph/messenger.c
-> +++ b/net/ceph/messenger.c
-> @@ -1937,11 +1937,11 @@ static int process_banner(struct ceph_connection *con)
->                    sizeof(con->peer_addr)) != 0 &&
->             !(addr_is_blank(&con->actual_peer_addr.in_addr) &&
->               con->actual_peer_addr.nonce == con->peer_addr.nonce)) {
-> -               pr_warning("wrong peer, want %s/%d, got %s/%d\n",
-> -                          ceph_pr_addr(&con->peer_addr.in_addr),
-> -                          (int)le32_to_cpu(con->peer_addr.nonce),
-> -                          ceph_pr_addr(&con->actual_peer_addr.in_addr),
-> -                          (int)le32_to_cpu(con->actual_peer_addr.nonce));
-> +               pr_warn("wrong peer, want %s/%d, got %s/%d\n",
-> +                       ceph_pr_addr(&con->peer_addr.in_addr),
-> +                       (int)le32_to_cpu(con->peer_addr.nonce),
-> +                       ceph_pr_addr(&con->actual_peer_addr.in_addr),
-> +                       (int)le32_to_cpu(con->actual_peer_addr.nonce));
->                 con->error_msg = "wrong peer at address";
->                 return -1;
->         }
-> @@ -2302,7 +2302,7 @@ static int read_partial_message(struct ceph_connection *con)
->
->                 BUG_ON(!con->in_msg ^ skip);
->                 if (con->in_msg && data_len > con->in_msg->data_length) {
-> -                       pr_warning("%s skipping long message (%u > %zd)\n",
-> +                       pr_warn("%s skipping long message (%u > %zd)\n",
->                                 __func__, data_len, con->in_msg->data_length);
->                         ceph_msg_put(con->in_msg);
->                         con->in_msg = NULL;
-> @@ -2712,7 +2712,7 @@ static bool con_sock_closed(struct ceph_connection *con)
->         CASE(OPEN);
->         CASE(STANDBY);
->         default:
-> -               pr_warning("%s con %p unrecognized state %lu\n",
-> +               pr_warn("%s con %p unrecognized state %lu\n",
->                         __func__, con, con->state);
->                 con->error_msg = "unrecognized con state";
->                 BUG();
-> @@ -2828,8 +2828,9 @@ static void con_work(struct work_struct *work)
->   */
->  static void con_fault(struct ceph_connection *con)
->  {
-> -       pr_warning("%s%lld %s %s\n", ENTITY_NAME(con->peer_name),
-> -              ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
-> +       pr_warn("%s%lld %s %s\n",
-> +               ENTITY_NAME(con->peer_name),
-> +               ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
->         dout("fault %p state %lu to peer %s\n",
->              con, con->state, ceph_pr_addr(&con->peer_addr.in_addr));
->
-> diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-> index 30f6faf..8ebb748 100644
-> --- a/net/ceph/osd_client.c
-> +++ b/net/ceph/osd_client.c
-> @@ -1774,8 +1774,8 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
->         }
->         bytes = le32_to_cpu(msg->hdr.data_len);
->         if (payload_len != bytes) {
-> -               pr_warning("sum of op payload lens %d != data_len %d",
-> -                          payload_len, bytes);
-> +               pr_warn("sum of op payload lens %d != data_len %d\n",
-> +                       payload_len, bytes);
->                 goto bad_put;
->         }
->
-> @@ -2797,10 +2797,10 @@ static struct ceph_msg *get_reply(struct ceph_connection *con,
->         ceph_msg_revoke_incoming(req->r_reply);
->
->         if (front_len > req->r_reply->front_alloc_len) {
-> -               pr_warning("get_reply front %d > preallocated %d (%u#%llu)\n",
-> -                          front_len, req->r_reply->front_alloc_len,
-> -                          (unsigned int)con->peer_name.type,
-> -                          le64_to_cpu(con->peer_name.num));
-> +               pr_warn("get_reply front %d > preallocated %d (%u#%llu)\n",
-> +                       front_len, req->r_reply->front_alloc_len,
-> +                       (unsigned int)con->peer_name.type,
-> +                       le64_to_cpu(con->peer_name.num));
->                 m = ceph_msg_new(CEPH_MSG_OSD_OPREPLY, front_len, GFP_NOFS,
->                                  false);
->                 if (!m)
-> @@ -2823,8 +2823,7 @@ static struct ceph_msg *get_reply(struct ceph_connection *con,
->                         if (osd_data->pages &&
->                                 unlikely(osd_data->length < data_len)) {
->
-> -                               pr_warning("tid %lld reply has %d bytes "
-> -                                       "we had only %llu bytes ready\n",
-> +                               pr_warn("tid %lld reply has %d bytes we had only %llu bytes ready\n",
->                                         tid, data_len, osd_data->length);
->                                 *skip = 1;
->                                 ceph_msg_put(m);
-> diff --git a/net/ceph/osdmap.c b/net/ceph/osdmap.c
-> index c547e46..ae5a507 100644
-> --- a/net/ceph/osdmap.c
-> +++ b/net/ceph/osdmap.c
-> @@ -521,11 +521,11 @@ static int decode_pool(void **p, void *end, struct ceph_pg_pool_info *pi)
->         ev = ceph_decode_8(p);  /* encoding version */
->         cv = ceph_decode_8(p); /* compat version */
->         if (ev < 5) {
-> -               pr_warning("got v %d < 5 cv %d of ceph_pg_pool\n", ev, cv);
-> +               pr_warn("got v %d < 5 cv %d of ceph_pg_pool\n", ev, cv);
->                 return -EINVAL;
->         }
->         if (cv > 9) {
-> -               pr_warning("got v %d cv %d > 9 of ceph_pg_pool\n", ev, cv);
-> +               pr_warn("got v %d cv %d > 9 of ceph_pg_pool\n", ev, cv);
->                 return -EINVAL;
->         }
->         len = ceph_decode_32(p);
-> @@ -729,9 +729,9 @@ static int get_osdmap_client_data_v(void **p, void *end,
->
->                 ceph_decode_8_safe(p, end, struct_compat, e_inval);
->                 if (struct_compat > OSDMAP_WRAPPER_COMPAT_VER) {
-> -                       pr_warning("got v %d cv %d > %d of %s ceph_osdmap\n",
-> -                                  struct_v, struct_compat,
-> -                                  OSDMAP_WRAPPER_COMPAT_VER, prefix);
-> +                       pr_warn("got v %d cv %d > %d of %s ceph_osdmap\n",
-> +                               struct_v, struct_compat,
-> +                               OSDMAP_WRAPPER_COMPAT_VER, prefix);
->                         return -EINVAL;
->                 }
->                 *p += 4; /* ignore wrapper struct_len */
-> @@ -739,9 +739,9 @@ static int get_osdmap_client_data_v(void **p, void *end,
->                 ceph_decode_8_safe(p, end, struct_v, e_inval);
->                 ceph_decode_8_safe(p, end, struct_compat, e_inval);
->                 if (struct_compat > OSDMAP_CLIENT_DATA_COMPAT_VER) {
-> -                       pr_warning("got v %d cv %d > %d of %s ceph_osdmap client data\n",
-> -                                  struct_v, struct_compat,
-> -                                  OSDMAP_CLIENT_DATA_COMPAT_VER, prefix);
-> +                       pr_warn("got v %d cv %d > %d of %s ceph_osdmap client data\n",
-> +                               struct_v, struct_compat,
-> +                               OSDMAP_CLIENT_DATA_COMPAT_VER, prefix);
->                         return -EINVAL;
->                 }
->                 *p += 4; /* ignore client data struct_len */
-> @@ -751,8 +751,8 @@ static int get_osdmap_client_data_v(void **p, void *end,
->                 *p -= 1;
->                 ceph_decode_16_safe(p, end, version, e_inval);
->                 if (version < 6) {
-> -                       pr_warning("got v %d < 6 of %s ceph_osdmap\n", version,
-> -                                  prefix);
-> +                       pr_warn("got v %d < 6 of %s ceph_osdmap\n",
-> +                               version, prefix);
->                         return -EINVAL;
->                 }
->
-> --
-> 1.8.1.2.459.gbcd45b4.dirty
+On Wed, Sep 10, 2014 at 12:13:51PM +0100, Hanjun Guo wrote:
+> On 2014/9/10 3:06, Jon Masters wrote:
+> > On 09/09/2014 02:05 PM, Sudeep Holla wrote:
+> >> On 09/09/14 18:50, Lorenzo Pieralisi wrote:
+> >>> On Tue, Sep 09, 2014 at 06:15:41PM +0100, Mark Rutland wrote:
+> >>>> On Tue, Sep 09, 2014 at 05:41:51PM +0100, Jon Masters wrote:
+> >>>>> On 09/09/2014 12:26 PM, Catalin Marinas wrote:
+> >>>>>> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
+> >>>>>>> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
+> >>>>>>> new file mode 100644
+> >>>>>>> index 0000000..3899ee6
+> >>>>>>> --- /dev/null
+> >>>>>>> +++ b/arch/arm64/include/asm/acenv.h
+> >>>>>>> @@ -0,0 +1,18 @@
+> >>>>>>> +/*
+> >>>>>>> + * ARM64 specific ACPICA environments and implementation
+> >>>>>>> + *
+> >>>>>>> + * Copyright (C) 2014, Linaro Ltd.
+> >>>>>>> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
+> >>>>>>> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
+> >>>>>>> + *
+> >>>>>>> + * This program is free software; you can redistribute it and/or modify
+> >>>>>>> + * it under the terms of the GNU General Public License version 2 as
+> >>>>>>> + * published by the Free Software Foundation.
+> >>>>>>> + */
+> >>>>>>> +
+> >>>>>>> +#ifndef _ASM_ACENV_H
+> >>>>>>> +#define _ASM_ACENV_H
+> >>>>>>> +
+> >>>>>>> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
+> >>>>>>
+> >>>>>> Does this mean that it will be supported at some point? Looking at the
+> >>>>>> places where this function is called, I don't really see how this would
+> >>>>>> ever work on ARM. Which means that we add such macro just to be able to
+> >>>>>> compile code that would never be used on arm64. I would rather see the
+> >>>>>> relevant ACPI files only compiled on x86/IA-64 rather than arm64.
+> >>>>>
+> >>>>> That specific cache behavior is a part of e.g. ACPI C3 state support
+> >>>>> (e.g. ACPI5.1 8.1.4 Processor Power State C3).
+> >>>>
+> >>>> Per table 5-35, if neither WBINVD or WBINVD_FLUSH are set in the FADT,
+> >>>> we don't get S1, S2, or S3 states either.
+> >>>>
+> >>>>> As you note, it's not going to work on 64-bit ARM as it does on x86,
+> >>>>> but it's optional to implement C3 and early 64-bit ARM systems should
+> >>>>> not report Wbindv flags in the FADT anyway.
+> >>>>
+> >>>> Unless the arm cache architecture changes, I wouldn't expect any 64-bit
+> >>>> ARM system to set either of the WBINVD flags.
+> >>>>
+> >>>>> They can also set FADT.P_LVL3_LAT > 1000, which has the effect of
+> >>>>> disabling C3 support, while also allowing for use of _CST objects to
+> >>>>> define more flexible C-States later on.
+> >>>>
+> >>>> It sounds like we should be sanity checking these in the arm64 ACPI code
+> >>>> for the moment. I don't want us to discover that current platforms
+> >>>> report the wrong thing only when new platforms come out that might
+> >>>> actually report things correctly.
+> >>>
+> >>> I think that the kernel must ignore most of the stuff mentioned above
+> >>> in HW_REDUCED_ACPI mode. And to be frank I still think that the problem
+> >>> is not even there. The problem is trying to compile code that basically
+> >>> has no defined behaviour - ie it is unspecified - on ARM64, that's what
+> >>> Catalin pointed out.
+> >>>
+> >>> I understand it is compiled in by default on x86, but that's not a reason
+> >>> why we should add empty hooks all over the place to compile code that
+> >>> does not stand a chance to be doing anything sensible apart from
+> >>> returning an error code, in the best case scenario.
+> >>>
+> >>
+> >> I had pointed out this earlier, even if we make it compile there's
+> >> every possibility that it can blow up if some vendor adds S- states
+> >> to their ACPI tables. One clear reason why it could blow up is:
+> >>
+> >> "
+> >>       /* This violates the spec but is required for bug compatibility. */
+> >>       acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+> >> "
+> >>
+> >> I don't think this can ever work on ARM platforms. So better to fix it
+> >> properly.
 
-Looks good.  I'll take it though ceph tree to avoid possible conflicts?
+Agree.
 
-Thanks,
+> > How do you want to proceed? I'm not sure it should be !HW_REDUCED_MODE
+> > for the cache behavior, because an embedded x86 box would still probably
+> > define those, but removing the hooks on ARM may make sense.
+> 
+> As Graeme said in the reply, for sleep we are doing the same thing as
+> ia64 in stubbing out the functions,
 
-                Ilya
+Sorry, that's not really an argument.
+
+> and before that we are trying to remove
+> the hooks on ARM by introducing more stubs and making things more complicated.
+
+I still think you can make things simpler by not compiling the code
+in question because we'll never implement such hooks on arm64, they
+don't make sense from an architecture perspective (whole cache flushing
+with MMU enabled cannot be done).
+
+> I agree that we should rework the ACPI core to make sleep/cache related
+> stuff compatible with ARM, but I think we may not do this in one go, it will
+> need incremental changes over the next couple of years as real hardware
+> starts to appear and we finalise the standards to support this.
+> 
+> Now, as we list in the arm-acpi.txt doc, power management of sleep states
+> and CPU power/frequency control are not well defined in ACPI spec for ARM,
+> we need some time to finalize the standard and then we know how to implement
+> that in a good shape.
+> 
+> ACPI 5.1 already fixed lots missing features for ARM64 and provide the
+> fundamental needs to bring up the basic system for ARM server, power
+> management is not critical at now, so why not fix/implement it later?
+
+I don't have a problem with implementing (rather than fixing) power
+management later, once the ACPI spec covers it. But the point a few of
+us were trying to make is that even when ACPI spec is updated, the
+current power management code and hooks still won't make sense on ARM.
+The best is to avoid compiling it for ARM now and look at refactoring it
+later to accommodate ARM ACPI.
+
+-- 
+Catalin
+
