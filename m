@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaIJS2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:28:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57045 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaIJS2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:28:03 -0400
-Date: Wed, 10 Sep 2014 11:27:12 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Maciej Matraszek <m.matraszek@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct
- generic_pm_domain-s
-Message-ID: <20140910182712.GE14642@kroah.com>
-References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
- <20140910144340.GA17967@kroah.com>
- <1410363493.15593.26.camel@AMDC723>
+	id S1752958AbaIJS2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:28:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8098 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752282AbaIJS2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 14:28:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,500,1406617200"; 
+   d="scan'208";a="601005399"
+Message-ID: <54109845.3050309@intel.com>
+Date: Wed, 10 Sep 2014 11:28:21 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410363493.15593.26.camel@AMDC723>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Boaz Harrosh <boaz@plexistor.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@fb.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org, Toshi Kani <toshi.kani@hp.com>,
+        linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] mm: Let sparse_{add,remove}_one_section receive a
+ node_id
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com> <540F1EC6.4000504@plexistor.com> <540F20AB.4000404@plexistor.com> <540F48BA.2090304@intel.com> <541022DB.9090000@plexistor.com> <541077DF.1060609@intel.com> <5410899C.3030501@plexistor.com>
+In-Reply-To: <5410899C.3030501@plexistor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 05:38:13PM +0200, Maciej Matraszek wrote:
-> Hi Greg,
-> thanks for your reply!
-> 
-> > > +static int __init pm_genpd_debug_init(void)
-> > > +{
-> > > +	struct dentry *d;
-> > > +
-> > > +	pm_genpd_debugfs_dir = debugfs_create_dir("pm_genpd", NULL);
-> > > +
-> > > +	/* No debugfs */
-> > > +	if (IS_ERR(pm_genpd_debugfs_dir))
-> > > +		return PTR_ERR(pm_genpd_debugfs_dir);
-> > 
-> > You shouldn't care at all, just do this check:
-> > 
-> > > +	if (!pm_genpd_debugfs_dir)
-> > > +		return -ENOMEM;
-> > 
-> > And all will be fine, because:
-> > 
-> > > +	d = debugfs_create_file("pm_genpd_summary", S_IRUGO,
-> > > +			pm_genpd_debugfs_dir, NULL, &pm_genpd_summary_fops);
-> > 
-> > That call will resolve away to nothing if debugfs is not enabled, and it
-> > doesn't make much sense to do anything with an "error" of no debugfs.
-> 
-> Great! I'll fix this bizarre double check.
-> 
-> > 
-> > > +	if (!d)
-> > > +		return -ENOMEM;
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +late_initcall(pm_genpd_debug_init);
-> > > +#endif /* CONFIG_PM_ADVANCED_DEBUG */
-> > 
-> > No tear-down of the debugfs files on shutdown?
-> 
-> In drivers/clk/clk.c, there is no tear-down of debugfs files paired
-> with clk_debug_init(), same with wakeup_sources_debugfs_init() from
-> drivers/base/power/wakeup.c. On the other hand, some subsystems
-> perform it. What would you prefer?
+On 09/10/2014 10:25 AM, Boaz Harrosh wrote:
+> Yes the block_allocator of the pmem-FS always holds the final REF on this
+> page, as long as there is valid data on this block. Even cross boots, the
+> mount code re-initializes references. The only internal state that frees
+> these blocks is truncate, which only then return these pages to the block
+> allocator, all this is common practice in filesystems so the page-ref on
+> these blocks only ever drops to zero after they loose all visibility. And
+> yes the block allocator uses a special code to drop the count to zero
+> not using put_page().
 
-In my quest for symmetry I prefer to see files you add to be removed at
-the proper time. :)
+OK, so what happens when a page is truncated out of a file and this
+"last" block reference is dropped while a get_user_pages() still has a
+reference?
 
-thanks,
+> On 09/10/2014 07:10 PM, Dave Hansen wrote:
+>> Does the fs support mmap()?
+>>
+> No!
+> 
+> Yes the FS supports mmap, but through the DAX patchset. Please see
+> Matthew's DAX patchset how he implements mmap without using pages
+> at all, direct PFN to virtual_addr. So these pages do not get exposed
+> to the top of the FS.
+> 
+> My FS uses his technics exactly only when it wants to spill over to
+> slower device it will use these pages copy-less.
 
-greg k-h
+>From my perspective, DAX is complicated, but it is necessary because we
+don't have a 'struct page'.  You're saying that even if we pay the cost
+of a 'struct page' for the memory, we still don't get the benefit of
+having it like getting rid of this DAX stuff?
+
+Also, about not having a zone for these pages.  Do you intend to support
+32-bit systems?  If so, I believe you will require the kmap() family of
+functions to map the pages in order to copy data in and out.  kmap()
+currently requires knowing the zone of the page.
