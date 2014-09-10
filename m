@@ -1,145 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaIJBqt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 21:46:49 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:64930 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623AbaIJBqp (ORCPT
+	id S1751637AbaIJBxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 21:53:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35875 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaIJBxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 21:46:45 -0400
-Message-ID: <540FAD13.9030502@huawei.com>
-Date: Wed, 10 Sep 2014 09:44:51 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 9 Sep 2014 21:53:01 -0400
+Message-ID: <540FAEFC.9050102@codeaurora.org>
+Date: Tue, 09 Sep 2014 18:53:00 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-CC: Rob Herring <robherring2@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Will Deacon" <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "Suravee Suthikulanit" <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Device Tree ML" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI
- domain_nr
-References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com> <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com> <20140908145459.GO27864@e106497-lin.cambridge.arm.com> <CAL_JsqJdGKDVwJOpPp19OkVPGzR7Zqv3nh+ONHHaYnPLYTYoYg@mail.gmail.com> <20140908155931.GP27864@e106497-lin.cambridge.arm.com> <540E960D.7080408@huawei.com> <20140909084621.GS27864@e106497-lin.cambridge.arm.com> <540EC8CB.7010106@huawei.com> <20140909141122.GY27864@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20140909141122.GY27864@e106497-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Mike Turquette <mturquette@linaro.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+CC: shawn.guo@freescale.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 2/9] clk: Move all drivers to use internal API
+References: <1410271329-26637-1-git-send-email-tomeu.vizoso@collabora.com> <1410271497-27148-1-git-send-email-tomeu.vizoso@collabora.com> <20140909191205.19023.61366@quantum> <20140909192503.19023.33476@quantum>
+In-Reply-To: <20140909192503.19023.33476@quantum>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.540FAD25.0079,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 00588597c07062a49489c0bbfbc5ea0e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> OK. Sorry, I have one last question, because domain will be used to calculate the address used to
->> access PCI hardware config registers. So if DTS file doesn't report the domain, how do we know
->> we would access the right registers when we use the auto increment domain vaule ?
-> 
-> That's a good question and sides with Arnd's suggestion to try to mandate the presence of the PCI
-> domain in the DTS. However, by grepping through the source code, it looks like the architectures
-> that use the domain number for reading config registers (x86-based) are non-DT architectures,
-> while DT-aware arches seem to ignore the domain number except when printing out messages. Is that
-> another confirmation that most DT-aware architectures have only run with domain_nr = 0?
-> 
+On 09/09/14 12:25, Mike Turquette wrote:
+>
+> I'm starting to get nervous about this Coccinelle script... Seems like a
+> lot of things are slipping through.
+>
 
-Arnd's suggestion is make sense to me, thanks for Bjorn's detailed explanation, now I know domain_nr
-is purely internal to kernel in DT-aware platform, it's not needed when access PCI config space.
+Do we need to make this huge invasive change to every clock driver? If
+we gave every clk_hw instance it's own private struct clk pointer at
+registration time and also created a pointer for the parents of the
+clk_hw instance then we could use that pointer throughout the clock
+provider drivers. This way we don't have to change any ops signatures
+and we don't have to go through every clock provider and fix things up.
+The good news is we already have this via hw->clk. We could also make
+this an opt-in behavior where the clock provider could register clkdev
+lookups and clock providers the old way or the new way. The new way
+would be a different registration function and a different clk_src_get
+function:
 
-Thanks!
-Yijing.
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 6dec0b306336..e82b3b987f63 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -573,6 +573,10 @@ int of_clk_add_provider(struct device_node *np,
+                        struct clk *(*clk_src_get)(struct of_phandle_args *args,
+                                                   void *data),
+                        void *data);
++int of_clk_add_provider_hw(struct device_node *np,
++                       struct clk_hw *(*clk_src_get)(struct of_phandle_args *args,
++                                                  void *data),
++                       void *data);
+ void of_clk_del_provider(struct device_node *np);
+ struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
+                                  void *data);
 
-> 
->> Has there a mechanism to make sure system can access the correct registers by the domain ?
-> 
-> Not as such if you look with x86 glasses. With the exception of powerpc all other architecures
-> seem to happily assume domain_nr = 0 and ignore it in the computation of configuration registers
-> offsets.
-> 
-> Best regards,
-> Liviu
-> 
->>
->> Thanks!
->> Yijing.
->>
->>>
->>> Best regards,
->>> Liviu
->>>
->>>>
->>>> PCI get domain by ACPI "_SEG" in IA64(drivers/acpi/pci_root.c)
->>>> ......
->>>> 	status = acpi_evaluate_integer(handle, METHOD_NAME__SEG, NULL,
->>>> 				       &segment);
->>>> 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
->>>> 		dev_err(&device->dev,  "can't evaluate _SEG\n");
->>>> 		result = -ENODEV;
->>>> 		goto end;
->>>> 	}
->>>> .......
->>>>
->>>> Thanks!
->>>> Yijing.
->>>>
->>>>>
->>>>>> This function
->>>>>> is just a weird mixture of data retrieval and allocation. I think you
->>>>>> need to separate it into 2 functions.
->>>>>
->>>>> It is meant to do allocation with the retrieval being a short-cut (or fine
->>>>> control if you want).
->>>>>
->>>>> I need to think a bit more for a better solution.
->>>>>
->>>>> Best regards,
->>>>> Liviu
->>>>>
->>>>>>
->>>>>> Rob
->>>>>>
->>>>>
->>>>
->>>>
->>>> -- 
->>>> Thanks!
->>>> Yijing
->>>>
->>>>
->>>
->>
->>
->> -- 
->> Thanks!
->> Yijing
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
+and add a new member to struct of_clk_provider for the new clk_src_get
+prototype. Then the clkdev framework wouldn't even need to know in the
+OF case that the struct clk pointer is dynamically allocated. If we
+really want to pass that con_id and dev_id stuff down into the
+allocation layer we can always change the of_clk_get_from_provider()
+functions to take more arguments. Note that clk_register() stays the
+same here because a clock pointer is always allocated at registration time.
 
+Then we have clkdev_add() and friends to deal with in clkdev. Honestly,
+the current patches make it really ugly inside clkdev.c with all those
+#ifdefs and clk_core_t typedef. clk_get() and clk_put() are pretty much
+different functions depending on if the ccf is used or not, so why even
+combine the two together? The fundamental change here is that the clkdev
+APIs are struct clk focused and they rely on the struct clk pointer
+existing when the lookup is registered. We'd like to change that and
+have clk_get() generate the struct clk on the fly. We can support both
+at the same time if we do something like:
+
+diff --git a/include/linux/clkdev.h b/include/linux/clkdev.h
+index 94bad77eeb4a..5f8af5ec2565 100644
+--- a/include/linux/clkdev.h
++++ b/include/linux/clkdev.h
+@@ -15,6 +15,7 @@
+ #include <asm/clkdev.h>
+ 
+ struct clk;
++struct clk_hw;
+ struct device;
+ 
+ struct clk_lookup {
+@@ -22,6 +23,9 @@ struct clk_lookup {
+        const char              *dev_id;
+        const char              *con_id;
+        struct clk              *clk;
++#ifdef CONFIG_COMMON_CLK
++       struct clk_hw           *hw;
++#endif
+ };
+ 
+ #define CLKDEV_INIT(d, n, c)   \
+@@ -41,6 +45,9 @@ void clkdev_add_table(struct clk_lookup *, size_t);
+ int clk_add_alias(const char *, const char *, char *, struct device *);
+ 
+ int clk_register_clkdev(struct clk *, const char *, const char *, ...);
++#ifdef CONFIG_COMMON_CLK
++int clk_register_clkdev_hw(struct clk_hw *, const char *, const char *, ...);
++#endif
+ int clk_register_clkdevs(struct clk *, struct clk_lookup *, size_t);
+ 
+
+
+And then have the clkdev code look for a struct clk_hw pointer in the
+lookup. If such a pointer exists, call the ccf function to generate a
+struct clk on the fly. Otherwise return the clk pointer that's there.
+
+I must have missed something, perhaps statically allocated struct clk
+pointers exist somewhere? Anyway, it seems possible to make this much
+less invasive. I would think that we want to have struct clk used in the
+clk_ops because that allows us to do per-user constraints for clocks
+within the tree, instead of just supporting constraints at the user
+boundary (basically we want every clk_hw to have a vote too).
 
 -- 
-Thanks!
-Yijing
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
