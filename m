@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaIJQLf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:11:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:38465 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092AbaIJQLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:11:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
-   d="scan'208";a="597520369"
-Date: Wed, 10 Sep 2014 12:09:15 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC] Making more drivers compile on x86
-Message-ID: <20140910160915.GG27730@localhost.localdomain>
+	id S1752635AbaIJQMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:12:03 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:41703 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224AbaIJQMA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 12:12:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <541071CF.9030901@gmail.com>
+References: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>
+	<541071CF.9030901@gmail.com>
+Date: Wed, 10 Sep 2014 12:11:58 -0400
+Message-ID: <CAJ5Y-eYRiq8ZFuKQHR0cDBWQfp7eEQLVfzvXNHpxOwEFQZeEeg@mail.gmail.com>
+Subject: Re: [RFC v1 0/6] CPPC as a PID backend
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "rwells@codeaurora.org" <rwells@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10 September 2014 11:44, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+> Hi Ashwin,
 
-In Chicago, there was a brief discussion about making more drivers
-compile on architectures where there was no possible way they could run
-(since the relevant hardware does not exist for those platforms).
+Hi Dirk,
 
-I have recently needed to compile-test axonram and dcssblk, which rely
-on hardware unique to powerpc and s390, respectively.  As promised in
-the discussion, here is the patch I use to do that.  Since it was for
-my own purposes, I didn't do anything fancy like wrap the faked parts
-in #ifdef COMPILE_TEST.
+>
+> I think the CPPC based driver should be a separate driver.
+>
+> We made the conscious decision to not use any of the ACPI mechanisms
+> to enumerate or control P state selection.  Experience over the years
+> has shown that the quality/accuracy of the BIOS/ACPI implementations
+> vary widely across OEM's and platform types from a single OEM. Features
+> that always work on a server platform from a given OEM may not work or
+> provide bad information on client platforms for example.
+>
+> Another reason for doing intel_pstate was to be able to land intel specific
+> features and fixes without breaking other architectures as the power
+> management capabilities of the platform evolve. As processors that support
+> Hardware P states (HWP) as described in section 14.4 of the current SDM
+> come into the market intel_pstate will change to not doing much other
+> than enabling HWP and providing an interface to forward user configuration
+> requests to the processor if the user chooses to enable HWP otherwise the
+> current mechanisms will be used.  This is why the intel_pstate sysfs
+> interface is the way it is to be able to map cleanly to HWP and provide
+> an abstract interface going forward.
+>
+> Having separate drivers allows the system integrator/user to select the
+> most appropriate mechanism for their system.
+>
+> --Dirk
 
-Hopefully this will be useful grist for the mill.  Looking the patch
-over, if I were proposing something to be merged, I think I'd make much
-more use of prototypes, and less of macros.  It would probably also make
-sense to put extmem in asm-generic, rather than replicate it for each
-architecture that wants to have a more "full" compile test.
+With the current split I think you will still be able to maintain
+Intel specific changes for the future in the backend driver. The PID
+algorithm seems platform independent anyway and the PID knobs are
+exported to userspace for platform specific tuning. The Intel backend
+driver should be unaffected by the CPPC (ACPI) backend. We can also
+make them mutually exclusive at runtime.
 
---- /dev/null	2013-12-18 16:49:55.714859099 -0500
-+++ b/arch/x86/include/asm/extmem.h	2013-12-19 16:49:44.000000000 -0500
-@@ -0,0 +1,10 @@
-+#define SEGMENT_EXCLUSIVE 1
-+#define SEG_TYPE_ER 2
-+#define SEGMENT_SHARED 3
-+#define SEG_TYPE_SR 4
-+#define SEG_TYPE_SC 5
-+#define segment_warning(x, y) do { } while (0)
-+int segment_load(char *x, int y, unsigned long *z, unsigned long *a);
-+#define segment_unload(x) do { } while (0)
-+#define segment_modify_shared(x, y) 0
-+#define segment_save(x) do { } while (0)
-diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-index fbeb06e..dc6191f 100644
---- a/arch/x86/include/asm/prom.h
-+++ b/arch/x86/include/asm/prom.h
-@@ -37,6 +37,11 @@ static inline void x86_dtb_init(void) { }
- #define of_ioapic 0
- #endif
- 
-+#define _PAGE_NO_CACHE 1
-+#define NO_IRQ 2
-+extern int of_address_to_resource(void *x, int y, struct resource *z);
-+#define irq_of_parse_and_map(x, y) 0
-+
- extern char cmd_line[COMMAND_LINE_SIZE];
- 
- #endif /* __ASSEMBLY__ */
+Or are you suggesting using PID + CPPC as another driver? IIUC, that
+would lead to a lot of redundancy.
 
+Cheers,
+Ashwin
