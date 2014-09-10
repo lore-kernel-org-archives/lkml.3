@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413AbaIJMlD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:41:03 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:46472 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaIJMk7 (ORCPT
+	id S1751140AbaIJMnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:43:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37073 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750734AbaIJMnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:40:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <7h1trkkc49.fsf@deeprootsystems.com>
-References: <1410183344-14756-1-git-send-email-geert+renesas@glider.be>
-	<1410183344-14756-5-git-send-email-geert+renesas@glider.be>
-	<7h1trkkc49.fsf@deeprootsystems.com>
-Date: Wed, 10 Sep 2014 14:40:57 +0200
-X-Google-Sender-Auth: RvVBJ_s4AUjovcVmSKIq9gLpbJU
-Message-ID: <CAMuHMdUcaGNQWmfS4U=XhksscuWh6hk8gA8fOpaUwxSmChDbiQ@mail.gmail.com>
-Subject: Re: [PATCH/RFC 4/5] ARM: shmobile: R-Mobile: Add DT support for PM domains
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+	Wed, 10 Sep 2014 08:43:19 -0400
+Date: Wed, 10 Sep 2014 14:43:15 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] rtc: at91sam9: add DT bindings documentation
+Message-ID: <20140910144315.240621e6@bbrezillon>
+In-Reply-To: <20140910121424.GG2974@localhost>
+References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
+	<20140910121424.GG2974@localhost>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Hi Johan,
 
-On Tue, Sep 9, 2014 at 6:11 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> +static int r8a7740_pd_a4s_suspend(void)
->> +{
->> +     /*
->> +      * The A4S domain contains the CPU core and therefore it should
->> +      * only be turned off if the CPU is in use.
->> +      */
->> +     return -EBUSY;
->> +}
->
->
-> Do you have plans to use pm_genpd_attach_cpuidle() for this eventually,
-> maybe by checking if the enclosing node is a CPU?  If not, are there
-> other plans to handle idle for the power domains that contain CPUs?
+On Wed, 10 Sep 2014 14:14:24 +0200
+Johan Hovold <johan@kernel.org> wrote:
 
-Yes, the plan is to add more power saving features, and use DT topology
-analysis to get rid of the hardcoded domain logic.
+> On Wed, Sep 03, 2014 at 10:45:34AM +0200, Boris BREZILLON wrote:
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt   | 20 ++++++++++++++++++++
+> >  1 file changed, 20 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+> > new file mode 100644
+> > index 0000000..9ca455f
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+> > @@ -0,0 +1,20 @@
+> > +Atmel AT91SAM9260 Real Time Timer
+> > +
+> > +Required properties:
+> > +- compatible: should be: "atmel,at91sam9260-rtt"
+> > +- reg: should contain 2 memory regions
+> > +  * the first one encodes the memory region of the RTT controller
+> > +  * the second one encodes the GPBR (General Purpose Backup Resgisters)
+> > +    memory region used to store the current time
+> > +- interrupts: rtc alarm/event interrupt
+> > +- clocks: should contain one clock pointing the the slow clk
+> > +
+> > +Example:
+> > +
+> > +rtc@fffffe00 {
+> > +	compatible = "atmel,at91sam9260-rtt";
+> > +	reg = <0xfffffd20 0x10
+> > +	       0xfffffd50 0x4>;
+> > +	interrupts = <1 4 7>;
+> > +	clocks = <&clk32k>;
+> > +};
+> 
+> This does not describe the hardware, but rather a specific software
+> configuration.
+> 
+> The RTT is first of all not an RTC (although it can be used as one in a
+> specific software configuration). And the second register resource above
+> is not an RTT register, but a general-purpose backup register could be
+> used for other purposes (which register to use is currently configurable
+> for legacy booting using CONFIG_RTC_DRV_AT91SAM9_GPBR).
+> 
+> This was discussed in the thread where I posted an RFC for this last
+> year (which you linked to in your original submission thread), but no
+> conclusion was reached:
+> 
+> 	http://www.spinics.net/lists/arm-kernel/msg236292.html
 
-Gr{oetje,eeting}s,
+Yes, I read this thread.
 
-                        Geert
+Please, lets just find a solution, even if it's not a perfect one,
+because the situation is unacceptable.
+We're missing this features since the move to DT because we were not
+able to agree on a DT binding...
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I know DT bindings are supposed to represent HW parts and not what
+they're used for or how they're configured, but do you see any other
+real usage of the RTT block ?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+BTW, I don't care which binding/implementation is chosen but we need to
+sort this out!
+
+Best Regards,
+
+Boris
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
