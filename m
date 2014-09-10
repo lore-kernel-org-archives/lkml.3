@@ -1,128 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaIJTGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:06:44 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18586 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903AbaIJTGn (ORCPT
+	id S1753350AbaIJTHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:07:00 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44593 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753273AbaIJTG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:06:43 -0400
-Message-ID: <5410A118.9080803@oracle.com>
-Date: Wed, 10 Sep 2014 15:06:00 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: mm: BUG in unmap_page_range
-References: <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com> <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de> <540F7D42.1020402@oracle.com> <alpine.LSU.2.11.1409091903390.10989@eggly.anvils> <20140910124732.GT17501@suse.de>
-In-Reply-To: <20140910124732.GT17501@suse.de>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 10 Sep 2014 15:06:57 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2 04/14] serial: core: Privatize tty->hw_stopped
+Date: Wed, 10 Sep 2014 15:06:26 -0400
+Message-Id: <1410375996-4693-5-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410375996-4693-1-git-send-email-peter@hurleysoftware.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+ <1410375996-4693-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 08:47 AM, Mel Gorman wrote:
-> migrate: debug patch to try identify race between migration completion and mprotect
-> 
-> A migration entry is marked as write if pte_write was true at the
-> time the entry was created. The VMA protections are not double checked
-> when migration entries are being removed but mprotect itself will mark
-> write-migration-entries as read to avoid problems. It means we potentially
-> take a spurious fault to mark these ptes write again but otherwise it's
-> harmless.  Still, one dump indicates that this situation can actually
-> happen so this debugging patch spits out a warning if the situation occurs
-> and hopefully the resulting warning will contain a clue as to how exactly
-> it happens
-> 
-> Not-signed-off
-> ---
->  mm/migrate.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 09d489c..631725c 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -146,8 +146,16 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
->  	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
->  	if (pte_swp_soft_dirty(*ptep))
->  		pte = pte_mksoft_dirty(pte);
-> -	if (is_write_migration_entry(entry))
-> -		pte = pte_mkwrite(pte);
-> +	if (is_write_migration_entry(entry)) {
-> +		/*
-> +		 * This WARN_ON_ONCE is temporary for the purposes of seeing if
-> +		 * it's a case encountered by trinity in Sasha's testing
-> +		 */
-> +		if (!(vma->vm_flags & (VM_WRITE)))
-> +			WARN_ON_ONCE(1);
-> +		else
-> +			pte = pte_mkwrite(pte);
-> +	}
->  #ifdef CONFIG_HUGETLB_PAGE
->  	if (PageHuge(new)) {
->  		pte = pte_mkhuge(pte);
+tty->hw_stopped is not used by the tty core and is thread-unsafe;
+hw_stopped is a member of a bitfield whose fields are updated
+non-atomically and no lock is suitable for serializing updates.
 
-I seem to have hit this warning:
+Replace serial core usage of tty->hw_stopped with uport->hw_stopped.
+Use int storage which works around Alpha EV4/5 non-atomic byte storage,
+since uart_port uses different locks to protect certain fields within the
+structure.
 
-[ 4782.617806] WARNING: CPU: 10 PID: 21180 at mm/migrate.c:155 remove_migration_pte+0x3f7/0x420()
-[ 4782.619315] Modules linked in:
-[ 4782.622189]
-[ 4782.622501] CPU: 10 PID: 21180 Comm: trinity-main Tainted: G        W      3.17.0-rc4-next-20140910-sasha-00032-g6825fb5-dirty #1137
-[ 4782.624344]  0000000000000009 ffff8800193eb770 ffffffffa04c742a 0000000000000000
-[ 4782.627801]  ffff8800193eb7a8 ffffffff9d16e55d 00007f2458d89000 ffff880120959600
-[ 4782.629283]  ffff88012b02c000 ffffea002abeab00 ffff88063118da90 ffff8800193eb7b8
-[ 4782.631353] Call Trace:
-[ 4782.633789]  [<ffffffffa04c742a>] dump_stack+0x4e/0x7a
-[ 4782.634314]  [<ffffffff9d16e55d>] warn_slowpath_common+0x7d/0xa0
-[ 4782.634877]  [<ffffffff9d16e63a>] warn_slowpath_null+0x1a/0x20
-[ 4782.635430]  [<ffffffff9d315487>] remove_migration_pte+0x3f7/0x420
-[ 4782.636042]  [<ffffffff9d2e99cf>] rmap_walk+0xef/0x380
-[ 4782.636544]  [<ffffffff9d3147f1>] remove_migration_ptes+0x41/0x50
-[ 4782.637130]  [<ffffffff9d315090>] ? __migration_entry_wait.isra.24+0x160/0x160
-[ 4782.639928]  [<ffffffff9d3154b0>] ? remove_migration_pte+0x420/0x420
-[ 4782.640616]  [<ffffffff9d31671b>] move_to_new_page+0x16b/0x230
-[ 4782.641251]  [<ffffffff9d2e9e8c>] ? try_to_unmap+0x6c/0xf0
-[ 4782.643950]  [<ffffffff9d2e88a0>] ? try_to_unmap_nonlinear+0x5c0/0x5c0
-[ 4782.644690]  [<ffffffff9d2e70a0>] ? invalid_migration_vma+0x30/0x30
-[ 4782.645273]  [<ffffffff9d2e82e0>] ? page_remove_rmap+0x320/0x320
-[ 4782.646072]  [<ffffffff9d31717c>] migrate_pages+0x85c/0x930
-[ 4782.646701]  [<ffffffff9d2d0e20>] ? isolate_freepages_block+0x410/0x410
-[ 4782.647407]  [<ffffffff9d2cfa60>] ? arch_local_save_flags+0x30/0x30
-[ 4782.648114]  [<ffffffff9d2d1803>] compact_zone+0x4d3/0x8a0
-[ 4782.650157]  [<ffffffff9d2d1c2f>] compact_zone_order+0x5f/0xa0
-[ 4782.651014]  [<ffffffff9d2d1f87>] try_to_compact_pages+0x127/0x2f0
-[ 4782.651656]  [<ffffffff9d2b0c98>] __alloc_pages_direct_compact+0x68/0x200
-[ 4782.652313]  [<ffffffff9d2b17ca>] __alloc_pages_nodemask+0x99a/0xd90
-[ 4782.652916]  [<ffffffff9d300a1c>] alloc_pages_vma+0x13c/0x270
-[ 4782.653618]  [<ffffffff9d31d914>] ? do_huge_pmd_wp_page+0x494/0xc90
-[ 4782.654487]  [<ffffffff9d31d914>] do_huge_pmd_wp_page+0x494/0xc90
-[ 4782.656045]  [<ffffffff9d320d20>] ? __mem_cgroup_count_vm_event+0xd0/0x240
-[ 4782.657089]  [<ffffffff9d2dcb7d>] handle_mm_fault+0x8bd/0xc50
-[ 4782.660931]  [<ffffffff9d1d26e6>] ? __lock_is_held+0x56/0x80
-[ 4782.662695]  [<ffffffff9d0c7bc7>] __do_page_fault+0x1b7/0x660
-[ 4782.663259]  [<ffffffff9d1cdc5e>] ? put_lock_stats.isra.13+0xe/0x30
-[ 4782.663851]  [<ffffffff9d1abf41>] ? vtime_account_user+0x91/0xa0
-[ 4782.664419]  [<ffffffff9d2a2c35>] ? context_tracking_user_exit+0xb5/0x1b0
-[ 4782.665119]  [<ffffffff9db6e103>] ? __this_cpu_preempt_check+0x13/0x20
-[ 4782.665969]  [<ffffffff9d1ce2e2>] ? trace_hardirqs_off_caller+0xe2/0x1b0
-[ 4782.666634]  [<ffffffff9d0c8141>] trace_do_page_fault+0x51/0x2b0
-[ 4782.667257]  [<ffffffff9d0bee83>] do_async_page_fault+0x63/0xd0
-[ 4782.667871]  [<ffffffffa0511018>] async_page_fault+0x28/0x30
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/serial/bfin_uart.c   | 14 +++++++-------
+ drivers/tty/serial/serial_core.c | 28 +++++++++++++---------------
+ include/linux/serial_core.h      |  3 ++-
+ 3 files changed, 22 insertions(+), 23 deletions(-)
 
-Although it wasn't followed by anything else, and I've seen the original issue
-getting triggered without this WARN showing up, so it seems like a different,
-unrelated issue?
+diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
+index dec0fd7..fc9fbf3 100644
+--- a/drivers/tty/serial/bfin_uart.c
++++ b/drivers/tty/serial/bfin_uart.c
+@@ -108,22 +108,22 @@ static void bfin_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ static irqreturn_t bfin_serial_mctrl_cts_int(int irq, void *dev_id)
+ {
+ 	struct bfin_serial_port *uart = dev_id;
+-	unsigned int status = bfin_serial_get_mctrl(&uart->port);
++	struct uart_port *uport = &uart->port;
++	unsigned int status = bfin_serial_get_mctrl(uport);
+ #ifdef CONFIG_SERIAL_BFIN_HARD_CTSRTS
+-	struct tty_struct *tty = uart->port.state->port.tty;
+ 
+ 	UART_CLEAR_SCTS(uart);
+-	if (tty->hw_stopped) {
++	if (uport->hw_stopped) {
+ 		if (status) {
+-			tty->hw_stopped = 0;
+-			uart_write_wakeup(&uart->port);
++			uport->hw_stopped = 0;
++			uart_write_wakeup(uport);
+ 		}
+ 	} else {
+ 		if (!status)
+-			tty->hw_stopped = 1;
++			uport->hw_stopped = 1;
+ 	}
+ #endif
+-	uart_handle_cts_change(&uart->port, status & TIOCM_CTS);
++	uart_handle_cts_change(uport, status & TIOCM_CTS);
+ 
+ 	return IRQ_HANDLED;
+ }
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 3c62b3f..1f52a7d 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -94,7 +94,7 @@ static void __uart_start(struct tty_struct *tty)
+ 	struct uart_state *state = tty->driver_data;
+ 	struct uart_port *port = state->uart_port;
+ 
+-	if (!tty->stopped && !tty->hw_stopped)
++	if (!uart_tx_stopped(port))
+ 		port->ops->start_tx(port);
+ }
+ 
+@@ -180,10 +180,11 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+ 		}
+ 
+ 		spin_lock_irq(&uport->lock);
+-		if (uart_cts_enabled(uport)) {
+-			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+-				tty->hw_stopped = 1;
+-		}
++		if (uart_cts_enabled(uport) &&
++		    !(uport->ops->get_mctrl(uport) & TIOCM_CTS))
++			uport->hw_stopped = 1;
++		else
++			uport->hw_stopped = 0;
+ 		spin_unlock_irq(&uport->lock);
+ 	}
+ 
+@@ -944,7 +945,7 @@ static int uart_get_lsr_info(struct tty_struct *tty,
+ 	 */
+ 	if (uport->x_char ||
+ 	    ((uart_circ_chars_pending(&state->xmit) > 0) &&
+-	     !tty->stopped && !tty->hw_stopped))
++	     !uart_tx_stopped(uport)))
+ 		result &= ~TIOCSER_TEMT;
+ 
+ 	return put_user(result, value);
+@@ -1290,7 +1291,7 @@ static void uart_set_termios(struct tty_struct *tty,
+ 
+ 	/*
+ 	 * If the port is doing h/w assisted flow control, do nothing.
+-	 * We assume that tty->hw_stopped has never been set.
++	 * We assume that port->hw_stopped has never been set.
+ 	 */
+ 	if (uport->flags & UPF_HARD_FLOW)
+ 		return;
+@@ -1298,7 +1299,7 @@ static void uart_set_termios(struct tty_struct *tty,
+ 	/* Handle turning off CRTSCTS */
+ 	if ((old_termios->c_cflag & CRTSCTS) && !(cflag & CRTSCTS)) {
+ 		spin_lock_irqsave(&uport->lock, flags);
+-		tty->hw_stopped = 0;
++		uport->hw_stopped = 0;
+ 		__uart_start(tty);
+ 		spin_unlock_irqrestore(&uport->lock, flags);
+ 	}
+@@ -1306,7 +1307,7 @@ static void uart_set_termios(struct tty_struct *tty,
+ 	else if (!(old_termios->c_cflag & CRTSCTS) && (cflag & CRTSCTS)) {
+ 		spin_lock_irqsave(&uport->lock, flags);
+ 		if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS)) {
+-			tty->hw_stopped = 1;
++			uport->hw_stopped = 1;
+ 			uport->ops->stop_tx(uport);
+ 		}
+ 		spin_unlock_irqrestore(&uport->lock, flags);
+@@ -2776,23 +2777,20 @@ EXPORT_SYMBOL_GPL(uart_handle_dcd_change);
+  */
+ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+ {
+-	struct tty_port *port = &uport->state->port;
+-	struct tty_struct *tty = port->tty;
+-
+ 	lockdep_assert_held_once(&uport->lock);
+ 
+ 	uport->icount.cts++;
+ 
+ 	if (uart_cts_enabled(uport)) {
+-		if (tty->hw_stopped) {
++		if (uport->hw_stopped) {
+ 			if (status) {
+-				tty->hw_stopped = 0;
++				uport->hw_stopped = 0;
+ 				uport->ops->start_tx(uport);
+ 				uart_write_wakeup(uport);
+ 			}
+ 		} else {
+ 			if (!status) {
+-				tty->hw_stopped = 1;
++				uport->hw_stopped = 1;
+ 				uport->ops->stop_tx(uport);
+ 			}
+ 		}
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index bc70048..677a97c 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -195,6 +195,7 @@ struct uart_port {
+ #define UPSTAT_CTS_ENABLE	((__force upstat_t) (1 << 0))
+ #define UPSTAT_DCD_ENABLE	((__force upstat_t) (1 << 1))
+ 
++	int			hw_stopped;		/* sw-assisted CTS flow state */
+ 	unsigned int		mctrl;			/* current modem ctrl settings */
+ 	unsigned int		timeout;		/* character-based timeout */
+ 	unsigned int		type;			/* port type */
+@@ -353,7 +354,7 @@ int uart_resume_port(struct uart_driver *reg, struct uart_port *port);
+ static inline int uart_tx_stopped(struct uart_port *port)
+ {
+ 	struct tty_struct *tty = port->state->port.tty;
+-	if(tty->stopped || tty->hw_stopped)
++	if (tty->stopped || port->hw_stopped)
+ 		return 1;
+ 	return 0;
+ }
+-- 
+2.1.0
 
-
-Thanks,
-Sasha
