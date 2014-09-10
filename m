@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaIJPiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:38:20 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:13887 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbaIJPiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:38:18 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-c0-5410706685bd
-Message-id: <1410363493.15593.26.camel@AMDC723>
-Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct
- generic_pm_domain-s
-From: Maciej Matraszek <m.matraszek@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Wed, 10 Sep 2014 17:38:13 +0200
-In-reply-to: <20140910144340.GA17967@kroah.com>
-References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
- <20140910144340.GA17967@kroah.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/xK7ppBQIhBhPazSw2zljPatG8eD2b
-	xesXhhazpuxlsri8aw6bxefeI4wWd08dZbM4c/oSqwOHx+I9L5k89s9dw+6x5Wo7i0ffllWM
-	HitWf2f3+LxJLoAtissmJTUnsyy1SN8ugStjzaNHLAW3uCrWHTrO2MC4kaOLkZNDQsBEomtd
-	BxuELSZx4d56IJuLQ0hgKaPEvf/z2SGcT4wS0+YtAqviFdCXmN50kRXEFhYIk/jTvxnMZhMw
-	kNj8r58FxBYRMJboPzsLrJlZoIdJ4u+2w2DNLAKqEhuuvmECsTmBBs1vnAjWLCSQI/H4ZzMz
-	iM0soC4xad4iIJsD6CRlicZ+N4i9ghI/Jt9jgSiRl9i85i3zBEaBWUg6ZiEpm4WkbAEj8ypG
-	0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkMD/soNx8TGrQ4wCHIxKPLyFF/lDhFgTy4orcw8x
-	SnAwK4nwNjkIhAjxpiRWVqUW5ccXleakFh9iZOLglGpgnF93P8jOzzX93ZQt6vmxLafPibwp
-	PTP5zzm9pS4hCfJMDU3ZMu/rrh+8mZLP+4pF5e/99NbTF84tvxRnEV6dk5bUKe8yV92y2XbH
-	8zc/7hzR+ezg+FSbaf2ZiJ+zl8wRj8v4YnNQK2PDdndt/8c/futN47TvTNyW6hL64IPInENM
-	OxXt1rNsUmIpzkg01GIuKk4EABQyNmhaAgAA
+	id S1752088AbaIJPjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:39:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751190AbaIJPjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 11:39:01 -0400
+Date: Wed, 10 Sep 2014 11:38:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Baoquan He <bhe@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
+ relocations
+Message-ID: <20140910153847.GC3771@redhat.com>
+References: <1409926097-2101-2-git-send-email-bhe@redhat.com>
+ <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
+ <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
+ <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
+ <20140909192813.GB9435@redhat.com>
+ <20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
+ <20140910143019.GA3771@redhat.com>
+ <CAGXu5jLTd=xvhjiSGsp5FiT7w0cSctZF2KPOvfU=1_R8Up-97w@mail.gmail.com>
+ <20140910150525.GB7898@redhat.com>
+ <20140910152716.GD1887@dhcp-17-102.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910152716.GD1887@dhcp-17-102.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-thanks for your reply!
+On Wed, Sep 10, 2014 at 11:27:16PM +0800, Baoquan He wrote:
+> On 09/10/14 at 11:05am, Vivek Goyal wrote:
+> > On Wed, Sep 10, 2014 at 07:41:38AM -0700, Kees Cook wrote:
+> > > On Wed, Sep 10, 2014 at 7:30 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > > So I would suggest that test and repost the other patch with proper changelog
+> > > > and that might be sufficient for now. Only other thing we will need is
+> > > > Kees's patch for avoiding setup data regions in kaslr.
+> > > 
+> > > If someone can confirm that my patch works, I can request x86 pull it.
+> > > 
+> > > Currently living here:
+> > > https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=kaslr
+> > > 
+> > 
+> > Bao,
+> > 
+> > Can you please test Kees's patch and provide feedback.
+> 
+> I can only use a trick by setting the E820_MAX to a very small number,
+> say 10 in kexec-tools. Then extra memory regions will be added into
+> setup data. Sufficient real test can't be taken by me since lack of
+> machine.
 
-> > +static int __init pm_genpd_debug_init(void)
-> > +{
-> > +	struct dentry *d;
-> > +
-> > +	pm_genpd_debugfs_dir = debugfs_create_dir("pm_genpd", NULL);
-> > +
-> > +	/* No debugfs */
-> > +	if (IS_ERR(pm_genpd_debugfs_dir))
-> > +		return PTR_ERR(pm_genpd_debugfs_dir);
-> 
-> You shouldn't care at all, just do this check:
-> 
-> > +	if (!pm_genpd_debugfs_dir)
-> > +		return -ENOMEM;
-> 
-> And all will be fine, because:
-> 
-> > +	d = debugfs_create_file("pm_genpd_summary", S_IRUGO,
-> > +			pm_genpd_debugfs_dir, NULL, &pm_genpd_summary_fops);
-> 
-> That call will resolve away to nothing if debugfs is not enabled, and it
-> doesn't make much sense to do anything with an "error" of no debugfs.
+I think modifying kexec-tools test should be good. Also we prepare
+an kexec specific data blob for EFI machines and pass to second
+kernel through setup_data. We can put some printk and make sure
+this patch avoids that region. 
 
-Great! I'll fix this bizarre double check.
-
-> 
-> > +	if (!d)
-> > +		return -ENOMEM;
-> > +
-> > +	return 0;
-> > +}
-> > +late_initcall(pm_genpd_debug_init);
-> > +#endif /* CONFIG_PM_ADVANCED_DEBUG */
-> 
-> No tear-down of the debugfs files on shutdown?
-
-In drivers/clk/clk.c, there is no tear-down of debugfs files paired
-with clk_debug_init(), same with wakeup_sources_debugfs_init() from
-drivers/base/power/wakeup.c. On the other hand, some subsystems
-perform it. What would you prefer?
-
-
-> 
-> thanks,
-> 
-> greg k-h
-
-Thanks,
---
-Maciej Matraszek
-Samsung R&D Institute Poland
-Samsung Electronics
-
+Thanks
+Vivek
