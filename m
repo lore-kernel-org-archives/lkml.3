@@ -1,112 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaIJPbT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:31:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38540 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751344AbaIJPbS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:31:18 -0400
-Date: Wed, 10 Sep 2014 17:31:14 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] rtc: at91sam9: add DT bindings documentation
-Message-ID: <20140910173114.593dd132@bbrezillon>
-In-Reply-To: <20140910150702.GK2974@localhost>
-References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
-	<20140910121424.GG2974@localhost>
-	<20140910152019.111c4c01@bbrezillon>
-	<20140910150702.GK2974@localhost>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752396AbaIJPba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:31:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22342 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752306AbaIJPb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 11:31:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
+   d="scan'208";a="476628562"
+Date: Wed, 10 Sep 2014 11:23:37 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        willy@linux.intel.com
+Subject: Re: [PATCH v10 09/21] Replace the XIP page fault handler with the
+ DAX page fault handler
+Message-ID: <20140910152337.GF27730@localhost.localdomain>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+ <4d71d7a13bec3acf703e26bf6b0c7da21a71ebe0.1409110741.git.matthew.r.wilcox@intel.com>
+ <20140903074724.GE20473@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140903074724.GE20473@dastard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014 17:07:02 +0200
-Johan Hovold <johan@kernel.org> wrote:
-
-> On Wed, Sep 10, 2014 at 03:20:19PM +0200, Boris BREZILLON wrote:
-> > On Wed, 10 Sep 2014 14:14:24 +0200
-> > Johan Hovold <johan@kernel.org> wrote:
+On Wed, Sep 03, 2014 at 05:47:24PM +1000, Dave Chinner wrote:
+> > +	error = get_block(inode, block, &bh, 0);
+> > +	if (!error && (bh.b_size < PAGE_SIZE))
+> > +		error = -EIO;
+> > +	if (error)
+> > +		goto unlock_page;
 > 
-> > > This does not describe the hardware, but rather a specific software
-> > > configuration.
-> > > 
-> > > The RTT is first of all not an RTC (although it can be used as one in a
-> > > specific software configuration). And the second register resource above
-> > > is not an RTT register, but a general-purpose backup register could be
-> > > used for other purposes (which register to use is currently configurable
-> > > for legacy booting using CONFIG_RTC_DRV_AT91SAM9_GPBR).
-> > 
-> > We could use a syscon device (which exposes a regmap) for the GPBR
-> > block.
-> > 
-> > rtc@ffffff20 {
+> page fault into unwritten region, returns buffer_unwritten(bh) ==
+> true. Hence buffer_written(bh) is false, and we take this branch:
 > 
-> rtt
+> > +	if (!buffer_written(&bh) && !vmf->cow_page) {
+> > +		if (vmf->flags & FAULT_FLAG_WRITE) {
+> > +			error = get_block(inode, block, &bh, 1);
 > 
-> > 	compatible = "atmel,at91sam9260-rtt";
-> > 	reg = <0xfffffd20 0x10>;
-> > 	interrupts = <1 4 7>;
-> > 	clocks = <&clk32k>;
-> > 	atmel,time-reg = <&gpbr 0x0>;
-> > };
-> > 
-> > gpbr: syscon@fffffd50 {
-> > 	compatible = "atmel,at91sam9260-gpbr", "syscon";
-> > 	reg = <0xfffffd50 0x10>;
-> > 	
-> > };
+> Exactly what are you expecting to happen here? We don't do
+> allocation because there are already unwritten blocks over this
+> extent, and so bh will be unchanged when returning. i.e. it will
+> still be mapping an unwritten extent.
+
+I was expecting calling get_block() on an unwritten extent to convert it
+to a written extent.  Your suggestion below of using b_end_io() to do that
+is a better idea.
+
+So this should be:
+
+	if (!buffer_mapped(&bh) && !vmf->cow_page) {
+
+... right?
+
+> dax: add IO completion callback for page faults
 > 
-> Yes, this essentially what I suggested in the thread (and my last reply)
-> and relying on syscon rather than a custom driver seems like a good
-> idea. It would allow early access to the registers too with the recently
-> proposed changes. It would not guarantee any kind of exclusivity,
-> though, but I guess that's tolerable?
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> When a page fault drops into a hole, it needs to allocate an extent.
+> Filesystems may allocate unwritten extents so that the underlying
+> contents are not exposed until data is written to the extent. In
+> that case, we need an io completion callback to run once the blocks
+> have been zeroed to indicate that it is safe for the filesystem to
+> mark those blocks written without exposing stale data in the event
+> of a crash.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/dax.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/dax.c b/fs/dax.c
+> index 96c4fed..387ca78 100644
+> --- a/fs/dax.c
+> +++ b/fs/dax.c
+> @@ -306,6 +306,7 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+>  	memset(&bh, 0, sizeof(bh));
+>  	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - blkbits);
+>  	bh.b_size = PAGE_SIZE;
+> +	bh.b_end_io = NULL;
 
-Yep, that's one of the concern I had with the syscon/regmap
-approach :-(, but I guess I'll give this solution a try and post a new
-version of this series ;-).
+Given the above memset, I don't think we need to explicitly set b_end_io
+to NULL.
 
-Can we just leave the rtt as an rtc problem on the side for now and bind
-it to the rtc-at91sam9 driver.
+>   repeat:
+>  	page = find_get_page(mapping, vmf->pgoff);
+> @@ -364,8 +365,12 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+>  		return VM_FAULT_LOCKED;
+>  	}
+>  
+> -	if (buffer_unwritten(&bh) || buffer_new(&bh))
+> +	if (buffer_unwritten(&bh) || buffer_new(&bh)) {
+> +		/* XXX: errors zeroing the blocks are propagated how? */
+>  		dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
 
-If we ever decide to add a new driver using the RTT for another purpose
-we will still be able to reference the RTT block like this (and keep
-the existing rtt node definition):
+That's a great question.  I think we need to segfault here.
 
+> +		if (bh.b_end_io)
+> +			bh.b_end_io(&bh, 1);
+> +	}
 
-rtt-based-rtc {
-	compatible = "atmel,rtt-rtc";
-	atmel,rtt = <&rtt>;
-	atmel,time-reg = <&gpbr 0x0>;
-}
+I think ext4 is going to need to set b_end_io too.  Right now, it uses the
+dio_iodone_t to convert unwritten extents to written extents, but we don't
+have (and I don't think we should have) a kiocb for page faults.
 
-rtt-based-xdev {
-	compatible = "atmel,rtt-xdev";
-	atmel,rtt = <&rtt>;
-	/*...*/
-}
-
-Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+So, if it's OK with you, I'm going to fold this patch into version 11 and
+add your Reviewed-by to it.
