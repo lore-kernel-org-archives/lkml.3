@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaIJLQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:16:29 -0400
-Received: from mail-bn1bn0108.outbound.protection.outlook.com ([157.56.110.108]:58647
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751973AbaIJLQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 07:16:27 -0400
-Date: Wed, 10 Sep 2014 19:22:59 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-spi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <marex@denx.de>,
-        <shawn.guo@linaro.org>, <Frank.Li@freescale.com>
-Subject: Re: [PATCH v5] spi: spi-imx: add DMA support
-Message-ID: <20140910112258.GA30794@Robin-OptiPlex-780>
-References: <1410312604-31949-1-git-send-email-b38343@freescale.com>
- <20140910102105.GR2601@sirena.org.uk>
+	id S1751873AbaIJLZc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:25:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31153 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338AbaIJLZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 07:25:30 -0400
+Message-ID: <54103506.1030501@redhat.com>
+Date: Wed, 10 Sep 2014 13:24:54 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140910102105.GR2601@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(24454002)(51704005)(189002)(199003)(54356999)(26826002)(31966008)(21056001)(50466002)(102836001)(81542001)(74502001)(76176999)(77982001)(83072002)(20776003)(83322001)(99396002)(64706001)(33656002)(107046002)(85306004)(81156004)(50986999)(87936001)(47776003)(80022001)(110136001)(106466001)(85852003)(79102001)(33716001)(4396001)(6806004)(84676001)(23726002)(95666004)(104016003)(69596002)(92726001)(44976005)(97756001)(46102001)(81342001)(97736003)(74662001)(90102001)(105606002)(92566001)(76482001)(83506001)(46406003)(68736004)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB491;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033054F29A
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 net-next 11/12] net: filter: move eBPF instruction
+ macros
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com> <1410325808-3657-12-git-send-email-ast@plumgrid.com>
+In-Reply-To: <1410325808-3657-12-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 11:21:05AM +0100, Mark Brown wrote:
-> On Wed, Sep 10, 2014 at 09:30:04AM +0800, Robin Gong wrote:
-> 
-> > +static bool spi_imx_can_dma(struct spi_master *master, struct spi_device *spi,
-> > +			 struct spi_transfer *transfer)
-> > +{
-> > +	struct spi_imx_data *spi_imx = spi_master_get_devdata(master);
-> > +
-> > +	if (spi_imx->dma_is_inited && (transfer->len > spi_imx->rx_wml)
-> > +	    && (transfer->len > spi_imx->tx_wml))
-> > +		spi_imx->usedma = true;
-> > +	else
-> > +		spi_imx->usedma = false;
-> > +
-> > +	return spi_imx->usedma;
-> > +}
-> 
-> This isn't going to work, anything that looks at the usedma flag will
-> see the result of the last thing that was checked which may or may not
-> be the transfer that it's handling.  The driver should check to see if
-> the core mapped the transfer for DMA.
-Yes, you're right. I should use "transfer->tx_sg->sgl == NULL" or
-"transfer->rx_sg->sgl == NULL" instead of usedma flag in driver, right?
+On 09/10/2014 07:10 AM, Alexei Starovoitov wrote:
+> move instruction macros (like BPF_MOV64_REG or BPF_ALU32_IMM)
+> from linux/filter.h into uapi/linux/bpf.h
+> so that userspace programs can use them.
+>
+> verifier testsuite (in later patches) will be using them.
+>
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 
+I don't think we need this commit at all. These macros are not really
+part of the ABI and we should expose __as less as possible__, otherwise
+we won't be able to alter them anymore. Plus, based on your previous
+argumentation regarding the header file expose, we also won't be able
+to add any new macros anymore since you could run into name collisions.
+
+Anyway, I don't see a reason why a e.g. central user space eBPF library
+cannot live with, for example, a private copy of these helper macros or
+whatever it wants to define by itself.
+
+I know in classic BPF there's BPF_STMT() and BPF_JUMP() but it's much
+less complicated than eBPF and less likely to changes.
