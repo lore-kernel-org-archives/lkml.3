@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaIIXzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 19:55:42 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:42638 "EHLO mail.anarazel.de"
+	id S1752287AbaIJADa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 20:03:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:65346 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648AbaIIXzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 19:55:40 -0400
-Date: Wed, 10 Sep 2014 01:55:34 +0200
-From: Andres Freund <andres@anarazel.de>
-To: Cong Wang <cwang@twopensource.com>
-Cc: "Alexander Y. Fomichev" <git.user@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Macvlan WARNiNGS about duplicate sysfs filenames (Was [GIT]
- Networking)
-Message-ID: <20140909235534.GH24649@awork2.anarazel.de>
-References: <20140907.164109.1944849896872238507.davem@davemloft.net>
- <20140908212514.GA2348@awork2.anarazel.de>
- <CAHA+R7NCwhMaWX0Mhr7AqHH4x5RZ6TEEiJB7906yVzQouXD3Lg@mail.gmail.com>
- <20140909234806.GG24649@awork2.anarazel.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909234806.GG24649@awork2.anarazel.de>
+	id S1751437AbaIJAD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 20:03:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,494,1406617200"; 
+   d="scan'208";a="588890337"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Fall back to vmalloc for BTS buffer allocation
+Date: Tue,  9 Sep 2014 17:03:21 -0700
+Message-Id: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-10 01:48:06 +0200, Andres Freund wrote:
-> On 2014-09-09 15:43:55 -0700, Cong Wang wrote:
-> > On Mon, Sep 8, 2014 at 2:25 PM, Andres Freund <andres@anarazel.de> wrote:
-> > > Hi,
-> > >
-> > > (don't have netdev archived, thus answering here, sorry)
-> > >
-> > > On 2014-09-07 16:41:09 -0700, David Miller wrote:
-> > >> Alexander Y. Fomichev (1):
-> > >>       net: prevent of emerging cross-namespace symlinks
-> > >
-> > 
-> > Since you are quoting this change, are you saying it causes
-> > the following kernel warning?
-> 
-> I thought it might be a likely candidate; but I'm not sure at all. I'll
-> verify it as soon as I can reboot the machine a couple of times (end of
-> week-ish).
-> 
-> > > I'm seeing WARNINGs like:
-> > > [ 1005.269134] ------------[ cut here ]------------
-> > > [ 1005.269148] WARNING: CPU: 6 PID: 4213 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
-> > > [ 1005.269150] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0/upper_mv-eth0'
-> > 
-> > 
-> > Is there a network device named upper_mv-eth0 existed in your system
-> > before you created macvlan?
-> 
-> No, there wasn't any. Afaics, the sequence is:
-> 1) macvlan mv-eth0 is created in global namespace
-> 2) mv-eth0 is moved (by systemd-nsspawn) into a new network
->    namespace. Leaving a dangling symlink in the host namespace
-> /devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0/upper_mv-eth0 pointing toward
-> ../mv-eth0
-> which doesn't exist in the external namespace. The new namespace seems
-> to have broken 'lower_bond0' symlink as well
-> 
-> This seems to be the case (and probably the actual root cause) in
-> slightly earlier kernels as well.
-> What changed seems to be that:
-> 3) macvlan mv-eth0 is destroyed in the namespace (potentially while
->    tearing it down)
-> 4) Now there's a broken symlink that doesn't make sense in any namespace
-> 5) mv-eth0 can't be created anew
-> 
-> It seems that 3-5 didn't happen that way on older kernels. The most
-> recent where it's not persistently broken is 3.16.0-rc7-00007 -
-> 31dab719f. The oldest where I know it's reproducible is
-> 3.17.0-rc4-andres-00135-g35af256.
+From: Andi Kleen <ak@linux.intel.com>
 
-I've reproduced the problem on another machine where it's perfectly
-reproducible (except being about mv-bond0). After reverting only the
-aforementioned 4c75431ac352063 it works again.
-As I said above, I'm not sure whether 4c75431ac352063 is the actual
-culprit, but it certainly made the problem visible. How are these
-upper_$if/lower_$if supposed to behave when the macvlan and the
-underlying device are in differing namespaces?
+On my workstation the order 4 BTS buffer allocation fails regularly
+after the system has been up for some time due to memory
+fragmentation.
 
-Greetings,
+BTS is virtual memory, so we can just fall back to vmalloc
+instead of failing.
 
-Andres Freund
+Do this here.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 9dc4199..3cf5b74 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -312,8 +312,11 @@ static int alloc_bts_buffer(int cpu)
+ 
+ 	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL | __GFP_NOWARN, node);
+ 	if (unlikely(!buffer)) {
+-		WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
+-		return -ENOMEM;
++		buffer = vmalloc_node(BTS_BUFFER_SIZE, node);
++		if (!buffer) {
++			WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
++			return -ENOMEM;
++		}
+ 	}
+ 
+ 	max = BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
+@@ -336,7 +339,7 @@ static void release_bts_buffer(int cpu)
+ 	if (!ds || !x86_pmu.bts)
+ 		return;
+ 
+-	kfree((void *)(unsigned long)ds->bts_buffer_base);
++	kvfree((void *)(unsigned long)ds->bts_buffer_base);
+ 	ds->bts_buffer_base = 0;
+ }
+ 
+-- 
+1.9.3
+
