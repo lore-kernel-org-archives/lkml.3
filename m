@@ -1,195 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaIJOK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:10:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38628 "EHLO mail.kernel.org"
+	id S1752293AbaIJOKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:10:36 -0400
+Received: from mga14.intel.com ([192.55.52.115]:43680 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552AbaIJOKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:10:23 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 10/14] perf evlist: Introduce poll method for common code idiom
-Date: Wed, 10 Sep 2014 11:08:45 -0300
-Message-Id: <1410358129-9965-11-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410358129-9965-1-git-send-email-acme@kernel.org>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+	id S1752221AbaIJOKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:10:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
+   d="scan'208";a="589215221"
+From: kan.liang@intel.com
+To: a.p.zijlstra@chello.nl, eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        acme@kernel.org, ak@linux.intel.com, kan.liang@intel.com
+Subject: [PATCH V5 00/16] perf, x86: Haswell LBR call stack support
+Date: Wed, 10 Sep 2014 10:08:57 -0400
+Message-Id: <1410358153-421-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Kan Liang <kan.liang@intel.com>
 
-Since we have access two evlist members in all these poll calls, provide
-a helper.
+(The Email and patch date of last post isn't correct,
+so re-post to fix the time.)
+(Re-post the haswell LBR call stack patch on behalf of Yan, Zheng.
+The patch set is rebased on tip.git commit ID 8b5df2f.
+I've tested them on my Haswell platform.)
 
-This will also help to make the patch introducing the pollfd class more
-clear, as the evlist specific uses will be hiden away
-perf_evlist__poll().
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-hizx410uqouefj52jujubv2y@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c               | 2 +-
- tools/perf/builtin-top.c                  | 4 ++--
- tools/perf/builtin-trace.c                | 2 +-
- tools/perf/tests/open-syscall-tp-fields.c | 2 +-
- tools/perf/tests/perf-record.c            | 2 +-
- tools/perf/tests/task-exit.c              | 2 +-
- tools/perf/util/evlist.c                  | 5 +++++
- tools/perf/util/evlist.h                  | 2 ++
- tools/perf/util/python.c                  | 2 +-
- 9 files changed, 15 insertions(+), 8 deletions(-)
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index b87708ce09c9..aac86600b89e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -459,7 +459,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 		if (hits == rec->samples) {
- 			if (done)
- 				break;
--			err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
-+			err = perf_evlist__poll(rec->evlist, -1);
- 			/*
- 			 * Propagate error, only if there's any. Ignore positive
- 			 * number of returned events and interrupt error.
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 9848e270b92c..ef7c808c8ce2 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -964,7 +964,7 @@ static int __cmd_top(struct perf_top *top)
-                 perf_evlist__enable(top->evlist);
- 
- 	/* Wait for a minimal set of events before starting the snapshot */
--	poll(top->evlist->pollfd, top->evlist->nr_fds, 100);
-+	perf_evlist__poll(top->evlist, 100);
- 
- 	perf_top__mmap_read(top);
- 
-@@ -991,7 +991,7 @@ static int __cmd_top(struct perf_top *top)
- 		perf_top__mmap_read(top);
- 
- 		if (hits == top->samples)
--			ret = poll(top->evlist->pollfd, top->evlist->nr_fds, 100);
-+			ret = perf_evlist__poll(top->evlist, 100);
- 	}
- 
- 	ret = 0;
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 09d4bc44215e..970aa0297697 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2171,7 +2171,7 @@ next_event:
- 	if (trace->nr_events == before) {
- 		int timeout = done ? 100 : -1;
- 
--		if (poll(evlist->pollfd, evlist->nr_fds, timeout) > 0 &&
-+		if (perf_evlist__poll(evlist, timeout) > 0 &&
- 		    perf_evlist__filter_pollfd(evlist, POLLERR | POLLHUP) > 0)
- 			goto again;
- 	} else {
-diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
-index 922bdb627950..127dcae0b760 100644
---- a/tools/perf/tests/open-syscall-tp-fields.c
-+++ b/tools/perf/tests/open-syscall-tp-fields.c
-@@ -105,7 +105,7 @@ int test__syscall_open_tp_fields(void)
- 		}
- 
- 		if (nr_events == before)
--			poll(evlist->pollfd, evlist->nr_fds, 10);
-+			perf_evlist__poll(evlist, 10);
- 
- 		if (++nr_polls > 5) {
- 			pr_debug("%s: no events!\n", __func__);
-diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
-index 2ce753c1db63..7a228a2a070b 100644
---- a/tools/perf/tests/perf-record.c
-+++ b/tools/perf/tests/perf-record.c
-@@ -268,7 +268,7 @@ int test__PERF_RECORD(void)
- 		 * perf_event_attr.wakeup_events, just PERF_EVENT_SAMPLE does.
- 		 */
- 		if (total_events == before && false)
--			poll(evlist->pollfd, evlist->nr_fds, -1);
-+			perf_evlist__poll(evlist, -1);
- 
- 		sleep(1);
- 		if (++wakeups > 5) {
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
-index 87522f01c7ad..3a8fedef83bc 100644
---- a/tools/perf/tests/task-exit.c
-+++ b/tools/perf/tests/task-exit.c
-@@ -105,7 +105,7 @@ retry:
- 	}
- 
- 	if (!exited || !nr_exit) {
--		poll(evlist->pollfd, evlist->nr_fds, -1);
-+		perf_evlist__poll(evlist, -1);
- 		goto retry;
- 	}
- 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index bcf157c8a9da..5ff3c667542f 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -475,6 +475,11 @@ int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mas
- 	return nr_fds;
- }
- 
-+int perf_evlist__poll(struct perf_evlist *evlist, int timeout)
-+{
-+	return poll(evlist->pollfd, evlist->nr_fds, timeout);
-+}
-+
- static void perf_evlist__id_hash(struct perf_evlist *evlist,
- 				 struct perf_evsel *evsel,
- 				 int cpu, int thread, u64 id)
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index bbc2fd01b5c5..d7e99b67c94f 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -87,6 +87,8 @@ int perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
- int perf_evlist__alloc_pollfd(struct perf_evlist *evlist);
- int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask);
- 
-+int perf_evlist__poll(struct perf_evlist *evlist, int timeout);
-+
- struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
- 
- struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 12aa9b0d0ba1..4472f8be8e35 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -736,7 +736,7 @@ static PyObject *pyrf_evlist__poll(struct pyrf_evlist *pevlist,
- 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", kwlist, &timeout))
- 		return NULL;
- 
--	n = poll(evlist->pollfd, evlist->nr_fds, timeout);
-+	n = perf_evlist__poll(evlist, timeout);
- 	if (n < 0) {
- 		PyErr_SetFromErrno(PyExc_OSError);
- 		return NULL;
+When profiling bc(1) on Fedora 19:
+echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph fp bc -l < cmd
+If this feature is enabled, perf report output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
+If this feature is disabled, perf report output looks like:
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are captured
+
+Changes since v1
+ - split change into more patches
+ - introduce context switch callback and use it to flush LBR
+ - use the context switch callback to save/restore LBR
+ - dynamic allocate memory area for storing LBR stack, always switch the
+   memory area during context switch
+ - disable this feature by default
+ - more description in change logs
+
+Changes since v2
+ - don't use xchg to switch PMU specific data
+ - remove nr_branch_stack from struct perf_event_context
+ - simplify the save/restore LBR stack logical
+ - remove unnecessary 'has_branch_stack -> needs_branch_stack'
+   conversion
+ - more description in change logs
+
+Changes since v3
+ - remove sysfs attribute file that disable this feature
+
+Changes since v4
+ - re-organize code that save/resotre LBR stack
+ - allocate pmu specific data when it's needed
+ - update code comments
+
+Yan, Zheng (16):
+  perf, x86: Reduce lbr_sel_map size
+  perf, core: introduce pmu context switch callback
+  perf, x86: use context switch callback to flush LBR stack
+  perf, x86: Basic Haswell LBR call stack support
+  perf, core: pmu specific data for perf task context
+  perf, core: always switch pmu specific data during context switch
+  perf, x86: allocate space for storing LBR stack
+  perf, x86: track number of events that use LBR callstack
+  perf, x86: Save/resotre LBR stack during context switch
+  perf, core: simplify need branch stack check
+  perf, core: Pass perf_sample_data to perf_callchain()
+  perf, x86: use LBR call stack to get user callchain
+  perf, x86: re-organize code that implicitly enables LBR/PEBS
+  perf, x86: enable LBR callstack when recording callchain
+  perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack  
+      mode
+  perf, x86: Discard zero length call entries in LBR call stack
+
+ arch/arm/kernel/perf_event.c               |   4 +-
+ arch/powerpc/perf/callchain.c              |   4 +-
+ arch/sparc/kernel/perf_event.c             |   4 +-
+ arch/x86/kernel/cpu/perf_event.c           | 120 +++++++----
+ arch/x86/kernel/cpu/perf_event.h           |  28 ++-
+ arch/x86/kernel/cpu/perf_event_intel.c     |  38 +---
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 316 ++++++++++++++++++++++-------
+ include/linux/perf_event.h                 |  26 ++-
+ include/uapi/linux/perf_event.h            |  49 +++--
+ kernel/events/callchain.c                  |   8 +-
+ kernel/events/core.c                       | 182 +++++++++--------
+ kernel/events/internal.h                   |   3 +-
+ 12 files changed, 528 insertions(+), 254 deletions(-)
+
 -- 
-1.9.3
+1.8.3.2
 
