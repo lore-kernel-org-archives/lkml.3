@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaIJFYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 01:24:08 -0400
-Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:18800
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750805AbaIJFYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 01:24:07 -0400
-Date: Wed, 10 Sep 2014 13:16:16 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-CC: <kernel@pengutronix.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Frank.Li@freescale.com>
-Subject: Re: [PATCH v1] ARM: dts: imx6dl: disable dma support for spi on
- i.mx6dl
-Message-ID: <20140910051615.GA29006@Robin-OptiPlex-780>
-References: <1410312816-32171-1-git-send-email-b38343@freescale.com>
- <20140910032128.GD18566@dragon>
+	id S1751451AbaIJFYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 01:24:54 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:35819 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaIJFYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 01:24:52 -0400
+Date: Tue, 9 Sep 2014 22:24:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Konstantin Ryabitsev <konstantin@linuxfoundation.org>,
+        webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux kernels with LongTerm Support (LTS) VS. End-Of-Life [EOL]
+Message-ID: <20140910052448.GA26888@roeck-us.net>
+References: <CA+icZUXwwvAesGkqGkC+-AHMzLrFz3QtYb03LXdob9AKGY8dKg@mail.gmail.com>
+ <20140909122753.GA3314@gmail.com>
+ <CA+icZUWKsPzZ0rC_11zNnE9-D4MLO7TjvakKyT5P1u=uqbqZDA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140910032128.GD18566@dragon>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+icZUWKsPzZ0rC_11zNnE9-D4MLO7TjvakKyT5P1u=uqbqZDA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(24454002)(189002)(51704005)(199003)(92566001)(92726001)(50466002)(4396001)(107046002)(81342001)(81156004)(33656002)(95666004)(76482001)(50986999)(76176999)(46406003)(84676001)(20776003)(64706001)(23726002)(47776003)(54356999)(87936001)(575784001)(79102001)(99396002)(110136001)(102836001)(81542001)(26826002)(83506001)(80022001)(104016003)(77982001)(97736003)(106466001)(44976005)(83322001)(19580395003)(97756001)(33716001)(85306004)(69596002)(19580405001)(6806004)(85852003)(21056001)(74502001)(105606002)(31966008)(90102001)(74662001)(83072002)(68736004)(46102001)(32563001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB339;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB339;
-X-Forefront-PRVS: 033054F29A
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 11:21:30AM +0800, Shawn Guo wrote:
-> On Wed, Sep 10, 2014 at 09:33:36AM +0800, Robin Gong wrote:
-> > There is one weird data in rxfifo after one full rx/tx transfer
-> > done sometimes. It looks a design issue and hard to workaround
-> > totally, so disable dma functhion here. And will re-enable it
-> > once the root cause found.
-> > 
-> > Signed-off-by: Robin Gong <b38343@freescale.com>
-> > ---
-> >  arch/arm/boot/dts/imx6dl.dtsi | 16 ++++++++++++++++
-> >  1 file changed, 16 insertions(+)
-> > 
-> > diff --git a/arch/arm/boot/dts/imx6dl.dtsi b/arch/arm/boot/dts/imx6dl.dtsi
-> > index b453e0e..e84a1ff 100644
-> > --- a/arch/arm/boot/dts/imx6dl.dtsi
-> > +++ b/arch/arm/boot/dts/imx6dl.dtsi
-> > @@ -102,6 +102,22 @@
-> >  	};
-> >  };
-> >  
-> > +&ecspi1 {
-> > +	dma-names = "", "";
-> > +};
-> > +
-> > +&ecspi2 {
-> > +	dma-names = "", "";
-> > +};
-> > +
-> > +&ecspi3 {
-> > +	dma-names = "", "";
-> > +};
-> > +
-> > +&ecspi4 {
-> > +	dma-names = "", "";
-> > +};
-> > +
+On Tue, Sep 09, 2014 at 02:52:47PM +0200, Sedat Dilek wrote:
+> Oh cool.
+> Hmm, is it possible to link all "longterm:" labeled kernels to the
+> page you pointed me to?
 > 
-> This looks odd.  Can we drop the dma properties from imx6qdl.dtsi,
-> and only add them in imx6q.dtsi instead?
+You mean following the "Releases" link on the top of the page
+is too difficult to find ?
+
+Guenter
+
+> - Sedat -
 > 
-> Shawn
->
-Ok, I'll send v2.
-> >  &hdmi {
-> >  	compatible = "fsl,imx6dl-hdmi";
-> >  };
-> > -- 
-> > 1.9.1
-> > 
+> On Tue, Sep 9, 2014 at 2:27 PM, Konstantin Ryabitsev
+> <konstantin@linuxfoundation.org> wrote:
+> > On Tue, Sep 09, 2014 at 02:25:24PM +0200, Sedat Dilek wrote:
+> >> Hi,
+> >>
+> >> it's a cool idea to label Linux-kernels with an "EOL" on the mainpage
+> >> of <kernel.org>.
+> >> But how can someone see how long a LongTerm Support (LTS) L-k is supported?
+> >> Is it possible to add a date line or a web-link on the mainpage?
+> >
+> > https://www.kernel.org/releases.html
+> >
+> > --
+> > Konstantin Ryabitsev
+> > Linux Foundation Collab Projects
+> > Montréal, Québec
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
