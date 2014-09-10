@@ -1,118 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028AbaIJSKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:10:04 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:51558 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963AbaIJSKB (ORCPT
+	id S1753064AbaIJSLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:11:18 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33838 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092AbaIJSLQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:10:01 -0400
+	Wed, 10 Sep 2014 14:11:16 -0400
+Message-ID: <5410943E.3050505@arm.com>
+Date: Wed, 10 Sep 2014 19:11:10 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20140910173401.GG1710@arm.com>
-References: <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
-	<53FE5B09.2020403@codeaurora.org>
-	<CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
-	<53FE7E3B.1010500@codeaurora.org>
-	<CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
-	<CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
-	<20140828093505.GC14650@leverpostej>
-	<CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
-	<20140908135436.GC22717@arm.com>
-	<CAD=FV=Up=+zNneY-behnkFbhupi50_f5R=ECgJQeqGV5kz5d2g@mail.gmail.com>
-	<20140910173401.GG1710@arm.com>
-Date: Wed, 10 Sep 2014 11:09:59 -0700
-X-Google-Sender-Auth: NEDiIJ1CWKBkeFv6PL_w0EB9md8
-Message-ID: <CAD=FV=WJpP1aAo-r9bnUQg5xarGQYo8pROvyh0a5dt+m1OOn4g@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-From: Doug Anderson <dianders@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Christoph Lameter <cl@linux.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        Tejun Heo <tj@kernel.org>, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+References: <20140901230728.GM29327@sirena.org.uk> <1627064.QhxvejlWdk@amdc1032> <alpine.DEB.2.11.1409020857110.9201@gentwo.org> <alpine.DEB.2.11.1409020958530.9608@gentwo.org> <alpine.LFD.2.11.1409051525440.16533@knanqh.ubzr> <20140910174141.GH12361@n2100.arm.linux.org.uk>
+In-Reply-To: <20140910174141.GH12361@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 10 Sep 2014 18:11:11.0647 (UTC) FILETIME=[9A3042F0:01CFCD22]
+X-MC-Unique: 114091019111400101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will,
+Hi Russell,
 
-On Wed, Sep 10, 2014 at 10:34 AM, Will Deacon <will.deacon@arm.com> wrote:
-> Setting aside the security model, booting in secure mode can also have a
-> significant impact on the programming model of system IP, not just the CPU.
-> For example, the SMMU register file suddenly looks different and the way in
-> which it is programmed also changes. The GIC (v3+) is similar. Linux doesn't
-> have drivers that know about this so, whilst not impossible, there's a
-> non-trivial amount of work (and then maintenance overhead) if you want to
-> support booting Linux on the secure side.
+On 10/09/14 18:41, Russell King - ARM Linux wrote:
+> On Fri, Sep 05, 2014 at 03:27:51PM -0400, Nicolas Pitre wrote:
+>> On Tue, 2 Sep 2014, Christoph Lameter wrote:
+>>
+>>> On Tue, 2 Sep 2014, Christoph Lameter wrote:
+>>>
+>>>> Oww.. This is double indirection deal there. A percpu offset pointing to
+>>>> a pointer?
+>>>>
+>>>> Generally the following is true (definition from
+>>>> include/asm-generic/percpu.h that is used for ARM for raw_cpu_read):
+>>>>
+>>>> #define raw_cpu_read_4(pcp)             (*raw_cpu_ptr(&(pcp)))
+>>>
+>>> I think what the issue is that we dropped the fetch of the percpu offset
+>>> in the patch. Instead we are using the address of the variable that
+>>> contains the offset. Does this patch fix it?
+>>>
+>>>
+>>> Subject: irqchip: Properly fetch the per cpu offset
+>>>
+>>> The raw_cpu_read() conversion dropped the fetch of the offset
+>>> from base->percpu_base in gic_get_percpu_base.
+>>>
+>>> Signed-off-by: Christoph Lameter <cl@linux.com>
+>>>
+>>> Index: linux/drivers/irqchip/irq-gic.c
+>>> ===================================================================
+>>> --- linux.orig/drivers/irqchip/irq-gic.c
+>>> +++ linux/drivers/irqchip/irq-gic.c
+>>> @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+>>>  #ifdef CONFIG_GIC_NON_BANKED
+>>>  static void __iomem *gic_get_percpu_base(union gic_base *base)
+>>>  {
+>>> -	return raw_cpu_read(base->percpu_base);
+>>> +	return raw_cpu_read(*base->percpu_base);
+>>
+>> Isn't the pointer dereference supposed to be performed _outside_ the per 
+>> CPU accessor?
+> 
+> I think this is correct.
+> 
+> Let's start from the depths of raw_cpu_read(), where the pointer is
+> verified to be the correct type:
+> 
+> #define __verify_pcpu_ptr(ptr)                                          \
+> do {                                                                    \
+>         const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;    \
+>         (void)__vpp_verify;                                             \
+> } while (0)
+> 
+> So, "ptr" should be of type "const void __percpu *" (note the __percpu
+> annotation there, which makes it sparse-checkable.)
+> 
+> The next level up is this:
+> 
+> #define __pcpu_size_call_return(stem, variable)                         \
+> ({                                                                      \
+>         typeof(variable) pscr_ret__;                                    \
+>         __verify_pcpu_ptr(&(variable));                                 \
+> 
+> So, we pass the address of the variable to the verification function.
+> That makes it a void-typed variable - "const void __percpu".
+> 
+> #define raw_cpu_read(pcp)   __pcpu_size_call_return(raw_cpu_read_, pcp)
+> 
+> So this also makes "pcp" a "const void __percpu".
+> 
+> Now, what type is base->percpu_base?
+> 
+>         void __percpu * __iomem *percpu_base;
+> 
+> The thing we want to be per-cpu is a "void __iomem *" pointer.  However,
+> we have a pointer to the per-cpu instance.  That's the "void __percpu *"
+> bit.
+> 
+> So, for this to match the requirements for raw_cpu_read(), we need to
+> do one dereference to end up with "void __percpu".
+> 
+> Hence, to me, the patch looks correct.
+> 
+> Whether it works or not is a /completely/ different matter.  As has been
+> pointed out, the only place this code gets used is on a very small number
+> of platforms, which I don't have, and that gives me zero way to test it.
+> If it's Exynos which is affected by this, we need to call on Samsung to
+> test this patch.
+> 
+> Now, this code was introduced by Marc Zyngier in order to support Exynos,
+> probably the result of another patch on the mailing list from Samsung.
+> (I've added Marc and another Samsung guy to the Cc list.)  Whatever,
+> *someone* needs to verify this but it needs to be done with the affected
+> hardware.  Whether Marc can, or whether it has to be someone from Samsung,
+> I don't care which.
 
-Hrm.  I could have sworn someone told me that exynos5250-snow is
-booted in Secure SVC mode and has been that way forever.  I could
-certainly be wrong.  Stupid question, but should any of your
-statements apply to an A15 or an A12?  Maybe things change with newer
-CPUs?
+Thanks for looping me in. I indeed introduced this as an alternative to
+an utterly broken patch that was submitted at the time.
 
+As far as I can tell, and by reading your analysis, this patch looks
+perfectly sensible.
 
-On the rk3288 I have in front of me I tried running the following at
-(semi early) boot to help confirm we were in Secure SVC.  Standard "I
-don't know what I'm doing" caveats apply:
+Now, I have long given up on trying to run *anything* on a Samsung
+platform other than my Chromebook - the various maintainers don't seem
+to care at all. I may be able to revive an Origen board though (I think
+I have one collecting the proverbial dust in a cupboard), assuming I can
+locate a bootloader for it.
 
-       asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
-       pr_info("DOUG: val is %#010x", val);
-       val |= (1 << 2);
-       asm volatile("mcr p15, 0, %0, c1, c1, 0" : : "r" (val));
-       val = 0xffffffff;
-       asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
-       pr_info("DOUG: val is %#010x", val);
+> /Or/ we deem the code unmaintained, broken, and untestable, and we start
+> considering ripping it out of the mainline kernel on the basis that no
+> one cares about it anymore.
 
-When I did that I found that I was able to read back 0x00000004.  OK,
-and I just replicated that same behavior on exynos5250-snow.
+That's an alternative. I personally wouldn't shed a tear.
 
-Since I think the SCR register is only accessible from "Secure PL1
-modes" and I showed that I could change it, to me that meant that I
-must be in "Secure PL1".  Please yell if I'm just being an idiot and I
-can look for some other way to test for secure mode.
+Thanks,
 
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-Also: I wasn't actually suggesting running Linux in secure mode, I was
-only suggesting _booting_ Linux in secure mode.  The idea was that
-Linux would realize this and immediately switch to nonsecure HYP mode.
-Linux doesn't normally run at HYP mode, so it would eventually drop
-down into nonsecure SVC mode, too.
-
-One (admittedly weak) justification was that if someone later wanted
-to do some whizbang feature in the Linux kernel that required "secure
-svc" mode then it would be possible on this hardware.  Obviously this
-person would need to implement a whole crapload of code to handle
-this, but they wouldn't need to add custom firmware.
-
-The other (important) justification was to keep bootloaders simple.
-All of the "I've never even thought about secure mode" bootloaders
-that I've seen just happen to boot the kernel in Secure SVC.  That
-makes me think that must be the easiest thing for them to do.  We
-should support them.
-
-
-> The secure world may be more permissive in some regards, but it's actually
-> a burden in others. It's not a simple superset of non-secure, and this is
-> more evident than ever in ARMv8.
->
-> As I understand it, this conversation started because we're booting at
-> non-secure EL1 with a badly configured EL2. That sounds like something
-> we may have to fix/work around in Linux (Olof points out that it used to
-> work), but we shouldn't conflate that with booting on the secure side to
-> get away from broken firmware.
-
-See above and also my summary to Mark Rutland.  I don't think your
-statement above is quite where we're at, but hopefully we're on the
-same page now.  :)
-
--Doug
