@@ -1,281 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaIJT2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:28:15 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:40316 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaIJT2N (ORCPT
+	id S1752985AbaIJT2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:28:39 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51711 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330AbaIJT2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:28:13 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Wed, 10 Sep 2014 15:28:10 -0400
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, trond.myklebust@primarydata.com,
-        smayhew@redhat.com
-Subject: Re: [RFC PATCH 08/12] nfs: convert lock handling to use
- file_lock_context
-Message-ID: <20140910152810.36ec5bc0@tlielax.poochiereds.net>
-In-Reply-To: <20140910191734.GD4210@fieldses.org>
-References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
-	<1410359330-27564-9-git-send-email-jlayton@primarydata.com>
-	<20140910191734.GD4210@fieldses.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Wed, 10 Sep 2014 15:28:38 -0400
+Message-ID: <5410A652.8070006@kernel.org>
+Date: Wed, 10 Sep 2014 20:28:18 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>
+CC: linux-iio@vger.kernel.org, pmeerw@pmeerw.net, linux-kernel@vger.kernel.org,
+        Tsechih_Lin@asus.com
+Subject: Re: [PATCH v7] iio: Add Dyna-Image AL3320A ambient light sensor driver
+References: <1410332226-5481-1-git-send-email-daniel.baluta@intel.com> <54109112.90508@gmx.de>
+In-Reply-To: <54109112.90508@gmx.de>
+Content-Type: text/plain; charset=iso-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014 15:17:34 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+On 10/09/14 18:57, Hartmut Knaack wrote:
+> Daniel Baluta schrieb, Am 10.09.2014 08:57:
+>> Minimal implementation. This driver provides raw illuminance readings.
+>>
+>> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
+>> by Tsechih Lin <Tsechih_Lin@asus.com>
+>>
+>> * https://android.googlesource.com/kernel/msm.git
+>>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> Reviewed-by: Hartmut Knaack <knaack.h@gmx.de>
+Thanks Daniel.
+Also thanks to Hartmut for reviewing stamina.
 
-> On Wed, Sep 10, 2014 at 10:28:46AM -0400, Jeff Layton wrote:
-> > Signed-off-by: Jeff Layton <jlayton@primarydata.com>
-> > ---
-> >  fs/nfs/delegation.c | 37 +++++++++++++++++++++----------------
-> >  fs/nfs/nfs4state.c  | 24 +++++++++++++++---------
-> >  fs/nfs/pagelist.c   |  3 ++-
-> >  fs/nfs/write.c      | 39 +++++++++++++++++++++++++++++++++------
-> >  4 files changed, 71 insertions(+), 32 deletions(-)
-> > 
-> > diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-> > index 5853f53db732..22c6eed9bb5b 100644
-> > --- a/fs/nfs/delegation.c
-> > +++ b/fs/nfs/delegation.c
-> > @@ -85,25 +85,30 @@ static int nfs_delegation_claim_locks(struct nfs_open_context *ctx, struct nfs4_
-> >  {
-> >  	struct inode *inode = state->inode;
-> >  	struct file_lock *fl;
-> > +	struct file_lock_context *flctx = inode->i_flctx;
-> > +	struct list_head *list;
-> >  	int status = 0;
-> >  
-> > -	if (inode->i_flock == NULL)
-> > -		goto out;
-> > -
-> > -	/* Protect inode->i_flock using the i_lock */
-> > -	spin_lock(&inode->i_lock);
-> > -	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
-> > -		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
-> > -			continue;
-> > -		if (nfs_file_open_context(fl->fl_file) != ctx)
-> > -			continue;
-> > -		spin_unlock(&inode->i_lock);
-> > -		status = nfs4_lock_delegation_recall(fl, state, stateid);
-> > -		if (status < 0)
-> > -			goto out;
-> > -		spin_lock(&inode->i_lock);
-> > +	flctx = inode->i_flctx;
-> > +	if (flctx) {
-> > +		list = &flctx->flc_posix;
-> > +		spin_lock(&flctx->flc_lock);
-> > +restart:
-> > +		list_for_each_entry(fl, list, fl_list) {
-> > +			if (nfs_file_open_context(fl->fl_file) != ctx)
-> > +				continue;
-> > +			spin_unlock(&flctx->flc_lock);
-> > +			status = nfs4_lock_delegation_recall(fl, state, stateid);
-> > +			if (status < 0)
-> > +				goto out;
-> > +			spin_lock(&flctx->flc_lock);
-> > +		}
-> > +		if (list == &flctx->flc_posix) {
-> > +			list = &flctx->flc_flock;
-> > +			goto restart;
-> > +		}
-> > +		spin_unlock(&flctx->flc_lock);
-> >  	}
-> > -	spin_unlock(&inode->i_lock);
-> >  out:
-> >  	return status;
-> >  }
-> > diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-> > index a043f618cd5a..2899a0f26293 100644
-> > --- a/fs/nfs/nfs4state.c
-> > +++ b/fs/nfs/nfs4state.c
-> > @@ -1377,21 +1377,23 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
-> >  	struct inode *inode = state->inode;
-> >  	struct nfs_inode *nfsi = NFS_I(inode);
-> >  	struct file_lock *fl;
-> > +	struct file_lock_context *flctx = inode->i_flctx;
-> > +	struct list_head *list;
-> >  	int status = 0;
-> >  
-> > -	if (inode->i_flock == NULL)
-> > +	if (!flctx)
-> >  		return 0;
-> >  
-> > +	list = &flctx->flc_posix;
-> > +
-> >  	/* Guard against delegation returns and new lock/unlock calls */
-> >  	down_write(&nfsi->rwsem);
-> > -	/* Protect inode->i_flock using the BKL */
-> > -	spin_lock(&inode->i_lock);
-> > -	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
-> > -		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
-> > -			continue;
-> > +	spin_lock(&flctx->flc_lock);
-> > +restart:
-> > +	list_for_each_entry(fl, list, fl_list) {
-> >  		if (nfs_file_open_context(fl->fl_file)->state != state)
-> >  			continue;
-> > -		spin_unlock(&inode->i_lock);
-> > +		spin_unlock(&flctx->flc_lock);
-> >  		status = ops->recover_lock(state, fl);
-> >  		switch (status) {
-> >  			case 0:
-> > @@ -1418,9 +1420,13 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
-> >  				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
-> >  				status = 0;
-> >  		}
-> > -		spin_lock(&inode->i_lock);
-> > +		spin_lock(&flctx->flc_lock);
-> >  	}
-> > -	spin_unlock(&inode->i_lock);
-> > +	if (list == &flctx->flc_posix) {
-> > +		list = &flctx->flc_flock;
-> > +		goto restart;
-> > +	}
-> > +	spin_unlock(&flctx->flc_lock);
-> >  out:
-> >  	up_write(&nfsi->rwsem);
-> >  	return status;
-> > diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
-> > index ba491926df5f..4df8d8755026 100644
-> > --- a/fs/nfs/pagelist.c
-> > +++ b/fs/nfs/pagelist.c
-> > @@ -782,7 +782,8 @@ static bool nfs_can_coalesce_requests(struct nfs_page *prev,
-> >  	if (prev) {
-> >  		if (!nfs_match_open_context(req->wb_context, prev->wb_context))
-> >  			return false;
-> > -		if (req->wb_context->dentry->d_inode->i_flock != NULL &&
-> > +		if (req->wb_context->dentry->d_inode->i_flctx != NULL &&
-> > +		    !list_empty(&req->wb_context->dentry->d_inode->i_flctx->flc_posix) &&
-> >  		    !nfs_match_lock_context(req->wb_lock_context,
-> >  					    prev->wb_lock_context))
-> >  			return false;
-> > diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-> > index e3b5cf28bdc5..02b8777f8f2f 100644
-> > --- a/fs/nfs/write.c
-> > +++ b/fs/nfs/write.c
-> > @@ -1128,7 +1128,8 @@ int nfs_flush_incompatible(struct file *file, struct page *page)
-> >  		do_flush = req->wb_page != page || req->wb_context != ctx;
-> >  		/* for now, flush if more than 1 request in page_group */
-> >  		do_flush |= req->wb_this_page != req;
-> > -		if (l_ctx && ctx->dentry->d_inode->i_flock != NULL) {
-> > +		if (l_ctx && ctx->dentry->d_inode->i_flctx &&
-> > +		    !list_empty(&ctx->dentry->d_inode->i_flctx->flc_posix)) {
-> >  			do_flush |= l_ctx->lockowner.l_owner != current->files
-> >  				|| l_ctx->lockowner.l_pid != current->tgid;
-> >  		}
-> > @@ -1189,6 +1190,12 @@ out:
-> >  	return PageUptodate(page) != 0;
-> >  }
-> >  
-> > +static bool
-> > +is_whole_file_wrlock(struct file_lock *fl)
-> > +{
-> > +	return fl->fl_start == 0 && fl->fl_end == OFFSET_MAX && fl->fl_type == F_WRLCK;
-> > +}
-> > +
-> >  /* If we know the page is up to date, and we're not using byte range locks (or
-> >   * if we have the whole file locked for writing), it may be more efficient to
-> >   * extend the write to cover the entire page in order to avoid fragmentation
-> > @@ -1199,17 +1206,37 @@ out:
-> >   */
-> >  static int nfs_can_extend_write(struct file *file, struct page *page, struct inode *inode)
-> >  {
-> > +	int ret;
-> > +	struct file_lock_context *flctx = inode->i_flctx;
-> > +	struct file_lock *fl;
-> > +
-> >  	if (file->f_flags & O_DSYNC)
-> >  		return 0;
-> >  	if (!nfs_write_pageuptodate(page, inode))
-> >  		return 0;
-> >  	if (NFS_PROTO(inode)->have_delegation(inode, FMODE_WRITE))
-> >  		return 1;
-> > -	if (inode->i_flock == NULL || (inode->i_flock->fl_start == 0 &&
-> > -			inode->i_flock->fl_end == OFFSET_MAX &&
-> > -			inode->i_flock->fl_type != F_RDLCK))
+I've been effectively offline for a 10 days (some of it spent in a fridge)
+so am even more grateful to those who help with reviewing than normal.
+
+Applied to the togreg branch of iio.git which I will push out as testing
+for the autobuilders to play when not in an airport departure lounge on the
+30 mins of free airport wifi.  What fun.
+
+I wonder if this will send?
+
+>> ---
+>> Changes since v6: (reported by Hartmut)
+>>         * drop variable i and reuse ret
+>>
+>> Changes since v5: (reported by Hartmut)
+>>         * fix comments for al3320a_range
+>>         * make sure we always use a valid index in al3320a_scales
+>>
+>> Changes since v4: (reported by Peter)
+>>         * no need to fix endianess when reading raw value
+>>
+>> Changes since v3: (reported by Hartmut and Jonathan)
+>>         * dropped the local store for the range, instead read it when necessary
+>>         * removed wrapper functions
+>>         * added in_illuminance_scale_available attribute
+>>         * fix bug when reading raw value, use i2c_smbus_read_word instead of
+>>           i2c_smbus_read_word_swapped and fix the endianess after read.
+>>         * small coding style fixes
+>>
+>> Changes since v2: (reported by Peter Meerwald)
+>>         * removed definition of DATA_HIGH and SW_RESET as they are not used
+>>         * added a comment to al3320a_get_adc_value() function
+>>         * added thresholds on TODO list
+>>         * small style fixes
+>>
+>> Changes since v1: (reported by Peter Meerwald)
+>>         * used u8 instead of int for passing gain and mean_time
+>>         * used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
+>>         * used devm_iio_device_register instead of iio_device_register
+>>         * small style fixes
+>>  drivers/iio/light/Kconfig   |  10 ++
+>>  drivers/iio/light/Makefile  |   1 +
+>>  drivers/iio/light/al3320a.c | 232 ++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 243 insertions(+)
+>>  create mode 100644 drivers/iio/light/al3320a.c
+>>
+>> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+>> index bf05ca5..5bea821 100644
+>> --- a/drivers/iio/light/Kconfig
+>> +++ b/drivers/iio/light/Kconfig
+>> @@ -17,6 +17,16 @@ config ADJD_S311
+>>  	 This driver can also be built as a module.  If so, the module
+>>  	 will be called adjd_s311.
+>>  
+>> +config AL3320A
+>> +	tristate "AL3320A ambient light sensor"
+>> +	depends on I2C
+>> +	help
+>> +	 Say Y here if you want to build a driver for the Dyna Image AL3320A
+>> +	 ambient light sensor.
+>> +
+>> +	 To compile this driver as a module, choose M here: the
+>> +	 module will be called al3320a.
+>> +
+>>  config APDS9300
+>>  	tristate "APDS9300 ambient light sensor"
+>>  	depends on I2C
+>> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+>> index 8b8c09f..47877a3 100644
+>> --- a/drivers/iio/light/Makefile
+>> +++ b/drivers/iio/light/Makefile
+>> @@ -4,6 +4,7 @@
+>>  
+>>  # When adding new entries keep the list in alphabetical order
+>>  obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
+>> +obj-$(CONFIG_AL3320A)		+= al3320a.o
+>>  obj-$(CONFIG_APDS9300)		+= apds9300.o
+>>  obj-$(CONFIG_CM32181)		+= cm32181.o
+>>  obj-$(CONFIG_CM36651)		+= cm36651.o
+>> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
+>> new file mode 100644
+>> index 0000000..6aac651
+>> --- /dev/null
+>> +++ b/drivers/iio/light/al3320a.c
+>> @@ -0,0 +1,232 @@
+>> +/*
+>> + * AL3320A - Dyna Image Ambient Light Sensor
+>> + *
+>> + * Copyright (c) 2014, Intel Corporation.
+>> + *
+>> + * This file is subject to the terms and conditions of version 2 of
+>> + * the GNU General Public License.  See the file COPYING in the main
+>> + * directory of this archive for more details.
+>> + *
+>> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
+>> + *
+>> + * TODO: interrupt support, thresholds
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/i2c.h>
+>> +
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +
+>> +#define AL3320A_DRV_NAME "al3320a"
+>> +
+>> +#define AL3320A_REG_CONFIG		0x00
+>> +#define AL3320A_REG_STATUS		0x01
+>> +#define AL3320A_REG_INT			0x02
+>> +#define AL3320A_REG_WAIT		0x06
+>> +#define AL3320A_REG_CONFIG_RANGE	0x07
+>> +#define AL3320A_REG_PERSIST		0x08
+>> +#define AL3320A_REG_MEAN_TIME		0x09
+>> +#define AL3320A_REG_ADUMMY		0x0A
+>> +#define AL3320A_REG_DATA_LOW		0x22
+>> +
+>> +#define AL3320A_REG_LOW_THRESH_LOW	0x30
+>> +#define AL3320A_REG_LOW_THRESH_HIGH	0x31
+>> +#define AL3320A_REG_HIGH_THRESH_LOW	0x32
+>> +#define AL3320A_REG_HIGH_THRESH_HIGH	0x33
+>> +
+>> +#define AL3320A_CONFIG_DISABLE		0x00
+>> +#define AL3320A_CONFIG_ENABLE		0x01
+>> +
+>> +#define AL3320A_GAIN_SHIFT		1
+>> +#define AL3320A_GAIN_MASK		(BIT(2) | BIT(1))
+>> +
+>> +/* chip params default values */
+>> +#define AL3320A_DEFAULT_MEAN_TIME	4
+>> +#define AL3320A_DEFAULT_WAIT_TIME	0 /* no waiting */
+>> +
+>> +#define AL3320A_SCALE_AVAILABLE "0.512 0.128 0.032 0.01"
+>> +
+>> +enum al3320a_range {
+>> +	AL3320A_RANGE_1, /* 33.28 Klx */
+>> +	AL3320A_RANGE_2, /* 8.32 Klx  */
+>> +	AL3320A_RANGE_3, /* 2.08 Klx  */
+>> +	AL3320A_RANGE_4  /* 0.65 Klx  */
+>> +};
+>> +
+>> +static const int al3320a_scales[][2] = {
+>> +	{0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
+>> +};
+>> +
+>> +struct al3320a_data {
+>> +	struct i2c_client *client;
+>> +};
+>> +
+>> +static const struct iio_chan_spec al3320a_channels[] = {
+>> +	{
+>> +		.type	= IIO_LIGHT,
+>> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+>> +				      BIT(IIO_CHAN_INFO_SCALE),
+>> +	}
+>> +};
+>> +
+>> +static IIO_CONST_ATTR(in_illuminance_scale_available, AL3320A_SCALE_AVAILABLE);
+>> +
+>> +static struct attribute *al3320a_attributes[] = {
+>> +	&iio_const_attr_in_illuminance_scale_available.dev_attr.attr,
+>> +	NULL,
+>> +};
+>> +
+>> +static const struct attribute_group al3320a_attribute_group = {
+>> +	.attrs = al3320a_attributes,
+>> +};
+>> +
+>> +static int al3320a_init(struct al3320a_data *data)
+>> +{
+>> +	int ret;
+>> +
+>> +	/* power on */
+>> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
+>> +					AL3320A_CONFIG_ENABLE);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
+>> +					AL3320A_RANGE_3 << AL3320A_GAIN_SHIFT);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
+>> +					AL3320A_DEFAULT_MEAN_TIME);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
+>> +					AL3320A_DEFAULT_WAIT_TIME);
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int al3320a_read_raw(struct iio_dev *indio_dev,
+>> +			    struct iio_chan_spec const *chan, int *val,
+>> +			    int *val2, long mask)
+>> +{
+>> +	struct al3320a_data *data = iio_priv(indio_dev);
+>> +	int ret;
+>> +
+>> +	switch (mask) {
+>> +	case IIO_CHAN_INFO_RAW:
+>> +		/*
+>> +		 * ALS ADC value is stored in two adjacent registers:
+>> +		 * - low byte of output is stored at AL3320A_REG_DATA_LOW
+>> +		 * - high byte of output is stored at AL3320A_REG_DATA_LOW + 1
+>> +		 */
+>> +		ret = i2c_smbus_read_word_data(data->client,
+>> +					       AL3320A_REG_DATA_LOW);
+>> +		if (ret < 0)
+>> +			return ret;
+>> +		*val = ret;
+>> +		return IIO_VAL_INT;
+>> +	case IIO_CHAN_INFO_SCALE:
+>> +		ret = i2c_smbus_read_byte_data(data->client,
+>> +					       AL3320A_REG_CONFIG_RANGE);
+>> +		if (ret < 0)
+>> +			return ret;
+>> +
+>> +		ret = (ret & AL3320A_GAIN_MASK) >> AL3320A_GAIN_SHIFT;
+>> +		*val = al3320a_scales[ret][0];
+>> +		*val2 = al3320a_scales[ret][1];
+>> +
+>> +		return IIO_VAL_INT_PLUS_MICRO;
+>> +	}
+>> +	return -EINVAL;
+>> +}
+>> +
+>> +static int al3320a_write_raw(struct iio_dev *indio_dev,
+>> +			     struct iio_chan_spec const *chan, int val,
+>> +			     int val2, long mask)
+>> +{
+>> +	struct al3320a_data *data = iio_priv(indio_dev);
+>> +	int i;
+>> +
+>> +	switch (mask) {
+>> +	case IIO_CHAN_INFO_SCALE:
+>> +		for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
+>> +			if (val == al3320a_scales[i][0] &&
+>> +			    val2 == al3320a_scales[i][1])
+>> +				return i2c_smbus_write_byte_data(data->client,
+>> +					AL3320A_REG_CONFIG_RANGE,
+>> +					i << AL3320A_GAIN_SHIFT);
+>> +		}
+>> +		break;
+>> +	}
+>> +	return -EINVAL;
+>> +}
+>> +
+>> +static const struct iio_info al3320a_info = {
+>> +	.driver_module	= THIS_MODULE,
+>> +	.read_raw	= al3320a_read_raw,
+>> +	.write_raw	= al3320a_write_raw,
+>> +	.attrs		= &al3320a_attribute_group,
+>> +};
+>> +
+>> +static int al3320a_probe(struct i2c_client *client,
+>> +			 const struct i2c_device_id *id)
+>> +{
+>> +	struct al3320a_data *data;
+>> +	struct iio_dev *indio_dev;
+>> +	int ret;
+>> +
+>> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+>> +	if (!indio_dev)
+>> +		return -ENOMEM;
+>> +
+>> +	data = iio_priv(indio_dev);
+>> +	i2c_set_clientdata(client, indio_dev);
+>> +	data->client = client;
+>> +
+>> +	indio_dev->dev.parent = &client->dev;
+>> +	indio_dev->info = &al3320a_info;
+>> +	indio_dev->name = AL3320A_DRV_NAME;
+>> +	indio_dev->channels = al3320a_channels;
+>> +	indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
+>> +	indio_dev->modes = INDIO_DIRECT_MODE;
+>> +
+>> +	ret = al3320a_init(data);
+>> +	if (ret < 0) {
+>> +		dev_err(&client->dev, "al3320a chip init failed\n");
+>> +		return ret;
+>> +	}
+>> +	return devm_iio_device_register(&client->dev, indio_dev);
+>> +}
+>> +
+>> +static int al3320a_remove(struct i2c_client *client)
+>> +{
+>> +	return i2c_smbus_write_byte_data(client, AL3320A_REG_CONFIG,
+>> +					 AL3320A_CONFIG_DISABLE);
+>> +}
+>> +
+>> +static const struct i2c_device_id al3320a_id[] = {
+>> +	{"al3320a", 0},
+>> +	{}
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, al3320a_id);
+>> +
+>> +static struct i2c_driver al3320a_driver = {
+>> +	.driver = {
+>> +		.name = AL3320A_DRV_NAME,
+>> +	},
+>> +	.probe		= al3320a_probe,
+>> +	.remove		= al3320a_remove,
+>> +	.id_table	= al3320a_id,
+>> +};
+>> +
+>> +module_i2c_driver(al3320a_driver);
+>> +
+>> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
+>> +MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
+>> +MODULE_LICENSE("GPL v2");
+>>
 > 
-> Doesn't the existing code already have a bug?  Without the i_lock
-> inode->i_flock could turn NULL partyway through 
-> 
-> There's a bug in the existing code, isn't there?  Without holding the
-> i_lock, couldn't inode->i_flock turn NULL partway through this
-> conditional and cause NULL dereferences?  (Or, more bizarrely, the
-> checks of those various fields could end up being for different locks.)
-> 
-
-(cc'ing Trond and Scott...)
-
-Yeah, I think you're correct. We really ought to hold the i_lock there
-once we see that i_flock isn't NULL.
-
-It's stuff like this that makes me wonder if we ought to convert all of
-this to using RCU. Being able to hold the rcu_read_lock instead of the
-i_lock (or the flc_lock once the conversion is done) would be rather
-nice.
-
-
-> > -		return 1;
-> > -	return 0;
-> > +	/* no lock context == no locks */
-> > +	if (!flctx)
-> > +		return 0;
-> > +
-> > +	/* if lists are empty then there are no locks */
-> > +	if (list_empty(&flctx->flc_posix) && list_empty(&flctx->flc_flock))
-> > +		return 0;
-> > +
-> > +	ret = 0;
-> > +	/* Check to see if there are whole file write locks */
-> > +	spin_lock(&flctx->flc_lock);
-> > +	fl = list_first_entry(&flctx->flc_posix, struct file_lock, fl_list);
-> > +	if (is_whole_file_wrlock(fl)) {
-> > +		ret = 1;
-> > +	} else {
-> > +		fl = list_first_entry(&flctx->flc_flock, struct file_lock, fl_list);
-> > +		if (is_whole_file_wrlock(fl))
-> > +			ret = 1;
-> > +	}
-> > +	spin_unlock(&flctx->flc_lock);
-> > +	return ret;
-> 
-> Kind of pity we're turning 5 lines of code into 20 in the name of
-> simplification.  Could be slightly pithier:
-> 
-> 	ret = is_whole_file_wrlock(fl);
-> 	if (!ret) {
-> 		fl = ...
-> 		ret = is_whole_file_wrlock(fl);
-> 	}
-> 
-> But, whatever, looks OK to me.
-> 
-> --b.
-> 
-
-Yes, that's the downside of moving to multiple list_heads. Still, I
-think it's worth doing that even if we end up with the code a bit more
-verbose.
-
-It may be best to consider moving some of this into helpers that live
-in locks.c. I really don't like having filesystems poke around in the
-intimate details of the file locking code as a general rule...
-
-> >  }
-> >  
-> >  /*
-> > -- 
-> > 1.9.3
-> > 
-
-
--- 
-Jeff Layton <jlayton@primarydata.com>
