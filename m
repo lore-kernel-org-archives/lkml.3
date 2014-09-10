@@ -1,124 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaIJKMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:12:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14652 "EHLO mx1.redhat.com"
+	id S1752275AbaIJKNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:13:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37361 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaIJKM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:12:27 -0400
-Message-ID: <541023EB.70705@redhat.com>
-Date: Wed, 10 Sep 2014 12:11:55 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751490AbaIJKND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 06:13:03 -0400
+Date: Wed, 10 Sep 2014 12:12:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [RFC][PATCH 0/5 v2] x86/nmi: Print all cpu stacks from NMI safely
+Message-ID: <20140910101259.GA27702@quack.suse.cz>
+References: <20140626214901.596791200@goodmis.org>
+ <alpine.LNX.2.00.1408071034450.6219@pobox.suse.cz>
+ <20140808144412.1357dd05@gandalf.local.home>
+ <alpine.LNX.2.00.1409101006000.5523@pobox.suse.cz>
 MIME-Version: 1.0
-To: suravee.suthikulpanit@amd.com, tj@kernel.org
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ata: ahci_platform: Add ACPI support for AMD Seattle
- SATA controller
-References: <1410295035-14471-1-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1410295035-14471-1-git-send-email-suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1409101006000.5523@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 09/09/2014 10:37 PM, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On Wed 10-09-14 10:08:02, Jiri Kosina wrote:
+> On Fri, 8 Aug 2014, Steven Rostedt wrote:
 > 
-> This patch adds ACPI support for non-PCI SATA contoller in ahci_platform driver.
-> It adds ACPI matching table in ahci_platform to support AMD Seattle SATA controller
-> with following ASL structure in DSDT:
+> > > > This is my proposal to print the NMI stack traces from an RCU stall safely.
+> > > > Here's the gist of it.
+> > > 
+> > > Steven, what's your plan with this patchset please? 
+> > 
+> > Has there been consensus on this approach?
 > 
->     Device (SATA0)
->     {
->       Name(_HID, "AMDI0600")	// Seattle AHSATA
->       Name (_CCA, 1)		// Cache-coherent controller
->       Name (_CRS, ResourceTemplate ()
->       {
->         Memory32Fixed (ReadWrite, 0xE0300000, 0x00010000)
->         Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive,,,) { 387 }
->       })
->     }
-> 
-> Since ATA driver should not require PCI support for ATA_ACPI,
-> this patch also removes dependency in the driver/ata/Kconfig.
-> 
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> From what I heard, the kernel summit workshop seems to have reached that 
+> conclusion; I was unfortunately unable to attend it due to another 
+> discussion I was interested in happening at the same time -- Jan Kara was 
+> there, so I believe he can provide all the details if necessary.
+  Yes, we briefly talked about printk from NMI and noone was objecting to
+Steven's solution.
 
-Looks good to me, one small nitpick inline.
-
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-
-
-
-> ---
->  drivers/ata/Kconfig         |  2 +-
->  drivers/ata/ahci_platform.c | 13 +++++++++++++
->  2 files changed, 14 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-> index e1b9278..f2e6c9e 100644
-> --- a/drivers/ata/Kconfig
-> +++ b/drivers/ata/Kconfig
-> @@ -48,7 +48,7 @@ config ATA_VERBOSE_ERROR
->  
->  config ATA_ACPI
->  	bool "ATA ACPI Support"
-> -	depends on ACPI && PCI
-> +	depends on ACPI
->  	default y
->  	help
->  	  This option adds support for ATA-related ACPI objects.
-> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-> index f61ddb9..3499bab 100644
-> --- a/drivers/ata/ahci_platform.c
-> +++ b/drivers/ata/ahci_platform.c
-> @@ -20,6 +20,9 @@
->  #include <linux/platform_device.h>
->  #include <linux/libata.h>
->  #include <linux/ahci_platform.h>
-> +#ifdef CONFIG_ATA_ACPI
-> +#include <linux/acpi.h>
-> +#endif
->  #include "ahci.h"
->  
->  static const struct ata_port_info ahci_port_info = {
-> @@ -87,6 +90,13 @@ static const struct of_device_id ahci_of_match[] = {
->  };
->  MODULE_DEVICE_TABLE(of, ahci_of_match);
->  
-> +#ifdef CONFIG_ATA_ACPI
-> +static const struct acpi_device_id ahci_acpi_match[] = {
-> +	{ "AMDI0600", 0 }, /* AMD Seattle AHCI */
-> +	{ },
-> +};
-> +#endif
-> +
->  static struct platform_driver ahci_driver = {
->  	.probe = ahci_probe,
->  	.remove = ata_platform_remove_one,
-> @@ -94,6 +104,9 @@ static struct platform_driver ahci_driver = {
->  		.name = "ahci",
->  		.owner = THIS_MODULE,
->  		.of_match_table = ahci_of_match,
-> +#ifdef CONFIG_ATA_ACPI
-> +		.acpi_match_table = ACPI_PTR(ahci_acpi_match),
-> +#endif
-
-Hmm, is the cast here really necessary ? AFAIK nowadays we usually
-don't need this cast macros, and they can hide accidental prototype
-differences, so they are better avoided.
-
-
->  		.pm = &ahci_pm_ops,
->  	},
->  };
-> 
-
-Regards,
-
-Hans
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
