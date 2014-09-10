@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292AbaIJMYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:24:51 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40000 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaIJMYu (ORCPT
+	id S1751139AbaIJMaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:30:01 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:51207 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750734AbaIJMaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:24:50 -0400
-Message-ID: <5410430E.5030804@parallels.com>
-Date: Wed, 10 Sep 2014 16:24:46 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 10 Sep 2014 08:30:00 -0400
+Date: Wed, 10 Sep 2014 15:29:53 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Maciej Matraszek <m.matraszek@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>, stable@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH] [media] v4l2-common: fix overflow in
+ v4l_bound_align_image()
+Message-ID: <20140910122953.GA2939@valkosipuli.retiisi.org.uk>
+References: <1410275801-17627-1-git-send-email-m.matraszek@samsung.com>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: <viro@zeniv.linux.org.uk>, <fuse-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, <werner.baumann@onlinehome.de>
-Subject: Re: [PATCH 0/2] fuse: fix regression in fuse_get_user_pages()
-References: <20140903100826.23218.95122.stgit@localhost.localdomain> <20140910095115.GA7441@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20140910095115.GA7441@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410275801-17627-1-git-send-email-m.matraszek@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 01:51 PM, Miklos Szeredi wrote:
-> On Wed, Sep 03, 2014 at 02:10:23PM +0400, Maxim Patlasov wrote:
->> Hi,
->>
->> The patchset fixes a regression introduced by the following commits:
->>
->> c7f3888ad7f0 ("switch iov_iter_get_pages() to passing maximal number of pages")
->> c9c37e2e6378 ("fuse: switch to iov_iter_get_pages()")
->>
-> Hmm, instead of reverting to passing maxbytes *instead* of maxpages, I think the
-> right fix is to *add* the maxbytes argument.
->
-> Just maxbytes alone doesn't have enough information in it.  E.g. 4096 contiguous
-> bytes could occupy 1 or 2 pages, depending on the starting offset.
-Yes, you are right. I missed that c7f3888ad7f0 fixed a subtle bug in 
-get_pages_iovec().
+Hi Maciej,
 
->
-> So how about the following (untested) patch?
-Your patch works fine in my tests.
+Thanks for the patch!
 
-Thanks,
-Maxim
+On Tue, Sep 09, 2014 at 05:16:41PM +0200, Maciej Matraszek wrote:
+> diff --git a/drivers/media/v4l2-core/v4l2-common.c b/drivers/media/v4l2-core/v4l2-common.c
+> index ccaa38f65cf1..506cf8b7763b 100644
+> --- a/drivers/media/v4l2-core/v4l2-common.c
+> +++ b/drivers/media/v4l2-core/v4l2-common.c
+> @@ -435,16 +435,13 @@ static unsigned int clamp_align(unsigned int x, unsigned int min,
+>  	/* Bits that must be zero to be aligned */
+>  	unsigned int mask = ~((1 << align) - 1);
+>  
+> +	/* Clamp to aligned min and max */
+> +	x = clamp_t(unsigned int, x, (min + ~mask) & mask, max & mask);
+
+I think you could use just clamp() since all the arguments are unsigned int.
+With that considered,
+
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+
+> +
+>  	/* Round to nearest aligned value */
+>  	if (align)
+>  		x = (x + (1 << (align - 1))) & mask;
+> 
+> -	/* Clamp to aligned value of min and max */
+> -	if (x < min)
+> -		x = (min + ~mask) & mask;
+> -	else if (x > max)
+> -		x = max & mask;
+> -
+>  	return x;
+>  }
+>  
+
+-- 
+Kind regards,
+
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
