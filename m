@@ -1,220 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaIJObF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:31:05 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:54533 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411AbaIJO3K (ORCPT
+	id S1753048AbaIJObp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:31:45 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56881 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaIJObn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:29:10 -0400
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, bfields@fieldses.org
-Subject: [RFC PATCH 08/12] nfs: convert lock handling to use file_lock_context
-Date: Wed, 10 Sep 2014 10:28:46 -0400
-Message-Id: <1410359330-27564-9-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
-References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
+	Wed, 10 Sep 2014 10:31:43 -0400
+Message-ID: <541060CB.6000402@codeaurora.org>
+Date: Wed, 10 Sep 2014 10:31:39 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Andrew Pinski <apinski@cavium.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        pinskia@gmail.com
+Subject: Re: [PATCH 18/24] ARM64: Add vdso for ILP32 and use it for the signal
+ return
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com> <1409779158-30963-19-git-send-email-apinski@cavium.com>
+In-Reply-To: <1409779158-30963-19-git-send-email-apinski@cavium.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- fs/nfs/delegation.c | 37 +++++++++++++++++++++----------------
- fs/nfs/nfs4state.c  | 24 +++++++++++++++---------
- fs/nfs/pagelist.c   |  3 ++-
- fs/nfs/write.c      | 39 +++++++++++++++++++++++++++++++++------
- 4 files changed, 71 insertions(+), 32 deletions(-)
+Hi Andrew,
 
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 5853f53db732..22c6eed9bb5b 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -85,25 +85,30 @@ static int nfs_delegation_claim_locks(struct nfs_open_context *ctx, struct nfs4_
- {
- 	struct inode *inode = state->inode;
- 	struct file_lock *fl;
-+	struct file_lock_context *flctx = inode->i_flctx;
-+	struct list_head *list;
- 	int status = 0;
- 
--	if (inode->i_flock == NULL)
--		goto out;
--
--	/* Protect inode->i_flock using the i_lock */
--	spin_lock(&inode->i_lock);
--	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
--		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
--			continue;
--		if (nfs_file_open_context(fl->fl_file) != ctx)
--			continue;
--		spin_unlock(&inode->i_lock);
--		status = nfs4_lock_delegation_recall(fl, state, stateid);
--		if (status < 0)
--			goto out;
--		spin_lock(&inode->i_lock);
-+	flctx = inode->i_flctx;
-+	if (flctx) {
-+		list = &flctx->flc_posix;
-+		spin_lock(&flctx->flc_lock);
-+restart:
-+		list_for_each_entry(fl, list, fl_list) {
-+			if (nfs_file_open_context(fl->fl_file) != ctx)
-+				continue;
-+			spin_unlock(&flctx->flc_lock);
-+			status = nfs4_lock_delegation_recall(fl, state, stateid);
-+			if (status < 0)
-+				goto out;
-+			spin_lock(&flctx->flc_lock);
-+		}
-+		if (list == &flctx->flc_posix) {
-+			list = &flctx->flc_flock;
-+			goto restart;
-+		}
-+		spin_unlock(&flctx->flc_lock);
- 	}
--	spin_unlock(&inode->i_lock);
- out:
- 	return status;
- }
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index a043f618cd5a..2899a0f26293 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1377,21 +1377,23 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
- 	struct inode *inode = state->inode;
- 	struct nfs_inode *nfsi = NFS_I(inode);
- 	struct file_lock *fl;
-+	struct file_lock_context *flctx = inode->i_flctx;
-+	struct list_head *list;
- 	int status = 0;
- 
--	if (inode->i_flock == NULL)
-+	if (!flctx)
- 		return 0;
- 
-+	list = &flctx->flc_posix;
-+
- 	/* Guard against delegation returns and new lock/unlock calls */
- 	down_write(&nfsi->rwsem);
--	/* Protect inode->i_flock using the BKL */
--	spin_lock(&inode->i_lock);
--	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
--		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
--			continue;
-+	spin_lock(&flctx->flc_lock);
-+restart:
-+	list_for_each_entry(fl, list, fl_list) {
- 		if (nfs_file_open_context(fl->fl_file)->state != state)
- 			continue;
--		spin_unlock(&inode->i_lock);
-+		spin_unlock(&flctx->flc_lock);
- 		status = ops->recover_lock(state, fl);
- 		switch (status) {
- 			case 0:
-@@ -1418,9 +1420,13 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
- 				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
- 				status = 0;
- 		}
--		spin_lock(&inode->i_lock);
-+		spin_lock(&flctx->flc_lock);
- 	}
--	spin_unlock(&inode->i_lock);
-+	if (list == &flctx->flc_posix) {
-+		list = &flctx->flc_flock;
-+		goto restart;
-+	}
-+	spin_unlock(&flctx->flc_lock);
- out:
- 	up_write(&nfsi->rwsem);
- 	return status;
-diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
-index ba491926df5f..4df8d8755026 100644
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -782,7 +782,8 @@ static bool nfs_can_coalesce_requests(struct nfs_page *prev,
- 	if (prev) {
- 		if (!nfs_match_open_context(req->wb_context, prev->wb_context))
- 			return false;
--		if (req->wb_context->dentry->d_inode->i_flock != NULL &&
-+		if (req->wb_context->dentry->d_inode->i_flctx != NULL &&
-+		    !list_empty(&req->wb_context->dentry->d_inode->i_flctx->flc_posix) &&
- 		    !nfs_match_lock_context(req->wb_lock_context,
- 					    prev->wb_lock_context))
- 			return false;
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index e3b5cf28bdc5..02b8777f8f2f 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1128,7 +1128,8 @@ int nfs_flush_incompatible(struct file *file, struct page *page)
- 		do_flush = req->wb_page != page || req->wb_context != ctx;
- 		/* for now, flush if more than 1 request in page_group */
- 		do_flush |= req->wb_this_page != req;
--		if (l_ctx && ctx->dentry->d_inode->i_flock != NULL) {
-+		if (l_ctx && ctx->dentry->d_inode->i_flctx &&
-+		    !list_empty(&ctx->dentry->d_inode->i_flctx->flc_posix)) {
- 			do_flush |= l_ctx->lockowner.l_owner != current->files
- 				|| l_ctx->lockowner.l_pid != current->tgid;
- 		}
-@@ -1189,6 +1190,12 @@ out:
- 	return PageUptodate(page) != 0;
- }
- 
-+static bool
-+is_whole_file_wrlock(struct file_lock *fl)
-+{
-+	return fl->fl_start == 0 && fl->fl_end == OFFSET_MAX && fl->fl_type == F_WRLCK;
-+}
-+
- /* If we know the page is up to date, and we're not using byte range locks (or
-  * if we have the whole file locked for writing), it may be more efficient to
-  * extend the write to cover the entire page in order to avoid fragmentation
-@@ -1199,17 +1206,37 @@ out:
-  */
- static int nfs_can_extend_write(struct file *file, struct page *page, struct inode *inode)
- {
-+	int ret;
-+	struct file_lock_context *flctx = inode->i_flctx;
-+	struct file_lock *fl;
-+
- 	if (file->f_flags & O_DSYNC)
- 		return 0;
- 	if (!nfs_write_pageuptodate(page, inode))
- 		return 0;
- 	if (NFS_PROTO(inode)->have_delegation(inode, FMODE_WRITE))
- 		return 1;
--	if (inode->i_flock == NULL || (inode->i_flock->fl_start == 0 &&
--			inode->i_flock->fl_end == OFFSET_MAX &&
--			inode->i_flock->fl_type != F_RDLCK))
--		return 1;
--	return 0;
-+	/* no lock context == no locks */
-+	if (!flctx)
-+		return 0;
-+
-+	/* if lists are empty then there are no locks */
-+	if (list_empty(&flctx->flc_posix) && list_empty(&flctx->flc_flock))
-+		return 0;
-+
-+	ret = 0;
-+	/* Check to see if there are whole file write locks */
-+	spin_lock(&flctx->flc_lock);
-+	fl = list_first_entry(&flctx->flc_posix, struct file_lock, fl_list);
-+	if (is_whole_file_wrlock(fl)) {
-+		ret = 1;
-+	} else {
-+		fl = list_first_entry(&flctx->flc_flock, struct file_lock, fl_list);
-+		if (is_whole_file_wrlock(fl))
-+			ret = 1;
-+	}
-+	spin_unlock(&flctx->flc_lock);
-+	return ret;
- }
- 
- /*
+On 09/03/2014 05:19 PM, Andrew Pinski wrote:
+> This patch adds the VDSO for ILP32. We need to use a different
+> VDSO than LP64 since ILP32 uses ELF32 while LP64 uses ELF64.
+> 
+> After this patch, signal handling works mostly.  In that signals
+> go through their action and then returned correctly.
+> 
+> Signed-off-by: Andrew Pinski <apinski@cavium.com>
+> ---
+>  arch/arm64/include/asm/vdso.h                 |    4 +
+>  arch/arm64/kernel/Makefile                    |    5 +
+>  arch/arm64/kernel/signal.c                    |    4 +
+>  arch/arm64/kernel/vdso-ilp32/.gitignore       |    2 +
+>  arch/arm64/kernel/vdso-ilp32/Makefile         |   72 ++++++++++++++++++
+>  arch/arm64/kernel/vdso-ilp32/vdso-ilp32.S     |   33 ++++++++
+>  arch/arm64/kernel/vdso-ilp32/vdso-ilp32.lds.S |   98 +++++++++++++++++++++++++
+>  arch/arm64/kernel/vdso.c                      |   69 ++++++++++++++---
+>  8 files changed, 274 insertions(+), 13 deletions(-)
+>  create mode 100644 arch/arm64/kernel/vdso-ilp32/.gitignore
+>  create mode 100644 arch/arm64/kernel/vdso-ilp32/Makefile
+>  create mode 100644 arch/arm64/kernel/vdso-ilp32/vdso-ilp32.S
+>  create mode 100644 arch/arm64/kernel/vdso-ilp32/vdso-ilp32.lds.S
+> 
+> diff --git a/arch/arm64/include/asm/vdso.h b/arch/arm64/include/asm/vdso.h
+> index 839ce00..84050c6 100644
+> --- a/arch/arm64/include/asm/vdso.h
+> +++ b/arch/arm64/include/asm/vdso.h
+> @@ -29,6 +29,10 @@
+>  
+>  #include <generated/vdso-offsets.h>
+>  
+> +#ifdef CONFIG_ARM64_ILP32
+> +#include <generated/vdso-ilp32-offsets.h>
+> +#endif
+> +
+>  #define VDSO_SYMBOL(base, name)						   \
+>  ({									   \
+>  	(void *)(vdso_offset_##name - VDSO_LBASE + (unsigned long)(base)); \
+> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+> index 6de85f5..dcb9033 100644
+> --- a/arch/arm64/kernel/Makefile
+> +++ b/arch/arm64/kernel/Makefile
+> @@ -31,6 +31,7 @@ arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
+>  arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
+>  
+>  obj-y					+= $(arm64-obj-y) vdso/
+> +obj-$(CONFIG_ARM64_ILP32)		+= vdso-ilp32/
+>  obj-m					+= $(arm64-obj-m)
+>  head-y					:= head.o
+>  extra-y					:= $(head-y) vmlinux.lds
+> @@ -38,3 +39,7 @@ extra-y					:= $(head-y) vmlinux.lds
+>  # vDSO - this must be built first to generate the symbol offsets
+>  $(call objectify,$(arm64-obj-y)): $(obj)/vdso/vdso-offsets.h
+>  $(obj)/vdso/vdso-offsets.h: $(obj)/vdso
+> +
+> +# vDSO - this must be built first to generate the symbol offsets
+> +$(call objectify,$(arm64-obj-y)): $(obj)/vdso-ilp32/vdso-ilp32-offsets.h
+> +$(obj)/vdso-ilp32/vdso-ilp32-offsets.h: $(obj)/vdso-ilp32
+> diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+> index f47c064..5311147 100644
+> --- a/arch/arm64/kernel/signal.c
+> +++ b/arch/arm64/kernel/signal.c
+> @@ -242,6 +242,10 @@ static void setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+>  
+>  	if (ka->sa.sa_flags & SA_RESTORER)
+>  		sigtramp = ka->sa.sa_restorer;
+> +#ifdef CONFIG_ARM64_ILP32
+> +	else if (is_ilp32_compat_task())
+> +		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp_ilp32);
+> +#endif
+>  	else
+>  		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
+
+In my opinion, moving the ifdef around the definition of
+is_ilp32_compat_task() would make the code easier to read and maintain.
+
+> diff --git a/arch/arm64/kernel/vdso.c b/arch/arm64/kernel/vdso.c
+> index a777ac3..21b3726 100644
+> --- a/arch/arm64/kernel/vdso.c
+> +++ b/arch/arm64/kernel/vdso.c
+> @@ -41,6 +41,12 @@ extern char vdso_start, vdso_end;
+>  static unsigned long vdso_pages;
+>  static struct page **vdso_pagelist;
+>  
+> +#ifdef CONFIG_ARM64_ILP32
+> +extern char vdso_ilp32_start, vdso_ilp32_end;
+> +static unsigned long vdso_ilp32_pages;
+> +static struct page **vdso_ilp32_pagelist;
+> +#endif
+> +
+>  /*
+>   * The vDSO data page.
+>   */
+> @@ -110,24 +116,31 @@ int aarch32_setup_vectors_page(struct linux_binprm *bprm, int uses_interp)
+>  }
+>  #endif /* CONFIG_AARCH32_EL0 */
+>  
+> -static struct vm_special_mapping vdso_spec[2];
+> +static struct vm_special_mapping vdso_spec[2][2];
+>  
+> -static int __init vdso_init(void)
+> +static inline int __init vdso_init_common(char *vdso_start, char *vdso_end,
+> +					  unsigned long *vdso_pagesp,
+> +					  struct page ***vdso_pagelistp,
+> +					  bool ilp32)
+>  {
+>  	int i;
+> +	unsigned long vdso_pages;
+> +	struct page **vdso_pagelist;
+>  
+> -	if (memcmp(&vdso_start, "\177ELF", 4)) {
+> +	if (memcmp(vdso_start, "\177ELF", 4)) {
+>  		pr_err("vDSO is not a valid ELF object!\n");
+>  		return -EINVAL;
+>  	}
+>  
+> -	vdso_pages = (&vdso_end - &vdso_start) >> PAGE_SHIFT;
+> +	vdso_pages = (vdso_end - vdso_start) >> PAGE_SHIFT;
+> +	*vdso_pagesp = vdso_pages;
+>  	pr_info("vdso: %ld pages (%ld code @ %p, %ld data @ %p)\n",
+> -		vdso_pages + 1, vdso_pages, &vdso_start, 1L, vdso_data);
+> +		vdso_pages + 1, vdso_pages, vdso_start, 1L, vdso_data);
+>  
+>  	/* Allocate the vDSO pagelist, plus a page for the data. */
+>  	vdso_pagelist = kcalloc(vdso_pages + 1, sizeof(struct page *),
+>  				GFP_KERNEL);
+> +	*vdso_pagelistp = vdso_pagelist;
+>  	if (vdso_pagelist == NULL)
+>  		return -ENOMEM;
+>  
+> @@ -136,33 +149,63 @@ static int __init vdso_init(void)
+>  
+>  	/* Grab the vDSO code pages. */
+>  	for (i = 0; i < vdso_pages; i++)
+> -		vdso_pagelist[i + 1] = virt_to_page(&vdso_start + i * PAGE_SIZE);
+> +		vdso_pagelist[i + 1] = virt_to_page(vdso_start + i * PAGE_SIZE);
+>  
+>  	/* Populate the special mapping structures */
+> -	vdso_spec[0] = (struct vm_special_mapping) {
+> +	vdso_spec[ilp32][0] = (struct vm_special_mapping) {
+>  		.name	= "[vvar]",
+>  		.pages	= vdso_pagelist,
+>  	};
+>  
+> -	vdso_spec[1] = (struct vm_special_mapping) {
+> +	vdso_spec[ilp32][1] = (struct vm_special_mapping) {
+>  		.name	= "[vdso]",
+>  		.pages	= &vdso_pagelist[1],
+>  	};
+>  
+>  	return 0;
+>  }
+> +
+> +static int __init vdso_init(void)
+> +{
+> +	return vdso_init_common(&vdso_start, &vdso_end,
+> +				&vdso_pages, &vdso_pagelist, 0);
+> +}
+>  arch_initcall(vdso_init);
+>  
+> +#ifdef CONFIG_ARM64_ILP32
+> +static int __init vdso_ilp32_init(void)
+> +{
+> +	return vdso_init_common(&vdso_ilp32_start, &vdso_ilp32_end,
+> +				&vdso_ilp32_pages, &vdso_ilp32_pagelist, 1);
+> +}
+> +arch_initcall(vdso_ilp32_init);
+> +#endif
+> +
+>  int arch_setup_additional_pages(struct linux_binprm *bprm,
+>  				int uses_interp)
+>  {
+>  	struct mm_struct *mm = current->mm;
+>  	unsigned long vdso_base, vdso_text_len, vdso_mapping_len;
+>  	void *ret;
+> -
+> -	vdso_text_len = vdso_pages << PAGE_SHIFT;
+> +	struct page **pagelist;
+> +	unsigned long pages;
+> +	bool ilp32;
+> +
+> +#ifdef CONFIG_ARM64_ILP32
+> +	ilp32 = is_ilp32_compat_task();
+> +	if (is_ilp32_compat_task()) {
+> +		pages = vdso_ilp32_pages;
+> +		pagelist = vdso_ilp32_pagelist;
+> +	} else
+> +#endif
+
+Same
+
+> +	{
+> +		ilp32 = false;
+> +		pages = vdso_pages;
+> +		pagelist = vdso_pagelist;
+> +	}
+> +	vdso_text_len = pages << PAGE_SHIFT;
+>  	/* Be sure to map the data page */
+> -	vdso_mapping_len = vdso_text_len + PAGE_SIZE;
+> +	vdso_mapping_len = (pages + 1) << PAGE_SHIFT;
+>  
+>  	down_write(&mm->mmap_sem);
+>  	vdso_base = get_unmapped_area(NULL, 0, vdso_mapping_len, 0, 0);
+> @@ -172,7 +215,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
+>  	}
+>  	ret = _install_special_mapping(mm, vdso_base, PAGE_SIZE,
+>  				       VM_READ|VM_MAYREAD,
+> -				       &vdso_spec[0]);
+> +				       &vdso_spec[ilp32][0]);
+>  	if (IS_ERR(ret))
+>  		goto up_fail;
+>  
+> @@ -181,7 +224,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
+>  	ret = _install_special_mapping(mm, vdso_base, vdso_text_len,
+>  				       VM_READ|VM_EXEC|
+>  				       VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
+> -				       &vdso_spec[1]);
+> +				       &vdso_spec[ilp32][1]);
+>  	if (IS_ERR(ret))
+>  		goto up_fail;
+>  
+> 
+
+Regards,
+Christopher
+
 -- 
-1.9.3
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
