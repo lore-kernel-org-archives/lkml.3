@@ -1,113 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaIJSfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:35:11 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:46200 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927AbaIJSfI (ORCPT
+	id S1753194AbaIJSfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:35:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57125 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaIJSfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:35:08 -0400
+	Wed, 10 Sep 2014 14:35:47 -0400
+Date: Wed, 10 Sep 2014 11:33:41 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: serial: men_z135_uart: Fix driver for changes in
+ hardware
+Message-ID: <20140910183341.GB15117@kroah.com>
+References: <1409229140-14407-1-git-send-email-johannes.thumshirn@men.de>
+ <20140908231733.GB23907@kroah.com>
+ <20140909055615.GA10306@jtlinux>
+ <20140910002635.GA2189@kroah.com>
+ <20140910060723.GA3525@jtlinux>
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=U4ar=jW273=0PMX1A_hTqxPAJ9avJuTD2N4RNa4a12xg@mail.gmail.com>
-References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org>
-	<20140910172710.GA3300@leverpostej>
-	<CAD=FV=U4ar=jW273=0PMX1A_hTqxPAJ9avJuTD2N4RNa4a12xg@mail.gmail.com>
-Date: Wed, 10 Sep 2014 11:35:07 -0700
-X-Google-Sender-Auth: NvDl6Gdc6JLgIJrUP96se52i53k
-Message-ID: <CAD=FV=ULX7ndD2wk3UAKJ3T2Uaf=LmYw_tpyGTeURFTXC+iMvQ@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910060723.GA3525@jtlinux>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Sep 10, 2014 at 08:07:24AM +0200, Johannes Thumshirn wrote:
+> On Tue, Sep 09, 2014 at 05:26:35PM -0700, Greg Kroah-Hartman wrote:
+> > On Tue, Sep 09, 2014 at 07:56:15AM +0200, Johannes Thumshirn wrote:
+> > > On Mon, Sep 08, 2014 at 04:17:33PM -0700, Greg Kroah-Hartman wrote:
+> > > > >
+> > > > > @@ -118,6 +117,10 @@ static int align;
+> > > > >  module_param(align, int, S_IRUGO);
+> > > > >  MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
+> > > > >
+> > > > > +static int rx_timeout;
+> > > > > +module_param(rx_timeout, uint, S_IRUGO);
+> > > > > +MODULE_PARM_DESC(rx_timeout, "RX timeout");
+> > > >
+> > > > Why add a module parameter?  Who will know to set this?  And to what
+> > > > value?
+> > > >
+> > >
+> > > There will be a user manual describing the parameter. It's like the rxlvl and
+> > > txlvl parameters, you'll have to read the manual if you need other values than
+> > > the default ones.
+> >
+> > Ugh, but module parameters are for all devices in the system of this
+> > type, which is why we try not to have them at all anymore.
+> >
+> > And I don't like the other module parameters either :(
+> >
+> > But it's an odd-one-off driver, I guess we can live...
+> 
+> Just for my information, what would be the correct way to do these kinds of
+> hardware specific settings? Sysfs? Debugfs? Custom ioctl()s (no struct file_operations,
+> so probably not)?
 
-On Wed, Sep 10, 2014 at 10:52 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Mark,
->
-> On Wed, Sep 10, 2014 at 10:27 AM, Mark Rutland <mark.rutland@arm.com> wrote:
->> Hi Sonny,
->>
->> On Wed, Aug 27, 2014 at 10:03:39PM +0100, Sonny Rao wrote:
->>> This is a bug fix for using physical arch timers when
->>> the arch_timer_use_virtual boolean is false.  It restores the
->>> arch_counter_get_cntpct() function after removal in
->>>
->>> 0d651e4e "clocksource: arch_timer: use virtual counters"
->>>
->>> and completes the implementation of memory mapped access for physical
->>> timers, so if a system is trying to use physical timers, it will
->>> function properly.
->>
->> To get back to the topic at hand:
->>
->> Which platform is this required by?
->
-> I've seen similar problems on the A7s on exynos5420 / exynos5800 and
-> on rk3288.  I can't say what other platforms might be affected.  Note
-> that the arch timers on exyno5420/exynos5800 are not supported anyway,
-> so I guess that means we're just worrying about the rk3288.
->
->
->> Why exactly is arch_timer_use_virtual false in this case?
->
-> To re-summarize my understanding of everything (many of the below is
-> secondhand knowledge, so correct if wrong):
->
-> 1. The initial problem is that the virtual offset is not initialized
-> by anyone and is per core (each core gets a different, random offset).
-> That makes the virtual counter useless.  ...but the kernel only uses
-> virtual counters.
->
-> 2. As far as I know, we don't have any particular need for HYP mode
-> nor for limiting access to secure mode.
->
-> 3. You can only change the virtual offset from HYP mode.  That means
-> someone needs to transition to HYP mode if we want to use virtual
-> counters.
->
-> 4. If the kernel happens to be in HYP mode it will init the virtual offset.
->
-> 5. We could transition to HYP mode once in the firmware and boot the
-> kernel like that, but since firmware is gone after we've booted the
-> kernel, we run into the same problem when we power off a processor and
-> when we resume from S3.  The firmware is not involved in these cases.
-> In these cases the processors have an uninitialized virtual offset
-> again.  These processors don't appear to magically come up in HYP
-> mode.  Thus it would be up to the kernel to transition to HYP mode,
-> init the offset, and get out of HYP mode.  ...or just use the physical
-> counter.
->
->
-> If you can suggest something that doesn't require us to involve the
-> firmware in processor bringup and in resume, I'm all ears.  We have a
-> desire not to involve the firmware there because of all the issues of
-> keeping kernel/firmware in sync and because of the extra difficultly
-> of shipping firmware updates (understandably the QA needed to validate
-> a new firmware is much higher than the QA needed to validate a new
-> kernel).
+For serial ports, odds are there is already some other way to do this
+through a common interface...
 
-Note: we can avoid all of this mess by just using physical counters
-and otherwise leaving the system alone.  That would mean landing
-Sonny's patch plus another one that allows us to manually chose
-physical counters.
+But sysfs is a good way to go if you really need it, just document it
+properly in Documentation/ABI/
 
-If everyone can agree that's not terrible then we could probably end
-the conversation there.
+thanks,
 
--Doug
+greg k-h
