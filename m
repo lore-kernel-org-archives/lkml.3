@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbaIJVpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:45:31 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:36515 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857AbaIJVpa (ORCPT
+	id S1753856AbaIJVsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:48:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56231 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753697AbaIJVsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:45:30 -0400
-Message-ID: <1410384895.28990.312.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 6/6] x86, pat: Update documentation for WT changes
-From: Toshi Kani <toshi.kani@hp.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 10 Sep 2014 15:34:55 -0600
-In-Reply-To: <CALCETrUh20-2PX_KN2KWO085n=5XJpOnPysmCGbk7bufaD3Mhw@mail.gmail.com>
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
-	 <1410367910-6026-7-git-send-email-toshi.kani@hp.com>
-	 <CALCETrVnHg0X=R23qyiPtxYs3knHaXq65L0Jw_1oY4=gX5kpXQ@mail.gmail.com>
-	 <1410379933.28990.287.camel@misato.fc.hp.com>
-	 <CALCETrUh20-2PX_KN2KWO085n=5XJpOnPysmCGbk7bufaD3Mhw@mail.gmail.com>
+	Wed, 10 Sep 2014 17:48:09 -0400
+Message-ID: <1410385686.28237.5.camel@jarvis>
+Subject: Re: bit fields && data tearing
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: paulmck@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org
+Date: Wed, 10 Sep 2014 14:48:06 -0700
+In-Reply-To: <540ED929.5040305@hurleysoftware.com>
+References: <21512.10628.412205.873477@gargle.gargle.HOWL>
+				 <20140904090952.GW17454@tucnak.redhat.com>
+				 <540859EC.5000407@hurleysoftware.com>
+				 <20140904175044.4697aee4@alan.etchedpixels.co.uk>
+				 <5408C0AB.6050801@hurleysoftware.com>
+				 <20140905001751.GL5001@linux.vnet.ibm.com>
+				 <1409883098.5078.14.camel@jarvis.lan>
+			 <5409243C.4080704@hurleysoftware.com>
+				 <20140905040645.GO5001@linux.vnet.ibm.com>
+				 <1410066442.12512.13.camel@jarvis.lan>
+				 <20140907162146.GK5001@linux.vnet.ibm.com>
+			 <1410116687.2027.19.camel@jarvis.lan>
+		 <540CC305.8010407@hurleysoftware.com>
+	 <1410155407.2027.29.camel@jarvis.lan>
+		 <540E3BFF.7080307@hurleysoftware.com>
+	 <1410231392.2028.15.camel@jarvis.lan> <540ED929.5040305@hurleysoftware.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 13:29 -0700, Andy Lutomirski wrote:
-> On Wed, Sep 10, 2014 at 1:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > On Wed, 2014-09-10 at 11:30 -0700, Andy Lutomirski wrote:
-> >> On Wed, Sep 10, 2014 at 9:51 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> >> > +Drivers may map the entire NV-DIMM range with ioremap_cache and then change
-> >> > +a specific range to wt with set_memory_wt.
+On Tue, 2014-09-09 at 06:40 -0400, Peter Hurley wrote:
+> On 09/08/2014 10:56 PM, James Bottomley wrote:
+> > On Mon, 2014-09-08 at 19:30 -0400, Peter Hurley wrote:
+> >> On 09/08/2014 01:50 AM, James Bottomley wrote:
+> >>>> But additionally, even if gcc combines adjacent writes _that are part
+> >>>> of the program flow_ then I believe the situation is no worse than
+> >>>> would otherwise exist.
+> >>>>
+> >>>> For instance, given the following:
+> >>>>
+> >>>> struct x {
+> >>>> 	spinlock_t lock;
+> >>>> 	long a;
+> >>>> 	byte b;
+> >>>> 	byte c;
+> >>>> };
+> >>>>
+> >>>> void locked_store_b(struct x *p)
+> >>>> {
+> >>>> 	spin_lock(&p->lock);
+> >>>> 	p->b = 1;
+> >>>> 	spin_unlock(&p->lock);
+> >>>> 	p->c = 2;
+> >>>> }
+> >>>>
+> >>>> Granted, the author probably expects ordered writes of
+> >>>> 	STORE B
+> >>>> 	STORE C
+> >>>> but that's not guaranteed because there is no memory barrier
+> >>>> ordering B before C.
+> >>>
+> >>> Yes, there is: loads and stores may not migrate into or out of critical
+> >>> sections.
 > >>
-> >> That's mighty specific :)
-> >
-> > How about below?
-> >
-> > Drivers may use set_memory_wt to set WT type for cached reserve ranges.
+> >> That's a common misconception.
+> >>
+> >> The processor is free to re-order this to:
+> >>
+> >> 	STORE C
+> >> 	STORE B
+> >> 	UNLOCK
+> >>
+> >> That's because the unlock() only guarantees that:
+> >>
+> >> Stores before the unlock in program order are guaranteed to complete
+> >> before the unlock completes. Stores after the unlock _may_ complete
+> >> before the unlock completes.
+> >>
+> >> My point was that even if compiler barriers had the same semantics
+> >> as memory barriers, the situation would be no worse. That is, code
+> >> that is sensitive to memory barriers (like the example I gave above)
+> >> would merely have the same fragility with one-way compiler barriers
+> >> (with respect to the compiler combining writes).
+> >>
+> >> That's what I meant by "no worse than would otherwise exist".
+> > 
+> > Actually, that's not correct.  This is actually deja vu with me on the
+> > other side of the argument.  When we first did spinlocks on PA, I argued
+> > as you did: lock only a barrier for code after and unlock for code
+> > before.  The failing case is that you can have a critical section which
+> > performs an atomically required operation and a following unit which
+> > depends on it being performed.  If you begin the following unit before
+> > the atomic requirement, you may end up losing.  It turns out this kind
+> > of pattern is inherent in a lot of mail box device drivers: you need to
+> > set up the mailbox atomically then poke it.  Setup is usually atomic,
+> > deciding which mailbox to prime and actually poking it is in the
+> > following unit.  Priming often involves an I/O bus transaction and if
+> > you poke before priming, you get a misfire.
 > 
-> Do they have to be cached?
-
-Yes, set_memory_xyz only supports WB->type->WB transition.
-
-> How about:
+> Take it up with the man because this was discussed extensively last
+> year and it was decided that unlocks would not be full barriers.
+> Thus the changes to memory-barriers.txt that explicitly note this
+> and the addition of smp_mb__after_unlock_lock() (for two different
+> locks; an unlock followed by a lock on the same lock is a full barrier).
 > 
-> Drivers may call set_memory_wt on ioremapped ranges.  In this case,
-> there is no need to change the memory type back before calling
-> iounmap.
-> 
-> (Or only on cached ioremapped ranges if that is, in fact, the case.)
+> Code that expects ordered writes after an unlock needs to explicitly
+> add the memory barrier.
 
-Sounds good.  Yes, I will use cashed ioremapped ranges.
+I don't really care what ARM does; spin locks are full barriers on
+architectures that need them.  The driver problem we had that detected
+our semi permeable spinlocks was an LSI 53c875 which is enterprise class
+PCI, so presumably not relevant to ARM anyway.
 
-Thanks,
--Toshi
+James
 
 
