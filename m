@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaIJRTb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:19:31 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:51565 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaIJRT3 (ORCPT
+	id S1752697AbaIJRTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:19:43 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:58388 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158AbaIJRTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:19:29 -0400
+	Wed, 10 Sep 2014 13:19:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140910155509.GA7519@leverpostej>
-References: <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
-	<CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
-	<53FE5B09.2020403@codeaurora.org>
-	<CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
-	<53FE7E3B.1010500@codeaurora.org>
-	<CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
-	<CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
-	<20140828093505.GC14650@leverpostej>
-	<CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
-	<54106707.4010006@codeaurora.org>
-	<20140910155509.GA7519@leverpostej>
-Date: Wed, 10 Sep 2014 10:19:28 -0700
-X-Google-Sender-Auth: KwT-ZZt1dEXT_MsR4iw-2hPBWp0
-Message-ID: <CAD=FV=URg=vQbOqkg57Uujs4UWv8OKEjY+3Rx=7jbgab5pgoBQ@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <5410062A.4090003@redhat.com>
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+	<1410325808-3657-5-git-send-email-ast@plumgrid.com>
+	<5410062A.4090003@redhat.com>
+Date: Wed, 10 Sep 2014 10:19:39 -0700
+Message-ID: <CAMEtUuxuTrhJ-Eyqc+sXK_5DeDccpN7EZ9kejS1fif-QxCOMqA@mail.gmail.com>
+Subject: Re: [PATCH v11 net-next 04/12] bpf: expand BPF syscall with program load/unload
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+On Wed, Sep 10, 2014 at 1:04 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>> +       bool                    has_info;       /* whether 'info' is valid
+>>         u32                     len;            /* Number of filter blocks
+>> -       struct sock_fprog_kern  *orig_prog;     /* Original BPF program */
+>> +       union {
+>> +               struct sock_fprog_kern  *orig_prog;     /* Original BPF
+>> program */
+>> +               struct bpf_prog_info    *info;
+>> +       };
+>
+>
+> All members of this bpf_prog_info should go into bpf_work_struct,
+> as I have intended this to be a ancillary structure here. Since
+> we already allocate this anyway, you can reduce complexity by doing
+> the additional allocation plus remove the has_info member.
 
-On Wed, Sep 10, 2014 at 8:55 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> That's not true in general as other secure initialization will still be
-> necessary, and the extent and character of that initialization is going
-> to be implementation specific.
+that's doable, but won't you be worried about extra 6 fields
+in there that only used by native eBPF programs?
+I kept them separate not to introduce any overhead
+to classic programs.
 
-Can you give more examples of what you mean by implementation
-specific?  Does this mean that secure initialization will be different
-for every SoC out there?  ...or is it just different for different ARM
-cores?
+>>         struct bpf_work_struct  *work;          /* Deferred free work
+>> struct */
 
--Doug
+Also we'd need to rename it, adjust the comment above
+and move into linux/bpf.h, since it don't want to overload
+linux/filter.h with native eBPF stuff. In my mind filter.h
+is for classic and socket things, whereas bpf.h is net-less.
+So I'm 50/50 on this one.
+Dropping has_info flag is definitely a plus.
+
+Rename 'struct bpf_work_struct' to 'struct bpf_prog_info' ?
+bpf_prog_aux_data? bpf_prog_extra ?
+Naming is hard.
+
+> But seccomp already does refcounting on each BPF filter. Or, is the
+> intention to remove this from seccomp?
+
+seccomp refcounts its own wrapper struct on top of classic bpf.
+It gets incremented when task is forked, so I suspect it will
+be needed even when seccomp moves to native.
+Note that 'struct sk_filter' has its own refcnt as well which
+gets incremented when socket is cloned. It's independent from
+eBPF program refcnt which is part of 'struct bpf_prog_info',
+since the same eBPF program can be attached to multiple
+sockets. So both are needed. Seccomp may want to attach
+the same eBPF program to multiple tasks as well to save
+some memory.
+In classic BPF we may open multiple sockets and attach
+the same classic BPF prog to all. prog is allocated multiple
+times. JIT is called multiple times, but overhead is not huge.
+For eBPF is not an option. In eBPF+tracing single program
+may be attached to hundreds of events.
+
+>> +       BUG_ON(fp->has_info);
+>
+> Why BUG_ON() (also in so many other places)?
+
+because struct bpf_prog can be created in many different
+ways and I had a painful bug here while developing.
+I think it can be dropped now.
