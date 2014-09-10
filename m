@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaIJK6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:58:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58761 "EHLO
+	id S1752661AbaIJK6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:58:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58763 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaIJK6e (ORCPT
+	with ESMTP id S1752148AbaIJK6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Sep 2014 06:58:34 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
@@ -17,9 +17,9 @@ Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 4/8] of: Add for_each_endpoint_of_node helper macro
-Date: Wed, 10 Sep 2014 12:58:24 +0200
-Message-Id: <1410346708-5125-5-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v2 6/8] drm: use for_each_endpoint_of_node macro in drm_of_find_possible_crtcs
+Date: Wed, 10 Sep 2014 12:58:26 +0200
+Message-Id: <1410346708-5125-7-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
 References: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
@@ -31,41 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that while of_graph_get_next_endpoint decrements the reference count
-of the child node passed to it, of_node_put(child) still has to be called
-manually when breaking out of the loop.
+Using the for_each_... macro should make the code a bit shorter and
+easier to read.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
-Changes since v1:
- - Added a comment about the child node reference count when breaking out
-   of the loop
----
- include/linux/of_graph.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/gpu/drm/drm_of.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-index befef42..e43442e 100644
---- a/include/linux/of_graph.h
-+++ b/include/linux/of_graph.h
-@@ -26,6 +26,17 @@ struct of_endpoint {
- 	const struct device_node *local_node;
- };
+diff --git a/drivers/gpu/drm/drm_of.c b/drivers/gpu/drm/drm_of.c
+index 16150a0..024fa77 100644
+--- a/drivers/gpu/drm/drm_of.c
++++ b/drivers/gpu/drm/drm_of.c
+@@ -46,11 +46,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device *dev,
+ 	struct device_node *remote_port, *ep = NULL;
+ 	uint32_t possible_crtcs = 0;
  
-+/**
-+ * for_each_endpoint_of_node - iterate over every endpoint in a device node
-+ * @parent: parent device node containing ports and endpoints
-+ * @child: loop variable pointing to the current endpoint node
-+ *
-+ * When breaking out of the loop, of_node_put(child) has to be called manually.
-+ */
-+#define for_each_endpoint_of_node(parent, child) \
-+	for (child = of_graph_get_next_endpoint(parent, NULL); child != NULL; \
-+	     child = of_graph_get_next_endpoint(parent, child))
-+
- #ifdef CONFIG_OF
- int of_graph_parse_endpoint(const struct device_node *node,
- 				struct of_endpoint *endpoint);
+-	do {
+-		ep = of_graph_get_next_endpoint(port, ep);
+-		if (!ep)
+-			break;
+-
++	for_each_endpoint_of_node(port, ep) {
+ 		remote_port = of_graph_get_remote_port(ep);
+ 		if (!remote_port) {
+ 			of_node_put(ep);
+@@ -60,7 +56,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device *dev,
+ 		possible_crtcs |= drm_crtc_port_mask(dev, remote_port);
+ 
+ 		of_node_put(remote_port);
+-	} while (1);
++	}
+ 
+ 	return possible_crtcs;
+ }
 -- 
 2.1.0
 
