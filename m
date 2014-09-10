@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaIJH3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:29:32 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:39600 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaIJH3b (ORCPT
+	id S1751903AbaIJH3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:29:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48383 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaIJH3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:29:31 -0400
-Message-ID: <540FFDD5.8000403@mentor.com>
-Date: Wed, 10 Sep 2014 15:29:25 +0800
-From: Chung-Lin Tang <chunglin_tang@mentor.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 10 Sep 2014 03:29:45 -0400
+Date: Wed, 10 Sep 2014 09:29:35 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: struct of_device_id should usually be const
+Message-ID: <20140910072935.GA3755@pengutronix.de>
+References: <1410333346-29062-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <1410333797.24028.29.camel@joe-AO725>
 MIME-Version: 1.0
-To: <Valdis.Kletnieks@vt.edu>, Ley Foon Tan <lftan@altera.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Subject: Re: [PATCH v3 25/29] nios2: Module support
-References: <1410168160-3624-1-git-send-email-lftan@altera.com>            <1410168160-3624-26-git-send-email-lftan@altera.com> <75377.1410297958@turing-police.cc.vt.edu>
-In-Reply-To: <75377.1410297958@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410333797.24028.29.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/9/10 5:25 AM, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 08 Sep 2014 17:22:36 +0800, Ley Foon Tan said:
->> This patch adds support for loadable modules.
->>
->> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+On Wed, Sep 10, 2014 at 12:23:17AM -0700, Joe Perches wrote:
+> On Wed, 2014-09-10 at 09:15 +0200, Uwe Kleine-König wrote:
+> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> []
+> > @@ -4941,6 +4941,7 @@ sub process {
+> >  				mtrr_ops|
+> >  				neigh_ops|
+> >  				nlmsvc_binding|
+> > +				of_device_id|
+> >  				pci_raw_ops|
+> >  				pipe_buf_operations|
+> >  				platform_hibernation_ops|
 > 
->> +/*
->> + * Modules should NOT be allocated with kmalloc for (obvious) reasons.
->> + * But we do it for now to avoid relocation issues. CALL26/PCREL26 cannot reach
->> + * from 0x80000000 (vmalloc area) to 0xc00000000 (kernel) (kmalloc returns
->> + * addresses in 0xc0000000)
->> + */
+> Fine by me, there are ~1200 or so const uses.
 > 
-> That's a nice scary comment to see. :)
+> There are also ~350 of these that are not const.
 > 
-> What's the long-term plan here?
-> 
+> Are most all of those supposed to be const?
+Yeah, I'm working on a patch series to fix most of these. I thought I
+sent out the checkpatch patch first to slow down the occurences to fix.
 
-We would probably need to add the ability to add trampolines in some
-way, though this of course impairs a little performance. Or if the
-default region of vmalloc can be configured to use the same 256MB region
-as the kernel.
+Best regards
+Uwe
 
-I wonder how MIPS (which has similar same-region call/jump instructions)
-deals with this?
-
-Chung-Lin
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
