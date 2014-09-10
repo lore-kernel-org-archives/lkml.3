@@ -1,102 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaIJQ3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:29:43 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:60958 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459AbaIJQ3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:29:39 -0400
-Date: Wed, 10 Sep 2014 18:29:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Dave Hansen <dave@sr71.net>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Tejun Heo <tj@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-Message-ID: <20140910162936.GI25219@dhcp22.suse.cz>
-References: <54061505.8020500@sr71.net>
- <5406262F.4050705@intel.com>
- <54062F32.5070504@sr71.net>
- <20140904142721.GB14548@dhcp22.suse.cz>
- <5408CB2E.3080101@sr71.net>
- <20140905092537.GC26243@dhcp22.suse.cz>
+	id S1752026AbaIJQd0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:33:26 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:37100 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751084AbaIJQdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 12:33:24 -0400
+Date: Wed, 10 Sep 2014 10:32:50 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yijing Wang <wangyijing@huawei.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI
+ domain_nr
+Message-ID: <20140910163250.GA22910@obsidianresearch.com>
+References: <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com>
+ <20140908145459.GO27864@e106497-lin.cambridge.arm.com>
+ <CAL_JsqJdGKDVwJOpPp19OkVPGzR7Zqv3nh+ONHHaYnPLYTYoYg@mail.gmail.com>
+ <20140908155931.GP27864@e106497-lin.cambridge.arm.com>
+ <540E960D.7080408@huawei.com>
+ <20140909084621.GS27864@e106497-lin.cambridge.arm.com>
+ <540EC8CB.7010106@huawei.com>
+ <CAErSpo4cAfom2=07NYDRfTCdHO22M0v+ueiaZuG6v2Xd18wEnQ@mail.gmail.com>
+ <20140909154123.GA12906@obsidianresearch.com>
+ <CAL_JsqJMRqbwNkB2K6Mg2DU9mSHwAObtD7LLG2_n=4jGDAFhyQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140905092537.GC26243@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAL_JsqJMRqbwNkB2K6Mg2DU9mSHwAObtD7LLG2_n=4jGDAFhyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-09-14 11:25:37, Michal Hocko wrote:
-> On Thu 04-09-14 13:27:26, Dave Hansen wrote:
-> > On 09/04/2014 07:27 AM, Michal Hocko wrote:
-> > > Ouch. free_pages_and_swap_cache completely kills the uncharge batching
-> > > because it reduces it to PAGEVEC_SIZE batches.
-> > > 
-> > > I think we really do not need PAGEVEC_SIZE batching anymore. We are
-> > > already batching on tlb_gather layer. That one is limited so I think
-> > > the below should be safe but I have to think about this some more. There
-> > > is a risk of prolonged lru_lock wait times but the number of pages is
-> > > limited to 10k and the heavy work is done outside of the lock. If this
-> > > is really a problem then we can tear LRU part and the actual
-> > > freeing/uncharging into a separate functions in this path.
-> > > 
-> > > Could you test with this half baked patch, please? I didn't get to test
-> > > it myself unfortunately.
-> > 
-> > 3.16 settled out at about 11.5M faults/sec before the regression.  This
-> > patch gets it back up to about 10.5M, which is good.
+On Tue, Sep 09, 2014 at 09:44:56PM -0500, Rob Herring wrote:
+> On Tue, Sep 9, 2014 at 10:41 AM, Jason Gunthorpe
+> <jgunthorpe@obsidianresearch.com> wrote:
+> > On Tue, Sep 09, 2014 at 08:26:19AM -0600, Bjorn Helgaas wrote:
+> >
+> >> So as long as the DT tells you the ECAM information for each host
+> >> bridge, that should be sufficient.  The domain number is then just a
+> >> Linux convenience and is not tied to the platform as it is on ia64.
+> >
+> > I think this is right for DT systems - the domain is purely internal
+> > to the kernel and userspace, it is used to locate the proper host
+> > bridge driver instance, which contains the proper config accessor (and
+> > register bases, etc).
+> >
+> > AFAIK the main reason to have a DT alias to learn the domain number is
+> > to make it stable so things like udev/etc can reliably match on the
+> > PCI location.
 > 
-> Dave, would you be willing to test the following patch as well? I do not
-> have a huge machine at hand right now. It would be great if you could
+> For what purpose?
 
-I was playing with 48CPU with 32G of RAM machine but the res_counter
-lock didn't show up in the traces much (this was with 96 processes doing
-mmap (256M private file, faul, unmap in parallel):
-                          |--0.75%-- __res_counter_charge
-                          |          res_counter_charge
-                          |          try_charge
-                          |          mem_cgroup_try_charge
-                          |          |          
-                          |          |--81.56%-- do_cow_fault
-                          |          |          handle_mm_fault
-                          |          |          __do_page_fault
-                          |          |          do_page_fault
-                          |          |          page_fault
-[...]
-                          |          |          
-                          |           --18.44%-- __add_to_page_cache_locked
-                          |                     add_to_page_cache_lru
-                          |                     mpage_readpages
-                          |                     ext4_readpages
-                          |                     __do_page_cache_readahead
-                          |                     ondemand_readahead
-                          |                     page_cache_async_readahead
-                          |                     filemap_fault
-                          |                     __do_fault
-                          |                     do_cow_fault
-                          |                     handle_mm_fault
-                          |                     __do_page_fault
-                          |                     do_page_fault
-                          |                     page_fault
+udev places PCI D:B:D.F's all over the place, eg:
 
-Nothing really changed in that regards when I reduced mmap size to 128M
-and run with 4*CPUs.
+$ ls /dev/serial/by-path/
+pci-0000:00:1a.0-usb-0:1.4.2.5:1.0@
+pci-0000:00:1a.0-usb-0:1.4.2.6:1.0@
+$ ls /dev/disk/by-path/
+pci-0000:03:00.0-sas-0x5fcfffff00000001-lun-0@
+pci-0000:03:00.0-sas-0x5fcfffff00000001-lun-0-part1@
+pci-0000:03:00.0-sas-0x5fcfffff00000001-lun-0-part2@
+pci-0000:03:00.0-sas-0x5fcfffff00000001-lun-0-part3@
+    ^^^^
+domain number
 
-I do not have a bigger machine to play with unfortunately. I think the
-patch makes sense on its own. I would really appreciate if you could
-give it a try on your machine with !root memcg case to see how much it
-helped. I would expect similar results to your previous testing without
-the revert and Johannes' patch.
+It is part of the stable naming scheme udev uses - and that scheme is
+predicated on the PCI location being stable.
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+> IMO they should not. We really want to move away from aliases, not
+> expand their use. They are used for serial because there was no good
+> way to not break things like "console=ttyS0". I2C I think was more
+> internal, but may have been for i2c-dev. What are we going to break if
+> we don't have consistent domain numbering? 
+
+Well, DT needs some kind of solution to produce stable names for
+things. It is no good if the names unpredictably randomize.
+
+Lets use I2C as an example. My embedded systems have multiple I2C
+busses, with multiple drivers (so load order is not easily ensured).
+I am relying on DT aliases to force the bus numbers to stable values,
+but if I don't do that - then how do I find things in user space?
+
+$ ls -l /sys/bus/i2c/devices
+lrwxrwxrwx    1 root     root            0 Sep 10 16:12 i2c-2 -> ../../../devices/pci0000:00/0000:00:01.0/i2c_qsfp.4/i2c-2
+
+Oh, I have to search based on the HW path, which includes the domain
+number.
+
+So that *must* be really stable, or user space has no hope of mapping
+real hardware back to an I2C bus number.
+
+The same is true for pretty much every small IDR scheme in the kernel
+- they rely on the HW path for stable names.
+
+As an aside, I think for embedded being able to directly specify
+things like the bus number for I2C, ethX for ethernet, etc is very
+valuable, I would be sad to see that go away.
+
+> DT, I'd rather see it as part of the PCI root node. But I'm not
+> convinced it is needed.
+ 
+> It doesn't really sound like we have any actual need to solve this for
+> DT ATM. It's not clear to me if all buses should be domain 0 or a
+> simple incrementing index for each bus in absence of any firmware set
+> value.
+
+There are already ARM DTs in the kernel that require multiple domains,
+so that ship has sailed.
+
+I don't think it really matters where the number comes from, so long
+as it doesn't change after a kernel upgrade, or with a different
+module load order, or if the DT is recompiled, or whatever. It needs
+to be stable.
+
+Jason
