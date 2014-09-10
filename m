@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaIJUCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:02:06 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:48649 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaIJUCD (ORCPT
+	id S1753441AbaIJUDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:03:32 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:54822 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320AbaIJUD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:02:03 -0400
+	Wed, 10 Sep 2014 16:03:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <1410344391-5675-7-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1410344391-5675-8-git-send-email-javier.martinez@collabora.co.uk>
 References: <1410344391-5675-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1410344391-5675-7-git-send-email-javier.martinez@collabora.co.uk>
-Date: Wed, 10 Sep 2014 13:02:02 -0700
-X-Google-Sender-Auth: GFukOeJtxOYPEQR9f2BOyrSi6X4
-Message-ID: <CAD=FV=Wb+0gQ7xLzxoXz_7gxEK01oX3fm8wcBwqM2tzUvQ8h-g@mail.gmail.com>
-Subject: Re: [PATCH v3 6/7] ARM: dts: Set i2c7 clock at 400kHz for Peach boards
+	<1410344391-5675-8-git-send-email-javier.martinez@collabora.co.uk>
+Date: Wed, 10 Sep 2014 13:03:28 -0700
+X-Google-Sender-Auth: Ftk55JzVSL23I5a7VZeaIvhnH-s
+Message-ID: <CAD=FV=UL8gUO7bGk4vxZxuUuwZumzNZsR5+DVXafB6Z7Psc2kQ@mail.gmail.com>
+Subject: Re: [PATCH v3 7/7] ARM: exynos_defconfig: Enable MAX77802
 From: Doug Anderson <dianders@chromium.org>
 To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
@@ -36,14 +36,19 @@ Javier,
 
 On Wed, Sep 10, 2014 at 3:19 AM, Javier Martinez Canillas
 <javier.martinez@collabora.co.uk> wrote:
-> The downstream ChromeOS 3.8 kernel sets the clock frequency
-> for the I2C bus 7 at 400kHz. Do the same change in mainline.
+> From: Vivek Gautam <gautam.vivek@samsung.com>
 >
-> Suggested-by: Doug Anderson <dianders@chromium.org>
+> Enabled MAX77802 pmic for exynos systems.
+> One config USB_ANNOUNCE_NEW_DEVICES to display device
+> information on connect.
+> Another config for I2C_CHARDEV to see i2c device nodes.
+>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 > Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 > ---
->  arch/arm/boot/dts/exynos5420-peach-pit.dts | 1 +
->  arch/arm/boot/dts/exynos5800-peach-pi.dts  | 1 +
->  2 files changed, 2 insertions(+)
+>  arch/arm/configs/exynos_defconfig | 3 +++
+>  1 file changed, 3 insertions(+)
+
+I've no complaints about any of that.
 
 Reviewed-by: Doug Anderson <dianders@chromium.org>
