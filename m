@@ -1,129 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaIJFX0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 01:23:26 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:51755 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaIJFXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 01:23:24 -0400
+	id S1751432AbaIJFYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 01:24:08 -0400
+Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:18800
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750805AbaIJFYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 01:24:07 -0400
+Date: Wed, 10 Sep 2014 13:16:16 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: <kernel@pengutronix.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Frank.Li@freescale.com>
+Subject: Re: [PATCH v1] ARM: dts: imx6dl: disable dma support for spi on
+ i.mx6dl
+Message-ID: <20140910051615.GA29006@Robin-OptiPlex-780>
+References: <1410312816-32171-1-git-send-email-b38343@freescale.com>
+ <20140910032128.GD18566@dragon>
 MIME-Version: 1.0
-In-Reply-To: <20140910045328.GA32475@saruman.home>
-References: <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
-	<20140903144225.GD31855@saruman.home>
-	<CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
-	<20140905175651.GK24449@saruman.home>
-	<CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
-	<20140908134454.GK22409@saruman.home>
-	<CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
-	<20140909144225.GF6151@saruman.home>
-	<CAFp+6iHJKmeothDM67WW60Sqqj8BQroBCzZ8zecKwM_GcYL8HA@mail.gmail.com>
-	<CAFp+6iHRJ5oAA+K1Y0Y2uadPhsR6wmrd13DM39dqiL4jj+swHg@mail.gmail.com>
-	<20140910045328.GA32475@saruman.home>
-Date: Wed, 10 Sep 2014 10:53:23 +0530
-X-Google-Sender-Auth: IoEPAv6Yl8LgMbFhLf86YW_w1WM
-Message-ID: <CAFp+6iHMhbi4V4LAkNsgzDc192ihT2a1mZHgLbia=K2U8+x=2w@mail.gmail.com>
-Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Julius Werner <jwerner@google.com>, Julius Werner <jwerner@chromium.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140910032128.GD18566@dragon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(24454002)(189002)(51704005)(199003)(92566001)(92726001)(50466002)(4396001)(107046002)(81342001)(81156004)(33656002)(95666004)(76482001)(50986999)(76176999)(46406003)(84676001)(20776003)(64706001)(23726002)(47776003)(54356999)(87936001)(575784001)(79102001)(99396002)(110136001)(102836001)(81542001)(26826002)(83506001)(80022001)(104016003)(77982001)(97736003)(106466001)(44976005)(83322001)(19580395003)(97756001)(33716001)(85306004)(69596002)(19580405001)(6806004)(85852003)(21056001)(74502001)(105606002)(31966008)(90102001)(74662001)(83072002)(68736004)(46102001)(32563001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB339;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB339;
+X-Forefront-PRVS: 033054F29A
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 10:23 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Sep 10, 2014 at 09:09:57AM +0530, Vivek Gautam wrote:
->> On Wed, Sep 10, 2014 at 9:07 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->> > adding Julius here,
->>
->> i think i had missed adding Julius for this entire series :-(
->> I should be more careful with the CC list in future.
->> Added his chromium id, since that seems to be more active.
->>
->> >
->> >
->> > On Tue, Sep 9, 2014 at 8:12 PM, Felipe Balbi <balbi@ti.com> wrote:
->> >> On Tue, Sep 09, 2014 at 07:19:50AM +0530, Vivek Gautam wrote:
->> >>> Hi,
->> >>>
->> >>>
->> >>> On Mon, Sep 8, 2014 at 7:14 PM, Felipe Balbi <balbi@ti.com> wrote:
->> >>> > Hi,
->> >>> >
->> >>> > On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
->> >>> >> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wrote:
->> >>> >> > On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
->> >>> >> >> > Don't we have phy_power_on()
->> >>> >> >> > for that ? It looks like you could just as well do this from
->> >>> >> >> > phy_power_on() ?
->> >>> >> >>
->> >>> >> >> No, unfortunately keeping these calibration settings in phy_power_on()
->> >>> >> >> doesn't help, since we need to do this after XHCI reset has happened.
->> >>> >> >
->> >>> >> > teach xHCI about PHYs ?
->> >>> >>
->> >>> >> sorry i couldn't understand you here.
->> >>> >> Aren't we trying to do the same with Heikki's patch about dwc3 :
->> >>> >> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
->> >>> >>
->> >>> >> and the 2nd patch in this series :
->> >>> >> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
->> >>> >>
->> >>> >> Is there something else that is expected ?
->> >>> >
->> >>> > right, use that to call phy_init() at the right time, then you need to
->> >>> > add a new ->calibrate() method which, likely, will only be used by you
->> >>> > ;-)
->> >>>
->> >>> so you mean, the xhci should itself call phy_init() at a time suitable,
->> >>> so that ->calibrate() is not required at all ?
->> >>>
->> >>> i think you meant there - "then you __do not__ need to
->> >>
->> >> right :-)
->> >
->> > alright, i will prepare a patch for the suggested change.
->> >
->> > But AFAI remember we had discussion for this patch in earlier
->> > version, and Julius suggested to use a generic approach for such
->> > change wherein other users in future may be able to use the
->> > facility.
+On Wed, Sep 10, 2014 at 11:21:30AM +0800, Shawn Guo wrote:
+> On Wed, Sep 10, 2014 at 09:33:36AM +0800, Robin Gong wrote:
+> > There is one weird data in rxfifo after one full rx/tx transfer
+> > done sometimes. It looks a design issue and hard to workaround
+> > totally, so disable dma functhion here. And will re-enable it
+> > once the root cause found.
+> > 
+> > Signed-off-by: Robin Gong <b38343@freescale.com>
+> > ---
+> >  arch/arm/boot/dts/imx6dl.dtsi | 16 ++++++++++++++++
+> >  1 file changed, 16 insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/imx6dl.dtsi b/arch/arm/boot/dts/imx6dl.dtsi
+> > index b453e0e..e84a1ff 100644
+> > --- a/arch/arm/boot/dts/imx6dl.dtsi
+> > +++ b/arch/arm/boot/dts/imx6dl.dtsi
+> > @@ -102,6 +102,22 @@
+> >  	};
+> >  };
+> >  
+> > +&ecspi1 {
+> > +	dma-names = "", "";
+> > +};
+> > +
+> > +&ecspi2 {
+> > +	dma-names = "", "";
+> > +};
+> > +
+> > +&ecspi3 {
+> > +	dma-names = "", "";
+> > +};
+> > +
+> > +&ecspi4 {
+> > +	dma-names = "", "";
+> > +};
+> > +
+> 
+> This looks odd.  Can we drop the dma properties from imx6qdl.dtsi,
+> and only add them in imx6q.dtsi instead?
+> 
+> Shawn
 >
-> right, and what's more generic than adding the support for PHYs straight
-> into xHCI ?
->
-> What I fear is that we end up opening the doors for every odd
-> platform-specific operation to be added to the framework without really
-> considering what needs to be done. That would defeat the idea of having
-> a generic framework altogether.
-
-Ok, i will prepare the patch series as suggested and post it
-to gather opinion from you. :-)
-
->
-> cheers
->
-> --
-> balbi
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Ok, I'll send v2.
+> >  &hdmi {
+> >  	compatible = "fsl,imx6dl-hdmi";
+> >  };
+> > -- 
+> > 1.9.1
+> > 
