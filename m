@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225AbaIJMCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:02:12 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:54507 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaIJMCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:02:10 -0400
-Date: Wed, 10 Sep 2014 16:01:57 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] memory cgroup: my thoughts on memsw
-Message-ID: <20140910120157.GA13796@esperanza>
-References: <20140904143055.GA20099@esperanza>
- <5408E1CD.3090004@jp.fujitsu.com>
- <20140905082846.GA25641@esperanza>
- <5409C6BB.7060009@jp.fujitsu.com>
- <20140905160029.GF25641@esperanza>
- <540A4420.2030504@jp.fujitsu.com>
- <20140908110131.GA11812@esperanza>
- <540DB4EC.6060100@jp.fujitsu.com>
+	id S1751356AbaIJMDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:03:44 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:33081 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751092AbaIJMDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 08:03:42 -0400
+Message-ID: <54103E15.3090406@compulab.co.il>
+Date: Wed, 10 Sep 2014 15:03:33 +0300
+From: Dmitry Lifshitz <lifshitz@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <540DB4EC.6060100@jp.fujitsu.com>
+To: balbi@ti.com
+CC: Roger Quadros <rogerq@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        George Cherian <george.cherian@ti.com>
+Subject: Re: [PATCH 2/2] ARM: dts: omap5: Add dr_mode for dwc3
+References: <1381402195-29257-1-git-send-email-kishon@ti.com> <1381402195-29257-2-git-send-email-kishon@ti.com> <52580F34.8030809@ti.com> <20140416161619.GH28035@saruman.home> <540D9449.3090008@compulab.co.il> <20140908132403.GA22409@saruman.home>
+In-Reply-To: <20140908132403.GA22409@saruman.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: lifshitz@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 10:53:48PM +0900, Kamezawa Hiroyuki wrote:
-> (2014/09/08 20:01), Vladimir Davydov wrote:
-> >On Sat, Sep 06, 2014 at 08:15:44AM +0900, Kamezawa Hiroyuki wrote:
-> >>As you noticed, hitting anon+swap limit just means oom-kill.
-> >>My point is that using oom-killer for "server management" just seems crazy.
-> >>
-> >>Let my clarify things. your proposal was.
-> >>  1. soft-limit will be a main feature for server management.
-> >>  2. Because of soft-limit, global memory reclaim runs.
-> >>  3. Using swap at global memory reclaim can cause poor performance.
-> >>  4. So, making use of OOM-Killer for avoiding swap.
-> >>
-> >>I can't agree "4". I think
-> >>
-> >>  - don't configure swap.
-> >
-> >Suppose there are two containers, each having soft limit set to 50% of
-> >total system RAM. One of the containers eats 90% of the system RAM by
-> >allocating anonymous pages. Another starts using file caches and wants
-> >more than 10% of RAM to work w/o issuing disk reads. So what should we
-> >do then?
-> >We won't be able to shrink the first container to its soft
-> >limit, because there's no swap. Leaving it as is would be unfair from
-> >the second container's point of view. Kill it? But the whole system is
-> >going OK, because the working set of the second container is easily
-> >shrinkable. Besides there may be some progress in shrinking file caches
-> >from the first container.
-> >
-> >>  - use zram
-> >
-> >In fact this isn't different from the previous proposal (working w/o
-> >swap). ZRAM only compresses data while still storing them in RAM so we
-> >eventually may get into a situation where almost all RAM is full of
-> >compressed anon pages.
-> >
-> 
-> In above 2 cases, "vmpressure" works fine.
+Hi,
 
-What if a container allocates memory so fast that the userspace thread
-handling its threshold notifications won't have time to react before it
-eats all memory?
+On 09/08/2014 04:24 PM, Felipe Balbi wrote:
+> Hi,
+>
+> On Mon, Sep 08, 2014 at 02:34:33PM +0300, Dmitry Lifshitz wrote:
+>> Hi Felipe, Roger
+>>
+>> On 04/16/2014 07:16 PM, Felipe Balbi wrote:
+>>> On Fri, Oct 11, 2013 at 05:46:12PM +0300, Roger Quadros wrote:
+>>>> Hi,
+>>>>
+>>>> On 10/10/2013 01:49 PM, Kishon Vijay Abraham I wrote:
+>>>>> From: George Cherian <george.cherian@ti.com>
+>>>>>
+>>>>> Added dr_mode property in dwc3 and set its default mode to device.
+>>>>
+>>>> If there is a specific reason why this is not set to "otg", we need
+>>>> to explain it here.
+>>>>
+>>>> AFAIK the port is meant to be used as OTG port.
+>>>
+>>> we still don't have the workaround for dual role ports, I've been
+>>> working on it but still need to retest and make sure it's working fine
+>>> before merging upstream.
+>>>
+>>
+>>
+>> Does the OTG port suppose to work with OMAP5? I mean role switching
+>> mechanism?
+>>
+>> I'm testing kernel v3.16 with OMAP5 based board (CM-T54).
+>>
+>> If I set CONFIG_USB_DWC3_DUAL_ROLE, than nothing is going on when I plug
+>> some device/host cable into micro USB3.0 port (VBUS/ID detection with extcon
+>> events works fine).
+>
+> Dual role does not work. We allow the driver to the built with both Host
+> and Peripheral support because some platforms have more than one port
+> and building the driver with dual role allows us to make one port host
+> and one peripheral.
+>
+
+Please, can you provide some detail about platforms with several ports.
+How do that ports are connected to DWC3?
+
 
 Thanks,
-Vladimir
+
+Dmitry
+
+
